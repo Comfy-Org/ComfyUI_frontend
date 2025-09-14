@@ -1,0 +1,100 @@
+> vitest --run WidgetColorPicker
+
+[?25l
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90m/home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8[39m
+
+[?2026h
+[1m[33m ❯ [39m[22msrc/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m0 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m[1m[32m0 passed[39m[22m[90m (0)[39m
+[2m   Start at [22m14:07:42
+[2m   Duration [22m102ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K
+[1m[33m ❯ [39m[22msrc/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts[2m 0/23[22m
+
+[2m Test Files [22m[1m[32m0 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m[1m[32m0 passed[39m[22m[90m (23)[39m
+[2m   Start at [22m14:07:42
+[2m   Duration [22m382ms
+[?2026l[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [31m❯[39m src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts [2m([22m[2m23 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 77[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22memits Vue event when color changes[32m 19[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22mhandles different color formats[32m 3[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22mhandles missing callback gracefully[32m 3[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22mnormalizes bare hex without # to #hex on emit[32m 2[2mms[22m[39m
+[31m   [31m×[31m WidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22mnormalizes rgb() strings to #hex on emit[39m[32m 5[2mms[22m[39m
+[31m     → expected [ '#000000' ] to include '#ff0000'[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22mnormalizes hsb() strings to #hex on emit[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22mnormalizes HSB object values to #hex on emit[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mComponent Rendering[2m > [22mrenders color picker component[32m 2[2mms[22m[39m
+[31m   [31m×[31m WidgetColorPicker Value Binding[2m > [22mComponent Rendering[2m > [22mnormalizes display to a single leading #[39m[32m 5[2mms[22m[39m
+[31m     → expected '#000000' to be '#ff0000' // Object.is equality[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mComponent Rendering[2m > [22mrenders layout field wrapper[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mComponent Rendering[2m > [22mdisplays current color value as text[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mComponent Rendering[2m > [22mupdates color text when value changes[32m 4[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mComponent Rendering[2m > [22muses default color when no value provided[32m 1[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mReadonly Mode[2m > [22mdisables color picker when readonly[32m 1[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mReadonly Mode[2m > [22menables color picker when not readonly[32m 1[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mColor Formats[2m > [22mhandles valid hex colors[32m 8[2mms[22m[39m
+[31m   [31m×[31m WidgetColorPicker Value Binding[2m > [22mColor Formats[2m > [22mhandles short hex colors[39m[32m 2[2mms[22m[39m
+[31m     → expected '#ffffff' to be '#fff' // Object.is equality[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mColor Formats[2m > [22mpasses widget options to color picker[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mWidget Layout Integration[2m > [22mpasses widget to layout field[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mWidget Layout Integration[2m > [22mmaintains proper component structure[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mEdge Cases[2m > [22mhandles empty color value[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mEdge Cases[2m > [22mhandles invalid color formats gracefully[32m 2[2mms[22m[39m
+   [32m✓[39m WidgetColorPicker Value Binding[2m > [22mEdge Cases[2m > [22mhandles widget with no options[32m 2[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 3 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts[2m > [22mWidgetColorPicker Value Binding[2m > [22mVue Event Emission[2m > [22mnormalizes rgb() strings to #hex on emit
+[31m[1mAssertionError[22m: expected [ '#000000' ] to include '#ff0000'[39m
+[36m [2m❯[22m src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts:[2m102:27[22m[39m
+    [90m100| [39m      [35mconst[39m emitted [33m=[39m [35mawait[39m [34msetColorPickerValue[39m(wrapper[33m,[39m [32m'rgb(255, 0, 0)'[39m)
+    [90m101| [39m      [34mexpect[39m(emitted)[33m.[39m[34mtoBeDefined[39m()
+    [90m102| [39m      [34mexpect[39m(emitted[33m![39m[[34m0[39m])[33m.[39m[34mtoContain[39m([32m'#ff0000'[39m)
+    [90m   | [39m                          [31m^[39m
+    [90m103| [39m    })
+    [90m104| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts[2m > [22mWidgetColorPicker Value Binding[2m > [22mComponent Rendering[2m > [22mnormalizes display to a single leading #
+[31m[1mAssertionError[22m: expected '#000000' to be '#ff0000' // Object.is equality[39m
+
+Expected: [32m"#[7mff[27m0000"[39m
+Received: [31m"#[7m00[27m0000"[39m
+
+[36m [2m❯[22m src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts:[2m148:37[22m[39m
+    [90m146| [39m      wrapper [33m=[39m [34mmountComponent[39m(widget[33m,[39m [32m'ff0000'[39m)
+    [90m147| [39m      colorText [33m=[39m wrapper[33m.[39m[34mfind[39m([32m'[data-testid="widget-color-text"]'[39m)
+    [90m148| [39m      expect[33m.[39m[34msoft[39m(colorText[33m.[39m[34mtext[39m())[33m.[39m[34mtoBe[39m([32m'#ff0000'[39m)
+    [90m   | [39m                                    [31m^[39m
+    [90m149| [39m    })
+    [90m150| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts[2m > [22mWidgetColorPicker Value Binding[2m > [22mColor Formats[2m > [22mhandles short hex colors
+[31m[1mAssertionError[22m: expected '#ffffff' to be '#fff' // Object.is equality[39m
+
+Expected: [32m"#fff"[39m
+Received: [31m"#fff[7mfff[27m"[39m
+
+[36m [2m❯[22m src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts:[2m232:32[22m[39m
+    [90m230| [39m
+    [90m231| [39m      [35mconst[39m colorText [33m=[39m wrapper[33m.[39m[34mfind[39m([32m'[data-testid="widget-color-text"]'[39m)
+    [90m232| [39m      [34mexpect[39m(colorText[33m.[39m[34mtext[39m())[33m.[39m[34mtoBe[39m([32m'#fff'[39m)
+    [90m   | [39m                               [31m^[39m
+    [90m233| [39m    })
+    [90m234| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m20 passed[39m[22m[90m (23)[39m
+[2m   Start at [22m 14:07:42
+[2m   Duration [22m 560ms[2m (transform 169ms, setup 31ms, collect 232ms, tests 77ms, environment 71ms, prepare 45ms)[22m
+
+[?25h

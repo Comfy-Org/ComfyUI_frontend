@@ -1,0 +1,717 @@
+> vitest src/components/
+
+[?25l
+[1m[44m DEV [49m[22m [34mv3.2.4 [39m[90m/home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8[39m
+
+[?2026h
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m0 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m0 passed[39m[22m[90m (0)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m223ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K
+[1m[33m ❯ [39m[22msrc/components/common/ColorCustomizationSelector.spec.ts[2m 0/8[22m
+[1m[33m ❯ [39m[22msrc/components/common/UrlInput.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/ManagerProgressDialogContent.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserPopover.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m0 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m0 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m728ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mrenders label
+[22m[39m[intlify] Not found '' key in 'en' locale messages.
+
+
+[1m[33m ❯ [39m[22msrc/components/common/ColorCustomizationSelector.spec.ts[2m 1/8[22m
+[1m[33m ❯ [39m[22msrc/components/common/UrlInput.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts[2m 0/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/ManagerProgressDialogContent.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 0/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 0/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserPopover.spec.ts[2m 6/6[22m
+
+[2m Test Files [22m[1m[32m1 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m7 passed[39m[22m[90m (51)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m830ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/topbar/CurrentUserPopover.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/ColorCustomizationSelector.spec.ts[2m 1/8[22m
+[1m[33m ❯ [39m[22msrc/components/common/UrlInput.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts[2m 0/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/ManagerProgressDialogContent.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 0/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 0/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserPopover.spec.ts[2m 6/6[22m
+
+[2m Test Files [22m[1m[32m1 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m7 passed[39m[22m[90m (51)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m830ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mrenders icon
+[22m[39m[intlify] Not found '' key in 'en' locale messages.
+
+[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mcreates badge when iconBadge prop is set
+[22m[39m[intlify] Not found '' key in 'en' locale messages.
+
+[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mshows tooltip on hover
+[22m[39m[intlify] Not found 'Settings' key in 'en' locale messages.
+
+
+[1m[33m ❯ [39m[22msrc/components/common/ColorCustomizationSelector.spec.ts[2m 1/8[22m
+[1m[33m ❯ [39m[22msrc/components/common/UrlInput.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts[2m 0/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/ManagerProgressDialogContent.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 0/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 0/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserPopover.spec.ts[2m 6/6[22m
+
+[2m Test Files [22m[1m[32m1 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m7 passed[39m[22m[90m (51)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m830ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m src/components/common/ColorCustomizationSelector.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 115[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/ManagerProgressDialogContent.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 150[2mms[22m[39m
+ [32m✓[39m src/components/common/UrlInput.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/ColorCustomizationSelector.spec.ts[2m 8/8[22m
+[1m[33m ❯ [39m[22msrc/components/common/UrlInput.test.ts[2m 10/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts[2m 10/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/ManagerProgressDialogContent.test.ts[2m 7/7[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 3/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 3/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserPopover.spec.ts[2m 6/6[22m
+
+[2m Test Files [22m[1m[32m5 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m47 passed[39m[22m[90m (61)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m942ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | Fetch.onError (file:/home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/node_modules/.pnpm/happy-dom@15.11.0/node_modules/happy-dom/src/fetch/Fetch.ts:493:24)
+[22m[39mDOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/fetch/Fetch.ts:506:17[90m)[39m
+    at Object.<anonymous> [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/fetch/Fetch.ts:361:10[90m)[39m
+    at AsyncTaskManager.abortAll [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/async-task-manager/AsyncTaskManager.ts:266:21[90m)[39m
+    at AsyncTaskManager.abort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/async-task-manager/AsyncTaskManager.ts:56:15[90m)[39m
+    at DetachedBrowserFrame.abort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/browser/detached-browser/DetachedBrowserFrame.ts:147:49[90m)[39m
+    at DetachedWindowAPI.abort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/window/DetachedWindowAPI.ts:62:29[90m)[39m
+    at teardownWindow [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/index.CmSc2RE5.js:336:22[90m)[39m
+    at Object.teardown [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/index.CmSc2RE5.js:391:10[90m)[39m
+    at withEnv [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/runBaseTests.9Ij9_de-.js:89:13[90m)[39m
+    at run [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/runBaseTests.9Ij9_de-.js:109:2[90m)[39m
+
+
+[1m[33m ❯ [39m[22msrc/components/common/ColorCustomizationSelector.spec.ts[2m 8/8[22m
+[1m[33m ❯ [39m[22msrc/components/common/UrlInput.test.ts[2m 10/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts[2m 10/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/ManagerProgressDialogContent.test.ts[2m 7/7[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 3/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 3/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserPopover.spec.ts[2m 6/6[22m
+
+[2m Test Files [22m[1m[32m5 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m47 passed[39m[22m[90m (61)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m942ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstdout[2m | src/components/sidebar/tabs/queue/ResultGallery.spec.ts
+[22m[39mRunning on localhost:3000
+
+[90mstdout[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts
+[22m[39mRunning on localhost:3000
+
+
+[1m[33m ❯ [39m[22msrc/components/common/UrlInput.test.ts[2m 10/10[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 0/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/ManagerProgressDialogContent.test.ts[2m 7/7[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 7/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/widgets/ChatHistoryWidget.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 3/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m5 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m51 passed[39m[22m[90m (79)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.04s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/dialog/content/setting/UsageLogsTable.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 340[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/EditableText.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/common/TreeExplorerTreeNode.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m 0/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 3/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 15/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/widgets/ChatHistoryWidget.spec.ts[2m 0/4[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 5/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m7 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m64 passed[39m[22m[90m (89)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.15s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2msets aria-label attribute when tooltip is provided
+[22m[39m[intlify] Not found 'Settings' key in 'en' locale messages.
+
+
+[1m[33m ❯ [39m[22msrc/components/common/EditableText.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/common/TreeExplorerTreeNode.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m 0/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 3/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 15/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/widgets/ChatHistoryWidget.spec.ts[2m 0/4[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 5/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m7 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m64 passed[39m[22m[90m (89)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.15s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/sidebar/SidebarIcon.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 355[2mms[22m[39m
+   [33m[2m✓[22m[39m SidebarIcon[2m > [22mshows tooltip on hover [33m 320[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/EditableText.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/common/TreeExplorerTreeNode.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m 0/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 3/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 15/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/widgets/ChatHistoryWidget.spec.ts[2m 0/4[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 5/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m7 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m64 passed[39m[22m[90m (89)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.15s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2mrenders chat history correctly
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[{\"prompt\":\"Test prompt\",\"response\":\"Test response\",\"response_id\":\"123\"}]" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2mhandles empty history
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[]" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2medits previous prompts
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[{\"prompt\":\"Test prompt\",\"response\":\"Test response\",\"response_id\":\"123\"}]" widget= { node: { widgets: [ [36m[Object][39m ] } } ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2mcancels editing correctly
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[{\"prompt\":\"Test prompt\",\"response\":\"Test response\",\"response_id\":\"123\"}]" widget= { node: { widgets: [ [36m[Object][39m ] } } ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+
+[1m[33m ❯ [39m[22msrc/components/common/EditableText.spec.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/common/TreeExplorerTreeNode.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m 6/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 6/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 15/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/widgets/ChatHistoryWidget.spec.ts[2m 4/4[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 5/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m9 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m77 passed[39m[22m[90m (96)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.28s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/graph/widgets/ChatHistoryWidget.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/manager/ManagerHeader.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/EditableText.spec.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/common/TreeExplorerTreeNode.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m 6/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 6/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/UsageLogsTable.spec.ts[2m 15/15[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/widgets/ChatHistoryWidget.spec.ts[2m 4/4[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 5/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m9 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m77 passed[39m[22m[90m (96)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.28s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/common/EditableText.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/EditableText.spec.ts[2m 7/7[22m
+[1m[33m ❯ [39m[22msrc/components/common/TreeExplorerTreeNode.spec.ts[2m 1/3[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m 6/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 10/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/widgets/ChatHistoryWidget.spec.ts[2m 4/4[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/SidebarIcon.spec.ts[2m 5/5[22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowView.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m10 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m89 passed[39m[22m[90m (99)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.38s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/common/TreeExplorerTreeNode.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/EditableText.spec.ts[2m 7/7[22m
+[1m[33m ❯ [39m[22msrc/components/common/TreeExplorerTreeNode.spec.ts[2m 3/3[22m
+[1m[33m ❯ [39m[22msrc/components/common/UserAvatar.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/ManagerHeader.test.ts[2m 6/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 16/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowCard.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowView.spec.ts[2m 0/4[22m
+
+[2m Test Files [22m[1m[32m11 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m97 passed[39m[22m[90m (103)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.48s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/dialog/content/manager/PackVersionSelectorPopover.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 487[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/UserAvatar.test.ts[2m 1/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 18/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowCard.spec.ts[2m 14/14[22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowView.spec.ts[2m 4/4[22m
+[1m[33m ❯ [39m[22msrc/components/templates/thumbnails/HoverDissolveThumbnail.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserButton.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m14 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m118 passed[39m[22m[90m (123)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.69s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2mrenders template cards for each template
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="default" categoryTitle="Test Category"  ... > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2memits loadWorkflow event when clicked
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="default" categoryTitle="Test Category"  ... > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2mpasses correct props to template cards
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="custom" categoryTitle="Custom Category"  ... > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2mapplies loading state correctly to cards
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="default" categoryTitle="Test Category"  ... > 
+  at <VTUROOT>
+
+
+[1m[33m ❯ [39m[22msrc/components/common/UserAvatar.test.ts[2m 1/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 18/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowCard.spec.ts[2m 14/14[22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowView.spec.ts[2m 4/4[22m
+[1m[33m ❯ [39m[22msrc/components/templates/thumbnails/HoverDissolveThumbnail.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserButton.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m14 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m118 passed[39m[22m[90m (123)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.69s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/templates/TemplateWorkflowView.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m src/components/templates/TemplateWorkflowCard.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/UserAvatar.test.ts[2m 1/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionSelectorPopover.test.ts[2m 18/18[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/ApiKeyForm.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowCard.spec.ts[2m 14/14[22m
+[1m[33m ❯ [39m[22msrc/components/templates/TemplateWorkflowView.spec.ts[2m 4/4[22m
+[1m[33m ❯ [39m[22msrc/components/templates/thumbnails/HoverDissolveThumbnail.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/topbar/CurrentUserButton.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m14 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m118 passed[39m[22m[90m (123)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.69s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/common/UserAvatar.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m src/components/topbar/CurrentUserButton.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m src/components/templates/thumbnails/HoverDissolveThumbnail.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/signin/ApiKeyForm.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/UserAvatar.test.ts[2m 6/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/signin/SignInForm.spec.ts[2m 0/12[22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/thumbnails/BaseThumbnail.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/thumbnails/CompareSliderThumbnail.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/thumbnails/DefaultThumbnail.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m18 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m137 passed[39m[22m[90m (149)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.79s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstdout[2m | src/components/dialog/content/setting/SettingItem.spec.ts
+[22m[39mRunning on localhost:3000
+
+ [32m✓[39m src/components/templates/thumbnails/CompareSliderThumbnail.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+[90mstdout[2m | src/components/dialog/content/manager/PackVersionBadge.test.ts
+[22m[39mRunning on localhost:3000
+
+ [32m✓[39m src/components/dialog/content/signin/SignInForm.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 149[2mms[22m[39m
+ [32m✓[39m src/components/templates/thumbnails/DefaultThumbnail.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/common/UserAvatar.test.ts[2m 6/6[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/templates/thumbnails/BaseThumbnail.spec.ts[2m 1/6[22m
+
+[2m Test Files [22m[1m[32m21 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m165 passed[39m[22m[90m (170)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m1.89s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/templates/thumbnails/BaseThumbnail.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/components/templates/thumbnails/AudioThumbnail.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/skeleton/PackCardGridSkeleton.test.ts[2m 0/3[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m23 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m172 passed[39m[22m[90m (175)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m2.00s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/dialog/content/manager/skeleton/PackCardGridSkeleton.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+[90mstdout[2m | src/components/node/NodePreview.spec.ts
+[22m[39mRunning on localhost:3000
+
+[90mstdout[2m | src/components/graph/selectionToolbox/ColorPickerButton.spec.ts
+[22m[39mRunning on localhost:3000
+
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m24 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m175 passed[39m[22m[90m (175)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m3.00s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/PackVersionBadge.test.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/dialog/content/setting/SettingItem.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/graph/selectionToolbox/ColorPickerButton.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m [queued][22m
+[1m[33m ❯ [39m[22msrc/components/sidebar/tabs/queue/ResultGallery.spec.ts[2m [queued][22m
+
+[2m Test Files [22m[1m[32m24 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m175 passed[39m[22m[90m (182)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m3.30s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mrenders a toggle switch
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/setting/SettingItem.spec.ts[2m > [22m[2mSettingItem[2m > [22m[2mtranslates options that use legacy type
+[22m[39m[intlify] Not found 'settings.undefined.name' key in 'en' locale messages.
+[intlify] Not found 'settings.undefined.options.undefined' key in 'en' locale messages.
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mchecks if pack is enabled on mount
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2msets toggle to on when pack is enabled
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/setting/SettingItem.spec.ts[2m > [22m[2mSettingItem[2m > [22m[2mhandles tooltips with @ symbols without errors
+[22m[39m[intlify] Not found 'settings.undefined.name' key in 'en' locale messages.
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2msets toggle to off when pack is disabled
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m 1/17[22m
+
+[2m Test Files [22m[1m[32m28 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m196 passed[39m[22m[90m (219)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m3.50s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/dialog/content/setting/SettingItem.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/manager/PackVersionBadge.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m 1/17[22m
+
+[2m Test Files [22m[1m[32m28 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m196 passed[39m[22m[90m (219)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m3.50s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls enablePack when toggle is switched on
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls enablePack when toggle is switched on
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls enablePack when toggle is switched on
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls disablePack when toggle is switched off
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls disablePack when toggle is switched off
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls disablePack when toggle is switched off
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mdisables toggle while loading
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mdisables toggle while loading
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m 1/17[22m
+
+[2m Test Files [22m[1m[32m28 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m196 passed[39m[22m[90m (219)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m3.50s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/sidebar/tabs/queue/ResultGallery.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m src/components/graph/selectionToolbox/ColorPickerButton.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m 0/7[22m
+[1m[33m ❯ [39m[22msrc/components/node/NodePreview.spec.ts[2m 1/17[22m
+
+[2m Test Files [22m[1m[32m28 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m196 passed[39m[22m[90m (219)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m3.50s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/node/NodePreview.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m 0/7[22m
+
+[2m Test Files [22m[1m[32m29 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m212 passed[39m[22m[90m (219)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m3.90s
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mdisables toggle while loading
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+
+[1m[33m ❯ [39m[22msrc/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m 1/7[22m
+
+[2m Test Files [22m[1m[32m29 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m[1m[32m213 passed[39m[22m[90m (219)[39m
+[2m   Start at [22m21:09:53
+[2m   Duration [22m4.40s
+[?2026l[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/components/dialog/content/manager/button/PackEnableToggle.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1051[2mms[22m[39m
+   [33m[2m✓[22m[39m PackEnableToggle[2m > [22mdisables toggle while loading [33m 1004[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m30 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m [1m[32m219 passed[39m[22m[90m (219)[39m
+[2m   Start at [22m 21:09:53
+[2m   Duration [22m 4.50s[2m (transform 5.26s, setup 1.84s, collect 24.11s, tests 3.46s, environment 3.13s, prepare 1.31s)[22m
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+[?25h

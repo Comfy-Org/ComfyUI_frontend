@@ -1,0 +1,422 @@
+> vitest src/components/ tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90m/home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8[39m
+
+[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2mrenders template cards for each template
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="default" categoryTitle="Test Category"  ... > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2memits loadWorkflow event when clicked
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="default" categoryTitle="Test Category"  ... > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2mpasses correct props to template cards
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="custom" categoryTitle="Custom Category"  ... > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/templates/TemplateWorkflowView.spec.ts[2m > [22m[2mTemplateWorkflowView[2m > [22m[2mapplies loading state correctly to cards
+[22m[39m[Vue warn]: Invalid watch source:  { value: [32m''[39m } A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types. 
+  at <TemplateWorkflowView title="Test Templates" sourceModule="default" categoryTitle="Test Category"  ... > 
+  at <VTUROOT>
+
+ [32m✓[39m src/components/templates/thumbnails/BaseThumbnail.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m src/components/templates/TemplateWorkflowView.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m src/components/templates/TemplateWorkflowCard.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m src/components/templates/thumbnails/HoverDissolveThumbnail.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/components/templates/thumbnails/DefaultThumbnail.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m src/components/common/UserAvatar.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/components/topbar/CurrentUserPopover.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m src/components/common/EditableText.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2mrenders chat history correctly
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[{\"prompt\":\"Test prompt\",\"response\":\"Test response\",\"response_id\":\"123\"}]" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2mhandles empty history
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[]" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2medits previous prompts
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[{\"prompt\":\"Test prompt\",\"response\":\"Test response\",\"response_id\":\"123\"}]" widget= { node: { widgets: [ [36m[Object][39m ] } } ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/graph/widgets/ChatHistoryWidget.spec.ts[2m > [22m[2mChatHistoryWidget.vue[2m > [22m[2mcancels editing correctly
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <ChatHistoryWidget history="[{\"prompt\":\"Test prompt\",\"response\":\"Test response\",\"response_id\":\"123\"}]" widget= { node: { widgets: [ [36m[Object][39m ] } } ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/components/graph/widgets/ChatHistoryWidget.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mrenders label
+[22m[39m[intlify] Not found '' key in 'en' locale messages.
+
+[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mrenders icon
+[22m[39m[intlify] Not found '' key in 'en' locale messages.
+
+ [32m✓[39m src/components/dialog/content/manager/ManagerHeader.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mcreates badge when iconBadge prop is set
+[22m[39m[intlify] Not found '' key in 'en' locale messages.
+
+[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2mshows tooltip on hover
+[22m[39m[intlify] Not found 'Settings' key in 'en' locale messages.
+
+ [32m✓[39m src/components/common/ColorCustomizationSelector.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 138[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m src/components/common/TreeExplorerTreeNode.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/ManagerProgressDialogContent.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 208[2mms[22m[39m
+ [32m✓[39m src/components/common/UrlInput.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 90[2mms[22m[39m
+[90mstderr[2m | Fetch.onError (file:/home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/node_modules/.pnpm/happy-dom@15.11.0/node_modules/happy-dom/src/fetch/Fetch.ts:493:24)
+[22m[39mDOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/fetch/Fetch.ts:506:17[90m)[39m
+    at Object.<anonymous> [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/fetch/Fetch.ts:361:10[90m)[39m
+    at AsyncTaskManager.abortAll [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/async-task-manager/AsyncTaskManager.ts:266:21[90m)[39m
+    at AsyncTaskManager.abort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/async-task-manager/AsyncTaskManager.ts:56:15[90m)[39m
+    at DetachedBrowserFrame.abort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/browser/detached-browser/DetachedBrowserFrame.ts:147:49[90m)[39m
+    at DetachedWindowAPI.abort [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/happy-dom@15.11.0/node_modules/[4mhappy-dom[24m/src/window/DetachedWindowAPI.ts:62:29[90m)[39m
+    at teardownWindow [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/index.CmSc2RE5.js:336:22[90m)[39m
+    at Object.teardown [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/index.CmSc2RE5.js:391:10[90m)[39m
+    at withEnv [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/runBaseTests.9Ij9_de-.js:89:13[90m)[39m
+    at run [90m(file:///home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8/[39mnode_modules/[4m.pnpm[24m/vitest@3.2.4_@types+debug@4.1.12_@types+node@20.14.10_@vitest+ui@3.2.4_happy-dom@15.11._b61ff151f47ad30125302eb2be9992cc/node_modules/[4mvitest[24m/dist/chunks/runBaseTests.9Ij9_de-.js:109:2[90m)[39m
+
+[90mstdout[2m | src/components/dialog/content/setting/SettingItem.spec.ts
+[22m[39mRunning on localhost:3000
+
+[90mstdout[2m | src/components/sidebar/tabs/queue/ResultGallery.spec.ts
+[22m[39mRunning on localhost:3000
+
+[90mstdout[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts
+[22m[39mRunning on localhost:3000
+
+ [32m✓[39m src/components/templates/thumbnails/CompareSliderThumbnail.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/components/templates/thumbnails/AudioThumbnail.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+[90mstderr[2m | src/components/sidebar/SidebarIcon.spec.ts[2m > [22m[2mSidebarIcon[2m > [22m[2msets aria-label attribute when tooltip is provided
+[22m[39m[intlify] Not found 'Settings' key in 'en' locale messages.
+
+ [32m✓[39m src/components/sidebar/SidebarIcon.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 373[2mms[22m[39m
+   [33m[2m✓[22m[39m SidebarIcon[2m > [22mshows tooltip on hover [33m 324[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/manager/skeleton/PackCardGridSkeleton.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m src/components/topbar/CurrentUserButton.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/setting/UsageLogsTable.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 576[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/manager/PackVersionSelectorPopover.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 487[2mms[22m[39m
+[90mstdout[2m | src/components/dialog/content/manager/PackVersionBadge.test.ts
+[22m[39mRunning on localhost:3000
+
+ [32m✓[39m src/components/dialog/content/signin/ApiKeyForm.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/signin/SignInForm.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 174[2mms[22m[39m
+[90mstdout[2m | src/components/graph/selectionToolbox/ColorPickerButton.spec.ts
+[22m[39mRunning on localhost:3000
+
+[90mstdout[2m | src/components/node/NodePreview.spec.ts
+[22m[39mRunning on localhost:3000
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould call resize tracking composable with node ID
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould render with data-node-id attribute
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould render node title
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould apply selected styling when selected prop is true
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} selected=true ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould apply executing animation when executing prop is true
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} executing=true ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould emit node-click event on pointer down
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mrenders a toggle switch
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mchecks if pack is enabled on mount
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2msets toggle to on when pack is enabled
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2msets toggle to off when pack is disabled
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls enablePack when toggle is switched on
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls enablePack when toggle is switched on
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls enablePack when toggle is switched on
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls disablePack when toggle is switched off
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls disablePack when toggle is switched off
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mcalls disablePack when toggle is switched off
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mdisables toggle while loading
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mdisables toggle while loading
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/dialog/content/setting/SettingItem.spec.ts[2m > [22m[2mSettingItem[2m > [22m[2mtranslates options that use legacy type
+[22m[39m[intlify] Not found 'settings.undefined.name' key in 'en' locale messages.
+[intlify] Not found 'settings.undefined.options.undefined' key in 'en' locale messages.
+
+[90mstderr[2m | src/components/dialog/content/setting/SettingItem.spec.ts[2m > [22m[2mSettingItem[2m > [22m[2mhandles tooltips with @ symbols without errors
+[22m[39m[intlify] Not found 'settings.undefined.name' key in 'en' locale messages.
+
+ [32m✓[39m src/components/dialog/content/setting/SettingItem.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m src/components/dialog/content/manager/PackVersionBadge.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m src/components/sidebar/tabs/queue/ResultGallery.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m src/components/graph/selectionToolbox/ColorPickerButton.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m src/components/node/NodePreview.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+[90mstderr[2m | src/components/dialog/content/manager/button/PackEnableToggle.test.ts[2m > [22m[2mPackEnableToggle[2m > [22m[2mdisables toggle while loading
+[22m[39m[Vue warn]: Failed to resolve directive: tooltip 
+  at <PackEnableToggle nodePack= {
+  id: [32m'test-pack'[39m,
+  name: [32m'Test Pack'[39m,
+  latest_version: { version: [32m'1.0.0'[39m, createdAt: [32m'2023-01-01T00:00:00Z'[39m }
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/components/dialog/content/manager/button/PackEnableToggle.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1035[2mms[22m[39m
+   [33m[2m✓[22m[39m PackEnableToggle[2m > [22mdisables toggle while loading [33m 1002[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+[2m      Tests [22m [1m[32m225 passed[39m[22m[90m (225)[39m
+[2m   Start at [22m 21:48:11
+[2m   Duration [22m 4.78s[2m (transform 8.38s, setup 1.54s, collect 34.22s, tests 3.94s, environment 8.76s, prepare 2.06s)[22m
+

@@ -1,0 +1,4168 @@
+{
+  ".": {
+    "root": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.cache": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.options": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.inputs": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.outputs": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.metadata": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.executor": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.options.cwd": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.options.command": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.metadata.technologies": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.metadata.technologies.0": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.metadata.description": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.metadata.help": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.metadata.help.command": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.lint.metadata.help.example": [
+      "eslint.config.js",
+      "@nx/eslint/plugin"
+    ],
+    "targets.build-storybook": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.build-storybook.options": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.build-storybook.cache": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.build-storybook.outputs": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.build-storybook.inputs": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.build-storybook.executor": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.build-storybook.options.cwd": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.build-storybook.options.command": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.storybook": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.storybook.continuous": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.storybook.options": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.storybook.executor": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.storybook.options.cwd": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.storybook.options.command": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.static-storybook": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.static-storybook.dependsOn": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.static-storybook.continuous": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.static-storybook.executor": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.static-storybook.options": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.static-storybook.options.buildTarget": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.static-storybook.options.staticFilePath": [
+      ".storybook/main.ts",
+      "@nx/storybook/plugin"
+    ],
+    "targets.test": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.cache": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.inputs": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.outputs": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.options.cwd": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.options.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata.technologies": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata.technologies.0": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata.description": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata.help": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata.help.command": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata.help.example": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.cache": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.inputs": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.options.cwd": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.options.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.description": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.technologies": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.technologies.0": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.technologies.1": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.help": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.help.command": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.help.example": [
+      "vitest.config.ts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build-deps": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build-deps.dependsOn": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.watch-deps": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.watch-deps.continuous": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.watch-deps.dependsOn": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.watch-deps.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.watch-deps.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.watch-deps.options.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "projectType": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.test.metadata.technologies.1": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.cache": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.dependsOn": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.inputs": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.outputs": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.metadata": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.options.cwd": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.options.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.metadata.technologies": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.metadata.technologies.0": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.metadata.description": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.metadata.help": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.metadata.help.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.build.metadata.help.example": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.continuous": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.options.cwd": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.options.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata.technologies": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata.technologies.0": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata.description": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata.help": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata.help.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata.help.example": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve.metadata.deprecated": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.continuous": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.metadata": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.options.cwd": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.options.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.metadata.technologies": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.metadata.technologies.0": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.metadata.description": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.metadata.help": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.metadata.help.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.dev.metadata.help.example": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.continuous": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.dependsOn": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.metadata": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.options.cwd": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.options.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.metadata.technologies": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.metadata.technologies.0": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.metadata.description": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.metadata.help": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.metadata.help.command": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.preview.metadata.help.example": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve-static": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve-static.continuous": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve-static.executor": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve-static.options": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve-static.options.buildTarget": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.serve-static.options.spa": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.technologies.2": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "targets.typecheck.metadata.technologies.3": [
+      "vite.config.mts",
+      "@nx/vite/plugin"
+    ],
+    "metadata.targetGroups": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI)": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).1": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).2": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).3": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).4": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).5": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).6": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).7": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).8": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).9": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).10": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).11": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).12": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).13": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).14": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).15": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).16": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).17": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).18": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).19": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).20": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).21": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).22": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).23": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).24": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).25": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).26": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).27": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).28": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).29": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).30": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).31": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).32": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).33": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).34": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).35": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).36": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).37": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).38": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).39": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).40": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).41": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).42": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).43": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).44": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).45": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).46": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).47": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "metadata.targetGroups.E2E (CI).48": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/actionbar.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/backgroundImageUpload.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/bottomPanelShortcuts.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/browserTabTitle.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/changeTracker.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/chatHistory.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/colorPalette.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/commands.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/copyPaste.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/customIcons.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/dialog.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/domWidget.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/execution.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/extensionAPI.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/featureFlags.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graph.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/graphCanvasMenu.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/groupNode.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/interaction.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/keybindings.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/litegraphEvent.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/loadWorkflowInMedia.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/lodThreshold.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/menu.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/minimap.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeBadge.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeDisplay.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeHelp.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/nodeSearchBox.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/noteNode.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/primitiveNode.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/releaseNotifications.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/remoteWidgets.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rerouteNode.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/rightClickMenu.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/selectionToolbox.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/nodeLibrary.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/queue.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/sidebar/workflows.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph-rename-dialog.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/subgraph.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/templates.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/useSettingSearch.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/userSelectView.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/versionMismatchWarnings.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/vueNodes/NodeHeader.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/widget.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.options": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.options.cwd": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.options.env": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.options.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci--browser_tests/tests/workflowTabThumbnail.spec.ts.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.executor": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.cache": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.inputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.outputs": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.dependsOn": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.parallelism": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata.technologies": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata.technologies.0": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata.description": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata.nonAtomizedTarget": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata.help": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata.help.command": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ],
+    "targets.e2e-ci.metadata.help.example": [
+      "playwright.config.ts",
+      "@nx/playwright/plugin"
+    ]
+  }
+}

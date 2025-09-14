@@ -1,0 +1,21 @@
+{
+  "run": {
+    "command": "nx run test tests-ui/tests -- --run WidgetColorPicker",
+    "startTime": "2025-09-13T21:44:22.093Z",
+    "endTime": "2025-09-13T21:44:23.032Z",
+    "inner": false
+  },
+  "tasks": [
+    {
+      "taskId": "@comfyorg/comfyui-frontend:test",
+      "target": "test",
+      "projectName": "@comfyorg/comfyui-frontend",
+      "hash": "8510107207378429835",
+      "startTime": "2025-09-13T21:44:22.098Z",
+      "endTime": "2025-09-13T21:44:23.030Z",
+      "params": "",
+      "cacheStatus": "cache-miss",
+      "status": 1
+    }
+  ]
+}

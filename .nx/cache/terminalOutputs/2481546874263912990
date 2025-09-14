@@ -1,0 +1,87 @@
+> vite
+
+Forced re-optimization of dependencies
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.19[39m  [2mready in [0m[1m492[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5175[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.8.247:[1m5175[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.8.210:[1m5175[22m/[39m
+  [32m➜[39m  [1mVue DevTools[22m: [32mOpen [36mhttp://localhost:[1m5175[22m/__devtools__/[32m as a separate window[39m
+  [32m➜[39m  [1mVue DevTools[22m: [32mPress [33mAlt(⌥)[2m+[22mShift(⇧)[2m+[22mD[32m in App to toggle the Vue DevTools[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+
+[41m[30m ERROR [39m[49m [2m11:36:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/customnode/installed[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+
+[41m[30m ERROR [39m[49m [2m11:36:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/system_stats[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+
+[41m[30m ERROR [39m[49m [2m11:36:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/users[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+
+[41m[30m ERROR [39m[49m [2m11:36:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/customnode/installed[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m11:36:26 PM[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+Forced re-optimization of dependencies
+[2m11:36:26 PM[22m [36m[1m[vite][22m[39m server restarted.
+
+[41m[30m ERROR [39m[49m [2m11:36:29 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/customnode/installed[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+
+[41m[30m ERROR [39m[49m [2m11:36:29 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/system_stats[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+
+[41m[30m ERROR [39m[49m [2m11:36:29 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/users[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+
+[41m[30m ERROR [39m[49m [2m11:36:29 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/customnode/installed[39m
+Error: connect ECONNREFUSED 127.0.0.1:80
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+
+^C

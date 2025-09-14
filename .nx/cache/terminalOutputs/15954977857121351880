@@ -1,0 +1,180 @@
+> vitest tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90m/home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone-8[39m
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould call resize tracking composable with node ID
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould render with data-node-id attribute
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould render node title
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould apply selected styling when selected prop is true
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} selected=true ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould apply executing animation when executing prop is true
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} executing=true ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts[2m > [22m[2mLGraphNode[2m > [22m[2mshould emit node-click event on pointer down
+[22m[39m[Vue warn]: Invalid prop: type check failed for prop "lodLevel". Expected String with value "[object Object]", got Object  
+  at <NodeHeader node-data= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} readonly=false lod-level= { value: [33m0[39m }  ... > 
+  at <LGraphNode nodeData= {
+  id: [32m'test-node-123'[39m,
+  title: [32m'Test Node'[39m,
+  type: [32m'TestNode'[39m,
+  mode: [33m0[39m,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: [33mfalse[39m,
+  executing: [33mfalse[39m
+} ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests-ui/tests/renderer/extensions/vueNodes/components/LGraphNode.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 13:31:55
+[2m   Duration [22m 1.60s[2m (transform 863ms, setup 29ms, collect 1.22s, tests 38ms, environment 164ms, prepare 44ms)[22m
+

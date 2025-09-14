@@ -1,0 +1,521 @@
+> vite
+
+Port 5173 is in use, trying another one...                                                            [90m19:07:25[39m
+Port 5174 is in use, trying another one...                                                            [90m19:07:25[39m
+                                                                                                      [90m19:07:25[39m
+  [32m[1mVITE[22m v5.4.19[39m  [2mready in [0m[1m474[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5175[22m/[39m                                                                  [90m19:07:25[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.8.248:[1m5175[22m/[39m                                                              [90m19:07:25[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.8.210:[1m5175[22m/[39m                                                              [90m19:07:25[39m
+  [32m➜[39m  [1mVue DevTools[22m: [32mOpen [36mhttp://localhost:[1m5175[22m/__devtools__/[32m as a separate window[39m                      [90m19:07:25[39m
+  [32m➜[39m  [1mVue DevTools[22m: [32mPress [33mAlt(⌥)[2m+[22mShift(⇧)[2m+[22mD[32m in App to toggle the Vue DevTools[39m                          [90m19:07:25[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m                                                                     [90m19:07:25[39m
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:07:26[39m
+
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:07:26[39m
+
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:07:40[39m
+
+                                                                                                      [90m19:10:14[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:10:14 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:10:31[39m
+
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:10:31[39m
+
+                                                                                                      [90m19:11:37[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:11:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x2)[39m
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:11:53[39m
+
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:11:53[39m
+
+                                                                                                      [90m19:12:37[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:12:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x3)[39m
+                                                                                                      [90m19:13:28[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:13:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x4)[39m
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:14:48[39m
+
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m19:14:48[39m
+
+                                                                                                      [90m19:15:22[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:15:22 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x5)[39m
+                                                                                                      [90m19:17:08[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:17:08 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x6)[39m
+                                                                                                      [90m19:18:25[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:18:25 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x7)[39m
+                                                                                                      [90m19:33:58[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:33:58 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x8)[39m
+                                                                                                      [90m19:59:35[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:59:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/renderer/extensions/vueNodes/components/LGraphNode.vue[22m
+                                                                                                      [90m20:00:24[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:00:24 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/renderer/extensions/vueNodes/components/LGraphNode.vue[22m [33m(x2)[39m
+                                                                                                      [90m20:00:29[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:00:29 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m
+                                                                                                      [90m20:00:31[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:00:31 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m [33m(x2)[39m
+                                                                                                      [90m20:23:20[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:23:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/renderer/extensions/vueNodes/components/LGraphNode.vue[22m
+                                                                                                      [90m20:25:49[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:25:49 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/renderer/extensions/vueNodes/components/LGraphNode.vue[22m [33m(x2)[39m
+                                                                                                      [90m20:31:09[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:31:09 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/components/graph/SelectionToolbox.vue[22m
+                                                                                                      [90m20:32:05[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:32:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/assets/css/style.css, /src/components/dialog/GlobalDialog.vue?vue&type=style&index=0&lang.css, /src/components/common/SearchBox.vue?vue&type=style&index=0&scoped=61da5883&lang.css, /src/components/dialog/content/signin/SignInForm.vue?vue&type=style&index=0&scoped=2a686723&lang.css, /src/components/sidebar/tabs/SidebarTabTemplate.vue?vue&type=style&index=0&scoped=8582cf0d&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue?vue&type=style&index=0&scoped=144c5f22&lang.css, /src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue?vue&type=style&index=0&scoped=71904a0a&lang.css, /src/components/searchbox/NodeSearchFilter.vue?vue&type=style&index=0&scoped=fb0fcc2a&lang.css, /src/components/common/SearchFilterChip.vue?vue&type=style&index=0&scoped=8dd861f2&lang.css, /src/components/common/FormItem.vue?vue&type=style&index=0&scoped=00d347df&lang.css, /src/components/MenuHamburger.vue?vue&type=style&index=0&scoped=7da09667&lang.css, /src/components/LiteGraphCanvasSplitterOverlay.vue?vue&type=style&index=0&scoped=d4248b00&lang.css, /src/components/topbar/CommandMenubar.vue?vue&type=style&index=0&scoped=10ee0e60&lang.css, /src/components/topbar/WorkflowTabs.vue?vue&type=style&index=0&scoped=fdeeb0f0&lang.css, /src/components/actionbar/ComfyActionbar.vue?vue&type=style&index=0&scoped=07bb5559&lang.css, /src/components/graph/widgets/DomWidget.vue?vue&type=style&index=0&scoped=be128810&lang.css, /src/components/graph/selectionToolbox/ColorPickerButton.vue?vue&type=style&index=0&scoped=4d5d1e54&lang.css, /src/components/sidebar/SidebarIcon.vue?vue&type=style&index=1&scoped=3cd9f0a0&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=0&scoped=13ba0f9e&lang.css, /src/components/breadcrumb/SubgraphBreadcrumb.vue?vue&type=style&index=1&lang.css, /src/components/topbar/WorkflowTab.vue?vue&type=style&index=0&scoped=a49462d4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=0&scoped=cdfea9b2&lang.css, /src/components/breadcrumb/SubgraphBreadcrumbItem.vue?vue&type=style&index=0&scoped=c8bf51e4&lang.css, /src/components/topbar/WorkflowTabPopover.vue?vue&type=style&index=1&lang.css, /src/renderer/extensions/vueNodes/components/LGraphNode.vue[22m
+^C

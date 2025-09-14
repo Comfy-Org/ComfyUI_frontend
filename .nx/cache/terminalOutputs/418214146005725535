@@ -1,0 +1,23 @@
+> vite
+
+Port 5173 is in use, trying another one...                                                            [90m13:19:51[39m
+Port 5174 is in use, trying another one...                                                            [90m13:19:51[39m
+                                                                                                      [90m13:19:51[39m
+  [32m[1mVITE[22m v5.4.19[39m  [2mready in [0m[1m452[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5175[22m/[39m                                                                  [90m13:19:51[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.8.247:[1m5175[22m/[39m                                                              [90m13:19:51[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.8.210:[1m5175[22m/[39m                                                              [90m13:19:51[39m
+  [32m➜[39m  [1mVue DevTools[22m: [32mOpen [36mhttp://localhost:[1m5175[22m/__devtools__/[32m as a separate window[39m                      [90m13:19:51[39m
+  [32m➜[39m  [1mVue DevTools[22m: [32mPress [33mAlt(⌥)[2m+[22mShift(⇧)[2m+[22mD[32m in App to toggle the Vue DevTools[39m                          [90m13:19:51[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m                                                                     [90m13:19:51[39m
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m13:19:52[39m
+
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m13:19:52[39m
+
+
+[43m[30m WARN [39m[49m [ImportMap Plugin] No vendor chunks found to create import map.                                [90m13:20:34[39m
+
+^C

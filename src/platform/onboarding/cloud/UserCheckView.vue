@@ -1,5 +1,5 @@
 <template>
-  <div />
+  <CloudLoginViewSkeleton />
 </template>
 
 <script setup lang="ts">
@@ -7,6 +7,8 @@ import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { getSurveyCompletedStatus, getUserCloudStatus } from '@/api/auth'
+
+import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 
 const router = useRouter()
 const isNavigating = ref(false)
@@ -38,11 +40,11 @@ onMounted(async () => {
       // User completed survey but not whitelisted
       await router.replace({ name: 'cloud-waitlist' })
     } else {
-      // User is fully onboarded - just reload the page to bypass router issues
-      window.location.href = '/'
+      // User is fully onboarded - use router instead of direct navigation
+      await router.replace({ name: 'GraphView' })
     }
   } catch (error) {
-    // On error, fallback to page reload
+    // On error, fallback to login
     await router.push({ name: 'cloud-login' })
   }
 })
