@@ -1,9 +1,8 @@
-import { mount } from '@vue/test-utils'
+import { mount, type ComponentMountingOptions } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json'
 import { useDomSlotRegistration } from '@/renderer/core/layout/slots/useDomSlotRegistration'
 
@@ -15,17 +14,10 @@ vi.mock('@/renderer/core/layout/slots/useDomSlotRegistration', () => ({
   useDomSlotRegistration: vi.fn(() => ({ remeasure: vi.fn() }))
 }))
 
-interface TestSlotProps {
-  nodeId: string
-  index: number
-  slotData: INodeSlot
-  connected?: boolean
-  compatible?: boolean
-  readonly?: boolean
-  dotOnly?: boolean
-}
+type InputSlotProps = ComponentMountingOptions<typeof InputSlot>['props']
+type OutputSlotProps = ComponentMountingOptions<typeof OutputSlot>['props']
 
-const mountInputSlot = (props: TestSlotProps) =>
+const mountInputSlot = (props: InputSlotProps) =>
   mount(InputSlot, {
     global: {
       plugins: [
@@ -40,7 +32,7 @@ const mountInputSlot = (props: TestSlotProps) =>
     props
   })
 
-const mountOutputSlot = (props: TestSlotProps) =>
+const mountOutputSlot = (props: OutputSlotProps) =>
   mount(OutputSlot, {
     global: {
       plugins: [
