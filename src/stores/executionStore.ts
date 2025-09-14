@@ -132,7 +132,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   // Easily access all currently executing node IDs
   const executingNodeIds = computed<NodeId[]>(() => {
-    return Object.entries(nodeProgressStates)
+    return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
       .map(([nodeId, _]) => nodeId)
   })
