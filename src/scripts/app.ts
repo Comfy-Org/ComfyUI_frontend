@@ -649,8 +649,6 @@ export class ComfyApp {
       const opacity = useSettingStore().get('Comfy.Node.Opacity')
       if (opacity) adjustments.opacity = opacity
 
-      node.bgcolor = adjustColor(bgColor, adjustments)
-
       if (useColorPaletteStore().completedActivePalette.light_theme) {
         adjustments.lightness = 0.5
 
@@ -659,6 +657,8 @@ export class ComfyApp {
           node.color = adjustColor(old_color, { lightness: 0.5 })
         }
       }
+
+      node.bgcolor = adjustColor(bgColor, adjustments)
 
       // @ts-expect-error fixme ts strict error
       const res = origDrawNode.apply(this, arguments)
