@@ -212,9 +212,10 @@ const hasExecutionError = computed(
 )
 
 // Computed error states for styling
-const hasAnyError = computed(
-  () => hasExecutionError.value || props.nodeData.hasErrors || props.error
-)
+const hasAnyError = computed((): boolean => {
+  const { error = null, nodeData } = props
+  return !!(hasExecutionError.value || nodeData.hasErrors || error)
+})
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => props.zoomLevel ?? 1)
