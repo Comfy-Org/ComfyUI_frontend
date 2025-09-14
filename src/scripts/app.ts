@@ -636,12 +636,10 @@ export class ComfyApp {
         this.editor_alpha = 0.4
       }
 
-      let bgColor: string | undefined
+      let bgColor = old_bgcolor
       if (node.mode === LGraphEventMode.BYPASS) {
         bgColor = app.bypassBgColor
         this.editor_alpha = 0.2
-      } else {
-        bgColor = old_bgcolor
       }
 
       const adjustments: ColorAdjustOptions = {}
