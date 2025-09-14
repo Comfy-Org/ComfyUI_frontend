@@ -1,3 +1,4 @@
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -31,7 +32,7 @@ export function useSelectionState() {
   const nodeHelpStore = useNodeHelpStore()
   const { id: nodeLibraryTabId } = useNodeLibrarySidebarTab()
 
-  const selectedItems = computed(() => canvasStore.selectedItems)
+  const { selectedItems } = storeToRefs(canvasStore)
 
   const selectedNodes = computed(() => {
     return selectedItems.value.filter((i) => isLGraphNode(i)) as LGraphNode[]
