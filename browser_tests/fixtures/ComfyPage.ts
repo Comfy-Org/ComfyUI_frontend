@@ -1424,7 +1424,7 @@ export class ComfyPage {
   }
 
   async closeDialog() {
-    await this.page.locator('.p-dialog-close-button').click()
+    await this.page.locator('.p-dialog-close-button').click({ force: true })
     await expect(this.page.locator('.p-dialog')).toBeHidden()
   }
 
