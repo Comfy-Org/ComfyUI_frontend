@@ -1,15 +1,10 @@
 <template>
-  <div
-    ref="rootEl"
-    class="relative overflow-hidden h-full w-full bg-black"
-    @mouseenter="showCopyButton = true"
-    @mouseleave="showCopyButton = false"
-  >
+  <div ref="rootEl" class="relative overflow-hidden h-full w-full bg-black">
     <div class="p-terminal rounded-none h-full w-full p-2">
       <div ref="terminalEl" class="h-full terminal-host" />
     </div>
     <Button
-      v-if="showCopyButton"
+      v-if="isHovered"
       v-tooltip.top="{
         value: tooltipText,
         showDelay: 300
@@ -18,7 +13,7 @@
       severity="secondary"
       size="small"
       class="absolute top-2 right-8 opacity-0 transition-opacity duration-200"
-      :class="{ 'opacity-100': showCopyButton }"
+      :class="{ 'opacity-100': isHovered }"
       :aria-label="tooltipText"
       @click="handleCopy"
     />
@@ -26,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useElementHover, useEventListener } from '@vueuse/core'
 import Button from 'primevue/button'
 import { Ref, computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -42,8 +37,9 @@ const emit = defineEmits<{
 }>()
 const terminalEl = ref<HTMLElement | undefined>()
 const rootEl = ref<HTMLElement | undefined>()
-const showCopyButton = ref(false)
 const hasSelection = ref(false)
+
+const isHovered = useElementHover(rootEl)
 
 const terminalData = useTerminal(terminalEl)
 emit('created', terminalData, rootEl)
