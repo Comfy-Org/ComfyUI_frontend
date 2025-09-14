@@ -6,53 +6,55 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectButton from './WidgetSelectButton.vue'
 
-describe('WidgetSelectButton Button Selection', () => {
-  const createMockWidget = (
-    value: string = 'option1',
-    options: { values?: any[]; [key: string]: any } = {},
-    callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
+function createMockWidget(
+  value: string = 'option1',
+  options: SimplifiedWidget['options'] = {},
+  callback?: (value: string) => void
+): SimplifiedWidget<string> {
+  return {
     name: 'test_selectbutton',
     type: 'string',
     value,
     options,
     callback
-  })
-
-  const mountComponent = (
-    widget: SimplifiedWidget<string>,
-    modelValue: string,
-    readonly = false
-  ) => {
-    return mount(WidgetSelectButton, {
-      global: {
-        plugins: [PrimeVue]
-      },
-      props: {
-        widget,
-        modelValue,
-        readonly
-      }
-    })
   }
+}
 
-  const clickSelectButton = async (
-    wrapper: ReturnType<typeof mount>,
-    optionText: string
-  ) => {
-    const buttons = wrapper.findAll('button')
-    const targetButton = buttons.find((button) =>
-      button.text().includes(optionText)
-    )
-
-    if (!targetButton) {
-      throw new Error(`Button with text "${optionText}" not found`)
+function mountComponent(
+  widget: SimplifiedWidget<string>,
+  modelValue: string,
+  readonly = false
+) {
+  return mount(WidgetSelectButton, {
+    global: {
+      plugins: [PrimeVue]
+    },
+    props: {
+      widget,
+      modelValue,
+      readonly
     }
+  })
+}
 
-    await targetButton.trigger('click')
-    return targetButton
+async function clickSelectButton(
+  wrapper: ReturnType<typeof mount>,
+  optionText: string
+) {
+  const buttons = wrapper.findAll('button')
+  const targetButton = buttons.find((button) =>
+    button.text().includes(optionText)
+  )
+
+  if (!targetButton) {
+    throw new Error(`Button with text "${optionText}" not found`)
   }
 
+  await targetButton.trigger('click')
+  return targetButton
+}
+
+describe('WidgetSelectButton Button Selection', () => {
   describe('Basic Rendering', () => {
     it('renders FormSelectButton component', () => {
       const widget = createMockWidget('option1', {
@@ -318,7 +320,12 @@ describe('WidgetSelectButton Button Selection', () => {
     })
 
     it('handles null/undefined in options', () => {
-      const options = ['valid', null, undefined, 'another'] as any[]
+      const options: (string | null | undefined)[] = [
+        'valid',
+        null,
+        undefined,
+        'another'
+      ]
       const widget = createMockWidget('valid', { values: options })
       const wrapper = mountComponent(widget, 'valid')
 
