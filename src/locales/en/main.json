@@ -495,7 +495,6 @@
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
     "showTerminal": "Show Terminal",
-    "copyTerminal": "Copy Terminal",
     "copySelectionTooltip": "Copy selection",
     "copyAllTooltip": "Copy all",
     "process": {
