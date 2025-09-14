@@ -10,6 +10,7 @@
         :name="id"
         :value="option.value"
         :model-value="modelValue"
+        :aria-describedby="`${option.text}-label`"
         @update:model-value="$emit('update:modelValue', $event)"
       />
       <label :for="`${id}-${option.value}`" class="ml-2 cursor-pointer">
@@ -23,9 +24,11 @@
 import RadioButton from 'primevue/radiobutton'
 import { computed } from 'vue'
 
+import type { SettingOption } from '@/types/settingTypes'
+
 const props = defineProps<{
   modelValue: any
-  options: any[] | undefined
+  options: (SettingOption | string)[]
   optionLabel?: string
   optionValue?: string
   id?: string
@@ -35,15 +38,23 @@ defineEmits<{
   'update:modelValue': [value: any]
 }>()
 
-const normalizedOptions = computed(() => {
+const normalizedOptions = computed<SettingOption[]>(() => {
   if (!props.options) return []
 
   return props.options.map((option) => {
     if (typeof option === 'string') {
       return { text: option, value: option }
     }
+
+    if ('text' in option) {
+      return {
+        text: option.text,
+        value: option.value ?? option.text
+      }
+    }
+    // Handle optionLabel/optionValue
     return {
-      text: option[props.optionLabel || 'text'],
+      text: option[props.optionLabel || 'text'] || 'Unknown',
       value: option[props.optionValue || 'value']
     }
   })
