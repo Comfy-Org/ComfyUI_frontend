@@ -13,26 +13,105 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
   )
   terminal.loadAddon(fitAddon)
 
-  terminal.attachCustomKeyEventHandler((event) => {
-    // Allow default browser copy/paste handling
-    if (
-      event.type === 'keydown' &&
-      (event.ctrlKey || event.metaKey) &&
-      ((event.key === 'c' && terminal.hasSelection()) || event.key === 'v')
-    ) {
-      // TODO: Deselect text after copy/paste; use IPC.
-      return false
-    }
-    return true
+  let currentSelection = ''
+  let terminalHasFocus = false
+
+  terminal.onSelectionChange(() => {
+    currentSelection = terminal.getSelection()
+    console.error('Selection changed:', currentSelection)
   })
+
+  // Don't use attachCustomKeyEventHandler as it might interfere with DOM events
+  // We'll handle everything through DOM event listeners instead
 
   onMounted(async () => {
     if (element.value) {
       terminal.open(element.value)
+
+      element.value.addEventListener('focusin', () => {
+        terminalHasFocus = true
+        console.error('Terminal gained focus')
+      })
+
+      element.value.addEventListener('focusout', () => {
+        terminalHasFocus = false
+        console.error('Terminal lost focus')
+      })
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        console.error(
+          'Global key event:',
+          event.key,
+          'target:',
+          event.target,
+          'terminal has focus:',
+          terminalHasFocus
+        )
+
+        if (!terminalHasFocus) {
+          return
+        }
+
+        console.error(
+          'Processing terminal key:',
+          event.key,
+          'ctrl:',
+          event.ctrlKey,
+          'meta:',
+          event.metaKey
+        )
+
+        if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+          console.error('Copy shortcut!', currentSelection)
+          if (currentSelection) {
+            event.preventDefault()
+            event.stopPropagation()
+            event.stopImmediatePropagation()
+            void navigator.clipboard.writeText(currentSelection)
+            terminal.clearSelection()
+            currentSelection = ''
+            return false
+          }
+        }
+
+        if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
+          console.error('Paste shortcut!')
+          event.preventDefault()
+          event.stopPropagation()
+          event.stopImmediatePropagation()
+          void navigator.clipboard.readText().then((text) => {
+            console.error('Pasting:', text)
+            if (text) {
+              terminal.write(text)
+            }
+          })
+          return false
+        }
+      }
+
+      console.error('Attaching keyboard listener to document')
+      document.addEventListener('keydown', handleKeyDown, true)
+
+      setTimeout(() => {
+        const textarea = element.value?.querySelector(
+          '.xterm-helper-textarea'
+        ) as HTMLTextAreaElement
+        if (textarea) {
+          console.error('Found xterm textarea, focusing it')
+          textarea.focus()
+        }
+      }, 100)
+      ;(element.value as any)._terminalKeyHandler = handleKeyDown
     }
   })
 
   onUnmounted(() => {
+    if (element.value && (element.value as any)._terminalKeyHandler) {
+      const handler = (element.value as any)._terminalKeyHandler
+      document.removeEventListener('keydown', handler, true)
+      delete (element.value as any)._terminalKeyHandler
+    }
+
     terminal.dispose()
   })
 
