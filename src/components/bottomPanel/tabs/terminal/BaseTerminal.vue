@@ -5,7 +5,7 @@
     </div>
     <Button
       v-if="isHovered"
-      v-tooltip.top="{
+      v-tooltip.left="{
         value: tooltipText,
         showDelay: 300
       }"
