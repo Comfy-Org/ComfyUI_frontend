@@ -838,24 +838,27 @@ export class ComfyApp {
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
-        // Assertion: Not yet defined in litegraph.
         const { newGraph } = e.detail
 
-        const widgetIds: Record<string, BaseDOMWidget<object | string>> = {}
         const widgetStore = useDomWidgetStore()
 
-        for (const node of newGraph.nodes)
-          for (const w of node.widgets ?? [])
-            if (w instanceof DOMWidgetImpl && w.id) widgetIds[w.id] = w
+        const activeWidgets: Record<
+          string,
+          BaseDOMWidget<object | string>
+        > = Object.fromEntries(
+          newGraph.nodes
+            .flatMap((node) => node.widgets ?? [])
+            .filter((w) => w instanceof DOMWidgetImpl)
+            .map((w) => [w.id, w])
+        )
 
-        // Assertions: UnwrapRef
-        for (const widgetId of widgetStore.widgetStates.keys()) {
-          const widgetState = widgetStore.widgetStates.get(widgetId)
-          //Unreachable, but required for type safety
-          if (!widgetState) continue
-          if (widgetId in widgetIds) {
+        for (const [
+          widgetId,
+          widgetState
+        ] of widgetStore.widgetStates.entries()) {
+          if (widgetId in activeWidgets) {
             widgetState.active = true
-            widgetState.widget = widgetIds[widgetId]
+            widgetState.widget = activeWidgets[widgetId]
           } else {
             widgetState.active = false
           }
