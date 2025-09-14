@@ -17,7 +17,7 @@
       icon="pi pi-copy"
       severity="secondary"
       size="small"
-      class="absolute top-2 right-8 opacity-0 animate-fade-in"
+      class="absolute top-2 right-8 opacity-0 transition-opacity duration-200"
       :class="{ 'opacity-100': showCopyButton }"
       :aria-label="tooltipText"
       @click="handleCopy"
@@ -100,9 +100,5 @@ onUnmounted(() => emit('unmounted'))
 :deep(.p-terminal) .xterm-screen {
   background-color: black;
   overflow-y: hidden;
-}
-
-.animate-fade-in {
-  transition: opacity 0.2s ease-in-out;
 }
 </style>
