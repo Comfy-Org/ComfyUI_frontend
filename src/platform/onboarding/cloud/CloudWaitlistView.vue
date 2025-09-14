@@ -1,7 +1,7 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <CloudTemplate>
-    <div class="flex flex-col items-center justify-center min-h-screen p-8">
+    <div class="flex flex-col items-center justify-center p-8">
       <div class="w-full max-w-md text-center">
         <h1 class="text-3xl italic font-bolder mb-8">
           YOU'RE ON THE<br />
