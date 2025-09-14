@@ -44,7 +44,7 @@ onMounted(async () => {
     }
   } catch (error) {
     // On error, fallback to page reload
-    window.location.href = '/'
+    await router.push({ name: 'cloud-login' })
   }
 })
 </script>

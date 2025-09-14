@@ -7,6 +7,7 @@
         : 'text-neutral-900 bg-neutral-300'
     ]"
   >
+    <slot name="header"></slot>
     <!-- Virtual top menu for native window (drag handle) -->
     <div
       v-show="isNativeWindow()"
@@ -14,10 +15,11 @@
       class="app-drag w-full h-[var(--comfy-topbar-height)]"
     />
     <div
-      class="flex-grow w-full flex items-center justify-center overflow-auto"
+      class="flex-1 flex-grow w-full flex items-center justify-center overflow-auto"
     >
       <slot />
     </div>
+    <slot name="footer"></slot>
   </div>
 </template>
 

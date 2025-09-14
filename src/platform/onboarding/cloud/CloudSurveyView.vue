@@ -1,69 +1,220 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <BaseViewTemplate dark>
-    <div class="flex flex-col items-center justify-center min-h-screen p-8">
-      <div class="w-full max-w-md">
-        <h1 class="text-3xl font-bold mb-8">
-          {{ t('cloudOnboarding.survey.title') }}
-        </h1>
+    <template #header>
+      <CloudLogo />
+    </template>
+    <div>
+      <Stepper value="1" class="flex flex-col min-h-[638px] min-w-[320px]">
+        <ProgressBar
+          :value="progressPercent"
+          :show-value="false"
+          class="h-2 mb-8"
+        />
 
-        <!-- Survey Form -->
-        <div class="space-y-6">
-          <div class="flex flex-col gap-2">
-            <label for="useCase" class="font-medium">
-              What will you use ComfyUI for?
-            </label>
-            <Select
-              v-model="surveyData.useCase"
-              :options="useCaseOptions"
-              option-label="label"
-              option-value="value"
-              placeholder="Select a use case"
-              class="w-full"
-            />
-          </div>
+        <StepPanels class="p-0 flex-1 flex flex-col">
+          <StepPanel
+            v-slot="{ activateCallback }"
+            value="1"
+            class="flex-1 min-h-full flex flex-col justify-between"
+          >
+            <div>
+              <label class="text-lg font-medium block mb-8">{{
+                t('cloudOnboarding.survey.steps.familiarity')
+              }}</label>
+              <div class="flex flex-col gap-6">
+                <div
+                  v-for="opt in familiarityOptions"
+                  :key="opt.value"
+                  class="flex items-center gap-3"
+                >
+                  <RadioButton
+                    v-model="surveyData.familiarity"
+                    :input-id="`fam-${opt.value}`"
+                    name="familiarity"
+                    :value="opt.value"
+                  />
+                  <label
+                    :for="`fam-${opt.value}`"
+                    class="text-sm cursor-pointer"
+                    >{{ opt.label }}</label
+                  >
+                </div>
+              </div>
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label for="experience" class="font-medium">
-              What's your experience level?
-            </label>
-            <Select
-              v-model="surveyData.experience"
-              :options="experienceOptions"
-              option-label="label"
-              option-value="value"
-              placeholder="Select your experience"
-              class="w-full"
-            />
-          </div>
+            <div class="flex justify-between pt-4">
+              <span />
+              <Button
+                label="Next"
+                :disabled="!validStep1"
+                class="w-full h-10 bg-gray-800 border-none text-white"
+                @click="goTo(2, activateCallback)"
+              />
+            </div>
+          </StepPanel>
 
-          <div class="flex flex-col gap-2">
-            <label for="teamSize" class="font-medium"> Team size </label>
-            <Select
-              v-model="surveyData.teamSize"
-              :options="teamSizeOptions"
-              option-label="label"
-              option-value="value"
-              placeholder="Select team size"
-              class="w-full"
-            />
-          </div>
+          <StepPanel
+            v-slot="{ activateCallback }"
+            value="2"
+            class="flex-1 min-h-full flex flex-col justify-between"
+          >
+            <div>
+              <label class="text-lg font-medium block mb-8">{{
+                t('cloudOnboarding.survey.steps.purpose')
+              }}</label>
+              <div class="flex flex-col gap-6">
+                <div
+                  v-for="opt in purposeOptions"
+                  :key="opt.value"
+                  class="flex items-center gap-3"
+                >
+                  <RadioButton
+                    v-model="surveyData.useCase"
+                    :input-id="`purpose-${opt.value}`"
+                    name="purpose"
+                    :value="opt.value"
+                  />
+                  <label
+                    :for="`purpose-${opt.value}`"
+                    class="text-sm cursor-pointer"
+                    >{{ opt.label }}</label
+                  >
+                </div>
+              </div>
+            </div>
 
-          <Button
-            label="Submit Survey"
-            :disabled="!isFormValid"
-            class="w-full"
-            @click="onSubmitSurvey"
-          />
-        </div>
-      </div>
+            <div class="flex gap-6 pt-4">
+              <Button
+                label="Back"
+                severity="secondary"
+                class="border border-white text-white flex-1"
+                @click="goTo(1, activateCallback)"
+              />
+              <Button
+                label="Next"
+                :disabled="!validStep2"
+                class="flex-1 h-10 bg-gray-800 border-none text-white"
+                @click="goTo(3, activateCallback)"
+              />
+            </div>
+          </StepPanel>
+
+          <StepPanel
+            v-slot="{ activateCallback }"
+            value="3"
+            class="flex-1 min-h-full flex flex-col justify-between"
+          >
+            <div>
+              <label class="text-lg font-medium block mb-8">{{
+                t('cloudOnboarding.survey.steps.industry')
+              }}</label>
+              <div class="flex flex-col gap-6">
+                <div
+                  v-for="opt in industryOptions"
+                  :key="opt.value"
+                  class="flex items-center gap-3"
+                >
+                  <RadioButton
+                    v-model="surveyData.industry"
+                    :input-id="`industry-${opt.value}`"
+                    name="industry"
+                    :value="opt.value"
+                  />
+                  <label
+                    :for="`industry-${opt.value}`"
+                    class="text-sm cursor-pointer"
+                    >{{ opt.label }}</label
+                  >
+                </div>
+              </div>
+              <div v-if="surveyData.industry === 'other'" class="mt-4 ml-8">
+                <InputText
+                  v-model="surveyData.industryOther"
+                  class="w-full"
+                  placeholder="Please specify"
+                />
+              </div>
+            </div>
+
+            <div class="flex gap-6 pt-4">
+              <Button
+                label="Back"
+                severity="secondary"
+                class="border border-white text-white flex-1"
+                @click="goTo(2, activateCallback)"
+              />
+              <Button
+                label="Next"
+                :disabled="!validStep3"
+                class="flex-1 h-10 bg-gray-800 border-none text-white"
+                @click="goTo(4, activateCallback)"
+              />
+            </div>
+          </StepPanel>
+
+          <StepPanel
+            v-slot="{ activateCallback }"
+            value="4"
+            class="flex-1 min-h-full flex flex-col justify-between"
+          >
+            <div>
+              <label class="text-lg font-medium block mb-8">{{
+                t('cloudOnboarding.survey.steps.making')
+              }}</label>
+              <div class="flex flex-col gap-6">
+                <div
+                  v-for="opt in makingOptions"
+                  :key="opt.value"
+                  class="flex items-center gap-3"
+                >
+                  <Checkbox
+                    v-model="surveyData.making"
+                    :input-id="`making-${opt.value}`"
+                    :value="opt.value"
+                  />
+                  <label
+                    :for="`making-${opt.value}`"
+                    class="text-sm cursor-pointer"
+                    >{{ opt.label }}</label
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-6 pt-4">
+              <Button
+                label="Back"
+                severity="secondary"
+                class="border border-white text-white flex-1"
+                @click="goTo(3, activateCallback)"
+              />
+              <Button
+                label="Submit"
+                :disabled="!validStep4 || isSubmitting"
+                :loading="isSubmitting"
+                class="flex-1 h-10 bg-gray-800 border-none text-white"
+                @click="onSubmitSurvey"
+              />
+            </div>
+          </StepPanel>
+        </StepPanels>
+      </Stepper>
     </div>
+    <template #footer>
+      <CloudTemplateFooter />
+    </template>
   </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Select from 'primevue/select'
+import Checkbox from 'primevue/checkbox'
+import InputText from 'primevue/inputtext'
+import ProgressBar from 'primevue/progressbar'
+import RadioButton from 'primevue/radiobutton'
+import StepPanel from 'primevue/steppanel'
+import StepPanels from 'primevue/steppanels'
+import Stepper from 'primevue/stepper'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -71,50 +222,122 @@ import { useRouter } from 'vue-router'
 import { submitSurvey } from '@/api/auth'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
+import CloudLogo from './components/CloudLogo.vue'
+import CloudTemplateFooter from './components/CloudTemplateFooter.vue'
+
 const { t } = useI18n()
 const router = useRouter()
 
+const activeStep = ref(1)
+const totalSteps = 4
+const progressPercent = computed(() =>
+  Math.max(20, Math.min(100, ((activeStep.value - 1) / (totalSteps - 1)) * 100))
+)
+
+const isSubmitting = ref(false)
+
 const surveyData = ref({
+  familiarity: '',
   useCase: '',
-  experience: '',
-  teamSize: ''
+  industry: '',
+  industryOther: '',
+  making: [] as string[]
 })
 
-const useCaseOptions = [
-  { label: 'Personal Projects', value: 'personal' },
-  { label: 'Professional Work', value: 'professional' },
-  { label: 'Research', value: 'research' },
+// Options
+const familiarityOptions = [
+  { label: 'New to ComfyUI (never used it before)', value: 'new' },
+  { label: 'Just getting started (following tutorials)', value: 'starting' },
+  { label: 'Comfortable with basics', value: 'basics' },
+  { label: 'Advanced user (custom workflows)', value: 'advanced' },
+  { label: 'Expert (help others)', value: 'expert' }
+]
+
+const purposeOptions = [
+  { label: 'Personal projects/hobby', value: 'personal' },
+  {
+    label: 'Community contributions (nodes, workflows, etc.)',
+    value: 'community'
+  },
+  { label: 'Client work (freelance)', value: 'client' },
+  { label: 'My own workplace (in-house)', value: 'inhouse' },
+  { label: 'Academic research', value: 'research' }
+]
+
+const industryOptions = [
+  { label: 'Film, TV, & animation', value: 'film_tv_animation' },
+  { label: 'Gaming', value: 'gaming' },
+  { label: 'Marketing & advertising', value: 'marketing' },
+  { label: 'Architecture', value: 'architecture' },
+  { label: 'Product & graphic design', value: 'product_design' },
+  { label: 'Fine art & illustration', value: 'fine_art' },
+  { label: 'Software & technology', value: 'software' },
   { label: 'Education', value: 'education' },
   { label: 'Other', value: 'other' }
 ]
 
-const experienceOptions = [
-  { label: 'Beginner', value: 'beginner' },
-  { label: 'Intermediate', value: 'intermediate' },
-  { label: 'Advanced', value: 'advanced' },
-  { label: 'Expert', value: 'expert' }
+const makingOptions = [
+  { label: 'Images', value: 'images' },
+  { label: 'Video & animation', value: 'video' },
+  { label: '3D assets', value: '3d' },
+  { label: 'Audio/music', value: 'audio' },
+  { label: 'Custom nodes & workflows', value: 'custom_nodes' }
 ]
 
-const teamSizeOptions = [
-  { label: 'Just me', value: '1' },
-  { label: '2-5 people', value: '2-5' },
-  { label: '6-20 people', value: '6-20' },
-  { label: '20+ people', value: '20+' }
-]
-
-const isFormValid = computed(() => {
-  return !!(
-    surveyData.value.useCase &&
-    surveyData.value.experience &&
-    surveyData.value.teamSize
-  )
+// Validation per step
+const validStep1 = computed(() => !!surveyData.value.familiarity)
+const validStep2 = computed(() => !!surveyData.value.useCase)
+const validStep3 = computed(() => {
+  if (!surveyData.value.industry) return false
+  if (surveyData.value.industry === 'other') {
+    return !!surveyData.value.industryOther?.trim()
+  }
+  return true
 })
+const validStep4 = computed(() => surveyData.value.making.length > 0)
 
+const changeActiveStep = (step: number) => {
+  activeStep.value = step
+}
+
+const goTo = (step: number, activate: (val: string | number) => void) => {
+  // keep Stepper panel and progress bar in sync; Stepper values are strings
+  changeActiveStep(step)
+  activate(String(step))
+}
+
+// Submit
 const onSubmitSurvey = async () => {
-  await submitSurvey(surveyData.value)
-
-  // After survey completion, go back to user check
-  // User check will handle routing based on updated status
-  await router.push({ name: 'cloud-user-check' })
+  try {
+    isSubmitting.value = true
+    // prepare payload: collapse "other" field
+    const payload = {
+      familiarity: surveyData.value.familiarity,
+      useCase: surveyData.value.useCase,
+      industry:
+        surveyData.value.industry === 'other'
+          ? { type: 'other', text: surveyData.value.industryOther }
+          : surveyData.value.industry,
+      making: surveyData.value.making
+    }
+    await submitSurvey(payload)
+    await router.push({ name: 'cloud-user-check' })
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
+
+<style scoped>
+:deep(.p-progressbar .p-progressbar-value) {
+  background-color: #f0ff41 !important;
+}
+:deep(.p-radiobutton-checked .p-radiobutton-box) {
+  background-color: #f0ff41 !important;
+  border-color: #f0ff41 !important;
+}
+:deep(.p-checkbox-checked .p-checkbox-box) {
+  background-color: #f0ff41 !important;
+  border-color: #f0ff41 !important;
+}
+</style>

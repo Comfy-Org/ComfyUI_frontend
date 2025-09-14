@@ -1730,7 +1730,54 @@
   "cloudOnboarding": {
     "survey": {
       "title": "Cloud Survey",
-      "placeholder": "Survey questions placeholder"
+      "placeholder": "Survey questions placeholder",
+      "steps": {
+        "familiarity": "How familiar are you with ComfyUI?",
+        "purpose": "What will you primarily use ComfyUI for?",
+        "industry": "What's your primary industry?",
+        "making": "What do you plan on making?"
+      },
+      "questions": {
+        "familiarity": "How familiar are you with ComfyUI?",
+        "purpose": "What will you primarily use ComfyUI for?",
+        "industry": "What's your primary industry?",
+        "making": "What do you plan on making?"
+      },
+      "options": {
+        "familiarity": {
+          "new": "New to ComfyUI (never used it before)",
+          "starting": "Just getting started (following tutorials)",
+          "basics": "Comfortable with basics",
+          "advanced": "Advanced user (custom workflows)",
+          "expert": "Expert (help others)"
+        },
+        "purpose": {
+          "personal": "Personal projects / hobby",
+          "community": "Community contributions (nodes, workflows, etc.)",
+          "client": "Client work (freelance)",
+          "inhouse": "My own workplace (in-house)",
+          "research": "Academic research"
+        },
+        "industry": {
+          "film_tv_animation": "Film, TV, & animation",
+          "gaming": "Gaming",
+          "marketing": "Marketing & advertising",
+          "architecture": "Architecture",
+          "product_design": "Product & graphic design",
+          "fine_art": "Fine art & illustration",
+          "software": "Software & technology",
+          "education": "Education",
+          "other": "Other",
+          "otherPlaceholder": "Please specify"
+        },
+        "making": {
+          "images": "Images",
+          "video": "Video & animation",
+          "3d": "3D assets",
+          "audio": "Audio / music",
+          "custom_nodes": "Custom nodes & workflows"
+        }
+      }
     },
     "waitlist": {
       "title": "Cloud Waitlist",
