@@ -18,7 +18,7 @@
     >
       <i
         :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-        class="text-xs leading-none relative top-[1px] text-stone-200 dark-theme:text-[#5B5E7D]"
+        class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
       ></i>
     </button>
 
