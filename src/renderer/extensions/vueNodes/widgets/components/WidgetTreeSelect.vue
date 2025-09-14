@@ -2,9 +2,9 @@
   <WidgetLayoutField :widget="widget">
     <TreeSelect
       v-model="localValue"
-      v-bind="filteredProps"
+      v-bind="combinedProps"
       :disabled="readonly"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+      class="w-full text-xs"
       size="small"
       @update:model-value="onChange"
     />
@@ -16,14 +16,13 @@ import TreeSelect from 'primevue/treeselect'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
@@ -44,6 +43,9 @@ const { localValue, onChange } = useWidgetValue({
   emit
 })
 
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
+
 // TreeSelect specific excluded props
 const TREE_SELECT_EXCLUDED_PROPS = [
   ...PANEL_EXCLUDED_PROPS,
@@ -51,7 +53,8 @@ const TREE_SELECT_EXCLUDED_PROPS = [
   'inputStyle'
 ] as const
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, TREE_SELECT_EXCLUDED_PROPS)
-)
+const combinedProps = computed(() => ({
+  ...filterWidgetProps(props.widget.options, TREE_SELECT_EXCLUDED_PROPS),
+  ...transformCompatProps.value
+}))
 </script>

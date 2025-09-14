@@ -57,6 +57,7 @@ export interface VueNodeData {
   widgets?: SafeWidgetData[]
   inputs?: unknown[]
   outputs?: unknown[]
+  hasErrors?: boolean
   flags?: {
     collapsed?: boolean
   }
@@ -215,6 +216,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
       subgraphId,
+      hasErrors: !!node.has_errors,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
       outputs: node.outputs ? [...node.outputs] : undefined,

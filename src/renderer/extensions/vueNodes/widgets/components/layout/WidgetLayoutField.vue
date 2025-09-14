@@ -14,12 +14,12 @@ defineProps<{
   >
     <p
       v-if="widget.name"
-      class="text-sm text-[#888682] dark-theme:text-[#9FA2BD] font-normal flex-1 truncate w-20"
+      class="text-sm text-stone-200 dark-theme:text-slate-200 font-normal flex-1 truncate w-20"
     >
       {{ widget.name }}
     </p>
     <div
-      class="w-75"
+      class="w-75 cursor-default"
       @pointerdown.stop="noop"
       @pointermove.stop="noop"
       @pointerup.stop="noop"

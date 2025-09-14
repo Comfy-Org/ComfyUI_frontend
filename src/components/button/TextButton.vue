@@ -1,5 +1,11 @@
 <template>
-  <Button unstyled :class="buttonStyle" :disabled="disabled" @click="onClick">
+  <Button
+    v-bind="$attrs"
+    unstyled
+    :class="buttonStyle"
+    :disabled="disabled"
+    @click="onClick"
+  >
     <span>{{ label }}</span>
   </Button>
 </template>
@@ -15,11 +21,16 @@ import {
   getButtonSizeClasses,
   getButtonTypeClasses
 } from '@/types/buttonTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 interface TextButtonProps extends BaseButtonProps {
   label: string
   onClick: () => void
 }
+
+defineOptions({
+  inheritAttrs: false
+})
 
 const {
   size = 'md',
@@ -38,8 +49,6 @@ const buttonStyle = computed(() => {
     ? getBorderButtonTypeClasses(type)
     : getButtonTypeClasses(type)
 
-  return [baseClasses, sizeClasses, typeClasses, className]
-    .filter(Boolean)
-    .join(' ')
+  return cn(baseClasses, sizeClasses, typeClasses, className)
 })
 </script>

@@ -229,7 +229,13 @@ jobs:
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: npx playwright test --project=${{ matrix.browser }} --reporter=html
+        run: |
+          # Run tests with both HTML and JSON reporters
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          npx playwright test --project=${{ matrix.browser }} \
+            --reporter=list \
+            --reporter=html \
+            --reporter=json
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
@@ -275,7 +281,12 @@ jobs:
           merge-multiple: true
 
       - name: Merge into HTML Report
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        run: |
+          # Generate HTML report
+          npx playwright merge-reports --reporter=html ./all-blob-reports
+          # Generate JSON report separately with explicit output path
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          npx playwright merge-reports --reporter=json ./all-blob-reports
         working-directory: ComfyUI_frontend
 
       - name: Upload HTML report
@@ -284,3 +295,65 @@ jobs:
           name: playwright-report-chromium
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
+
+  #### BEGIN Deployment and commenting (non-forked PRs only)
+  # when using pull_request event, we have permission to comment directly
+  # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
+
+  # Post starting comment for non-forked PRs
+  comment-on-pr-start:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Get start time
+        id: start-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        
+      - name: Post starting comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
+          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "starting" \
+            "${{ steps.start-time.outputs.time }}"
+          
+  # Deploy and comment for non-forked PRs only
+  deploy-and-comment:
+    needs: [playwright-tests, merge-reports]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download all playwright reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          path: reports
+          
+      - name: Make deployment script executable
+        run: chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
+        
+      - name: Deploy reports and comment on PR
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "completed"
+  #### END Deployment and commenting (non-forked PRs only)
