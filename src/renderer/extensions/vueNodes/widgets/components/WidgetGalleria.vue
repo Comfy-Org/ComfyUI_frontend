@@ -25,7 +25,10 @@
       <template #item="{ item }">
         <img
           :src="item?.itemImageSrc || item?.src || ''"
-          :alt="item?.alt || t('Gallery image')"
+          :alt="
+            item?.alt ||
+            `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
+          "
           class="w-full h-auto max-h-64 object-contain"
         />
       </template>
@@ -33,7 +36,10 @@
         <div class="p-1 w-full h-full">
           <img
             :src="item?.thumbnailImageSrc || item?.src || ''"
-            :alt="item?.alt || t('Gallery image')"
+            :alt="
+              item?.alt ||
+              `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
+            "
             class="w-full h-full object-cover rounded-lg"
           />
         </div>

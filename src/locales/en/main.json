@@ -11,6 +11,8 @@
     "removeImage": "Remove image",
     "viewImageOfTotal": "View image {index} of {total}",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
+    "galleryImage": "Gallery image",
+    "galleryThumbnail": "Gallery thumbnail",
     "errorLoadingImage": "Error loading image",
     "failedToDownloadImage": "Failed to download image",
     "calculatingDimensions": "Calculating dimensions",
