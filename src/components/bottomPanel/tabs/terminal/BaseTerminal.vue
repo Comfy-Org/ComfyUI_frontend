@@ -46,7 +46,7 @@ emit('created', terminalData, rootEl)
 
 const { terminal } = terminalData
 terminal.onSelectionChange(() => {
-  hasSelection.value = terminal.getSelection().length > 0
+  hasSelection.value = terminal.hasSelection()
 })
 
 const tooltipText = computed(() => {
