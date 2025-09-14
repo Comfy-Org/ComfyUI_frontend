@@ -41,10 +41,10 @@ const emit = defineEmits<{
 }>()
 
 // Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
+const { localValue, onChange } = useWidgetValue<T[]>({
   widget: props.widget,
   modelValue: props.modelValue,
-  defaultValue: [] as T[],
+  defaultValue: [],
   emit
 })
 
@@ -66,8 +66,8 @@ const combinedProps = computed(() => ({
 const multiSelectOptions = computed((): T[] => {
   const options = props.widget.options
 
-  if (options?.values && Array.isArray(options.values)) {
-    return options.values as T[]
+  if (Array.isArray(options?.values)) {
+    return options.values
   }
 
   return []
