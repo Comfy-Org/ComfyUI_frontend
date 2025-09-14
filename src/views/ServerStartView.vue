@@ -29,12 +29,6 @@
             :label="t('serverStart.troubleshoot')"
             @click="troubleshoot"
           />
-          <Button
-            icon="pi pi-copy"
-            severity="secondary"
-            :label="t('serverStart.copyTerminal')"
-            @click="copyTerminal"
-          />
         </div>
         <Button
           v-if="!terminalVisible"
@@ -44,7 +38,11 @@
           @click="terminalVisible = true"
         />
       </div>
-      <BaseTerminal v-show="terminalVisible" @created="terminalCreated" />
+      <BaseTerminal
+        v-show="terminalVisible"
+        @created="terminalCreated"
+        @copy-terminal="copyTerminal"
+      />
     </div>
   </BaseViewTemplate>
 </template>
