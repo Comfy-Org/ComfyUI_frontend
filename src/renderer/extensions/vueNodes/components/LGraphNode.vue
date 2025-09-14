@@ -119,6 +119,7 @@
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
+          :image-urls="nodeImageUrls"
         />
       </div>
     </template>
@@ -126,7 +127,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  onErrorCaptured,
+  provide,
+  ref,
+  toRef,
+  watch
+} from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -134,6 +143,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
@@ -244,11 +257,10 @@ watch(
   }
 )
 
-// Check if node has custom content
+// Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
-  // Currently all content is handled through widgets
-  // This remains false but provides extensibility point
-  return false
+  // Show custom content if node has image outputs
+  return nodeImageUrls.value.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -318,4 +330,50 @@ const handleSlotClick = (
 const handleTitleUpdate = (newTitle: string) => {
   emit('update:title', props.nodeData.id, newTitle)
 }
+
+const nodeOutputs = useNodeOutputStore()
+
+const nodeImageUrls = ref<string[]>([])
+const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
+  // Construct proper locator ID using subgraph ID from VueNodeData
+  const locatorId = props.nodeData.subgraphId
+    ? `${props.nodeData.subgraphId}:${props.nodeData.id}`
+    : props.nodeData.id
+
+  // Use root graph for getNodeByLocatorId since it needs to traverse from root
+  const rootGraph = app.graph?.rootGraph || app.graph
+  if (!rootGraph) {
+    nodeImageUrls.value = []
+    return
+  }
+
+  const node = getNodeByLocatorId(rootGraph, locatorId)
+
+  if (node && newOutputs?.images?.length) {
+    const urls = nodeOutputs.getNodeImageUrls(node)
+    if (urls) {
+      nodeImageUrls.value = urls
+    }
+  } else {
+    // Clear URLs if no outputs or no images
+    nodeImageUrls.value = []
+  }
+}
+
+const nodeOutputLocatorId = computed(() =>
+  props.nodeData.subgraphId
+    ? `${props.nodeData.subgraphId}:${props.nodeData.id}`
+    : props.nodeData.id
+)
+
+watch(
+  () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
+  (newOutputs) => {
+    onNodeOutputsUpdate(newOutputs)
+  },
+  { deep: true }
+)
+
+// Provide nodeImageUrls to child components
+provide('nodeImageUrls', nodeImageUrls)
 </script>

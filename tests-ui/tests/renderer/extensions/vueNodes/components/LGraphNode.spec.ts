@@ -1,6 +1,8 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
@@ -40,6 +42,16 @@ vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
   LODLevel: { MINIMAL: 0 }
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      'Node Render Error': 'Node Render Error'
+    }
+  }
+})
+
 describe('LGraphNode', () => {
   const mockNodeData: VueNodeData = {
     id: 'test-node-123',
@@ -58,8 +70,21 @@ describe('LGraphNode', () => {
     return mount(LGraphNode, {
       props,
       global: {
+        plugins: [
+          createTestingPinia({
+            createSpy: vi.fn
+          }),
+          i18n
+        ],
         provide: {
           [SelectedNodeIdsKey as symbol]: ref(selectedNodeIds)
+        },
+        stubs: {
+          NodeHeader: true,
+          NodeSlots: true,
+          NodeWidgets: true,
+          NodeContent: true,
+          SlotConnectionDot: true
         }
       }
     })
@@ -82,7 +107,27 @@ describe('LGraphNode', () => {
   })
 
   it('should render node title', () => {
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+    // Don't stub NodeHeader for this test so we can see the title
+    const wrapper = mount(LGraphNode, {
+      props: { nodeData: mockNodeData },
+      global: {
+        plugins: [
+          createTestingPinia({
+            createSpy: vi.fn
+          }),
+          i18n
+        ],
+        provide: {
+          [SelectedNodeIdsKey as symbol]: ref(new Set())
+        },
+        stubs: {
+          NodeSlots: true,
+          NodeWidgets: true,
+          NodeContent: true,
+          SlotConnectionDot: true
+        }
+      }
+    })
 
     expect(wrapper.text()).toContain('Test Node')
   })
