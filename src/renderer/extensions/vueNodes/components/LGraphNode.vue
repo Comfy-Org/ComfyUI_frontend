@@ -14,7 +14,7 @@
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
         !!executing && 'border-blue-500 dark-theme:border-blue-500',
         !!(error || nodeData.hasErrors) &&
-          'border-error dark-theme:border-error',
+          'border-error',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         // Selected
