@@ -35,7 +35,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: mockSettingGet
   })

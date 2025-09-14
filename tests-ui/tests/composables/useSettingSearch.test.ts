@@ -14,7 +14,7 @@ vi.mock('@/i18n', () => ({
   st: vi.fn((_: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(),
   getSettingInfo: vi.fn()
 }))

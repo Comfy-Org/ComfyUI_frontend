@@ -26,7 +26,7 @@ vi.mock('@/stores/executionStore', () => ({
 const settingStore = reactive({
   get: vi.fn(() => 'Enabled')
 })
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => settingStore
 }))
 

@@ -19,7 +19,7 @@ import { TaskLog } from '@/types/comfyManagerTypes'
 // Mock modules
 vi.mock('@/stores/comfyManagerStore')
 vi.mock('@/stores/dialogStore')
-vi.mock('@/stores/settingStore')
+vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/commandStore')
 vi.mock('@/services/comfyManagerService')
 vi.mock('@/composables/useConflictDetection', () => ({

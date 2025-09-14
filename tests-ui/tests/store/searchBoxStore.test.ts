@@ -14,7 +14,7 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 const mockSettingStore = createMockSettingStore()
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => mockSettingStore)
 }))
 

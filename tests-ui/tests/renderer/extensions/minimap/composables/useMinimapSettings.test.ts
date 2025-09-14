@@ -5,7 +5,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMinimapSettings } from '@/renderer/extensions/minimap/composables/useMinimapSettings'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-vi.mock('@/stores/settingStore')
+vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/workspace/colorPaletteStore')
 
 describe('useMinimapSettings', () => {

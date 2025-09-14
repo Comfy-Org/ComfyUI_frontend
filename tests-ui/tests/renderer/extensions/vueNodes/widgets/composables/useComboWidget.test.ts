@@ -11,7 +11,7 @@ vi.mock('@/scripts/widgets', () => ({
 }))
 
 const mockSettingStoreGet = vi.fn(() => false)
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     get: mockSettingStoreGet
   }))
