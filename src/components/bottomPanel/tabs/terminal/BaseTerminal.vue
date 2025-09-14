@@ -35,16 +35,26 @@ const { t } = useI18n()
 const emit = defineEmits<{
   created: [ReturnType<typeof useTerminal>, Ref<HTMLElement | undefined>]
   unmounted: []
-  copyTerminal: []
 }>()
 const terminalEl = ref<HTMLElement | undefined>()
 const rootEl = ref<HTMLElement | undefined>()
 const showCopyButton = ref(false)
 
-emit('created', useTerminal(terminalEl), rootEl)
+const terminalData = useTerminal(terminalEl)
+emit('created', terminalData, rootEl)
 
-const handleCopy = () => {
-  emit('copyTerminal')
+const handleCopy = async () => {
+  const { terminal } = terminalData
+
+  terminal.selectAll()
+
+  const selectedText = terminal.getSelection()
+
+  if (selectedText) {
+    await navigator.clipboard.writeText(selectedText)
+
+    terminal.clearSelection()
+  }
 }
 
 const showContextMenu = (event: MouseEvent) => {

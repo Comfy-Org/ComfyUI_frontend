@@ -38,11 +38,7 @@
           @click="terminalVisible = true"
         />
       </div>
-      <BaseTerminal
-        v-show="terminalVisible"
-        @created="terminalCreated"
-        @copy-terminal="copyTerminal"
-      />
+      <BaseTerminal v-show="terminalVisible" @created="terminalCreated" />
     </div>
   </BaseViewTemplate>
 </template>
@@ -97,24 +93,6 @@ const reportIssue = () => {
   window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
 }
 const openLogs = () => electron.openLogsFolder()
-
-const copyTerminal = async () => {
-  if (!xterm) return
-
-  // Select all text in the terminal
-  xterm.selectAll()
-
-  // Get the selected text
-  const selectedText = xterm.getSelection()
-
-  if (selectedText) {
-    // Copy to clipboard
-    await navigator.clipboard.writeText(selectedText)
-
-    // Clear selection after copying
-    xterm.clearSelection()
-  }
-}
 
 onMounted(async () => {
   electron.sendReady()
