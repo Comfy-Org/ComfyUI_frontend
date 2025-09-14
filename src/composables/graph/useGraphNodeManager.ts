@@ -202,15 +202,17 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       }
     })
 
+    const nodeType =
+      node.type ||
+      node.constructor?.comfyClass ||
+      node.constructor?.title ||
+      node.constructor?.name ||
+      'Unknown'
+
     return {
       id: String(node.id),
       title: typeof node.title === 'string' ? node.title : '',
-      type:
-        node.type ||
-        node.constructor?.comfyClass ||
-        node.constructor?.title ||
-        node.constructor?.name ||
-        'Unknown',
+      type: nodeType,
       mode: node.mode || 0,
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
