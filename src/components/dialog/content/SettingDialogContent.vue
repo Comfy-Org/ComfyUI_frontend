@@ -113,7 +113,12 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
     .sort((a, b) => a.label.localeCompare(b.label))
     .map((group) => ({
       label: group.label,
-      settings: flattenTree<SettingParams>(group)
+      settings: flattenTree<SettingParams>(group).sort((a, b) => {
+        const sortOrderA = a.sortOrder ?? 0
+        const sortOrderB = b.sortOrder ?? 0
+
+        return sortOrderB - sortOrderA
+      })
     }))
 }
 
