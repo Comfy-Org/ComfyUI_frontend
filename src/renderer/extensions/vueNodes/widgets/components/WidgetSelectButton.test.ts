@@ -152,7 +152,7 @@ describe('WidgetSelectButton Button Selection', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toEqual(['second'])
+      expect(emitted?.[0]).toEqual(['second'])
     })
 
     it('handles callback execution when provided', async () => {
@@ -180,7 +180,7 @@ describe('WidgetSelectButton Button Selection', () => {
       // Should still emit Vue event
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toEqual(['option2'])
+      expect(emitted?.[0]).toEqual(['option2'])
     })
 
     it('allows clicking same option again', async () => {
@@ -192,7 +192,7 @@ describe('WidgetSelectButton Button Selection', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toEqual(['option1'])
+      expect(emitted?.[0]).toEqual(['option1'])
     })
   })
 
@@ -294,7 +294,7 @@ describe('WidgetSelectButton Button Selection', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toEqual(['second_val'])
+      expect(emitted?.[0]).toEqual(['second_val'])
     })
   })
 
