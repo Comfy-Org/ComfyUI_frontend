@@ -1,6 +1,6 @@
-import { mount, type ComponentMountingOptions } from '@vue/test-utils'
+import { type ComponentMountingOptions, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -53,7 +53,6 @@ describe('InputSlot/OutputSlot', () => {
   })
 
   it('InputSlot registers with correct options', () => {
-
     mountInputSlot({
       nodeId: 'node-1',
       index: 3,
@@ -70,7 +69,6 @@ describe('InputSlot/OutputSlot', () => {
   })
 
   it('OutputSlot registers with correct options', () => {
-
     mountOutputSlot({
       nodeId: 'node-2',
       index: 1,
