@@ -60,12 +60,13 @@ describe('InputSlot/OutputSlot', () => {
       slotData: { name: 'A', type: 'any', boundingRect: [0, 0, 0, 0] }
     })
 
-    const call = vi.mocked(useDomSlotRegistration).mock.calls.at(-1)![0]
-    expect(call).toMatchObject({
-      nodeId: 'node-1',
-      slotIndex: 3,
-      isInput: true
-    })
+    expect(useDomSlotRegistration).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        nodeId: 'node-1',
+        slotIndex: 3,
+        isInput: true
+      })
+    )
   })
 
   it('OutputSlot registers with correct options', () => {
@@ -76,11 +77,12 @@ describe('InputSlot/OutputSlot', () => {
       slotData: { name: 'B', type: 'any', boundingRect: [0, 0, 0, 0] }
     })
 
-    const call = vi.mocked(useDomSlotRegistration).mock.calls.at(-1)![0]
-    expect(call).toMatchObject({
-      nodeId: 'node-2',
-      slotIndex: 1,
-      isInput: false
-    })
+    expect(useDomSlotRegistration).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        nodeId: 'node-2',
+        slotIndex: 1,
+        isInput: false
+      })
+    )
   })
 })
