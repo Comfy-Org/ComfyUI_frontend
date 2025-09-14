@@ -3,12 +3,19 @@
  */
 import type { Component } from 'vue'
 
+import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import {
+  type InputSpec,
+  isComboInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
 import WidgetColorPicker from '../components/WidgetColorPicker.vue'
 import WidgetFileUpload from '../components/WidgetFileUpload.vue'
 import WidgetGalleria from '../components/WidgetGalleria.vue'
 import WidgetImageCompare from '../components/WidgetImageCompare.vue'
+import WidgetImageUpload from '../components/WidgetImageUpload.vue'
 import WidgetInputNumber from '../components/WidgetInputNumber.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
@@ -143,8 +150,36 @@ export const isEssential = (type: string): boolean => {
 export const shouldRenderAsVue = (widget: {
   type?: string
   options?: Record<string, unknown>
+  spec?: InputSpec
 }): boolean => {
-  if (widget.options?.canvasOnly) return false
+  // Check canvasOnly in both widget options (legacy) and input spec (new system)
+  const specCanvasOnly =
+    widget.spec && 'canvasOnly' in widget.spec ? widget.spec.canvasOnly : false
+  if (widget.options?.canvasOnly || specCanvasOnly) {
+    return false
+  }
   if (!widget.type) return false
   return isSupported(widget.type)
+}
+
+/**
+ * Returns the Vue component for a given widget, with special handling for
+ * image-capable combo inputs in Vue Nodes.
+ */
+export const getComponentForWidget = (
+  widget: SafeWidgetData
+): Component | null => {
+  const type = widget.type?.toUpperCase()
+  const isImageCombo =
+    type === 'COMBO' &&
+    widget.spec &&
+    isComboInputSpec(widget.spec) &&
+    (widget.spec.image_upload ||
+      widget.spec.animated_image_upload ||
+      widget.spec.video_upload)
+
+  if (isImageCombo) {
+    return WidgetImageUpload
+  }
+  return getComponent(widget.type)
 }

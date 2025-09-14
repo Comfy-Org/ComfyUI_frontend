@@ -7,6 +7,7 @@
     <slot>
       <ImagePreview
         v-if="hasImages"
+        :key="(props.imageUrls || []).join('|')"
         :image-urls="props.imageUrls || []"
         :node-id="nodeId"
         class="mt-2"

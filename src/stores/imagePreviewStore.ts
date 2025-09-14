@@ -112,18 +112,34 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
     const previews = getNodePreviews(node)
-    if (previews?.length) return previews
+    if (previews?.length) {
+      console.debug('[NodeOutputStore] using preview images', {
+        nodeId: node.id,
+        count: previews.length
+      })
+      return previews
+    }
 
     const outputs = getNodeOutputs(node)
-    if (!outputs?.images?.length) return
+    if (!outputs?.images?.length) {
+      console.debug('[NodeOutputStore] no output images for node', {
+        nodeId: node.id
+      })
+      return
+    }
 
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images.map((image) => {
+    const urls = outputs.images.map((image) => {
       const imgUrlPart = new URLSearchParams(image)
       return api.apiURL(`/view?${imgUrlPart}${previewParam}${rand}`)
     })
+    console.debug('[NodeOutputStore] computed image URLs', {
+      nodeId: node.id,
+      urls
+    })
+    return urls
   }
 
   /**

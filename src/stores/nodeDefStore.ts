@@ -352,6 +352,19 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     return nodeDef
   }
 
+  function getInputSpecForWidget(
+    node: LGraphNode,
+    widgetName: string
+  ): InputSpecV2 | undefined {
+    const nodeDef = fromLGraphNode(node)
+    if (!nodeDef) {
+      return undefined
+    }
+
+    // V2 inputs are stored as Record<string, InputSpecV2> keyed by input name
+    return nodeDef.inputs[widgetName]
+  }
+
   /**
    * Registers a node definition filter.
    * @param filter - The filter to register
@@ -424,6 +437,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     updateNodeDefs,
     addNodeDef,
     fromLGraphNode,
+    getInputSpecForWidget,
     registerNodeDefFilter,
     unregisterNodeDefFilter
   }
