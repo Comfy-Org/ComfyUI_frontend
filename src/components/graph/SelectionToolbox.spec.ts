@@ -52,6 +52,11 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLoad3dNode: vi.fn(() => false)
 }))
 
+vi.mock('@/utils/nodeFilterUtil', () => ({
+  isOutputNode: vi.fn(() => false),
+  filterOutputNodes: vi.fn((nodes) => nodes.filter(() => false))
+}))
+
 vi.mock('@/stores/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) => {
@@ -308,6 +313,38 @@ describe('SelectionToolbox', () => {
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.load-3d-viewer-button').exists()).toBe(false)
+    })
+
+    it('should show ExecuteButton only when output nodes are selected', async () => {
+      const mockNodeFilterUtil = await import('@/utils/nodeFilterUtil')
+      const isOutputNodeSpy = vi.spyOn(mockNodeFilterUtil, 'isOutputNode')
+      const filterOutputNodesSpy = vi.spyOn(
+        mockNodeFilterUtil,
+        'filterOutputNodes'
+      )
+
+      // With output node selected
+      isOutputNodeSpy.mockReturnValue(true)
+      filterOutputNodesSpy.mockReturnValue([{ type: 'SaveImage' }] as any)
+      canvasStore.selectedItems = [
+        { type: 'SaveImage', constructor: { nodeData: { output_node: true } } }
+      ] as any
+      const wrapper = mountComponent()
+      expect(wrapper.find('.execute-button').exists()).toBe(true)
+
+      // Without output node selected
+      isOutputNodeSpy.mockReturnValue(false)
+      filterOutputNodesSpy.mockReturnValue([])
+      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      wrapper.unmount()
+      const wrapper2 = mountComponent()
+      expect(wrapper2.find('.execute-button').exists()).toBe(false)
+
+      // No selection at all
+      canvasStore.selectedItems = []
+      wrapper2.unmount()
+      const wrapper3 = mountComponent()
+      expect(wrapper3.find('.execute-button').exists()).toBe(false)
     })
   })
 

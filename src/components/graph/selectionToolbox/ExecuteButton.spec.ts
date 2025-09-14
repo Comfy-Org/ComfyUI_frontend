@@ -6,44 +6,41 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/stores/graphStore'
 
-const mockLGraphNode = {
-  constructor: {
-    nodeData: {
-      output_node: true
-    }
-  },
-  type: 'TestNode',
-  title: 'Test Node',
-  hasOutputs: vi.fn(() => true),
-  isExecutionNode: vi.fn(() => true)
-}
-
-vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphNode: vi.fn(() => true)
-}))
-
-// Mock canvas
-const mockCanvas = {
-  setDirty: vi.fn()
-}
-
+// Mock the stores
 vi.mock('@/stores/graphStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => mockCanvas,
-    selectedItems: [],
-    nodeSelected: true
-  })
+  useCanvasStore: vi.fn()
 }))
 
 vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: vi.fn()
-  })
+  useCommandStore: vi.fn()
+}))
+
+// Mock the utils
+vi.mock('@/utils/litegraphUtil', () => ({
+  isLGraphNode: vi.fn((node) => !!node?.type)
+}))
+
+vi.mock('@/utils/nodeFilterUtil', () => ({
+  isOutputNode: vi.fn((node) => !!node?.constructor?.nodeData?.output_node)
+}))
+
+// Mock the composables
+vi.mock('@/composables/graph/useSelectionState', () => ({
+  useSelectionState: vi.fn(() => ({
+    selectedNodes: {
+      value: []
+    }
+  }))
 }))
 
 describe('ExecuteButton', () => {
-  let canvasStore: any
+  let mockCanvas: any
+  let mockCanvasStore: any
+  let mockCommandStore: any
+  let mockSelectedNodes: any[]
 
   const i18n = createI18n({
     legacy: false,
@@ -52,21 +49,45 @@ describe('ExecuteButton', () => {
       en: {
         selectionToolbox: {
           executeButton: {
-            tooltip: 'Execute selected nodes',
-            disabledTooltip: 'No executable nodes selected'
+            tooltip: 'Execute selected nodes'
           }
         }
       }
     }
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     setActivePinia(createPinia())
-    canvasStore = {
-      getCanvas: () => mockCanvas,
-      selectedItems: [],
-      nodeSelected: true
+
+    // Reset mocks
+    mockCanvas = {
+      setDirty: vi.fn()
     }
+
+    mockSelectedNodes = []
+
+    mockCanvasStore = {
+      getCanvas: vi.fn(() => mockCanvas),
+      selectedItems: []
+    }
+
+    mockCommandStore = {
+      execute: vi.fn()
+    }
+
+    // Setup store mocks
+    vi.mocked(useCanvasStore).mockReturnValue(mockCanvasStore as any)
+    vi.mocked(useCommandStore).mockReturnValue(mockCommandStore as any)
+
+    // Update the useSelectionState mock
+    const { useSelectionState } = vi.mocked(
+      await import('@/composables/graph/useSelectionState')
+    )
+    useSelectionState.mockReturnValue({
+      selectedNodes: {
+        value: mockSelectedNodes
+      }
+    } as any)
 
     vi.clearAllMocks()
   })
@@ -77,30 +98,31 @@ describe('ExecuteButton', () => {
         plugins: [i18n, PrimeVue],
         directives: { tooltip: Tooltip },
         stubs: {
-          'i-lucide:play': true
+          'i-lucide:play': { template: '<div class="play-icon" />' }
         }
       }
     })
   }
 
-  it('should render execute button', () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.exists()).toBe(true)
+  describe('Rendering', () => {
+    it('should be able to render', () => {
+      const wrapper = mountComponent()
+      const button = wrapper.find('button')
+      expect(button.exists()).toBe(true)
+    })
   })
 
-  it('should be disabled when no executable nodes are selected', () => {
-    canvasStore.selectedItems = []
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.attributes('disabled')).toBeDefined()
-  })
+  describe('Click Handler', () => {
+    it('should execute Comfy.QueueSelectedOutputNodes command on click', async () => {
+      const wrapper = mountComponent()
+      const button = wrapper.find('button')
 
-  it('should be enabled when executable nodes are selected', () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.attributes('disabled')).toBe('')
+      await button.trigger('click')
+
+      expect(mockCommandStore.execute).toHaveBeenCalledWith(
+        'Comfy.QueueSelectedOutputNodes'
+      )
+      expect(mockCommandStore.execute).toHaveBeenCalledTimes(1)
+    })
   })
 })
