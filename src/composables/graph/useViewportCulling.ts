@@ -1,16 +1,14 @@
 /**
- * Viewport Culling Composable
+ * Vue Nodes Viewport Culling
  *
- * Handles viewport culling optimization for Vue nodes including:
- * - Transform state synchronization
- * - Visible node calculation with screen space transforms
- * - Adaptive margin computation based on zoom level
- * - Performance optimizations for large graphs
+ * Principles:
+ * 1. Query DOM directly using data attributes (no cache to maintain)
+ * 2. Set display none on element to avoid cascade resolution overhead
+ * 3. Only run when transform changes (event driven)
  */
-import { type Ref, computed, readonly, ref } from 'vue'
+import { type Ref, computed } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useTransformState } from '@/renderer/core/layout/useTransformState'
 import { app as comfyApp } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -25,188 +23,84 @@ export function useViewportCulling(
   nodeManager: Ref<NodeManager | null>
 ) {
   const canvasStore = useCanvasStore()
-  const { syncWithCanvas } = useTransformState()
 
-  // Transform tracking for performance optimization
-  const lastScale = ref(1)
-  const lastOffsetX = ref(0)
-  const lastOffsetY = ref(0)
-
-  // Current transform state
-  const currentTransformState = computed(() => ({
-    scale: lastScale.value,
-    offsetX: lastOffsetX.value,
-    offsetY: lastOffsetY.value
-  }))
-
-  /**
-   * Computed property that returns nodes visible in the current viewport
-   * Implements sophisticated culling algorithm with adaptive margins
-   */
-  const nodesToRender = computed(() => {
-    if (!isVueNodesEnabled.value) {
-      return []
-    }
-
-    // Access trigger to force re-evaluation after nodeManager initialization
-    void nodeDataTrigger.value
-
-    if (!comfyApp.graph) {
-      return []
-    }
-
-    const allNodes = Array.from(vueNodeData.value.values())
-
-    // Apply viewport culling - check if node bounds intersect with viewport
-    // TODO: use quadtree
-    if (nodeManager.value && canvasStore.canvas && comfyApp.canvas) {
-      const canvas = canvasStore.canvas
-      const manager = nodeManager.value
-
-      // Ensure transform is synced before checking visibility
-      syncWithCanvas(comfyApp.canvas)
-
-      const ds = canvas.ds
-
-      // Work in screen space - viewport is simply the canvas element size
-      const viewport_width = canvas.canvas.width
-      const viewport_height = canvas.canvas.height
-
-      // Add margin that represents a constant distance in canvas space
-      // Convert canvas units to screen pixels by multiplying by scale
-      const canvasMarginDistance = 200 // Fixed margin in canvas units
-      const margin_x = canvasMarginDistance * ds.scale
-      const margin_y = canvasMarginDistance * ds.scale
-
-      const filtered = allNodes.filter((nodeData) => {
-        const node = manager.getNode(nodeData.id)
-        if (!node) return false
-
-        // Transform node position to screen space (same as DOM widgets)
-        const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
-        const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
-        const screen_width = node.size[0] * ds.scale
-        const screen_height = node.size[1] * ds.scale
-
-        // Check if node bounds intersect with expanded viewport (in screen space)
-        const isVisible = !(
-          screen_x + screen_width < -margin_x ||
-          screen_x > viewport_width + margin_x ||
-          screen_y + screen_height < -margin_y ||
-          screen_y > viewport_height + margin_y
-        )
-
-        return isVisible
-      })
-
-      return filtered
-    }
-
-    return allNodes
+  const allNodes = computed(() => {
+    if (!isVueNodesEnabled.value) return []
+    void nodeDataTrigger.value // Force re-evaluation when nodeManager initializes
+    return Array.from(vueNodeData.value.values())
   })
 
   /**
-   * Handle transform updates with performance optimization
-   * Only syncs when transform actually changes to avoid unnecessary reflows
+   * Update visibility of all nodes based on viewport
+   * Queries DOM directly - no cache maintenance needed
    */
-  const handleTransformUpdate = (detectChangesInRAF: () => void) => {
-    // Skip all work if Vue nodes are disabled
-    if (!isVueNodesEnabled.value) {
-      return
-    }
-
-    // Sync transform state only when it changes (avoids reflows)
-    if (comfyApp.canvas?.ds) {
-      const currentScale = comfyApp.canvas.ds.scale
-      const currentOffsetX = comfyApp.canvas.ds.offset[0]
-      const currentOffsetY = comfyApp.canvas.ds.offset[1]
-
-      if (
-        currentScale !== lastScale.value ||
-        currentOffsetX !== lastOffsetX.value ||
-        currentOffsetY !== lastOffsetY.value
-      ) {
-        syncWithCanvas(comfyApp.canvas)
-        lastScale.value = currentScale
-        lastOffsetX.value = currentOffsetX
-        lastOffsetY.value = currentOffsetY
-      }
-    }
-
-    // Detect node changes during transform updates
-    detectChangesInRAF()
-
-    // Trigger reactivity for nodesToRender
-    void nodesToRender.value.length
-  }
-
-  /**
-   * Calculate if a specific node is visible in viewport
-   * Useful for individual node visibility checks
-   */
-  const isNodeVisible = (nodeData: VueNodeData): boolean => {
-    if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) {
-      return true // Default to visible if culling not available
-    }
+  const updateVisibility = () => {
+    if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
 
     const canvas = canvasStore.canvas
-    const node = nodeManager.value.getNode(nodeData.id)
-    if (!node) return false
-
-    syncWithCanvas(comfyApp.canvas)
+    const manager = nodeManager.value
     const ds = canvas.ds
 
+    // Viewport bounds
     const viewport_width = canvas.canvas.width
     const viewport_height = canvas.canvas.height
-    const canvasMarginDistance = 200
-    const margin_x = canvasMarginDistance * ds.scale
-    const margin_y = canvasMarginDistance * ds.scale
+    const margin = 500 * ds.scale
 
-    const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
-    const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
-    const screen_width = node.size[0] * ds.scale
-    const screen_height = node.size[1] * ds.scale
+    // Get all node elements at once
+    const nodeElements = document.querySelectorAll('[data-node-id]')
 
-    return !(
-      screen_x + screen_width < -margin_x ||
-      screen_x > viewport_width + margin_x ||
-      screen_y + screen_height < -margin_y ||
-      screen_y > viewport_height + margin_y
-    )
+    // Update each element's visibility
+    for (const element of nodeElements) {
+      const nodeId = element.getAttribute('data-node-id')
+      if (!nodeId) continue
+
+      const node = manager.getNode(nodeId)
+      if (!node) continue
+
+      // Calculate if node is outside viewport
+      const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
+      const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
+      const screen_width = node.size[0] * ds.scale
+      const screen_height = node.size[1] * ds.scale
+
+      const isNodeOutsideViewport =
+        screen_x + screen_width < -margin ||
+        screen_x > viewport_width + margin ||
+        screen_y + screen_height < -margin ||
+        screen_y > viewport_height + margin
+
+      // Setting display none directly avoid potential cascade resolution
+      if (element instanceof HTMLElement) {
+        element.style.display = isNodeOutsideViewport ? 'none' : ''
+      }
+    }
   }
 
+  // RAF throttling for smooth updates during continuous panning
+  let rafId: number | null = null
+
   /**
-   * Get viewport bounds information for debugging
+   * Handle transform update - called by TransformPane event
+   * Uses RAF to batch updates for smooth performance
    */
-  const getViewportInfo = () => {
-    if (!canvasStore.canvas || !comfyApp.canvas) {
-      return null
+  const handleTransformUpdate = () => {
+    if (!isVueNodesEnabled.value) return
+
+    // Cancel previous RAF if still pending
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
     }
 
-    const canvas = canvasStore.canvas
-    const ds = canvas.ds
-
-    return {
-      viewport_width: canvas.canvas.width,
-      viewport_height: canvas.canvas.height,
-      scale: ds.scale,
-      offset: [ds.offset[0], ds.offset[1]],
-      margin_distance: 200,
-      margin_x: 200 * ds.scale,
-      margin_y: 200 * ds.scale
-    }
+    // Schedule update in next animation frame
+    rafId = requestAnimationFrame(() => {
+      updateVisibility()
+      rafId = null
+    })
   }
 
   return {
-    nodesToRender,
+    allNodes,
     handleTransformUpdate,
-    isNodeVisible,
-    getViewportInfo,
-
-    // Transform state
-    currentTransformState: readonly(currentTransformState),
-    lastScale: readonly(lastScale),
-    lastOffsetX: readonly(lastOffsetX),
-    lastOffsetY: readonly(lastOffsetY)
+    updateVisibility
   }
 }
