@@ -29,6 +29,12 @@
             :label="t('serverStart.troubleshoot')"
             @click="troubleshoot"
           />
+          <Button
+            icon="pi pi-copy"
+            severity="secondary"
+            :label="t('serverStart.copyTerminal')"
+            @click="copyTerminal"
+          />
         </div>
         <Button
           v-if="!terminalVisible"
@@ -93,6 +99,24 @@ const reportIssue = () => {
   window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
 }
 const openLogs = () => electron.openLogsFolder()
+
+const copyTerminal = async () => {
+  if (!xterm) return
+
+  // Select all text in the terminal
+  xterm.selectAll()
+
+  // Get the selected text
+  const selectedText = xterm.getSelection()
+
+  if (selectedText) {
+    // Copy to clipboard
+    await navigator.clipboard.writeText(selectedText)
+
+    // Clear selection after copying
+    xterm.clearSelection()
+  }
+}
 
 onMounted(async () => {
   electron.sendReady()
