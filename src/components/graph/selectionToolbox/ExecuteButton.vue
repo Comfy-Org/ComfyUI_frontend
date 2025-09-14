@@ -1,13 +1,11 @@
 <template>
   <Button
-    v-show="hasOutputNodesSelected && !isDisabled"
     v-tooltip.top="{
       value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
     class="dark-theme:bg-[#0B8CE9] bg-[#31B9F4] size-8 !p-0"
     text
-    :disabled="isDisabled"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
@@ -31,15 +29,13 @@ import { isOutputNode } from '@/utils/nodeFilterUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
-const { hasOutputNodesSelected, selectedNodes } = useSelectionState()
+const { selectedNodes } = useSelectionState()
 
 const canvas = canvasStore.getCanvas()
 const buttonHovered = ref(false)
 const selectedOutputNodes = computed(() =>
   selectedNodes.value.filter(isLGraphNode).filter(isOutputNode)
 )
-
-const isDisabled = computed(() => selectedOutputNodes.value.length === 0)
 
 function outputNodeStokeStyle(this: LGraphNode) {
   if (

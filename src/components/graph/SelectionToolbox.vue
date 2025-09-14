@@ -104,6 +104,7 @@ const {
   isSingleSubgraph,
   isSingleImageNode,
   hasAny3DNodeSelected,
+  hasOutputNodesSelected,
   nodeDef
 } = useSelectionState()
 const showInfoButton = computed(() => !!nodeDef.value)
@@ -122,7 +123,7 @@ const showMaskEditor = computed(() => isSingleImageNode.value)
 
 const showDelete = computed(() => hasAnySelection.value)
 const showRefresh = computed(() => hasAnySelection.value)
-const showExecute = computed(() => hasAnySelection.value)
+const showExecute = computed(() => hasOutputNodesSelected.value)
 
 const showAnyPrimaryActions = computed(
   () =>
