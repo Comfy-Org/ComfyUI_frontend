@@ -1,9 +1,9 @@
-import arc from '@/assets/palettes/arc.json'
-import dark from '@/assets/palettes/dark.json'
-import github from '@/assets/palettes/github.json'
-import light from '@/assets/palettes/light.json'
-import nord from '@/assets/palettes/nord.json'
-import solarized from '@/assets/palettes/solarized.json'
+import arc from '@/assets/palettes/arc.json' with { type: 'json' }
+import dark from '@/assets/palettes/dark.json' with { type: 'json' }
+import github from '@/assets/palettes/github.json' with { type: 'json' }
+import light from '@/assets/palettes/light.json' with { type: 'json' }
+import nord from '@/assets/palettes/nord.json' with { type: 'json' }
+import solarized from '@/assets/palettes/solarized.json' with { type: 'json' }
 import type {
   ColorPalettes,
   CompletedPalette

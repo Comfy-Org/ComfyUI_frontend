@@ -12,12 +12,15 @@
         'lg-node absolute rounded-2xl',
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
+        !!executing && 'border-blue-500 dark-theme:border-blue-500',
         !!error && 'border-red-700 dark-theme:border-red-300',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         // Selected
         'outline-transparent -outline-offset-2 outline-2',
         !!isSelected && 'outline-black dark-theme:outline-white',
+        !!(isSelected && executing) &&
+          'outline-blue-500 dark-theme:outline-blue-500',
         !!(isSelected && error) && 'outline-red-500 dark-theme:outline-red-500',
         {
           'animate-pulse': executing,
@@ -56,8 +59,35 @@
       />
     </div>
 
+    <div
+      v-if="
+        (isMinimalLOD || isCollapsed) && executing && progress !== undefined
+      "
+      :class="
+        cn(
+          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
+          progressClasses
+        )
+      "
+      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+    />
+
     <template v-if="!isMinimalLOD && !isCollapsed">
-      <div :class="cn(separatorClasses, 'mb-4')" />
+      <div class="mb-4 relative">
+        <div :class="separatorClasses" />
+        <!-- Progress bar for executing state -->
+        <div
+          v-if="executing && progress !== undefined"
+          :class="
+            cn(
+              'absolute inset-x-0 top-1/2 -translate-y-1/2',
+              !!(progress < 1) && 'rounded-r-full',
+              progressClasses
+            )
+          "
+          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+        />
+      </div>
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
@@ -74,11 +104,6 @@
           @slot-click="handleSlotClick"
         />
 
-        <div
-          v-if="shouldRenderSlots && shouldShowWidgets"
-          :class="separatorClasses"
-        />
-
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
           v-if="shouldShowWidgets"
@@ -86,11 +111,6 @@
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
-        />
-
-        <div
-          v-if="(shouldRenderSlots || shouldShowWidgets) && shouldShowContent"
-          :class="separatorClasses"
         />
 
         <!-- Custom content at reduced+ detail -->
@@ -102,13 +122,6 @@
         />
       </div>
     </template>
-
-    <!-- Progress bar for executing state -->
-    <div
-      v-if="executing && progress !== undefined"
-      class="absolute bottom-0 left-0 h-1 bg-primary-500 transition-all duration-300"
-      :style="{ width: `${progress * 100}%` }"
-    />
   </div>
 </template>
 
@@ -145,13 +158,18 @@ interface LGraphNodeProps {
 const props = defineProps<LGraphNodeProps>()
 
 const emit = defineEmits<{
-  'node-click': [event: PointerEvent, nodeData: VueNodeData]
+  'node-click': [
+    event: PointerEvent,
+    nodeData: VueNodeData,
+    wasDragging: boolean
+  ]
   'slot-click': [
     event: PointerEvent,
     nodeData: VueNodeData,
     slotIndex: number,
     isInput: boolean
   ]
+  dragStart: [event: DragEvent, nodeData: VueNodeData]
   'update:collapsed': [nodeId: string, collapsed: boolean]
   'update:title': [nodeId: string, newTitle: string]
 }>()
@@ -208,6 +226,10 @@ const isDragging = ref(false)
 const dragStyle = computed(() => ({
   cursor: isDragging.value ? 'grabbing' : 'grab'
 }))
+const lastY = ref(0)
+const lastX = ref(0)
+// Treat tiny pointer jitter as a click, not a drag
+const DRAG_THRESHOLD_PX = 4
 
 // Track collapsed state
 const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
@@ -232,6 +254,7 @@ const hasCustomContent = computed(() => {
 // Computed classes and conditions for better reusability
 const separatorClasses =
   'bg-sand-100 dark-theme:bg-charcoal-300 h-[1px] mx-0 w-full'
+const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
@@ -252,9 +275,8 @@ const handlePointerDown = (event: PointerEvent) => {
   // Start drag using layout system
   isDragging.value = true
   startDrag(event)
-
-  // Emit node-click for selection handling in GraphCanvas
-  emit('node-click', event, props.nodeData)
+  lastY.value = event.clientY
+  lastX.value = event.clientX
 }
 
 const handlePointerMove = (event: PointerEvent) => {
@@ -268,6 +290,11 @@ const handlePointerUp = (event: PointerEvent) => {
     isDragging.value = false
     void endDrag(event)
   }
+  // Emit node-click for selection handling in GraphCanvas
+  const dx = event.clientX - lastX.value
+  const dy = event.clientY - lastY.value
+  const wasDragging = Math.hypot(dx, dy) > DRAG_THRESHOLD_PX
+  emit('node-click', event, props.nodeData, wasDragging)
 }
 
 const handleCollapse = () => {

@@ -110,7 +110,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeData, false)
 
       expect(mockCanvas.deselectAll).toHaveBeenCalledOnce()
       expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
@@ -130,7 +130,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeData, false)
 
       expect(mockCanvas.deselectAll).not.toHaveBeenCalled()
       expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
@@ -149,7 +149,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeData, false)
 
       expect(mockCanvas.deselect).toHaveBeenCalledWith(mockNode)
       expect(mockCanvas.select).not.toHaveBeenCalled()
@@ -167,7 +167,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: true
       })
 
-      handleNodeSelect(metaClickEvent, testNodeData)
+      handleNodeSelect(metaClickEvent, testNodeData, false)
 
       expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
       expect(mockCanvas.deselectAll).not.toHaveBeenCalled()
@@ -180,7 +180,7 @@ describe('useNodeEventHandlers', () => {
       mockNode.flags.pinned = false
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeData, false)
 
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
         'node-1'
@@ -194,7 +194,7 @@ describe('useNodeEventHandlers', () => {
       mockNode.flags.pinned = true
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeData, false)
 
       expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
     })
@@ -207,7 +207,7 @@ describe('useNodeEventHandlers', () => {
 
       const event = new PointerEvent('pointerdown')
       expect(() => {
-        handleNodeSelect(event, testNodeData)
+        handleNodeSelect(event, testNodeData, false)
       }).not.toThrow()
 
       expect(mockCanvas.select).not.toHaveBeenCalled()
@@ -227,7 +227,7 @@ describe('useNodeEventHandlers', () => {
       } as any
 
       expect(() => {
-        handleNodeSelect(event, nodeData)
+        handleNodeSelect(event, nodeData, false)
       }).not.toThrow()
 
       expect(mockCanvas.select).not.toHaveBeenCalled()
