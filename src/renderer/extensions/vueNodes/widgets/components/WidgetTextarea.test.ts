@@ -1,62 +1,61 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Textarea from 'primevue/textarea'
-import type { TextareaProps } from 'primevue/textarea'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 
-describe('WidgetTextarea Value Binding', () => {
-  const createMockWidget = (
-    value: string = 'default text',
-    options: Partial<TextareaProps> = {},
-    callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_textarea',
-    type: 'string',
-    value,
-    options,
-    callback
-  })
+const createMockWidget = (
+  value: string = 'default text',
+  options: Record<string, any> = {},
+  callback?: (value: string) => void
+): SimplifiedWidget<string> => ({
+  name: 'test_textarea',
+  type: 'string',
+  value,
+  options,
+  callback
+})
 
-  const mountComponent = (
-    widget: SimplifiedWidget<string>,
-    modelValue: string,
-    readonly = false,
-    placeholder?: string
-  ) => {
-    return mount(WidgetTextarea, {
-      global: {
-        plugins: [PrimeVue],
-        components: { Textarea }
-      },
-      props: {
-        widget,
-        modelValue,
-        readonly,
-        placeholder
-      }
-    })
-  }
-
-  const setTextareaValueAndTrigger = async (
-    wrapper: ReturnType<typeof mount>,
-    value: string,
-    trigger: 'blur' | 'input' = 'blur'
-  ) => {
-    const textarea = wrapper.find('textarea')
-    if (!(textarea.element instanceof HTMLTextAreaElement)) {
-      throw new Error(
-        'Textarea element not found or is not an HTMLTextAreaElement'
-      )
+const mountComponent = (
+  widget: SimplifiedWidget<string>,
+  modelValue: string,
+  readonly = false,
+  placeholder?: string
+) => {
+  return mount(WidgetTextarea, {
+    global: {
+      plugins: [PrimeVue],
+      components: { Textarea }
+    },
+    props: {
+      widget,
+      modelValue,
+      readonly,
+      placeholder
     }
-    await textarea.setValue(value)
-    await textarea.trigger(trigger)
-    return textarea
-  }
+  })
+}
 
+const setTextareaValueAndTrigger = async (
+  wrapper: ReturnType<typeof mount>,
+  value: string,
+  trigger: 'blur' | 'input' = 'blur'
+) => {
+  const textarea = wrapper.find('textarea')
+  if (!(textarea.element instanceof HTMLTextAreaElement)) {
+    throw new Error(
+      'Textarea element not found or is not an HTMLTextAreaElement'
+    )
+  }
+  await textarea.setValue(value)
+  await textarea.trigger(trigger)
+  return textarea
+}
+
+describe('WidgetTextarea Value Binding', () => {
   describe('Vue Event Emission', () => {
     it('emits Vue event when textarea value changes on blur', async () => {
       const widget = createMockWidget('hello')
@@ -66,7 +65,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('world')
+      expect(emitted?.[0]).toContain('world')
     })
 
     it('emits Vue event when textarea value changes on input', async () => {
@@ -77,7 +76,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('new content')
+      expect(emitted?.[0]).toContain('new content')
     })
 
     it('handles empty string values', async () => {
@@ -88,7 +87,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('')
+      expect(emitted?.[0]).toContain('')
     })
 
     it('handles multiline text correctly', async () => {
@@ -100,7 +99,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(multilineText)
+      expect(emitted?.[0]).toContain(multilineText)
     })
 
     it('handles special characters correctly', async () => {
@@ -112,7 +111,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(specialText)
+      expect(emitted?.[0]).toContain(specialText)
     })
 
     it('handles missing callback gracefully', async () => {
@@ -124,7 +123,7 @@ describe('WidgetTextarea Value Binding', () => {
       // Should still emit Vue event
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('new value')
+      expect(emitted?.[0]).toContain('new value')
     })
   })
 
@@ -137,7 +136,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('updated')
+      expect(emitted?.[0]).toContain('updated')
     })
 
     it('emits update:modelValue on input', async () => {
@@ -148,7 +147,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('finish')
+      expect(emitted?.[0]).toContain('finish')
     })
   })
 
@@ -229,7 +228,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(longText)
+      expect(emitted?.[0]).toContain(longText)
     })
 
     it('handles unicode characters', async () => {
@@ -241,7 +240,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(unicodeText)
+      expect(emitted?.[0]).toContain(unicodeText)
     })
 
     it('handles text with tabs and spaces', async () => {
@@ -253,7 +252,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(formattedText)
+      expect(emitted?.[0]).toContain(formattedText)
     })
   })
 })
