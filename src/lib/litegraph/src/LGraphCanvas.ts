@@ -236,11 +236,11 @@ export class LGraphCanvas
   implements CustomEventDispatcher<LGraphCanvasEventMap>
 {
   // Optimised buffers used during rendering
-  static #temp = new Float32Array(4)
-  static #temp_vec2 = new Float32Array(2)
-  static #tmp_area = new Float32Array(4)
-  static #margin_area = new Float32Array(4)
-  static #link_bounding = new Float32Array(4)
+  static #temp: [number, number, number, number] = [0, 0, 0, 0]
+  static #temp_vec2: [number, number] = [0, 0]
+  static #tmp_area: [number, number, number, number] = [0, 0, 0, 0]
+  static #margin_area: [number, number, number, number] = [0, 0, 0, 0]
+  static #link_bounding: [number, number, number, number] = [0, 0, 0, 0]
 
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
@@ -2633,7 +2633,7 @@ export class LGraphCanvas
     pointer: CanvasPointer,
     node?: LGraphNode | undefined
   ): void {
-    const dragRect = new Float32Array(4)
+    const dragRect: [number, number, number, number] = [0, 0, 0, 0]
 
     dragRect[0] = e.canvasX
     dragRect[1] = e.canvasY
@@ -4055,7 +4055,10 @@ export class LGraphCanvas
     this.setDirty(true)
   }
 
-  #handleMultiSelect(e: CanvasPointerEvent, dragRect: Float32Array) {
+  #handleMultiSelect(
+    e: CanvasPointerEvent,
+    dragRect: [number, number, number, number]
+  ) {
     // Process drag
     // Convert Point pair (pos, offset) to Rect
     const { graph, selectedItems, subgraph } = this
@@ -5183,7 +5186,8 @@ export class LGraphCanvas
     // clip if required (mask)
     const shape = node._shape || RenderShape.BOX
     const size = LGraphCanvas.#temp_vec2
-    size.set(node.renderingSize)
+    size[0] = node.renderingSize[0]
+    size[1] = node.renderingSize[1]
 
     if (node.collapsed) {
       ctx.font = this.inner_text_font
@@ -5378,7 +5382,10 @@ export class LGraphCanvas
 
     // Normalised node dimensions
     const area = LGraphCanvas.#tmp_area
-    area.set(node.boundingRect)
+    area[0] = node.boundingRect[0]
+    area[1] = node.boundingRect[1]
+    area[2] = node.boundingRect[2]
+    area[3] = node.boundingRect[3]
     area[0] -= node.pos[0]
     area[1] -= node.pos[1]
 
@@ -5480,7 +5487,10 @@ export class LGraphCanvas
     shape = RenderShape.ROUND
   ) {
     const snapGuide = LGraphCanvas.#temp
-    snapGuide.set(item.boundingRect)
+    snapGuide[0] = item.boundingRect[0]
+    snapGuide[1] = item.boundingRect[1]
+    snapGuide[2] = item.boundingRect[2]
+    snapGuide[3] = item.boundingRect[3]
 
     // Not all items have pos equal to top-left of bounds
     const { pos } = item

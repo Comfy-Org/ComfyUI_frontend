@@ -11,6 +11,7 @@ import type {
   IPinnable,
   Point,
   Positionable,
+  ReadOnlyRect,
   Size
 } from './interfaces'
 import { LiteGraph } from './litegraph'
@@ -40,15 +41,15 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   title: string
   font?: string
   font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
-  _bounding: Float32Array = new Float32Array([
+  _bounding: [number, number, number, number] = [
     10,
     10,
     LGraphGroup.minWidth,
     LGraphGroup.minHeight
-  ])
+  ]
 
-  _pos: Point = this._bounding.subarray(0, 2)
-  _size: Size = this._bounding.subarray(2, 4)
+  _pos: Point = [10, 10]
+  _size: Size = [LGraphGroup.minWidth, LGraphGroup.minHeight]
   /** @deprecated See {@link _children} */
   _nodes: LGraphNode[] = []
   _children: Set<Positionable> = new Set()
@@ -107,8 +108,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this._size[1] = Math.max(LGraphGroup.minHeight, v[1])
   }
 
-  get boundingRect() {
-    return this._bounding
+  get boundingRect(): ReadOnlyRect {
+    return [this._pos[0], this._pos[1], this._size[0], this._size[1]] as const
   }
 
   get nodes() {
@@ -145,14 +146,17 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   configure(o: ISerialisedGroup): void {
     this.id = o.id
     this.title = o.title
-    this._bounding.set(o.bounding)
+    this._pos[0] = o.bounding[0]
+    this._pos[1] = o.bounding[1]
+    this._size[0] = o.bounding[2]
+    this._size[1] = o.bounding[3]
     this.color = o.color
     this.flags = o.flags || this.flags
     if (o.font_size) this.font_size = o.font_size
   }
 
   serialize(): ISerialisedGroup {
-    const b = this._bounding
+    const b = [this._pos[0], this._pos[1], this._size[0], this._size[1]]
     return {
       id: this.id,
       title: this.title,
@@ -210,7 +214,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     )
 
     if (LiteGraph.highlight_selected_group && this.selected) {
-      strokeShape(ctx, this._bounding, {
+      strokeShape(ctx, [...this.boundingRect], {
         title_height: this.titleHeight,
         padding
       })
@@ -251,7 +255,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
     // Move nodes we overlap the centre point of
     for (const node of nodes) {
-      if (containsCentre(this._bounding, node.boundingRect)) {
+      if (containsCentre(this.boundingRect, node.boundingRect)) {
         this._nodes.push(node)
         children.add(node)
       }
@@ -259,12 +263,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
     // Move reroutes we overlap the centre point of
     for (const reroute of reroutes.values()) {
-      if (isPointInRect(reroute.pos, this._bounding)) children.add(reroute)
+      if (isPointInRect(reroute.pos, this.boundingRect)) children.add(reroute)
     }
 
     // Move groups we wholly contain
     for (const group of groups) {
-      if (containsRect(this._bounding, group._bounding)) children.add(group)
+      if (containsRect(this.boundingRect, group.boundingRect))
+        children.add(group)
     }
 
     groups.sort((a, b) => {
