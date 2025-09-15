@@ -1728,6 +1728,18 @@
     },
     "footer": {
       "needHelp": "需要帮助？"
+    },
+    "privateBeta": {
+      "title": "Cloud 目前处于私人测试阶段",
+      "desc": "登录以加入等候名单。轮到您时我们会通知您。已收到通知？请登录开始使用 Cloud。"
+    },
+    "start": {
+      "title": "几秒内开始创作",
+      "desc": "无需设置。适用于任何设备。",
+      "explain": "一次生成多个输出。轻松分享工作流程。",
+      "learnAboutButton": "了解 Cloud",
+      "wantToRun": "想要在本地运行 ComfyUI？",
+      "download": "下载 ComfyUI"
     }
   }
 }

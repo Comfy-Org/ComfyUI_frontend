@@ -101,6 +101,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -672,6 +684,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -1057,6 +1081,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -1214,6 +1250,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -1384,6 +1432,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -1590,6 +1650,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -1765,6 +1837,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -1889,6 +1973,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }
@@ -1913,6 +2009,18 @@
     },
     "footer": {
       "needHelp": "Besoin d'aide ?"
+    },
+    "privateBeta": {
+      "title": "Cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "commencez à créer en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+      "explain": "Générez plusieurs sorties à la fois. Partagez facilement les flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Voulez-vous plutôt exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
     }
   }
 }

@@ -1728,6 +1728,18 @@
     },
     "footer": {
       "needHelp": "도움이 필요하신가요?"
+    },
+    "privateBeta": {
+      "title": "Cloud는 현재 비공개 베타 버전입니다",
+      "desc": "로그인하여 대기 명단에 참여하세요. 차례가 되면 알려드리겠습니다. 이미 알림을 받으셨나요? 로그인하여 Cloud 사용을 시작하세요."
+    },
+    "start": {
+      "title": "몇 초 만에 창작 시작",
+      "desc": "설정이 필요 없습니다. 모든 기기에서 작동합니다.",
+      "explain": "한 번에 여러 출력을 생성하세요. 워크플로를 쉽게 공유하세요.",
+      "learnAboutButton": "Cloud에 대해 알아보기",
+      "wantToRun": "대신 ComfyUI를 로컬에서 실행하시겠습니까?",
+      "download": "ComfyUI 다운로드"
     }
   }
 }
