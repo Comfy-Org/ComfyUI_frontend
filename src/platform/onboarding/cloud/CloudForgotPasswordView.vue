@@ -1,6 +1,6 @@
 <template>
   <div class="h-full flex items-center justify-center p-8">
-    <div class="w-96 p-2">
+    <div class="lg:w-96 max-w-[100vw] p-2">
       <!-- Header -->
       <div class="flex flex-col gap-4 mb-8">
         <h1 class="text-xl font-medium leading-normal my-0">

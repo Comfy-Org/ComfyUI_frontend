@@ -3,7 +3,7 @@
   <CloudSurveyViewSkeleton v-else-if="skeletonType === 'survey'" />
   <CloudWaitlistViewSkeleton v-else-if="skeletonType === 'waitlist'" />
   <div v-else-if="error" class="h-full flex items-center justify-center p-8">
-    <div class="w-96 p-2 text-center">
+    <div class="lg:w-96 max-w-[100vw] p-2 text-center">
       <p class="text-red-500 mb-4">{{ errorMessage }}</p>
       <Button
         :label="
@@ -18,13 +18,14 @@
     </div>
   </div>
   <div v-else class="flex items-center justify-center min-h-screen">
-    <div class="animate-pulse text-gray-500">{{ $t('g.loading') }}</div>
+    <ProgressSpinner class="w-8 h-8" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
