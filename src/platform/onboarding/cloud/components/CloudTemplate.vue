@@ -41,15 +41,7 @@
         </div>
       </div>
       <div class="absolute inset-0 flex flex-col justify-end px-14 pb-[64px]">
-        <div class="flex items-center justify-between">
-          <Button
-            type="button"
-            class="h-10 bg-black text-white font-bold"
-            severity="secondary"
-            @click="handleLearnAboutClick"
-          >
-            {{ t('cloudStart_learnAboutButton') }}
-          </Button>
+        <div class="flex items-center justify-end">
           <div class="flex items-center gap-3">
             <p class="text-md text-white">
               {{ t('cloudStart_wantToRun') }}
@@ -78,10 +70,6 @@ import videoSrc from '@/platform/onboarding/cloud/assets/videos/video.mp4'
 import CloudLogo from '@/platform/onboarding/cloud/components/CloudLogo.vue'
 import CloudTemplateFooter from '@/platform/onboarding/cloud/components/CloudTemplateFooter.vue'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
-
-const handleLearnAboutClick = () => {
-  window.open('https://www.comfy.org', '_blank')
-}
 
 const handleDownloadClick = () => {
   window.open('https://www.comfy.org/download', '_blank')
