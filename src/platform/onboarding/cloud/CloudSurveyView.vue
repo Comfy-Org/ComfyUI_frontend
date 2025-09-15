@@ -1,6 +1,9 @@
 <template>
   <div>
-    <Stepper value="1" class="flex flex-col min-h-[638px] min-w-[320px]">
+    <Stepper
+      value="1"
+      class="flex flex-col max-h-[80vh] h-[638px] max-w-[90vw] w-[320px]"
+    >
       <ProgressBar
         :value="progressPercent"
         :show-value="false"
@@ -11,7 +14,7 @@
         <StepPanel
           v-slot="{ activateCallback }"
           value="1"
-          class="flex-1 min-h-full flex flex-col justify-between"
+          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{
@@ -52,7 +55,7 @@
         <StepPanel
           v-slot="{ activateCallback }"
           value="2"
-          class="flex-1 min-h-full flex flex-col justify-between"
+          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{
@@ -98,7 +101,7 @@
         <StepPanel
           v-slot="{ activateCallback }"
           value="3"
-          class="flex-1 min-h-full flex flex-col justify-between"
+          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{
@@ -151,7 +154,7 @@
         <StepPanel
           v-slot="{ activateCallback }"
           value="4"
-          class="flex-1 min-h-full flex flex-col justify-between"
+          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{

@@ -1,0 +1,65 @@
+/* ABC ROM Extended — full face mapping */
+@font-face {
+  font-family: 'ABC ROM Extended';
+  src:
+    local('ABC ROM Extended Bold Italic'),
+    local('ABCRom BoldItalic'),
+    url('../fonts/ABCROM-BoldItalic.woff2') format('woff2');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABC ROM Extended';
+  src:
+    local('ABC ROM Extended Bold'),
+    local('ABCRom Bold'),
+    url('../fonts/ABCROM-Bold.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABC ROM Extended';
+  src:
+    local('ABC ROM Extended Medium'),
+    local('ABCRom Medium'),
+    url('../fonts/ABCROM-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABC ROM Extended';
+  src:
+    local('ABC ROM Extended Regular'),
+    local('ABCRom Regular'),
+    url('../fonts/ABCROM-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Prevent browser from synthesizing fake bold/italic which can cause mismatches */
+.hero-title,
+.font-abcrom {
+  font-family: 'ABC ROM Extended', sans-serif;
+  font-synthesis: none; /* no faux bold/italic */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Figma-like hero style */
+.hero-title {
+  font-size: 32px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  /* Figma has leading-trim/text-edge which CSS doesn't support; emulate with tight line-height */
+  line-height: 1.1;
+}

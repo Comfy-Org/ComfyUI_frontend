@@ -1,6 +1,6 @@
 <template>
   <div class="h-full flex items-center justify-center p-8">
-    <div class="w-96 p-2">
+    <div class="w-96 max-w-[100vw] p-2">
       <div class="bg-[#2d2e32] p-4 rounded-lg">
         <h4 class="m-0 pb-2 text-lg">
           {{ t('cloudPrivateBeta_title') }}
