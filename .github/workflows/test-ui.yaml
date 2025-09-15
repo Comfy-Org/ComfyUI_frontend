@@ -32,7 +32,7 @@ jobs:
         with:
           repository: 'Comfy-Org/ComfyUI_devtools'
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
-          ref: 'd05fd48dd787a4192e16802d4244cfcc0e2f9684'
+          ref: 'a92e8ae968830671846eb1da2ae43130eebbee3c'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
