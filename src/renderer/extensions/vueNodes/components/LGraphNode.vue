@@ -8,7 +8,6 @@
     :class="
       cn(
         'bg-white dark-theme:bg-charcoal-100',
-        'min-w-[445px]',
         'lg-node absolute rounded-2xl',
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
@@ -131,6 +130,7 @@ import {
   computed,
   inject,
   onErrorCaptured,
+  onMounted,
   provide,
   ref,
   toRef,
@@ -170,6 +170,8 @@ interface LGraphNodeProps {
 
 const {
   nodeData,
+  position,
+  size,
   error = null,
   readonly = false,
   zoomLevel = 1
@@ -201,6 +203,21 @@ if (!selectedNodeIds) {
     'SelectedNodeIds not provided - LGraphNode must be used within a component that provides selection state'
   )
 }
+
+// Inject transform state for coordinate conversion
+const transformState = inject('transformState') as
+  | {
+      camera: { z: number }
+      canvasToScreen: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+      screenToCanvas: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+    }
+  | undefined
 
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
@@ -250,8 +267,20 @@ const {
   zIndex,
   startDrag,
   handleDrag: handleLayoutDrag,
-  endDrag
+  endDrag,
+  resize
 } = useNodeLayout(nodeData.id)
+
+onMounted(() => {
+  if (size && transformState) {
+    const scale = transformState.camera.z
+    const screenSize = {
+      width: size.width * scale,
+      height: size.height * scale
+    }
+    resize(screenSize)
+  }
+})
 
 // Drag state for styling
 const isDragging = ref(false)
