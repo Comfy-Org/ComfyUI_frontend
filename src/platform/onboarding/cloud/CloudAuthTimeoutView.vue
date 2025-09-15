@@ -1,6 +1,6 @@
 <template>
   <div class="h-full flex items-center justify-center p-8">
-    <div class="w-96 text-center">
+    <div class="lg:w-96 max-w-[100vw] text-center">
       <h2 class="text-xl mb-4">
         {{ $t('cloudOnboarding.authTimeout.title') }}
       </h2>
