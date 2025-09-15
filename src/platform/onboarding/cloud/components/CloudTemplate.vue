@@ -9,7 +9,7 @@
         <CloudTemplateFooter />
       </template>
     </BaseViewTemplate>
-    <div class="flex-1 relative bg-black overflow-hidden">
+    <div class="flex-1 relative bg-black overflow-hidden md:hidden lg:block">
       <!-- Video Background -->
       <video
         class="absolute inset-0 w-full h-full object-cover"
@@ -25,11 +25,9 @@
       <div class="absolute inset-0 w-full h-full bg-black/30"></div>
 
       <!-- Optional Overlay for better visual -->
-      <div class="absolute inset-0 flex justify-center items-center">
+      <div class="absolute inset-0 flex justify-center items-center text-white">
         <div>
-          <h1
-            class="text-5xl italic font-bolder mb-8 uppercase text-center text-white"
-          >
+          <h1 class="font-abcrom font-black italic uppercase hero-title">
             {{ t('cloudStart_title') }}
           </h1>
           <p class="m-2 text-xl text-center text-white">
@@ -51,7 +49,9 @@
             {{ t('cloudStart_learnAboutButton') }}
           </Button>
           <div class="flex items-center gap-3">
-            <p class="text-white">{{ t('cloudStart_wantToRun') }}</p>
+            <p class="text-md text-white">
+              {{ t('cloudStart_wantToRun') }}
+            </p>
             <Button
               type="button"
               class="h-10 bg-black text-white font-bold"
@@ -85,3 +85,6 @@ const handleDownloadClick = () => {
   window.open('https://www.comfy.org/download', '_blank')
 }
 </script>
+<style scoped>
+@import '@/platform/onboarding/cloud/assets/css/fonts.css';
+</style>

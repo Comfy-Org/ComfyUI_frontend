@@ -1,5 +1,5 @@
 <template>
-  <footer class="flex gap-2.5 pl-[60px] pb-[60px]">
+  <footer class="flex gap-2.5 w-5/6 h-[5%] max-h-[60px] mx-auto items-start">
     <a
       href="https://www.comfy.org/terms-of-service"
       target="_blank"
