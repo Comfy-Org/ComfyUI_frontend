@@ -90,9 +90,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (selectionDisposable) {
-    selectionDisposable.dispose()
-  }
+  selectionDisposable?.dispose()
 
   emit('unmounted')
 })
