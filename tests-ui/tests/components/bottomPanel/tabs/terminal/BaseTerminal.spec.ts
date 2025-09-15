@@ -78,27 +78,27 @@ const i18n = createI18n({
   }
 })
 
-describe('BaseTerminal', () => {
-  let wrapper: VueWrapper<InstanceType<typeof BaseTerminal>> | undefined
-
-  const mountBaseTerminal = () => {
-    return mount(BaseTerminal, {
-      global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
-        stubs: {
-          Button: {
-            template: '<button v-bind="$attrs"><slot /></button>',
-            props: ['icon', 'severity', 'size']
-          }
+const mountBaseTerminal = () => {
+  return mount(BaseTerminal, {
+    global: {
+      plugins: [
+        createTestingPinia({
+          createSpy: vi.fn
+        }),
+        i18n
+      ],
+      stubs: {
+        Button: {
+          template: '<button v-bind="$attrs"><slot /></button>',
+          props: ['icon', 'severity', 'size']
         }
       }
-    })
-  }
+    }
+  })
+}
+
+describe('BaseTerminal', () => {
+  let wrapper: VueWrapper<InstanceType<typeof BaseTerminal>> | undefined
 
   beforeEach(() => {
     vi.clearAllMocks()
