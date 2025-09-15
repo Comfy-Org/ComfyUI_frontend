@@ -6,7 +6,7 @@ import {
   calculateNodeBounds
 } from '@/renderer/core/spatial/boundsCalculator'
 
-import { renderMinimapToCanvas } from '../extensions/minimap/minimapCanvasRenderer'
+import { renderMinimapToCanvas } from '../../extensions/minimap/minimapCanvasRenderer'
 
 /**
  * Create a thumbnail of the current canvas's active graph.

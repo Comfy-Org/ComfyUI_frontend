@@ -8,7 +8,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useWorkflowThumbnail } from '@/renderer/thumbnail/useWorkflowThumbnail'
+import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
