@@ -1,3 +1,7 @@
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
+
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
@@ -5,6 +9,31 @@ import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidg
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useCanvasStore } from '@/stores/graphStore'
+
+const canvasStore = useCanvasStore()
+
+export const proxyWidgetsPropertySchema = z.array(
+  z.tuple([z.string(), z.string()])
+)
+export type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
+//export type proxyWidgetsProperty = [string, string][]
+
+export function parseProxyWidgets(
+  property: NodeProperty | undefined
+): ProxyWidgetsProperty {
+  if (typeof property !== 'string') {
+    console.error(`Found non-string value for properties.proxyWidgets`)
+    return []
+  }
+  const parsed = JSON.parse(property)
+  const result = proxyWidgetsPropertySchema.safeParse(parsed)
+  if (result.success) return result.data ?? []
+
+  const error = fromZodError(result.error)
+  console.error(`Invalid assignment for properties.proxyWidgets:\n${error}`)
+  return []
+}
 
 useExtensionService().registerExtension({
   name: 'Comfy.SubgraphProxyWidgets',
@@ -19,11 +48,13 @@ function injectProperty(subgraphNode: SubgraphNode) {
   const proxyWidgets = subgraphNode.properties.proxyWidgets
   Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
     get: () => {
-      return subgraphNode.widgets
+      const result = subgraphNode.widgets
         .filter((w) => isProxyWidget(w))
         .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
+      return JSON.stringify(result)
     },
-    set: (property) => {
+    set: (property: string) => {
+      const parsed = parseProxyWidgets(property)
       const { widgetStates } = useDomWidgetStore()
       for (const w of subgraphNode.widgets ?? []) {
         if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
@@ -36,7 +67,7 @@ function injectProperty(subgraphNode: SubgraphNode) {
       subgraphNode.widgets = subgraphNode.widgets.filter(
         (w) => !isProxyWidget(w)
       )
-      for (const [nodeId, widgetName] of property) {
+      for (const [nodeId, widgetName] of parsed) {
         const w = addProxyWidget(subgraphNode, `${nodeId}`, widgetName)
         if (w instanceof DOMWidgetImpl) {
           const widgetState = widgetStates.get(w.id)
@@ -45,7 +76,7 @@ function injectProperty(subgraphNode: SubgraphNode) {
           widgetState.widget = w
         }
       }
-      //TODO: set dirty canvas
+      canvasStore.canvas?.setDirty(true, true)
     }
   })
   subgraphNode.properties.proxyWidgets = proxyWidgets

@@ -6,12 +6,15 @@ import draggable from 'vuedraggable'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/components/selectionbar/SubgraphNodeWidget.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import {
+  type ProxyWidgetsProperty,
+  parseProxyWidgets
+} from '@/extensions/core/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/stores/graphStore'
 
-type ProxyWidgets = [string, string][]
 type WidgetItem = [LGraphNode, IBaseWidget]
 
 const { t } = useI18n()
@@ -37,7 +40,7 @@ const activeWidgets = computed<WidgetItem[]>({
     if (triggerUpdate.value < 0) console.log('unreachable')
     const node = activeNode.value
     if (!node) return []
-    const pw = node.properties.proxyWidgets as ProxyWidgets
+    const pw = parseProxyWidgets(node.properties.proxyWidgets)
     return pw.flatMap(([id, name]: [string, string]) => {
       const wNode = node.subgraph._nodes_by_id[id]
       if (!wNode?.widgets) return []
@@ -51,14 +54,13 @@ const activeWidgets = computed<WidgetItem[]>({
     if (!node)
       throw new Error('Attempted to toggle widgets with no node selected')
     //map back to id/name
-    const pw: ProxyWidgets = value.map(([node, widget]) => [
+    const pw: ProxyWidgetsProperty = value.map(([node, widget]) => [
       `${node.id}`,
       widget.name
     ])
-    node.properties.proxyWidgets = pw as unknown as string
+    node.properties.proxyWidgets = JSON.stringify(pw)
     //force trigger an update
     triggerUpdate.value++
-    canvasStore.getCanvas().setDirty(true, true)
   }
 })
 function toggleVisibility(
@@ -70,19 +72,17 @@ function toggleVisibility(
   if (!node)
     throw new Error('Attempted to toggle widgets with no node selected')
   if (!isShown) {
-    const proxyWidgets: ProxyWidgets = node.properties
-      .proxyWidgets as ProxyWidgets
+    const proxyWidgets = parseProxyWidgets(node.properties.proxyWidgets)
     proxyWidgets.push([nodeId, widgetName])
-    node.properties.proxyWidgets = proxyWidgets as unknown as string
+    node.properties.proxyWidgets = JSON.stringify(proxyWidgets)
   } else {
-    let pw = node.properties.proxyWidgets as ProxyWidgets
+    let pw = parseProxyWidgets(node.properties.proxyWidgets)
     pw = pw.filter(
       (p: [string, string]) => p[1] !== widgetName || p[0] !== nodeId
     )
-    node.properties.proxyWidgets = pw as unknown as string
+    node.properties.proxyWidgets = JSON.stringify(pw)
   }
   triggerUpdate.value++
-  useCanvasStore().getCanvas().setDirty(true, true)
 }
 
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
@@ -94,7 +94,7 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
   if (triggerUpdate.value < 0) console.log('unreachable')
-  const pw = node.properties.proxyWidgets as ProxyWidgets
+  const pw = parseProxyWidgets(node.properties.proxyWidgets)
   const interiorNodes = node.subgraph.nodes
   //node.widgets ??= []
   const allWidgets: WidgetItem[] = interiorNodes.flatMap(nodeWidgets)
@@ -119,13 +119,12 @@ const filteredCandidates = computed<WidgetItem[]>(() => {
 function showAll() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  const pw = node.properties.proxyWidgets as ProxyWidgets
-  const toAdd: ProxyWidgets = filteredCandidates.value.map(
+  const pw = parseProxyWidgets(node.properties.proxyWidgets)
+  const toAdd: ProxyWidgetsProperty = filteredCandidates.value.map(
     ([n, w]: WidgetItem) => [`${n.id}`, w.name]
   )
   pw.push(...toAdd)
-  node.properties.proxyWidgets = pw
-  useCanvasStore().getCanvas().setDirty(true, true)
+  node.properties.proxyWidgets = JSON.stringify(pw)
   triggerUpdate.value++
 }
 function hideAll() {
@@ -133,14 +132,15 @@ function hideAll() {
   if (!node) return //Not reachable
   //Not great from a nesting perspective, but path is cold
   //and it cleans up potential error states
-  const toKeep = (node.properties.proxyWidgets as ProxyWidgets).filter(
+  const toKeep: ProxyWidgetsProperty = parseProxyWidgets(
+    node.properties.proxyWidgets
+  ).filter(
     ([nodeId, widgetName]) =>
       !filteredActive.value.some(
         ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
       )
   )
-  node.properties.proxyWidgets = toKeep
-  useCanvasStore().getCanvas().setDirty(true, true)
+  node.properties.proxyWidgets = JSON.stringify(toKeep)
   triggerUpdate.value++
 }
 
