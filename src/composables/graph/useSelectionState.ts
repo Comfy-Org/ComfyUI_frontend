@@ -7,9 +7,9 @@ import {
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isImageNode, isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
