@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../src/LiteGraphSingleton'
 
 describe('LGraphCanvas Title Button Rendering', () => {
   let canvas: LGraphCanvas
@@ -115,7 +116,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
       // Check draw positions (right-aligned from node width)
       // First button (rightmost): 200 - 5 = 195, then subtract width
       // Second button: first button position - 5 - button width
-      const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+      const titleHeight = LiteGraphSingleton.NODE_TITLE_HEIGHT
       const buttonY = -titleHeight + (titleHeight - 20) / 2 // Centered
       expect(draw1).toHaveBeenCalledWith(ctx, 180, buttonY) // 200 - 20
       expect(draw2).toHaveBeenCalledWith(ctx, 153, buttonY) // 180 - 2 - 25
@@ -180,7 +181,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
       canvas.drawNode(node, ctx)
 
-      const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+      const titleHeight = LiteGraphSingleton.NODE_TITLE_HEIGHT
 
       // Check positions are correctly spaced (right to left)
       // Starting position: 200
@@ -209,7 +210,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
       // Buttons should still be rendered in low quality mode
       const buttonY =
-        -LiteGraph.NODE_TITLE_HEIGHT + (LiteGraph.NODE_TITLE_HEIGHT - 20) / 2
+        -LiteGraphSingleton.NODE_TITLE_HEIGHT + (LiteGraphSingleton.NODE_TITLE_HEIGHT - 20) / 2
       expect(drawSpy).toHaveBeenCalledWith(ctx, 180, buttonY)
     })
 
@@ -236,7 +237,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
       canvas.drawNode(node, ctx)
 
-      const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+      const titleHeight = LiteGraphSingleton.NODE_TITLE_HEIGHT
 
       // Small button (rightmost): 200 - 15 = 185
       const buttonY = -titleHeight + (titleHeight - 20) / 2
@@ -263,7 +264,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
       canvas.drawNode(node, ctx)
 
-      const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+      const titleHeight = LiteGraphSingleton.NODE_TITLE_HEIGHT
       // Should use new width: 300 - 20 = 280
       const buttonY = -titleHeight + (titleHeight - 20) / 2
       expect(drawSpy).toHaveBeenCalledWith(ctx, 280, buttonY)

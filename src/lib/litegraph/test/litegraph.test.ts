@@ -2,14 +2,15 @@ import { clamp } from 'es-toolkit/compat'
 import { beforeEach, describe, expect, vi } from 'vitest'
 
 import { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../src/LiteGraphSingleton'
 
 import { test } from './testExtensions'
 
 describe('Litegraph module', () => {
   test('contains a global export', ({ expect }) => {
-    expect(LiteGraph).toBeInstanceOf(LiteGraphGlobal)
-    expect(LiteGraph.LGraphCanvas).toBe(LGraphCanvas)
+    expect(LiteGraphSingleton).toBeInstanceOf(LiteGraphGlobal)
+    expect(LiteGraphSingleton.LGraphCanvas).toBe(LGraphCanvas)
   })
 
   test('has the same structure', ({ expect }) => {
@@ -36,8 +37,8 @@ describe('Import order dependency', () => {
       const directImport = await import('@/lib/litegraph/src/LGraph')
 
       // Sanity check that imports were cleared.
-      expect(Object.is(LiteGraph, entryPointImport.LiteGraph)).toBe(false)
-      expect(Object.is(LiteGraph.LGraph, directImport.LGraph)).toBe(false)
+      expect(Object.is(LiteGraphSingleton, entryPointImport.LiteGraphSingleton)).toBe(false)
+      expect(Object.is(LiteGraphSingleton.LGraph, directImport.LGraph)).toBe(false)
     }
 
     await expect(importNormally()).resolves.toBeUndefined()

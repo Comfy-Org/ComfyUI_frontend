@@ -4,9 +4,8 @@ import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+  LGraphNode} from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../../src/LiteGraphSingleton'
 
 import {
   createTestSubgraph,
@@ -20,7 +19,7 @@ function createNode(
   title?: string
 ) {
   const type = JSON.stringify({ inputs, outputs })
-  if (!LiteGraph.registered_node_types[type]) {
+  if (!LiteGraphSingleton.registered_node_types[type]) {
     class testnode extends LGraphNode {
       constructor(title: string) {
         super(title)
@@ -31,9 +30,9 @@ function createNode(
           this.addOutput('output_' + o_count++, output)
       }
     }
-    LiteGraph.registered_node_types[type] = testnode
+    LiteGraphSingleton.registered_node_types[type] = testnode
   }
-  const node = LiteGraph.createNode(type, title)
+  const node = LiteGraphSingleton.createNode(type, title)
   if (!node) {
     throw new Error('Failed to create node')
   }

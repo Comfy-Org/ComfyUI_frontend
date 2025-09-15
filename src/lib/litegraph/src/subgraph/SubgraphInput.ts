@@ -9,7 +9,7 @@ import type {
   Point,
   ReadOnlyRect
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -237,12 +237,12 @@ export class SubgraphInput extends SubgraphSlot {
     if (isNodeSlot(fromSlot)) {
       return (
         'link' in fromSlot &&
-        LiteGraph.isValidConnection(this.type, fromSlot.type)
+        LiteGraphSingleton.isValidConnection(this.type, fromSlot.type)
       )
     }
 
     if (isSubgraphOutput(fromSlot)) {
-      return LiteGraph.isValidConnection(this.type, fromSlot.type)
+      return LiteGraphSingleton.isValidConnection(this.type, fromSlot.type)
     }
 
     return false

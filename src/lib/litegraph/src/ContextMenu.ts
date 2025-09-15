@@ -3,7 +3,7 @@ import type {
   IContextMenuOptions,
   IContextMenuValue
 } from './interfaces'
-import { LiteGraph } from './litegraph'
+import { LiteGraphSingleton } from './LiteGraphSingleton'
 
 // TODO: Replace this pattern with something more modern.
 export interface ContextMenu<TValue = unknown> {
@@ -182,7 +182,7 @@ export class ContextMenu<TValue = unknown> {
     root.style.left = `${left}px`
     root.style.top = `${top}px`
 
-    if (LiteGraph.context_menu_scaling && options.scale) {
+    if (LiteGraphSingleton.context_menu_scaling && options.scale) {
       root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
     }
   }
@@ -355,7 +355,7 @@ export class ContextMenu<TValue = unknown> {
       ) {
         ContextMenu.trigger(
           this.parentMenu.root,
-          `${LiteGraph.pointerevents_method}leave`,
+          `${LiteGraphSingleton.pointerevents_method}leave`,
           e
         )
       }

@@ -13,9 +13,8 @@ import {
   type CanvasColour,
   type CanvasPointer,
   type CanvasPointerEvent,
-  type IContextMenuValue,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+  type IContextMenuValue} from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
 import type {
@@ -194,7 +193,7 @@ export abstract class SubgraphIONodeBase<
     const options: (IContextMenuValue | null)[] = this.#getSlotMenuOptions(slot)
     if (!(options.length > 0)) return
 
-    new LiteGraph.ContextMenu(options, {
+    new LiteGraphSingleton.ContextMenu(options, {
       event: event as any,
       title: slot.name || 'Subgraph Output',
       callback: (item: IContextMenuValue) => {

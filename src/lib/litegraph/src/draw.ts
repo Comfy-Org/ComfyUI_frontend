@@ -1,6 +1,6 @@
 import type { Rectangle } from './infrastructure/Rectangle'
 import type { CanvasColour, Rect } from './interfaces'
-import { LiteGraph } from './litegraph'
+import { LiteGraphSingleton } from './LiteGraphSingleton'
 import { RenderShape, TitleMode } from './types/globalEnums'
 
 const ELLIPSIS = '\u2026'
@@ -80,12 +80,12 @@ export function strokeShape(
   }: IDrawBoundingOptions = {}
 ): void {
   // These param defaults are not compile-time static, and must be re-evaluated at runtime
-  round_radius ??= LiteGraph.ROUND_RADIUS
-  color ??= LiteGraph.NODE_BOX_OUTLINE_COLOR
+  round_radius ??= LiteGraphSingleton.ROUND_RADIUS
+  color ??= LiteGraphSingleton.NODE_BOX_OUTLINE_COLOR
 
   // Adjust area if title is transparent
   if (title_mode === TitleMode.TRANSPARENT_TITLE) {
-    const height = title_height ?? LiteGraph.NODE_TITLE_HEIGHT
+    const height = title_height ?? LiteGraphSingleton.NODE_TITLE_HEIGHT
     area[1] -= height
     area[3] += height
   }

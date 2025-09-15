@@ -9,7 +9,7 @@ import type {
   Point,
   ReadOnlyRect
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { SubgraphInput } from './SubgraphInput'
@@ -39,7 +39,7 @@ export class SubgraphOutput extends SubgraphSlot {
     const { subgraph } = this.parent
 
     // Validate type compatibility
-    if (!LiteGraph.isValidConnection(slot.type, this.type)) return
+    if (!LiteGraphSingleton.isValidConnection(slot.type, this.type)) return
 
     // Allow nodes to block connection
     const outputIndex = node.outputs.indexOf(slot)
@@ -143,12 +143,12 @@ export class SubgraphOutput extends SubgraphSlot {
     if (isNodeSlot(fromSlot)) {
       return (
         'links' in fromSlot &&
-        LiteGraph.isValidConnection(fromSlot.type, this.type)
+        LiteGraphSingleton.isValidConnection(fromSlot.type, this.type)
       )
     }
 
     if (isSubgraphInput(fromSlot)) {
-      return LiteGraph.isValidConnection(fromSlot.type, this.type)
+      return LiteGraphSingleton.isValidConnection(fromSlot.type, this.type)
     }
 
     return false

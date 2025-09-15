@@ -12,7 +12,8 @@ import type {
   INodeOutputSlot,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
+import { createUuidv4 } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type {
   ISerialisedNode,
@@ -217,14 +218,14 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
 
   // Selectively clone - keep IDs & links
   for (const node of nodes) {
-    const newNode = LiteGraph.createNode(node.type)
+    const newNode = LiteGraphSingleton.createNode(node.type)
     if (!newNode) {
       console.warn('Failed to create node', node.type)
       continue
     }
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
-    const data = LiteGraph.cloneObject(node.serialize())
+    const data = LiteGraphSingleton.cloneObject(node.serialize())
     newNode.configure(data)
 
     clonedNodes.push(newNode.serialize())

@@ -7,7 +7,7 @@ import type {
   OptionalProps,
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -33,7 +33,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   }
 
   get collapsedPos(): ReadOnlyPoint {
-    return [0, LiteGraph.NODE_TITLE_HEIGHT * -0.5]
+    return [0, LiteGraphSingleton.NODE_TITLE_HEIGHT * -0.5]
   }
 
   constructor(
@@ -52,11 +52,11 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
     if ('links' in fromSlot) {
-      return LiteGraph.isValidConnection(fromSlot.type, this.type)
+      return LiteGraphSingleton.isValidConnection(fromSlot.type, this.type)
     }
 
     if (isSubgraphInput(fromSlot)) {
-      return LiteGraph.isValidConnection(fromSlot.type, this.type)
+      return LiteGraphSingleton.isValidConnection(fromSlot.type, this.type)
     }
 
     return false

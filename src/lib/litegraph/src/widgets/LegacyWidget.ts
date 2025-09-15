@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { BaseWidget, type DrawWidgetOptions } from './BaseWidget'
@@ -27,7 +27,7 @@ export class LegacyWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx: CanvasRenderingContext2D,
     options: DrawWidgetOptions
   ) {
-    const H = LiteGraph.NODE_WIDGET_HEIGHT
+    const H = LiteGraphSingleton.NODE_WIDGET_HEIGHT
     this.draw?.(ctx, this.node, options.width, this.y, H, !!options.showText)
   }
 

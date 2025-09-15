@@ -1,7 +1,7 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import type {
   IComboWidget,
   IStringComboWidget
@@ -133,7 +133,7 @@ export class ComboWidget
 
     // Handle center click - show dropdown menu
     const text_values = values != values_list ? Object.values(values) : values
-    new LiteGraph.ContextMenu(text_values, {
+    new LiteGraphSingleton.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',

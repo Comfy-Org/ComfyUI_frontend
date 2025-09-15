@@ -34,7 +34,8 @@ import type {
   Positionable,
   Size
 } from './interfaces'
-import { LiteGraph, SubgraphNode } from './litegraph'
+import { SubgraphNode } from './litegraph'
+import { LiteGraphSingleton } from './LiteGraphSingleton'
 import {
   alignOutsideContainer,
   alignToContainer,
@@ -274,7 +275,7 @@ export class LGraph
    * @param o data from previous serialization [optional]
    */
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
-    if (LiteGraph.debug) console.log('Graph created')
+    if (LiteGraphSingleton.debug) console.log('Graph created')
 
     /** @see MapProxyHandler */
     const links = this._links
@@ -424,7 +425,7 @@ export class LGraph
     this.sendEventToAllNodes('onStart')
 
     // launch
-    this.starttime = LiteGraph.getTime()
+    this.starttime = LiteGraphSingleton.getTime()
     this.last_update_time = this.starttime
     interval ||= 0
 
@@ -486,7 +487,7 @@ export class LGraph
   runStep(num: number, do_not_catch_errors: boolean, limit?: number): void {
     num = num || 1
 
-    const start = LiteGraph.getTime()
+    const start = LiteGraphSingleton.getTime()
     this.globaltime = 0.001 * (start - this.starttime)
 
     const nodes = this._nodes_executable || this._nodes
@@ -530,14 +531,14 @@ export class LGraph
         this.errors_in_execution = false
       } catch (error) {
         this.errors_in_execution = true
-        if (LiteGraph.throw_errors) throw error
+        if (LiteGraphSingleton.throw_errors) throw error
 
-        if (LiteGraph.debug) console.log('Error during execution:', error)
+        if (LiteGraphSingleton.debug) console.log('Error during execution:', error)
         this.stop()
       }
     }
 
-    const now = LiteGraph.getTime()
+    const now = LiteGraphSingleton.getTime()
     let elapsed = now - start
     if (elapsed == 0) elapsed = 1
 
@@ -662,7 +663,7 @@ export class LGraph
       L.push(M[i])
     }
 
-    if (L.length != this._nodes.length && LiteGraph.debug)
+    if (L.length != this._nodes.length && LiteGraphSingleton.debug)
       console.warn('something went wrong, nodes missing')
 
     /** Ensure type is set */
@@ -718,16 +719,16 @@ export class LGraph
       if (!column) continue
 
       let max_size = 100
-      let y = margin + LiteGraph.NODE_TITLE_HEIGHT
+      let y = margin + LiteGraphSingleton.NODE_TITLE_HEIGHT
       for (const node of column) {
-        node.pos[0] = layout == LiteGraph.VERTICAL_LAYOUT ? y : x
-        node.pos[1] = layout == LiteGraph.VERTICAL_LAYOUT ? x : y
-        const max_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 1 : 0
+        node.pos[0] = layout == LiteGraphSingleton.VERTICAL_LAYOUT ? y : x
+        node.pos[1] = layout == LiteGraphSingleton.VERTICAL_LAYOUT ? x : y
+        const max_size_index = layout == LiteGraphSingleton.VERTICAL_LAYOUT ? 1 : 0
         if (node.size[max_size_index] > max_size) {
           max_size = node.size[max_size_index]
         }
-        const node_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 0 : 1
-        y += node.size[node_size_index] + margin + LiteGraph.NODE_TITLE_HEIGHT
+        const node_size_index = layout == LiteGraphSingleton.VERTICAL_LAYOUT ? 0 : 1
+        y += node.size[node_size_index] + margin + LiteGraphSingleton.NODE_TITLE_HEIGHT
       }
       x += max_size + margin
     }
@@ -831,7 +832,7 @@ export class LGraph
     const { state } = this
 
     // Ensure created items are snapped
-    if (LiteGraph.alwaysSnapToGrid) {
+    if (LiteGraphSingleton.alwaysSnapToGrid) {
       const snapTo = this.getSnapToGridSize()
       if (snapTo) node.snapToGrid(snapTo)
     }
@@ -856,16 +857,16 @@ export class LGraph
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
-      node.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++state.lastNodeId
+      node.id = LiteGraphSingleton.use_uuids ? LiteGraphSingleton.uuidv4() : ++state.lastNodeId
     }
 
-    if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
+    if (this._nodes.length >= LiteGraphSingleton.MAX_NUMBER_OF_NODES) {
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
 
     // give him an id
-    if (LiteGraph.use_uuids) {
-      if (node.id == null || node.id == -1) node.id = LiteGraph.uuidv4()
+    if (LiteGraphSingleton.use_uuids) {
+      if (node.id == null || node.id == -1) node.id = LiteGraphSingleton.uuidv4()
     } else {
       if (node.id == null || node.id == -1) {
         node.id = ++state.lastNodeId
@@ -1128,9 +1129,9 @@ export class LGraph
   /**
    * Snaps the provided items to a grid.
    *
-   * Item positions are reounded to the nearest multiple of {@link LiteGraph.CANVAS_GRID_SIZE}.
+   * Item positions are reounded to the nearest multiple of {@link LiteGraphSingleton.CANVAS_GRID_SIZE}.
    *
-   * When {@link LiteGraph.alwaysSnapToGrid} is enabled
+   * When {@link LiteGraphSingleton.alwaysSnapToGrid} is enabled
    * and the grid size is falsy, a default of 1 is used.
    * @param items The items to be snapped to the grid
    * @todo Currently only snaps nodes.
@@ -1150,9 +1151,9 @@ export class LGraph
    */
   getSnapToGridSize(): number {
     // Default to 1 when always snapping
-    return LiteGraph.alwaysSnapToGrid
-      ? LiteGraph.CANVAS_GRID_SIZE || 1
-      : LiteGraph.CANVAS_GRID_SIZE
+    return LiteGraphSingleton.alwaysSnapToGrid
+      ? LiteGraphSingleton.CANVAS_GRID_SIZE || 1
+      : LiteGraphSingleton.CANVAS_GRID_SIZE
   }
 
   /**
@@ -1164,11 +1165,11 @@ export class LGraph
   checkNodeTypes() {
     const { _nodes } = this
     for (const [i, node] of _nodes.entries()) {
-      const ctor = LiteGraph.registered_node_types[node.type]
+      const ctor = LiteGraphSingleton.registered_node_types[node.type]
       if (node.constructor == ctor) continue
 
       console.log('node being replaced by newer version:', node.type)
-      const newnode = LiteGraph.createNode(node.type)
+      const newnode = LiteGraphSingleton.createNode(node.type)
       if (!newnode) continue
       _nodes[i] = newnode
       newnode.configure(node.serialize())
@@ -1229,7 +1230,7 @@ export class LGraph
 
   /* Called when something visually changed (not the graph!) */
   change(): void {
-    if (LiteGraph.debug) {
+    if (LiteGraphSingleton.debug) {
       console.log('Graph changed')
     }
     this.canvasAction((c) => c.setDirty(true, true))
@@ -1579,7 +1580,7 @@ export class LGraph
     })
 
     // Create subgraph node object
-    const subgraphNode = LiteGraph.createNode(subgraph.id, subgraph.name, {
+    const subgraphNode = LiteGraphSingleton.createNode(subgraph.id, subgraph.name, {
       outputs: structuredClone(outputs)
     })
     if (!subgraphNode) throw new Error('Failed to create subgraph node')
@@ -1598,7 +1599,7 @@ export class LGraph
     )
 
     //Correct for title height. It's included in bounding box, but not _posSize
-    subgraphNode.pos[1] += LiteGraph.NODE_TITLE_HEIGHT / 2
+    subgraphNode.pos[1] += LiteGraphSingleton.NODE_TITLE_HEIGHT / 2
 
     // Add the subgraph node to the graph
     this.add(subgraphNode)
@@ -1719,7 +1720,7 @@ export class LGraph
     const movedNodes = multiClone(subgraphNode.subgraph.nodes)
     const nodeIdMap = new Map<NodeId, NodeId>()
     for (const n_info of movedNodes) {
-      const node = LiteGraph.createNode(String(n_info.type), n_info.title)
+      const node = LiteGraphSingleton.createNode(String(n_info.type), n_info.title)
       if (!node) {
         throw new Error('Node not found')
       }
@@ -2027,7 +2028,7 @@ export class LGraph
       definitions,
       config,
       extra,
-      version: LiteGraph.VERSION
+      version: LiteGraphSingleton.VERSION
     }
   }
 
@@ -2052,7 +2053,7 @@ export class LGraph
     const { id, revision, config, state } = this
 
     const nodeList =
-      !LiteGraph.use_uuids && options?.sortNodes
+      !LiteGraphSingleton.use_uuids && options?.sortNodes
         ? // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
           [...this._nodes].sort((a, b) => a.id - b.id)
         : this._nodes
@@ -2072,7 +2073,7 @@ export class LGraph
 
     // Save scale and offset
     const extra = { ...this.extra }
-    if (LiteGraph.saveViewportWithGraph) extra.ds = this.#getDragAndScale()
+    if (LiteGraphSingleton.saveViewportWithGraph) extra.ds = this.#getDragAndScale()
     if (!extra.ds) delete extra.ds
 
     const data: ReturnType<typeof this.asSerialisable> = {
@@ -2230,9 +2231,9 @@ export class LGraph
       if (nodesData) {
         for (const n_info of nodesData) {
           // stored info
-          let node = LiteGraph.createNode(String(n_info.type), n_info.title)
+          let node = LiteGraphSingleton.createNode(String(n_info.type), n_info.title)
           if (!node) {
-            if (LiteGraph.debug)
+            if (LiteGraphSingleton.debug)
               console.log('Node not found or has errors:', n_info.type)
 
             // in case of error we create a replacement node to avoid losing info
@@ -2284,7 +2285,7 @@ export class LGraph
       if (groupData) {
         for (const data of groupData) {
           // TODO: Search/remove these global object refs
-          const group = new LiteGraph.LGraphGroup()
+          const group = new LiteGraphSingleton.LGraphGroup()
           group.configure(data)
           this.add(group)
         }

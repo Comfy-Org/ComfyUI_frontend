@@ -1,6 +1,6 @@
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
-import { LiteGraphGlobal } from './LiteGraphGlobal'
+import { LiteGraphSingleton } from './LiteGraphSingleton'
 import type { ConnectingLink, Point } from './interfaces'
 import type { IContextMenuOptions, Size } from './interfaces'
 import { loadPolyfills } from './polyfills'
@@ -10,7 +10,7 @@ import type { RenderShape, TitleMode } from './types/globalEnums'
 // Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
 export { Subgraph } from './subgraph/Subgraph'
 
-export const LiteGraph = new LiteGraphGlobal()
+export const LiteGraph = LiteGraphSingleton
 
 // Load legacy polyfills
 loadPolyfills()

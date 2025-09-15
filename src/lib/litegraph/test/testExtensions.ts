@@ -1,7 +1,7 @@
 import { test as baseTest } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../src/LiteGraphSingleton'
 
 import type {
   ISerialisedGraph,
@@ -74,7 +74,7 @@ export const dirtyTest = test.extend<DirtyFixtures>({
 
     // Register node types
     for (const node of basicSerialisableGraph.nodes) {
-      LiteGraph.registerNodeType(node.type!, LiteGraph.LGraphNode)
+      LiteGraphSingleton.registerNodeType(node.type!, LiteGraphSingleton.LGraphNode)
     }
 
     await use(structuredClone(basicSerialisableGraph))

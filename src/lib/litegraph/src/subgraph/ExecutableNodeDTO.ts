@@ -9,7 +9,8 @@ import type {
   CallbackReturn,
   ISlotType
 } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 
 import { Subgraph } from './Subgraph'
 import type { SubgraphNode } from './SubgraphNode'
@@ -346,8 +347,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Prefer input with the same slot ID
     if (
       oppositeInput &&
-      LiteGraph.isValidConnection(oppositeInput.type, outputType) &&
-      LiteGraph.isValidConnection(oppositeInput.type, type)
+      LiteGraphSingleton.isValidConnection(oppositeInput.type, outputType) &&
+      LiteGraphSingleton.isValidConnection(oppositeInput.type, type)
     ) {
       return slot
     }
@@ -359,8 +360,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Find first matching slot - prefer exact type
     return inputs.findIndex(
       (input) =>
-        LiteGraph.isValidConnection(input.type, outputType) &&
-        LiteGraph.isValidConnection(input.type, type)
+        LiteGraphSingleton.isValidConnection(input.type, outputType) &&
+        LiteGraphSingleton.isValidConnection(input.type, type)
     )
   }
 

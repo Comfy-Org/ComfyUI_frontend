@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type { INodeInputSlot, Point } from '@/lib/litegraph/src/interfaces'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../src/LiteGraphSingleton'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
@@ -28,14 +29,14 @@ function getMockISerialisedNode(
 
 describe('LGraphNode', () => {
   let node: LGraphNode
-  let origLiteGraph: typeof LiteGraph
+  let origLiteGraph: typeof LiteGraphSingleton
 
   beforeEach(() => {
-    origLiteGraph = Object.assign({}, LiteGraph)
+    origLiteGraph = Object.assign({}, LiteGraphSingleton)
     // @ts-expect-error TODO: Fix after merge - Classes property not in type
     delete origLiteGraph.Classes
 
-    Object.assign(LiteGraph, {
+    Object.assign(LiteGraphSingleton, {
       NODE_TITLE_HEIGHT: 20,
       NODE_SLOT_HEIGHT: 15,
       NODE_TEXT_SIZE: 14,
@@ -52,7 +53,7 @@ describe('LGraphNode', () => {
   })
 
   afterEach(() => {
-    Object.assign(LiteGraph, origLiteGraph)
+    Object.assign(LiteGraphSingleton, origLiteGraph)
   })
 
   test('should serialize position/size correctly', () => {
@@ -460,8 +461,8 @@ describe('LGraphNode', () => {
       node.addOutput('output2', 'number')
 
       // Calculate expected positions
-      const slotOffset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      const slotSpacing = LiteGraph.NODE_SLOT_HEIGHT
+      const slotOffset = LiteGraphSingleton.NODE_SLOT_HEIGHT * 0.5
+      const slotSpacing = LiteGraphSingleton.NODE_SLOT_HEIGHT
       const nodeWidth = node.size[0]
 
       // Test input positions
@@ -496,8 +497,8 @@ describe('LGraphNode', () => {
       node.addInput('default-input1', 'number')
       node.addInput('default-input2', 'number')
 
-      const slotOffset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      const slotSpacing = LiteGraph.NODE_SLOT_HEIGHT
+      const slotOffset = LiteGraphSingleton.NODE_SLOT_HEIGHT * 0.5
+      const slotSpacing = LiteGraphSingleton.NODE_SLOT_HEIGHT
 
       // Test: default positioned slots should be consecutive, ignoring absolute positioned ones
       expect(node.getInputPos(1)).toEqual([
@@ -576,7 +577,7 @@ describe('LGraphNode', () => {
     })
     test('should return position based on title height when collapsed', () => {
       node.flags.collapsed = true
-      const expectedPos: Point = [100, 200 - LiteGraph.NODE_TITLE_HEIGHT * 0.5]
+      const expectedPos: Point = [100, 200 - LiteGraphSingleton.NODE_TITLE_HEIGHT * 0.5]
       expect(node.getInputSlotPos(inputSlot)).toEqual(expectedPos)
     })
 
@@ -600,12 +601,12 @@ describe('LGraphNode', () => {
       const slotIndex = 0
       const nodeOffsetY = (node.constructor as any).slot_start_y || 0
       const expectedY =
-        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
-      const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
+        200 + (slotIndex + 0.7) * LiteGraphSingleton.NODE_SLOT_HEIGHT + nodeOffsetY
+      const expectedX = 100 + LiteGraphSingleton.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
       const slotIndex2 = 1
       const expectedY2 =
-        200 + (slotIndex2 + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
+        200 + (slotIndex2 + 0.7) * LiteGraphSingleton.NODE_SLOT_HEIGHT + nodeOffsetY
       expect(node.getInputSlotPos(inputSlot2)).toEqual([expectedX, expectedY2])
     })
 
@@ -616,8 +617,8 @@ describe('LGraphNode', () => {
       const slotIndex = 0
       const nodeOffsetY = 25
       const expectedY =
-        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
-      const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
+        200 + (slotIndex + 0.7) * LiteGraphSingleton.NODE_SLOT_HEIGHT + nodeOffsetY
+      const expectedX = 100 + LiteGraphSingleton.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
       delete (node.constructor as any).slot_start_y
     })
@@ -650,8 +651,8 @@ describe('LGraphNode', () => {
       const slotIndex = 0
       const nodeOffsetY = (node.constructor as any).slot_start_y || 0
       const expectedDefaultY =
-        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
-      const expectedDefaultX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
+        200 + (slotIndex + 0.7) * LiteGraphSingleton.NODE_SLOT_HEIGHT + nodeOffsetY
+      const expectedDefaultX = 100 + LiteGraphSingleton.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputPos(0)).toEqual([expectedDefaultX, expectedDefaultY])
       spy.mockRestore()
     })
@@ -660,7 +661,7 @@ describe('LGraphNode', () => {
   describe('removeInput/removeOutput on copied nodes', () => {
     beforeEach(() => {
       // Register a test node type so clone() can work
-      LiteGraph.registerNodeType('TestNode', LGraphNode)
+      LiteGraphSingleton.registerNodeType('TestNode', LGraphNode)
     })
 
     test('should NOT throw error when calling removeInput on a copied node without graph', () => {

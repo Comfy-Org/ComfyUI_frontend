@@ -15,7 +15,7 @@ import type {
   Point,
   Size
 } from '../interfaces'
-import type { LiteGraph } from '../litegraph'
+import type { LiteGraphSingleton } from '../LiteGraphSingleton'
 import type { TWidgetValue } from '../types/widgets'
 import type { RenderShape } from './globalEnums'
 
@@ -124,7 +124,7 @@ export interface ISerialisedGraph extends BaseExportedGraph {
   links: SerialisedLLinkArray[]
   floatingLinks?: SerialisableLLink[]
   groups: ISerialisedGroup[]
-  version: typeof LiteGraph.VERSION
+  version: typeof LiteGraphSingleton.VERSION
   extra?: LGraphExtra
 }
 

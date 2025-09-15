@@ -11,7 +11,8 @@ import type {
   Point,
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
+import { Rectangle } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphSingleton } from '../LiteGraphSingleton'
 import { getCentre } from '@/lib/litegraph/src/measure'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -61,9 +62,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
   get highlightColor(): CanvasColour {
     return (
-      LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ??
-      LiteGraph.NODE_SELECTED_TITLE_COLOR ??
-      LiteGraph.NODE_TEXT_COLOR
+      LiteGraphSingleton.NODE_TEXT_HIGHLIGHT_COLOR ??
+      LiteGraphSingleton.NODE_SELECTED_TITLE_COLOR ??
+      LiteGraphSingleton.NODE_TEXT_COLOR
     )
   }
 
@@ -123,7 +124,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
     const labelColor = highlight
       ? this.highlightColor
-      : LiteGraph.NODE_TEXT_COLOR
+      : LiteGraphSingleton.NODE_TEXT_COLOR
 
     const pos = this.#centreOffset
     const slot_type = this.type
