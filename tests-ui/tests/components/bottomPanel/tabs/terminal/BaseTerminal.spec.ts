@@ -107,7 +107,7 @@ describe('BaseTerminal', () => {
   })
 
   afterEach(() => {
-      wrapper?.unmount()
+    wrapper?.unmount()
   })
 
   it('emits created event on mount', () => {
