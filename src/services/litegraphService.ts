@@ -12,10 +12,10 @@ import {
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
+  type Point,
   RenderShape,
   type Subgraph,
   SubgraphNode,
-  type Vector2,
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -994,7 +994,7 @@ export const useLitegraphService = () => {
     return node
   }
 
-  function getCanvasCenter(): Vector2 {
+  function getCanvasCenter(): Point {
     const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     const [x, y, w, h] = app.canvas.ds.visible_area
     return [x + w / dpi / 2, y + h / dpi / 2]

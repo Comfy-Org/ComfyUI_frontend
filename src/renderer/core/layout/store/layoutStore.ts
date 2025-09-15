@@ -39,7 +39,10 @@ import {
   type Size,
   type SlotLayout
 } from '@/renderer/core/layout/types'
-import { sameBounds, samePoint } from '@/renderer/core/layout/utils/geometry'
+import {
+  isBoundsEqual,
+  isPointEqual
+} from '@/renderer/core/layout/utils/geometry'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
@@ -414,8 +417,8 @@ class LayoutStoreImpl implements LayoutStore {
     // Short-circuit if bounds and centerPos unchanged
     if (
       existing &&
-      sameBounds(existing.bounds, layout.bounds) &&
-      samePoint(existing.centerPos, layout.centerPos)
+      isBoundsEqual(existing.bounds, layout.bounds) &&
+      isPointEqual(existing.centerPos, layout.centerPos)
     ) {
       // Only update path if provided (for hit detection)
       if (layout.path) {
@@ -456,8 +459,8 @@ class LayoutStoreImpl implements LayoutStore {
     if (existing) {
       // Short-circuit if geometry is unchanged
       if (
-        samePoint(existing.position, layout.position) &&
-        sameBounds(existing.bounds, layout.bounds)
+        isPointEqual(existing.position, layout.position) &&
+        isBoundsEqual(existing.bounds, layout.bounds)
       ) {
         return
       }
@@ -486,8 +489,8 @@ class LayoutStoreImpl implements LayoutStore {
       if (existing) {
         // Short-circuit if geometry is unchanged
         if (
-          samePoint(existing.position, layout.position) &&
-          sameBounds(existing.bounds, layout.bounds)
+          isPointEqual(existing.position, layout.position) &&
+          isBoundsEqual(existing.bounds, layout.bounds)
         ) {
           continue
         }
@@ -617,8 +620,8 @@ class LayoutStoreImpl implements LayoutStore {
     // Short-circuit if bounds and centerPos unchanged (prevents spatial index churn)
     if (
       existing &&
-      sameBounds(existing.bounds, layout.bounds) &&
-      samePoint(existing.centerPos, layout.centerPos)
+      isBoundsEqual(existing.bounds, layout.bounds) &&
+      isPointEqual(existing.centerPos, layout.centerPos)
     ) {
       // Only update path if provided (for hit detection)
       if (layout.path) {

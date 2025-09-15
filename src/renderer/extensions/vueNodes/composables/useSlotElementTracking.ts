@@ -5,25 +5,23 @@
  * positions in a single batched pass, and caches offsets so that node moves
  * update slot positions without DOM reads.
  */
-import { type Ref, inject, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { type Ref, onMounted, onUnmounted, watch } from 'vue'
 
+import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { getCanvasClientOrigin } from '@/renderer/core/layout/dom/canvasRectCache'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point, SlotLayout } from '@/renderer/core/layout/types'
+import type { SlotLayout } from '@/renderer/core/layout/types'
 
 type SlotEntry = {
   el: HTMLElement
   index: number
-  isInput: boolean
+  type: 'input' | 'output'
   cachedOffset?: { x: number; y: number }
 }
 
 type NodeEntry = {
   nodeId: string
-  screenToCanvas?: (p: Point) => Point
   slots: Map<string, SlotEntry>
   stopWatch?: () => void
 }
@@ -47,45 +45,34 @@ function scheduleSlotLayoutSync(nodeId: string) {
 
 function flushScheduledSlotLayoutSync() {
   if (pendingNodes.size === 0) return
-
-  // Read container origin once from cache
-  const { left: originLeft, top: originTop } = getCanvasClientOrigin()
-
+  const conv = useSharedCanvasPositionConversion()
   for (const nodeId of Array.from(pendingNodes)) {
     pendingNodes.delete(nodeId)
-    syncNodeSlotLayoutsFromDOM(nodeId, originLeft, originTop)
+    syncNodeSlotLayoutsFromDOM(nodeId, conv)
   }
 }
 
 function syncNodeSlotLayoutsFromDOM(
   nodeId: string,
-  originLeft?: number,
-  originTop?: number
+  conv?: ReturnType<typeof useSharedCanvasPositionConversion>
 ) {
   const node = nodeRegistry.get(nodeId)
   if (!node) return
-  if (!node.screenToCanvas) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
-
-  // Compute origin lazily if not provided
-  let originL = originLeft
-  let originT = originTop
-  if (originL == null || originT == null) {
-    const { left, top } = getCanvasClientOrigin()
-    originL = left
-    originT = top
-  }
 
   const batch: Array<{ key: string; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
     const rect = entry.el.getBoundingClientRect()
-    const centerScreen = {
-      x: rect.left + rect.width / 2 - (originL ?? 0),
-      y: rect.top + rect.height / 2 - (originT ?? 0)
-    }
-    const centerCanvas = node.screenToCanvas(centerScreen)
+    const screenCenter: [number, number] = [
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2
+    ]
+    const [x, y] = (
+      conv ?? useSharedCanvasPositionConversion()
+    ).clientPosToCanvasPos(screenCenter)
+    const centerCanvas = { x, y }
 
     // Cache offset relative to node position for fast updates later
     entry.cachedOffset = {
@@ -101,7 +88,7 @@ function syncNodeSlotLayoutsFromDOM(
       layout: {
         nodeId,
         index: entry.index,
-        type: entry.isInput ? 'input' : 'output',
+        type: entry.type,
         position: { x: centerCanvas.x, y: centerCanvas.y },
         bounds: {
           x: centerCanvas.x - half,
@@ -141,7 +128,7 @@ function updateNodeSlotsFromCache(nodeId: string) {
       layout: {
         nodeId,
         index: entry.index,
-        type: entry.isInput ? 'input' : 'output',
+        type: entry.type,
         position: { x: centerCanvas.x, y: centerCanvas.y },
         bounds: {
           x: centerCanvas.x - half,
@@ -159,60 +146,54 @@ function updateNodeSlotsFromCache(nodeId: string) {
 export function useSlotElementTracking(options: {
   nodeId: string
   index: number
-  isInput: boolean
+  type: 'input' | 'output'
   element: Ref<HTMLElement | null>
 }) {
-  const { nodeId, index, isInput, element } = options
+  const { nodeId, index, type, element } = options
 
-  // Get transform utilities from TransformPane
-  const transformState = inject(TransformStateKey)
-
-  onMounted(async () => {
+  onMounted(() => {
     if (!nodeId) return
-    await nextTick()
-    const el = element.value
-    if (!el) return
+    const stop = watch(
+      element,
+      (el) => {
+        if (!el) return
 
-    // Ensure node entry
-    let node = nodeRegistry.get(nodeId)
-    if (!node) {
-      node = {
-        nodeId,
-        screenToCanvas: transformState?.screenToCanvas,
-        slots: new Map()
-      }
-      nodeRegistry.set(nodeId, node)
-      // Subscribe once per node to layout changes for fast cached updates
-      const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
-      const stop = watch(
-        nodeRef,
-        (newLayout, oldLayout) => {
-          if (newLayout && oldLayout) {
-            const moved =
-              newLayout.position.x !== oldLayout.position.x ||
-              newLayout.position.y !== oldLayout.position.y
-            const resized =
-              newLayout.size.width !== oldLayout.size.width ||
-              newLayout.size.height !== oldLayout.size.height
+        // Ensure node entry
+        let node = nodeRegistry.get(nodeId)
+        if (!node) {
+          const entry: NodeEntry = {
+            nodeId,
+            slots: new Map()
+          }
+          nodeRegistry.set(nodeId, entry)
 
-            // Only update from cache on move-only changes.
-            // On resizes (or move+resize), let ResizeObserver resync slots from DOM accurately.
-            if (moved && !resized) {
+          const unsubscribe = layoutStore.onChange((change) => {
+            const op = change.operation
+            if (
+              op &&
+              op.entity === 'node' &&
+              op.nodeId === nodeId &&
+              op.type === 'moveNode'
+            ) {
               updateNodeSlotsFromCache(nodeId)
             }
-          }
-        },
-        { flush: 'post' }
-      )
-      node.stopWatch = () => stop()
-    }
+          })
+          entry.stopWatch = () => unsubscribe()
+          node = entry
+        }
 
-    // Register slot
-    const slotKey = getSlotKey(nodeId, index, isInput)
-    node.slots.set(slotKey, { el, index, isInput })
+        // Register slot
+        const slotKey = getSlotKey(nodeId, index, type === 'input')
+        node.slots.set(slotKey, { el, index, type })
 
-    // Seed initial sync from DOM
-    scheduleSlotLayoutSync(nodeId)
+        // Seed initial sync from DOM
+        scheduleSlotLayoutSync(nodeId)
+
+        // Stop watching once registered
+        stop()
+      },
+      { immediate: true, flush: 'post' }
+    )
   })
 
   onUnmounted(() => {
@@ -221,12 +202,13 @@ export function useSlotElementTracking(options: {
     if (!node) return
 
     // Remove this slot from registry and layout
-    const slotKey = getSlotKey(nodeId, index, isInput)
+    const slotKey = getSlotKey(nodeId, index, type === 'input')
     node.slots.delete(slotKey)
     layoutStore.deleteSlotLayout(slotKey)
 
     // If node has no more slots, clean up
     if (node.slots.size === 0) {
+      // Stop the node-level watcher when the last slot is gone
       if (node.stopWatch) node.stopWatch()
       nodeRegistry.delete(nodeId)
     }
@@ -237,9 +219,6 @@ export function useSlotElementTracking(options: {
   }
 }
 
-export function syncNodeSlotLayoutsNow(
-  nodeId: string,
-  origin?: { left: number; top: number }
-) {
-  syncNodeSlotLayoutsFromDOM(nodeId, origin?.left, origin?.top)
+export function syncNodeSlotLayoutsNow(nodeId: string) {
+  syncNodeSlotLayoutsFromDOM(nodeId)
 }

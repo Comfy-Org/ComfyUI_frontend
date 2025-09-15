@@ -40,7 +40,6 @@ import {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
-// DOM-based slot registration for arbitrary positioning
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
@@ -86,7 +85,7 @@ watchEffect(() => {
 useSlotElementTracking({
   nodeId: props.nodeId ?? '',
   index: props.index,
-  isInput: true,
+  type: 'input',
   element: slotElRef
 })
 </script>

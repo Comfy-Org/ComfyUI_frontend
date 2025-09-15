@@ -8,22 +8,14 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, inject, onMounted, onUnmounted } from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted } from 'vue'
 
+import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { getCanvasClientOrigin } from '@/renderer/core/layout/dom/canvasRectCache'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point } from '@/renderer/core/layout/types'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 
 import { syncNodeSlotLayoutsNow } from './useSlotElementTracking'
-
-// Per-element conversion context
-const elementConversion = new WeakMap<
-  HTMLElement,
-  { screenToCanvas?: (p: Point) => Point }
->()
 
 /**
  * Generic update item for element bounds tracking
@@ -66,13 +58,12 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
+  // Canvas is ready when this code runs; no defensive guards needed.
+  const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
   // Track nodes whose slots should be resynced after node size changes
   const nodesNeedingSlotResync = new Set<string>()
-
-  // Read container origin once per batch via cache
-  const { left: originLeft, top: originTop } = getCanvasClientOrigin()
 
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
@@ -105,22 +96,13 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     // Screen-space rect
     const rect = element.getBoundingClientRect()
-    let bounds: Bounds = { x: rect.left, y: rect.top, width, height }
-
-    // Convert position to canvas space (top-left), leave size as-is
-    // Note: ResizeObserver sizes are pre-transform; they already represent canvas units.
-    const ctx = elementConversion.get(element)
-    if (ctx?.screenToCanvas) {
-      const topLeftCanvas = ctx.screenToCanvas({
-        x: bounds.x - originLeft,
-        y: bounds.y - originTop
-      })
-      bounds = {
-        x: topLeftCanvas.x,
-        y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
-        width: Math.max(0, width),
-        height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
-      }
+    const [cx, cy] = conv.clientPosToCanvasPos([rect.left, rect.top])
+    const topLeftCanvas = { x: cx, y: cy }
+    const bounds: Bounds = {
+      x: topLeftCanvas.x,
+      y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
+      width: Math.max(0, width),
+      height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
     }
 
     let updates = updatesByType.get(elementType)
@@ -145,7 +127,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // After node bounds are updated, refresh slot cached offsets and layouts
   if (nodesNeedingSlotResync.size > 0) {
     for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsNow(nodeId, { left: originLeft, top: originTop })
+      syncNodeSlotLayoutsNow(nodeId)
     }
   }
 })
@@ -175,22 +157,15 @@ export function useVueElementTracking(
   appIdentifier: string,
   trackingType: string
 ) {
-  // For canvas-space conversion: provided by TransformPane
-  const transformState = inject(TransformStateKey)
-
   onMounted(() => {
     const element = getCurrentInstance()?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
 
     const config = trackingConfigs.get(trackingType)
-    if (!config) return // Set the data attribute expected by the RO pipeline for this type
+    if (!config) return
+
+    // Set the data attribute expected by the RO pipeline for this type
     element.dataset[config.dataAttribute] = appIdentifier
-    // Remember transformer for this element
-    if (transformState?.screenToCanvas) {
-      elementConversion.set(element, {
-        screenToCanvas: transformState.screenToCanvas
-      })
-    }
     resizeObserver.observe(element)
   })
 
@@ -204,6 +179,5 @@ export function useVueElementTracking(
     // Remove the data attribute and observer
     delete element.dataset[config.dataAttribute]
     resizeObserver.unobserve(element)
-    elementConversion.delete(element)
   })
 }

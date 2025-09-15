@@ -2,7 +2,7 @@ import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
@@ -344,7 +344,7 @@ export const useWorkflowService = () => {
    */
   const insertWorkflow = async (
     workflow: ComfyWorkflow,
-    options: { position?: Vector2 } = {}
+    options: { position?: Point } = {}
   ) => {
     const loadedWorkflow = await workflow.load()
     const workflowJSON = toRaw(loadedWorkflow.initialState)
