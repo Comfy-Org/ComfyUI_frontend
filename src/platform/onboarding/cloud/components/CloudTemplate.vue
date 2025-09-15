@@ -9,7 +9,7 @@
         <CloudTemplateFooter />
       </template>
     </BaseViewTemplate>
-    <div class="flex-1 relative bg-black overflow-hidden md:hidden lg:block">
+    <div class="flex-1 relative bg-black overflow-hidden hidden lg:block">
       <!-- Video Background -->
       <video
         class="absolute inset-0 w-full h-full object-cover"
