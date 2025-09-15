@@ -62,8 +62,8 @@ import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSub
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 
