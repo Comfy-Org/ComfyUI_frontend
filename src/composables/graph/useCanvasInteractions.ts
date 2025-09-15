@@ -11,10 +11,19 @@ import { app } from '@/scripts/app'
  */
 export function useCanvasInteractions() {
   const settingStore = useSettingStore()
-  const { getCanvas } = useCanvasStore()
+  const canvasStore = useCanvasStore()
+  const { getCanvas } = canvasStore
 
   const isStandardNavMode = computed(
     () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
+  )
+
+  /**
+   * Whether Vue components can capture pointer events.
+   * Returns false when canvas is in read-only/panning mode.
+   */
+  const canCapturePointerEvents = computed(
+    () => !(canvasStore.canvas?.read_only ?? false)
   )
 
   /**
@@ -97,6 +106,7 @@ export function useCanvasInteractions() {
   return {
     handleWheel,
     handlePointer,
-    forwardEventToCanvas
+    forwardEventToCanvas,
+    canCapturePointerEvents
   }
 }

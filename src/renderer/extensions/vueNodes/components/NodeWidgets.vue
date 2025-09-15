@@ -2,7 +2,16 @@
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
     {{ $t('Node Widgets Error') }}
   </div>
-  <div v-else class="lg-node-widgets flex flex-col gap-2 pr-4">
+  <div
+    v-else
+    :class="cn(
+      'lg-node-widgets flex flex-col gap-2 pr-4',
+      shouldHandleNodePointerEvents ? 'pointer-events-auto' : 'pointer-events-none'
+    )"
+    @pointerdown="handleWidgetPointerEvent"
+    @pointermove="handleWidgetPointerEvent"
+    @pointerup="handleWidgetPointerEvent"
+  >
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
@@ -40,6 +49,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import type {
   SafeWidgetData,
   VueNodeData
@@ -55,6 +65,7 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
 
@@ -66,6 +77,14 @@ interface NodeWidgetsProps {
 }
 
 const props = defineProps<NodeWidgetsProps>()
+
+const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
+  useCanvasInteractions()
+const handleWidgetPointerEvent = (event: PointerEvent) => {
+  if (!shouldHandleNodePointerEvents.value) {
+    forwardEventToCanvas(event)
+  }
+}
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
