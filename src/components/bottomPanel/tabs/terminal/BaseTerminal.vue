@@ -4,7 +4,6 @@
       <div ref="terminalEl" class="h-full terminal-host" />
     </div>
     <Button
-      v-show="isHovered"
       v-tooltip.left="{
         value: tooltipText,
         showDelay: 300
@@ -12,7 +11,8 @@
       icon="pi pi-copy"
       severity="secondary"
       size="small"
-      class="absolute top-2 right-8"
+      class="absolute top-2 right-8 transition-opacity"
+      :class="{ 'opacity-0 pointer-events-none select-none': !isHovered }"
       :aria-label="tooltipText"
       @click="handleCopy"
     />
