@@ -18,9 +18,7 @@ import Button from 'primevue/button'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { t } from '@/i18n'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 const { isSingleImageNode } = useSelectionState()

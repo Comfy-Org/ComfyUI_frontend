@@ -6,8 +6,8 @@ import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
-import { useCanvasStore } from '@/stores/graphStore'
 
 // Mock the composables and services
 vi.mock('@/composables/graph/useCanvasInteractions', () => ({
