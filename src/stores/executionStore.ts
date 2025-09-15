@@ -440,10 +440,6 @@ export const useExecutionStore = defineStore('execution', () => {
      */
     lastExecutionError,
     /**
-     * NodeLocatorId for the most recent execution error.
-     */
-    lastExecutionErrorNodeLocatorId,
-    /**
      * Local node ID for the most recent execution error.
      */
     lastExecutionErrorNodeId,
