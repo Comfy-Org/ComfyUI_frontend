@@ -650,7 +650,7 @@ export class ComfyApp {
       if (opacity) adjustments.opacity = opacity
 
       if (useColorPaletteStore().completedActivePalette.light_theme) {
-        adjustments.lightness = 0.5
+        if (old_bgcolor) adjustments.lightness = 0.5
 
         // Lighten title bar of colored nodes on light theme
         if (old_color) {

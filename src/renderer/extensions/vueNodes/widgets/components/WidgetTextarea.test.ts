@@ -7,24 +7,26 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 
-const createMockWidget = (
+function createMockWidget(
   value: string = 'default text',
-  options: Record<string, any> = {},
+  options: SimplifiedWidget['options'] = {},
   callback?: (value: string) => void
-): SimplifiedWidget<string> => ({
-  name: 'test_textarea',
-  type: 'string',
-  value,
-  options,
-  callback
-})
+): SimplifiedWidget<string> {
+  return {
+    name: 'test_textarea',
+    type: 'string',
+    value,
+    options,
+    callback
+  }
+}
 
-const mountComponent = (
+function mountComponent(
   widget: SimplifiedWidget<string>,
   modelValue: string,
   readonly = false,
   placeholder?: string
-) => {
+) {
   return mount(WidgetTextarea, {
     global: {
       plugins: [PrimeVue],
@@ -39,11 +41,11 @@ const mountComponent = (
   })
 }
 
-const setTextareaValueAndTrigger = async (
+async function setTextareaValueAndTrigger(
   wrapper: ReturnType<typeof mount>,
   value: string,
   trigger: 'blur' | 'input' = 'blur'
-) => {
+) {
   const textarea = wrapper.find('textarea')
   if (!(textarea.element instanceof HTMLTextAreaElement)) {
     throw new Error(
