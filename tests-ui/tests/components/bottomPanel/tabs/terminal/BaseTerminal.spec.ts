@@ -137,29 +137,40 @@ describe('BaseTerminal', () => {
   it('shows copy button on hover', async () => {
     wrapper = mountBaseTerminal()
 
-    // Initially button should not be visible
-    expect(wrapper.find('button[aria-label]').exists()).toBe(false)
+    const button = wrapper.find('button[aria-label]')
+    expect(button.exists()).toBe(true)
+
+    // Initially button should not be interactive
+    expect(button.classes()).toContain('opacity-0')
+    expect(button.classes()).toContain('pointer-events-none')
 
     // Trigger hover on root element
     await wrapper.trigger('mouseenter')
     await nextTick()
 
-    // Button should now be visible
-    expect(wrapper.find('button[aria-label]').exists()).toBe(true)
+    // Button should now be visible and interactive
+    expect(button.classes()).toContain('opacity-100')
+    expect(button.classes()).toContain('pointer-events-auto')
+    expect(button.classes()).not.toContain('opacity-0')
+    expect(button.classes()).not.toContain('pointer-events-none')
   })
 
   it('hides copy button when not hovering', async () => {
     wrapper = mountBaseTerminal()
 
+    const button = wrapper.find('button[aria-label]')
+
     // Trigger hover
     await wrapper.trigger('mouseenter')
     await nextTick()
-    expect(wrapper.find('button[aria-label]').exists()).toBe(true)
+    expect(button.classes()).toContain('opacity-100')
+    expect(button.classes()).toContain('pointer-events-auto')
 
     // Trigger mouse leave
     await wrapper.trigger('mouseleave')
     await nextTick()
-    expect(wrapper.find('button[aria-label]').exists()).toBe(false)
+    expect(button.classes()).toContain('opacity-0')
+    expect(button.classes()).toContain('pointer-events-none')
   })
 
   it('shows correct tooltip when no selection', async () => {
