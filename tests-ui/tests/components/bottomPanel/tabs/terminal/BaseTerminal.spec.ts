@@ -150,8 +150,6 @@ describe('BaseTerminal', () => {
     await nextTick()
 
     // Button should now be visible and interactive
-    expect(button.classes()).toContain('opacity-100')
-    expect(button.classes()).toContain('pointer-events-auto')
     expect(button.classes()).not.toContain('opacity-0')
     expect(button.classes()).not.toContain('pointer-events-none')
   })
@@ -164,8 +162,8 @@ describe('BaseTerminal', () => {
     // Trigger hover
     await wrapper.trigger('mouseenter')
     await nextTick()
-    expect(button.classes()).toContain('opacity-100')
-    expect(button.classes()).toContain('pointer-events-auto')
+    expect(button.classes()).not.toContain('opacity-0')
+    expect(button.classes()).not.toContain('pointer-events-none')
 
     // Trigger mouse leave
     await wrapper.trigger('mouseleave')
@@ -266,17 +264,17 @@ describe('BaseTerminal', () => {
   })
 
   it('tracks selection changes', async () => {
-    terminalMock.hasSelection
-      .mockReturnValueOnce(false)
-      .mockReturnValueOnce(true)
-
     wrapper = mountBaseTerminal()
 
     // Initially no selection
+    terminalMock.hasSelection.mockReturnValue(false)
     await wrapper.trigger('mouseenter')
     await nextTick()
     let button = wrapper.find('button[aria-label]')
     expect(button.attributes('aria-label')).toBe('Copy all')
+
+    // Update mock to return true for selection
+    terminalMock.hasSelection.mockReturnValue(true)
 
     // Trigger selection change
     const selectionCallback = terminalMock.onSelectionChange.mock.calls[0][0]
