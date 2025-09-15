@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { useElementHover, useEventListener } from '@vueuse/core'
 import Button from 'primevue/button'
-import { Ref, computed, onUnmounted, ref } from 'vue'
+import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
@@ -45,9 +45,7 @@ const terminalData = useTerminal(terminalEl)
 emit('created', terminalData, rootEl)
 
 const { terminal } = terminalData
-terminal.onSelectionChange(() => {
-  hasSelection.value = terminal.hasSelection()
-})
+let selectionDisposable: any
 
 const tooltipText = computed(() => {
   return hasSelection.value
@@ -85,7 +83,19 @@ if (isElectron()) {
   useEventListener(terminalEl, 'contextmenu', showContextMenu)
 }
 
-onUnmounted(() => emit('unmounted'))
+onMounted(() => {
+  selectionDisposable = terminal.onSelectionChange(() => {
+    hasSelection.value = terminal.hasSelection()
+  })
+})
+
+onUnmounted(() => {
+  if (selectionDisposable) {
+    selectionDisposable.dispose()
+  }
+
+  emit('unmounted')
+})
 </script>
 
 <style scoped>
