@@ -1,5 +1,5 @@
 <template>
-  <div />
+  <CloudClaimInviteViewSkeleton />
 </template>
 
 <script setup lang="ts">
@@ -7,6 +7,8 @@ import { nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getInviteCodeStatus } from '@/api/auth'
+
+import CloudClaimInviteViewSkeleton from './skeletons/CloudClaimInviteViewSkeleton.vue'
 
 const router = useRouter()
 const route = useRoute()
