@@ -1,4 +1,4 @@
-import type { useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/platform/settings/settingStore'
 
 let pendingCallbacks: Array<() => Promise<void>> = []
 let isNewUserDetermined = false

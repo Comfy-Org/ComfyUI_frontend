@@ -41,7 +41,7 @@
 import Popover from 'primevue/popover'
 import { computed, nextTick, ref, toRefs, useId } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const POPOVER_WIDTH = 250
 

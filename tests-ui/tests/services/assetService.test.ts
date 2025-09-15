@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
-import { assetService } from '@/services/assetService'
 
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: vi.fn(() => ({
