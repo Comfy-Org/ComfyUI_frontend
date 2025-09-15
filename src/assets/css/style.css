@@ -108,8 +108,8 @@
 
   --color-error: #962a2a;
 
-  --color-blue-selection: rgb( from var(--color-blue-100) r g b / 0.3); 
-  --color-node-hover-100: rgb( from var(--color-charcoal-800) r g b/ 0.15);
+  --color-blue-selection: rgb(from var(--color-blue-100) r g b / 0.3);
+  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
   --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
   --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
 
@@ -138,7 +138,7 @@
 
 @utility scrollbar-hide {
   scrollbar-width: none;
-  &::-webkit-scrollbar { 
+  &::-webkit-scrollbar {
     width: 1px;
   }
   &::-webkit-scrollbar-thumb {
