@@ -55,11 +55,10 @@ function injectProperty(subgraphNode: SubgraphNode) {
   })
   subgraphNode.properties.proxyWidgets = proxyWidgets
 }
-type Overlay = {
+type Overlay = Partial<IBaseWidget> & {
   graph: LGraph
   nodeId: string
   widgetName: string
-  label: string
   isProxyWidget: boolean
 }
 type ProxyWidget = IBaseWidget & { _overlay: Overlay }
@@ -72,12 +71,21 @@ function addProxyWidget(
   nodeId: string,
   widgetName: string
 ) {
+  const name = `${nodeId}: ${widgetName}`
   const overlay = {
     nodeId,
     widgetName,
     graph: subgraphNode.subgraph,
-    label: `${nodeId}: ${widgetName}`,
-    isProxyWidget: true
+    name,
+    label: name,
+    isProxyWidget: true,
+    y: 0,
+    lasy_y: 0,
+    width: undefined,
+    computedHeight: 0,
+    afterQueued: undefined,
+    onRemove: undefined,
+    node: subgraphNode
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
@@ -102,12 +110,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
     ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function (t: object, p: string, ...rest: object[]) {
         if (s == 'get' && p == '_overlay') return overlay
-        if (!linkedWidget)
-          [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
         const bw = linkedWidget ?? disconnectedWidget
-        if (s == 'get' && p == 'node') {
-          return subgraphNode
-        }
         if (s == 'set' && p == 'computedDisabled') {
           //ignore setting, calc actual
           bw.computedDisabled =
@@ -116,20 +119,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
         }
         //NOTE: p may be undefined
         let r = rest.at(-1)
-        if (
-          [
-            'y',
-            'last_y',
-            'width',
-            'computedHeight',
-            'afterQueued',
-            'beforeQueued',
-            'onRemove',
-            'isProxyWidget',
-            'label'
-          ].includes(p)
-        )
-          r = t = overlay
+        if (overlay.hasOwnProperty(p)) r = t = overlay
         else {
           t = bw
           if (p == 'value') r = t
@@ -139,7 +129,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       return [s, func]
     })
   )
-  const w = new Proxy(disconnectedWidget, handler)
+  const w = new Proxy(overlay, handler) as IBaseWidget
   subgraphNode.widgets.push(w)
   return w
 }
