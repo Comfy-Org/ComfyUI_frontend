@@ -33,7 +33,7 @@ interface ElementBoundsUpdate {
 /**
  * Control interface for pausing/resuming tracking
  */
-export interface TrackingControl {
+interface TrackingControl {
   pause(): void
   resume(): void
   isActive: Readonly<Ref<boolean>>
