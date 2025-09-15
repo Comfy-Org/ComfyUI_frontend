@@ -4,19 +4,19 @@ exports[`LGraph configure() > LGraph matches previous snapshot (normal configure
 LGraph {
   "_groups": [
     LGraphGroup {
-      "_bounding": Float32Array [
-        20,
-        20,
-        1,
-        3,
+      "_bounding": [
+        10,
+        10,
+        140,
+        80,
       ],
       "_children": Set {},
       "_nodes": [],
-      "_pos": Float32Array [
+      "_pos": [
         20,
         20,
       ],
-      "_size": Float32Array [
+      "_size": [
         1,
         3,
       ],
@@ -39,19 +39,19 @@ LGraph {
     LGraphNode {
       "_collapsed_width": undefined,
       "_level": undefined,
-      "_pos": Float32Array [
+      "_pos": [
         10,
         10,
       ],
-      "_posSize": Float32Array [
-        10,
-        10,
-        140,
-        60,
+      "_posSize": [
+        0,
+        0,
+        0,
+        0,
       ],
       "_relative_id": undefined,
       "_shape": undefined,
-      "_size": Float32Array [
+      "_size": [
         140,
         60,
       ],
@@ -98,6 +98,7 @@ LGraph {
         "selected": [Function],
       },
       "title": "LGraphNode",
+      "title_buttons": [],
       "type": "mustBeSet",
       "widgets": undefined,
       "widgets_start_y": undefined,
@@ -108,19 +109,19 @@ LGraph {
     "1": LGraphNode {
       "_collapsed_width": undefined,
       "_level": undefined,
-      "_pos": Float32Array [
+      "_pos": [
         10,
         10,
       ],
-      "_posSize": Float32Array [
-        10,
-        10,
-        140,
-        60,
+      "_posSize": [
+        0,
+        0,
+        0,
+        0,
       ],
       "_relative_id": undefined,
       "_shape": undefined,
-      "_size": Float32Array [
+      "_size": [
         140,
         60,
       ],
@@ -167,6 +168,7 @@ LGraph {
         "selected": [Function],
       },
       "title": "LGraphNode",
+      "title_buttons": [],
       "type": "mustBeSet",
       "widgets": undefined,
       "widgets_start_y": undefined,
@@ -178,19 +180,19 @@ LGraph {
     LGraphNode {
       "_collapsed_width": undefined,
       "_level": undefined,
-      "_pos": Float32Array [
+      "_pos": [
         10,
         10,
       ],
-      "_posSize": Float32Array [
-        10,
-        10,
-        140,
-        60,
+      "_posSize": [
+        0,
+        0,
+        0,
+        0,
       ],
       "_relative_id": undefined,
       "_shape": undefined,
-      "_size": Float32Array [
+      "_size": [
         140,
         60,
       ],
@@ -237,6 +239,7 @@ LGraph {
         "selected": [Function],
       },
       "title": "LGraphNode",
+      "title_buttons": [],
       "type": "mustBeSet",
       "widgets": undefined,
       "widgets_start_y": undefined,
@@ -249,7 +252,16 @@ LGraph {
   "config": {},
   "elapsed_time": 0.01,
   "errors_in_execution": undefined,
-  "events": CustomEventTarget {},
+  "events": CustomEventTarget {
+    Symbol(listeners): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+    Symbol(listenerOptions): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+  },
   "execution_time": undefined,
   "execution_timer_id": undefined,
   "extra": {},
@@ -296,7 +308,16 @@ LGraph {
   "config": {},
   "elapsed_time": 0.01,
   "errors_in_execution": undefined,
-  "events": CustomEventTarget {},
+  "events": CustomEventTarget {
+    Symbol(listeners): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+    Symbol(listenerOptions): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+  },
   "execution_time": undefined,
   "execution_timer_id": undefined,
   "extra": {},
