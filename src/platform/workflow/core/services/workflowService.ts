@@ -4,6 +4,7 @@ import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -15,7 +16,6 @@ import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useToastStore } from '@/stores/toastStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
 

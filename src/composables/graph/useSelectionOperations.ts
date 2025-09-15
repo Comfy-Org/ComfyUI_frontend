@@ -1,6 +1,7 @@
 // import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useCanvasStore,
@@ -8,7 +9,6 @@ import {
 } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/stores/toastStore'
 
 /**
  * Composable for handling basic selection operations like copy, paste, duplicate, delete, rename
