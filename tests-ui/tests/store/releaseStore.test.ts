@@ -6,7 +6,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 // Mock the dependencies
 vi.mock('@/utils/formatUtil')
 vi.mock('@/utils/envUtil')
-vi.mock('@/services/releaseService')
+vi.mock('@/platform/updates/common/releaseService')
 vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/systemStatsStore')
 vi.mock('@vueuse/core', () => ({

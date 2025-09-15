@@ -11,7 +11,7 @@ vi.mock('@/services/load3dService', () => ({
   useLoad3dService: vi.fn()
 }))
 
-vi.mock('@/stores/toastStore', () => ({
+vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn()
 }))
 
