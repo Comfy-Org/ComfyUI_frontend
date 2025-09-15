@@ -89,7 +89,7 @@ async function main() {
 
   const logFile = path.join(__dirname, 'tsc.log');
 
-  if (!await readFile(logFile).catch(() => null)) {
+  if (!await fs.readFile(logFile, 'utf-8').catch(() => null)) {
     console.error('Unable to read tsc.log');
     console.error('Run this command to generate type errors and rerun this script again:');
     console.error('pnpm typecheck > tsc.log');
