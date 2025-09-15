@@ -806,7 +806,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
               })
               break
             case 'mode':
-              console.log('Do the thing')
               vueNodeData.set(nodeId, {
                 ...currentData,
                 mode: typeof event.newValue === 'number' ? event.newValue : 0
