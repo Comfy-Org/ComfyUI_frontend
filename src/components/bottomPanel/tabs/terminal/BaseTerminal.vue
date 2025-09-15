@@ -12,8 +12,7 @@
       icon="pi pi-copy"
       severity="secondary"
       size="small"
-      class="absolute top-2 right-8 transition-opacity duration-200"
-      :class="{ 'opacity-0': !isHovered }"
+      class="absolute top-2 right-8"
       :aria-label="tooltipText"
       @click="handleCopy"
     />
