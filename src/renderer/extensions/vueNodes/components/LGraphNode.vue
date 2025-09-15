@@ -135,6 +135,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
@@ -353,6 +354,10 @@ const handlePointerDown = (event: PointerEvent) => {
 
   // Start drag using layout system
   isDragging.value = true
+
+  // Set Vue node dragging state for selection toolbox
+  layoutStore.setVueNodeDraggingState(true)
+
   startDrag(event)
   lastY.value = event.clientY
   lastX.value = event.clientX
@@ -368,6 +373,9 @@ const handlePointerUp = (event: PointerEvent) => {
   if (isDragging.value) {
     isDragging.value = false
     void endDrag(event)
+
+    // Clear Vue node dragging state for selection toolbox
+    layoutStore.setVueNodeDraggingState(false)
   }
   // Emit node-click for selection handling in GraphCanvas
   const dx = event.clientX - lastX.value

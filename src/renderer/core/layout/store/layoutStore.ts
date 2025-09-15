@@ -5,7 +5,7 @@
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
 import log from 'loglevel'
-import { type ComputedRef, type Ref, computed, customRef } from 'vue'
+import { type ComputedRef, type Ref, computed, customRef, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
@@ -129,6 +129,9 @@ class LayoutStoreImpl implements LayoutStore {
   private linkSegmentSpatialIndex: SpatialIndexManager // For link segments (single index for all link geometry)
   private slotSpatialIndex: SpatialIndexManager // For slots
   private rerouteSpatialIndex: SpatialIndexManager // For reroutes
+
+  // Vue dragging state for selection toolbox
+  private isDraggingVueNodes = ref(false)
 
   constructor() {
     // Initialize Yjs data structures
@@ -346,6 +349,20 @@ class LayoutStoreImpl implements LayoutStore {
    */
   getVersion(): ComputedRef<number> {
     return computed(() => this.version)
+  }
+
+  /**
+   * Get Vue node dragging state for selection toolbox
+   */
+  getVueNodeDraggingState(): Ref<boolean> {
+    return this.isDraggingVueNodes
+  }
+
+  /**
+   * Set Vue node dragging state
+   */
+  setVueNodeDraggingState(isDragging: boolean): void {
+    this.isDraggingVueNodes.value = isDragging
   }
 
   /**
