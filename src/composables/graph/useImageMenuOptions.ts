@@ -1,5 +1,6 @@
 import { useI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import { useCommandStore } from '@/stores/commandStore'
 
 import type { MenuOption } from './useMoreOptionsMenu'
@@ -69,22 +70,7 @@ export function useImageMenuOptions() {
     try {
       const url = new URL(img.src)
       url.searchParams.delete('preview')
-
-      const a = document.createElement('a')
-      a.href = url.toString()
-      a.setAttribute(
-        'download',
-        new URLSearchParams(url.search).get('filename') ?? 'image.png'
-      )
-      a.style.display = 'none'
-      document.body.appendChild(a)
-      a.click()
-
-      requestAnimationFrame(() => {
-        if (document.body.contains(a)) {
-          document.body.removeChild(a)
-        }
-      })
+      downloadFile(url.toString())
     } catch (error) {
       console.error('Failed to save image:', error)
     }
