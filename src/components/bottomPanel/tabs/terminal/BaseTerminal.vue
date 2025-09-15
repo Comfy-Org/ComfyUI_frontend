@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
 import { useElementHover, useEventListener } from '@vueuse/core'
+import type { IDisposable } from '@xterm/xterm'
 import Button from 'primevue/button'
 import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -45,7 +46,7 @@ const terminalData = useTerminal(terminalEl)
 emit('created', terminalData, rootEl)
 
 const { terminal } = terminalData
-let selectionDisposable: any
+let selectionDisposable: IDisposable | undefined
 
 const tooltipText = computed(() => {
   return hasSelection.value
