@@ -58,10 +58,11 @@ vi.mock('@/utils/envUtil', () => ({
 }))
 
 // Mock clipboard API
-Object.assign(navigator, {
-  clipboard: {
+Object.defineProperty(navigator, 'clipboard', {
+  value: {
     writeText: vi.fn().mockResolvedValue(undefined)
-  }
+  },
+  configurable: true
 })
 
 const i18n = createI18n({
