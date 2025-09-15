@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
+import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -10,6 +11,10 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn()
+}))
+
+vi.mock('@/composables/graph/useCanvasInteractions', () => ({
+  useCanvasInteractions: vi.fn()
 }))
 
 vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
@@ -68,12 +73,22 @@ function createMockLayoutMutations(): Pick<
   }
 }
 
+function createMockCanvasInteractions(): Pick<
+  ReturnType<typeof useCanvasInteractions>,
+  'canCapturePointerEvents'
+> {
+  return {
+    canCapturePointerEvents: computed(() => true) // Default to allowing pointer events
+  }
+}
+
 describe('useNodeEventHandlers', () => {
   let mockCanvas: ReturnType<typeof createMockCanvas>
   let mockNode: ReturnType<typeof createMockNode>
   let mockNodeManager: ReturnType<typeof createMockNodeManager>
   let mockCanvasStore: ReturnType<typeof createMockCanvasStore>
   let mockLayoutMutations: ReturnType<typeof createMockLayoutMutations>
+  let mockCanvasInteractions: ReturnType<typeof createMockCanvasInteractions>
 
   const testNodeData: VueNodeData = {
     id: 'node-1',
@@ -90,12 +105,16 @@ describe('useNodeEventHandlers', () => {
     mockNodeManager = createMockNodeManager(mockNode)
     mockCanvasStore = createMockCanvasStore(mockCanvas)
     mockLayoutMutations = createMockLayoutMutations()
+    mockCanvasInteractions = createMockCanvasInteractions()
 
     vi.mocked(useCanvasStore).mockReturnValue(
       mockCanvasStore as ReturnType<typeof useCanvasStore>
     )
     vi.mocked(useLayoutMutations).mockReturnValue(
       mockLayoutMutations as ReturnType<typeof useLayoutMutations>
+    )
+    vi.mocked(useCanvasInteractions).mockReturnValue(
+      mockCanvasInteractions as ReturnType<typeof useCanvasInteractions>
     )
   })
 
