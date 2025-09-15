@@ -1,15 +1,17 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <div>
-    <h1>Email Verification</h1>
+    <h1>{{ t('cloudOnboarding.verifyEmail.title') }}</h1>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 // import { verifyEmail } from '@/api/auth'
 import router from '@/router'
+
+const { t } = useI18n()
 
 onMounted(async () => {
   // verifyEmail()

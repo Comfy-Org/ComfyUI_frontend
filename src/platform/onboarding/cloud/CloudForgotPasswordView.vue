@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <div class="h-full flex items-center justify-center p-8">
     <div class="w-96 p-2">
@@ -68,7 +67,7 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-          here</a
+          {{ t('cloudOnboarding.waitlist.contactLink') }}</a
         >.
       </p>
     </div>

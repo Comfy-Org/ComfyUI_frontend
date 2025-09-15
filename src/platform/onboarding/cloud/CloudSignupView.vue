@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <div class="h-full flex items-center justify-center p-8">
     <div class="w-96 p-2">
@@ -76,14 +75,14 @@
           {{ t('auth.login.privacyLink') }} </a
         >.
         <p class="mt-2">
-          Questions? Contact us
+          {{ t('cloudOnboarding.waitlist.questionsText') }}
           <a
             href="https://support.comfy.org"
             class="text-blue-400 no-underline cursor-pointer"
             target="_blank"
             rel="noopener noreferrer"
           >
-            here</a
+            {{ t('cloudOnboarding.waitlist.contactLink') }}</a
           >.
         </p>
       </div>

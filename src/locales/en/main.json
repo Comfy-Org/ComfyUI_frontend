@@ -1780,8 +1780,11 @@
       }
     },
     "waitlist": {
-      "title": "Cloud Waitlist",
-      "message": "You have been added to the waitlist. We will notify you when access is available."
+      "titleLine1": "YOU'RE ON THE",
+      "titleLine2": "WAITLIST 🎉",
+      "message": "You have been added to the waitlist. We will notify you when access is available.",
+      "questionsText": "Questions? Contact us",
+      "contactLink": "here"
     },
     "forgotPassword": {
       "title": "Forgot Password",
@@ -1806,6 +1809,19 @@
       "learnAboutButton": "Learn about Cloud",
       "wantToRun": "Want to run comfyUI locally instead?",
       "download": "Download ComfyUI"
+    },
+    "claimInvite": {
+      "processingTitle": "Processing Invite Code...",
+      "claimButton": "Claim Invite"
+    },
+    "sorryContactSupport": {
+      "title": "Sorry, contact support"
+    },
+    "verifyEmail": {
+      "title": "Email Verification"
+    },
+    "footer": {
+      "needHelp": "Need Help?"
     }
   }
 }
