@@ -3,17 +3,17 @@ import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSubgraphNavigation } from '@/renderer/core/canvas/useSubgraphNavigation'
 
-// Create mutable mock for app
-const mockApp = {
-  canvas: {
-    graph: null as LGraph | null,
-    subgraph: null as any
+vi.mock('@/scripts/app', () => {
+  const mockApp = {
+    canvas: {
+      graph: null as any,
+      subgraph: undefined as any
+    }
   }
-}
-
-vi.mock('@/scripts/app', () => ({
-  app: mockApp
-}))
+  return {
+    app: mockApp
+  }
+})
 
 vi.mock('@/stores/graphStore', () => ({
   useCanvasStore: () => ({
@@ -88,7 +88,8 @@ describe('useSubgraphNavigation', () => {
 
   it('should call onSubgraphExit when exiting a subgraph via set-graph event', async () => {
     // Mock being in a subgraph initially
-    mockApp.canvas.subgraph = { id: 'test-subgraph' } as any
+    const { app } = await import('@/scripts/app')
+    app.canvas.subgraph = { id: 'test-subgraph' } as any
 
     useSubgraphNavigation({
       onSubgraphEnter,
@@ -112,7 +113,7 @@ describe('useSubgraphNavigation', () => {
     })
 
     // Simulate exiting subgraph (subgraph becomes null)
-    mockApp.canvas.subgraph = null
+    app.canvas.subgraph = undefined
     const newMockGraph = { id: 'main-graph' } as LGraph
     handler({
       detail: { newGraph: newMockGraph }
@@ -186,17 +187,18 @@ describe('useSubgraphNavigation', () => {
     const handler = setGraphCall[2]
 
     // Start in main graph
-    mockApp.canvas.subgraph = null
+    const { app } = await import('@/scripts/app')
+    app.canvas.subgraph = undefined
     const mainGraph = { id: 'main' } as LGraph
     handler({ detail: { newGraph: mainGraph } })
 
     // Enter subgraph
-    mockApp.canvas.subgraph = { id: 'sub1' } as any
+    app.canvas.subgraph = { id: 'sub1' } as any
     const subGraph1 = { id: 'sub1' } as LGraph
     handler({ detail: { newGraph: subGraph1 } })
 
     // Exit back to main
-    mockApp.canvas.subgraph = null
+    app.canvas.subgraph = undefined
     handler({ detail: { newGraph: mainGraph } })
 
     // Should only trigger exit once (when actually exiting subgraph)
