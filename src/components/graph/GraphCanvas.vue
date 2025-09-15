@@ -119,6 +119,7 @@ import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useSubgraphNavigation } from '@/renderer/core/canvas/useSubgraphNavigation'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -181,6 +182,35 @@ const viewportCulling = useViewportCulling(
   vueNodeLifecycle.nodeManager
 )
 const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
+
+useSubgraphNavigation({
+  onSubgraphEnter: () => {
+    if (isVueNodesEnabled.value) {
+      vueNodeLifecycle.disposeNodeManagerAndSyncs()
+      void nextTick(() => {
+        vueNodeLifecycle.initializeNodeManager()
+      })
+    }
+  },
+  onSubgraphExit: () => {
+    useWorkflowStore().updateActiveGraph()
+    if (isVueNodesEnabled.value) {
+      vueNodeLifecycle.disposeNodeManagerAndSyncs()
+      void nextTick(() => {
+        vueNodeLifecycle.initializeNodeManager()
+      })
+    }
+  },
+  onGraphChange: () => {
+    // Handle any graph context change (including tab restoration)
+    if (isVueNodesEnabled.value) {
+      vueNodeLifecycle.disposeNodeManagerAndSyncs()
+      void nextTick(() => {
+        vueNodeLifecycle.initializeNodeManager()
+      })
+    }
+  }
+})
 
 const nodePositions = vueNodeLifecycle.nodePositions
 const nodeSizes = vueNodeLifecycle.nodeSizes
@@ -450,49 +480,8 @@ onMounted(async () => {
   whenever(
     () => useCanvasStore().canvas,
     (canvas) => {
-      // Track current graph context to detect subgraph transitions
-      let currentGraph: any = null
-      let wasInSubgraph = false
-
-      useEventListener(canvas.canvas, 'litegraph:set-graph', (event: any) => {
+      useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
         useWorkflowStore().updateActiveGraph()
-        console.log('set-graph')
-
-        const newGraph = event.detail?.newGraph || comfyApp.canvas?.graph
-        const isInSubgraph = Boolean(comfyApp.canvas?.subgraph)
-
-        // Detect transitions that require Vue node reinitialization
-        if (isVueNodesEnabled.value && newGraph && newGraph !== currentGraph) {
-          const isExitingSubgraph = wasInSubgraph && !isInSubgraph
-
-          if (isExitingSubgraph) {
-            console.log(
-              'Exiting subgraph - reinitializing Vue node manager for parent graph'
-            )
-            vueNodeLifecycle.disposeNodeManagerAndSyncs()
-            void nextTick(() => {
-              vueNodeLifecycle.initializeNodeManager()
-            })
-          }
-        }
-
-        // Update tracking variables
-        currentGraph = newGraph
-        wasInSubgraph = isInSubgraph
-      })
-
-      // Reinitialize Vue node manager specifically for subgraph entry
-      useEventListener(canvas.canvas, 'subgraph-opened', () => {
-        console.log(
-          'subgraph-opened - reinitializing Vue node manager for subgraph'
-        )
-        if (isVueNodesEnabled.value) {
-          vueNodeLifecycle.disposeNodeManagerAndSyncs()
-          // Use nextTick to ensure the graph context has settled
-          void nextTick(() => {
-            vueNodeLifecycle.initializeNodeManager()
-          })
-        }
       })
     },
     { immediate: true }
