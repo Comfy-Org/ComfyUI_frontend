@@ -135,6 +135,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
@@ -199,19 +200,7 @@ if (!selectedNodeIds) {
 }
 
 // Inject transform state for coordinate conversion
-const transformState = inject('transformState') as
-  | {
-      camera: { z: number }
-      canvasToScreen: (point: { x: number; y: number }) => {
-        x: number
-        y: number
-      }
-      screenToCanvas: (point: { x: number; y: number }) => {
-        x: number
-        y: number
-      }
-    }
-  | undefined
+const transformState = inject(TransformStateKey)
 
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
@@ -268,7 +257,7 @@ const {
 } = useNodeLayout(nodeData.id)
 
 onMounted(() => {
-  if (size && transformState) {
+  if (size && transformState?.camera) {
     const scale = transformState.camera.z
     const screenSize = {
       width: size.width * scale,
