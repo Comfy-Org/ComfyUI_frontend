@@ -12,7 +12,7 @@
         'lg-node absolute rounded-2xl',
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
-        !!executing && 'border-blue-500 dark-theme:border-blue-500',
+        !!executing && 'border-blue-100 dark-theme:border-blue-100',
         hasAnyError && 'border-error',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
@@ -20,7 +20,7 @@
         'outline-transparent -outline-offset-2 outline-2',
         !!isSelected && 'outline-black dark-theme:outline-white',
         !!(isSelected && executing) &&
-          'outline-blue-500 dark-theme:outline-blue-500',
+          'outline-blue-100 dark-theme:outline-blue-100',
         isSelected && hasAnyError && 'outline-error',
         {
           'animate-pulse': executing,
@@ -213,7 +213,7 @@ const { executing, progress } = useNodeExecutionState(nodeData.id)
 // Direct access to execution store for error state
 const executionStore = useExecutionStore()
 const hasExecutionError = computed(
-  () => executionStore.lastExecutionErrorNodeLocatorId === nodeData.id
+  () => executionStore.lastExecutionErrorNodeId === nodeData.id
 )
 
 // Computed error states for styling
