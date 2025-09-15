@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center justify-center p-8">
     <div class="w-full max-w-md text-center">
-      <h1 class="text-3xl italic font-bolder mb-8">
+      <h1 class="font-abcrom font-black italic uppercase hero-title">
         {{ t('cloudWaitlist_titleLine1') }}<br />
         {{ t('cloudWaitlist_titleLine2') }}
       </h1>

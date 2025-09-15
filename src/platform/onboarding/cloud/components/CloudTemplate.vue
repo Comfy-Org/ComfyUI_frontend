@@ -75,6 +75,6 @@ const handleDownloadClick = () => {
   window.open('https://www.comfy.org/download', '_blank')
 }
 </script>
-<style scoped>
+<style>
 @import '@/platform/onboarding/cloud/assets/css/fonts.css';
 </style>
