@@ -168,50 +168,59 @@ export function useSelectionToolboxPosition(
     }
   )
 
-  // Watch for dragging state
-  watch(
-    () => canvasStore.canvas?.state?.draggingItems,
-    (dragging) => {
-      if (dragging) {
-        visible.value = false
+  // Helper function to handle drag state changes (shared between LiteGraph and Vue nodes)
+  const handleDragStateChange = (dragging: boolean) => {
+    if (dragging) {
+      visible.value = false
 
-        if (moreOptionsOpen.value) {
-          const currentSig = buildSelectionSignature(canvasStore)
-          if (currentSig !== moreOptionsSelectionSignature) {
-            moreOptionsSelectionSignature = null
-          }
-          moreOptionsWasOpenBeforeDrag = true
-          moreOptionsOpen.value = false
-          moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
-          if (moreOptionsRestorePending.value) {
-            forceCloseMoreOptionsSignal.value++
-          } else {
-            moreOptionsWasOpenBeforeDrag = false
-          }
+      if (moreOptionsOpen.value) {
+        const currentSig = buildSelectionSignature(canvasStore)
+        if (currentSig !== moreOptionsSelectionSignature) {
+          moreOptionsSelectionSignature = null
+        }
+        moreOptionsWasOpenBeforeDrag = true
+        moreOptionsOpen.value = false
+        moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
+        if (moreOptionsRestorePending.value) {
+          forceCloseMoreOptionsSignal.value++
         } else {
-          moreOptionsRestorePending.value = false
           moreOptionsWasOpenBeforeDrag = false
         }
       } else {
-        requestAnimationFrame(() => {
-          updateSelectionBounds()
-          const selectionMatches = currentSelectionMatchesSignature(canvasStore)
-          const shouldRestore =
-            moreOptionsWasOpenBeforeDrag &&
-            visible.value &&
-            moreOptionsRestorePending.value &&
-            selectionMatches
-
-          if (shouldRestore) {
-            restoreMoreOptionsSignal.value++
-          } else {
-            moreOptionsRestorePending.value = false
-          }
-          moreOptionsWasOpenBeforeDrag = false
-        })
+        moreOptionsRestorePending.value = false
+        moreOptionsWasOpenBeforeDrag = false
       }
+    } else {
+      requestAnimationFrame(() => {
+        updateSelectionBounds()
+        const selectionMatches = currentSelectionMatchesSignature(canvasStore)
+        const shouldRestore =
+          moreOptionsWasOpenBeforeDrag &&
+          visible.value &&
+          moreOptionsRestorePending.value &&
+          selectionMatches
+
+        if (shouldRestore) {
+          restoreMoreOptionsSignal.value++
+        } else {
+          moreOptionsRestorePending.value = false
+        }
+        moreOptionsWasOpenBeforeDrag = false
+      })
     }
+  }
+
+  // Watch for LiteGraph dragging state
+  watch(
+    () => canvasStore.canvas?.state?.draggingItems,
+    (dragging) => handleDragStateChange(dragging || false)
   )
+
+  // Watch for Vue node dragging state when Vue nodes are enabled
+  if (shouldRenderVueNodes.value) {
+    const vueNodeDraggingState = layoutStore.getVueNodeDraggingState()
+    watch(vueNodeDraggingState, handleDragStateChange)
+  }
 
   onUnmounted(() => {
     resetMoreOptionsState()
