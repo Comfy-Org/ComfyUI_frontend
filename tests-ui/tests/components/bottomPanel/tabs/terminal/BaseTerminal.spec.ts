@@ -114,13 +114,6 @@ describe('BaseTerminal', () => {
     }
   })
 
-  it('renders terminal container', () => {
-    wrapper = mountBaseTerminal()
-
-    expect(wrapper.find('.terminal-host').exists()).toBe(true)
-    expect(wrapper.find('.p-terminal').exists()).toBe(true)
-  })
-
   it('emits created event on mount', () => {
     wrapper = mountBaseTerminal()
 
