@@ -11,8 +11,11 @@
       icon="pi pi-copy"
       severity="secondary"
       size="small"
-      class="absolute top-2 right-8 transition-opacity"
-      :class="{ 'opacity-0 pointer-events-none select-none': !isHovered }"
+      :class="
+        cn('absolute top-2 right-8 transition-opacity', {
+          'opacity-0 pointer-events-none select-none': !isHovered
+        })
+      "
       :aria-label="tooltipText"
       @click="handleCopy"
     />
@@ -28,6 +31,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI, isElectron } from '@/utils/envUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
