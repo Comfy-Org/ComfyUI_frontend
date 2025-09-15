@@ -8,7 +8,14 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted } from 'vue'
+import {
+  type Ref,
+  getCurrentInstance,
+  onMounted,
+  onUnmounted,
+  readonly,
+  ref
+} from 'vue'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
@@ -21,6 +28,15 @@ interface ElementBoundsUpdate {
   id: string
   /** Updated bounds */
   bounds: Bounds
+}
+
+/**
+ * Control interface for pausing/resuming tracking
+ */
+export interface TrackingControl {
+  pause(): void
+  resume(): void
+  isActive: Readonly<Ref<boolean>>
 }
 
 /**
@@ -52,6 +68,9 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
   ]
 ])
 
+// Storage for tracking controls by element
+const trackingControls = new WeakMap<HTMLElement, TrackingControl>()
+
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
   // Group updates by element type
@@ -60,6 +79,10 @@ const resizeObserver = new ResizeObserver((entries) => {
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
+
+    // Check if tracking is paused for this element
+    const control = trackingControls.get(element)
+    if (control && !control.isActive.value) continue
 
     // Find which type this element belongs to
     let elementType: string | undefined
@@ -128,7 +151,18 @@ const resizeObserver = new ResizeObserver((entries) => {
 export function useVueElementTracking(
   appIdentifier: string,
   trackingType: string
-) {
+): TrackingControl {
+  const isActive = ref(true)
+
+  const control: TrackingControl = {
+    pause: () => {
+      isActive.value = false
+    },
+    resume: () => {
+      isActive.value = true
+    },
+    isActive: readonly(isActive)
+  }
   onMounted(() => {
     const element = getCurrentInstance()?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
@@ -137,6 +171,10 @@ export function useVueElementTracking(
     if (config) {
       // Set the appropriate data attribute
       element.dataset[config.dataAttribute] = appIdentifier
+
+      // Store the tracking control for this element
+      trackingControls.set(element, control)
+
       resizeObserver.observe(element)
     }
   })
@@ -149,7 +187,13 @@ export function useVueElementTracking(
     if (config) {
       // Remove the data attribute
       delete element.dataset[config.dataAttribute]
+
+      // Remove the tracking control
+      trackingControls.delete(element)
+
       resizeObserver.unobserve(element)
     }
   })
+
+  return control
 }

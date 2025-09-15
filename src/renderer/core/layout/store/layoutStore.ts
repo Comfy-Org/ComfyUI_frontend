@@ -1381,6 +1381,24 @@ class LayoutStoreImpl implements LayoutStore {
     // Restore original source
     this.currentSource = originalSource
   }
+
+  /**
+   * Get all node layouts for syncing to external systems
+   */
+  getAllNodeLayouts(): Map<NodeId, NodeLayout | null> {
+    const results = new Map<NodeId, NodeLayout | null>()
+
+    for (const [nodeId, ynode] of this.ynodes.entries()) {
+      if (ynode) {
+        const layout = yNodeToLayout(ynode)
+        results.set(nodeId, layout)
+      } else {
+        results.set(nodeId, null)
+      }
+    }
+
+    return results
+  }
 }
 
 // Create singleton instance

@@ -1,6 +1,7 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
@@ -12,6 +13,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
+  const { forceSyncAll } = useLayoutSync()
 
   const workflowPersistenceEnabled = computed(() =>
     settingStore.get('Comfy.Workflow.Persist')
@@ -19,6 +21,12 @@ export function useWorkflowPersistence() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
+
+    // Force sync all layout changes to LiteGraph before serialization
+    if (comfyApp.canvas) {
+      forceSyncAll(comfyApp.canvas)
+    }
+
     const workflow = JSON.stringify(comfyApp.graph.serialize())
     localStorage.setItem('workflow', workflow)
     if (api.clientId) {
