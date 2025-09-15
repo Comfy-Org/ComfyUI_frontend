@@ -2,9 +2,9 @@ import { useTitle } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
