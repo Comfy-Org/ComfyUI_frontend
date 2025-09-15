@@ -58,7 +58,6 @@ const tooltipText = computed(() => {
 })
 
 const handleCopy = async () => {
-  const { terminal } = terminalData
 
   const existingSelection = terminal.getSelection()
   const shouldSelectAll = !existingSelection
