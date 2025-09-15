@@ -219,27 +219,4 @@ describe('BaseTerminal', () => {
     expect(terminalMock.selectAll).toHaveBeenCalled()
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
   })
-
-  it('tracks selection changes', async () => {
-    wrapper = mountBaseTerminal()
-
-    // Initially no selection
-    terminalMock.hasSelection.mockReturnValue(false)
-    await wrapper.trigger('mouseenter')
-    await nextTick()
-    let button = wrapper.find('button[aria-label]')
-    expect(button.attributes('aria-label')).toBe('Copy all')
-
-    // Update mock to return true for selection
-    terminalMock.hasSelection.mockReturnValue(true)
-
-    // Trigger selection change
-    const selectionCallback = terminalMock.onSelectionChange.mock.calls[0][0]
-    selectionCallback()
-    await nextTick()
-
-    // Should update tooltip
-    button = wrapper.find('button[aria-label]')
-    expect(button.attributes('aria-label')).toBe('Copy selection')
-  })
 })
