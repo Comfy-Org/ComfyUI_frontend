@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { VueWrapper, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -79,8 +79,7 @@ const i18n = createI18n({
 })
 
 describe('BaseTerminal', () => {
-  let wrapper: any
-  let terminalMock: any
+  let wrapper: VueWrapper<InstanceType<typeof BaseTerminal>> | undefined
 
   const mountBaseTerminal = () => {
     return mount(BaseTerminal, {
@@ -103,7 +102,6 @@ describe('BaseTerminal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    terminalMock = mockTerminal
   })
 
   afterEach(() => {
@@ -114,7 +112,7 @@ describe('BaseTerminal', () => {
     wrapper = mountBaseTerminal()
 
     expect(wrapper.emitted('created')).toBeTruthy()
-    expect(wrapper.emitted('created')[0]).toHaveLength(2)
+    expect(wrapper.emitted('created')![0]).toHaveLength(2)
   })
 
   it('emits unmounted event on unmount', () => {
@@ -135,7 +133,7 @@ describe('BaseTerminal', () => {
   })
 
   it('shows correct tooltip when no selection', async () => {
-    terminalMock.hasSelection.mockReturnValue(false)
+    mockTerminal.hasSelection.mockReturnValue(false)
     wrapper = mountBaseTerminal()
 
     await wrapper.trigger('mouseenter')
@@ -146,10 +144,14 @@ describe('BaseTerminal', () => {
   })
 
   it('shows correct tooltip when selection exists', async () => {
-    terminalMock.hasSelection.mockReturnValue(true)
+    mockTerminal.hasSelection.mockReturnValue(true)
     wrapper = mountBaseTerminal()
 
-    const selectionCallback = terminalMock.onSelectionChange.mock.calls[0][0]
+    // Trigger the selection change callback that was registered during mount
+    expect(mockTerminal.onSelectionChange).toHaveBeenCalled()
+    // Access the mock calls - TypeScript can't infer the mock structure dynamically
+    const selectionCallback = (mockTerminal.onSelectionChange as any).mock
+      .calls[0][0]
     selectionCallback()
     await nextTick()
 
@@ -162,8 +164,8 @@ describe('BaseTerminal', () => {
 
   it('copies selected text when selection exists', async () => {
     const selectedText = 'selected text'
-    terminalMock.hasSelection.mockReturnValue(true)
-    terminalMock.getSelection.mockReturnValue(selectedText)
+    mockTerminal.hasSelection.mockReturnValue(true)
+    mockTerminal.getSelection.mockReturnValue(selectedText)
 
     wrapper = mountBaseTerminal()
 
@@ -173,15 +175,15 @@ describe('BaseTerminal', () => {
     const button = wrapper.find('button[aria-label]')
     await button.trigger('click')
 
-    expect(terminalMock.selectAll).not.toHaveBeenCalled()
+    expect(mockTerminal.selectAll).not.toHaveBeenCalled()
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(selectedText)
-    expect(terminalMock.clearSelection).not.toHaveBeenCalled()
+    expect(mockTerminal.clearSelection).not.toHaveBeenCalled()
   })
 
   it('copies all text when no selection exists', async () => {
     const allText = 'all terminal content'
-    terminalMock.hasSelection.mockReturnValue(false)
-    terminalMock.getSelection
+    mockTerminal.hasSelection.mockReturnValue(false)
+    mockTerminal.getSelection
       .mockReturnValueOnce('') // First call returns empty (no selection)
       .mockReturnValueOnce(allText) // Second call after selectAll returns all text
 
@@ -193,14 +195,14 @@ describe('BaseTerminal', () => {
     const button = wrapper.find('button[aria-label]')
     await button.trigger('click')
 
-    expect(terminalMock.selectAll).toHaveBeenCalled()
+    expect(mockTerminal.selectAll).toHaveBeenCalled()
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(allText)
-    expect(terminalMock.clearSelection).toHaveBeenCalled()
+    expect(mockTerminal.clearSelection).toHaveBeenCalled()
   })
 
   it('does not copy when no text available', async () => {
-    terminalMock.hasSelection.mockReturnValue(false)
-    terminalMock.getSelection.mockReturnValue('')
+    mockTerminal.hasSelection.mockReturnValue(false)
+    mockTerminal.getSelection.mockReturnValue('')
 
     wrapper = mountBaseTerminal()
 
@@ -210,7 +212,7 @@ describe('BaseTerminal', () => {
     const button = wrapper.find('button[aria-label]')
     await button.trigger('click')
 
-    expect(terminalMock.selectAll).toHaveBeenCalled()
+    expect(mockTerminal.selectAll).toHaveBeenCalled()
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
   })
 })
