@@ -25,7 +25,9 @@
       <div class="absolute inset-0 w-full h-full bg-black/30"></div>
 
       <!-- Optional Overlay for better visual -->
-      <div class="absolute inset-0 flex justify-center items-center text-white">
+      <div
+        class="absolute inset-0 flex justify-center items-center text-white text-center"
+      >
         <div>
           <h1 class="font-abcrom font-black italic uppercase hero-title">
             {{ t('cloudStart_title') }}
