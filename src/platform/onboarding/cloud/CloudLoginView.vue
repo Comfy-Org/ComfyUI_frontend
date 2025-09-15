@@ -1,13 +1,12 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <div class="h-full flex items-center justify-center p-8">
     <div class="w-96 p-2">
       <div class="bg-[#2d2e32] p-4 rounded-lg">
         <h4 class="m-0 pb-2 text-lg">
-          {{ t('cloudOnboarding.privateBeta.title') }}
+          {{ t('cloudPrivateBeta_title') }}
         </h4>
         <p class="m-0 text-base leading-6">
-          {{ t('cloudOnboarding.privateBeta.desc') }}
+          {{ t('cloudPrivateBeta_desc') }}
         </p>
       </div>
 
@@ -63,14 +62,14 @@
 
       <!-- Terms & Contact -->
       <p class="mt-5 text-sm text-gray-600">
-        Questions? Contact us
+        {{ t('cloudWaitlist_questionsText') }}
         <a
           href="https://support.comfy.org"
           class="text-blue-400 no-underline cursor-pointer"
           target="_blank"
           rel="noopener noreferrer"
         >
-          here</a
+          {{ t('cloudWaitlist_contactLink') }}</a
         >.
       </p>
     </div>

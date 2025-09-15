@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <footer class="flex gap-2.5 pl-[60px] pb-[60px]">
     <a
@@ -21,7 +20,7 @@
       target="_blank"
       rel="noopener noreferrer"
     >
-      Need Help?
+      {{ t('cloudFooter_needHelp') }}
     </a>
   </footer>
 </template>
