@@ -94,9 +94,9 @@ import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 const props = defineProps<{
   message: string

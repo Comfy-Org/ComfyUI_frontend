@@ -8,12 +8,12 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { useCanvasStore } from '@/stores/graphStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 const renderPreview = (

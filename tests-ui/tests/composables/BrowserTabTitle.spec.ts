@@ -26,7 +26,7 @@ vi.mock('@/stores/executionStore', () => ({
 const settingStore = reactive({
   get: vi.fn(() => 'Enabled')
 })
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => settingStore
 }))
 
@@ -34,7 +34,7 @@ vi.mock('@/stores/settingStore', () => ({
 const workflowStore = reactive({
   activeWorkflow: null as any
 })
-vi.mock('@/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => workflowStore
 }))
 

@@ -1,7 +1,7 @@
 import { useElementBounding } from '@vueuse/core'
 
 import type { LGraphCanvas, Point } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 let sharedConverter: ReturnType<typeof useCanvasPositionConversion> | null =
   null

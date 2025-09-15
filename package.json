@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.27.3",
+  "version": "1.27.4",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -83,6 +83,7 @@
     "tailwindcss": "^4.1.12",
     "tailwindcss-primeui": "^0.6.1",
     "tsx": "^4.15.6",
+    "tw-animate-css": "^1.3.8",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.42.0",
     "unplugin-icons": "^0.22.0",
@@ -100,7 +101,7 @@
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
     "@atlaskit/pragmatic-drag-and-drop": "^1.3.1",
-    "@comfyorg/comfyui-electron-types": "^0.4.69",
+    "@comfyorg/comfyui-electron-types": "^0.4.72",
     "@iconify/json": "^2.2.380",
     "@primeuix/forms": "0.0.2",
     "@primeuix/styled": "0.3.2",
@@ -140,6 +141,7 @@
     "pinia": "^2.1.7",
     "primeicons": "^7.0.0",
     "primevue": "^4.2.5",
+    "reka-ui": "^2.5.0",
     "semver": "^7.7.2",
     "tailwind-merge": "^3.3.1",
     "three": "^0.170.0",

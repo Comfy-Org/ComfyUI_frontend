@@ -8,23 +8,16 @@
     :class="
       cn(
         'bg-white dark-theme:bg-charcoal-100',
-        'min-w-[445px]',
         'lg-node absolute rounded-2xl',
-        // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
-        !!executing && 'border-blue-500 dark-theme:border-blue-500',
-        !!error && 'border-red-700 dark-theme:border-red-300',
-        // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
-        // Selected
         'outline-transparent -outline-offset-2 outline-2',
-        !!isSelected && 'outline-black dark-theme:outline-white',
-        !!(isSelected && executing) &&
-          'outline-blue-500 dark-theme:outline-blue-500',
-        !!(isSelected && error) && 'outline-red-500 dark-theme:outline-red-500',
+        borderClass,
+        outlineClass,
         {
           'animate-pulse': executing,
-          'opacity-50': nodeData.mode === 4,
+          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
+            bypassed,
           'will-change-transform': isDragging
         },
         lodCssClass,
@@ -104,11 +97,6 @@
           @slot-click="handleSlotClick"
         />
 
-        <div
-          v-if="shouldRenderSlots && shouldShowWidgets"
-          :class="separatorClasses"
-        />
-
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
           v-if="shouldShowWidgets"
@@ -118,17 +106,13 @@
           :lod-level="lodLevel"
         />
 
-        <div
-          v-if="(shouldRenderSlots || shouldShowWidgets) && shouldShowContent"
-          :class="separatorClasses"
-        />
-
         <!-- Custom content at reduced+ detail -->
         <NodeContent
           v-if="shouldShowContent"
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
+          :image-urls="nodeImageUrls"
         />
       </div>
     </template>
@@ -136,14 +120,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  onErrorCaptured,
+  onMounted,
+  provide,
+  ref,
+  toRef,
+  watch
+} from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { app } from '@/scripts/app'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
@@ -159,13 +158,18 @@ interface LGraphNodeProps {
   position?: { x: number; y: number }
   size?: { width: number; height: number }
   readonly?: boolean
-  executing?: boolean
-  progress?: number
   error?: string | null
   zoomLevel?: number
 }
 
-const props = defineProps<LGraphNodeProps>()
+const {
+  nodeData,
+  position,
+  size,
+  error = null,
+  readonly = false,
+  zoomLevel = 1
+} = defineProps<LGraphNodeProps>()
 
 const emit = defineEmits<{
   'node-click': [
@@ -184,7 +188,7 @@ const emit = defineEmits<{
   'update:title': [nodeId: string, newTitle: string]
 }>()
 
-useVueElementTracking(props.nodeData.id, 'node')
+useVueElementTracking(nodeData.id, 'node')
 
 // Inject selection state from parent
 const selectedNodeIds = inject(SelectedNodeIdsKey)
@@ -194,13 +198,44 @@ if (!selectedNodeIds) {
   )
 }
 
+// Inject transform state for coordinate conversion
+const transformState = inject('transformState') as
+  | {
+      camera: { z: number }
+      canvasToScreen: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+      screenToCanvas: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+    }
+  | undefined
+
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
-  return selectedNodeIds.value.has(props.nodeData.id)
+  return selectedNodeIds.value.has(nodeData.id)
 })
 
+// Use execution state composable
+const { executing, progress } = useNodeExecutionState(nodeData.id)
+
+// Direct access to execution store for error state
+const executionStore = useExecutionStore()
+const hasExecutionError = computed(
+  () => executionStore.lastExecutionErrorNodeId === nodeData.id
+)
+
+// Computed error states for styling
+const hasAnyError = computed(
+  (): boolean => !!(hasExecutionError.value || nodeData.hasErrors || error)
+)
+
+const bypassed = computed((): boolean => nodeData.mode === 4)
+
 // LOD (Level of Detail) system based on zoom level
-const zoomRef = toRef(() => props.zoomLevel ?? 1)
+const zoomRef = toRef(() => zoomLevel)
 const {
   lodLevel,
   shouldRenderWidgets,
@@ -228,8 +263,20 @@ const {
   zIndex,
   startDrag,
   handleDrag: handleLayoutDrag,
-  endDrag
-} = useNodeLayout(props.nodeData.id)
+  endDrag,
+  resize
+} = useNodeLayout(nodeData.id)
+
+onMounted(() => {
+  if (size && transformState) {
+    const scale = transformState.camera.z
+    const screenSize = {
+      width: size.width * scale,
+      height: size.height * scale
+    }
+    resize(screenSize)
+  }
+})
 
 // Drag state for styling
 const isDragging = ref(false)
@@ -242,11 +289,11 @@ const lastX = ref(0)
 const DRAG_THRESHOLD_PX = 4
 
 // Track collapsed state
-const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
+const isCollapsed = ref(nodeData.flags?.collapsed ?? false)
 
 // Watch for external changes to the collapsed state
 watch(
-  () => props.nodeData.flags?.collapsed,
+  () => nodeData.flags?.collapsed,
   (newCollapsed: boolean | undefined) => {
     if (newCollapsed !== undefined && newCollapsed !== isCollapsed.value) {
       isCollapsed.value = newCollapsed
@@ -254,11 +301,10 @@ watch(
   }
 )
 
-// Check if node has custom content
+// Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
-  // Currently all content is handled through widgets
-  // This remains false but provides extensibility point
-  return false
+  // Show custom content if node has image outputs
+  return nodeImageUrls.value.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -268,16 +314,39 @@ const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
-  () => shouldRenderWidgets.value && props.nodeData.widgets?.length
+  () => shouldRenderWidgets.value && nodeData.widgets?.length
 )
 
 const shouldShowContent = computed(
   () => shouldRenderContent.value && hasCustomContent.value
 )
 
+const borderClass = computed(() => {
+  if (hasAnyError.value) {
+    return 'border-error'
+  }
+  if (executing.value) {
+    return 'border-blue-500'
+  }
+  return undefined
+})
+
+const outlineClass = computed(() => {
+  if (!isSelected.value) {
+    return undefined
+  }
+  if (hasAnyError.value) {
+    return 'outline-error'
+  }
+  if (executing.value) {
+    return 'outline-blue-500'
+  }
+  return 'outline-black dark-theme:outline-white'
+})
+
 // Event handlers
 const handlePointerDown = (event: PointerEvent) => {
-  if (!props.nodeData) {
+  if (!nodeData) {
     console.warn('LGraphNode: nodeData is null/undefined in handlePointerDown')
     return
   }
@@ -304,13 +373,13 @@ const handlePointerUp = (event: PointerEvent) => {
   const dx = event.clientX - lastX.value
   const dy = event.clientY - lastY.value
   const wasDragging = Math.hypot(dx, dy) > DRAG_THRESHOLD_PX
-  emit('node-click', event, props.nodeData, wasDragging)
+  emit('node-click', event, nodeData, wasDragging)
 }
 
 const handleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
   // Emit event so parent can sync with LiteGraph if needed
-  emit('update:collapsed', props.nodeData.id, isCollapsed.value)
+  emit('update:collapsed', nodeData.id, isCollapsed.value)
 }
 
 const handleSlotClick = (
@@ -318,14 +387,58 @@ const handleSlotClick = (
   slotIndex: number,
   isInput: boolean
 ) => {
-  if (!props.nodeData) {
+  if (!nodeData) {
     console.warn('LGraphNode: nodeData is null/undefined in handleSlotClick')
     return
   }
-  emit('slot-click', event, props.nodeData, slotIndex, isInput)
+  emit('slot-click', event, nodeData, slotIndex, isInput)
 }
 
 const handleTitleUpdate = (newTitle: string) => {
-  emit('update:title', props.nodeData.id, newTitle)
+  emit('update:title', nodeData.id, newTitle)
 }
+
+const nodeOutputs = useNodeOutputStore()
+
+const nodeImageUrls = ref<string[]>([])
+const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
+  // Construct proper locator ID using subgraph ID from VueNodeData
+  const locatorId = nodeData.subgraphId
+    ? `${nodeData.subgraphId}:${nodeData.id}`
+    : nodeData.id
+
+  // Use root graph for getNodeByLocatorId since it needs to traverse from root
+  const rootGraph = app.graph?.rootGraph || app.graph
+  if (!rootGraph) {
+    nodeImageUrls.value = []
+    return
+  }
+
+  const node = getNodeByLocatorId(rootGraph, locatorId)
+
+  if (node && newOutputs?.images?.length) {
+    const urls = nodeOutputs.getNodeImageUrls(node)
+    if (urls) {
+      nodeImageUrls.value = urls
+    }
+  } else {
+    // Clear URLs if no outputs or no images
+    nodeImageUrls.value = []
+  }
+}
+
+const nodeOutputLocatorId = computed(() =>
+  nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
+)
+
+watch(
+  () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
+  (newOutputs) => {
+    onNodeOutputsUpdate(newOutputs)
+  },
+  { deep: true }
+)
+
+// Provide nodeImageUrls to child components
+provide('nodeImageUrls', nodeImageUrls)
 </script>
