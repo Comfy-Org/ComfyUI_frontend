@@ -76,6 +76,7 @@
     "babel-plugin-transform-vue-jsx": "^3.7.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-typescript-vue3": "^2.1.1",
+    "dependency-cruiser": "^17.0.1",
     "eslint": "^9.34.0",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.2.6",
