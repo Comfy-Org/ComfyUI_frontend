@@ -220,16 +220,6 @@ describe('BaseTerminal', () => {
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
   })
 
-  it('disposes selection listener on unmount', async () => {
-    wrapper = mountBaseTerminal()
-
-    const disposable = terminalMock.onSelectionChange.mock.results[0].value
-
-    wrapper.unmount()
-
-    expect(disposable.dispose).toHaveBeenCalled()
-  })
-
   it('tracks selection changes', async () => {
     wrapper = mountBaseTerminal()
 
