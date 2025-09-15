@@ -45,7 +45,7 @@ export abstract class SubgraphSlot
     return LiteGraph.NODE_SLOT_HEIGHT
   }
 
-  readonly #pos: Point = new Float32Array(2)
+  readonly #pos: Point = [0, 0]
 
   readonly measurement: ConstrainedSize = new ConstrainedSize(
     SubgraphSlot.defaultHeight,
