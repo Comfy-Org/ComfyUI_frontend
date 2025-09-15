@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { Ref, ref } from 'vue'
+import { Ref, onUnmounted, ref } from 'vue'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -30,7 +30,9 @@ if (isElectron()) {
   useEventListener(terminalEl, 'contextmenu', showContextMenu)
 }
 
-emit('unmounted')
+onUnmounted(() => {
+  emit('unmounted')
+})
 </script>
 
 <style scoped>
