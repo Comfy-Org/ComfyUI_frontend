@@ -2,44 +2,12 @@
 @font-face {
   font-family: 'ABC ROM Extended';
   src:
-    local('ABC ROM Extended Bold Italic'),
-    local('ABCRom BoldItalic'),
-    url('../fonts/ABCROM-BoldItalic.woff2') format('woff2');
+    local('ABC ROM Extended Black Italic'),
+    local('ABCRom BlackItalic'),
+    url('../fonts/ABCROMExtended-BlackItalic.woff2') format('woff2'),
+    url('../fonts/ABCROMExtended-BlackItalic.woff') format('woff');
   font-weight: 900;
   font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'ABC ROM Extended';
-  src:
-    local('ABC ROM Extended Bold'),
-    local('ABCRom Bold'),
-    url('../fonts/ABCROM-Bold.woff2') format('woff2');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'ABC ROM Extended';
-  src:
-    local('ABC ROM Extended Medium'),
-    local('ABCRom Medium'),
-    url('../fonts/ABCROM-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'ABC ROM Extended';
-  src:
-    local('ABC ROM Extended Regular'),
-    local('ABCRom Regular'),
-    url('../fonts/ABCROM-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
   font-display: swap;
 }
 
