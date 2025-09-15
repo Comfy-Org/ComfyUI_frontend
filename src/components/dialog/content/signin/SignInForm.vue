@@ -34,10 +34,12 @@
           {{ t('auth.login.passwordLabel') }}
         </label>
         <span
-          class="text-muted text-base font-medium cursor-pointer select-none"
-          :class="{
-            'text-link-disabled': !$form.email?.value || $form.email?.invalid
-          }"
+          :class="
+            cn('text-muted text-base font-medium cursor-pointer select-none', {
+              'opacity-50 cursor-not-allowed':
+                !$form.email?.value || $form.email?.invalid
+            })
+          "
           @click="handleForgotPassword($form.email?.value, $form.email?.valid)"
         >
           {{ t('auth.login.forgotPassword') }}
@@ -84,6 +86,7 @@ import { useI18n } from 'vue-i18n'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { type SignInData, signInSchema } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const authStore = useFirebaseAuthStore()
 const firebaseAuthActions = useFirebaseAuthActions()
@@ -121,11 +124,3 @@ const handleForgotPassword = async (
   await firebaseAuthActions.sendPasswordReset(email)
 }
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-.text-link-disabled {
-  @apply opacity-50 cursor-not-allowed;
-}
-</style>

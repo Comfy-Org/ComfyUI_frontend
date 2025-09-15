@@ -4,7 +4,7 @@
     :class="{ 'opacity-75': isLoading }"
   >
     <Card
-      class="max-w-48 relative h-full overflow-hidden"
+      class="max-w-48 relative h-full overflow-hidden transition-opacity"
       :class="{ 'opacity-65': runner.state !== 'error' }"
       v-bind="(({ onClick, ...rest }) => rest)($attrs)"
     >
@@ -43,7 +43,7 @@
 
     <i
       v-if="!isLoading && runner.state === 'OK'"
-      class="task-card-ok pi pi-check"
+      class="task-card-ok pi pi-check text-green-500 absolute -right-4 -bottom-4 opacity-100 row-span-full col-span-full transition-opacity"
     />
   </div>
 </template>
@@ -86,19 +86,13 @@ const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .task-card-ok {
-  @apply text-green-500 absolute -right-4 -bottom-4 opacity-100 row-span-full col-span-full transition-opacity;
-
   font-size: 4rem;
   text-shadow: 0.25rem 0 0.5rem black;
   z-index: 10;
 }
 
 .p-card {
-  @apply transition-opacity;
-
   --p-card-background: var(--p-button-secondary-background);
   opacity: 0.9;
 

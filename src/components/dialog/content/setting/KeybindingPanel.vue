@@ -295,15 +295,13 @@ async function resetAllKeybindings() {
 </script>
 
 <style scoped>
-@reference '../../../../assets/css/style.css';
-
 :deep(.p-datatable-tbody) > tr > td {
-  @apply p-1;
+  padding: calc(var(--spacing) * 1);
   min-height: 2rem;
 }
 
 :deep(.p-datatable-row-selected) .actions,
 :deep(.p-datatable-selectable-row:hover) .actions {
-  @apply visible;
+  visibility: visible;
 }
 </style>

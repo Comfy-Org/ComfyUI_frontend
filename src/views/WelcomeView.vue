@@ -2,7 +2,7 @@
   <BaseViewTemplate dark>
     <div class="flex flex-col items-center justify-center gap-8 p-8">
       <!-- Header -->
-      <h1 class="animated-gradient-text text-glow select-none">
+      <h1 class="animated-gradient-text font-bold text-glow select-none">
         {{ $t('welcome.title') }}
       </h1>
 
@@ -33,10 +33,7 @@ const navigateTo = async (path: string) => {
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 .animated-gradient-text {
-  @apply font-bold;
   font-size: clamp(2rem, 8vw, 4rem);
   background: linear-gradient(to right, #12c2e9, #c471ed, #f64f59, #12c2e9);
   background-size: 300% auto;

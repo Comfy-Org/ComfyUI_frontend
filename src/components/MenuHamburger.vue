@@ -1,7 +1,7 @@
 <template>
   <div
     v-show="workspaceState.focusMode"
-    class="comfy-menu-hamburger no-drag"
+    class="fixed z-9999 flex flex-row no-drag"
     :style="positionCSS"
   >
     <Button
@@ -54,11 +54,3 @@ const positionCSS = computed<CSSProperties>(() =>
     : { top: '0px', right: '0px' }
 )
 </script>
-
-<style scoped>
-@reference '../assets/css/style.css';
-
-.comfy-menu-hamburger {
-  @apply fixed z-9999 flex flex-row;
-}
-</style>

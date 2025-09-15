@@ -3,7 +3,7 @@
     <IconField>
       <Button
         v-if="filterIcon"
-        class="p-inputicon filter-button"
+        class="p-inputicon overflow-visible p-0 w-auto border-none filter-button"
         :icon="filterIcon"
         text
         severity="contrast"
@@ -18,7 +18,7 @@
       <InputIcon v-if="!modelValue" :class="icon" />
       <Button
         v-if="modelValue"
-        class="p-inputicon clear-button"
+        class="p-inputicon overflow-visible p-0 w-auto border-none clear-button"
         icon="pi pi-times"
         text
         severity="contrast"
@@ -91,13 +91,7 @@ const clearSearch = () => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 :deep(.p-inputtext) {
   --p-form-field-padding-x: 0.625rem;
-}
-
-.p-button.p-inputicon {
-  @apply p-0 w-auto border-none;
 }
 </style>
