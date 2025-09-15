@@ -5,8 +5,8 @@ import {
   SettingTreeNode,
   getSettingInfo,
   useSettingStore
-} from '@/stores/settingStore'
-import { ISettingGroup, SettingParams } from '@/types/settingTypes'
+} from '@/platform/settings/settingStore'
+import { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export function useSettingSearch() {

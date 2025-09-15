@@ -104,6 +104,7 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -114,7 +115,6 @@ import {
   TaskItemImpl,
   useQueueStore
 } from '@/stores/queueStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import ResultGallery from './queue/ResultGallery.vue'

@@ -43,8 +43,8 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const settingStore = useSettingStore()

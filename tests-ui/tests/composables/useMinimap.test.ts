@@ -119,7 +119,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => defaultCanvasStore)
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)
 }))
 

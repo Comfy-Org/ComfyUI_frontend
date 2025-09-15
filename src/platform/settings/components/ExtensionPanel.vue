@@ -92,10 +92,9 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, onMounted, ref } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
+import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useSettingStore } from '@/stores/settingStore'
-
-import PanelTemplate from './PanelTemplate.vue'
 
 const filterTypes = ['All', 'Core', 'Custom']
 const filterType = ref('All')

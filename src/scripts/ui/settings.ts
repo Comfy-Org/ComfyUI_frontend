@@ -1,9 +1,9 @@
 import { t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingParams } from '@/platform/settings/types'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import type { SettingParams } from '@/types/settingTypes'
 
 import { ComfyDialog } from './dialog'
 

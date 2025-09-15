@@ -24,7 +24,7 @@
 import RadioButton from 'primevue/radiobutton'
 import { computed } from 'vue'
 
-import type { SettingOption } from '@/types/settingTypes'
+import type { SettingOption } from '@/platform/settings/types'
 
 const props = defineProps<{
   modelValue: any

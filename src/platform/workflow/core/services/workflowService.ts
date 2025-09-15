@@ -3,6 +3,7 @@ import { toRaw } from 'vue'
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -14,7 +15,6 @@ import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt, generateUUID } from '@/utils/formatUtil'

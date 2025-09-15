@@ -54,6 +54,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   ComfyModelDef,
@@ -62,7 +63,6 @@ import {
   useModelStore
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useSettingStore } from '@/stores/settingStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isElectron } from '@/utils/envUtil'

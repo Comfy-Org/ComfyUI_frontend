@@ -20,7 +20,7 @@ vi.mock('@/i18n', () => ({
   }
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     settings: {}
   })

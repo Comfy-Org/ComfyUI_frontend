@@ -19,8 +19,8 @@
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 
-import SettingItem from '@/components/dialog/content/setting/SettingItem.vue'
-import { SettingParams } from '@/types/settingTypes'
+import SettingItem from '@/platform/settings/components/SettingItem.vue'
+import { SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{

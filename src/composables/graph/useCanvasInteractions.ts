@@ -1,8 +1,8 @@
 import { computed } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 
 /**
  * Composable for handling canvas interactions from Vue components.

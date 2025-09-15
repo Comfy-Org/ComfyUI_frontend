@@ -29,8 +29,8 @@ import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
 import { st } from '@/i18n'
-import { useSettingStore } from '@/stores/settingStore'
-import type { SettingOption, SettingParams } from '@/types/settingTypes'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingOption, SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{

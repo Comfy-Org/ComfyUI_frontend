@@ -18,7 +18,7 @@ vi.mock('@/scripts/app', () => {
 })
 
 // Mock stores
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => [])
   }))

@@ -18,7 +18,7 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   }))
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn((key) => {
       if (key === 'Comfy.Workflow.AutoSave') return mockAutoSaveSetting

@@ -2,9 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
@@ -33,7 +33,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/settingStore')
+vi.mock('@/platform/settings/settingStore')
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({}))

@@ -74,14 +74,13 @@ import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig } from '@/constants/serverConfig'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { FormItem as FormItemType } from '@/platform/settings/types'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useSettingStore } from '@/stores/settingStore'
-import type { FormItem as FormItemType } from '@/types/settingTypes'
 import { electronAPI } from '@/utils/envUtil'
-
-import PanelTemplate from './PanelTemplate.vue'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()

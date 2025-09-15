@@ -7,7 +7,7 @@ import { useReleaseStore } from '@/stores/releaseStore'
 vi.mock('@/utils/formatUtil')
 vi.mock('@/utils/envUtil')
 vi.mock('@/services/releaseService')
-vi.mock('@/stores/settingStore')
+vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/systemStatsStore')
 vi.mock('@vueuse/core', () => ({
   until: vi.fn(() => Promise.resolve()),
@@ -60,7 +60,7 @@ describe('useReleaseStore', () => {
 
     // Setup mock implementations
     const { useReleaseService } = await import('@/services/releaseService')
-    const { useSettingStore } = await import('@/stores/settingStore')
+    const { useSettingStore } = await import('@/platform/settings/settingStore')
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
     const { isElectron } = await import('@/utils/envUtil')
 

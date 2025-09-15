@@ -30,8 +30,8 @@ import {
 } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { ComfyModelDef } from '@/stores/modelStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
