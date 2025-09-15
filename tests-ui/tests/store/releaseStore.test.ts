@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useReleaseStore } from '@/stores/releaseStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
 // Mock the dependencies
 vi.mock('@/utils/formatUtil')
@@ -59,7 +59,9 @@ describe('useReleaseStore', () => {
     }
 
     // Setup mock implementations
-    const { useReleaseService } = await import('@/services/releaseService')
+    const { useReleaseService } = await import(
+      '@/platform/updates/common/releaseService'
+    )
     const { useSettingStore } = await import('@/platform/settings/settingStore')
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
     const { isElectron } = await import('@/utils/envUtil')

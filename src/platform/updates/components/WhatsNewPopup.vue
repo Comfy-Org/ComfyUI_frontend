@@ -68,9 +68,10 @@ import { marked } from 'marked'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ReleaseNote } from '@/services/releaseService'
-import { useReleaseStore } from '@/stores/releaseStore'
 import { formatVersionAnchor } from '@/utils/formatUtil'
+
+import type { ReleaseNote } from '../common/releaseService'
+import { useReleaseStore } from '../common/releaseStore'
 
 const { locale, t } = useI18n()
 const releaseStore = useReleaseStore()

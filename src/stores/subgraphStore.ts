@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -25,7 +26,6 @@ import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useToastStore } from '@/stores/toastStore'
 import { UserFile } from '@/stores/userFileStore'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {

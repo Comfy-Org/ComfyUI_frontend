@@ -8,7 +8,7 @@ import { useToast } from 'primevue/usetoast'
 import { nextTick, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const toast = useToast()
 const toastStore = useToastStore()

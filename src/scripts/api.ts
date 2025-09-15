@@ -2,6 +2,7 @@ import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
@@ -38,7 +39,6 @@ import type {
 } from '@/schemas/apiSchema'
 import type { ModelFile, ModelFolderInfo } from '@/schemas/assetSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useToastStore } from '@/stores/toastStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface QueuePromptRequestBody {

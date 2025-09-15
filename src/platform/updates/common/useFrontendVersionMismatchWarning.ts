@@ -2,8 +2,8 @@ import { whenever } from '@vueuse/core'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/stores/toastStore'
-import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
+import { useToastStore } from './toastStore'
+import { useVersionCompatibilityStore } from './versionCompatibilityStore'
 
 interface UseFrontendVersionMismatchWarningOptions {
   immediate?: boolean
