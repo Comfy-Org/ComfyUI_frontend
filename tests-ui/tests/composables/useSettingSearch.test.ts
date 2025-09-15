@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { st } from '@/i18n'
+import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import {
   getSettingInfo,
   useSettingStore

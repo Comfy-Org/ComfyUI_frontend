@@ -4,7 +4,7 @@ import RadioButton from 'primevue/radiobutton'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
 
-import type { SettingOption } from '@/types/settingTypes'
+import type { SettingOption } from '@/platform/settings/types'
 
 import FormRadioGroup from './FormRadioGroup.vue'
 

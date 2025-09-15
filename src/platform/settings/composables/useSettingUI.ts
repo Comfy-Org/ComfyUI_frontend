@@ -7,16 +7,15 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   SettingTreeNode,
   useSettingStore
 } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/types/settingTypes'
+import type { SettingParams } from '@/platform/settings/types'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
-
-import { useCurrentUser } from '../auth/useCurrentUser'
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -115,7 +114,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/ExtensionPanel.vue')
+      () => import('@/platform/settings/components/ExtensionPanel.vue')
     )
   }
 
@@ -126,7 +125,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/ServerConfigPanel.vue')
+      () => import('@/platform/settings/components/ServerConfigPanel.vue')
     )
   }
 

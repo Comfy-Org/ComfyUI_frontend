@@ -2,10 +2,10 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import type { SettingParams } from '@/platform/settings/types'
 import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
 

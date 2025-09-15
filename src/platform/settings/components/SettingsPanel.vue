@@ -17,9 +17,8 @@
 
 <script setup lang="ts">
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { ISettingGroup } from '@/types/settingTypes'
-
-import SettingGroup from './SettingGroup.vue'
+import SettingGroup from '@/platform/settings/components/SettingGroup.vue'
+import { ISettingGroup } from '@/platform/settings/types'
 
 const props = defineProps<{
   settingGroups: ISettingGroup[]

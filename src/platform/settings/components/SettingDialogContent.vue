@@ -66,17 +66,16 @@ import Tabs from 'primevue/tabs'
 import { computed, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
+import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
+import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useSettingSearch } from '@/composables/setting/useSettingSearch'
-import { useSettingUI } from '@/composables/setting/useSettingUI'
+import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
+import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
+import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
+import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { SettingTreeNode } from '@/platform/settings/settingStore'
-import { ISettingGroup, SettingParams } from '@/types/settingTypes'
+import { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { flattenTree } from '@/utils/treeUtil'
-
-import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
-import CurrentUserMessage from './setting/CurrentUserMessage.vue'
-import PanelTemplate from './setting/PanelTemplate.vue'
-import SettingsPanel from './setting/SettingsPanel.vue'
 
 const { defaultPanel } = defineProps<{
   defaultPanel?:

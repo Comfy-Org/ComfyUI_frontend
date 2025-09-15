@@ -5,9 +5,9 @@ import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
+import type { SettingParams } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { SettingParams } from '@/types/settingTypes'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({

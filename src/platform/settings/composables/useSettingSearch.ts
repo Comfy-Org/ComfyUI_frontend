@@ -6,7 +6,7 @@ import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
-import { ISettingGroup, SettingParams } from '@/types/settingTypes'
+import { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export function useSettingSearch() {
