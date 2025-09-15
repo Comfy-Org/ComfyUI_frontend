@@ -30,9 +30,9 @@ import {
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
-import { type DomWidgetState } from '@/stores/domWidgetStore'
-import { useCanvasStore } from '@/stores/graphStore'
+import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 const { widgetState } = defineProps<{

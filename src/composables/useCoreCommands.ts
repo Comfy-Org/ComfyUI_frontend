@@ -12,9 +12,13 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph,
-  SubgraphNode
+  SubgraphNode,
+  type Point
 } from '@/lib/litegraph/src/litegraph'
-import { type Point } from '@/lib/litegraph/src/litegraph'
+import {
+  useCanvasStore,
+  useTitleEditorStore
+} from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -22,7 +26,6 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'

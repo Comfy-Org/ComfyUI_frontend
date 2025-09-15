@@ -13,6 +13,7 @@ import { ComfyActionbar } from '../helpers/actionbar'
 import { LocationMock } from '../helpers/locationMock'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
+import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
@@ -146,6 +147,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly locationMock: LocationMock
+  public readonly vueNodes: VueNodeHelpers
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -175,6 +177,7 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.locationMock = new LocationMock(page)
+    this.vueNodes = new VueNodeHelpers(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -1433,7 +1436,7 @@ export class ComfyPage {
   }
 
   async closeDialog() {
-    await this.page.locator('.p-dialog-close-button').click()
+    await this.page.locator('.p-dialog-close-button').click({ force: true })
     await expect(this.page.locator('.p-dialog')).toBeHidden()
   }
 

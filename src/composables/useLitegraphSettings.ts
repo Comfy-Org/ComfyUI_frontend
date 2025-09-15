@@ -5,7 +5,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 /**

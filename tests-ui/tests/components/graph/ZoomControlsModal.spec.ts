@@ -28,7 +28,7 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     appScalePercentage: 100,
     setAppZoomFromPercentage: mockSetAppZoom

@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 // Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 // Mock the litegraph module
@@ -93,17 +93,6 @@ describe('ColorPickerButton', () => {
     canvasStore.selectedItems = [{ type: 'LGraphNode' } as any]
     const wrapper = createWrapper()
     expect(wrapper.find('button').exists()).toBe(true)
-  })
-
-  it('should not render when nothing is selected', () => {
-    // Keep selectedItems empty
-    canvasStore.selectedItems = []
-    const wrapper = createWrapper()
-    // The button exists but is hidden with v-show
-    expect(wrapper.find('button').exists()).toBe(true)
-    expect(wrapper.find('button').attributes('style')).toContain(
-      'display: none'
-    )
   })
 
   it('should toggle color picker visibility on button click', async () => {

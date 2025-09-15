@@ -8,8 +8,8 @@ import {
   LGraphNode,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 
 // Mock the app module
 vi.mock('@/scripts/app', () => ({

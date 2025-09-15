@@ -1,21 +1,25 @@
 <template>
   <div class="relative">
     <Button
-      v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
       v-tooltip.top="{
         value: localizedCurrentColorName ?? t('color.noColor'),
-        showDelay: 512
+        showDelay: 1000
       }"
+      data-testid="color-picker-button"
       severity="secondary"
       text
       @click="() => (showColorPicker = !showColorPicker)"
     >
-      <template #icon>
-        <div class="flex items-center gap-1">
-          <i class="pi pi-circle-fill" :style="{ color: currentColor ?? '' }" />
-          <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
-        </div>
-      </template>
+      <div class="flex items-center gap-1 px-0">
+        <i
+          class="w-4 h-4 pi pi-circle-fill"
+          :style="{ color: currentColor ?? '' }"
+        />
+        <i
+          class="w-4 h-4 pi pi-chevron-down py-1"
+          :style="{ fontSize: '0.5rem' }"
+        />
+      </div>
     </Button>
     <div
       v-if="showColorPicker"
@@ -46,16 +50,19 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
-import { computed, ref, watch } from 'vue'
+import { Raw, computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ColorOption as CanvasColorOption } from '@/lib/litegraph/src/litegraph'
+import type {
+  ColorOption as CanvasColorOption,
+  Positionable
+} from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LiteGraph,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
@@ -140,13 +147,17 @@ const localizedCurrentColorName = computed(() => {
   )
   return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
 })
-
+const updateColorSelectionFromNode = (
+  newSelectedItems: Raw<Positionable[]>
+) => {
+  showColorPicker.value = false
+  selectedColorOption.value = null
+  currentColorOption.value = getItemsColorOption(newSelectedItems)
+}
 watch(
   () => canvasStore.selectedItems,
   (newSelectedItems) => {
-    showColorPicker.value = false
-    selectedColorOption.value = null
-    currentColorOption.value = getItemsColorOption(newSelectedItems)
+    updateColorSelectionFromNode(newSelectedItems)
   },
   { immediate: true }
 )

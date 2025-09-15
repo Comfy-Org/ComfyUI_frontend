@@ -1,9 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   calculateMinimapScale,
   calculateNodeBounds
 } from '@/renderer/core/spatial/boundsCalculator'
-import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 import { renderMinimapToCanvas } from '../extensions/minimap/minimapCanvasRenderer'

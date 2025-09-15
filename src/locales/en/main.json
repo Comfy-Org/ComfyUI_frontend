@@ -6,9 +6,20 @@
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
     "download": "Download",
+    "downloadImage": "Download image",
+    "editOrMaskImage": "Edit or mask image",
+    "removeImage": "Remove image",
+    "viewImageOfTotal": "View image {index} of {total}",
+    "imagePreview": "Image preview - Use arrow keys to navigate between images",
+    "galleryImage": "Gallery image",
+    "galleryThumbnail": "Gallery thumbnail",
+    "errorLoadingImage": "Error loading image",
+    "failedToDownloadImage": "Failed to download image",
+    "calculatingDimensions": "Calculating dimensions",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
     "refresh": "Refresh",
+    "refreshNode": "Refresh Node",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -30,7 +41,9 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
-    "help": "Help",
+    "info": "Node Info",
+    "bookmark": "Save to Library",
+    "moreOptions": "More Options",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -157,7 +170,8 @@
     "nodeContentError": "Node Content Error",
     "nodeHeaderError": "Node Header Error",
     "nodeSlotsError": "Node Slots Error",
-    "nodeWidgetsError": "Node Widgets Error"
+    "nodeWidgetsError": "Node Widgets Error",
+    "frameNodes": "Frame Nodes"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -311,7 +325,37 @@
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
     "Manage": "Manage",
-    "Search": "Search"
+    "Search": "Search",
+    "Open in Mask Editor": "Open in Mask Editor",
+    "Open Image": "Open Image",
+    "Copy Image": "Copy Image",
+    "Save Image": "Save Image",
+    "Rename": "Rename",
+    "Copy": "Copy",
+    "Duplicate": "Duplicate",
+    "Paste": "Paste",
+    "Node Info": "Node Info",
+    "Adjust Size": "Adjust Size",
+    "Minimize Node": "Minimize Node",
+    "Expand Node": "Expand Node",
+    "Shape": "Shape",
+    "Color": "Color",
+    "Add Subgraph to Library": "Add Subgraph to Library",
+    "Unpack Subgraph": "Unpack Subgraph",
+    "Convert to Subgraph": "Convert to Subgraph",
+    "Align Selected To": "Align Selected To",
+    "Distribute Nodes": "Distribute Nodes",
+    "Remove Bypass": "Remove Bypass",
+    "Run Branch": "Run Branch",
+    "Delete": "Delete",
+    "Top": "Top",
+    "Bottom": "Bottom",
+    "Left": "Left",
+    "Right": "Right",
+    "Horizontal": "Horizontal",
+    "Vertical": "Vertical",
+    "new": "new",
+    "deprecated": "deprecated"
   },
   "icon": {
     "bookmark": "Bookmark",
@@ -461,6 +505,14 @@
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
     "restart": "Restart"
+  },
+  "shape": {
+    "default": "Default",
+    "round": "Round",
+    "CARD": "Card",
+    "circle": "Circle",
+    "arrow": "Arrow",
+    "box": "Box"
   },
   "sideToolbar": {
     "themeToggle": "Toggle Theme",
@@ -1758,7 +1810,10 @@
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
-    }
+    },
+    "Set Group Nodes to Never": "Set Group Nodes to Never",
+    "Bypass Group Nodes": "Bypass Group Nodes",
+    "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "chatHistory": {
     "cancelEdit": "Cancel",

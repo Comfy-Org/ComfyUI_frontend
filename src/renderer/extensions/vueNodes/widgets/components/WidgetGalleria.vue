@@ -4,9 +4,8 @@
       v-model:activeIndex="activeIndex"
       :value="galleryImages"
       v-bind="filteredProps"
-      :disabled="readonly"
       :show-thumbnails="showThumbnails"
-      :show-nav-buttons="showNavButtons"
+      :show-item-navigators="showNavButtons"
       class="max-w-full"
       :pt="{
         thumbnails: {
@@ -25,16 +24,22 @@
     >
       <template #item="{ item }">
         <img
-          :src="item.itemImageSrc || item.src || item"
-          :alt="item.alt || 'Gallery image'"
+          :src="item?.itemImageSrc || item?.src || ''"
+          :alt="
+            item?.alt ||
+            `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
+          "
           class="w-full h-auto max-h-64 object-contain"
         />
       </template>
       <template #thumbnail="{ item }">
         <div class="p-1 w-full h-full">
           <img
-            :src="item.thumbnailImageSrc || item.src || item"
-            :alt="item.alt || 'Gallery thumbnail'"
+            :src="item?.thumbnailImageSrc || item?.src || ''"
+            :alt="
+              item?.alt ||
+              `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
+            "
             class="w-full h-full object-cover rounded-lg"
           />
         </div>
@@ -46,6 +51,7 @@
 <script setup lang="ts">
 import Galleria from 'primevue/galleria'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
@@ -53,14 +59,14 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-interface GalleryImage {
+export interface GalleryImage {
   itemImageSrc?: string
   thumbnailImageSrc?: string
   src?: string
   alt?: string
 }
 
-type GalleryValue = string[] | GalleryImage[]
+export type GalleryValue = string[] | GalleryImage[]
 
 const value = defineModel<GalleryValue>({ required: true })
 
@@ -71,6 +77,8 @@ const props = defineProps<{
 
 const activeIndex = ref(0)
 
+const { t } = useI18n()
+
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
 )
@@ -78,16 +86,18 @@ const filteredProps = computed(() =>
 const galleryImages = computed(() => {
   if (!value.value || !Array.isArray(value.value)) return []
 
-  return value.value.map((item, index) => {
-    if (typeof item === 'string') {
-      return {
-        itemImageSrc: item,
-        thumbnailImageSrc: item,
-        alt: `Image ${index + 1}`
+  return value.value
+    .filter((item) => item !== null && item !== undefined) // Filter out null/undefined
+    .map((item, index) => {
+      if (typeof item === 'string') {
+        return {
+          itemImageSrc: item,
+          thumbnailImageSrc: item,
+          alt: `Image ${index}`
+        }
       }
-    }
-    return item
-  })
+      return item ?? {} // Ensure we have at least an empty object
+    })
 })
 
 const showThumbnails = computed(() => {
@@ -99,7 +109,7 @@ const showThumbnails = computed(() => {
 
 const showNavButtons = computed(() => {
   return (
-    props.widget.options?.showNavButtons !== false &&
+    props.widget.options?.showItemNavigators !== false &&
     galleryImages.value.length > 1
   )
 })
