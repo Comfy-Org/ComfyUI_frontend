@@ -91,7 +91,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   selectionDisposable?.dispose()
-
   emit('unmounted')
 })
 </script>
