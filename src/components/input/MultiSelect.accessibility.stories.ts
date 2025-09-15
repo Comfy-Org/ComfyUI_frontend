@@ -3,6 +3,7 @@ import type { MultiSelectProps } from 'primevue/multiselect'
 import { ref } from 'vue'
 
 import MultiSelect from './MultiSelect.vue'
+import { type SelectOption } from './types'
 
 // Combine our component props with PrimeVue MultiSelect props
 interface ExtendedProps extends Partial<MultiSelectProps> {
@@ -16,7 +17,7 @@ interface ExtendedProps extends Partial<MultiSelectProps> {
   popoverMinWidth?: string
   popoverMaxWidth?: string
   // Override modelValue type to match our Option type
-  modelValue?: Array<{ name: string; value: string }>
+  modelValue?: SelectOption[]
 }
 
 const meta: Meta<ExtendedProps> = {
@@ -97,7 +98,7 @@ export const KeyboardNavigationDemo: Story = {
   render: (args) => ({
     components: { MultiSelect },
     setup() {
-      const selectedFrameworks = ref([])
+      const selectedFrameworks = ref<SelectOption[]>([])
       const searchQuery = ref('')
 
       return {
@@ -105,7 +106,7 @@ export const KeyboardNavigationDemo: Story = {
           ...args,
           options: frameworkOptions,
           modelValue: selectedFrameworks,
-          'onUpdate:modelValue': (value: any) => {
+          'onUpdate:modelValue': (value: SelectOption[]) => {
             selectedFrameworks.value = value
           },
           'onUpdate:searchQuery': (value: string) => {
@@ -156,8 +157,8 @@ export const ScreenReaderFriendly: Story = {
   render: (args) => ({
     components: { MultiSelect },
     setup() {
-      const selectedColors = ref([])
-      const selectedSizes = ref([])
+      const selectedColors = ref<SelectOption[]>([])
+      const selectedSizes = ref<SelectOption[]>([])
 
       const colorOptions = [
         { name: 'Red', value: 'red' },
@@ -241,7 +242,7 @@ export const FocusManagement: Story = {
   render: (args) => ({
     components: { MultiSelect },
     setup() {
-      const selectedItems = ref([])
+      const selectedItems = ref<SelectOption[]>([])
       const focusTestOptions = [
         { name: 'Option A', value: 'a' },
         { name: 'Option B', value: 'b' },

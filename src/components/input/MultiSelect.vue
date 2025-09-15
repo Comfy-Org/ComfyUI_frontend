@@ -117,8 +117,9 @@ import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
 import TextButton from '../button/TextButton.vue'
+import { type SelectOption } from './types'
 
-type Option = { name: string; value: string }
+type Option = SelectOption
 
 defineOptions({
   inheritAttrs: false
@@ -170,7 +171,7 @@ const popoverStyle = usePopoverSizing({
 
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
-    class: [
+    class: cn(
       'h-10 relative inline-flex cursor-pointer select-none',
       'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
       'transition-all duration-200 ease-in-out',
@@ -180,7 +181,7 @@ const pt = computed(() => ({
         : 'border-transparent',
       'focus-within:border-blue-400 dark-theme:focus-within:border-blue-500',
       { 'opacity-60 cursor-default': props.disabled }
-    ]
+    )
   }),
   labelContainer: {
     class:

@@ -64,6 +64,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/utils/tailwindUtil'
 
+import { type SelectOption } from './types'
+
 defineOptions({
   inheritAttrs: false
 })
@@ -81,10 +83,7 @@ const {
    * Cannot rely on $attrs alone because we need to access options
    * in getLabel() to map values to their display names.
    */
-  options?: {
-    name: string
-    value: string
-  }[]
+  options?: SelectOption[]
   /** Maximum height of the dropdown panel (default: 28rem) */
   listMaxHeight?: string
   /** Minimum width of the popover (default: auto) */
@@ -126,9 +125,7 @@ const optionStyle = computed(() => {
  * - Text/icon scale: compact size matching MultiSelect
  */
 const pt = computed(() => ({
-  root: ({
-    props
-  }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
+  root: ({ props }: SelectPassThroughMethodOptions<SelectOption>) => ({
     class: [
       // container
       'h-10 relative inline-flex cursor-pointer select-none items-center',
@@ -168,9 +165,7 @@ const pt = computed(() => ({
       // Same list tone/size as MultiSelect
       'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
   },
-  option: ({
-    context
-  }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
+  option: ({ context }: SelectPassThroughMethodOptions<SelectOption>) => ({
     class: [
       // Row layout
       'flex items-center justify-between gap-3 px-2 py-3 rounded',
