@@ -1707,5 +1707,27 @@
     "label": "ズームコントロール",
     "showMinimap": "ミニマップを表示",
     "zoomToFit": "全体表示にズーム"
+  },
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "あなたは",
+      "titleLine2": "ウェイトリストに追加されました 🎉",
+      "message": "ウェイトリストに追加されました。アクセス可能になったらお知らせします。",
+      "questionsText": "ご質問がありますか？お問い合わせください",
+      "contactLink": "こちら"
+    },
+    "claimInvite": {
+      "processingTitle": "招待コードを処理中...",
+      "claimButton": "招待を請求"
+    },
+    "sorryContactSupport": {
+      "title": "申し訳ございません、サポートにお問い合わせください"
+    },
+    "verifyEmail": {
+      "title": "メール認証"
+    },
+    "footer": {
+      "needHelp": "ヘルプが必要ですか？"
+    }
   }
 }

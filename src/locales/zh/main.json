@@ -1707,5 +1707,27 @@
     "label": "縮放控制",
     "showMinimap": "顯示小地圖",
     "zoomToFit": "適合畫面"
+  },
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "您已加入",
+      "titleLine2": "等候名单 🎉",
+      "message": "您已被添加到等候名单。当有访问权限时我们会通知您。",
+      "questionsText": "有问题？联系我们",
+      "contactLink": "这里"
+    },
+    "claimInvite": {
+      "processingTitle": "正在处理邀请码...",
+      "claimButton": "领取邀请"
+    },
+    "sorryContactSupport": {
+      "title": "抱歉，请联系支持"
+    },
+    "verifyEmail": {
+      "title": "邮箱验证"
+    },
+    "footer": {
+      "needHelp": "需要帮助？"
+    }
   }
 }

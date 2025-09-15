@@ -80,7 +80,30 @@
       "signUpWithGithub": "Registrarse con Github",
       "signUpWithGoogle": "Registrarse con Google",
       "title": "Crea una cuenta"
+    ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
     }
+  }
+}
   },
   "breadcrumbsMenu": {
     "clearWorkflow": "Limpiar flujo de trabajo",
@@ -628,7 +651,30 @@
       "modelSettings": "Configuración del modelo",
       "sceneSettings": "Configuración de la escena",
       "title": "Visor 3D (Beta)"
+    ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
     }
+  }
+}
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Requiere ComfyUI {version}:",
@@ -990,7 +1036,30 @@
     "executeButton": {
       "disabledTooltip": "No hay nodos de salida seleccionados",
       "tooltip": "Ejecutar en los nodos de salida seleccionados (resaltados con borde naranja)"
+    ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
     }
+  }
+}
   },
   "serverConfig": {
     "modifiedConfigs": "Has modificado las siguientes configuraciones del servidor. Reinicia para aplicar los cambios.",
@@ -1124,7 +1193,30 @@
     },
     "vram-management": {
       "name": "Modo de gestión de VRAM"
+    ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
     }
+  }
+}
   },
   "serverStart": {
     "openLogs": "Abrir registros",
@@ -1271,7 +1363,30 @@
         "bookmarks": "Marcadores",
         "browse": "Explorar",
         "open": "Abrir"
-      }
+      ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
+    }
+  }
+}
     },
     "workflows": "Flujos de trabajo"
   },
@@ -1454,7 +1569,30 @@
         "api_runway_gen3a_turbo_image_to_video": "Runway: Gen3a Turbo Imagen a Video",
         "api_runway_gen4_turo_image_to_video": "Runway: Gen4 Turbo Imagen a Video",
         "api_veo2_i2v": "Veo2: Imagen a Video"
-      }
+      ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
+    }
+  }
+}
     },
     "templateDescription": {
       "3D": {
@@ -1606,7 +1744,30 @@
         "api_runway_gen3a_turbo_image_to_video": "Genera videos cinematográficos a partir de imágenes estáticas usando Runway Gen3a Turbo.",
         "api_runway_gen4_turo_image_to_video": "Genera videos dinámicos a partir de imágenes usando Runway Gen4 Turbo.",
         "api_veo2_i2v": "Genera videos a partir de imágenes usando la API Google Veo2."
-      }
+      ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
+    }
+  }
+}
     },
     "title": "Comienza con una Plantilla"
   },
@@ -1707,5 +1868,51 @@
     "label": "Controles de zoom",
     "showMinimap": "Mostrar minimapa",
     "zoomToFit": "Ajustar al zoom"
+  ,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
+    }
+  }
+}
+,
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "ESTÁS EN LA",
+      "titleLine2": "LISTA DE ESPERA 🎉",
+      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+      "questionsText": "¿Preguntas? Contáctanos",
+      "contactLink": "aquí"
+    },
+    "claimInvite": {
+      "processingTitle": "Procesando código de invitación...",
+      "claimButton": "Reclamar invitación"
+    },
+    "sorryContactSupport": {
+      "title": "Lo sentimos, contacta con soporte"
+    },
+    "verifyEmail": {
+      "title": "Verificación de correo electrónico"
+    },
+    "footer": {
+      "needHelp": "¿Necesitas ayuda?"
+    }
   }
 }

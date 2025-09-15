@@ -1707,5 +1707,27 @@
     "label": "확대/축소 컨트롤",
     "showMinimap": "미니맵 표시",
     "zoomToFit": "화면에 맞게 확대"
+  },
+  "cloudOnboarding": {
+    "waitlist": {
+      "titleLine1": "대기 명단에",
+      "titleLine2": "등록되었습니다 🎉",
+      "message": "대기 명단에 추가되었습니다. 액세스가 가능해지면 알려드리겠습니다.",
+      "questionsText": "질문이 있으신가요? 문의하세요",
+      "contactLink": "여기"
+    },
+    "claimInvite": {
+      "processingTitle": "초대 코드 처리 중...",
+      "claimButton": "초대 청구"
+    },
+    "sorryContactSupport": {
+      "title": "죄송합니다. 지원팀에 문의하세요"
+    },
+    "verifyEmail": {
+      "title": "이메일 인증"
+    },
+    "footer": {
+      "needHelp": "도움이 필요하신가요?"
+    }
   }
 }
