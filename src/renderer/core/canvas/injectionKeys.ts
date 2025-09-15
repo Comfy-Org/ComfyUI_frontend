@@ -23,3 +23,10 @@ export const ExecutingNodeIdsKey: InjectionKey<Ref<Set<string>>> =
 export const NodeProgressStatesKey: InjectionKey<
   Ref<Record<string, NodeProgressState>>
 > = Symbol('nodeProgressStates')
+
+/**
+ * Injection key for providing node preview image URLs to Vue node components.
+ * Maps NodeLocatorId (string) to an array of preview blob URLs.
+ */
+export const NodePreviewImagesKey: InjectionKey<Ref<Record<string, string[]>>> =
+  Symbol('nodePreviewImages')

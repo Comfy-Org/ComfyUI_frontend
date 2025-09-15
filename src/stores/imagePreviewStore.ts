@@ -1,3 +1,4 @@
+import { useTimeoutFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -18,6 +19,8 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
+
+const PREVIEW_REVOKE_DELAY_MS = 400
 
 const createOutputs = (
   filenames: string[],
@@ -40,8 +43,27 @@ interface SetOutputOptions {
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId } = useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
+  const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
+
+  function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
+    if (scheduledRevoke[locator]) {
+      scheduledRevoke[locator].stop()
+    }
+
+    const { stop } = useTimeoutFn(() => {
+      delete scheduledRevoke[locator]
+      cb()
+    }, PREVIEW_REVOKE_DELAY_MS)
+
+    scheduledRevoke[locator] = { stop }
+  }
 
   const nodeOutputs = ref<Record<string, ExecutedWsMessage['output']>>({})
+
+  // Reactive state for node preview images - mirrors app.nodePreviewImages
+  const nodePreviewImages = ref<Record<string, string[]>>(
+    app.nodePreviewImages || {}
+  )
 
   function getNodeOutputs(
     node: LGraphNode
@@ -196,8 +218,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(executionId)
     if (!nodeLocatorId) return
-
+    if (scheduledRevoke[nodeLocatorId]) {
+      scheduledRevoke[nodeLocatorId].stop()
+      delete scheduledRevoke[nodeLocatorId]
+    }
     app.nodePreviewImages[nodeLocatorId] = previewImages
+    nodePreviewImages.value[nodeLocatorId] = previewImages
   }
 
   /**
@@ -212,7 +238,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     previewImages: string[]
   ) {
     const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
+    if (scheduledRevoke[nodeLocatorId]) {
+      scheduledRevoke[nodeLocatorId].stop()
+      delete scheduledRevoke[nodeLocatorId]
+    }
     app.nodePreviewImages[nodeLocatorId] = previewImages
+    nodePreviewImages.value[nodeLocatorId] = previewImages
   }
 
   /**
@@ -224,8 +255,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function revokePreviewsByExecutionId(executionId: string) {
     const nodeLocatorId = executionIdToNodeLocatorId(executionId)
     if (!nodeLocatorId) return
-
-    revokePreviewsByLocatorId(nodeLocatorId)
+    scheduleRevoke(nodeLocatorId, () =>
+      revokePreviewsByLocatorId(nodeLocatorId)
+    )
   }
 
   /**
@@ -243,6 +275,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     delete app.nodePreviewImages[nodeLocatorId]
+    delete nodePreviewImages.value[nodeLocatorId]
   }
 
   /**
@@ -259,6 +292,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       }
     }
     app.nodePreviewImages = {}
+    nodePreviewImages.value = {}
   }
 
   /**
@@ -293,6 +327,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // Clear preview images
     if (app.nodePreviewImages[nodeLocatorId]) {
       delete app.nodePreviewImages[nodeLocatorId]
+      delete nodePreviewImages.value[nodeLocatorId]
     }
 
     return hadOutputs
@@ -318,6 +353,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     removeNodeOutputs,
 
     // State
-    nodeOutputs
+    nodeOutputs,
+    nodePreviewImages
   }
 })

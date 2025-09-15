@@ -120,6 +120,18 @@
           :lod-level="lodLevel"
           :image-urls="nodeImageUrls"
         />
+        <!-- Live preview image -->
+        <div
+          v-if="shouldShowPreviewImg"
+          v-memo="[latestPreviewUrl]"
+          class="px-4 min-h-[220px]"
+        >
+          <img
+            :src="latestPreviewUrl"
+            alt="preview"
+            class="w-full h-[220px] object-contain rounded-lg"
+          />
+        </div>
       </div>
     </template>
   </div>
@@ -144,6 +156,7 @@ import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -315,6 +328,14 @@ const hasCustomContent = computed(() => {
 const separatorClasses =
   'bg-sand-100 dark-theme:bg-charcoal-300 h-[1px] mx-0 w-full'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
+
+const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
+  props.nodeData.id,
+  {
+    isMinimalLOD,
+    isCollapsed
+  }
+)
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
