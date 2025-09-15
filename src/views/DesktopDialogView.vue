@@ -3,15 +3,22 @@
     class="w-full h-full flex flex-col rounded-lg p-6 bg-[#2d2d2d] justify-between"
   >
     <h1 class="dialog-title font-semibold text-xl m-0 italic">
-      {{ dialog.title }}
+      {{ t(`desktopDialogs.${dialogI18nKey}.title`, dialog.title) }}
     </h1>
-    <p class="whitespace-pre-wrap">{{ dialog.message }}</p>
+    <p class="whitespace-pre-wrap">
+      {{ t(`desktopDialogs.${dialogI18nKey}.message`, dialog.message) }}
+    </p>
     <div class="flex w-full gap-2">
       <Button
         v-for="button in dialog.buttons"
         :key="button.label"
         class="first:mr-auto"
-        :label="button.label"
+        :label="
+          t(
+            `desktopDialogs.${dialogI18nKey}.buttons.${normalizeI18nKey(button.label)}`,
+            button.label
+          )
+        "
         :severity="button.severity ?? 'secondary'"
         @click="handleButtonClick(button)"
       />
@@ -23,10 +30,13 @@
 import Button from 'primevue/button'
 
 import { DESKTOP_DIALOGS, type DialogAction } from '@/constants/desktopDialogs'
+import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Use the const data directly
 const dialog = DESKTOP_DIALOGS.reinstallFreshStart
+const dialogI18nKey = normalizeI18nKey(dialog.id)
 
 const handleButtonClick = (button: DialogAction) => {
   if (button.action === 'openUrl' && button.url) {
