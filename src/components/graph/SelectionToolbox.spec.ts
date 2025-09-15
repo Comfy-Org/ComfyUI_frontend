@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
-import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 
 // Mock the composables and services
-vi.mock('@/composables/graph/useCanvasInteractions', () => ({
+vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
   useCanvasInteractions: vi.fn(() => ({
     handleWheel: vi.fn()
   }))

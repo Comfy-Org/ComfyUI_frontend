@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 
@@ -13,7 +13,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn()
 }))
 
-vi.mock('@/composables/graph/useCanvasInteractions', () => ({
+vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
   useCanvasInteractions: vi.fn()
 }))
 
@@ -75,10 +75,10 @@ function createMockLayoutMutations(): Pick<
 
 function createMockCanvasInteractions(): Pick<
   ReturnType<typeof useCanvasInteractions>,
-  'canCapturePointerEvents'
+  'shouldHandleNodePointerEvents'
 > {
   return {
-    canCapturePointerEvents: computed(() => true) // Default to allowing pointer events
+    shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
   }
 }
 

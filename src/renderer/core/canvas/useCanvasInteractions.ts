@@ -19,10 +19,10 @@ export function useCanvasInteractions() {
   )
 
   /**
-   * Whether Vue components can capture pointer events.
-   * Returns false when canvas is in read-only/panning mode.
+   * Whether Vue node components should handle pointer events.
+   * Returns false when canvas is in read-only/panning mode (e.g., space key held for panning).
    */
-  const canCapturePointerEvents = computed(
+  const shouldHandleNodePointerEvents = computed(
     () => !(canvasStore.canvas?.read_only ?? false)
   )
 
@@ -107,6 +107,6 @@ export function useCanvasInteractions() {
     handleWheel,
     handlePointer,
     forwardEventToCanvas,
-    canCapturePointerEvents
+    shouldHandleNodePointerEvents
   }
 }
