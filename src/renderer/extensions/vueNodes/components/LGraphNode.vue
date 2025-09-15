@@ -330,7 +330,7 @@ const separatorClasses =
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
-  props.nodeData.id,
+  nodeData.id,
   {
     isMinimalLOD,
     isCollapsed
