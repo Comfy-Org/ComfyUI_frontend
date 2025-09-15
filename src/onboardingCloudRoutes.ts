@@ -70,6 +70,12 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         name: 'cloud-sorry-contact-support',
         component: () =>
           import('@/platform/onboarding/cloud/CloudSorryContactSupportView.vue')
+      },
+      {
+        path: 'auth-timeout',
+        name: 'cloud-auth-timeout',
+        component: () =>
+          import('@/platform/onboarding/cloud/CloudAuthTimeoutView.vue')
       }
     ]
   }

@@ -181,16 +181,28 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const authStore = useFirebaseAuthStore()
 
-  // Wait for Firebase auth to initialize
+  // Wait for Firebase auth to initialize with timeout
   if (!authStore.isInitialized) {
-    await new Promise<void>((resolve) => {
-      const unwatch = authStore.$subscribe((_, state) => {
-        if (state.isInitialized) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
           unwatch()
-          resolve()
-        }
+          reject(new Error('Authentication initialization timeout'))
+        }, 16000) // 16 second timeout
+
+        const unwatch = authStore.$subscribe((_, state) => {
+          if (state.isInitialized) {
+            clearTimeout(timeout)
+            unwatch()
+            resolve()
+          }
+        })
       })
-    })
+    } catch (error) {
+      console.error('Auth initialization failed:', error)
+      // Navigate to auth timeout recovery page
+      return next({ name: 'cloud-auth-timeout' })
+    }
   }
 
   // Check if user is authenticated

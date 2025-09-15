@@ -1806,6 +1806,14 @@
       "learnAboutButton": "Learn about Cloud",
       "wantToRun": "Want to run comfyUI locally instead?",
       "download": "Download ComfyUI"
+    },
+    "checkingStatus": "Checking your account status...",
+    "retrying": "Retrying...",
+    "retry": "Try Again",
+    "authTimeout": {
+      "title": "Connection Taking Too Long",
+      "message": "We're having trouble connecting to ComfyUI Cloud. This could be due to a slow connection or temporary service issue.",
+      "restart": "Sign Out & Try Again"
     }
   }
 }
