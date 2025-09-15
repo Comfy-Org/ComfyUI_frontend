@@ -14,6 +14,11 @@
     option-value="value"
     unstyled
     :pt="pt"
+    :aria-label="label || t('g.singleSelectDropdown')"
+    role="combobox"
+    :aria-expanded="false"
+    aria-haspopup="listbox"
+    :tabindex="0"
   >
     <!-- Trigger value -->
     <template #value="slotProps">
@@ -55,6 +60,7 @@
 <script setup lang="ts">
 import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/utils/tailwindUtil'
 
@@ -88,6 +94,8 @@ const {
 }>()
 
 const selectedItem = defineModel<string | null>({ required: true })
+
+const { t } = useI18n()
 
 /**
  * Maps a value to its display label.
@@ -125,9 +133,11 @@ const pt = computed(() => ({
       // container
       'h-10 relative inline-flex cursor-pointer select-none items-center',
       // trigger surface
-      'rounded-md',
-      'bg-transparent text-neutral dark-theme:text-white',
-      'border-0',
+      'rounded-lg',
+      'bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
+      'border-[2.5px] border-solid border-transparent',
+      'transition-all duration-200 ease-in-out',
+      'focus-within:border-blue-400 dark-theme:focus-within:border-blue-500',
       // disabled
       { 'opacity-60 cursor-default': props.disabled }
     ]
