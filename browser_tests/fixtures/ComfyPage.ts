@@ -5,7 +5,7 @@ import dotenv from 'dotenv'
 import * as fs from 'fs'
 
 import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../src/schemas/comfyWorkflowSchema'
+import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
