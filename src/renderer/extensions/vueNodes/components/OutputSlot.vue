@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
-  <div v-else v-tooltip.bottom="tooltipConfig" :class="slotWrapperClass">
+  <div v-else v-tooltip.left="tooltipConfig" :class="slotWrapperClass">
     <!-- Slot Name -->
     <span
       v-if="!dotOnly"
