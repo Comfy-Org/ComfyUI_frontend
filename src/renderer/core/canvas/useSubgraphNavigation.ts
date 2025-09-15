@@ -7,8 +7,8 @@
 import { useEventListener, whenever } from '@vueuse/core'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app as comfyApp } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 
 interface SubgraphNavigationCallbacks {
   onSubgraphEnter?: () => void

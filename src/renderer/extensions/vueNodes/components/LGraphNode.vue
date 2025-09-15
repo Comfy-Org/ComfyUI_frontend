@@ -428,9 +428,9 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  const locatorId = props.nodeData.subgraphId
-    ? `${props.nodeData.subgraphId}:${String(props.nodeData.id)}`
-    : String(props.nodeData.id)
+  const locatorId = nodeData.subgraphId
+    ? `${nodeData.subgraphId}:${String(nodeData.id)}`
+    : String(nodeData.id)
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
 
