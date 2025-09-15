@@ -22,13 +22,13 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
-import { reinstallDialog } from '@/constants/desktopDialogs'
+import { DESKTOP_DIALOGS, type DialogAction } from '@/constants/desktopDialogs'
 import { electronAPI } from '@/utils/envUtil'
 
 // Use the const data directly
-const dialog = reinstallDialog
+const dialog = DESKTOP_DIALOGS.reinstallFreshStart
 
-const handleButtonClick = (button: (typeof dialog.buttons)[0]) => {
+const handleButtonClick = (button: DialogAction) => {
   if (button.action === 'openUrl' && button.url) {
     window.open(button.url, '_blank')
   }
