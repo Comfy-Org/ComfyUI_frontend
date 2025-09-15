@@ -236,11 +236,11 @@ export class LGraphCanvas
   implements CustomEventDispatcher<LGraphCanvasEventMap>
 {
   // Optimised buffers used during rendering
-  static #temp: [number, number, number, number] = [0, 0, 0, 0]
-  static #temp_vec2: [number, number] = [0, 0]
-  static #tmp_area: [number, number, number, number] = [0, 0, 0, 0]
-  static #margin_area: [number, number, number, number] = [0, 0, 0, 0]
-  static #link_bounding: [number, number, number, number] = [0, 0, 0, 0]
+  static #temp = [0, 0, 0, 0] satisfies Rect
+  static #temp_vec2 = [0, 0] satisfies Point
+  static #tmp_area = [0, 0, 0, 0] satisfies Rect
+  static #margin_area = [0, 0, 0, 0] satisfies Rect
+  static #link_bounding = [0, 0, 0, 0] satisfies Rect
 
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
