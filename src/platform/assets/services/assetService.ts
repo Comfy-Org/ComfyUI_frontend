@@ -5,7 +5,7 @@ import {
   type ModelFile,
   type ModelFolder,
   assetResponseSchema
-} from '@/schemas/assetSchema'
+} from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
