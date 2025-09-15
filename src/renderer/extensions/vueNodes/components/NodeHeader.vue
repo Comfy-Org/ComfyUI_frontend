@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -74,18 +74,26 @@ const isEditing = ref(false)
 
 const nodeInfo = computed(() => props.nodeData || props.node)
 
-const EMPTY_STRING = ''
-const DEFAULT_TITLE = 'Untitled'
-
 const resolveTitle = (info: LGraphNode | VueNodeData | undefined) => {
-  const title = (info?.title ?? EMPTY_STRING).trim()
+  const title = (info?.title ?? '').trim()
   if (title.length > 0) return title
-  const type = (info?.type ?? EMPTY_STRING).trim()
-  return type.length > 0 ? type : DEFAULT_TITLE
+  const type = (info?.type ?? '').trim()
+  return type.length > 0 ? type : 'Untitled'
 }
 
-// Computed title that provides reactive updates
-const displayTitle = computed(() => resolveTitle(nodeInfo.value))
+// Local state for title to provide immediate feedback
+const displayTitle = ref(resolveTitle(nodeInfo.value))
+
+// Watch for external changes to the node title or type
+watch(
+  () => [nodeInfo.value?.title, nodeInfo.value?.type] as const,
+  () => {
+    const next = resolveTitle(nodeInfo.value)
+    if (next !== displayTitle.value) {
+      displayTitle.value = next
+    }
+  }
+)
 
 // Event handlers
 const handleCollapse = () => {
