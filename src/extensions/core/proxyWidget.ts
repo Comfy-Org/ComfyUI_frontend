@@ -1,39 +1,12 @@
-import { z } from 'zod'
-import { fromZodError } from 'zod-validation-error'
-
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
+import { parseProxyWidgets } from '@/schemas/proxyWidget'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
-
-const canvasStore = useCanvasStore()
-
-export const proxyWidgetsPropertySchema = z.array(
-  z.tuple([z.string(), z.string()])
-)
-export type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
-//export type proxyWidgetsProperty = [string, string][]
-
-export function parseProxyWidgets(
-  property: NodeProperty | undefined
-): ProxyWidgetsProperty {
-  if (typeof property !== 'string') {
-    console.error(`Found non-string value for properties.proxyWidgets`)
-    return []
-  }
-  const parsed = JSON.parse(property)
-  const result = proxyWidgetsPropertySchema.safeParse(parsed)
-  if (result.success) return result.data ?? []
-
-  const error = fromZodError(result.error)
-  console.error(`Invalid assignment for properties.proxyWidgets:\n${error}`)
-  return []
-}
 
 useExtensionService().registerExtension({
   name: 'Comfy.SubgraphProxyWidgets',
@@ -44,6 +17,7 @@ useExtensionService().registerExtension({
   }
 })
 function injectProperty(subgraphNode: SubgraphNode) {
+  const canvasStore = useCanvasStore()
   subgraphNode.properties.proxyWidgets ??= []
   const proxyWidgets = subgraphNode.properties.proxyWidgets
   Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
@@ -155,7 +129,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
             'label'
           ].includes(p)
         )
-          t = overlay
+          r = t = overlay
         else {
           t = bw
           if (p == 'value') r = t
@@ -165,7 +139,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       return [s, func]
     })
   )
-  const w = new Proxy(overlay, handler) as unknown as ProxyWidget
+  const w = new Proxy(disconnectedWidget, handler)
   subgraphNode.widgets.push(w)
   return w
 }
