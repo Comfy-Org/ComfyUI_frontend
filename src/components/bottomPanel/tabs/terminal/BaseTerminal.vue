@@ -30,9 +30,7 @@ if (isElectron()) {
   useEventListener(terminalEl, 'contextmenu', showContextMenu)
 }
 
-onUnmounted(() => {
-  emit('unmounted')
-})
+onUnmounted(() => emit('unmounted'))
 </script>
 
 <style scoped>
