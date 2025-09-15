@@ -57,7 +57,7 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
   filterOutputNodes: vi.fn((nodes) => nodes.filter(() => false))
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.Load3D.3DViewerEnable') return true
