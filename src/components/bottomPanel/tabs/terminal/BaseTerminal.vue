@@ -57,19 +57,18 @@ const tooltipText = computed(() => {
 const handleCopy = async () => {
   const { terminal } = terminalData
 
-  let selectedText = terminal.getSelection()
-  let shouldClearSelection = false
+  const existingSelection = terminal.getSelection()
+  const shouldSelectAll = !existingSelection
+  if (shouldSelectAll) terminal.selectAll()
 
-  if (!selectedText) {
-    terminal.selectAll()
-    selectedText = terminal.getSelection()
-    shouldClearSelection = true
-  }
+  const selectedText = shouldSelectAll
+    ? terminal.getSelection()
+    : existingSelection
 
   if (selectedText) {
     await navigator.clipboard.writeText(selectedText)
 
-    if (shouldClearSelection) {
+    if (shouldSelectAll) {
       terminal.clearSelection()
     }
   }
