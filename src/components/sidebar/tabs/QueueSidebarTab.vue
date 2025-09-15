@@ -201,6 +201,30 @@ const menuTargetNode = ref<ComfyNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => {
   const items: MenuItem[] = [
     {
+      label: t('g.copyJobId'),
+      icon: 'pi pi-copy',
+      command: async () => {
+        if (menuTargetTask.value) {
+          try {
+            await navigator.clipboard.writeText(menuTargetTask.value.promptId)
+            toast.add({
+              severity: 'success',
+              summary: t('g.copied'),
+              detail: t('g.jobIdCopied'),
+              life: 2000
+            })
+          } catch (err) {
+            toast.add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('g.failedToCopyJobId'),
+              life: 3000
+            })
+          }
+        }
+      }
+    },
+    {
       label: t('g.delete'),
       icon: 'pi pi-trash',
       command: () => menuTargetTask.value && removeTask(menuTargetTask.value),
