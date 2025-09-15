@@ -7,3 +7,21 @@ c53f197de2a3e0fa66b16dedc65c131235c1c4b6
 
 # Reorganize renderer components into domain-driven folder structure
 c8a83a9caede7bdb5f8598c5492b07d08c339d49
+
+# Domain-driven design (DDD) refactors - September 2025
+# These commits reorganized the codebase into domain-driven architecture
+
+# [refactor] Improve renderer domain organization (#5552)
+6349ceee6
+
+# [refactor] Improve settings domain organization (#5550)  
+4c8c4a1ad
+
+# [refactor] Improve workflow domain organization (#5584)
+ca312fd1e
+
+# [refactor] Move thumbnail functionality to renderer/core domain (#5586)
+e3bb29ceb
+
+# [refactor] Improve updates/notifications domain organization (#5590)
+27ab355f9
