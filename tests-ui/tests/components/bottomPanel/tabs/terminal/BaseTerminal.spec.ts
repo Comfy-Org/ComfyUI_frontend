@@ -139,20 +139,6 @@ describe('BaseTerminal', () => {
     expect(button.classes()).toContain('pointer-events-none')
   })
 
-  it('button responds to hover', async () => {
-    wrapper = mountBaseTerminal()
-
-    const button = wrapper.find('button[aria-label]')
-
-    // Check initial state
-    const initialClasses = button.classes()
-    expect(initialClasses).toContain('opacity-0')
-
-    // Note: Testing dynamic class changes via hover would require
-    // proper reactive testing that's beyond simple unit test scope
-    // The actual hover behavior is tested via integration/e2e tests
-  })
-
   it('shows correct tooltip when no selection', async () => {
     terminalMock.hasSelection.mockReturnValue(false)
     wrapper = mountBaseTerminal()
