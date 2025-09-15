@@ -8,7 +8,7 @@ import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   ComfyWorkflow,
   useWorkflowStore
-} from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyNode,
   ComfyWorkflowJSON,

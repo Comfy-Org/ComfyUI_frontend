@@ -8,7 +8,7 @@ import {
   ComfyWorkflow,
   LoadedComfyWorkflow,
   useWorkflowStore
-} from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyNode,
   ComfyWorkflowJSON,

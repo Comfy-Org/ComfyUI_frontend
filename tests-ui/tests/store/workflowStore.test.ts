@@ -8,7 +8,7 @@ import {
   LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
-} from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'

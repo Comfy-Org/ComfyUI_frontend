@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ComfyWorkflow,
   useWorkflowStore
-} from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 
 vi.mock('@/renderer/thumbnail/graphThumbnailRenderer', () => ({
   createGraphThumbnail: vi.fn()
@@ -22,7 +22,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const { useWorkflowThumbnail } = await import(
-  '@/platform/workflow/rendering/composables/useWorkflowThumbnail'
+  '@/renderer/thumbnail/useWorkflowThumbnail'
 )
 const { createGraphThumbnail } = await import(
   '@/renderer/thumbnail/graphThumbnailRenderer'

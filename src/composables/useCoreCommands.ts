@@ -19,7 +19,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import {
   type ComfyWorkflow,
   useWorkflowStore
-} from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 import {
   useCanvasStore,
   useTitleEditorStore

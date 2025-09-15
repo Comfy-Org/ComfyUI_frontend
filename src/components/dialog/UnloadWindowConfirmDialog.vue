@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()

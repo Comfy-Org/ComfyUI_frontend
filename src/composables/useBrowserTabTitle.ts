@@ -2,7 +2,7 @@ import { useTitle } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { t } from '@/i18n'
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/stores/settingStore'
 

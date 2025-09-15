@@ -69,7 +69,7 @@ vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/platform/workflow/ui/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({}))
 }))
 

@@ -1,7 +1,7 @@
 // import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useCanvasStore,
   useTitleEditorStore

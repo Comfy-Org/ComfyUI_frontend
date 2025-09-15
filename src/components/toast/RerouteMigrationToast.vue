@@ -23,7 +23,7 @@ import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import { useI18n } from 'vue-i18n'
 
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
 import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'

@@ -5,7 +5,7 @@ import {
   type LGraphGroup,
   type LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/stores/settingStore'
 

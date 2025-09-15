@@ -41,9 +41,9 @@ import {
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowThumbnail } from '@/platform/workflow/rendering/composables/useWorkflowThumbnail'
-import { ComfyWorkflow } from '@/platform/workflow/ui/stores/workflowStore'
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowThumbnail } from '@/renderer/thumbnail/useWorkflowThumbnail'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 

@@ -1,12 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 
 // Mock the workflowStore
-vi.mock('@/platform/workflow/ui/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     nodeExecutionIdToNodeLocatorId: vi.fn(),
     nodeIdToNodeLocatorId: vi.fn(),

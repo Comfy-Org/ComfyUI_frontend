@@ -145,8 +145,8 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
-} from '@/platform/workflow/ui/stores/workflowStore'
-import { ComfyWorkflow } from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'

@@ -6,7 +6,7 @@ import {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   ExecutedWsMessage,
   ResultItem,

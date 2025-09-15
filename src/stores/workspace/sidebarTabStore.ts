@@ -5,7 +5,7 @@ import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLib
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { t, te } from '@/i18n'
-import { useWorkflowsSidebarTab } from '@/platform/workflow/ui/composables/useWorkflowsSidebarTab'
+import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { SidebarTabExtension } from '@/types/extensionTypes'

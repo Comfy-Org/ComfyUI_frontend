@@ -2,7 +2,7 @@ import { useRafFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/stores/settingStore'
 

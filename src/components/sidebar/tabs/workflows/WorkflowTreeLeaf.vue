@@ -20,7 +20,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import {
   ComfyWorkflow,
   useWorkflowBookmarkStore
-} from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const { node } = defineProps<{

@@ -57,7 +57,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import {
   ComfyWorkflow,
   useWorkflowStore
-} from '@/platform/workflow/ui/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
