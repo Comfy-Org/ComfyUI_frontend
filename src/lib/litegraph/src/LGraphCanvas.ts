@@ -6316,10 +6316,9 @@ export class LGraphCanvas
         // that.graph.beforeChange();
         const xSizeFix = opts.posSizeFix[0] * LiteGraph.NODE_WIDTH
         const ySizeFix = opts.posSizeFix[1] * LiteGraph.NODE_SLOT_HEIGHT
-        const pos = [
-          opts.position[0] + opts.posAdd[0] + xSizeFix,
-          opts.position[1] + opts.posAdd[1] + ySizeFix
-        ]
+        const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
+        const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
+        const pos = [nodeX, nodeY]
         const newNode = LiteGraph.createNode(nodeNewType, nodeNewOpts.title, {
           pos
         })
