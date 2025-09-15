@@ -1,4 +1,4 @@
-import { onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
@@ -210,15 +210,16 @@ export function useSelectionToolboxPosition(
     }
   }
 
-  // Watch for LiteGraph dragging state
-  watch(
-    () => canvasStore.canvas?.state?.draggingItems,
-    (dragging) => handleDragStateChange(dragging || false)
-  )
+  // Unified dragging state - combines both LiteGraph and Vue node dragging
+  const isDragging = computed(() => {
+    const litegraphDragging = canvasStore.canvas?.state?.draggingItems || false
+    const vueNodeDragging = shouldRenderVueNodes.value
+      ? layoutStore.getVueNodeDraggingState().value
+      : false
+    return litegraphDragging || vueNodeDragging
+  })
 
-  // Watch for Vue node dragging state when Vue nodes are enabled
-  const vueNodeDraggingState = layoutStore.getVueNodeDraggingState()
-  watch(vueNodeDraggingState, handleDragStateChange)
+  watch(isDragging, handleDragStateChange)
 
   onUnmounted(() => {
     resetMoreOptionsState()
