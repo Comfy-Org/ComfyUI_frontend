@@ -102,9 +102,7 @@ describe('BaseTerminal', () => {
   }
 
   beforeEach(() => {
-    // Reset mocks before each test
     vi.clearAllMocks()
-    // Use the mocked terminal directly
     terminalMock = mockTerminal
   })
 
@@ -134,7 +132,6 @@ describe('BaseTerminal', () => {
     const button = wrapper.find('button[aria-label]')
     expect(button.exists()).toBe(true)
 
-    // Initially button should not be interactive (has opacity-0 and pointer-events-none)
     expect(button.classes()).toContain('opacity-0')
     expect(button.classes()).toContain('pointer-events-none')
   })
@@ -154,7 +151,6 @@ describe('BaseTerminal', () => {
     terminalMock.hasSelection.mockReturnValue(true)
     wrapper = mountBaseTerminal()
 
-    // Trigger selection change
     const selectionCallback = terminalMock.onSelectionChange.mock.calls[0][0]
     selectionCallback()
     await nextTick()
