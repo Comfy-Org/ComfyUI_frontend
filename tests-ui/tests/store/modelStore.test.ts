@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { assetService } from '@/platform/assets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelStore } from '@/stores/modelStore'
@@ -19,7 +19,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the assetService
-vi.mock('@/platform/assets', () => ({
+vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetModelFolders: vi.fn(),
     getAssetModels: vi.fn()

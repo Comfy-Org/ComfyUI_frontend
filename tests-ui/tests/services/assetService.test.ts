@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { assetService } from '@/platform/assets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
 vi.mock('@/stores/modelToNodeStore', () => ({

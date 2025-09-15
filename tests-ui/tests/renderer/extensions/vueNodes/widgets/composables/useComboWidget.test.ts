@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { assetService } from '@/platform/assets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
@@ -23,7 +23,7 @@ vi.mock('@/i18n', () => ({
   )
 }))
 
-vi.mock('@/platform/assets', () => ({
+vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false)
   }

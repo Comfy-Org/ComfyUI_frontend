@@ -2,7 +2,10 @@ import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
-import type { ModelFile, ModelFolderInfo } from '@/platform/assets'
+import type {
+  ModelFile,
+  ModelFolderInfo
+} from '@/platform/assets/schemas/assetSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
