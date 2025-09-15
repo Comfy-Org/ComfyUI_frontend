@@ -248,17 +248,6 @@ const {
   lodCssClass
 } = useLOD(zoomRef)
 
-onMounted(() => {
-  if (size && transformState) {
-    const scale = transformState.camera.z
-    const screenSize = {
-      width: size.width * scale,
-      height: size.height * scale
-    }
-    resize(screenSize)
-  }
-})
-
 // Computed properties for template usage
 const isMinimalLOD = computed(() => lodLevel.value === LODLevel.MINIMAL)
 
