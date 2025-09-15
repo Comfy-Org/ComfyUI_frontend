@@ -1,8 +1,8 @@
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 /**

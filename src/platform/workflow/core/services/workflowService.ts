@@ -3,19 +3,21 @@ import { toRaw } from 'vue'
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
-import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
+import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
-
-import { useDialogService } from './dialogService'
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()

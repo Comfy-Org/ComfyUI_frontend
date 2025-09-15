@@ -49,7 +49,7 @@ vi.mock('firebase/auth', () => ({
   onAuthStateChanged: vi.fn()
 }))
 
-vi.mock('@/services/workflowService', () => ({
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: vi.fn(() => ({}))
 }))
 
@@ -69,7 +69,7 @@ vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({}))
 }))
 

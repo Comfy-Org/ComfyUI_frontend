@@ -1,7 +1,7 @@
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * Tag names used in ComfyUI metadata

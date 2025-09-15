@@ -4,14 +4,15 @@ import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
-import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { UserFile } from '@/stores/userFileStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -22,8 +23,6 @@ import {
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-
-import { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'

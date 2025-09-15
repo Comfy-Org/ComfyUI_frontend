@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
@@ -12,7 +13,6 @@ import { useFirebaseAuthStore } from './firebaseAuthStore'
 import { useQueueSettingsStore } from './queueStore'
 import { useSettingStore } from './settingStore'
 import { useToastStore } from './toastStore'
-import { useWorkflowStore } from './workflowStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
