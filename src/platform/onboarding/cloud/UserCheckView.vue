@@ -2,67 +2,103 @@
   <CloudLoginViewSkeleton v-if="skeletonType === 'login'" />
   <CloudSurveyViewSkeleton v-else-if="skeletonType === 'survey'" />
   <CloudWaitlistViewSkeleton v-else-if="skeletonType === 'waitlist'" />
+  <div v-else-if="error" class="h-full flex items-center justify-center p-8">
+    <div class="w-96 p-2 text-center">
+      <p class="text-red-500 mb-4">{{ errorMessage }}</p>
+      <Button
+        :label="
+          isRetrying
+            ? $t('cloudOnboarding.retrying')
+            : $t('cloudOnboarding.retry')
+        "
+        :loading="isRetrying"
+        class="w-full"
+        @click="handleRetry"
+      />
+    </div>
+  </div>
   <div v-else class="flex items-center justify-center min-h-screen">
     <div class="animate-pulse text-gray-500">{{ $t('g.loading') }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { useAsyncState } from '@vueuse/core'
+import Button from 'primevue/button'
+import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { getSurveyCompletedStatus, getUserCloudStatus } from '@/api/auth'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
 import CloudWaitlistViewSkeleton from './skeletons/CloudWaitlistViewSkeleton.vue'
 
 const router = useRouter()
-const isNavigating = ref(false)
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
+
 const skeletonType = ref<'login' | 'survey' | 'waitlist' | 'loading'>('loading')
 
-onMounted(async () => {
-  // Prevent multiple executions
-  if (isNavigating.value) {
-    return
-  }
-  isNavigating.value = true
+const {
+  isLoading,
+  error,
+  execute: checkUserStatus
+} = useAsyncState(
+  wrapWithErrorHandlingAsync(async () => {
+    await nextTick()
 
-  // Wait for next tick to ensure component is fully mounted
-  await nextTick()
+    const [cloudUserStats, surveyStatus] = await Promise.all([
+      getUserCloudStatus(),
+      getSurveyCompletedStatus()
+    ])
 
-  try {
-    const cloudUserStats = await getUserCloudStatus()
-
+    // Navigate based on user status
     if (!cloudUserStats) {
       skeletonType.value = 'login'
       await router.replace({ name: 'cloud-login' })
       return
     }
 
-    // We know user exists, now check survey status - show survey skeleton while loading
-    skeletonType.value = 'survey'
-    const surveyStatus = await getSurveyCompletedStatus()
-
-    // Check onboarding status and redirect accordingly
     if (!surveyStatus) {
-      // User hasn't completed survey
+      skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })
-    } else {
-      // Survey is done, now check if waitlisted - show waitlist skeleton while loading
-      skeletonType.value = 'waitlist'
-      if (cloudUserStats.status !== 'active') {
-        // User completed survey but not whitelisted
-        await router.replace({ name: 'cloud-waitlist' })
-      } else {
-        // User is fully onboarded - just reload the page to bypass router issues
-        window.location.href = '/'
-      }
+      return
     }
-  } catch (error) {
-    // On error, fallback to page reload
-    skeletonType.value = 'login'
-    await router.push({ name: 'cloud-login' })
+
+    if (cloudUserStats.status !== 'active') {
+      skeletonType.value = 'waitlist'
+      await router.replace({ name: 'cloud-waitlist' })
+      return
+    }
+
+    // User is fully onboarded
+    window.location.href = '/'
+  }),
+  null,
+  { resetOnExecute: false }
+)
+
+const errorMessage = computed(() => {
+  if (!error.value) return ''
+
+  // Provide user-friendly error messages
+  const errorStr = error.value.toString().toLowerCase()
+
+  if (errorStr.includes('network') || errorStr.includes('fetch')) {
+    return 'Connection problem. Please check your internet connection.'
   }
+
+  if (errorStr.includes('timeout')) {
+    return 'Request timed out. Please try again.'
+  }
+
+  return 'Unable to check account status. Please try again.'
 })
+
+const isRetrying = computed(() => isLoading.value && !!error.value)
+
+const handleRetry = async () => {
+  await checkUserStatus()
+}
 </script>
