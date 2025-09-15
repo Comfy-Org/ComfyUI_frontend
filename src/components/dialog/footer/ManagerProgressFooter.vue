@@ -75,9 +75,9 @@ import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
-import { useWorkflowService } from '@/services/workflowService'
 import {
   useComfyManagerStore,
   useManagerProgressDialogStore

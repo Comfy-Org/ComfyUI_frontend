@@ -6,6 +6,7 @@ import {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   ExecutedWsMessage,
   ResultItem,
@@ -14,7 +15,6 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'

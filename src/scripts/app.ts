@@ -3,7 +3,6 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
 import {
   LGraph,
@@ -14,18 +13,21 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type {
-  ExecutionErrorWsMessage,
-  NodeError,
-  ResultItem
-} from '@/schemas/apiSchema'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import {
   ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
   type NodeId,
   isSubgraphDefinition
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ExecutionErrorWsMessage,
+  NodeError,
+  ResultItem
+} from '@/schemas/apiSchema'
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
@@ -41,7 +43,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -56,7 +57,6 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'

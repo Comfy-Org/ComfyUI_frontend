@@ -1,6 +1,6 @@
 // call nextTick on all changeTracker
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 
 /**
  * Composable for refreshing nodes in the graph

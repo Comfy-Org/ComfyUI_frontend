@@ -5,9 +5,9 @@ import {
   type LGraphGroup,
   type LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
 import type { MenuOption } from './useMoreOptionsMenu'

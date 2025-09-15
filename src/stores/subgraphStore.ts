@@ -3,30 +3,30 @@ import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  ComfyWorkflow,
+  LoadedComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyNode,
   ComfyWorkflowJSON,
   NodeId
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeError } from '@/schemas/apiSchema'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { UserFile } from '@/stores/userFileStore'
-import {
-  ComfyWorkflow,
-  LoadedComfyWorkflow,
-  useWorkflowStore
-} from '@/stores/workflowStore'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({

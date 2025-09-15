@@ -44,7 +44,7 @@ vi.mock('@vueuse/core', async () => {
     )
   }
 })
-vi.mock('@/services/workflowService', () => ({
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: vi.fn(() => ({
     reloadCurrentWorkflow: vi.fn().mockResolvedValue(undefined)
   }))

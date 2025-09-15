@@ -3,12 +3,12 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { st } from '@/i18n'
-import { api } from '@/scripts/api'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
-} from '@/types/workflowTemplateTypes'
+} from '@/platform/workflow/templates/types/template'
+import { api } from '@/scripts/api'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const SHOULD_SORT_CATEGORIES = new Set([

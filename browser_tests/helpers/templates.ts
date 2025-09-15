@@ -4,7 +4,7 @@ import path from 'path'
 import {
   TemplateInfo,
   WorkflowTemplates
-} from '../../src/types/workflowTemplateTypes'
+} from '../../src/platform/workflow/templates/types/template'
 
 export class ComfyTemplates {
   readonly content: Locator

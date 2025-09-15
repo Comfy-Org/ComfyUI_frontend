@@ -7,8 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 // Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 
 // Mock the litegraph module
 vi.mock('@/lib/litegraph/src/litegraph', async () => {

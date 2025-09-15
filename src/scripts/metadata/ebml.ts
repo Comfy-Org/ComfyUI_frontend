@@ -1,7 +1,7 @@
 import {
   type ComfyApiWorkflow,
   type ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   ComfyMetadata,
   ComfyMetadataTags,
