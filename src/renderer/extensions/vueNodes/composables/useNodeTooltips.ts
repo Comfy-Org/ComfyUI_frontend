@@ -85,10 +85,20 @@ export function useNodeTooltips(
       showDelay: number
       disabled: boolean
       appendTo?: HTMLElement
+      pt?: any
     } = {
       value: tooltipText,
       showDelay: tooltipDelay as number,
-      disabled: !tooltipsEnabled.value || !tooltipText
+      disabled: !tooltipsEnabled.value || !tooltipText,
+      pt: {
+        text: {
+          class:
+            'bg-[#171718] border border-[#5B5E7D] rounded-md px-4 py-2 text-white text-sm font-normal leading-tight max-w-[300px] shadow-none'
+        },
+        arrow: {
+          class: 'before:border-[#171718]'
+        }
+      }
     }
 
     // If we have a container reference, append tooltips to it
