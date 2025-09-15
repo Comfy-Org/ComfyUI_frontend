@@ -1,6 +1,6 @@
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

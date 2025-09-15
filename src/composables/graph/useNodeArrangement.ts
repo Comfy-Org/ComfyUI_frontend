@@ -2,7 +2,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { Direction } from '@/lib/litegraph/src/interfaces'
 import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import { useCanvasRefresh } from './useCanvasRefresh'

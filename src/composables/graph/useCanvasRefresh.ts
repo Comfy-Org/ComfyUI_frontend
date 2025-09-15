@@ -1,5 +1,5 @@
 // call nextTick on all changeTracker
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 /**

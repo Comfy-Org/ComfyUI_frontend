@@ -1,9 +1,12 @@
 // import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  useCanvasStore,
+  useTitleEditorStore
+} from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 

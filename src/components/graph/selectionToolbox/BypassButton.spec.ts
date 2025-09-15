@@ -7,8 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
 const mockLGraphNode = {
   type: 'TestNode',

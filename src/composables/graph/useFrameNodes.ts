@@ -2,8 +2,8 @@ import { computed } from 'vue'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { useTitleEditorStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 /**

@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 // NOTE: The component import must come after mocks so they take effect.
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const mockLGraphNode = {

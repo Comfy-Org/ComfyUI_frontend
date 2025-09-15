@@ -5,7 +5,7 @@ import { type Ref, ref } from 'vue'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -33,7 +33,7 @@ interface TestNode {
 type MockedItem = TestNode | { type: string; isNode: boolean }
 
 // Mock all stores
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn()
 }))
 

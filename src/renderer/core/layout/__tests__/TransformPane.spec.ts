@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import TransformPane from '../TransformPane.vue'
+import TransformPane from '../transform/TransformPane.vue'
 
 // Mock the transform state composable
 const mockTransformState = {

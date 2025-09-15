@@ -7,7 +7,7 @@ import {
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
@@ -35,7 +35,9 @@ export function useSelectionState() {
   const { selectedItems } = storeToRefs(canvasStore)
 
   const selectedNodes = computed(() => {
-    return selectedItems.value.filter((i) => isLGraphNode(i)) as LGraphNode[]
+    return selectedItems.value.filter((i: unknown) =>
+      isLGraphNode(i)
+    ) as LGraphNode[]
   })
 
   const nodeDef = computed(() => {
@@ -61,7 +63,7 @@ export function useSelectionState() {
   )
 
   const hasSubgraphs = computed(() =>
-    selectedItems.value.some((i) => i instanceof SubgraphNode)
+    selectedItems.value.some((i: unknown) => i instanceof SubgraphNode)
   )
 
   const hasAny3DNodeSelected = computed(() => {
