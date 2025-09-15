@@ -7,7 +7,8 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, onMounted, onUnmounted, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { Ref, ref } from 'vue'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -25,18 +26,11 @@ const showContextMenu = (event: MouseEvent) => {
   electronAPI()?.showContextMenu({ type: 'text' })
 }
 
-onMounted(() => {
-  if (isElectron() && terminalEl.value) {
-    terminalEl.value.addEventListener('contextmenu', showContextMenu)
-  }
-})
+if (isElectron()) {
+  useEventListener(terminalEl, 'contextmenu', showContextMenu)
+}
 
-onUnmounted(() => {
-  if (isElectron() && terminalEl.value) {
-    terminalEl.value.removeEventListener('contextmenu', showContextMenu)
-  }
-  emit('unmounted')
-})
+emit('unmounted')
 </script>
 
 <style scoped>
