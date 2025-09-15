@@ -217,10 +217,8 @@ export function useSelectionToolboxPosition(
   )
 
   // Watch for Vue node dragging state when Vue nodes are enabled
-  if (shouldRenderVueNodes.value) {
-    const vueNodeDraggingState = layoutStore.getVueNodeDraggingState()
-    watch(vueNodeDraggingState, handleDragStateChange)
-  }
+  const vueNodeDraggingState = layoutStore.getVueNodeDraggingState()
+  watch(vueNodeDraggingState, handleDragStateChange)
 
   onUnmounted(() => {
     resetMoreOptionsState()
