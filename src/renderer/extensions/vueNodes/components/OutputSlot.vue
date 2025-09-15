@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
-  <div v-else :class="slotWrapperClass">
+  <div v-else v-tooltip.bottom="tooltipConfig" :class="slotWrapperClass">
     <!-- Slot Name -->
     <span
       v-if="!dotOnly"
@@ -22,7 +22,9 @@
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
+  type Ref,
   computed,
+  inject,
   onErrorCaptured,
   ref,
   watchEffect
@@ -30,15 +32,16 @@ import {
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
-import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { cn } from '@/utils/tailwindUtil'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {
-  node?: LGraphNode
+  nodeType?: string
   nodeId?: string
   slotData: INodeSlot
   index: number
@@ -54,6 +57,20 @@ const props = defineProps<OutputSlotProps>()
 const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
+
+const tooltipContainer =
+  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
+const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
+  props.nodeType || '',
+  tooltipContainer
+)
+
+const tooltipConfig = computed(() => {
+  const slotName = props.slotData.name || ''
+  const tooltipText = getOutputSlotTooltip(props.index)
+  const fallbackText = tooltipText || `Output: ${slotName}`
+  return createTooltipConfig(fallbackText)
+})
 
 onErrorCaptured((error) => {
   renderError.value = error.message

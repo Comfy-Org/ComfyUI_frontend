@@ -8,6 +8,7 @@
         v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
         :slot-data="input"
+        :node-type="nodeInfo?.type || ''"
         :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
         :index="getActualInputIndex(input, index)"
         :readonly="readonly"
@@ -19,6 +20,7 @@
         v-for="(output, index) in filteredOutputs"
         :key="`output-${index}`"
         :slot-data="output"
+        :node-type="nodeInfo?.type || ''"
         :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
         :index="index"
         :readonly="readonly"
@@ -32,7 +34,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
@@ -40,15 +42,14 @@ import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
-  node?: LGraphNode // For backwards compatibility
-  nodeData?: VueNodeData // New clean data structure
+  nodeData?: VueNodeData
   readonly?: boolean
   lodLevel?: LODLevel
 }
 
 const props = defineProps<NodeSlotsProps>()
 
-const nodeInfo = computed(() => props.nodeData || props.node || null)
+const nodeInfo = computed(() => props.nodeData || null)
 
 // Filter out input slots that have corresponding widgets
 const filteredInputs = computed(() => {

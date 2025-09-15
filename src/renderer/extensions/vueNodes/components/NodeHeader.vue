@@ -23,7 +23,11 @@
     </button>
 
     <!-- Node Title -->
-    <div class="text-sm font-bold truncate flex-1" data-testid="node-title">
+    <div
+      v-tooltip.top="tooltipConfig"
+      class="text-sm font-bold truncate flex-1"
+      data-testid="node-title"
+    >
       <EditableText
         :model-value="displayTitle"
         :is-editing="isEditing"
@@ -36,17 +40,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 
 interface NodeHeaderProps {
-  node?: LGraphNode // For backwards compatibility
-  nodeData?: VueNodeData // New clean data structure
+  nodeData?: VueNodeData
   readonly?: boolean
   lodLevel?: LODLevel
   collapsed?: boolean
@@ -72,9 +75,24 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const nodeInfo = computed(() => props.nodeData || props.node)
+const nodeInfo = computed(() => props.nodeData)
 
-const resolveTitle = (info: LGraphNode | VueNodeData | undefined) => {
+const tooltipContainer =
+  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
+const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
+  nodeInfo.value?.type || '',
+  tooltipContainer
+)
+
+const tooltipConfig = computed(() => {
+  if (props.readonly || isEditing.value) {
+    return { value: '', disabled: true }
+  }
+  const description = getNodeDescription.value
+  return createTooltipConfig(description)
+})
+
+const resolveTitle = (info: VueNodeData | undefined) => {
   const title = (info?.title ?? '').trim()
   if (title.length > 0) return title
   const type = (info?.type ?? '').trim()
