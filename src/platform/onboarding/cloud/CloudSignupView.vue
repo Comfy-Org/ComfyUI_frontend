@@ -75,14 +75,14 @@
           {{ t('auth.login.privacyLink') }} </a
         >.
         <p class="mt-2">
-          {{ t('cloudOnboarding.waitlist.questionsText') }}
+          {{ t('cloudWaitlist_questionsText') }}
           <a
             href="https://support.comfy.org"
             class="text-blue-400 no-underline cursor-pointer"
             target="_blank"
             rel="noopener noreferrer"
           >
-            {{ t('cloudOnboarding.waitlist.contactLink') }}</a
+            {{ t('cloudWaitlist_contactLink') }}</a
           >.
         </p>
       </div>

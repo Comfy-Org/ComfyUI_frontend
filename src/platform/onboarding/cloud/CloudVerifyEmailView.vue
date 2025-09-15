@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>{{ t('cloudOnboarding.verifyEmail.title') }}</h1>
+    <h1>{{ t('cloudVerifyEmail_title') }}</h1>
   </div>
 </template>
 

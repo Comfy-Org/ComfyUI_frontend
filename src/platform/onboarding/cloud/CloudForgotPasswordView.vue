@@ -4,10 +4,10 @@
       <!-- Header -->
       <div class="flex flex-col gap-4 mb-8">
         <h1 class="text-xl font-medium leading-normal my-0">
-          {{ t('cloudOnboarding.forgotPassword.title') }}
+          {{ t('cloudForgotPassword_title') }}
         </h1>
         <p class="text-base my-0 text-muted">
-          {{ t('cloudOnboarding.forgotPassword.instructions') }}
+          {{ t('cloudForgotPassword_instructions') }}
         </p>
       </div>
 
@@ -18,13 +18,13 @@
             class="opacity-80 text-base font-medium mb-2"
             for="reset-email"
           >
-            {{ t('cloudOnboarding.forgotPassword.emailLabel') }}
+            {{ t('cloudForgotPassword_emailLabel') }}
           </label>
           <InputText
             id="reset-email"
             v-model="email"
             type="email"
-            :placeholder="t('cloudOnboarding.forgotPassword.emailPlaceholder')"
+            :placeholder="t('cloudForgotPassword_emailPlaceholder')"
             class="h-10"
             :invalid="!!errorMessage && !email"
             autocomplete="email"
@@ -42,7 +42,7 @@
         <div class="flex flex-col gap-4">
           <Button
             type="submit"
-            :label="t('cloudOnboarding.forgotPassword.sendResetLink')"
+            :label="t('cloudForgotPassword_sendResetLink')"
             :loading="loading"
             :disabled="!email || loading"
             class="h-10 font-medium text-white"
@@ -50,7 +50,7 @@
 
           <Button
             type="button"
-            :label="t('cloudOnboarding.forgotPassword.backToLogin')"
+            :label="t('cloudForgotPassword_backToLogin')"
             severity="secondary"
             class="h-10 bg-[#2d2e32]"
             @click="navigateToLogin"
@@ -60,14 +60,14 @@
 
       <!-- Help text -->
       <p class="mt-5 text-sm text-gray-600">
-        {{ t('cloudOnboarding.forgotPassword.didntReceiveEmail') }}
+        {{ t('cloudForgotPassword_didntReceiveEmail') }}
         <a
           href="https://support.comfy.org"
           class="text-blue-400 no-underline cursor-pointer"
           target="_blank"
           rel="noopener noreferrer"
         >
-          {{ t('cloudOnboarding.waitlist.contactLink') }}</a
+          {{ t('cloudWaitlist_contactLink') }}</a
         >.
       </p>
     </div>
@@ -99,7 +99,7 @@ const navigateToLogin = () => {
 
 const handleSubmit = async () => {
   if (!email.value) {
-    errorMessage.value = t('cloudOnboarding.forgotPassword.emailRequired')
+    errorMessage.value = t('cloudForgotPassword_emailRequired')
     return
   }
 
@@ -111,7 +111,7 @@ const handleSubmit = async () => {
     // sendPasswordReset is already wrapped and returns a promise
     await authActions.sendPasswordReset(email.value)
 
-    successMessage.value = t('cloudOnboarding.forgotPassword.passwordResetSent')
+    successMessage.value = t('cloudForgotPassword_passwordResetSent')
 
     // Optionally redirect to login after a delay
     setTimeout(() => {
@@ -119,7 +119,7 @@ const handleSubmit = async () => {
     }, 3000)
   } catch (error) {
     console.error('Password reset error:', error)
-    errorMessage.value = t('cloudOnboarding.forgotPassword.passwordResetError')
+    errorMessage.value = t('cloudForgotPassword_passwordResetError')
   } finally {
     loading.value = false
   }

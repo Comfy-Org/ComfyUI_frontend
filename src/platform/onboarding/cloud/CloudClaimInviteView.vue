@@ -3,13 +3,13 @@
     class="flex flex-col justify-center items-center h-screen font-mono text-black gap-4"
   >
     <h1 class="text-2xl">
-      {{ t('cloudOnboarding.claimInvite.processingTitle') }}
+      {{ t('cloudClaimInvite_processingTitle') }}
     </h1>
     <button
       class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
       @click="onClaim"
     >
-      {{ t('cloudOnboarding.claimInvite.claimButton') }}
+      {{ t('cloudClaimInvite_claimButton') }}
     </button>
   </div>
 </template>

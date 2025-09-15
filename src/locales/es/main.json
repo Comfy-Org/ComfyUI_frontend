@@ -80,42 +80,7 @@
       "signUpWithGithub": "Registrarse con Github",
       "signUpWithGoogle": "Registrarse con Google",
       "title": "Crea una cuenta"
-    ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
     }
-  }
-}
   },
   "breadcrumbsMenu": {
     "clearWorkflow": "Limpiar flujo de trabajo",
@@ -663,42 +628,7 @@
       "modelSettings": "Configuración del modelo",
       "sceneSettings": "Configuración de la escena",
       "title": "Visor 3D (Beta)"
-    ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
     }
-  }
-}
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Requiere ComfyUI {version}:",
@@ -1060,42 +990,7 @@
     "executeButton": {
       "disabledTooltip": "No hay nodos de salida seleccionados",
       "tooltip": "Ejecutar en los nodos de salida seleccionados (resaltados con borde naranja)"
-    ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
     }
-  }
-}
   },
   "serverConfig": {
     "modifiedConfigs": "Has modificado las siguientes configuraciones del servidor. Reinicia para aplicar los cambios.",
@@ -1229,42 +1124,7 @@
     },
     "vram-management": {
       "name": "Modo de gestión de VRAM"
-    ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
     }
-  }
-}
   },
   "serverStart": {
     "openLogs": "Abrir registros",
@@ -1411,42 +1271,7 @@
         "bookmarks": "Marcadores",
         "browse": "Explorar",
         "open": "Abrir"
-      ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
-    }
-  }
-}
+      }
     },
     "workflows": "Flujos de trabajo"
   },
@@ -1629,42 +1454,7 @@
         "api_runway_gen3a_turbo_image_to_video": "Runway: Gen3a Turbo Imagen a Video",
         "api_runway_gen4_turo_image_to_video": "Runway: Gen4 Turbo Imagen a Video",
         "api_veo2_i2v": "Veo2: Imagen a Video"
-      ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
-    }
-  }
-}
+      }
     },
     "templateDescription": {
       "3D": {
@@ -1816,42 +1606,7 @@
         "api_runway_gen3a_turbo_image_to_video": "Genera videos cinematográficos a partir de imágenes estáticas usando Runway Gen3a Turbo.",
         "api_runway_gen4_turo_image_to_video": "Genera videos dinámicos a partir de imágenes usando Runway Gen4 Turbo.",
         "api_veo2_i2v": "Genera videos a partir de imágenes usando la API Google Veo2."
-      ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
-    }
-  }
-}
+      }
     },
     "title": "Comienza con una Plantilla"
   },
@@ -1952,75 +1707,37 @@
     "label": "Controles de zoom",
     "showMinimap": "Mostrar minimapa",
     "zoomToFit": "Ajustar al zoom"
-  ,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
-    }
-  }
-}
-,
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "ESTÁS EN LA",
-      "titleLine2": "LISTA DE ESPERA 🎉",
-      "message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
-      "questionsText": "¿Preguntas? Contáctanos",
-      "contactLink": "aquí"
-    },
-    "claimInvite": {
-      "processingTitle": "Procesando código de invitación...",
-      "claimButton": "Reclamar invitación"
-    },
-    "sorryContactSupport": {
-      "title": "Lo sentimos, contacta con soporte"
-    },
-    "verifyEmail": {
-      "title": "Verificación de correo electrónico"
-    },
-    "footer": {
-      "needHelp": "¿Necesitas ayuda?"
-    },
-    "privateBeta": {
-      "title": "Cloud está actualmente en beta privada",
-      "desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya has sido notificado? Inicia sesión para comenzar a usar Cloud."
-    },
-    "start": {
-      "title": "comienza a crear en segundos",
-      "desc": "No requiere configuración. Funciona en cualquier dispositivo.",
-      "explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo fácilmente.",
-      "learnAboutButton": "Aprende sobre Cloud",
-      "wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-      "download": "Descargar ComfyUI"
-    }
-  }
+  },
+  "cloudFooter_needHelp": "¿Necesitas ayuda?",
+  "cloudStart_title": "comienza a crear en segundos",
+  "cloudStart_desc": "No requiere configuración. Funciona en cualquier dispositivo.",
+  "cloudStart_explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo con facilidad.",
+  "cloudStart_learnAboutButton": "Conocer sobre Cloud",
+  "cloudStart_wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
+  "cloudStart_download": "Descargar ComfyUI",
+  "cloudWaitlist_titleLine1": "ESTÁS EN LA",
+  "cloudWaitlist_titleLine2": "LISTA DE ESPERA 🎉",
+  "cloudWaitlist_message": "Has sido añadido a la lista de espera. Te notificaremos cuando el acceso esté disponible.",
+  "cloudWaitlist_questionsText": "¿Preguntas? Contáctanos",
+  "cloudWaitlist_contactLink": "aquí",
+  "cloudClaimInvite_processingTitle": "Procesando Código de Invitación...",
+  "cloudClaimInvite_claimButton": "Reclamar Invitación",
+  "cloudSorryContactSupport_title": "Lo sentimos, contacta soporte",
+  "cloudVerifyEmail_title": "Verificación de Correo",
+  "cloudPrivateBeta_title": "Cloud está actualmente en beta privada",
+  "cloudPrivateBeta_desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando sea tu turno. ¿Ya fuiste notificado? Inicia sesión para empezar a usar Cloud.",
+  "cloudForgotPassword_title": "Olvidé mi Contraseña",
+  "cloudForgotPassword_instructions": "Ingresa tu dirección de correo y te enviaremos un enlace para restablecer tu contraseña.",
+  "cloudForgotPassword_emailLabel": "Correo",
+  "cloudForgotPassword_emailPlaceholder": "Ingresa tu correo",
+  "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
+  "cloudForgotPassword_backToLogin": "Volver al inicio de sesión",
+  "cloudForgotPassword_didntReceiveEmail": "¿No recibiste un correo?",
+  "cloudForgotPassword_emailRequired": "El correo es requerido",
+  "cloudForgotPassword_passwordResetSent": "Restablecimiento de contraseña enviado",
+  "cloudForgotPassword_passwordResetError": "Error al enviar correo de restablecimiento",
+  "cloudSurvey_steps_familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
+  "cloudSurvey_steps_purpose": "¿Para qué usarás principalmente ComfyUI?",
+  "cloudSurvey_steps_industry": "¿Cuál es tu industria principal?",
+  "cloudSurvey_steps_making": "¿Qué planeas crear?"
 }

@@ -1708,38 +1708,36 @@
     "showMinimap": "ミニマップを表示",
     "zoomToFit": "全体表示にズーム"
   },
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "あなたは",
-      "titleLine2": "ウェイトリストに追加されました 🎉",
-      "message": "ウェイトリストに追加されました。アクセス可能になったらお知らせします。",
-      "questionsText": "ご質問がありますか？お問い合わせください",
-      "contactLink": "こちら"
-    },
-    "claimInvite": {
-      "processingTitle": "招待コードを処理中...",
-      "claimButton": "招待を請求"
-    },
-    "sorryContactSupport": {
-      "title": "申し訳ございません、サポートにお問い合わせください"
-    },
-    "verifyEmail": {
-      "title": "メール認証"
-    },
-    "footer": {
-      "needHelp": "ヘルプが必要ですか？"
-    },
-    "privateBeta": {
-      "title": "Cloudは現在プライベートベータ版です",
-      "desc": "サインインしてウェイトリストに参加してください。順番が来たらお知らせします。すでに通知を受けましたか？サインインしてCloudの使用を開始してください。"
-    },
-    "start": {
-      "title": "数秒で創作を開始",
-      "desc": "セットアップ不要。あらゆるデバイスで動作します。",
-      "explain": "複数の出力を一度に生成。ワークフローを簡単に共有。",
-      "learnAboutButton": "Cloudについて学ぶ",
-      "wantToRun": "代わりにComfyUIをローカルで実行しますか？",
-      "download": "ComfyUIをダウンロード"
-    }
-  }
+  "cloudFooter_needHelp": "ヘルプが必要ですか？",
+  "cloudStart_title": "数秒で作成を開始",
+  "cloudStart_desc": "セットアップは不要。どのデバイスでも動作します。",
+  "cloudStart_explain": "複数の出力を一度に生成。ワークフローを簡単に共有。",
+  "cloudStart_learnAboutButton": "Cloudについて学ぶ",
+  "cloudStart_wantToRun": "代わりにComfyUIをローカルで実行しますか？",
+  "cloudStart_download": "ComfyUIをダウンロード",
+  "cloudWaitlist_titleLine1": "あなたは",
+  "cloudWaitlist_titleLine2": "ウェイトリストに登録されました 🎉",
+  "cloudWaitlist_message": "ウェイトリストに追加されました。アクセスが利用可能になったらお知らせします。",
+  "cloudWaitlist_questionsText": "質問がありますか？お問い合わせ",
+  "cloudWaitlist_contactLink": "こちら",
+  "cloudClaimInvite_processingTitle": "招待コードを処理中...",
+  "cloudClaimInvite_claimButton": "招待を申請",
+  "cloudSorryContactSupport_title": "申し訳ございません、サポートにお問い合わせください",
+  "cloudVerifyEmail_title": "メール確認",
+  "cloudPrivateBeta_title": "Cloudは現在プライベートベータ版です",
+  "cloudPrivateBeta_desc": "サインインしてウェイトリストに参加してください。順番が来たらお知らせします。すでに通知を受けましたか？サインインしてCloudの使用を開始してください。",
+  "cloudForgotPassword_title": "パスワードを忘れた",
+  "cloudForgotPassword_instructions": "メールアドレスを入力してください。パスワードリセット用のリンクをお送りします。",
+  "cloudForgotPassword_emailLabel": "メール",
+  "cloudForgotPassword_emailPlaceholder": "メールを入力",
+  "cloudForgotPassword_sendResetLink": "リセットリンクを送信",
+  "cloudForgotPassword_backToLogin": "ログインに戻る",
+  "cloudForgotPassword_didntReceiveEmail": "メールが届きませんでしたか？",
+  "cloudForgotPassword_emailRequired": "メールが必要です",
+  "cloudForgotPassword_passwordResetSent": "パスワードリセットを送信しました",
+  "cloudForgotPassword_passwordResetError": "パスワードリセットメールの送信に失敗しました",
+  "cloudSurvey_steps_familiarity": "ComfyUIにどの程度慣れていますか？",
+  "cloudSurvey_steps_purpose": "主にComfyUIを何に使用しますか？",
+  "cloudSurvey_steps_industry": "あなたの主要な業界は何ですか？",
+  "cloudSurvey_steps_making": "何を作成する予定ですか？"
 }

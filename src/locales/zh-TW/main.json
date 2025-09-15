@@ -1708,38 +1708,36 @@
     "showMinimap": "顯示小地圖",
     "zoomToFit": "縮放至適合大小"
   },
-  "cloudOnboarding": {
-    "waitlist": {
-      "titleLine1": "您已加入",
-      "titleLine2": "等候名單 🎉",
-      "message": "您已被添加到等候名單。當有訪問權限時我們會通知您。",
-      "questionsText": "有問題？聯繫我們",
-      "contactLink": "這裡"
-    },
-    "claimInvite": {
-      "processingTitle": "正在處理邀請碼...",
-      "claimButton": "領取邀請"
-    },
-    "sorryContactSupport": {
-      "title": "抱歉，請聯繫支援"
-    },
-    "verifyEmail": {
-      "title": "郵箱驗證"
-    },
-    "footer": {
-      "needHelp": "需要幫助？"
-    },
-    "privateBeta": {
-      "title": "Cloud 目前處於私人測試階段",
-      "desc": "登入以加入等候名單。輪到您時我們會通知您。已收到通知？請登入開始使用 Cloud。"
-    },
-    "start": {
-      "title": "幾秒內開始創作",
-      "desc": "無需設定。適用於任何裝置。",
-      "explain": "一次生成多個輸出。輕鬆分享工作流程。",
-      "learnAboutButton": "了解 Cloud",
-      "wantToRun": "想要在本機執行 ComfyUI？",
-      "download": "下載 ComfyUI"
-    }
-  }
+  "cloudFooter_needHelp": "需要幫助？",
+  "cloudStart_title": "幾秒鐘開始創作",
+  "cloudStart_desc": "無需設置。在任何設備上工作。",
+  "cloudStart_explain": "一次生成多個輸出。輕鬆分享工作流程。",
+  "cloudStart_learnAboutButton": "了解 Cloud",
+  "cloudStart_wantToRun": "想要在本地運行 ComfyUI？",
+  "cloudStart_download": "下載 ComfyUI",
+  "cloudWaitlist_titleLine1": "您已加入",
+  "cloudWaitlist_titleLine2": "等候名單 🎉",
+  "cloudWaitlist_message": "您已被添加到等候名單。當訪問權限可用時我們會通知您。",
+  "cloudWaitlist_questionsText": "有問題？聯繫我們",
+  "cloudWaitlist_contactLink": "這裡",
+  "cloudClaimInvite_processingTitle": "處理邀請碼...",
+  "cloudClaimInvite_claimButton": "領取邀請",
+  "cloudSorryContactSupport_title": "抱歉，請聯繫支援",
+  "cloudVerifyEmail_title": "郵箱驗證",
+  "cloudPrivateBeta_title": "Cloud 目前處於內測階段",
+  "cloudPrivateBeta_desc": "登入加入等候名單。輪到您時我們會通知您。已經收到通知？登入開始使用 Cloud。",
+  "cloudForgotPassword_title": "忘記密碼",
+  "cloudForgotPassword_instructions": "輸入您的郵箱地址，我們將發送重置密碼的連結。",
+  "cloudForgotPassword_emailLabel": "郵箱",
+  "cloudForgotPassword_emailPlaceholder": "輸入您的郵箱",
+  "cloudForgotPassword_sendResetLink": "發送重置連結",
+  "cloudForgotPassword_backToLogin": "返回登入",
+  "cloudForgotPassword_didntReceiveEmail": "沒有收到郵件？",
+  "cloudForgotPassword_emailRequired": "郵箱是必需的",
+  "cloudForgotPassword_passwordResetSent": "密碼重置已發送",
+  "cloudForgotPassword_passwordResetError": "發送密碼重置郵件失敗",
+  "cloudSurvey_steps_familiarity": "您對 ComfyUI 有多熟悉？",
+  "cloudSurvey_steps_purpose": "您主要會用 ComfyUI 做什麼？",
+  "cloudSurvey_steps_industry": "您的主要行業是什麼？",
+  "cloudSurvey_steps_making": "您計劃製作什麼？"
 }

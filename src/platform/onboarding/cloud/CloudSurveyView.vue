@@ -15,7 +15,7 @@
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{
-              t('cloudOnboarding.survey.steps.familiarity')
+              t('cloudSurvey_steps_familiarity')
             }}</label>
             <div class="flex flex-col gap-6">
               <div
@@ -56,7 +56,7 @@
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{
-              t('cloudOnboarding.survey.steps.purpose')
+              t('cloudSurvey_steps_purpose')
             }}</label>
             <div class="flex flex-col gap-6">
               <div
@@ -102,7 +102,7 @@
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{
-              t('cloudOnboarding.survey.steps.industry')
+              t('cloudSurvey_steps_industry')
             }}</label>
             <div class="flex flex-col gap-6">
               <div
@@ -155,7 +155,7 @@
         >
           <div>
             <label class="text-lg font-medium block mb-8">{{
-              t('cloudOnboarding.survey.steps.making')
+              t('cloudSurvey_steps_making')
             }}</label>
             <div class="flex flex-col gap-6">
               <div

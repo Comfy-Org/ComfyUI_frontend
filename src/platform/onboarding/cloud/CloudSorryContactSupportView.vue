@@ -1,6 +1,6 @@
 <template>
   <div class="cloud-sorry-contact-support">
-    <h1>{{ t('cloudOnboarding.sorryContactSupport.title') }}</h1>
+    <h1>{{ t('cloudSorryContactSupport_title') }}</h1>
   </div>
 </template>
 

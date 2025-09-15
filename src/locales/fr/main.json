@@ -88,103 +88,6 @@
     "duplicate": "Dupliquer",
     "enterNewName": "Entrez un nouveau nom"
   },
-  "cloudOnboarding": {
-    "survey": {
-      "title": "Enquête Cloud",
-      "placeholder": "Questions d'enquête temporaires",
-      "steps": {
-        "familiarity": "À quel point connaissez-vous ComfyUI ?",
-        "purpose": "Pour quoi allez-vous principalement utiliser ComfyUI ?",
-        "industry": "Quel est votre secteur d'activité principal ?",
-        "making": "Que prévoyez-vous de créer ?"
-      },
-      "questions": {
-        "familiarity": "À quel point connaissez-vous ComfyUI ?",
-        "purpose": "Pour quoi allez-vous principalement utiliser ComfyUI ?",
-        "industry": "Quel est votre secteur d'activité principal ?",
-        "making": "Que prévoyez-vous de créer ?"
-      },
-      "options": {
-        "familiarity": {
-          "new": "Nouveau sur ComfyUI (jamais utilisé auparavant)",
-          "starting": "Je commence (je suis des tutoriels)",
-          "basics": "À l'aise avec les bases",
-          "advanced": "Utilisateur avancé (workflows personnalisés)",
-          "expert": "Expert (j'aide les autres)"
-        },
-        "purpose": {
-          "personal": "Projets personnels / loisir",
-          "community": "Contributions communautaires (nœuds, workflows, etc.)",
-          "client": "Travail client (freelance)",
-          "inhouse": "Mon propre lieu de travail (interne)",
-          "research": "Recherche académique"
-        },
-        "industry": {
-          "film_tv_animation": "Cinéma, TV et animation",
-          "gaming": "Jeux vidéo",
-          "marketing": "Marketing et publicité",
-          "architecture": "Architecture",
-          "product_design": "Design produit et graphique",
-          "fine_art": "Beaux-arts et illustration",
-          "software": "Logiciel et technologie",
-          "education": "Éducation",
-          "other": "Autre",
-          "otherPlaceholder": "Veuillez préciser"
-        },
-        "making": {
-          "images": "Images",
-          "video": "Vidéo et animation",
-          "3d": "Ressources 3D",
-          "audio": "Audio / musique",
-          "custom_nodes": "Nœuds et workflows personnalisés"
-        }
-      }
-    },
-    "waitlist": {
-      "titleLine1": "VOUS ÊTES SUR LA",
-      "titleLine2": "LISTE D'ATTENTE 🎉",
-      "message": "Vous avez été ajouté à la liste d'attente. Nous vous préviendrons quand l'accès sera disponible.",
-      "questionsText": "Des questions ? Contactez-nous",
-      "contactLink": "ici"
-    },
-    "forgotPassword": {
-      "title": "Mot de passe oublié",
-      "instructions": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
-      "emailLabel": "E-mail",
-      "emailPlaceholder": "Entrez votre e-mail",
-      "sendResetLink": "Envoyer le lien de réinitialisation",
-      "backToLogin": "Retour à la connexion",
-      "didntReceiveEmail": "Vous n'avez pas reçu d'e-mail ? Contactez-nous à",
-      "passwordResetSent": "E-mail de réinitialisation du mot de passe envoyé",
-      "passwordResetError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe. Veuillez réessayer.",
-      "emailRequired": "L'e-mail est requis"
-    },
-    "privateBeta": {
-      "title": "Cloud est actuellement en bêta privée",
-      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà prévenu ? Connectez-vous pour commencer à utiliser Cloud."
-    },
-    "start": {
-      "title": "commencez à créer en quelques secondes",
-      "desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
-      "explain": "Générez plusieurs sorties à la fois. Partagez des workflows facilement.",
-      "learnAboutButton": "En savoir plus sur Cloud",
-      "wantToRun": "Vous voulez plutôt exécuter ComfyUI localement ?",
-      "download": "Télécharger ComfyUI"
-    },
-    "claimInvite": {
-      "processingTitle": "Traitement du code d'invitation...",
-      "claimButton": "Utiliser l'invitation"
-    },
-    "sorryContactSupport": {
-      "title": "Désolé, contactez le support"
-    },
-    "verifyEmail": {
-      "title": "Vérification de l'e-mail"
-    },
-    "footer": {
-      "needHelp": "Besoin d'aide ?"
-    }
-  },
   "chatHistory": {
     "cancelEdit": "Annuler",
     "cancelEditTooltip": "Annuler la modification",
@@ -1804,5 +1707,37 @@
     "label": "Contrôles de zoom",
     "showMinimap": "Afficher la mini-carte",
     "zoomToFit": "Ajuster à l’écran"
-  }
+  },
+  "cloudFooter_needHelp": "Besoin d'aide ?",
+  "cloudStart_title": "commencez à créer en quelques secondes",
+  "cloudStart_desc": "Aucune configuration requise. Fonctionne sur n'importe quel appareil.",
+  "cloudStart_explain": "Générez plusieurs sorties à la fois. Partagez des flux de travail facilement.",
+  "cloudStart_learnAboutButton": "En savoir plus sur Cloud",
+  "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
+  "cloudStart_download": "Télécharger ComfyUI",
+  "cloudWaitlist_titleLine1": "VOUS ÊTES SUR LA",
+  "cloudWaitlist_titleLine2": "LISTE D'ATTENTE 🎉",
+  "cloudWaitlist_message": "Vous avez été ajouté à la liste d'attente. Nous vous préviendrons quand l'accès sera disponible.",
+  "cloudWaitlist_questionsText": "Des questions ? Contactez-nous",
+  "cloudWaitlist_contactLink": "ici",
+  "cloudClaimInvite_processingTitle": "Traitement du Code d'Invitation...",
+  "cloudClaimInvite_claimButton": "Réclamer l'Invitation",
+  "cloudSorryContactSupport_title": "Désolé, contactez le support",
+  "cloudVerifyEmail_title": "Vérification d'Email",
+  "cloudPrivateBeta_title": "Cloud est actuellement en bêta privée",
+  "cloudPrivateBeta_desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud.",
+  "cloudForgotPassword_title": "Mot de passe oublié",
+  "cloudForgotPassword_instructions": "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+  "cloudForgotPassword_emailLabel": "Email",
+  "cloudForgotPassword_emailPlaceholder": "Entrez votre email",
+  "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
+  "cloudForgotPassword_backToLogin": "Retour à la connexion",
+  "cloudForgotPassword_didntReceiveEmail": "Vous n'avez pas reçu d'email ?",
+  "cloudForgotPassword_emailRequired": "L'email est requis",
+  "cloudForgotPassword_passwordResetSent": "Réinitialisation de mot de passe envoyée",
+  "cloudForgotPassword_passwordResetError": "Échec de l'envoi de l'email de réinitialisation",
+  "cloudSurvey_steps_familiarity": "À quel point êtes-vous familier avec ComfyUI ?",
+  "cloudSurvey_steps_purpose": "Pour quoi utiliserez-vous principalement ComfyUI ?",
+  "cloudSurvey_steps_industry": "Quelle est votre industrie principale ?",
+  "cloudSurvey_steps_making": "Que prévoyez-vous de créer ?"
 }

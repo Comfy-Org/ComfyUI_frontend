@@ -20,7 +20,7 @@
       target="_blank"
       rel="noopener noreferrer"
     >
-      {{ t('cloudOnboarding.footer.needHelp') }}
+      {{ t('cloudFooter_needHelp') }}
     </a>
   </footer>
 </template>

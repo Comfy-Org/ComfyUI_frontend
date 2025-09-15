@@ -2,22 +2,22 @@
   <div class="flex flex-col items-center justify-center p-8">
     <div class="w-full max-w-md text-center">
       <h1 class="text-3xl italic font-bolder mb-8">
-        {{ t('cloudOnboarding.waitlist.titleLine1') }}<br />
-        {{ t('cloudOnboarding.waitlist.titleLine2') }}
+        {{ t('cloudWaitlist_titleLine1') }}<br />
+        {{ t('cloudWaitlist_titleLine2') }}
       </h1>
       <div class="max-w-[320px] text-lg font-light">
         <p class="text-white">
-          {{ t('cloudOnboarding.waitlist.message') }}
+          {{ t('cloudWaitlist_message') }}
         </p>
         <p class="text-white">
-          {{ t('cloudOnboarding.waitlist.questionsText') }}
+          {{ t('cloudWaitlist_questionsText') }}
           <a
             href="https://support.comfy.org"
             class="text-blue-400 no-underline cursor-pointer"
             target="_blank"
             rel="noopener noreferrer"
           >
-            {{ t('cloudOnboarding.waitlist.contactLink') }}</a
+            {{ t('cloudWaitlist_contactLink') }}</a
           >.
         </p>
       </div>

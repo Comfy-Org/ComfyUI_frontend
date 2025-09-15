@@ -27,14 +27,16 @@
       <!-- Optional Overlay for better visual -->
       <div class="absolute inset-0 flex justify-center items-center">
         <div>
-          <h1 class="text-5xl italic font-bolder mb-8 uppercase text-center">
-            {{ t('cloudOnboarding.start.title') }}
+          <h1
+            class="text-5xl italic font-bolder mb-8 uppercase text-center text-white"
+          >
+            {{ t('cloudStart_title') }}
           </h1>
-          <p class="m-2 text-xl text-center">
-            {{ t('cloudOnboarding.start.desc') }}
+          <p class="m-2 text-xl text-center text-white">
+            {{ t('cloudStart_desc') }}
           </p>
-          <p class="m-0 text-xl text-center">
-            {{ t('cloudOnboarding.start.explain') }}
+          <p class="m-0 text-xl text-center text-white">
+            {{ t('cloudStart_explain') }}
           </p>
         </div>
       </div>
@@ -46,17 +48,17 @@
             severity="secondary"
             @click="handleLearnAboutClick"
           >
-            {{ t('cloudOnboarding.start.learnAboutButton') }}
+            {{ t('cloudStart_learnAboutButton') }}
           </Button>
           <div class="flex items-center gap-3">
-            <p>{{ t('cloudOnboarding.start.wantToRun') }}</p>
+            <p class="text-white">{{ t('cloudStart_wantToRun') }}</p>
             <Button
               type="button"
               class="h-10 bg-black text-white font-bold"
               severity="secondary"
               @click="handleDownloadClick"
             >
-              {{ t('cloudOnboarding.start.download') }}
+              {{ t('cloudStart_download') }}
             </Button>
           </div>
         </div>
