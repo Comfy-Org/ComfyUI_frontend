@@ -406,5 +406,3 @@ watch(
 // Provide nodeImageUrls to child components
 provide('nodeImageUrls', nodeImageUrls)
 </script>
-
-<style scoped></style>
