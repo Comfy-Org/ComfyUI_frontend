@@ -449,7 +449,7 @@ export class LitegraphLinkAdapter {
       // Copy calculated center position back to litegraph object
       // This is needed for hit detection and menu interaction
       if (linkData.centerPos) {
-        linkSegment._pos = linkSegment._pos || new Float32Array(2)
+        linkSegment._pos = linkSegment._pos || [0, 0]
         linkSegment._pos[0] = linkData.centerPos.x
         linkSegment._pos[1] = linkData.centerPos.y
 
