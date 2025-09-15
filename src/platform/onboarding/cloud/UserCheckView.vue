@@ -33,7 +33,6 @@ onMounted(async () => {
 
   try {
     const cloudUserStats = await getUserCloudStatus()
-    const surveyStatus = await getSurveyCompletedStatus()
 
     if (!cloudUserStats) {
       skeletonType.value = 'login'
@@ -41,18 +40,24 @@ onMounted(async () => {
       return
     }
 
+    // We know user exists, now check survey status - show survey skeleton while loading
+    skeletonType.value = 'survey'
+    const surveyStatus = await getSurveyCompletedStatus()
+
     // Check onboarding status and redirect accordingly
     if (!surveyStatus) {
       // User hasn't completed survey
-      skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })
-    } else if (cloudUserStats.status !== 'active') {
-      // User completed survey but not whitelisted
-      skeletonType.value = 'waitlist'
-      await router.replace({ name: 'cloud-waitlist' })
     } else {
-      // User is fully onboarded - just reload the page to bypass router issues
-      window.location.href = '/'
+      // Survey is done, now check if waitlisted - show waitlist skeleton while loading
+      skeletonType.value = 'waitlist'
+      if (cloudUserStats.status !== 'active') {
+        // User completed survey but not whitelisted
+        await router.replace({ name: 'cloud-waitlist' })
+      } else {
+        // User is fully onboarded - just reload the page to bypass router issues
+        window.location.href = '/'
+      }
     }
   } catch (error) {
     // On error, fallback to page reload
