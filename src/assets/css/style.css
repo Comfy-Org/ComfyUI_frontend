@@ -99,6 +99,7 @@
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
+  --color-bypass: #6A246A;
   --color-error: #962a2a;
 
   --color-blue-selection: rgb( from var(--color-blue-100) r g b / 0.3); 

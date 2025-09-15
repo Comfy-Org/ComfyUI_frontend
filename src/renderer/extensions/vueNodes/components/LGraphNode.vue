@@ -16,7 +16,8 @@
         outlineClass,
         {
           'animate-pulse': executing,
-          'opacity-50': nodeData.mode === 4,
+          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
+            bypassed,
           'will-change-transform': isDragging
         },
         lodCssClass,
@@ -230,6 +231,8 @@ const hasExecutionError = computed(
 const hasAnyError = computed(
   (): boolean => !!(hasExecutionError.value || nodeData.hasErrors || error)
 )
+
+const bypassed = computed((): boolean => nodeData.mode === 4)
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => zoomLevel)
