@@ -125,7 +125,7 @@ jobs:
           packages-dir: comfyui_frontend_package/dist
 
   publish_types:
-    needs: [build]
+    needs: build
     uses: ./.github/workflows/publish-frontend-types.yaml
     with:
       version: ${{ needs.build.outputs.version }}
