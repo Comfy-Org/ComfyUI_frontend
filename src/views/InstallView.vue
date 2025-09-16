@@ -28,9 +28,6 @@
             />
           </StepPanel>
           <StepPanel value="3">
-            <!-- Migration step is empty - content moved to accordion in step 2 -->
-          </StepPanel>
-          <StepPanel value="4">
             <DesktopSettingsConfiguration
               v-model:autoUpdate="autoUpdate"
               v-model:allowMetrics="allowMetrics"
@@ -117,8 +114,6 @@ const canProceed = computed(() => {
     case '2':
       return pathError.value === ''
     case '3':
-      return true // Migration step is now empty, always allow proceeding
-    case '4':
       return !hasError.value
     default:
       return false
