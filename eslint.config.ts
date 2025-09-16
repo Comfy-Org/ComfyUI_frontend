@@ -67,6 +67,7 @@ export default [
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/one-component-per-file': 'off', // TODO: fix
+      'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
       // Restrict deprecated PrimeVue components
       'no-restricted-imports': [
         'error',
