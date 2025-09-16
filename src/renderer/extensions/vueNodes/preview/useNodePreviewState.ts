@@ -1,8 +1,8 @@
 import { storeToRefs } from 'pinia'
 import { type Ref, computed } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 
 export const useNodePreviewState = (
   nodeId: string,
