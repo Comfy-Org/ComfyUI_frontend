@@ -93,7 +93,3 @@ const pickGpu = (value: typeof selected.value) => {
   selected.value = newValue
 }
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-</style>
