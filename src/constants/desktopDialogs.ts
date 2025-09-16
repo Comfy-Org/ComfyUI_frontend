@@ -1,15 +1,15 @@
 export interface DialogAction {
-  label: string
-  action: 'openUrl' | 'close' | 'cancel'
-  url?: string
-  severity?: 'danger' | 'primary' | 'secondary' | 'warn'
-  returnValue: string
+  readonly label: string
+  readonly action: 'openUrl' | 'close' | 'cancel'
+  readonly url?: string
+  readonly severity?: 'danger' | 'primary' | 'secondary' | 'warn'
+  readonly returnValue: string
 }
 
 export interface DesktopDialog {
-  title: string
-  message: string
-  buttons: DialogAction[]
+  readonly title: string
+  readonly message: string
+  readonly buttons: DialogAction[]
 }
 
 export const DESKTOP_DIALOGS = {
