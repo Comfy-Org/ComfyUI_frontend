@@ -61,7 +61,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { app } from '@/scripts/app'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import {
+  getLocatorIdFromNodeData,
+  getNodeByLocatorId
+} from '@/utils/graphTraversalUtil'
 
 interface NodeHeaderProps {
   node?: LGraphNode // For backwards compatibility
@@ -123,12 +126,7 @@ const isSubgraphNode = computed(() => {
   const graph = app.graph?.rootGraph || app.graph
   if (!graph) return false
 
-  // Handle both VueNodeData and LGraphNode cases
-  const nodeData = nodeInfo.value
-  const subgraphId = 'subgraphId' in nodeData ? nodeData.subgraphId : undefined
-  const locatorId = subgraphId
-    ? `${subgraphId}:${String(nodeData.id)}`
-    : String(nodeData.id)
+  const locatorId = getLocatorIdFromNodeData(nodeInfo.value)
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
 

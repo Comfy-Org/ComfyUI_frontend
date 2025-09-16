@@ -156,7 +156,10 @@ import { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import {
+  getLocatorIdFromNodeData,
+  getNodeByLocatorId
+} from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
@@ -421,40 +424,35 @@ const handleTitleUpdate = (newTitle: string) => {
 }
 
 const handleEnterSubgraph = () => {
-  // Get the underlying LiteGraph node
   const graph = app.graph?.rootGraph || app.graph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
   }
 
-  const locatorId = nodeData.subgraphId
-    ? `${nodeData.subgraphId}:${String(nodeData.id)}`
-    : String(nodeData.id)
+  const locatorId = getLocatorIdFromNodeData(nodeData)
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
 
-  if (litegraphNode?.isSubgraphNode() && 'subgraph' in litegraphNode) {
-    // Use the canvas to open the subgraph, similar to how LiteGraph does it
-    const canvas = app.canvas
-    if (canvas && typeof canvas.openSubgraph === 'function') {
-      canvas.openSubgraph(litegraphNode.subgraph)
-    } else {
-      console.warn('LGraphNode: Canvas or openSubgraph method not available')
-    }
-  } else {
+  if (!litegraphNode?.isSubgraphNode() || !('subgraph' in litegraphNode)) {
     console.warn('LGraphNode: Node is not a valid subgraph node', litegraphNode)
+    return
   }
+
+  const canvas = app.canvas
+  if (!canvas || typeof canvas.openSubgraph !== 'function') {
+    console.warn('LGraphNode: Canvas or openSubgraph method not available')
+    return
+  }
+
+  canvas.openSubgraph(litegraphNode.subgraph)
 }
 
 const nodeOutputs = useNodeOutputStore()
 
 const nodeImageUrls = ref<string[]>([])
 const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
-  // Construct proper locator ID using subgraph ID from VueNodeData
-  const locatorId = nodeData.subgraphId
-    ? `${nodeData.subgraphId}:${nodeData.id}`
-    : nodeData.id
+  const locatorId = getLocatorIdFromNodeData(nodeData)
 
   // Use root graph for getNodeByLocatorId since it needs to traverse from root
   const rootGraph = app.graph?.rootGraph || app.graph
