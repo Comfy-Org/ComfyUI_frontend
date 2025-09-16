@@ -41,8 +41,9 @@ const { dialogId } = route.params
 
 // Fallback to reinstallFreshStart if dialog not found
 const dialog =
-  (typeof dialogId === 'string' && DESKTOP_DIALOGS[dialogId]) ||
-  DESKTOP_DIALOGS.reinstallFreshStart
+  typeof dialogId === 'string' && dialogId in DESKTOP_DIALOGS
+    ? DESKTOP_DIALOGS[dialogId as keyof typeof DESKTOP_DIALOGS]
+    : DESKTOP_DIALOGS.reinstallFreshStart
 const dialogI18nKey = normalizeI18nKey(dialog.id)
 
 const handleButtonClick = (button: DialogAction) => {
