@@ -8,6 +8,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
+const canvasStore = useCanvasStore()
 useExtensionService().registerExtension({
   name: 'Comfy.SubgraphProxyWidgets',
   nodeCreated(node: LGraphNode) {
@@ -17,7 +18,6 @@ useExtensionService().registerExtension({
   }
 })
 function injectProperty(subgraphNode: SubgraphNode) {
-  const canvasStore = useCanvasStore()
   subgraphNode.properties.proxyWidgets ??= []
   const proxyWidgets = subgraphNode.properties.proxyWidgets
   Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
@@ -80,18 +80,16 @@ function addProxyWidget(
     label: name,
     isProxyWidget: true,
     y: 0,
-    lasy_y: 0,
+    last_y: undefined,
     width: undefined,
-    computedHeight: 0,
+    computedHeight: undefined,
     afterQueued: undefined,
     onRemove: undefined,
     node: subgraphNode
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
-function resolveLinkedWidget(
-  overlay: Overlay
-): [LGraphNode | undefined, IBaseWidget | undefined] {
+function resolveLinkedWidget(overlay: Overlay): IBaseWidget | undefined {
   const { graph, nodeId, widgetName } = overlay
   let g: LGraph | undefined = graph
   let n: LGraphNode | SubgraphNode | undefined = undefined
@@ -99,25 +97,16 @@ function resolveLinkedWidget(
     n = g?._nodes_by_id?.[id]
     g = n?.isSubgraphNode?.() ? n.subgraph : undefined
   }
-  if (!n) return [undefined, undefined]
-  return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
+  if (!n) return undefined
+  return n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
 }
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
-  //TODO: call toConcrete when resolved and hold reference?
-  //NOTE: From testing, WeakRefs never dropped. May refactor later
-  let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
+  let linkedWidget = resolveLinkedWidget(overlay)
+  const bw = linkedWidget ?? disconnectedWidget
   const handler = Object.fromEntries(
     ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function (t: object, p: string, ...rest: object[]) {
         if (s == 'get' && p == '_overlay') return overlay
-        const bw = linkedWidget ?? disconnectedWidget
-        if (s == 'set' && p == 'computedDisabled') {
-          //ignore setting, calc actual
-          bw.computedDisabled =
-            bw.disabled || linkedNode!.getSlotFromWidget(bw)?.link != null
-          return true
-        }
-        //NOTE: p may be undefined
         let r = rest.at(-1)
         if (overlay.hasOwnProperty(p)) r = t = overlay
         else {
@@ -129,7 +118,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       return [s, func]
     })
   )
-  const w = new Proxy(overlay, handler) as IBaseWidget
+  const w = new Proxy(disconnectedWidget, handler)
   subgraphNode.widgets.push(w)
   return w
 }
