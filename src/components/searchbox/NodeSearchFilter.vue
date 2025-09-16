@@ -28,7 +28,7 @@ import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
+import { FuseFilter, type FuseFilterWithValue } from '@/utils/fuseUtil'
 
 const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
 const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()

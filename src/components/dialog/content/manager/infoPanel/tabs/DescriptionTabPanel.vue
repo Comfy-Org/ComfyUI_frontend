@@ -29,7 +29,7 @@ import { useI18n } from 'vue-i18n'
 import InfoTextSection, {
   type TextSection
 } from '@/components/dialog/content/manager/infoPanel/InfoTextSection.vue'
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 import { isValidUrl } from '@/utils/formatUtil'
 
 const { t } = useI18n()

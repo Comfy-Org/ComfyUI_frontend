@@ -40,7 +40,7 @@ import {
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
-import { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { type INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // DOM-based slot registration for arbitrary positioning
 import {
   type TransformState,

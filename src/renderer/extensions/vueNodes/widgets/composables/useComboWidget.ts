@@ -11,7 +11,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
-  ComboInputSpec,
+  type ComboInputSpec,
   type InputSpec,
   isComboInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'

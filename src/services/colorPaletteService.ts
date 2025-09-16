@@ -6,7 +6,7 @@ import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
-  Colors,
+  type Colors,
   type Palette,
   paletteSchema
 } from '@/schemas/colorPaletteSchema'

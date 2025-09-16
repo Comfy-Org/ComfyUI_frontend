@@ -20,7 +20,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { Positionable } from '@/lib/litegraph/src/interfaces'
+import { type Positionable } from '@/lib/litegraph/src/interfaces'
 import { useCommandStore } from '@/stores/commandStore'
 
 const { t } = useI18n()

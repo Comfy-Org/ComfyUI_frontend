@@ -50,7 +50,7 @@ import PackUninstallButton from '@/components/dialog/content/manager/button/Pack
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetail } from '@/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/types/importFailedTypes'
 

@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
+import Select, { type SelectPassThroughMethodOptions } from 'primevue/select'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

@@ -44,7 +44,7 @@ import FormRadioGroup from '@/components/common/FormRadioGroup.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
-import { FormItem } from '@/platform/settings/types'
+import { type FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<any>('formValue')
 const props = defineProps<{

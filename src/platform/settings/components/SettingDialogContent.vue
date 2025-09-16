@@ -73,8 +73,11 @@ import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMess
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
-import { SettingTreeNode } from '@/platform/settings/settingStore'
-import { ISettingGroup, SettingParams } from '@/platform/settings/types'
+import { type SettingTreeNode } from '@/platform/settings/settingStore'
+import {
+  type ISettingGroup,
+  type SettingParams
+} from '@/platform/settings/types'
 import { flattenTree } from '@/utils/treeUtil'
 
 const { defaultPanel } = defineProps<{

@@ -8,9 +8,9 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
-  ExecutedWsMessage,
-  ResultItem,
-  ResultItemType
+  type ExecutedWsMessage,
+  type ResultItem,
+  type ResultItemType
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

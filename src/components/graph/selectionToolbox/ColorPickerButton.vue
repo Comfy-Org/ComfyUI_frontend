@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
-import { Raw, computed, ref, watch } from 'vue'
+import { type Raw, computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {

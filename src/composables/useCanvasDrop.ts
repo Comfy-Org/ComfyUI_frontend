@@ -1,4 +1,4 @@
-import { Ref } from 'vue'
+import { type Ref } from 'vue'
 
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -11,7 +11,7 @@ import { ComfyModelDef } from '@/stores/modelStore'
 import { ModelNodeProvider } from '@/stores/modelToNodeStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { type RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
   const modelToNodeStore = useModelToNodeStore()

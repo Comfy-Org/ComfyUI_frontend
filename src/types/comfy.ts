@@ -1,4 +1,4 @@
-import { Positionable } from '@/lib/litegraph/src/interfaces'
+import { type Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'

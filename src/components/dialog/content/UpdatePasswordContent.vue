@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { Form, FormSubmitEvent } from '@primevue/forms'
+import { Form, type FormSubmitEvent } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import { ref } from 'vue'

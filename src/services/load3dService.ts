@@ -4,7 +4,7 @@ import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { type NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 type Load3dReadyCallback = (load3d: Load3d | Load3dAnimation) => void

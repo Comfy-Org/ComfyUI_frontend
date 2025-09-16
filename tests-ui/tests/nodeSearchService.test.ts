@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { type ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 

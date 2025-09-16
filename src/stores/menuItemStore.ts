@@ -3,7 +3,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
-import { ComfyExtension } from '@/types/comfy'
+import { type ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 

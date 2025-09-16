@@ -5,7 +5,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import {
   LGraphEventMode,
   LGraphNode,
-  Positionable,
+  type Positionable,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

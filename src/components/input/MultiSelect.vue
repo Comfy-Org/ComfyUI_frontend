@@ -107,7 +107,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import MultiSelect, {
-  MultiSelectPassThroughMethodOptions
+  type MultiSelectPassThroughMethodOptions
 } from 'primevue/multiselect'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

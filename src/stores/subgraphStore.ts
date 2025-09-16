@@ -8,7 +8,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
-  LoadedComfyWorkflow,
+  type LoadedComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type {

@@ -11,7 +11,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import {
   InjectKeyHandleEditLabelFunction,
-  RenderedTreeExplorerNode
+  type RenderedTreeExplorerNode
 } from '@/types/treeExplorerTypes'
 
 // Create a mock i18n instance

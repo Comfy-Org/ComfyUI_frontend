@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
-  SettingTreeNode,
+  type SettingTreeNode,
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'

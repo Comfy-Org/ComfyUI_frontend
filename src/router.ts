@@ -1,6 +1,6 @@
 import {
-  NavigationGuardNext,
-  RouteLocationNormalized,
+  type NavigationGuardNext,
+  type RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
   createWebHistory

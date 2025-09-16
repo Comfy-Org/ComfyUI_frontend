@@ -72,7 +72,7 @@ import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
 import {
-  CSSProperties,
+  type CSSProperties,
   computed,
   nextTick,
   onMounted,
@@ -87,7 +87,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { type RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const { t } = useI18n()
 

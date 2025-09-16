@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   ComfyWorkflow,
-  LoadedComfyWorkflow,
+  type LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'

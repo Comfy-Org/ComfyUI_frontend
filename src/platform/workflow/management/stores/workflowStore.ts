@@ -4,7 +4,7 @@ import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { type ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
