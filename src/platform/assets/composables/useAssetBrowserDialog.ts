@@ -38,14 +38,13 @@ export const useAssetBrowserDialog = () => {
       closable: false,
       pt: {
         root: {
-          class:
-            'rounded-2xl overflow-hidden h-[80vh] w-[80vw] max-h-[80vh] max-w-[80vw]'
+          class: 'rounded-2xl overflow-hidden'
         },
         header: {
-          class: 'p-0! hidden'
+          class: 'p-0 hidden'
         },
         content: {
-          class: 'p-0! m-0! h-full w-full'
+          class: 'p-0 m-0 h-full w-full'
         }
       }
     }

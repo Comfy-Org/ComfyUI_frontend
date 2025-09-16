@@ -1,6 +1,6 @@
-import { VueWrapper, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
@@ -96,8 +96,6 @@ vi.mock('vue-i18n', () => ({
 }))
 
 describe('AssetBrowserModal', () => {
-  let wrapper: VueWrapper
-
   const createTestAsset = (
     id: string,
     name: string,
@@ -126,7 +124,7 @@ describe('AssetBrowserModal', () => {
     const pinia = createPinia()
     setActivePinia(pinia)
 
-    wrapper = mount(AssetBrowserModal, {
+    return mount(AssetBrowserModal, {
       props: {
         assets: assets,
         ...props
@@ -143,14 +141,7 @@ describe('AssetBrowserModal', () => {
         }
       }
     })
-    return wrapper
   }
-
-  afterEach(() => {
-    if (wrapper) {
-      wrapper.unmount()
-    }
-  })
 
   describe('Search Functionality', () => {
     it('filters assets when search query changes', async () => {
@@ -159,7 +150,7 @@ describe('AssetBrowserModal', () => {
         createTestAsset('asset2', 'Checkpoint Model B', 'checkpoints'),
         createTestAsset('asset3', 'LoRA Model C', 'loras')
       ]
-      createWrapper(assets)
+      const wrapper = createWrapper(assets)
 
       const searchBox = wrapper.find('[data-testid="search-box"]')
 
@@ -184,7 +175,7 @@ describe('AssetBrowserModal', () => {
         createTestAsset('asset1', 'LoRA Model C', 'loras'),
         createTestAsset('asset2', 'Checkpoint Model', 'checkpoints')
       ]
-      createWrapper(assets)
+      const wrapper = createWrapper(assets)
 
       const searchBox = wrapper.find('[data-testid="search-box"]')
 
@@ -203,7 +194,7 @@ describe('AssetBrowserModal', () => {
       const assets = [
         createTestAsset('asset1', 'Checkpoint Model', 'checkpoints')
       ]
-      createWrapper(assets)
+      const wrapper = createWrapper(assets)
 
       const searchBox = wrapper.find('[data-testid="search-box"]')
 
@@ -222,7 +213,7 @@ describe('AssetBrowserModal', () => {
         createTestAsset('asset2', 'LoRA Model C', 'loras'),
         createTestAsset('asset3', 'VAE Model D', 'vae')
       ]
-      createWrapper(assets)
+      const wrapper = createWrapper(assets, { showLeftPanel: true })
 
       // Wait for Vue reactivity and component mounting
       await nextTick()
@@ -251,7 +242,7 @@ describe('AssetBrowserModal', () => {
   describe('Asset Selection', () => {
     it('emits asset-select event when asset is selected', async () => {
       const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
-      createWrapper(assets)
+      const wrapper = createWrapper(assets)
 
       // Click on first asset
       await wrapper.find('[data-testid="asset-asset1"]').trigger('click')
@@ -267,7 +258,7 @@ describe('AssetBrowserModal', () => {
     it('executes onSelect callback when provided', async () => {
       const onSelectSpy = vi.fn()
       const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
-      createWrapper(assets, { onSelect: onSelectSpy })
+      const wrapper = createWrapper(assets, { onSelect: onSelectSpy })
 
       // Click on first asset
       await wrapper.find('[data-testid="asset-asset1"]').trigger('click')
@@ -277,36 +268,25 @@ describe('AssetBrowserModal', () => {
   })
 
   describe('Left Panel Conditional Logic', () => {
-    it('hides left panel when only one category exists', () => {
+    it('hides left panel by default when showLeftPanel prop is undefined', () => {
       const singleCategoryAssets = [
         createTestAsset('single1', 'Asset 1', 'checkpoints'),
         createTestAsset('single2', 'Asset 2', 'checkpoints')
       ]
-      createWrapper(singleCategoryAssets)
+      const wrapper = createWrapper(singleCategoryAssets)
 
       expect(wrapper.find('[data-testid="left-panel"]').exists()).toBe(false)
     })
 
-    it('shows left panel when multiple categories exist', async () => {
-      const multiCategoryAssets = [
-        createTestAsset('asset1', 'Checkpoint', 'checkpoints'),
-        createTestAsset('asset2', 'LoRA', 'loras')
-      ]
-      createWrapper(multiCategoryAssets)
-
-      // Wait for Vue reactivity to compute shouldShowLeftPanel
-      await nextTick()
-
-      expect(wrapper.find('[data-testid="left-panel"]').exists()).toBe(true)
-    })
-
-    it('respects explicit showLeftPanel prop override', () => {
+    it('shows left panel when showLeftPanel prop is explicitly true', () => {
       const singleCategoryAssets = [
         createTestAsset('single1', 'Asset 1', 'checkpoints')
       ]
 
       // Force show even with single category
-      createWrapper(singleCategoryAssets, { showLeftPanel: true })
+      const wrapper = createWrapper(singleCategoryAssets, {
+        showLeftPanel: true
+      })
       expect(wrapper.find('[data-testid="left-panel"]').exists()).toBe(true)
 
       // Force hide even with multiple categories
@@ -315,8 +295,10 @@ describe('AssetBrowserModal', () => {
         createTestAsset('asset1', 'Checkpoint', 'checkpoints'),
         createTestAsset('asset2', 'LoRA', 'loras')
       ]
-      createWrapper(multiCategoryAssets, { showLeftPanel: false })
-      expect(wrapper.find('[data-testid="left-panel"]').exists()).toBe(false)
+      const wrapper2 = createWrapper(multiCategoryAssets, {
+        showLeftPanel: false
+      })
+      expect(wrapper2.find('[data-testid="left-panel"]').exists()).toBe(false)
     })
   })
 })

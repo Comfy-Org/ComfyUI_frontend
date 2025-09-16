@@ -29,6 +29,7 @@
 
     <template #content>
       <AssetGrid
+        :class="{ 'max-w-5xl': !shouldShowLeftPanel }"
         :assets="filteredAssets"
         @asset-select="handleAssetSelectAndEmit"
       />
@@ -78,9 +79,9 @@ const {
   selectAsset
 } = useAssetBrowser(assetsToUse)
 
-// Compute whether to show left panel
+// Dialog controls panel visibility via prop
 const shouldShowLeftPanel = computed(() => {
-  return props.showLeftPanel ?? availableCategories.value.length >= 3
+  return props.showLeftPanel ?? true
 })
 
 // Handle close button - call both the prop callback and emit the event
