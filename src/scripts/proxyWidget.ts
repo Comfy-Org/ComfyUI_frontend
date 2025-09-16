@@ -52,6 +52,8 @@ SubgraphNode.prototype._internalConfigureAfterSlots = function () {
         }
       }
       canvasStore.canvas?.setDirty(true, true)
+      subgraphNode._setConcreteSlots()
+      subgraphNode.arrange()
     }
   })
   subgraphNode.properties.proxyWidgets = proxyWidgets

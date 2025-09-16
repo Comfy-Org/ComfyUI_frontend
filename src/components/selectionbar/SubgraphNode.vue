@@ -172,11 +172,11 @@ const filteredActive = computed<WidgetItem[]>(() => {
           <div>{{ t('subgraphStore.shown') }}</div>
           <a @click.stop="hideAll"> {{ t('subgraphStore.hideAll') }}</a>
         </div>
-        <div v-if="searchQuery">
+        <div v-if="searchQuery" class="w-full">
           <div
             v-for="element in filteredActive"
             :key="toKey(element)"
-            class="widget-container"
+            class="w-full"
           >
             <SubgraphNodeWidget
               :node-id="`${element[0].id}`"
@@ -191,9 +191,9 @@ const filteredActive = computed<WidgetItem[]>(() => {
           v-else
           v-model="activeWidgets"
           group="enabledWidgets"
-          class="widget-container draggable-item"
-          chosen-class="dragged-item"
-          drag-class="dragged-item"
+          class="w-full cursor-grab"
+          chosen-class="cursor-grabbing"
+          drag-class="cursor-grabbing"
           :animation="100"
           item-key="id"
         >
@@ -217,7 +217,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
         <div
           v-for="element in filteredCandidates"
           :key="toKey(element)"
-          class="widget-container"
+          class="w-full"
         >
           <SubgraphNodeWidget
             :node-id="`${element[0].id}`"
@@ -231,52 +231,32 @@ const filteredActive = computed<WidgetItem[]>(() => {
   </SidebarTabTemplate>
 </template>
 <style scoped>
-.widget-container {
-  width: 100%;
-}
 .widgets-section-header {
   display: flex;
   padding: 0 16px;
   justify-content: space-between;
-  align-items: flex-end;
-  align-self: stretch;
 }
 .widgets-section-header div {
-  color: var(--color-text-secondary, #9c9eab);
+  color: var(--color-slate-100, #9c9eab);
   /* body-text-badge */
   font-family: Inter;
   font-size: 9px;
-  font-style: normal;
   font-weight: 600;
-  line-height: normal;
   text-transform: uppercase;
 }
 .widgets-section-header a {
   cursor: pointer;
-  color: var(--color-base-blue-primary, #0b8ce9);
+  color: var(--color-blue-100, #0b8ce9);
   text-align: right;
 
   /* body-text-caption */
   font-family: Inter;
   font-size: 11px;
-  font-style: normal;
   font-weight: 400;
-  line-height: normal;
 }
 
 .widgets-section {
-  display: flex;
-
   padding: 4px 0 16px 0;
-  flex-direction: column;
-  align-items: flex-start;
-  align-self: stretch;
   border-bottom: 1px solid var(--color-node-divider, #2e3037);
-}
-.dragged-item {
-  cursor: grabbing;
-}
-.draggable-item {
-  cursor: grab;
 }
 </style>
