@@ -19,18 +19,18 @@
             <InstallLocationPicker
               v-model:install-path="installPath"
               v-model:path-error="pathError"
-              v-model:migrationSourcePath="migrationSourcePath"
-              v-model:migrationItemIds="migrationItemIds"
-              v-model:pythonMirror="pythonMirror"
-              v-model:pypiMirror="pypiMirror"
-              v-model:torchMirror="torchMirror"
+              v-model:migration-source-path="migrationSourcePath"
+              v-model:migration-item-ids="migrationItemIds"
+              v-model:python-mirror="pythonMirror"
+              v-model:pypi-mirror="pypiMirror"
+              v-model:torch-mirror="torchMirror"
               :device="device"
             />
           </StepPanel>
           <StepPanel value="3">
             <DesktopSettingsConfiguration
-              v-model:autoUpdate="autoUpdate"
-              v-model:allowMetrics="allowMetrics"
+              v-model:auto-update="autoUpdate"
+              v-model:allow-metrics="allowMetrics"
             />
           </StepPanel>
         </StepPanels>
