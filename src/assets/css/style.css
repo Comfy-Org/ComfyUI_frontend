@@ -54,10 +54,7 @@
   --text-xxs--line-height: calc(1 / 0.625);
 
   /* Font Families */
-  --font-inter: "Inter", sans-serif;
-  --font-inter-regular: "Inter Regular", sans-serif;
-  --font-inter-medium: "Inter Medium", sans-serif;
-  --font-inter-black-italic: "Inter Black Italic", sans-serif;
+  --font-inter: 'Inter', sans-serif;
 
   /* Palette Colors */
   --color-charcoal-100: #171718;
