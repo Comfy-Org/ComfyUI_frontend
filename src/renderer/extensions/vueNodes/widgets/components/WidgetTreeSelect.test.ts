@@ -6,16 +6,69 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
-import WidgetTreeSelect from './WidgetTreeSelect.vue'
+import WidgetTreeSelect, { type TreeNode } from './WidgetTreeSelect.vue'
 
-type TreeNode = {
-  key: string
-  label?: string
-  data?: unknown
-  children?: TreeNode[]
-  leaf?: boolean
-  selectable?: boolean
-}
+const createTreeData = (): TreeNode[] => [
+  {
+    key: '0',
+    label: 'Documents',
+    data: 'Documents Folder',
+    children: [
+      {
+        key: '0-0',
+        label: 'Work',
+        data: 'Work Folder',
+        children: [
+          {
+            key: '0-0-0',
+            label: 'Expenses.doc',
+            data: 'Expenses Document',
+            leaf: true
+          },
+          {
+            key: '0-0-1',
+            label: 'Resume.doc',
+            data: 'Resume Document',
+            leaf: true
+          }
+        ]
+      },
+      {
+        key: '0-1',
+        label: 'Home',
+        data: 'Home Folder',
+        children: [
+          {
+            key: '0-1-0',
+            label: 'Invoices.txt',
+            data: 'Invoices for this month',
+            leaf: true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    key: '1',
+    label: 'Events',
+    data: 'Events Folder',
+    children: [
+      { key: '1-0', label: 'Meeting', data: 'Meeting', leaf: true },
+      {
+        key: '1-1',
+        label: 'Product Launch',
+        data: 'Product Launch',
+        leaf: true
+      },
+      {
+        key: '1-2',
+        label: 'Report Review',
+        data: 'Report Review',
+        leaf: true
+      }
+    ]
+  }
+]
 
 describe('WidgetTreeSelect Tree Navigation', () => {
   const createMockWidget = (
@@ -56,68 +109,6 @@ describe('WidgetTreeSelect Tree Navigation', () => {
     await treeSelect.vm.$emit('update:modelValue', value)
     return treeSelect
   }
-
-  const createTreeData = (): TreeNode[] => [
-    {
-      key: '0',
-      label: 'Documents',
-      data: 'Documents Folder',
-      children: [
-        {
-          key: '0-0',
-          label: 'Work',
-          data: 'Work Folder',
-          children: [
-            {
-              key: '0-0-0',
-              label: 'Expenses.doc',
-              data: 'Expenses Document',
-              leaf: true
-            },
-            {
-              key: '0-0-1',
-              label: 'Resume.doc',
-              data: 'Resume Document',
-              leaf: true
-            }
-          ]
-        },
-        {
-          key: '0-1',
-          label: 'Home',
-          data: 'Home Folder',
-          children: [
-            {
-              key: '0-1-0',
-              label: 'Invoices.txt',
-              data: 'Invoices for this month',
-              leaf: true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      key: '1',
-      label: 'Events',
-      data: 'Events Folder',
-      children: [
-        { key: '1-0', label: 'Meeting', data: 'Meeting', leaf: true },
-        {
-          key: '1-1',
-          label: 'Product Launch',
-          data: 'Product Launch',
-          leaf: true
-        },
-        {
-          key: '1-2',
-          label: 'Report Review',
-          data: 'Report Review',
-          leaf: true
-        }
-      ]
-    }
-  ]
 
   describe('Component Rendering', () => {
     it('renders treeselect component', () => {
