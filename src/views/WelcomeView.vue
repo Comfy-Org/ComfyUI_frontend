@@ -12,10 +12,6 @@
         </div>
         <!-- Bottom container: Title and button -->
         <div class="flex flex-col items-center justify-center gap-4">
-          <h1 class="font-inter font-semibold text-3xl text-neutral-300">
-            {{ $t('welcome.title') }}
-          </h1>
-          <!-- Get Started Button -->
           <Button
             :label="$t('welcome.getStarted')"
             class="px-8 mt-4 bg-brand-yellow hover:bg-brand-yellow/90 border-0 rounded-lg transition-colors"
