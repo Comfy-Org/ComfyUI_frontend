@@ -47,9 +47,7 @@ interface Props {
 
 defineProps<Props>()
 
-defineEmits<{
-  click: []
-}>()
+defineEmits<{ click: [] }>()
 </script>
 
 <style scoped>
