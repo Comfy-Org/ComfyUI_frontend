@@ -1,25 +1,18 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import ImageCompare from 'primevue/imagecompare'
-import type { ImageCompareProps } from 'primevue/imagecompare'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetImageCompare from './WidgetImageCompare.vue'
-
-interface ImageCompareValue {
-  before: string
-  after: string
-  beforeAlt?: string
-  afterAlt?: string
-  initialPosition?: number
-}
+import WidgetImageCompare, {
+  type ImageCompareValue
+} from './WidgetImageCompare.vue'
 
 describe('WidgetImageCompare Display', () => {
   const createMockWidget = (
     value: ImageCompareValue | string,
-    options: Partial<ImageCompareProps> = {}
+    options: SimplifiedWidget['options'] = {}
   ): SimplifiedWidget<ImageCompareValue | string> => ({
     name: 'test_imagecompare',
     type: 'object',
@@ -265,7 +258,7 @@ describe('WidgetImageCompare Display', () => {
     })
 
     it('handles empty object value', () => {
-      const value = {} as ImageCompareValue
+      const value: ImageCompareValue = {} as ImageCompareValue
       const widget = createMockWidget(value)
       const wrapper = mountComponent(widget)
 
