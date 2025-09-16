@@ -2,7 +2,7 @@
   <div
     class="w-full h-full flex flex-col rounded-lg p-6 bg-[#2d2d2d] justify-between"
   >
-    <h1 class="dialog-title font-semibold text-xl m-0 italic">
+    <h1 class="font-inter font-semibold text-xl m-0 italic">
       {{ t(`desktopDialogs.${id}.title`, title) }}
     </h1>
     <p class="whitespace-pre-wrap">
@@ -12,7 +12,7 @@
       <Button
         v-for="button in buttons"
         :key="button.label"
-        class="first:mr-auto"
+        class="rounded-lg first:mr-auto"
         :label="
           t(
             `desktopDialogs.${id}.buttons.${normalizeI18nKey(button.label)}`,
@@ -48,14 +48,6 @@ const handleButtonClick = (button: DialogAction) => {
 
 <style scoped>
 @reference '../assets/css/style.css';
-
-.dialog-title {
-  font-family: 'ABC ROM';
-}
-
-.p-button {
-  @apply rounded-lg;
-}
 
 .p-button-secondary {
   @apply text-white rounded-lg border-none;
