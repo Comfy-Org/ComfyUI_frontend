@@ -64,16 +64,12 @@ function isDialogId(id: unknown): id is DesktopDialogId {
 
 /**
  * Gets the dialog with the given ID.
- * @param id The ID of the dialog to get
+ * @param dialogId The ID of the dialog to get
  * @returns The dialog with the given ID
  */
 export function getDialog(
-  id: string | string[]
+  dialogId: string | string[]
 ): DesktopDialog & { id: DesktopDialogId } {
-  return isDialogId(id)
-    ? { id, ...DESKTOP_DIALOGS[id] }
-    : {
-        id: 'invalidDialog',
-        ...DESKTOP_DIALOGS.invalidDialog
-      }
+  const id = isDialogId(dialogId) ? dialogId : 'invalidDialog'
+  return { id, ...DESKTOP_DIALOGS[id] }
 }
