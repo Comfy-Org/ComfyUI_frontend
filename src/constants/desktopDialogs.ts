@@ -1,6 +1,6 @@
 export interface DialogAction {
   label: string
-  action: 'openUrl' | 'close'
+  action: 'openUrl' | 'close' | 'cancel'
   url?: string
   severity?: 'danger' | 'primary' | 'secondary' | 'warn'
   returnValue: string
