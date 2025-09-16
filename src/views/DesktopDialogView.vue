@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="w-full h-full flex flex-col rounded-lg p-6 bg-[#2d2d2d] justify-between"
-  >
+  <div class="w-full h-full flex flex-col rounded-lg p-6 justify-between">
     <h1 class="font-inter font-semibold text-xl m-0 italic">
       {{ t(`desktopDialogs.${id}.title`, title) }}
     </h1>
