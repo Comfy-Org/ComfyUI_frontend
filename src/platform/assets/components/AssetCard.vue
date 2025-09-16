@@ -1,23 +1,31 @@
 <template>
-  <div
+  <component
+    :is="interactive ? 'button' : 'div'"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
-    role="button"
-    tabindex="0"
-    :aria-label="`Select asset ${asset.name}`"
+    v-bind="elementProps"
     :class="
       cn(
-        'rounded-xl overflow-hidden cursor-pointer transition-all duration-200 min-w-60 max-w-64',
-        'bg-ivory-100 border border-gray-300',
-        'dark-theme:bg-charcoal-400 dark-theme:border-charcoal-600',
-        'hover:transform hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-400',
-        'dark-theme:hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)] dark-theme:hover:border-charcoal-700',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500 dark-theme:focus:ring-blue-400'
+        // Base layout and container styles (always applied)
+        'rounded-xl overflow-hidden transition-all duration-200 min-w-60 max-w-64',
+        // Button-specific styles
+        interactive && [
+          'appearance-none bg-transparent p-0 m-0 font-inherit text-inherit outline-none cursor-pointer text-left',
+          'bg-ivory-100 border border-gray-300 dark-theme:bg-charcoal-400 dark-theme:border-charcoal-600',
+          'hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/10 hover:border-gray-400',
+          'dark-theme:hover:shadow-lg dark-theme:hover:shadow-black/30 dark-theme:hover:border-charcoal-700',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 dark-theme:focus:ring-blue-400'
+        ],
+        // Div-specific styles
+        !interactive && [
+          'bg-ivory-100 border border-gray-300',
+          'dark-theme:bg-charcoal-400 dark-theme:border-charcoal-600'
+        ]
       )
     "
-    @click="$emit('select', asset)"
-    @keydown.enter="$emit('select', asset)"
-    @keydown.space.prevent="$emit('select', asset)"
+    @click="interactive && $emit('select', asset)"
+    @keydown.enter="interactive && $emit('select', asset)"
+    @keydown.space.prevent="interactive && $emit('select', asset)"
   >
     <div class="relative w-full aspect-square overflow-hidden">
       <div
@@ -72,18 +80,30 @@
         </span>
       </div>
     </div>
-  </div>
+  </component>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { cn } from '@/utils/tailwindUtil'
 
 import AssetBadgeGroup from './AssetBadgeGroup.vue'
 
-defineProps<{
+const props = defineProps<{
   asset: AssetDisplayItem
+  interactive?: boolean
 }>()
+
+const elementProps = computed(() =>
+  props.interactive
+    ? {
+        type: 'button',
+        'aria-label': `Select asset ${props.asset.name}`
+      }
+    : {}
+)
 
 defineEmits<{
   select: [asset: AssetDisplayItem]

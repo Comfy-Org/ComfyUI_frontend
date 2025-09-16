@@ -46,13 +46,30 @@ type Story = StoryObj<typeof meta>
 // Default story with all data provided
 export const Default: Story = {
   args: {
-    asset: createAssetData()
+    asset: createAssetData(),
+    interactive: true
   },
   parameters: {
     docs: {
       description: {
         story:
           'Default AssetCard with complete data including badges and all stats.'
+      }
+    }
+  }
+}
+
+// Non-interactive story
+export const NonInteractive: Story = {
+  args: {
+    asset: createAssetData(),
+    interactive: false
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'AssetCard in non-interactive mode - renders as div without button semantics.'
       }
     }
   }
@@ -139,6 +156,7 @@ export const EdgeCases: Story = {
           v-for="asset in edgeCases"
           :key="asset.id"
           :asset="asset"
+          :interactive="true"
           @select="(asset) => console.log('Selected:', asset)"
         />
       </div>

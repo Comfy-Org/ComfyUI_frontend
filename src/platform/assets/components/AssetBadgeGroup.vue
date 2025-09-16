@@ -5,7 +5,7 @@
       :key="badge.label"
       :class="
         cn(
-          'px-2 py-1 rounded text-[10px] font-medium uppercase tracking-wider text-white',
+          'px-2 py-1 rounded text-xs font-medium uppercase tracking-wider text-white',
           getBadgeColor(badge.type)
         )
       "

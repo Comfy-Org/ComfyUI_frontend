@@ -1,7 +1,7 @@
 <template>
   <BaseModalLayout
     data-component-id="AssetBrowserModal"
-    class="h-full w-full max-h-full max-w-full min-w-0"
+    class="size-full max-h-full max-w-full min-w-0"
     :content-title="contentTitle"
     @close="handleClose"
   >
@@ -23,7 +23,7 @@
         v-model="searchQuery"
         size="lg"
         placeholder="Search assets..."
-        class="max-w-[384px]"
+        class="max-w-96"
       />
     </template>
 
@@ -80,14 +80,7 @@ const {
 
 // Compute whether to show left panel
 const shouldShowLeftPanel = computed(() => {
-  // If explicitly set to false, don't show
-  if (props.showLeftPanel === false) return false
-
-  // If explicitly set to true, always show
-  if (props.showLeftPanel === true) return true
-
-  // Auto-hide if only one unique asset category (excluding "All Models")
-  return availableCategories.value.length >= 3
+  return props.showLeftPanel ?? availableCategories.value.length >= 3
 })
 
 // Handle close button - call both the prop callback and emit the event

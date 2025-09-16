@@ -12,6 +12,7 @@
       v-for="(asset, index) in assets"
       :key="asset.id"
       :asset="asset"
+      :interactive="true"
       role="gridcell"
       :aria-posinset="index + 1"
       @select="$emit('assetSelect', $event)"
