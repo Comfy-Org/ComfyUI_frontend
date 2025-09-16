@@ -13,8 +13,6 @@ import '@/assets/css/style.css'
 import { i18n } from '@/i18n'
 import '@/lib/litegraph/public/css/litegraph.css'
 
-import '../src/assets/css/fonts.css'
-
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fix me
