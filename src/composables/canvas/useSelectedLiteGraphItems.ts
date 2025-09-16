@@ -4,8 +4,8 @@ import {
   Positionable,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 import {
   collectFromNodes,
   traverseNodesDepthFirst
@@ -123,12 +123,14 @@ export function useSelectedLiteGraphItems() {
     for (const i in selectedNodes) {
       selectedNodeArray.push(selectedNodes[i])
     }
+    const allNodesMatch = !selectedNodeArray.some(
+      (selectedNode) => selectedNode.mode !== mode
+    )
+    const newModeForSelectedNode = allNodesMatch ? LGraphEventMode.ALWAYS : mode
 
     // Process each selected node independently to determine its target state and apply to children
     selectedNodeArray.forEach((selectedNode) => {
       // Apply standard toggle logic to the selected node itself
-      const newModeForSelectedNode =
-        selectedNode.mode === mode ? LGraphEventMode.ALWAYS : mode
 
       selectedNode.mode = newModeForSelectedNode
 

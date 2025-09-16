@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   type NodeLocatorId,
   createNodeExecutionId,

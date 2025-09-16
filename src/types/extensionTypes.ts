@@ -3,7 +3,7 @@ import { Component } from 'vue'
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
 
-export interface BaseSidebarTabExtension {
+interface BaseSidebarTabExtension {
   id: string
   title: string
   icon?: string | Component
@@ -12,7 +12,7 @@ export interface BaseSidebarTabExtension {
   label?: string
 }
 
-export interface BaseBottomPanelExtension {
+interface BaseBottomPanelExtension {
   id: string
   title?: string // For extensions that provide static titles
   titleKey?: string // For core tabs with i18n keys
@@ -32,16 +32,14 @@ export interface CustomExtension {
   destroy?: () => void
 }
 
-export type VueSidebarTabExtension = BaseSidebarTabExtension & VueExtension
-export type CustomSidebarTabExtension = BaseSidebarTabExtension &
-  CustomExtension
+type VueSidebarTabExtension = BaseSidebarTabExtension & VueExtension
+type CustomSidebarTabExtension = BaseSidebarTabExtension & CustomExtension
 export type SidebarTabExtension =
   | VueSidebarTabExtension
   | CustomSidebarTabExtension
 
-export type VueBottomPanelExtension = BaseBottomPanelExtension & VueExtension
-export type CustomBottomPanelExtension = BaseBottomPanelExtension &
-  CustomExtension
+type VueBottomPanelExtension = BaseBottomPanelExtension & VueExtension
+type CustomBottomPanelExtension = BaseBottomPanelExtension & CustomExtension
 export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension

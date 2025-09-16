@@ -3,7 +3,11 @@ import type { LGraphNode } from './LGraphNode'
 /**
  * Default properties to track
  */
-const DEFAULT_TRACKED_PROPERTIES: string[] = ['title', 'flags.collapsed']
+const DEFAULT_TRACKED_PROPERTIES: string[] = [
+  'title',
+  'flags.collapsed',
+  'mode'
+]
 
 /**
  * Manages node properties with optional change tracking and instrumentation.

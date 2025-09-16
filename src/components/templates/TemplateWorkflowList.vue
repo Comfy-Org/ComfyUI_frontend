@@ -38,8 +38,8 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import { computed, ref } from 'vue'
 
-import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
-import type { TemplateInfo } from '@/types/workflowTemplateTypes'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 const { sourceModule, loading, templates } = defineProps<{
   sourceModule: string

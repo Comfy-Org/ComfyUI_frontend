@@ -314,6 +314,7 @@ export class LGraph
     if (this._nodes) {
       for (const _node of this._nodes) {
         _node.onRemoved?.()
+        this.onNodeRemoved?.(_node)
       }
     }
 

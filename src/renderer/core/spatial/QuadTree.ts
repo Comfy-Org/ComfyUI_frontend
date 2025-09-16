@@ -14,7 +14,7 @@ export interface Bounds {
   height: number
 }
 
-export interface QuadTreeItem<T> {
+interface QuadTreeItem<T> {
   id: string
   bounds: Bounds
   data: T

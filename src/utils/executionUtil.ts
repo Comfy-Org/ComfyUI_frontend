@@ -10,7 +10,7 @@ import {
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'

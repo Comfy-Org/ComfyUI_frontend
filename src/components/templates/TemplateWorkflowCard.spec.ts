@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
-import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 vi.mock('@/components/templates/thumbnails/AudioThumbnail.vue', () => ({
   default: {
@@ -64,13 +64,16 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('@/stores/workflowTemplatesStore', () => ({
-  useWorkflowTemplatesStore: () => ({
-    isLoaded: true,
-    loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
-    groupedTemplates: []
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: () => ({
+      isLoaded: true,
+      loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
+      groupedTemplates: []
+    })
   })
-}))
+)
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -78,35 +81,42 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('@/composables/useTemplateWorkflows', () => ({
-  useTemplateWorkflows: () => ({
-    getTemplateThumbnailUrl: (
-      template: TemplateInfo,
-      sourceModule: string,
-      index = ''
-    ) => {
-      const basePath =
-        sourceModule === 'default'
-          ? `/fileURL/templates/${template.name}`
-          : `/apiURL/workflow_templates/${sourceModule}/${template.name}`
-      const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
-      return `${basePath}${indexSuffix}.${template.mediaSubtype}`
-    },
-    getTemplateTitle: (template: TemplateInfo, sourceModule: string) => {
-      const fallback =
-        template.title ?? template.name ?? `${sourceModule} Template`
-      return sourceModule === 'default'
-        ? template.localizedTitle ?? fallback
-        : fallback
-    },
-    getTemplateDescription: (template: TemplateInfo, sourceModule: string) => {
-      return sourceModule === 'default'
-        ? template.localizedDescription ?? ''
-        : template.description?.replace(/[-_]/g, ' ').trim() ?? ''
-    },
-    loadWorkflowTemplate: vi.fn()
+vi.mock(
+  '@/platform/workflow/templates/composables/useTemplateWorkflows',
+  () => ({
+    useTemplateWorkflows: () => ({
+      getTemplateThumbnailUrl: (
+        template: TemplateInfo,
+        sourceModule: string,
+        index = ''
+      ) => {
+        const basePath =
+          sourceModule === 'default'
+            ? `/fileURL/templates/${template.name}`
+            : `/apiURL/workflow_templates/${sourceModule}/${template.name}`
+        const indexSuffix =
+          sourceModule === 'default' && index ? `-${index}` : ''
+        return `${basePath}${indexSuffix}.${template.mediaSubtype}`
+      },
+      getTemplateTitle: (template: TemplateInfo, sourceModule: string) => {
+        const fallback =
+          template.title ?? template.name ?? `${sourceModule} Template`
+        return sourceModule === 'default'
+          ? template.localizedTitle ?? fallback
+          : fallback
+      },
+      getTemplateDescription: (
+        template: TemplateInfo,
+        sourceModule: string
+      ) => {
+        return sourceModule === 'default'
+          ? template.localizedDescription ?? ''
+          : template.description?.replace(/[-_]/g, ' ').trim() ?? ''
+      },
+      loadWorkflowTemplate: vi.fn()
+    })
   })
-}))
+)
 
 describe('TemplateWorkflowCard', () => {
   const createTemplate = (overrides = {}): TemplateInfo => ({

@@ -18,7 +18,7 @@ jobs:
       is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Download dist artifact
         uses: actions/download-artifact@v4
         with:
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Download dist artifact
         uses: actions/download-artifact@v4
         with:
@@ -126,34 +126,8 @@ jobs:
 
   publish_types:
     needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: 'pnpm'
-          registry-url: https://registry.npmjs.org
-
-      - name: Cache tool outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache
-            tsconfig.tsbuildinfo
-            dist
-          key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            types-tools-cache-${{ runner.os }}-
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:types
-      - name: Publish package
-        run: pnpm publish --access public
-        working-directory: dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    uses: ./.github/workflows/publish-frontend-types.yaml
+    with:
+      version: ${{ needs.build.outputs.version }}
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+    secrets: inherit

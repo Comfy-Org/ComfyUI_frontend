@@ -4,6 +4,7 @@ import { fromZodError } from 'zod-validation-error'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   Colors,
   type Palette,
@@ -12,7 +13,6 @@ import {
 import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 export const useColorPaletteService = () => {

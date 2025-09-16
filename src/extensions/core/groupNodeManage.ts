@@ -4,7 +4,7 @@ import {
   type LGraphNodeConstructor,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { type ComfyApp, app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'

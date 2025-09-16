@@ -2,21 +2,29 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    clean: vi.fn(),
-    canvas: {
-      subgraph: null
-    },
-    graph: {
-      clear: vi.fn()
+vi.mock('@/scripts/app', () => {
+  const mockGraphClear = vi.fn()
+  const mockCanvas = { subgraph: undefined }
+
+  return {
+    app: {
+      clean: vi.fn(() => {
+        // Simulate app.clean() calling graph.clear() only when not in subgraph
+        if (!mockCanvas.subgraph) {
+          mockGraphClear()
+        }
+      }),
+      canvas: mockCanvas,
+      graph: {
+        clear: mockGraphClear
+      }
     }
   }
-}))
+})
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -25,7 +33,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/settingStore')
+vi.mock('@/platform/settings/settingStore')
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({}))
@@ -41,7 +49,7 @@ vi.mock('firebase/auth', () => ({
   onAuthStateChanged: vi.fn()
 }))
 
-vi.mock('@/services/workflowService', () => ({
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: vi.fn(() => ({}))
 }))
 
@@ -61,8 +69,12 @@ vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({}))
+}))
+
+vi.mock('@/stores/subgraphStore', () => ({
+  useSubgraphStore: vi.fn(() => ({}))
 }))
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({

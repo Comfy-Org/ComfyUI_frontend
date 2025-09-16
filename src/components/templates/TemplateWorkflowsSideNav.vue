@@ -33,7 +33,7 @@ import ScrollPanel from 'primevue/scrollpanel'
 import type {
   TemplateGroup,
   WorkflowTemplates
-} from '@/types/workflowTemplateTypes'
+} from '@/platform/workflow/templates/types/template'
 
 defineProps<{
   tabs: TemplateGroup[]

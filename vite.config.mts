@@ -28,7 +28,11 @@ export default defineConfig({
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
-      ignored: ['**/coverage/**', '**/playwright-report/**']
+      ignored: [
+        '**/coverage/**',
+        '**/playwright-report/**',
+        '**/*.{test,spec}.ts'
+      ]
     },
     proxy: {
       '/internal': {

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import GridSkeleton from './GridSkeleton.vue'
 import PackCardSkeleton from './PackCardSkeleton.vue'

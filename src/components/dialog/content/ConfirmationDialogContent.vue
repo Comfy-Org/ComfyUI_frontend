@@ -16,6 +16,21 @@
       {{ hint }}
     </Message>
     <div class="flex gap-4 justify-end">
+      <div
+        v-if="type === 'overwriteBlueprint'"
+        class="flex gap-4 justify-start"
+      >
+        <Checkbox
+          v-model="doNotAskAgain"
+          class="flex gap-4 justify-start"
+          input-id="doNotAskAgain"
+          binary
+        />
+        <label for="doNotAskAgain" severity="secondary">{{
+          t('missingModelsDialog.doNotAskAgain')
+        }}</label>
+      </div>
+
       <Button
         :label="$t('g.cancel')"
         icon="pi pi-undo"
@@ -38,7 +53,7 @@
         @click="onConfirm"
       />
       <Button
-        v-else-if="type === 'overwrite'"
+        v-else-if="type === 'overwrite' || type === 'overwriteBlueprint'"
         :label="$t('g.overwrite')"
         severity="warn"
         icon="pi pi-save"
@@ -74,8 +89,12 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -87,7 +106,11 @@ const props = defineProps<{
   hint?: string
 }>()
 
+const { t } = useI18n()
+
 const onCancel = () => useDialogStore().closeDialog()
+
+const doNotAskAgain = ref(false)
 
 const onDeny = () => {
   props.onConfirm(false)
@@ -95,6 +118,8 @@ const onDeny = () => {
 }
 
 const onConfirm = () => {
+  if (props.type === 'overwriteBlueprint' && doNotAskAgain.value)
+    void useSettingStore().set('Comfy.Workflow.WarnBlueprintOverwrite', false)
   props.onConfirm(true)
   useDialogStore().closeDialog()
 }

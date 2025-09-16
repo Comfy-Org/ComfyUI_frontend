@@ -6,7 +6,7 @@ import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import SettingItem from './SettingItem.vue'
+import SettingItem from '@/platform/settings/components/SettingItem.vue'
 
 const i18n = createI18n({
   legacy: false,

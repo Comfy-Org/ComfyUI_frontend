@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useTransformSettling } from '@/composables/graph/useTransformSettling'
+import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 
 describe('useTransformSettling', () => {
   let element: HTMLDivElement

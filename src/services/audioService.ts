@@ -1,8 +1,8 @@
 import { register } from 'extendable-media-recorder'
 import { connect } from 'extendable-media-recorder-wav-encoder'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/stores/toastStore'
 
 export interface AudioRecordingError {
   type: 'permission' | 'not_supported' | 'encoder' | 'recording' | 'unknown'

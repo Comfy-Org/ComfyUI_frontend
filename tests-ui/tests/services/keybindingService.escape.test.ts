@@ -12,7 +12,7 @@ import {
 } from '@/stores/keybindingStore'
 
 // Mock stores
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => [])
   }))

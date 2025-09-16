@@ -1,4 +1,6 @@
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
@@ -6,13 +8,25 @@ import {
   KeybindingImpl,
   useKeybindingStore
 } from '@/stores/keybindingStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 export const useKeybindingService = () => {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
+
+  // Helper function to determine if an event should be forwarded to canvas
+  const shouldForwardToCanvas = (event: KeyboardEvent): boolean => {
+    // Don't forward if modifier keys are pressed (except shift)
+    if (event.ctrlKey || event.altKey || event.metaKey) {
+      return false
+    }
+
+    // Keys that LiteGraph handles but aren't in core keybindings
+    const canvasKeys = ['Delete', 'Backspace']
+
+    return canvasKeys.includes(event.key)
+  }
 
   const keybindHandler = async function (event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -26,6 +40,7 @@ export const useKeybindingService = () => {
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
         target.tagName === 'INPUT' ||
+        target.contentEditable === 'true' ||
         (target.tagName === 'SPAN' &&
           target.classList.contains('property_value')))
     ) {
@@ -51,6 +66,20 @@ export const useKeybindingService = () => {
       event.preventDefault()
       await commandStore.execute(keybinding.commandId)
       return
+    }
+
+    // Forward unhandled canvas-targeted events to LiteGraph
+    if (!keybinding && shouldForwardToCanvas(event)) {
+      const canvas = app.canvas
+      if (
+        canvas &&
+        canvas.processKey &&
+        typeof canvas.processKey === 'function'
+      ) {
+        // Let LiteGraph handle the event
+        canvas.processKey(event)
+        return
+      }
     }
 
     // Only clear dialogs if not using modifiers

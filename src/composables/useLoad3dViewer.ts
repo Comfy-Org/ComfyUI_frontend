@@ -9,8 +9,8 @@ import {
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
-import { useToastStore } from '@/stores/toastStore'
 
 interface Load3dViewerState {
   backgroundColor: string

@@ -4,7 +4,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
 

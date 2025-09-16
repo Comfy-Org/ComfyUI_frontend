@@ -4,7 +4,7 @@
  */
 import { computed, watch } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LiteGraph } from '../lib/litegraph/src/litegraph'
 

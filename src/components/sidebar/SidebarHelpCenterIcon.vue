@@ -62,14 +62,14 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
-import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
-import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
+import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 
@@ -88,8 +88,8 @@ const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
   useConflictAcknowledgment()
 
 // Use either release red dot or conflict red dot
-const shouldShowRedDot = computed(() => {
-  const releaseRedDot = showReleaseRedDot
+const shouldShowRedDot = computed((): boolean => {
+  const releaseRedDot = showReleaseRedDot.value
   return releaseRedDot || shouldShowConflictRedDot.value
 })
 

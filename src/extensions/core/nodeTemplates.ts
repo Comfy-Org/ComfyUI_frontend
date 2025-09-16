@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/stores/toastStore'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'

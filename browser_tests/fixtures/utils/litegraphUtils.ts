@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { NodeId } from '../../../src/schemas/comfyWorkflowSchema'
+import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import { ManageGroupNode } from '../../helpers/manageGroupNode'
 import type { ComfyPage } from '../ComfyPage'
 import type { Position, Size } from '../types'
@@ -134,7 +134,7 @@ export class SubgraphSlotReference {
   }
 }
 
-export class NodeSlotReference {
+class NodeSlotReference {
   constructor(
     readonly type: 'input' | 'output',
     readonly index: number,
@@ -201,7 +201,7 @@ export class NodeSlotReference {
   }
 }
 
-export class NodeWidgetReference {
+class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference

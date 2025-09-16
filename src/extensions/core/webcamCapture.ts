@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'

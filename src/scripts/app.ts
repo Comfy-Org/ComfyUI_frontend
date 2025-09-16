@@ -3,7 +3,6 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
 import {
   LGraph,
@@ -14,18 +13,23 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type {
-  ExecutionErrorWsMessage,
-  NodeError,
-  ResultItem
-} from '@/schemas/apiSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import {
   ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
   type NodeId,
   isSubgraphDefinition
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ExecutionErrorWsMessage,
+  NodeError,
+  ResultItem
+} from '@/schemas/apiSchema'
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
@@ -41,7 +45,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -52,10 +55,8 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
@@ -649,7 +650,7 @@ export class ComfyApp {
       if (opacity) adjustments.opacity = opacity
 
       if (useColorPaletteStore().completedActivePalette.light_theme) {
-        adjustments.lightness = 0.5
+        if (old_bgcolor) adjustments.lightness = 0.5
 
         // Lighten title bar of colored nodes on light theme
         if (old_color) {
@@ -797,6 +798,7 @@ export class ComfyApp {
     this.resizeCanvas()
 
     await useWorkspaceStore().workflow.syncWorkflows()
+    await useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
     this.#addProcessKeyHandler()
@@ -905,7 +907,7 @@ export class ComfyApp {
       LiteGraph.registered_node_types
     )) {
       // Skip if we already have a backend definition or system definition
-      if (name in defs || name in SYSTEM_NODE_DEFS) {
+      if (name in defs || name in SYSTEM_NODE_DEFS || node.skip_list) {
         continue
       }
 
@@ -1058,6 +1060,8 @@ export class ComfyApp {
       checkForRerouteMigration = false
     } = {}
   ) {
+    useWorkflowService().beforeLoadNewGraph()
+
     if (clean !== false) {
       this.clean()
     }
@@ -1093,7 +1097,6 @@ export class ComfyApp {
         severity: 'warn'
       })
     }
-    useWorkflowService().beforeLoadNewGraph()
     useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
@@ -1765,6 +1768,12 @@ export class ComfyApp {
     executionStore.lastExecutionError = null
 
     useDomWidgetStore().clear()
+
+    // Subgraph does not properly implement `clear` and the parent class's
+    // (`LGraph`) `clear` breaks the subgraph structure.
+    if (this.graph && !this.canvas.subgraph) {
+      this.graph.clear()
+    }
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {

@@ -100,10 +100,3 @@ onMounted(async () => {
   electronVersion.value = await electron.getElectronVersion()
 })
 </script>
-
-<style scoped>
-:deep(.xterm-helper-textarea) {
-  /* Hide this as it moves all over when uv is running */
-  display: none;
-}
-</style>

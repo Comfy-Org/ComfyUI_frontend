@@ -14,7 +14,7 @@
       unstyled
       :pt="pt"
     >
-      <div class="flex flex-col gap-1 p-2 min-w-40">
+      <div class="flex flex-col gap-2 p-2 min-w-40">
         <slot :close="hide" />
       </div>
     </Popover>
@@ -24,6 +24,8 @@
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 import IconButton from './IconButton.vue'
 
@@ -39,13 +41,16 @@ const hide = () => {
 
 const pt = computed(() => ({
   root: {
-    class: 'absolute z-50'
+    class: cn('absolute z-50')
   },
   content: {
-    class: [
-      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700'
-    ]
+    class: cn(
+      'mt-2 rounded-lg',
+      'bg-white dark-theme:bg-zinc-800',
+      'text-neutral dark-theme:text-white',
+      'shadow-lg',
+      'border border-zinc-200 dark-theme:border-zinc-700'
+    )
   }
 }))
 </script>

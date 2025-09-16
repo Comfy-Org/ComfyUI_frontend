@@ -39,7 +39,7 @@ import { useI18n } from 'vue-i18n'
 import ElectronFileDownload from '@/components/common/ElectronFileDownload.vue'
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { isElectron } from '@/utils/envUtil'
 
 // TODO: Read this from server internal API rather than hardcoding here

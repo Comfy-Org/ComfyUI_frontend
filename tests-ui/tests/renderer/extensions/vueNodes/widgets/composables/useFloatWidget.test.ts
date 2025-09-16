@@ -6,7 +6,7 @@ vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     settings: {}
   })

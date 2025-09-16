@@ -24,7 +24,7 @@ import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
 import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
@@ -37,7 +37,7 @@ const visible = computed(() => position.value !== 'Disabled')
 const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0

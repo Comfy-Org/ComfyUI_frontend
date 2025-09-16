@@ -16,6 +16,7 @@
     @click="handleClick"
   >
     <span class="p-breadcrumb-item-label">{{ item.label }}</span>
+    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu
@@ -48,14 +49,18 @@
 import InputText from 'primevue/inputtext'
 import Menu, { MenuState } from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
+import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
 interface Props {
@@ -121,7 +126,7 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       },
-      visible: isRoot
+      visible: isRoot && !props.item.isBlueprint
     },
     {
       separator: true,
@@ -155,10 +160,24 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       separator: true,
+      visible: props.item.key === 'root' && props.item.isBlueprint
+    },
+    {
+      label: t('subgraphStore.publish'),
+      icon: 'pi pi-copy',
+      command: async () => {
+        await workflowService.saveWorkflowAs(workflowStore.activeWorkflow!)
+      },
+      visible: props.item.key === 'root' && props.item.isBlueprint
+    },
+    {
+      separator: true,
       visible: isRoot
     },
     {
-      label: t('breadcrumbsMenu.deleteWorkflow'),
+      label: props.item.isBlueprint
+        ? t('breadcrumbsMenu.deleteBlueprint')
+        : t('breadcrumbsMenu.deleteWorkflow'),
       icon: 'pi pi-times',
       command: async () => {
         await workflowService.deleteWorkflow(workflowStore.activeWorkflow!)

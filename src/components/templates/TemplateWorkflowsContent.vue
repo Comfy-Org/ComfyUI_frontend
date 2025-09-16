@@ -61,8 +61,8 @@ import { watch } from 'vue'
 import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import TemplateWorkflowsSideNav from '@/components/templates/TemplateWorkflowsSideNav.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
-import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
-import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 
 const {
   isSmallScreen,

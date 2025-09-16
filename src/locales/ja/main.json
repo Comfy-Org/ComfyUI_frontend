@@ -1222,6 +1222,10 @@
     },
     "workflows": "ワークフロー"
   },
+  "subgraphStore": {
+    "blueprintName": "サブグラフ名",
+    "saveBlueprint": "サブグラフをライブラリに保存"
+  },
   "tabMenu": {
     "addToBookmarks": "ブックマークに追加",
     "closeOtherTabs": "他のタブを閉じる",

@@ -1,9 +1,20 @@
 import { memoize } from 'es-toolkit/compat'
 
 type RGB = { r: number; g: number; b: number }
+export interface HSB {
+  h: number
+  s: number
+  b: number
+}
 type HSL = { h: number; s: number; l: number }
 type HSLA = { h: number; s: number; l: number; a: number }
-type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
+type ColorFormatInternal = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
+export type ColorFormat = 'hex' | 'rgb' | 'hsb'
+interface HSV {
+  h: number
+  s: number
+  v: number
+}
 
 export interface ColorAdjustOptions {
   lightness?: number
@@ -59,6 +70,65 @@ export function hexToRgb(hex: string): RGB {
   return { r, g, b }
 }
 
+export function rgbToHex({ r, g, b }: RGB): string {
+  const toHex = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+export function hsbToRgb({ h, s, b }: HSB): RGB {
+  // Normalize
+  const hh = ((h % 360) + 360) % 360
+  const ss = Math.max(0, Math.min(100, s)) / 100
+  const vv = Math.max(0, Math.min(100, b)) / 100
+
+  const c = vv * ss
+  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1))
+  const m = vv - c
+
+  let rp = 0,
+    gp = 0,
+    bp = 0
+
+  if (hh < 60) {
+    rp = c
+    gp = x
+    bp = 0
+  } else if (hh < 120) {
+    rp = x
+    gp = c
+    bp = 0
+  } else if (hh < 180) {
+    rp = 0
+    gp = c
+    bp = x
+  } else if (hh < 240) {
+    rp = 0
+    gp = x
+    bp = c
+  } else if (hh < 300) {
+    rp = x
+    gp = 0
+    bp = c
+  } else {
+    rp = c
+    gp = 0
+    bp = x
+  }
+
+  return {
+    r: Math.floor((rp + m) * 255),
+    g: Math.floor((gp + m) * 255),
+    b: Math.floor((bp + m) * 255)
+  }
+}
+
+/**
+ * Normalize various color inputs (hex, rgb/rgba, hsl/hsla, hsb string/object)
+ * into lowercase #rrggbb. Falls back to #000000 on invalid inputs.
+ */
 export function parseToRgb(color: string): RGB {
   const format = identifyColorFormat(color)
   if (!format) return { r: 0, g: 0, b: 0 }
@@ -112,7 +182,7 @@ export function parseToRgb(color: string): RGB {
   }
 }
 
-const identifyColorFormat = (color: string): ColorFormat | null => {
+const identifyColorFormat = (color: string): ColorFormatInternal | null => {
   if (!color) return null
   if (color.startsWith('#') && (color.length === 4 || color.length === 7))
     return 'hex'
@@ -133,7 +203,73 @@ const isHSLA = (color: unknown): color is HSLA => {
   )
 }
 
-function parseToHSLA(color: string, format: ColorFormat): HSLA | null {
+export function isColorFormat(v: unknown): v is ColorFormat {
+  return v === 'hex' || v === 'rgb' || v === 'hsb'
+}
+
+function isHSBObject(v: unknown): v is HSB {
+  if (!v || typeof v !== 'object') return false
+  const rec = v as Record<string, unknown>
+  return (
+    typeof rec.h === 'number' &&
+    Number.isFinite(rec.h) &&
+    typeof rec.s === 'number' &&
+    Number.isFinite(rec.s) &&
+    typeof (rec as Record<string, unknown>).b === 'number' &&
+    Number.isFinite((rec as Record<string, number>).b!)
+  )
+}
+
+function isHSVObject(v: unknown): v is HSV {
+  if (!v || typeof v !== 'object') return false
+  const rec = v as Record<string, unknown>
+  return (
+    typeof rec.h === 'number' &&
+    Number.isFinite(rec.h) &&
+    typeof rec.s === 'number' &&
+    Number.isFinite(rec.s) &&
+    typeof (rec as Record<string, unknown>).v === 'number' &&
+    Number.isFinite((rec as Record<string, number>).v!)
+  )
+}
+
+export function toHexFromFormat(val: unknown, format: ColorFormat): string {
+  if (format === 'hex' && typeof val === 'string') {
+    const raw = val.trim().toLowerCase()
+    if (!raw) return '#000000'
+    if (/^[0-9a-f]{3}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{3}$/.test(raw)) return raw
+    if (/^[0-9a-f]{6}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{6}$/.test(raw)) return raw
+    return '#000000'
+  }
+
+  if (format === 'rgb' && typeof val === 'string') {
+    const rgb = parseToRgb(val)
+    return rgbToHex(rgb).toLowerCase()
+  }
+
+  if (format === 'hsb') {
+    if (isHSBObject(val)) {
+      return rgbToHex(hsbToRgb(val)).toLowerCase()
+    }
+    if (isHSVObject(val)) {
+      const { h, s, v } = val
+      return rgbToHex(hsbToRgb({ h, s, b: v })).toLowerCase()
+    }
+    if (typeof val === 'string') {
+      const nums = val.match(/\d+(?:\.\d+)?/g)?.map(Number) || []
+      if (nums.length >= 3) {
+        return rgbToHex(
+          hsbToRgb({ h: nums[0], s: nums[1], b: nums[2] })
+        ).toLowerCase()
+      }
+    }
+  }
+  return '#000000'
+}
+
+function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
   let match: RegExpMatchArray | null
 
   switch (format) {

@@ -4,7 +4,7 @@ import { computed, ref, shallowRef } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()

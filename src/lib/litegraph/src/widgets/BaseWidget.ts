@@ -18,7 +18,7 @@ export interface DrawWidgetOptions {
   showText?: boolean
 }
 
-export interface DrawTruncatingTextOptions extends DrawWidgetOptions {
+interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   /** The canvas context to draw the text on. */
   ctx: CanvasRenderingContext2D
   /** The amount of padding to add to the left of the text. */

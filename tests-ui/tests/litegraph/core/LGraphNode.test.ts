@@ -621,5 +621,10 @@ describe('LGraphNode', () => {
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
       delete (node.constructor as any).slot_start_y
     })
+    test('should not overwrite onMouseDown prototype', () => {
+      expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
+        false
+      )
+    })
   })
 })

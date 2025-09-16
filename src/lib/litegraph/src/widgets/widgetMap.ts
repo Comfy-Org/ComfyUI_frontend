@@ -7,6 +7,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { toClass } from '@/lib/litegraph/src/utils/type'
 
+import { AssetWidget } from './AssetWidget'
 import { BaseWidget } from './BaseWidget'
 import { BooleanWidget } from './BooleanWidget'
 import { ButtonWidget } from './ButtonWidget'
@@ -47,6 +48,7 @@ export type WidgetTypeMap = {
   imagecompare: ImageCompareWidget
   selectbutton: SelectButtonWidget
   textarea: TextareaWidget
+  asset: AssetWidget
   [key: string]: BaseWidget
 }
 
@@ -115,6 +117,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(SelectButtonWidget, narrowedWidget, node)
     case 'textarea':
       return toClass(TextareaWidget, narrowedWidget, node)
+    case 'asset':
+      return toClass(AssetWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }

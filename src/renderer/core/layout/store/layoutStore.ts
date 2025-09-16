@@ -19,6 +19,7 @@ import type {
   LayoutOperation,
   MoveNodeOperation,
   MoveRerouteOperation,
+  NodeBoundsUpdate,
   ResizeNodeOperation,
   SetNodeZIndexOperation
 } from '@/renderer/core/layout/types'
@@ -37,6 +38,17 @@ import {
   type RerouteLayout,
   type SlotLayout
 } from '@/renderer/core/layout/types'
+import {
+  REROUTE_RADIUS,
+  boundsIntersect,
+  pointInBounds
+} from '@/renderer/core/layout/utils/layoutMath'
+import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
+import {
+  type NodeLayoutMap,
+  layoutToYNode,
+  yNodeToLayout
+} from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
@@ -46,13 +58,47 @@ type YEventChange = {
 
 const logger = log.getLogger('LayoutStore')
 
-// Constants
-const REROUTE_RADIUS = 8
+// Utility functions
+function asRerouteId(id: string | number): RerouteId {
+  return Number(id)
+}
+
+function asLinkId(id: string | number): LinkId {
+  return Number(id)
+}
+
+interface LinkData {
+  id: LinkId
+  sourceNodeId: NodeId
+  targetNodeId: NodeId
+  sourceSlot: number
+  targetSlot: number
+}
+
+interface RerouteData {
+  id: RerouteId
+  position: Point
+  parentId: LinkId
+  linkIds: LinkId[]
+}
+
+// Generic typed Y.Map interface
+interface TypedYMap<T> {
+  get<K extends keyof T>(key: K): T[K] | undefined
+  get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
+}
 
 class LayoutStoreImpl implements LayoutStore {
+  private static readonly REROUTE_DEFAULTS: RerouteData = {
+    id: 0,
+    position: { x: 0, y: 0 },
+    parentId: 0,
+    linkIds: []
+  }
+
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
-  private ynodes: Y.Map<Y.Map<unknown>> // Maps nodeId -> Y.Map containing NodeLayout data
+  private ynodes: Y.Map<NodeLayoutMap> // Maps nodeId -> NodeLayoutMap containing NodeLayout data
   private ylinks: Y.Map<Y.Map<unknown>> // Maps linkId -> Y.Map containing link data
   private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
   private yoperations: Y.Array<LayoutOperation> // Operation log
@@ -98,7 +144,7 @@ class LayoutStoreImpl implements LayoutStore {
     this.rerouteSpatialIndex = new SpatialIndexManager()
 
     // Listen for Yjs changes and trigger Vue reactivity
-    this.ynodes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
+    this.ynodes.observe((event: Y.YMapEvent<NodeLayoutMap>) => {
       this.version++
 
       // Trigger all affected node refs
@@ -127,6 +173,24 @@ class LayoutStoreImpl implements LayoutStore {
     })
   }
 
+  private getLinkField<K extends keyof LinkData>(
+    ylink: Y.Map<unknown>,
+    field: K
+  ): LinkData[K] | undefined {
+    const typedLink = ylink as TypedYMap<LinkData>
+    return typedLink.get(field)
+  }
+
+  private getRerouteField<K extends keyof RerouteData>(
+    yreroute: Y.Map<unknown>,
+    field: K,
+    defaultValue: RerouteData[K] = LayoutStoreImpl.REROUTE_DEFAULTS[field]
+  ): RerouteData[K] {
+    const typedReroute = yreroute as TypedYMap<RerouteData>
+    const value = typedReroute.get(field)
+    return value ?? defaultValue
+  }
+
   /**
    * Get or create a customRef for a node layout
    */
@@ -142,7 +206,7 @@ class LayoutStoreImpl implements LayoutStore {
           get: () => {
             track()
             const ynode = this.ynodes.get(nodeId)
-            const layout = ynode ? this.yNodeToLayout(ynode) : null
+            const layout = ynode ? yNodeToLayout(ynode) : null
             return layout
           },
           set: (newLayout: NodeLayout | null) => {
@@ -157,7 +221,7 @@ class LayoutStoreImpl implements LayoutStore {
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor,
-                  previousLayout: this.yNodeToLayout(existing)
+                  previousLayout: yNodeToLayout(existing)
                 })
               }
             } else {
@@ -175,7 +239,7 @@ class LayoutStoreImpl implements LayoutStore {
                   actor: this.currentActor
                 })
               } else {
-                const existingLayout = this.yNodeToLayout(existing)
+                const existingLayout = yNodeToLayout(existing)
 
                 // Check what properties changed
                 if (
@@ -245,8 +309,8 @@ class LayoutStoreImpl implements LayoutStore {
       for (const [nodeId] of this.ynodes) {
         const ynode = this.ynodes.get(nodeId)
         if (ynode) {
-          const layout = this.yNodeToLayout(ynode)
-          if (layout && this.boundsIntersect(layout.bounds, bounds)) {
+          const layout = yNodeToLayout(ynode)
+          if (layout && boundsIntersect(layout.bounds, bounds)) {
             result.push(nodeId)
           }
         }
@@ -267,7 +331,7 @@ class LayoutStoreImpl implements LayoutStore {
       for (const [nodeId] of this.ynodes) {
         const ynode = this.ynodes.get(nodeId)
         if (ynode) {
-          const layout = this.yNodeToLayout(ynode)
+          const layout = yNodeToLayout(ynode)
           if (layout) {
             result.set(nodeId, layout)
           }
@@ -293,7 +357,7 @@ class LayoutStoreImpl implements LayoutStore {
     for (const [nodeId] of this.ynodes) {
       const ynode = this.ynodes.get(nodeId)
       if (ynode) {
-        const layout = this.yNodeToLayout(ynode)
+        const layout = yNodeToLayout(ynode)
         if (layout) {
           nodes.push([nodeId, layout])
         }
@@ -304,7 +368,7 @@ class LayoutStoreImpl implements LayoutStore {
     nodes.sort(([, a], [, b]) => b.zIndex - a.zIndex)
 
     for (const [nodeId, layout] of nodes) {
-      if (this.pointInBounds(point, layout.bounds)) {
+      if (pointInBounds(point, layout.bounds)) {
         return nodeId
       }
     }
@@ -477,16 +541,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Helper to create internal key for link segment
-   */
-  private makeLinkSegmentKey(
-    linkId: LinkId,
-    rerouteId: RerouteId | null
-  ): string {
-    return `${linkId}:${rerouteId ?? 'final'}`
-  }
-
-  /**
    * Update link segment layout data
    */
   updateLinkSegmentLayout(
@@ -494,7 +548,7 @@ class LayoutStoreImpl implements LayoutStore {
     rerouteId: RerouteId | null,
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void {
-    const key = this.makeLinkSegmentKey(linkId, rerouteId)
+    const key = makeLinkSegmentKey(linkId, rerouteId)
     const existing = this.linkSegmentLayouts.get(key)
 
     // Short-circuit if bounds and centerPos unchanged (prevents spatial index churn)
@@ -544,7 +598,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Delete link segment layout data
    */
   deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void {
-    const key = this.makeLinkSegmentKey(linkId, rerouteId)
+    const key = makeLinkSegmentKey(linkId, rerouteId)
     const deleted = this.linkSegmentLayouts.delete(key)
     if (deleted) {
       // Remove from spatial index
@@ -608,7 +662,7 @@ class LayoutStoreImpl implements LayoutStore {
             rerouteId: segmentLayout.rerouteId
           }
         }
-      } else if (this.pointInBounds(point, segmentLayout.bounds)) {
+      } else if (pointInBounds(point, segmentLayout.bounds)) {
         // Fallback to bounding box test
         return {
           linkId: segmentLayout.linkId,
@@ -648,7 +702,7 @@ class LayoutStoreImpl implements LayoutStore {
     // Check precise bounds for candidates
     for (const key of candidateSlotKeys) {
       const slotLayout = this.slotLayouts.get(key)
-      if (slotLayout && this.pointInBounds(point, slotLayout.bounds)) {
+      if (slotLayout && pointInBounds(point, slotLayout.bounds)) {
         return slotLayout
       }
     }
@@ -678,7 +732,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Check precise distance for candidates
     for (const rerouteKey of candidateRerouteKeys) {
-      const rerouteId = Number(rerouteKey) as RerouteId // Convert string key back to numeric
+      const rerouteId = asRerouteId(rerouteKey)
       const rerouteLayout = this.rerouteLayouts.get(rerouteId)
       if (rerouteLayout) {
         const dx = point.x - rerouteLayout.position.x
@@ -723,7 +777,7 @@ class LayoutStoreImpl implements LayoutStore {
       slots: this.slotSpatialIndex.query(bounds),
       reroutes: this.rerouteSpatialIndex
         .query(bounds)
-        .map((key) => Number(key) as RerouteId) // Convert string keys to numeric
+        .map((key) => asRerouteId(key))
     }
   }
 
@@ -884,7 +938,7 @@ class LayoutStoreImpl implements LayoutStore {
           }
         }
 
-        this.ynodes.set(layout.id, this.layoutToYNode(layout))
+        this.ynodes.set(layout.id, layoutToYNode(layout))
 
         // Add to spatial index
         this.spatialIndex.insert(layout.id, layout.bounds)
@@ -902,7 +956,7 @@ class LayoutStoreImpl implements LayoutStore {
       return
     }
 
-    const size = ynode.get('size') as { width: number; height: number }
+    const size = yNodeToLayout(ynode).size
     const newBounds = {
       x: operation.position.x,
       y: operation.position.y,
@@ -931,7 +985,7 @@ class LayoutStoreImpl implements LayoutStore {
     const ynode = this.ynodes.get(operation.nodeId)
     if (!ynode) return
 
-    const position = ynode.get('position') as Point
+    const position = yNodeToLayout(ynode).position
     const newBounds = {
       x: position.x,
       y: position.y,
@@ -968,7 +1022,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: CreateNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.layoutToYNode(operation.layout)
+    const ynode = layoutToYNode(operation.layout)
     this.ynodes.set(operation.nodeId, ynode)
 
     // Add to spatial index
@@ -1102,7 +1156,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Update node bounds helper
    */
   private updateNodeBounds(
-    ynode: Y.Map<unknown>,
+    ynode: NodeLayoutMap,
     position: Point,
     size: { width: number; height: number }
   ): void {
@@ -1120,9 +1174,9 @@ class LayoutStoreImpl implements LayoutStore {
   private findLinksConnectedToNode(nodeId: NodeId): LinkId[] {
     const connectedLinks: LinkId[] = []
     this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
-      const linkId = Number(linkIdStr) as LinkId
-      const sourceNodeId = linkData.get('sourceNodeId') as NodeId
-      const targetNodeId = linkData.get('targetNodeId') as NodeId
+      const linkId = asLinkId(linkIdStr)
+      const sourceNodeId = this.getLinkField(linkData, 'sourceNodeId')
+      const targetNodeId = this.getLinkField(linkData, 'targetNodeId')
 
       if (sourceNodeId === nodeId || targetNodeId === nodeId) {
         connectedLinks.push(linkId)
@@ -1136,7 +1190,7 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private handleLinkChange(change: YEventChange, linkIdStr: string): void {
     if (change.action === 'delete') {
-      const linkId = Number(linkIdStr) as LinkId
+      const linkId = asLinkId(linkIdStr)
       this.cleanupLinkData(linkId)
     }
     // Link was added or updated - geometry will be computed separately
@@ -1175,7 +1229,7 @@ class LayoutStoreImpl implements LayoutStore {
     change: YEventChange,
     rerouteIdStr: string
   ): void {
-    const rerouteId = Number(rerouteIdStr) as RerouteId
+    const rerouteId = asRerouteId(rerouteIdStr)
 
     if (change.action === 'delete') {
       this.handleRerouteDelete(rerouteId)
@@ -1199,7 +1253,7 @@ class LayoutStoreImpl implements LayoutStore {
     const rerouteData = this.yreroutes.get(String(rerouteId))
     if (!rerouteData) return
 
-    const position = rerouteData.get('position') as Point
+    const position = this.getRerouteField(rerouteData, 'position')
     if (!position) return
 
     const layout = this.createRerouteLayout(rerouteId, position)
@@ -1250,27 +1304,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   // Helper methods
-  private layoutToYNode(layout: NodeLayout): Y.Map<unknown> {
-    const ynode = new Y.Map<unknown>()
-    ynode.set('id', layout.id)
-    ynode.set('position', layout.position)
-    ynode.set('size', layout.size)
-    ynode.set('zIndex', layout.zIndex)
-    ynode.set('visible', layout.visible)
-    ynode.set('bounds', layout.bounds)
-    return ynode
-  }
-
-  private yNodeToLayout(ynode: Y.Map<unknown>): NodeLayout {
-    return {
-      id: ynode.get('id') as string,
-      position: ynode.get('position') as Point,
-      size: ynode.get('size') as { width: number; height: number },
-      zIndex: ynode.get('zIndex') as number,
-      visible: ynode.get('visible') as boolean,
-      bounds: ynode.get('bounds') as Bounds
-    }
-  }
 
   private notifyChange(change: LayoutChange): void {
     this.changeListeners.forEach((listener) => {
@@ -1280,24 +1313,6 @@ class LayoutStoreImpl implements LayoutStore {
         console.error('Error in layout change listener:', error)
       }
     })
-  }
-
-  private pointInBounds(point: Point, bounds: Bounds): boolean {
-    return (
-      point.x >= bounds.x &&
-      point.x <= bounds.x + bounds.width &&
-      point.y >= bounds.y &&
-      point.y <= bounds.y + bounds.height
-    )
-  }
-
-  private boundsIntersect(a: Bounds, b: Bounds): boolean {
-    return !(
-      a.x + a.width < b.x ||
-      b.x + b.width < a.x ||
-      a.y + a.height < b.y ||
-      b.y + b.height < a.y
-    )
   }
 
   // CRDT-specific methods
@@ -1340,6 +1355,31 @@ class LayoutStoreImpl implements LayoutStore {
    */
   getStateAsUpdate(): Uint8Array {
     return Y.encodeStateAsUpdate(this.ydoc)
+  }
+
+  /**
+   * Batch update node bounds using Yjs transaction for atomicity.
+   */
+  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void {
+    if (updates.length === 0) return
+
+    // Set source to Vue for these DOM-driven updates
+    const originalSource = this.currentSource
+    this.currentSource = LayoutSource.Vue
+
+    this.ydoc.transact(() => {
+      for (const { nodeId, bounds } of updates) {
+        const ynode = this.ynodes.get(nodeId)
+        if (!ynode) continue
+
+        this.spatialIndex.update(nodeId, bounds)
+        ynode.set('bounds', bounds)
+        ynode.set('size', { width: bounds.width, height: bounds.height })
+      }
+    }, this.currentActor)
+
+    // Restore original source
+    this.currentSource = originalSource
   }
 }
 

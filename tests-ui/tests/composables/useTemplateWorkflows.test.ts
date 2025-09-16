@@ -1,13 +1,16 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
-import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 // Mock the store
-vi.mock('@/stores/workflowTemplatesStore', () => ({
-  useWorkflowTemplatesStore: vi.fn()
-}))
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: vi.fn()
+  })
+)
 
 // Mock the API
 vi.mock('@/scripts/api', () => ({

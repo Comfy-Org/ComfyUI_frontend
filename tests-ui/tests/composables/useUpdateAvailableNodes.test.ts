@@ -63,12 +63,14 @@ describe('useUpdateAvailableNodes', () => {
   const mockStartFetchInstalled = vi.fn()
   const mockIsPackInstalled = vi.fn()
   const mockGetInstalledPackVersion = vi.fn()
+  const mockIsPackEnabled = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
 
     // Default setup
     mockIsPackInstalled.mockReturnValue(true)
+    mockIsPackEnabled.mockReturnValue(true) // Default: all packs are enabled
     mockGetInstalledPackVersion.mockImplementation((id: string) => {
       switch (id) {
         case 'pack-1':
@@ -100,7 +102,8 @@ describe('useUpdateAvailableNodes', () => {
 
     mockUseComfyManagerStore.mockReturnValue({
       isPackInstalled: mockIsPackInstalled,
-      getInstalledPackVersion: mockGetInstalledPackVersion
+      getInstalledPackVersion: mockGetInstalledPackVersion,
+      isPackEnabled: mockIsPackEnabled
     } as any)
 
     mockUseInstalledPacks.mockReturnValue({
@@ -355,6 +358,129 @@ describe('useUpdateAvailableNodes', () => {
       expect(mockIsPackInstalled).toHaveBeenCalledWith('pack-2')
       expect(mockIsPackInstalled).toHaveBeenCalledWith('pack-3')
       expect(mockIsPackInstalled).toHaveBeenCalledWith('pack-4')
+    })
+  })
+
+  describe('enabledUpdateAvailableNodePacks', () => {
+    it('returns only enabled packs with updates', () => {
+      mockIsPackEnabled.mockImplementation((id: string) => {
+        // pack-1 is disabled
+        return id !== 'pack-1'
+      })
+
+      mockUseInstalledPacks.mockReturnValue({
+        installedPacks: ref([mockInstalledPacks[0], mockInstalledPacks[1]]),
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchInstalled: mockStartFetchInstalled
+      } as any)
+
+      const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
+        useUpdateAvailableNodes()
+
+      // pack-1 has updates but is disabled
+      expect(updateAvailableNodePacks.value).toHaveLength(1)
+      expect(updateAvailableNodePacks.value[0].id).toBe('pack-1')
+
+      // enabledUpdateAvailableNodePacks should be empty
+      expect(enabledUpdateAvailableNodePacks.value).toHaveLength(0)
+    })
+
+    it('returns all packs when all are enabled', () => {
+      mockUseInstalledPacks.mockReturnValue({
+        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchInstalled: mockStartFetchInstalled
+      } as any)
+
+      const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
+        useUpdateAvailableNodes()
+
+      expect(updateAvailableNodePacks.value).toHaveLength(1)
+      expect(enabledUpdateAvailableNodePacks.value).toHaveLength(1)
+      expect(enabledUpdateAvailableNodePacks.value[0].id).toBe('pack-1')
+    })
+  })
+
+  describe('hasDisabledUpdatePacks', () => {
+    it('returns true when there are disabled packs with updates', () => {
+      mockIsPackEnabled.mockImplementation((id: string) => {
+        // pack-1 is disabled
+        return id !== 'pack-1'
+      })
+
+      mockUseInstalledPacks.mockReturnValue({
+        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchInstalled: mockStartFetchInstalled
+      } as any)
+
+      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+
+      expect(hasDisabledUpdatePacks.value).toBe(true)
+    })
+
+    it('returns false when all packs with updates are enabled', () => {
+      mockUseInstalledPacks.mockReturnValue({
+        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchInstalled: mockStartFetchInstalled
+      } as any)
+
+      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+
+      expect(hasDisabledUpdatePacks.value).toBe(false)
+    })
+
+    it('returns false when no packs have updates', () => {
+      mockUseInstalledPacks.mockReturnValue({
+        installedPacks: ref([mockInstalledPacks[1]]), // pack-2: up to date
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchInstalled: mockStartFetchInstalled
+      } as any)
+
+      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+
+      expect(hasDisabledUpdatePacks.value).toBe(false)
+    })
+  })
+
+  describe('hasUpdateAvailable with disabled packs', () => {
+    it('returns false when only disabled packs have updates', () => {
+      mockIsPackEnabled.mockReturnValue(false) // All packs disabled
+
+      mockUseInstalledPacks.mockReturnValue({
+        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchInstalled: mockStartFetchInstalled
+      } as any)
+
+      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+
+      expect(hasUpdateAvailable.value).toBe(false)
+    })
+
+    it('returns true when at least one enabled pack has updates', () => {
+      mockIsPackEnabled.mockImplementation((id: string) => {
+        // Only pack-1 is enabled
+        return id === 'pack-1'
+      })
+
+      mockUseInstalledPacks.mockReturnValue({
+        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchInstalled: mockStartFetchInstalled
+      } as any)
+
+      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+
+      expect(hasUpdateAvailable.value).toBe(true)
     })
   })
 })

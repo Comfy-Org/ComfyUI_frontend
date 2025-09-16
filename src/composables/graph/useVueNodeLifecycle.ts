@@ -16,13 +16,13 @@ import type {
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 
 export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
   const canvasStore = useCanvasStore()

@@ -1062,7 +1062,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         if (!modelWidget || !generateAudioWidget) {
-          return '$2.00-6.00/Run (varies with model & audio generation)'
+          return '$0.80-3.20/Run (varies with model & audio generation)'
         }
 
         const model = String(modelWidget.value)
@@ -1070,13 +1070,13 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           String(generateAudioWidget.value).toLowerCase() === 'true'
 
         if (model.includes('veo-3.0-fast-generate-001')) {
-          return generateAudio ? '$3.20/Run' : '$2.00/Run'
+          return generateAudio ? '$1.20/Run' : '$0.80/Run'
         } else if (model.includes('veo-3.0-generate-001')) {
-          return generateAudio ? '$6.00/Run' : '$4.00/Run'
+          return generateAudio ? '$3.20/Run' : '$1.60/Run'
         }
 
         // Default fallback
-        return '$2.00-6.00/Run'
+        return '$0.80-3.20/Run'
       }
     },
     LumaImageNode: {
@@ -1511,6 +1511,32 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         return 'Token-based'
       }
     },
+    ByteDanceSeedreamNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const sequentialGenerationWidget = node.widgets?.find(
+          (w) => w.name === 'sequential_image_generation'
+        ) as IComboWidget
+        const maxImagesWidget = node.widgets?.find(
+          (w) => w.name === 'max_images'
+        ) as IComboWidget
+
+        if (!sequentialGenerationWidget || !maxImagesWidget)
+          return '$0.03/Run ($0.03 for one output image)'
+
+        if (
+          String(sequentialGenerationWidget.value).toLowerCase() === 'disabled'
+        ) {
+          return '$0.03/Run'
+        }
+
+        const maxImages = Number(maxImagesWidget.value)
+        if (maxImages === 1) {
+          return '$0.03/Run'
+        }
+        const cost = (0.03 * maxImages).toFixed(2)
+        return `$${cost}/Run ($0.03 for one output image)`
+      }
+    },
     ByteDanceTextToVideoNode: {
       displayPrice: byteDanceVideoPricingCalculator
     },
@@ -1613,6 +1639,11 @@ export const useNodePricing = () => {
       // ByteDance
       ByteDanceImageNode: ['model'],
       ByteDanceImageEditNode: ['model'],
+      ByteDanceSeedreamNode: [
+        'model',
+        'sequential_image_generation',
+        'max_images'
+      ],
       ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
       ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
       ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],

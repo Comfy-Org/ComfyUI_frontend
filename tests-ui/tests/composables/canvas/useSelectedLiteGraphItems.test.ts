@@ -8,8 +8,8 @@ import {
   Positionable,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 
 // Mock the app module
 vi.mock('@/scripts/app', () => ({
@@ -237,9 +237,9 @@ describe('useSelectedLiteGraphItems', () => {
       toggleSelectedNodesMode(LGraphEventMode.NEVER)
 
       // node1 should change from ALWAYS to NEVER
-      // node2 should change from NEVER to ALWAYS (since it was already NEVER)
+      // node2 should stay NEVER (since a selected node exists which is not NEVER)
       expect(node1.mode).toBe(LGraphEventMode.NEVER)
-      expect(node2.mode).toBe(LGraphEventMode.ALWAYS)
+      expect(node2.mode).toBe(LGraphEventMode.NEVER)
     })
 
     it('toggleSelectedNodesMode should set mode to ALWAYS when already in target mode', () => {

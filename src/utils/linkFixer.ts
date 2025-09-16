@@ -32,7 +32,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
-export interface BadLinksData<T = ISerialisedGraph | LGraph> {
+interface BadLinksData<T = ISerialisedGraph | LGraph> {
   hasBadLinks: boolean
   fixed: boolean
   graph: T

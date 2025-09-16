@@ -1223,6 +1223,10 @@
     },
     "workflows": "Flujos de trabajo"
   },
+  "subgraphStore": {
+    "blueprintName": "Nombre del subgrafo",
+    "saveBlueprint": "Guardar subgrafo en la biblioteca"
+  },
   "tabMenu": {
     "addToBookmarks": "Agregar a marcadores",
     "closeOtherTabs": "Cerrar otras pestañas",

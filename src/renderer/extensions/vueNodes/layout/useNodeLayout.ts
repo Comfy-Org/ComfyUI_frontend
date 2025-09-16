@@ -6,6 +6,7 @@
  */
 import { computed, inject } from 'vue'
 
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource, type Point } from '@/renderer/core/layout/types'
@@ -54,6 +55,9 @@ export function useNodeLayout(nodeId: string) {
   let isDragging = false
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
+  let otherSelectedNodesStartPositions: Map<string, Point> | null = null
+
+  const selectedNodeIds = inject(SelectedNodeIdsKey, null)
 
   /**
    * Start dragging the node
@@ -64,6 +68,24 @@ export function useNodeLayout(nodeId: string) {
     isDragging = true
     dragStartPos = { ...position.value }
     dragStartMouse = { x: event.clientX, y: event.clientY }
+
+    // capture the starting positions of all other selected nodes
+    if (selectedNodeIds?.value?.has(nodeId) && selectedNodeIds.value.size > 1) {
+      otherSelectedNodesStartPositions = new Map()
+
+      // Iterate through all selected node IDs
+      for (const id of selectedNodeIds.value) {
+        // Skip the current node being dragged
+        if (id === nodeId) continue
+
+        const nodeLayout = layoutStore.getNodeLayoutRef(id).value
+        if (nodeLayout) {
+          otherSelectedNodesStartPositions.set(id, { ...nodeLayout.position })
+        }
+      }
+    } else {
+      otherSelectedNodesStartPositions = null
+    }
 
     // Set mutation source
     mutations.setSource(LayoutSource.Vue)
@@ -95,7 +117,7 @@ export function useNodeLayout(nodeId: string) {
       y: canvasWithDelta.y - canvasOrigin.y
     }
 
-    // Calculate new position
+    // Calculate new position for the current node
     const newPosition = {
       x: dragStartPos.x + canvasDelta.x,
       y: dragStartPos.y + canvasDelta.y
@@ -103,6 +125,20 @@ export function useNodeLayout(nodeId: string) {
 
     // Apply mutation through the layout system
     mutations.moveNode(nodeId, newPosition)
+
+    // If we're dragging multiple selected nodes, move them all together
+    if (
+      otherSelectedNodesStartPositions &&
+      otherSelectedNodesStartPositions.size > 0
+    ) {
+      for (const [otherNodeId, startPos] of otherSelectedNodesStartPositions) {
+        const newOtherPosition = {
+          x: startPos.x + canvasDelta.x,
+          y: startPos.y + canvasDelta.y
+        }
+        mutations.moveNode(otherNodeId, newOtherPosition)
+      }
+    }
   }
 
   /**
@@ -114,6 +150,7 @@ export function useNodeLayout(nodeId: string) {
     isDragging = false
     dragStartPos = null
     dragStartMouse = null
+    otherSelectedNodesStartPositions = null
 
     // Release pointer
     const target = event.target as HTMLElement

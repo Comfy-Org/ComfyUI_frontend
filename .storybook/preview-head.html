@@ -57,9 +57,8 @@
 
   /* Override Storybook's problematic & selector styles */
   /* Reset only the specific properties that Storybook injects */
-  #storybook-root li+li,
-  #storybook-docs li+li {
-    margin: inherit;
-    padding: inherit;
+  li+li {
+    margin: 0;
+    padding: revert-layer;
   }
 </style>

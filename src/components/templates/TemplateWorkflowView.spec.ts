@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
-import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 vi.mock('primevue/dataview', () => ({
   default: {
