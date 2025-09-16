@@ -56,6 +56,13 @@ vi.mock(
   })
 )
 
+vi.mock('@/renderer/extensions/vueNodes/preview/useNodePreviewState', () => ({
+  useNodePreviewState: vi.fn(() => ({
+    latestPreviewUrl: computed(() => ''),
+    shouldShowPreviewImg: computed(() => false)
+  }))
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
