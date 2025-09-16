@@ -10,9 +10,7 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
   const terminal = markRaw(
     new Terminal({
       convertEol: true,
-      theme: {
-        background: '#171717'
-      }
+      theme: { background: '#171717' }
     })
   )
   terminal.loadAddon(fitAddon)
