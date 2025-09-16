@@ -356,7 +356,7 @@ const handlePointerDown = (event: PointerEvent) => {
   isDragging.value = true
 
   // Set Vue node dragging state for selection toolbox
-  layoutStore.setVueNodeDraggingState(true)
+  layoutStore.isDraggingVueNodes.value = true
 
   startDrag(event)
   lastY.value = event.clientY
@@ -375,7 +375,7 @@ const handlePointerUp = (event: PointerEvent) => {
     void endDrag(event)
 
     // Clear Vue node dragging state for selection toolbox
-    layoutStore.setVueNodeDraggingState(false)
+    layoutStore.isDraggingVueNodes.value = false
   }
   // Emit node-click for selection handling in GraphCanvas
   const dx = event.clientX - lastX.value

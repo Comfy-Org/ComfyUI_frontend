@@ -130,8 +130,8 @@ class LayoutStoreImpl implements LayoutStore {
   private slotSpatialIndex: SpatialIndexManager // For slots
   private rerouteSpatialIndex: SpatialIndexManager // For reroutes
 
-  // Vue dragging state for selection toolbox
-  private isDraggingVueNodes = ref(false)
+  // Vue dragging state for selection toolbox (public ref for direct mutation)
+  public isDraggingVueNodes = ref(false)
 
   constructor() {
     // Initialize Yjs data structures
@@ -349,20 +349,6 @@ class LayoutStoreImpl implements LayoutStore {
    */
   getVersion(): ComputedRef<number> {
     return computed(() => this.version)
-  }
-
-  /**
-   * Get Vue node dragging state for selection toolbox
-   */
-  getVueNodeDraggingState(): Ref<boolean> {
-    return this.isDraggingVueNodes
-  }
-
-  /**
-   * Set Vue node dragging state
-   */
-  setVueNodeDraggingState(isDragging: boolean): void {
-    this.isDraggingVueNodes.value = isDragging
   }
 
   /**

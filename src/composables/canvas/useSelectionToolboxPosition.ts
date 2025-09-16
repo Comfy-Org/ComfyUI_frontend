@@ -232,7 +232,7 @@ export function useSelectionToolboxPosition(
   const isDragging = computed((): boolean => {
     const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
     const vueNodeDragging =
-      shouldRenderVueNodes.value && layoutStore.getVueNodeDraggingState().value
+      shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
     return litegraphDragging || vueNodeDragging
   })
 
