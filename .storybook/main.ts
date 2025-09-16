@@ -3,7 +3,7 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig, Plugin } from 'vite'
+import type { InlineConfig } from 'vite'
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -18,18 +18,21 @@ const config: StorybookConfig = {
 
     // Filter out any plugins that might generate import maps
     if (config.plugins) {
-      config.plugins = (config.plugins as Plugin[]).filter((plugin: Plugin) => {
-        if (
-          plugin &&
-          typeof plugin === 'object' &&
-          'name' in plugin &&
-          typeof plugin.name === 'string' &&
-          plugin.name.includes('import-map')
-        ) {
-          return false
-        }
-        return true
-      })
+      config.plugins = config.plugins
+        // Type guard: ensure we have valid plugin objects with names
+        .filter(
+          (plugin): plugin is NonNullable<typeof plugin> & { name: string } => {
+            return (
+              plugin !== null &&
+              plugin !== undefined &&
+              typeof plugin === 'object' &&
+              'name' in plugin &&
+              typeof plugin.name === 'string'
+            )
+          }
+        )
+        // Business logic: filter out import-map plugins
+        .filter((plugin) => !plugin.name.includes('import-map'))
     }
 
     return mergeConfig(config, {

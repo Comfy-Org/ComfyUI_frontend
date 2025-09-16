@@ -9,10 +9,9 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
-import '../src/assets/css/style.css'
-import GlobalDialog from '../src/components/dialog/GlobalDialog.vue'
-import { i18n } from '../src/i18n'
-import '../src/lib/litegraph/public/css/litegraph.css'
+import '@/assets/css/style.css'
+import { i18n } from '@/i18n'
+import '@/lib/litegraph/public/css/litegraph.css'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
@@ -29,10 +28,6 @@ setup((app) => {
   const pinia = createPinia()
 
   app.use(pinia)
-
-  // Register global components for dialogs
-  app.component('GlobalDialog', GlobalDialog)
-
   app.use(i18n)
   app.use(PrimeVue, {
     theme: {
@@ -64,19 +59,7 @@ export const withTheme = (Story: StoryFn, context: StoryContext) => {
     document.body.classList.remove('dark-theme')
   }
 
-  // Return story with GlobalDialog included
-  return {
-    components: { GlobalDialog },
-    setup() {
-      return { storyResult: Story(context.args, context) }
-    },
-    template: `
-      <div>
-        <component :is="storyResult" />
-        <GlobalDialog />
-      </div>
-    `
-  }
+  return Story(context.args, context)
 }
 
 const preview: Preview = {
