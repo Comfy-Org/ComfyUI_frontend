@@ -244,6 +244,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 ::deep(.p-progressbar-indeterminate .p-progressbar-value),
 ::deep(.p-progressbar-determinate .p-progressbar-value) {
   @apply bg-brand-yellow;
