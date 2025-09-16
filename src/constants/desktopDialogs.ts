@@ -14,7 +14,7 @@ export interface DesktopDialog {
 
 export const DESKTOP_DIALOGS = {
   /** Shown when a corrupt venv is detected. */
-  reinstallFreshStart: {
+  reinstallVenv: {
     title: 'Reinstall ComfyUI (Fresh Start)?',
     message: `Sorry, we can't launch ComfyUI because some installed packages aren't compatible.
 
