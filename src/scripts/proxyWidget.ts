@@ -7,10 +7,10 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
-const canvasStore = useCanvasStore()
 const originalConfigureAfterSlots =
   SubgraphNode.prototype._internalConfigureAfterSlots
 SubgraphNode.prototype._internalConfigureAfterSlots = function () {
+  const canvasStore = useCanvasStore()
   const subgraphNode = this
   //Must give value to proxyWidgets prior to injecting or it won't serialize
   subgraphNode.properties.proxyWidgets ??= '[]'
