@@ -191,9 +191,9 @@ export function useSelectionToolboxPosition(
     const currentSig = buildSelectionSignature(canvasStore)
     const selectionChanged = currentSig !== moreOptionsSelectionSignature
 
-    moreOptionsSelectionSignature = selectionChanged
-      ? null
-      : moreOptionsSelectionSignature
+    if (selectionChanged) {
+      moreOptionsSelectionSignature = null
+    }
     moreOptionsOpen.value = false
     moreOptionsWasOpenBeforeDrag = true
     moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
@@ -218,9 +218,8 @@ export function useSelectionToolboxPosition(
         selectionMatches
 
       // Single point of assignment for each ref
-      moreOptionsRestorePending.value = shouldRestore
-        ? moreOptionsRestorePending.value
-        : false
+      moreOptionsRestorePending.value =
+        shouldRestore && moreOptionsRestorePending.value
       moreOptionsWasOpenBeforeDrag = false
 
       if (shouldRestore) {
@@ -232,9 +231,8 @@ export function useSelectionToolboxPosition(
   // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
     const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
-    const vueNodeDragging = shouldRenderVueNodes.value
-      ? layoutStore.getVueNodeDraggingState().value
-      : false
+    const vueNodeDragging =
+      shouldRenderVueNodes.value && layoutStore.getVueNodeDraggingState().value
     return litegraphDragging || vueNodeDragging
   })
 
