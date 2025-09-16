@@ -2,7 +2,7 @@
   <div class="relative">
     <!-- Recommended Badge -->
     <button
-      class="hardware-option flex flex-col items-center rounded-3xl transition-all duration-200 bg-neutral-900/70"
+      class="hardware-option p-5 flex flex-col items-center rounded-3xl transition-all duration-200 bg-neutral-900/70"
       :class="{
         'selected-border': selected,
         'border-4 border-transparent': !selected
@@ -11,7 +11,7 @@
     >
       <!-- Icon/Logo Area - Rounded square container -->
       <div
-        class="icon-container rounded-2xl bg-neutral-800 flex items-center justify-center overflow-hidden"
+        class="icon-container shrink-0 rounded-2xl bg-neutral-800 flex items-center justify-center overflow-hidden"
       >
         <img
           v-if="imagePath"
@@ -56,13 +56,11 @@ defineEmits<{ click: [] }>()
 .hardware-option {
   width: 170px;
   height: 190px;
-  padding: 1.25rem;
 }
 
 .icon-container {
   width: 110px;
   height: 110px;
-  flex-shrink: 0;
 }
 
 .hardware-option.selected-border {
