@@ -12,6 +12,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import {
+  isPointEqual,
+  isSizeEqual
+} from '@/renderer/core/layout/utils/geometry'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 // RAF batching
@@ -150,18 +154,32 @@ export function useSlotElementTracking(options: {
         const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
         if (!node.stopWatch) {
-          const unsubscribe = layoutStore.onChange((change) => {
-            const op = change.operation
-            if (
-              op &&
-              op.entity === 'node' &&
-              op.nodeId === nodeId &&
-              op.type === 'moveNode'
-            ) {
-              updateNodeSlotsFromCache(nodeId)
+          const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+
+          const stopPositionWatch = watch(
+            () => layoutRef.value?.position,
+            (newPosition, oldPosition) => {
+              if (!newPosition) return
+              if (!oldPosition || !isPointEqual(newPosition, oldPosition)) {
+                updateNodeSlotsFromCache(nodeId)
+              }
             }
-          })
-          node.stopWatch = () => unsubscribe()
+          )
+
+          const stopSizeWatch = watch(
+            () => layoutRef.value?.size,
+            (newSize, oldSize) => {
+              if (!newSize) return
+              if (!oldSize || !isSizeEqual(newSize, oldSize)) {
+                scheduleSlotLayoutSync(nodeId)
+              }
+            }
+          )
+
+          node.stopWatch = () => {
+            stopPositionWatch()
+            stopSizeWatch()
+          }
         }
 
         // Register slot
