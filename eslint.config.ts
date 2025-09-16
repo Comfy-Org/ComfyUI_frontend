@@ -8,6 +8,9 @@ import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+import vueParser from 'vue-eslint-parser'
+
+const extraFileExtensions = ['.vue']
 
 export default defineConfig([
   {
@@ -22,7 +25,7 @@ export default defineConfig([
     ]
   },
   {
-    files: ['src/**/*.{js,mjs,cjs,ts,mts,vue}', './*.{ts,mts}'],
+    files: ['./**/*.{ts,mts}'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -31,9 +34,28 @@ export default defineConfig([
       parserOptions: {
         parser: tseslint.parser,
         projectService: true,
+        tsConfigRootDir: import.meta.dirname,
         ecmaVersion: 2020,
         sourceType: 'module',
-        extraFileExtensions: ['.vue']
+        extraFileExtensions
+      }
+    }
+  },
+  {
+    files: ['./**/*.vue'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        __COMFYUI_FRONTEND_VERSION__: 'readonly'
+      },
+      parser: vueParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        projectService: true,
+        tsConfigRootDir: import.meta.dirname,
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        extraFileExtensions
       }
     }
   },
