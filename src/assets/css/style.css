@@ -104,9 +104,9 @@
   --color-danger-200: #d62952;
   --color-coral-red: #f14352;
 
-  --color-coral-red-50: rgb(from var(--color-coral-red) r g b / 0.5);
-  --color-coral-red-75: rgb(from var(--color-coral-red) r g b / 0.75);
-  --color-coral-red-88: rgb(from var(--color-coral-red) r g b / 0.88);
+  --color-coral-red-600: #973a40;
+  --color-coral-red-500: #c53f49;
+  --color-coral-red-400: #dd424e;
 
   --color-bypass: #6a246a;
   --color-error: #962a2a;
