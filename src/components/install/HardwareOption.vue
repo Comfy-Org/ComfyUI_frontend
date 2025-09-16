@@ -54,13 +54,11 @@ defineEmits<{ click: [] }>()
 @reference '../../assets/css/style.css';
 
 .hardware-option {
-  width: 170px;
-  height: 190px;
+  @apply w-[170px] h-[190px];
 }
 
 .icon-container {
-  width: 110px;
-  height: 110px;
+  @apply w-[110px] h-[110px];
 }
 
 .hardware-option.selected-border {

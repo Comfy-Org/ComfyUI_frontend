@@ -85,8 +85,7 @@
           class="absolute bottom-4 left-4 right-4 max-w-4xl mx-auto z-10"
         >
           <div
-            class="bg-neutral-900/95 rounded-lg p-4 border border-neutral-700"
-            style="height: 300px"
+            class="bg-neutral-900/95 rounded-lg p-4 border border-neutral-700 h-[300px]"
           >
             <BaseTerminal @created="terminalCreated" />
           </div>
@@ -245,13 +244,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-:deep(.p-progressbar-indeterminate .p-progressbar-value),
-:deep(.p-progressbar-determinate .p-progressbar-value) {
-  background-color: #f0ff41;
+::deep(.p-progressbar-indeterminate .p-progressbar-value),
+::deep(.p-progressbar-determinate .p-progressbar-value) {
+  @apply bg-brand-yellow;
 }
 
 /* Hide the xterm scrollbar completely */
-:deep(.p-terminal) .xterm-viewport {
+::deep(.p-terminal) .xterm-viewport {
   overflow: hidden !important;
 }
 </style>

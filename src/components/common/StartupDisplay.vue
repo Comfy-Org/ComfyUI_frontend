@@ -76,6 +76,6 @@ const wrapperClass = computed(() =>
 /* Override PrimeVue ProgressBar color to brand yellow */
 :deep(.p-progressbar-indeterminate .p-progressbar-value),
 :deep(.p-progressbar-determinate .p-progressbar-value) {
-  background-color: #f0ff41;
+  @apply bg-brand-yellow;
 }
 </style>

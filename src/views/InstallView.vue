@@ -194,22 +194,20 @@ onMounted(async () => {
 
 /* Ensure StepPanel content container has no top/bottom padding */
 :deep(.p-steppanel-content) {
-  @apply pt-0 pb-0 pl-0 pr-0;
+  @apply p-0;
 }
 
 /* Custom overlay scrollbar for WebKit browsers (Electron, Chrome) */
 :deep(.p-steppanels::-webkit-scrollbar) {
-  width: 1rem;
+  @apply w-4;
 }
 
 :deep(.p-steppanels::-webkit-scrollbar-track) {
-  background-color: transparent;
+  @apply bg-transparent;
 }
 
 :deep(.p-steppanels::-webkit-scrollbar-thumb) {
-  background-color: hsl(0 0% 100% / 0.2);
-  border-radius: 0.5rem;
-  border: 0.25rem solid transparent;
+  @apply bg-white/20 rounded-lg border-[4px] border-transparent;
   background-clip: content-box;
 }
 </style>

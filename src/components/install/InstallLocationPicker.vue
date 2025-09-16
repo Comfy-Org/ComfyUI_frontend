@@ -268,44 +268,33 @@ const onFocus = async () => {
 @reference '../../assets/css/style.css';
 
 /* Style the accordion to match the mockup */
-:deep(.location-picker-accordion) {
+::deep(.location-picker-accordion) {
   @apply px-12;
 
   .p-accordionpanel {
-    border: none;
-    background: transparent;
+    @apply border-0 bg-transparent;
   }
 
   .p-accordionheader {
-    background: rgba(38, 38, 38, 0.5); /* neutral-800 with 50% opacity */
-    border: none;
-    border-radius: 12px;
-    margin: 0.5rem 0 0 0;
+    @apply bg-neutral-800/50 border-0 rounded-xl mt-2 hover:bg-neutral-700/50;
     transition:
       background-color 0.2s ease,
       border-radius 0.5s ease;
-
-    &:hover {
-      background: rgba(64, 64, 64, 0.5); /* neutral-700 with 50% opacity */
-    }
   }
 
   /* When panel is expanded, adjust header border radius */
   .p-accordionpanel-active {
     .p-accordionheader {
-      border-radius: 12px 12px 0 0; /* Round only top corners when expanded */
+      @apply rounded-t-xl rounded-b-none; /* Round only top corners when expanded */
     }
   }
 
   .p-accordioncontent {
-    background: rgba(38, 38, 38, 0.5); /* Same background as header */
-    border: none;
-    border-radius: 0 0 12px 12px; /* Round only bottom corners */
+    @apply bg-neutral-800/50 border-0 rounded-b-xl rounded-t-none; /* Same background as header */
   }
 
   .p-accordioncontent-content {
-    background: transparent;
-    padding: 12px 20px 20px 20px; /* Add padding for better spacing */
+    @apply bg-transparent pt-3 pr-5 pb-5 pl-5; /* Add padding for better spacing */
   }
 
   /* Override default chevron icons to use right/down */

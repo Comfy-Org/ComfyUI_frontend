@@ -76,8 +76,7 @@ defineEmits<{
 }
 
 :deep(.p-step-header) {
-  @apply p-0 border-0 bg-transparent;
-  width: auto;
+  @apply p-0 border-0 bg-transparent w-auto;
   min-width: unset;
 }
 
@@ -86,20 +85,15 @@ defineEmits<{
 }
 
 :deep(.p-step-title) {
-  @apply block w-2.5 h-2.5 rounded-full transition-all duration-300;
+  @apply block w-2.5 h-2.5 rounded-full transition-all duration-300 overflow-hidden p-0 m-0;
   background-color: #4a4a4a;
   font-size: 0;
   line-height: 0;
-  overflow: hidden;
   text-indent: -9999px;
-  padding: 0;
-  margin: 0;
 }
 
 :deep(.p-step.p-step-active .p-step-title) {
-  @apply bg-brand-yellow;
-  width: 2rem;
-  border-radius: 0.625rem;
+  @apply bg-brand-yellow w-8 rounded-[10px];
 }
 
 :deep(.p-step:not(.p-step-disabled) .p-step-header:hover .p-step-title) {
@@ -109,7 +103,6 @@ defineEmits<{
 
 :deep(.p-step.p-step-disabled .p-step-title) {
   background-color: #2a2a2a;
-  @apply opacity-60;
-  cursor: not-allowed;
+  @apply opacity-60 cursor-not-allowed;
 }
 </style>
