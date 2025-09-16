@@ -50,15 +50,15 @@ const handleButtonClick = (button: DialogAction) => {
 @reference '../assets/css/style.css';
 
 .p-button-secondary {
-  @apply text-white rounded-lg border-none bg-charcoal-600;
+  @apply text-white rounded-lg border-none bg-charcoal-700;
 }
 
 .p-button-secondary:hover {
-  @apply bg-charcoal-700;
+  @apply bg-charcoal-800;
 }
 
 .p-button-secondary:active {
-  @apply bg-charcoal-800;
+  @apply bg-charcoal-900;
 }
 
 .p-button-danger {
