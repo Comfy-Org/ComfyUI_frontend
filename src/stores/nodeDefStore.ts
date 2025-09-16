@@ -292,9 +292,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
   const nodeDefFilters = ref<NodeDefFilter[]>([])
-  const subgraphStore = useSubgraphStore()
 
   const nodeDefs = computed(() => {
+    const subgraphStore = useSubgraphStore()
     return [
       ...Object.values(nodeDefsByName.value),
       ...subgraphStore.subgraphBlueprints

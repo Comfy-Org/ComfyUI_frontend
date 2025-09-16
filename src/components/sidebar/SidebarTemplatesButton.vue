@@ -12,8 +12,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 

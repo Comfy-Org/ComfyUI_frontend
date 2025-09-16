@@ -4,7 +4,7 @@ import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
 import { t } from '@/i18n'
-import { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 export class ModelExporter {
   static detectFormatFromURL(url: string): string | null {

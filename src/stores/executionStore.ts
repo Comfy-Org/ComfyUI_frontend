@@ -5,6 +5,16 @@ import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyNode,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   DisplayComponentWsMessage,
   ExecutedWsMessage,
@@ -17,19 +27,11 @@ import type {
   ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
-import type {
-  ComfyNode,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-
-import { useCanvasStore } from './graphStore'
-import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 
 interface QueuedPrompt {
   /**
@@ -132,7 +134,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   // Easily access all currently executing node IDs
   const executingNodeIds = computed<NodeId[]>(() => {
-    return Object.entries(nodeProgressStates)
+    return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
       .map(([nodeId, _]) => nodeId)
   })
@@ -218,6 +220,19 @@ export const useExecutionStore = defineStore('execution', () => {
     const total = totalNodesToExecute.value
     const done = nodesExecuted.value
     return total > 0 ? done / total : 0
+  })
+
+  const lastExecutionErrorNodeLocatorId = computed(() => {
+    const err = lastExecutionError.value
+    if (!err) return null
+    return executionIdToNodeLocatorId(String(err.node_id))
+  })
+
+  const lastExecutionErrorNodeId = computed(() => {
+    const locator = lastExecutionErrorNodeLocatorId.value
+    if (!locator) return null
+    const localId = workflowStore.nodeLocatorIdToNodeId(locator)
+    return localId != null ? String(localId) : null
   })
 
   function bindExecutionEvents() {
@@ -426,6 +441,10 @@ export const useExecutionStore = defineStore('execution', () => {
      * The error from the previous execution.
      */
     lastExecutionError,
+    /**
+     * Local node ID for the most recent execution error.
+     */
+    lastExecutionErrorNodeId,
     /**
      * The id of the node that is currently being executed (backward compatibility)
      */
