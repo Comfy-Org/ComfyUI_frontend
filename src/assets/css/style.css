@@ -57,14 +57,14 @@
   --font-inter: 'Inter', sans-serif;
 
   /* Palette Colors */
-  --color-charcoal-100: #171718;
-  --color-charcoal-200: #202121;
-  --color-charcoal-300: #262729;
-  --color-charcoal-400: #2d2e32;
-  --color-charcoal-500: #313235;
-  --color-charcoal-600: #3c3d42;
-  --color-charcoal-700: #494a50;
-  --color-charcoal-800: #55565e;
+  --color-charcoal-100: #55565e;
+  --color-charcoal-200: #494a50;
+  --color-charcoal-300: #3c3d42;
+  --color-charcoal-400: #313235;
+  --color-charcoal-500: #2d2e32;
+  --color-charcoal-600: #262729;
+  --color-charcoal-700: #202121;
+  --color-charcoal-800: #171718;
 
   --color-stone-100: #444444;
   --color-stone-200: #828282;
@@ -103,12 +103,12 @@
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
-  --color-bypass: #6A246A;
+  --color-bypass: #6a246a;
   --color-error: #962a2a;
 
   --color-blue-selection: rgb(from var(--color-blue-100) r g b / 0.3);
-  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
-  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
+  --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
+  --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
   --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
 
   /* PrimeVue pulled colors */
@@ -121,10 +121,10 @@
 }
 
 @theme inline {
-  --color-node-component-surface: var(--color-charcoal-300);
+  --color-node-component-surface: var(--color-charcoal-600);
   --color-node-component-surface-highlight: var(--color-slate-100);
-  --color-node-component-surface-hovered: var(--color-charcoal-500);
-  --color-node-component-surface-selected: var(--color-charcoal-700);
+  --color-node-component-surface-hovered: var(--color-charcoal-400);
+  --color-node-component-surface-selected: var(--color-charcoal-200);
   --color-node-stroke: var(--color-stone-100);
 }
 
