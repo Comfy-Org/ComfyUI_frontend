@@ -29,13 +29,13 @@
 
     <!-- Next/Install button -->
     <Button
-      :label="currentStep !== '4' ? $t('g.next') : $t('g.install')"
+      :label="currentStep !== '3' ? $t('g.next') : $t('g.install')"
       class="px-8 py-2 bg-brand-yellow hover:bg-brand-yellow/90 font-inter rounded-lg border-0 transition-colors justify-self-end"
       :pt="{
         label: { class: 'text-neutral-900 font-inter font-black' }
       }"
       :disabled="!canProceed"
-      @click="currentStep !== '4' ? $emit('next') : $emit('install')"
+      @click="currentStep !== '3' ? $emit('next') : $emit('install')"
     />
   </div>
 </template>
