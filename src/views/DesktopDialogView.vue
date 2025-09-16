@@ -30,7 +30,11 @@
 import Button from 'primevue/button'
 import { useRoute } from 'vue-router'
 
-import { DESKTOP_DIALOGS, type DialogAction } from '@/constants/desktopDialogs'
+import {
+  DESKTOP_DIALOGS,
+  type DesktopDialog,
+  type DialogAction
+} from '@/constants/desktopDialogs'
 import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -39,11 +43,15 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 const route = useRoute()
 const { dialogId } = route.params
 
-// Fallback to reinstallFreshStart if dialog not found
-const dialog =
-  typeof dialogId === 'string' && dialogId in DESKTOP_DIALOGS
-    ? DESKTOP_DIALOGS[dialogId as keyof typeof DESKTOP_DIALOGS]
-    : DESKTOP_DIALOGS.reinstallFreshStart
+// Get dialog with fallback - using Object.hasOwn for cleaner type narrowing
+let dialog: DesktopDialog
+if (typeof dialogId === 'string' && Object.hasOwn(DESKTOP_DIALOGS, dialogId)) {
+  // TypeScript now knows dialogId is a valid key
+  dialog = DESKTOP_DIALOGS[dialogId as keyof typeof DESKTOP_DIALOGS]
+} else {
+  dialog = DESKTOP_DIALOGS.reinstallFreshStart
+}
+
 const dialogI18nKey = normalizeI18nKey(dialog.id)
 
 const handleButtonClick = (button: DialogAction) => {
