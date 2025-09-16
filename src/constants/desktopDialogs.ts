@@ -71,5 +71,5 @@ export function getDialog(
   dialogId: string | string[]
 ): DesktopDialog & { id: DesktopDialogId } {
   const id = isDialogId(dialogId) ? dialogId : 'invalidDialog'
-  return { id, ...DESKTOP_DIALOGS[id] }
+  return { id, ...structuredClone(DESKTOP_DIALOGS[id]) }
 }
