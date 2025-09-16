@@ -23,6 +23,7 @@ import {
   addValueControlWidgets
 } from '@/scripts/widgets'
 import { assetService } from '@/services/assetService'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 import { useRemoteWidget } from './useRemoteWidget'
@@ -123,6 +124,38 @@ const addComboWidget = (
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )
+  }
+
+  // If this combo is an image-capable selector, update node outputs on change
+  const isImageCombo =
+    inputSpec.image_upload === true ||
+    inputSpec.animated_image_upload === true ||
+    inputSpec.video_upload === true
+  if (isImageCombo) {
+    const store = useNodeOutputStore()
+    const folder = inputSpec.image_folder ?? 'input'
+    const isAnimated = inputSpec.animated_image_upload === true
+    const orig = widget.callback
+    widget.callback = (value) => {
+      try {
+        orig?.(value)
+      } finally {
+        // Ensure outputs reflect the currently selected image
+        const val = String(value ?? '')
+        if (val != null && val !== '') {
+          store.setNodeOutputs(node, val, { folder, isAnimated })
+          node.graph?.setDirtyCanvas(true)
+        }
+      }
+    }
+    // Initial seed from default/current value
+    const seedVal = (widget.value ?? defaultValue) as string | undefined
+    if (seedVal) {
+      queueMicrotask(() => {
+        store.setNodeOutputs(node, seedVal, { folder, isAnimated })
+        node.graph?.setDirtyCanvas(true)
+      })
+    }
   }
 
   return widget as IBaseWidget

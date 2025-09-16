@@ -16,6 +16,7 @@
     "errorLoadingImage": "Error loading image",
     "failedToDownloadImage": "Failed to download image",
     "calculatingDimensions": "Calculating dimensions",
+    "upload": "Upload",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
     "refresh": "Refresh",

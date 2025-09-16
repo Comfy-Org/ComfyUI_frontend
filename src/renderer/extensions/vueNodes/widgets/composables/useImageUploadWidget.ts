@@ -98,6 +98,10 @@ export const useImageUploadWidget = () => {
 
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
+      console.debug('[ImageUploadWidget] combo changed', {
+        nodeId: node.id,
+        value: fileComboWidget.value
+      })
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
         isAnimated
       })

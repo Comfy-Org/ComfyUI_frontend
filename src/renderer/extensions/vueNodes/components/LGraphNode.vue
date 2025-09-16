@@ -138,6 +138,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import {
   computed,
   inject,
@@ -161,7 +162,7 @@ import { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
@@ -320,7 +321,6 @@ watch(
 
 // Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has image outputs
   return nodeImageUrls.value.length > 0
 })
 
@@ -401,32 +401,34 @@ const handleTitleUpdate = (newTitle: string) => {
 }
 
 const nodeOutputs = useNodeOutputStore()
+const { nodeOutputs: nodeOutputsRef } = storeToRefs(nodeOutputs)
+const { nodeIdToNodeLocatorId } = useWorkflowStore()
+const nodeLocatorId = computed(() => nodeIdToNodeLocatorId(props.nodeData.id))
 
 const nodeImageUrls = ref<string[]>([])
 const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
-  // Construct proper locator ID using subgraph ID from VueNodeData
-  const locatorId = nodeData.subgraphId
-    ? `${nodeData.subgraphId}:${nodeData.id}`
-    : nodeData.id
+  // Get the current graph context (subgraph if viewing one, otherwise root graph)
+  const currentGraph = app.canvas.graph || app.graph
+  const node = currentGraph?.getNodeById(Number(nodeData.id))
+  if (!node) return
 
-  // Use root graph for getNodeByLocatorId since it needs to traverse from root
-  const rootGraph = app.graph?.rootGraph || app.graph
-  if (!rootGraph) {
-    nodeImageUrls.value = []
-    return
-  }
-
-  const node = getNodeByLocatorId(rootGraph, locatorId)
-
-  if (node && newOutputs?.images?.length) {
+  // Update image URLs
+  if (newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
-    if (urls) {
-      nodeImageUrls.value = urls
-    }
+    console.debug('[VueNodes] onNodeOutputsUpdate: updating image URLs', {
+      nodeId: nodeData.id,
+      images: newOutputs.images?.length,
+      urls
+    })
+    nodeImageUrls.value = urls ?? []
   } else {
-    // Clear URLs if no outputs or no images
+    console.debug('[VueNodes] onNodeOutputsUpdate: cleared image URLs', {
+      nodeId: nodeData.id
+    })
     nodeImageUrls.value = []
   }
+
+  // No video handling in Vue node content; handled by canvas DOM widget
 }
 
 const nodeOutputLocatorId = computed(() =>
@@ -434,13 +436,17 @@ const nodeOutputLocatorId = computed(() =>
 )
 
 watch(
-  () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
+  () => nodeOutputsRef.value[nodeLocatorId.value],
   (newOutputs) => {
-    onNodeOutputsUpdate(newOutputs)
+    onNodeOutputsUpdate(newOutputs as ExecutedWsMessage['output'])
   },
-  { deep: true }
+  { immediate: true }
 )
 
 // Provide nodeImageUrls to child components
 provide('nodeImageUrls', nodeImageUrls)
+provide(
+  'nodeId',
+  computed(() => String(nodeData.id))
+)
 </script>

@@ -50,7 +50,7 @@ import { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
-  getComponent,
+  getComponentForWidget,
   isEssential,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
@@ -102,6 +102,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   }
 
   for (const widget of widgets) {
+    // Skip legacy IMAGEUPLOAD widget in Vue Nodes – unified Image widget handles UI
+    if (widget.type?.toUpperCase() === 'IMAGEUPLOAD') continue
     if (widget.options?.hidden) continue
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
@@ -109,7 +111,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     if (lodLevel === LODLevel.REDUCED && !isEssential(widget.type)) continue
 
-    const vueComponent = getComponent(widget.type) || WidgetInputText
+    const vueComponent = getComponentForWidget(widget) || WidgetInputText
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
