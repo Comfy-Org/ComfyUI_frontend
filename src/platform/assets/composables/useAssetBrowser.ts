@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { formatSize } from '@/utils/formatUtil'
 
 type AssetBadge = {
   label: string
@@ -38,7 +39,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       asset.user_metadata?.description || `${typeTag || 'Unknown'} model`
 
     // Format file size
-    const formattedSize = formatFileSize(asset.size)
+    const formattedSize = formatSize(asset.size)
 
     // Create badges from tags and metadata
     const badges: AssetBadge[] = []
@@ -73,20 +74,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       badges,
       stats
     }
-  }
-
-  // Helper to format file sizes
-  function formatFileSize(bytes: number): string {
-    const units = ['B', 'KB', 'MB', 'GB']
-    let size = bytes
-    let unitIndex = 0
-
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024
-      unitIndex++
-    }
-
-    return `${size.toFixed(1)} ${units[unitIndex]}`
   }
 
   // Extract available categories from assets
@@ -124,27 +111,27 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return category?.label || 'Assets'
   })
 
+  // Filter functions
+  const filterByCategory = (category: string) => (asset: AssetItem) => {
+    if (category === 'all') return true
+    return asset.tags.includes(category)
+  }
+
+  const filterByQuery = (query: string) => (asset: AssetItem) => {
+    if (!query) return true
+    const lowerQuery = query.toLowerCase()
+    return (
+      asset.name.toLowerCase().includes(lowerQuery) ||
+      asset.user_metadata?.description?.toLowerCase().includes(lowerQuery) ||
+      asset.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
+    )
+  }
+
   // Computed filtered and transformed assets
   const filteredAssets = computed(() => {
-    let filtered = [...assets]
-
-    // Filter by category (tag-based)
-    if (selectedCategory.value !== 'all') {
-      filtered = filtered.filter((asset) =>
-        asset.tags.includes(selectedCategory.value)
-      )
-    }
-
-    // Filter by search query
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filtered = filtered.filter(
-        (asset) =>
-          asset.name.toLowerCase().includes(query) ||
-          asset.user_metadata?.description?.toLowerCase().includes(query) ||
-          asset.tags.some((tag) => tag.toLowerCase().includes(query))
-      )
-    }
+    const filtered = assets
+      .filter(filterByCategory(selectedCategory.value))
+      .filter(filterByQuery(searchQuery.value))
 
     // Sort assets
     filtered.sort((a, b) => {
@@ -164,18 +151,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   })
 
   // Actions
-  function setSearchQuery(query: string) {
-    searchQuery.value = query
-  }
-
-  function setCategory(category: string) {
-    selectedCategory.value = category
-  }
-
-  function setSortBy(sort: string) {
-    sortBy.value = sort
-  }
-
   function selectAsset(asset: AssetDisplayItem): UUID {
     if (import.meta.env.DEV) {
       console.log('Asset selected:', asset.id, asset.name)
@@ -195,9 +170,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     filteredAssets,
 
     // Actions
-    setSearchQuery,
-    setCategory,
-    setSortBy,
     selectAsset,
     transformAssetForDisplay
   }

@@ -35,12 +35,12 @@ describe('useAssetBrowser', () => {
 
       // Adds display properties
       expect(result.description).toBe('Test model')
-      expect(result.formattedSize).toBe('2.0 GB')
+      expect(result.formattedSize).toBe('2 GB')
       expect(result.badges).toContainEqual({
         label: 'checkpoints',
         type: 'type'
       })
-      expect(result.badges).toContainEqual({ label: '2.0 GB', type: 'size' })
+      expect(result.badges).toContainEqual({ label: '2 GB', type: 'size' })
     })
 
     it('creates fallback description from tags when metadata missing', () => {
@@ -59,10 +59,10 @@ describe('useAssetBrowser', () => {
       const { transformAssetForDisplay } = useAssetBrowser([])
 
       const testCases = [
-        { size: 512, expected: '512.0 B' },
+        { size: 512, expected: '512 B' },
         { size: 1536, expected: '1.5 KB' },
-        { size: 2097152, expected: '2.0 MB' },
-        { size: 3221225472, expected: '3.0 GB' }
+        { size: 2097152, expected: '2 MB' },
+        { size: 3221225472, expected: '3 GB' }
       ]
 
       testCases.forEach(({ size, expected }) => {
@@ -81,9 +81,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '3', tags: ['models', 'checkpoints'] })
       ]
 
-      const { setCategory, filteredAssets } = useAssetBrowser(assets)
+      const { selectedCategory, filteredAssets } = useAssetBrowser(assets)
 
-      setCategory('checkpoints')
+      selectedCategory.value = 'checkpoints'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(2)
@@ -100,9 +100,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '2', tags: ['models', 'loras'] })
       ]
 
-      const { setCategory, filteredAssets } = useAssetBrowser(assets)
+      const { selectedCategory, filteredAssets } = useAssetBrowser(assets)
 
-      setCategory('all')
+      selectedCategory.value = 'all'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(2)
@@ -117,9 +117,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ name: 'photorealistic_v2.safetensors' })
       ]
 
-      const { setSearchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
 
-      setSearchQuery('realistic')
+      searchQuery.value = 'realistic'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(2)
@@ -142,9 +142,9 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { setSearchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
 
-      setSearchQuery('fantasy')
+      searchQuery.value = 'fantasy'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(1)
@@ -154,9 +154,9 @@ describe('useAssetBrowser', () => {
     it('handles empty search results', async () => {
       const assets = [createApiAsset({ name: 'test.safetensors' })]
 
-      const { setSearchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
 
-      setSearchQuery('nonexistent')
+      searchQuery.value = 'nonexistent'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(0)
@@ -180,11 +180,11 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { setSearchQuery, setCategory, filteredAssets } =
+      const { searchQuery, selectedCategory, filteredAssets } =
         useAssetBrowser(assets)
 
-      setSearchQuery('realistic')
-      setCategory('checkpoints')
+      searchQuery.value = 'realistic'
+      selectedCategory.value = 'checkpoints'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(1)
@@ -202,9 +202,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ name: 'beta.safetensors' })
       ]
 
-      const { setSortBy, filteredAssets } = useAssetBrowser(assets)
+      const { sortBy, filteredAssets } = useAssetBrowser(assets)
 
-      setSortBy('name')
+      sortBy.value = 'name'
       await nextTick()
 
       const names = filteredAssets.value.map((asset) => asset.name)
@@ -222,9 +222,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ created_at: '2024-02-01T00:00:00Z' })
       ]
 
-      const { setSortBy, filteredAssets } = useAssetBrowser(assets)
+      const { sortBy, filteredAssets } = useAssetBrowser(assets)
 
-      setSortBy('date')
+      sortBy.value = 'date'
       await nextTick()
 
       const dates = filteredAssets.value.map((asset) => asset.created_at)
@@ -262,9 +262,13 @@ describe('useAssetBrowser', () => {
       const { availableCategories } = useAssetBrowser(assets)
 
       expect(availableCategories.value).toEqual([
-        { id: 'all', label: 'All Models', icon: 'i-lucide:folder' },
-        { id: 'checkpoints', label: 'Checkpoints', icon: 'i-lucide:package' },
-        { id: 'loras', label: 'Loras', icon: 'i-lucide:package' }
+        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
+        {
+          id: 'checkpoints',
+          label: 'Checkpoints',
+          icon: 'icon-[lucide--package]'
+        },
+        { id: 'loras', label: 'Loras', icon: 'icon-[lucide--package]' }
       ])
     })
 
@@ -277,8 +281,8 @@ describe('useAssetBrowser', () => {
       const { availableCategories } = useAssetBrowser(assets)
 
       expect(availableCategories.value).toEqual([
-        { id: 'all', label: 'All Models', icon: 'i-lucide:folder' },
-        { id: 'vae', label: 'Vae', icon: 'i-lucide:package' }
+        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
+        { id: 'vae', label: 'Vae', icon: 'icon-[lucide--package]' }
       ])
     })
 
@@ -291,24 +295,28 @@ describe('useAssetBrowser', () => {
       const { availableCategories } = useAssetBrowser(assets)
 
       expect(availableCategories.value).toEqual([
-        { id: 'all', label: 'All Models', icon: 'i-lucide:folder' },
-        { id: 'checkpoints', label: 'Checkpoints', icon: 'i-lucide:package' }
+        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
+        {
+          id: 'checkpoints',
+          label: 'Checkpoints',
+          icon: 'icon-[lucide--package]'
+        }
       ])
     })
 
     it('computes content title from selected category', () => {
       const assets = [createApiAsset({ tags: ['models', 'checkpoints'] })]
-      const { setCategory, contentTitle } = useAssetBrowser(assets)
+      const { selectedCategory, contentTitle } = useAssetBrowser(assets)
 
       // Default
       expect(contentTitle.value).toBe('All Models')
 
       // Set specific category
-      setCategory('checkpoints')
+      selectedCategory.value = 'checkpoints'
       expect(contentTitle.value).toBe('Checkpoints')
 
       // Unknown category
-      setCategory('unknown')
+      selectedCategory.value = 'unknown'
       expect(contentTitle.value).toBe('Assets')
     })
   })
