@@ -93,10 +93,10 @@ export function useNodeTooltips(
       pt: {
         text: {
           class:
-            'bg-[#171718] border border-[#5B5E7D] rounded-md px-4 py-2 text-white text-sm font-normal leading-tight max-w-[300px] shadow-none'
+            'bg-charcoal-100 border border-slate-300 rounded-md px-4 py-2 text-white text-sm font-normal leading-tight max-w-[300px] shadow-none'
         },
         arrow: {
-          class: 'before:border-[#171718]'
+          class: 'before:border-charcoal-100'
         }
       }
     }
