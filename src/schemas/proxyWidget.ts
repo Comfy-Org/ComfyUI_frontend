@@ -3,9 +3,7 @@ import { fromZodError } from 'zod-validation-error'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
-export const proxyWidgetsPropertySchema = z.array(
-  z.tuple([z.string(), z.string()])
-)
+const proxyWidgetsPropertySchema = z.array(z.tuple([z.string(), z.string()]))
 export type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
 
 export function parseProxyWidgets(
