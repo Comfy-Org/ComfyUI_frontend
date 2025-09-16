@@ -6,7 +6,7 @@ export interface DialogAction {
   readonly returnValue: string
 }
 
-export interface DesktopDialog {
+interface DesktopDialog {
   readonly title: string
   readonly message: string
   readonly buttons: DialogAction[]
