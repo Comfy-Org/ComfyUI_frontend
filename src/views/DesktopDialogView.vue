@@ -50,15 +50,15 @@ const handleButtonClick = (button: DialogAction) => {
 @reference '../assets/css/style.css';
 
 .p-button-secondary {
-  @apply text-white rounded-lg border-none bg-charcoal-700;
+  @apply text-white rounded-lg border-none bg-neutral-600;
 }
 
 .p-button-secondary:hover {
-  @apply bg-charcoal-800;
+  @apply bg-neutral-550;
 }
 
 .p-button-secondary:active {
-  @apply bg-charcoal-900;
+  @apply bg-neutral-500;
 }
 
 .p-button-danger {
@@ -71,17 +71,5 @@ const handleButtonClick = (button: DialogAction) => {
 
 .p-button-danger:active {
   @apply bg-coral-red-400;
-}
-
-.p-button-warn {
-  @apply bg-brand-blue/65 text-brand-yellow border-0;
-}
-
-.p-button-warn:hover {
-  @apply bg-brand-blue/90 text-brand-yellow border-0;
-}
-
-.p-button-warn:active {
-  @apply bg-brand-blue text-brand-yellow border-0;
 }
 </style>
