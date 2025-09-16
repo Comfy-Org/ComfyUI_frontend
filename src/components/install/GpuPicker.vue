@@ -50,14 +50,8 @@
 
     <!-- Description text at bottom -->
     <div class="text-neutral-300 px-24">
-      <p v-if="selected === 'mps'" class="leading-relaxed">
-        {{ $t('install.gpuPicker.appleMetalDescription') }}
-      </p>
-      <p v-if="selected === 'cpu'" class="leading-relaxed">
-        {{ $t('install.gpuPicker.cpuDescription') }}
-      </p>
-      <p v-if="selected === 'unsupported'" class="leading-relaxed">
-        {{ $t('install.gpuPicker.manualDescription') }}
+      <p v-if="descriptionText" class="leading-relaxed">
+        {{ descriptionText }}
       </p>
     </div>
   </div>
@@ -66,9 +60,13 @@
 <script setup lang="ts">
 import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import Tag from 'primevue/tag'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import HardwareOption from '@/components/install/HardwareOption.vue'
 import { electronAPI } from '@/utils/envUtil'
+
+const { t } = useI18n()
 
 const selected = defineModel<TorchDeviceType | null>('device', {
   required: true
@@ -76,6 +74,19 @@ const selected = defineModel<TorchDeviceType | null>('device', {
 
 const electron = electronAPI()
 const platform = electron.getPlatform()
+
+const descriptionText = computed(() => {
+  switch (selected.value) {
+    case 'mps':
+      return t('install.gpuPicker.appleMetalDescription')
+    case 'cpu':
+      return t('install.gpuPicker.cpuDescription')
+    case 'unsupported':
+      return t('install.gpuPicker.manualDescription')
+    default:
+      return null
+  }
+})
 
 const pickGpu = (value: typeof selected.value) => {
   const newValue = selected.value === value ? null : value
