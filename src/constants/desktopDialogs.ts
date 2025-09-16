@@ -37,20 +37,15 @@ Please note: if you've added custom nodes, you'll need to reinstall them after t
       }
     ]
   }
-} satisfies { [K: string]: DesktopDialog }
+} as const satisfies { [K: string]: DesktopDialog }
 
-export type DesktopDialogId = keyof typeof DESKTOP_DIALOGS
-export type DesktopDialogsMap = typeof DESKTOP_DIALOGS
-
-function isDialogId(id: unknown): id is DesktopDialogId {
+function isDialogId(id: unknown): id is keyof typeof DESKTOP_DIALOGS {
   return typeof id === 'string' && id in DESKTOP_DIALOGS
 }
 
 export function getDialog(id: string | string[]): DesktopDialog {
-  const dialogId = Array.isArray(id) ? id[0] : id
-
-  if (isDialogId(dialogId)) {
-    return DESKTOP_DIALOGS[dialogId]
+  if (isDialogId(id)) {
+    return DESKTOP_DIALOGS[id]
   }
 
   return DESKTOP_DIALOGS.reinstallFreshStart
