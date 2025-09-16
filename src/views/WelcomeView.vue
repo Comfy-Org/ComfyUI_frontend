@@ -12,13 +12,16 @@
         </div>
         <!-- Bottom container: Title and button -->
         <div class="flex flex-col items-center justify-center gap-4">
-          <h1 class="font-inter font-medium italic text-3xl text-neutral-300">
+          <h1 class="font-inter font-semibold text-3xl text-neutral-300">
             {{ $t('welcome.title') }}
           </h1>
           <!-- Get Started Button -->
           <Button
             :label="$t('welcome.getStarted')"
-            class="font-inter px-8 py-2 mt-4 bg-brand-yellow hover:bg-brand-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
+            class="px-8 mt-4 bg-brand-yellow hover:bg-brand-yellow/90 rounded-lg transition-colors"
+            :pt="{
+              label: { class: 'font-inter text-neutral-900 font-black' }
+            }"
             @click="navigateTo('/install')"
           />
         </div>

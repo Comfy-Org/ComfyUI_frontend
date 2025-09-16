@@ -20,7 +20,7 @@
         />
         <h1
           v-if="title"
-          class="font-inter font-medium italic text-3xl text-neutral-300"
+          class="font-inter font-medium text-3xl text-neutral-300"
         >
           {{ title }}
         </h1>

@@ -30,7 +30,10 @@
     <!-- Next/Install button -->
     <Button
       :label="currentStep !== '4' ? $t('g.next') : $t('g.install')"
-      class="px-8 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-neutral-900 font-bold transition-colors italic justify-self-end"
+      class="px-8 py-2 bg-brand-yellow hover:bg-brand-yellow/90 transition-colors justify-self-end"
+      :pt="{
+        label: { class: 'text-neutral-900 font-inter font-black' }
+      }"
       :disabled="!canProceed"
       @click="currentStep !== '4' ? $emit('next') : $emit('install')"
     />
