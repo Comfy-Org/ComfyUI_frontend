@@ -74,7 +74,6 @@
 
 <script setup lang="ts">
 import { useEventListener, whenever } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import {
   computed,
   onMounted,
@@ -118,10 +117,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  NodePreviewImagesKey,
-  SelectedNodeIdsKey
-} from '@/renderer/core/canvas/injectionKeys'
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -135,7 +131,6 @@ import { useColorPaletteService } from '@/services/colorPaletteService'
 import { newUserService } from '@/services/newUserService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -212,9 +207,6 @@ provide(SelectedNodeIdsKey, selectedNodeIds)
 
 // Provide execution state to all Vue nodes
 useExecutionStateProvider()
-// Provide preview images state to all Vue nodes
-const { nodePreviewImages } = storeToRefs(useNodeOutputStore())
-provide(NodePreviewImagesKey, nodePreviewImages)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')

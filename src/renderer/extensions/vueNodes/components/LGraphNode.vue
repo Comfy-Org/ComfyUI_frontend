@@ -118,12 +118,12 @@
         <div
           v-if="shouldShowPreviewImg"
           v-memo="[latestPreviewUrl]"
-          class="px-4 min-h-[220px]"
+          class="px-4"
         >
           <img
             :src="latestPreviewUrl"
             alt="preview"
-            class="w-full h-[220px] object-contain rounded-lg"
+            class="w-full max-h-64 object-contain"
           />
         </div>
       </div>

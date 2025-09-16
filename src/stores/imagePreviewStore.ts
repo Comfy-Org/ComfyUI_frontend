@@ -46,9 +46,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
-    if (scheduledRevoke[locator]) {
-      scheduledRevoke[locator].stop()
-    }
+    scheduledRevoke[locator]?.stop()
 
     const { stop } = useTimeoutFn(() => {
       delete scheduledRevoke[locator]
