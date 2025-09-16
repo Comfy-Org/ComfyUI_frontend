@@ -65,6 +65,9 @@ describe('Subgraph proxyWidgets', () => {
       ['2', 'stringWidget']
     ])
     expect(subgraphNode.widgets.length).toBe(2)
+    expect(subgraphNode.widgets[0].name).not.toEqual(
+      subgraphNode.widgets[1].name
+    )
   })
   test('Will not modify existing widgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
