@@ -57,7 +57,7 @@ const handleButtonClick = async (button: DialogAction) => {
 }
 
 .p-button-danger {
-  @apply bg-coral-red-600 border-0;
+  @apply bg-coral-red-600;
 }
 
 .p-button-danger:hover {
