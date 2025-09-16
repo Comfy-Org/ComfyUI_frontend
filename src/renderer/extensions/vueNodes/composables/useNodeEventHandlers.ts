@@ -11,8 +11,8 @@
 import type { Ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { useCanvasStore } from '@/stores/graphStore'
 
 interface NodeManager {
   getNode: (id: string) => any
@@ -26,7 +26,11 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
    * Handle node selection events
    * Supports single selection and multi-select with Ctrl/Cmd
    */
-  const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
+  const handleNodeSelect = (
+    event: PointerEvent,
+    nodeData: VueNodeData,
+    wasDragging: boolean
+  ) => {
     if (!canvasStore.canvas || !nodeManager.value) return
 
     const node = nodeManager.value.getNode(nodeData.id)
@@ -42,9 +46,12 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
         canvasStore.canvas.select(node)
       }
     } else {
+      // If it wasn't a drag: single-select the node
+      if (!wasDragging) {
+        canvasStore.canvas.deselectAll()
+        canvasStore.canvas.select(node)
+      }
       // Regular click -> single select
-      canvasStore.canvas.deselectAll()
-      canvasStore.canvas.select(node)
     }
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
@@ -107,7 +114,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     // TODO: add custom double-click behavior here
     // For now, ensure node is selected
     if (!node.selected) {
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, nodeData, false)
     }
   }
 
@@ -126,7 +133,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
 
     // Select the node if not already selected
     if (!node.selected) {
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, nodeData, false)
     }
 
     // Let LiteGraph handle the context menu
@@ -151,7 +158,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
         metaKey: event.metaKey,
         bubbles: true
       })
-      handleNodeSelect(syntheticEvent, nodeData)
+      handleNodeSelect(syntheticEvent, nodeData, false)
     }
 
     // Set drag data for potential drop operations

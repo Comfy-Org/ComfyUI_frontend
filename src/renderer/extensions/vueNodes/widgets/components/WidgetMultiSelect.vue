@@ -2,6 +2,7 @@
   <WidgetLayoutField :widget="widget">
     <MultiSelect
       v-model="localValue"
+      :options="multiSelectOptions"
       v-bind="combinedProps"
       :disabled="readonly"
       class="w-full text-xs"
@@ -15,13 +16,13 @@
   </WidgetLayoutField>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends WidgetValue = WidgetValue">
 import MultiSelect from 'primevue/multiselect'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -30,17 +31,17 @@ import {
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<any[]>
-  modelValue: any[]
+  widget: SimplifiedWidget<T[]>
+  modelValue: T[]
   readonly?: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: any[]]
+  'update:modelValue': [value: T[]]
 }>()
 
 // Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
+const { localValue, onChange } = useWidgetValue<T[]>({
   widget: props.widget,
   modelValue: props.modelValue,
   defaultValue: [],
@@ -60,4 +61,15 @@ const combinedProps = computed(() => ({
   ...filterWidgetProps(props.widget.options, MULTISELECT_EXCLUDED_PROPS),
   ...transformCompatProps.value
 }))
+
+// Extract multiselect options from widget options
+const multiSelectOptions = computed((): T[] => {
+  const options = props.widget.options
+
+  if (Array.isArray(options?.values)) {
+    return options.values
+  }
+
+  return []
+})
 </script>

@@ -7,6 +7,8 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   ComboInputSpec,
@@ -22,8 +24,6 @@ import {
   type ComfyWidgetConstructorV2,
   addValueControlWidgets
 } from '@/scripts/widgets'
-import { assetService } from '@/services/assetService'
-import { useSettingStore } from '@/stores/settingStore'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
@@ -69,19 +69,15 @@ const addComboWidget = (
   )
 
   if (isUsingAssetAPI && isEligible) {
-    // Create button widget for Asset Browser
+    // Get the default value for the button text (currently selected model)
     const currentValue = getDefaultValue(inputSpec)
+    const displayLabel = currentValue ?? t('widgets.selectModel')
 
-    const widget = node.addWidget(
-      'button',
-      inputSpec.name,
-      t('widgets.selectModel'),
-      () => {
-        console.log(
-          `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
-        )
-      }
-    )
+    const widget = node.addWidget('asset', inputSpec.name, displayLabel, () => {
+      console.log(
+        `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
+      )
+    })
 
     return widget
   }
@@ -129,7 +125,7 @@ const addComboWidget = (
     )
   }
 
-  return widget
+  return widget as IBaseWidget
 }
 
 export const useComboWidget = () => {

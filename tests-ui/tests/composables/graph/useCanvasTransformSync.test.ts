@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/graph/useCanvasTransformSync'
+import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 
 import type { LGraphCanvas } from '../../../../src/lib/litegraph/src/litegraph'
 

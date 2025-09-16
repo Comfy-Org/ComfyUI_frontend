@@ -2,16 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { assetService } from '@/services/assetService'
 
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
 }))
 
 const mockSettingStoreGet = vi.fn(() => false)
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     get: mockSettingStoreGet
   }))
@@ -23,7 +23,7 @@ vi.mock('@/i18n', () => ({
   )
 }))
 
-vi.mock('@/services/assetService', () => ({
+vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false)
   }
@@ -88,8 +88,8 @@ describe('useComboWidget', () => {
   })
 
   it('should create normal combo widget when asset API is disabled', () => {
-    mockSettingStoreGet.mockReturnValue(false)
-    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+    mockSettingStoreGet.mockReturnValue(false) // Asset API disabled
+    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true) // Widget is eligible
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget()
@@ -101,6 +101,7 @@ describe('useComboWidget', () => {
     })
 
     const widget = constructor(mockNode, inputSpec)
+    expect(widget).toBe(mockWidget)
 
     expect(mockNode.addWidget).toHaveBeenCalledWith(
       'combo',
@@ -142,15 +143,15 @@ describe('useComboWidget', () => {
     expect(widget).toBe(mockWidget)
   })
 
-  it('should create asset browser button widget when API enabled and widget eligible', () => {
+  it('should create asset browser widget when API enabled and widget eligible', () => {
     mockSettingStoreGet.mockReturnValue(true)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({
-      type: 'button',
+      type: 'asset',
       name: 'ckpt_name',
-      value: 'Select model'
+      value: 'model1.safetensors'
     })
     const mockNode = createMockNode('CheckpointLoaderSimple')
     vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
@@ -162,9 +163,9 @@ describe('useComboWidget', () => {
     const widget = constructor(mockNode, inputSpec)
 
     expect(mockNode.addWidget).toHaveBeenCalledWith(
-      'button',
+      'asset',
       'ckpt_name',
-      'Select model',
+      'model1.safetensors',
       expect.any(Function)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
@@ -175,15 +176,48 @@ describe('useComboWidget', () => {
     expect(widget).toBe(mockWidget)
   })
 
-  it('should use asset browser button even when inputSpec has a default value but no options', () => {
+  it('should create asset browser widget with options when API enabled and widget eligible', () => {
     mockSettingStoreGet.mockReturnValue(true)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({
-      type: 'button',
+      type: 'asset',
       name: 'ckpt_name',
-      value: 'Select model'
+      value: 'model1.safetensors'
+    })
+    const mockNode = createMockNode('CheckpointLoaderSimple')
+    vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+    const inputSpec = createMockInputSpec({
+      name: 'ckpt_name',
+      options: ['model1.safetensors', 'model2.safetensors']
+    })
+
+    const widget = constructor(mockNode, inputSpec)
+
+    expect(mockNode.addWidget).toHaveBeenCalledWith(
+      'asset',
+      'ckpt_name',
+      'model1.safetensors',
+      expect.any(Function)
+    )
+    expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
+    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
+      'ckpt_name',
+      'CheckpointLoaderSimple'
+    )
+    expect(widget).toBe(mockWidget)
+  })
+
+  it('should use asset browser widget even when inputSpec has a default value but no options', () => {
+    mockSettingStoreGet.mockReturnValue(true)
+    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+
+    const constructor = useComboWidget()
+    const mockWidget = createMockWidget({
+      type: 'asset',
+      name: 'ckpt_name',
+      value: 'fallback.safetensors'
     })
     const mockNode = createMockNode('CheckpointLoaderSimple')
     vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
@@ -196,9 +230,42 @@ describe('useComboWidget', () => {
     const widget = constructor(mockNode, inputSpec)
 
     expect(mockNode.addWidget).toHaveBeenCalledWith(
-      'button',
+      'asset',
       'ckpt_name',
-      'Select model',
+      'fallback.safetensors',
+      expect.any(Function)
+    )
+    expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
+    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
+      'ckpt_name',
+      'CheckpointLoaderSimple'
+    )
+    expect(widget).toBe(mockWidget)
+  })
+
+  it('should show Select model when asset widget has undefined current value', () => {
+    mockSettingStoreGet.mockReturnValue(true)
+    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+
+    const constructor = useComboWidget()
+    const mockWidget = createMockWidget({
+      type: 'asset',
+      name: 'ckpt_name',
+      value: 'Select model'
+    })
+    const mockNode = createMockNode('CheckpointLoaderSimple')
+    vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+    const inputSpec = createMockInputSpec({
+      name: 'ckpt_name'
+      // Note: no default, no options, not remote - getDefaultValue returns undefined
+    })
+
+    const widget = constructor(mockNode, inputSpec)
+
+    expect(mockNode.addWidget).toHaveBeenCalledWith(
+      'asset',
+      'ckpt_name',
+      'Select model', // Should fallback to this instead of undefined
       expect.any(Function)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')

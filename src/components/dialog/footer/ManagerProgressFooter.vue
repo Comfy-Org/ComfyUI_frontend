@@ -75,16 +75,16 @@ import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
-import { useWorkflowService } from '@/services/workflowService'
 import {
   useComfyManagerStore,
   useManagerProgressDialogStore
 } from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()

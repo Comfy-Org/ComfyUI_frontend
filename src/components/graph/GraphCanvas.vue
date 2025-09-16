@@ -28,7 +28,7 @@
     id="graph-canvas"
     ref="canvasRef"
     tabindex="1"
-    class="w-full h-full touch-none"
+    class="align-top w-full h-full touch-none"
   />
 
   <!-- TransformPane for Vue node rendering -->
@@ -40,13 +40,12 @@
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <VueGraphNode
-      v-for="nodeData in nodesToRender"
+      v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
       :position="nodePositions.get(nodeData.id)"
       :size="nodeSizes.get(nodeData.id)"
       :readonly="false"
-      :executing="executionStore.executingNodeId === nodeData.id"
       :error="
         executionStore.lastExecutionError?.node_id === nodeData.id
           ? 'Execution error'
@@ -105,33 +104,34 @@ import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
-import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
-import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
-import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
+import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
+import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
-import TransformPane from '@/renderer/core/layout/TransformPane.vue'
+import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useExecutionStateProvider } from '@/renderer/extensions/vueNodes/execution/useExecutionStateProvider'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { newUserService } from '@/services/newUserService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -183,12 +183,12 @@ const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
 const nodePositions = vueNodeLifecycle.nodePositions
 const nodeSizes = vueNodeLifecycle.nodeSizes
-const nodesToRender = viewportCulling.nodesToRender
+const allNodes = viewportCulling.allNodes
 
 const handleTransformUpdate = () => {
-  viewportCulling.handleTransformUpdate(
-    vueNodeLifecycle.detectChangesInRAF.value
-  )
+  viewportCulling.handleTransformUpdate()
+  // TODO: Fix paste position sync in separate PR
+  vueNodeLifecycle.detectChangesInRAF.value()
 }
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
 const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
@@ -204,6 +204,9 @@ const selectedNodeIds = computed(
     )
 )
 provide(SelectedNodeIdsKey, selectedNodeIds)
+
+// Provide execution state to all Vue nodes
+useExecutionStateProvider()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -428,7 +431,9 @@ onMounted(async () => {
   workflowPersistence.restoreWorkflowTabsState()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
-  const { useReleaseStore } = await import('@/stores/releaseStore')
+  const { useReleaseStore } = await import(
+    '@/platform/updates/common/releaseStore'
+  )
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
 
