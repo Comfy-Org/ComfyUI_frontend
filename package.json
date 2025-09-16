@@ -95,7 +95,7 @@
     "vite-plugin-vue-devtools": "^7.7.6",
     "vitest": "^3.2.4",
     "vue-eslint-parser": "^10.2.0",
-    "vue-tsc": "^2.1.10",
+    "vue-tsc": "^3.0.7",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "^3.24.1"
   },
