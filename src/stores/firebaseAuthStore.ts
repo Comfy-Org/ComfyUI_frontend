@@ -90,6 +90,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       ;(window as any).mixpanel
         .identify(user.uid)(window as any)
         .mixpanel.people.set({
+          uid: user.uid,
           $email: user.email,
           $name: user.displayName,
           $created: user.metadata.creationTime
