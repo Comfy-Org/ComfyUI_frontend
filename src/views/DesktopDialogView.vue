@@ -28,14 +28,17 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import { useRoute } from 'vue-router'
 
 import { DESKTOP_DIALOGS, type DialogAction } from '@/constants/desktopDialogs'
 import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-// Use the const data directly
-const dialog = DESKTOP_DIALOGS.reinstallFreshStart
+// Get dialog ID from route parameter
+const route = useRoute()
+const dialogId = route.params.dialogId as string
+const dialog = DESKTOP_DIALOGS[dialogId] || DESKTOP_DIALOGS.reinstallFreshStart
 const dialogI18nKey = normalizeI18nKey(dialog.id)
 
 const handleButtonClick = (button: DialogAction) => {
