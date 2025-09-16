@@ -43,10 +43,8 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 const route = useRoute()
 const { dialogId } = route.params
 
-// Get dialog with fallback - using Object.hasOwn for cleaner type narrowing
 let dialog: DesktopDialog
 if (typeof dialogId === 'string' && Object.hasOwn(DESKTOP_DIALOGS, dialogId)) {
-  // TypeScript now knows dialogId is a valid key
   dialog = DESKTOP_DIALOGS[dialogId as keyof typeof DESKTOP_DIALOGS]
 } else {
   dialog = DESKTOP_DIALOGS.reinstallFreshStart
