@@ -4,22 +4,23 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
 import { parseProxyWidgets } from '@/schemas/proxyWidget'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const canvasStore = useCanvasStore()
-useExtensionService().registerExtension({
-  name: 'Comfy.SubgraphProxyWidgets',
-  nodeCreated(node: LGraphNode) {
-    if (node instanceof SubgraphNode) {
-      setTimeout(() => injectProperty(node), 0)
-    }
-  }
-})
-function injectProperty(subgraphNode: SubgraphNode) {
-  subgraphNode.properties.proxyWidgets ??= []
+const originalConfigureAfterSlots =
+  SubgraphNode.prototype._internalConfigureAfterSlots
+SubgraphNode.prototype._internalConfigureAfterSlots = function () {
+  const subgraphNode = this
+  //Must give value to proxyWidgets prior to injecting or it won't serialize
+  subgraphNode.properties.proxyWidgets ??= '[]'
   const proxyWidgets = subgraphNode.properties.proxyWidgets
+
+  //Takes no arguements, returns nothing
+  //Sometimes called multiple times on initialization, sometimes once
+  //Clobbers all widgets
+  originalConfigureAfterSlots?.bind(this)?.()
+
   Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
     get: () => {
       const result = subgraphNode.widgets
