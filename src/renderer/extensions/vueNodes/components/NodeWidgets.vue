@@ -40,7 +40,7 @@
       <!-- Widget Component -->
       <component
         :is="widget.vueComponent"
-        v-tooltip.left="widget.tooltipConfig"
+        v-tooltip="widget.tooltipConfig"
         :widget="widget.simplified"
         :model-value="widget.value"
         :readonly="readonly"
