@@ -414,13 +414,13 @@ Another line with more content.`
       const vm = wrapper.vm as InstanceType<typeof WidgetMarkdown>
 
       // Test that the component creates a textarea reference when entering edit mode
-      // @ts-expect-error - isEditing is exposed
+      // @ts-expect-error - isEditing is not exposed
       expect(vm.isEditing).toBe(false)
 
-      // @ts-expect-error - startEditing is exposed
+      // @ts-expect-error - startEditing is not exposed
       await vm.startEditing()
 
-      // @ts-expect-error - isEditing is exposed
+      // @ts-expect-error - isEditing is not exposed
       expect(vm.isEditing).toBe(true)
       await wrapper.vm.$nextTick()
 
