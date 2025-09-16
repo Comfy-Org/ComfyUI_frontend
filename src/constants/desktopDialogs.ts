@@ -63,10 +63,14 @@ function isDialogId(id: unknown): id is keyof typeof DESKTOP_DIALOGS {
  * @param id The ID of the dialog to get
  * @returns The dialog with the given ID
  */
-export function getDialog(id: string | string[]): DesktopDialog {
-  if (isDialogId(id)) {
-    return DESKTOP_DIALOGS[id]
-  }
-
-  return DESKTOP_DIALOGS.reinstallFreshStart
+export function getDialog(id: string | string[]): {
+  id: keyof typeof DESKTOP_DIALOGS
+  dialog: DesktopDialog
+} {
+  return isDialogId(id)
+    ? { id, dialog: DESKTOP_DIALOGS[id] }
+    : {
+        id: 'invalidDialog',
+        dialog: DESKTOP_DIALOGS.invalidDialog
+      }
 }

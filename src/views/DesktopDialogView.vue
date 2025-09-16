@@ -36,8 +36,8 @@ import { electronAPI } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const route = useRoute()
-const dialog = getDialog(route.params.dialogId)
-const dialogI18nKey = normalizeI18nKey(dialog.id)
+const { id, dialog } = getDialog(route.params.dialogId)
+const dialogI18nKey = normalizeI18nKey(id)
 
 const handleButtonClick = (button: DialogAction) => {
   if (button.action === 'openUrl' && button.url) {
