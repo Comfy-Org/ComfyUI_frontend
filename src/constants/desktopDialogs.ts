@@ -39,10 +39,20 @@ Please note: if you've added custom nodes, you'll need to reinstall them after t
   }
 } as const satisfies { [K: string]: DesktopDialog }
 
+/**
+ * Checks if {@link id} is a valid dialog ID.
+ * @param id The string to check
+ * @returns `true` if the ID is a valid dialog ID, otherwise `false`
+ */
 function isDialogId(id: unknown): id is keyof typeof DESKTOP_DIALOGS {
   return typeof id === 'string' && id in DESKTOP_DIALOGS
 }
 
+/**
+ * Gets the dialog with the given ID.
+ * @param id The ID of the dialog to get
+ * @returns The dialog with the given ID
+ */
 export function getDialog(id: string | string[]): DesktopDialog {
   if (isDialogId(id)) {
     return DESKTOP_DIALOGS[id]
