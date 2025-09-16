@@ -3,10 +3,7 @@
     class="grid grid-rows-[1fr_auto_auto_1fr] w-full max-w-3xl mx-auto h-[40rem] select-none"
   >
     <!-- Title at top -->
-    <h2
-      class="text-3xl text-neutral-100 text-center italic"
-      style="font-family: 'ABC ROM Black Italic', sans-serif"
-    >
+    <h2 class="font-inter font-bold text-3xl text-neutral-100 text-center">
       {{ $t('install.gpuPicker.title') }}
     </h2>
 

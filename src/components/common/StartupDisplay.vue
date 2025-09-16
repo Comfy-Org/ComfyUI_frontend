@@ -20,12 +20,7 @@
         />
         <h1
           v-if="title"
-          class="text-3xl text-neutral-300"
-          style="
-            font-family: 'ABC ROM', sans-serif;
-            font-weight: 500;
-            font-style: italic;
-          "
+          class="font-inter font-medium italic text-3xl text-neutral-300"
         >
           {{ title }}
         </h1>
@@ -48,7 +43,7 @@ const { t } = useI18n()
 interface StartupDisplayProps {
   /** Progress: 0-100 for determinate, undefined for indeterminate */
   progressPercentage?: number
-  /** Main title text (displayed in ABC ROM italic font) */
+  /** Main title text */
   title?: string
   /** Status text shown below the title */
   statusText?: string

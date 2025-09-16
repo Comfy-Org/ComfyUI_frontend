@@ -67,8 +67,7 @@ defineEmits<{
 
 /* Apply rounded corners to all buttons in the footer */
 :deep(.p-button) {
-  @apply rounded-lg border-0;
-  font-family: 'ABC ROM Black Italic', sans-serif;
+  @apply font-inter rounded-lg border-0;
 }
 
 /* Style step indicators as dots */

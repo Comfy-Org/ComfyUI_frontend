@@ -2,10 +2,7 @@
   <div class="flex flex-col gap-8 w-full max-w-3xl mx-auto select-none">
     <!-- Installation Path Section -->
     <div class="grow flex flex-col gap-6 text-neutral-300">
-      <h2
-        class="text-3xl text-neutral-100 text-center italic"
-        style="font-family: 'ABC ROM Black Italic', sans-serif"
-      >
+      <h2 class="font-inter font-bold text-3xl text-neutral-100 text-center">
         {{ $t('install.locationPicker.title') }}
       </h2>
 
