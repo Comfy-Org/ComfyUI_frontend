@@ -37,7 +37,7 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Get dialog ID from route parameter
 const route = useRoute()
-const dialogId = route.params.dialogId
+const { dialogId } = route.params
 
 // Fallback to reinstallFreshStart if dialog not found
 const dialog =
