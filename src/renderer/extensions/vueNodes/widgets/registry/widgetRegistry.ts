@@ -18,6 +18,7 @@ import WidgetSelectButton from '../components/WidgetSelectButton.vue'
 import WidgetTextarea from '../components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
 import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
+import WidgetAudioUI from '../components/WidgetAudioUI.vue'
 
 interface WidgetDefinition {
   component: Component
@@ -108,6 +109,10 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
+  ],
+  [
+    'audioUI',
+    { component: WidgetAudioUI, aliases: ['AUDIOUI'], essential: false }
   ]
 ]
 

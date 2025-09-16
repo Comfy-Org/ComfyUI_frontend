@@ -171,6 +171,8 @@ const {
   zoomLevel = 1
 } = defineProps<LGraphNodeProps>()
 
+console.log(JSON.stringify(nodeData))
+
 const emit = defineEmits<{
   'node-click': [
     event: PointerEvent,

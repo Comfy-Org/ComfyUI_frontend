@@ -30,6 +30,7 @@
         :widget="widget.simplified"
         :model-value="widget.value"
         :readonly="readonly"
+        :node-data="widget.type === 'audioUI' ? nodeInfo : undefined"
         class="flex-1"
         @update:model-value="widget.updateHandler"
       />
