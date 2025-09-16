@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute bottom-2 right-2 flex gap-1 flex-wrap justify-end">
+  <div class="absolute bottom-2 right-2 flex flex-col-reverse items-end gap-1">
     <span
       v-for="badge in badges"
       :key="badge.label"

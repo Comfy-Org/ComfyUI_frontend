@@ -9,12 +9,11 @@
     :aria-setsize="assets.length"
   >
     <AssetCard
-      v-for="(asset, index) in assets"
+      v-for="asset in assets"
       :key="asset.id"
       :asset="asset"
       :interactive="true"
       role="gridcell"
-      :aria-posinset="index + 1"
       @select="$emit('assetSelect', $event)"
     />
 
@@ -24,8 +23,7 @@
       :class="
         cn(
           'col-span-full flex flex-col items-center justify-center py-16',
-          'text-stone-300',
-          'dark-theme:text-stone-200'
+          'text-stone-300 dark-theme:text-stone-200'
         )
       "
     >
@@ -43,11 +41,7 @@
     >
       <i-lucide:loader
         :class="
-          cn(
-            'size-6 animate-spin',
-            'text-stone-300',
-            'dark-theme:text-stone-200'
-          )
+          cn('size-6 animate-spin', 'text-stone-300 dark-theme:text-stone-200')
         "
       />
     </div>

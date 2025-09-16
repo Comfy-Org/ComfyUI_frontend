@@ -43,8 +43,7 @@ const meta: Meta<typeof AssetCard> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// Default story with all data provided
-export const Default: Story = {
+export const Interactive: Story = {
   args: {
     asset: createAssetData(),
     interactive: true
@@ -59,7 +58,6 @@ export const Default: Story = {
   }
 }
 
-// Non-interactive story
 export const NonInteractive: Story = {
   args: {
     asset: createAssetData(),
@@ -75,7 +73,6 @@ export const NonInteractive: Story = {
   }
 }
 
-// Story with all edge cases in a grid layout
 export const EdgeCases: Story = {
   render: () => ({
     components: { AssetCard },

@@ -29,34 +29,36 @@
   >
     <div class="relative w-full aspect-square overflow-hidden">
       <div
-        class="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600"
+        class="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600 flex items-center justify-center"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
-    <div class="p-4">
-      <h3
-        :class="
-          cn(
-            'mb-2 m-0 text-base font-semibold overflow-hidden text-ellipsis whitespace-nowrap',
-            'text-slate-800',
-            'dark-theme:text-white'
-          )
-        "
-      >
-        {{ asset.name }}
-      </h3>
-      <p
-        :class="
-          cn(
-            'mb-3 m-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-            'text-stone-300',
-            'dark-theme:text-stone-200'
-          )
-        "
-        :title="asset.description"
-      >
-        {{ asset.description }}
-      </p>
+    <div class="p-4 h-32 flex flex-col justify-between">
+      <div>
+        <h3
+          :class="
+            cn(
+              'mb-2 m-0 text-base font-semibold overflow-hidden text-ellipsis whitespace-nowrap',
+              'text-slate-800',
+              'dark-theme:text-white'
+            )
+          "
+        >
+          {{ asset.name }}
+        </h3>
+        <p
+          :class="
+            cn(
+              'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
+              'text-stone-300',
+              'dark-theme:text-stone-200'
+            )
+          "
+          :title="asset.description"
+        >
+          {{ asset.description }}
+        </p>
+      </div>
       <div
         :class="
           cn(
