@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute bottom-2 right-2 flex flex-col-reverse items-end gap-1">
+  <div class="absolute bottom-2 right-2 flex flex-wrap justify-end gap-1">
     <span
       v-for="badge in badges"
       :key="badge.label"
@@ -18,16 +18,16 @@
 <script setup lang="ts">
 import { cn } from '@/utils/tailwindUtil'
 
-interface Badge {
+type AssetBadge = {
   label: string
   type: 'type' | 'base' | 'size'
 }
 
 defineProps<{
-  badges: Badge[]
+  badges: AssetBadge[]
 }>()
 
-function getBadgeColor(type: Badge['type']): string {
+function getBadgeColor(type: AssetBadge['type']): string {
   switch (type) {
     case 'type':
       return 'bg-blue-100/90 dark-theme:bg-blue-100/80'

@@ -3,14 +3,16 @@ import { computed, ref } from 'vue'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
+type AssetBadge = {
+  label: string
+  type: 'type' | 'base' | 'size'
+}
+
 // Display properties for transformed assets
 export interface AssetDisplayItem extends AssetItem {
   description: string
   formattedSize: string
-  badges: Array<{
-    label: string
-    type: 'type' | 'base' | 'size'
-  }>
+  badges: AssetBadge[]
   stats: {
     formattedDate?: string
     downloadCount?: string
@@ -31,32 +33,31 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   // Transform API asset to display asset
   function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
     // Extract description from metadata or create from tags
+    const typeTag = asset.tags.find((tag) => tag !== 'models')
     const description =
-      asset.user_metadata?.description ||
-      `${asset.tags.find((tag) => tag !== 'models') || 'Unknown'} model`
+      asset.user_metadata?.description || `${typeTag || 'Unknown'} model`
 
     // Format file size
     const formattedSize = formatFileSize(asset.size)
 
     // Create badges from tags and metadata
-    const badges = []
+    const badges: AssetBadge[] = []
 
     // Type badge from non-root tag
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
     if (typeTag) {
-      badges.push({ label: typeTag, type: 'type' as const })
+      badges.push({ label: typeTag, type: 'type' })
     }
 
     // Base model badge from metadata
     if (asset.user_metadata?.base_model) {
       badges.push({
         label: asset.user_metadata.base_model,
-        type: 'base' as const
+        type: 'base'
       })
     }
 
     // Size badge
-    badges.push({ label: formattedSize, type: 'size' as const })
+    badges.push({ label: formattedSize, type: 'size' })
 
     // Create display stats from API data
     const stats = {
