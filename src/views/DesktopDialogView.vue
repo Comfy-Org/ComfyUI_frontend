@@ -50,17 +50,15 @@ const handleButtonClick = (button: DialogAction) => {
 @reference '../assets/css/style.css';
 
 .p-button-secondary {
-  @apply text-white rounded-lg border-none;
-
-  background: var(--color-button-background, rgba(255, 255, 255, 0.15));
+  @apply text-white rounded-lg border-none bg-charcoal-600;
 }
 
 .p-button-secondary:hover {
-  background: rgba(255, 255, 255, 0.25);
+  @apply bg-charcoal-700;
 }
 
 .p-button-secondary:active {
-  background: rgba(255, 255, 255, 0.35);
+  @apply bg-charcoal-800;
 }
 
 .p-button-danger {
@@ -76,20 +74,14 @@ const handleButtonClick = (button: DialogAction) => {
 }
 
 .p-button-warn {
-  background: rgba(23, 45, 215, 0.66);
-  color: #f0ff41;
-  border: 0;
+  @apply bg-brand-blue/65 text-brand-yellow border-0;
 }
 
 .p-button-warn:hover {
-  background: rgba(23, 45, 215, 0.88);
-  color: #f0ff41;
-  border: 0;
+  @apply bg-brand-blue/90 text-brand-yellow border-0;
 }
 
 .p-button-warn:active {
-  background: rgba(23, 45, 215, 1);
-  color: #f0ff41;
-  border: 0;
+  @apply bg-brand-blue text-brand-yellow border-0;
 }
 </style>
