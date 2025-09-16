@@ -34,11 +34,13 @@
 </template>
 
 <script setup lang="ts">
+import { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
+
 interface Props {
   imagePath?: string
   placeholderText: string
   subtitle?: string
-  value: string
+  value: TorchDeviceType
   selected?: boolean
   recommended?: boolean
 }

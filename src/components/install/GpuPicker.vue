@@ -15,7 +15,7 @@
         :image-path="'/assets/images/apple-mps-logo.png'"
         placeholder-text="Apple Metal"
         subtitle="Apple Metal"
-        value="mps"
+        :value="'mps'"
         :selected="selected === 'mps'"
         :recommended="true"
         @click="pickGpu('mps')"
@@ -24,7 +24,7 @@
       <HardwareOption
         placeholder-text="CPU"
         :subtitle="$t('install.gpuPicker.cpuSubtitle')"
-        value="cpu"
+        :value="'cpu'"
         :selected="selected === 'cpu'"
         @click="pickGpu('cpu')"
       />
@@ -32,7 +32,7 @@
       <HardwareOption
         placeholder-text="Manual Install"
         :subtitle="$t('install.gpuPicker.manualSubtitle')"
-        value="unsupported"
+        :value="'unsupported'"
         :selected="selected === 'unsupported'"
         @click="pickGpu('unsupported')"
       />
