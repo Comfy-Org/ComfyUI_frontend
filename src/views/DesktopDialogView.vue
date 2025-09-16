@@ -3,14 +3,14 @@
     class="w-full h-full flex flex-col rounded-lg p-6 bg-[#2d2d2d] justify-between"
   >
     <h1 class="dialog-title font-semibold text-xl m-0 italic">
-      {{ t(`desktopDialogs.${dialogI18nKey}.title`, dialog.title) }}
+      {{ t(`desktopDialogs.${dialogI18nKey}.title`, title) }}
     </h1>
     <p class="whitespace-pre-wrap">
-      {{ t(`desktopDialogs.${dialogI18nKey}.message`, dialog.message) }}
+      {{ t(`desktopDialogs.${dialogI18nKey}.message`, message) }}
     </p>
     <div class="flex w-full gap-2">
       <Button
-        v-for="button in dialog.buttons"
+        v-for="button in buttons"
         :key="button.label"
         class="first:mr-auto"
         :label="
@@ -36,7 +36,7 @@ import { electronAPI } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const route = useRoute()
-const { id, dialog } = getDialog(route.params.dialogId)
+const { id, title, message, buttons } = getDialog(route.params.dialogId)
 const dialogI18nKey = normalizeI18nKey(id)
 
 const handleButtonClick = (button: DialogAction) => {

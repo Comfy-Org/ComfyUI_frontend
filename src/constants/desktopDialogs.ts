@@ -49,12 +49,15 @@ Please note: if you've added custom nodes, you'll need to reinstall them after t
   }
 } as const satisfies { [K: string]: DesktopDialog }
 
+/** The ID of a desktop dialog. */
+type DesktopDialogId = keyof typeof DESKTOP_DIALOGS
+
 /**
  * Checks if {@link id} is a valid dialog ID.
  * @param id The string to check
  * @returns `true` if the ID is a valid dialog ID, otherwise `false`
  */
-function isDialogId(id: unknown): id is keyof typeof DESKTOP_DIALOGS {
+function isDialogId(id: unknown): id is DesktopDialogId {
   return typeof id === 'string' && id in DESKTOP_DIALOGS
 }
 
@@ -63,14 +66,13 @@ function isDialogId(id: unknown): id is keyof typeof DESKTOP_DIALOGS {
  * @param id The ID of the dialog to get
  * @returns The dialog with the given ID
  */
-export function getDialog(id: string | string[]): {
-  id: keyof typeof DESKTOP_DIALOGS
-  dialog: DesktopDialog
-} {
+export function getDialog(
+  id: string | string[]
+): DesktopDialog & { id: DesktopDialogId } {
   return isDialogId(id)
-    ? { id, dialog: DESKTOP_DIALOGS[id] }
+    ? { id, ...DESKTOP_DIALOGS[id] }
     : {
         id: 'invalidDialog',
-        dialog: DESKTOP_DIALOGS.invalidDialog
+        ...DESKTOP_DIALOGS.invalidDialog
       }
 }
