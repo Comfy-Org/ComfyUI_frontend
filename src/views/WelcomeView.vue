@@ -18,7 +18,7 @@
           <!-- Get Started Button -->
           <Button
             :label="$t('welcome.getStarted')"
-            class="px-8 mt-4 bg-brand-yellow hover:bg-brand-yellow/90 rounded-lg transition-colors"
+            class="px-8 mt-4 bg-brand-yellow hover:bg-brand-yellow/90 border-0 rounded-lg transition-colors"
             :pt="{
               label: { class: 'font-inter text-neutral-900 font-black' }
             }"
