@@ -1,6 +1,7 @@
-import { type Ref, computed, inject, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { type Ref, computed } from 'vue'
 
-import { NodePreviewImagesKey } from '@/renderer/core/canvas/injectionKeys'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 export const useNodePreviewState = (
@@ -11,10 +12,7 @@ export const useNodePreviewState = (
   }
 ) => {
   const workflowStore = useWorkflowStore()
-  const nodePreviewImages = inject(
-    NodePreviewImagesKey,
-    ref<Record<string, string[]>>({})
-  )
+  const { nodePreviewImages } = storeToRefs(useNodeOutputStore())
 
   const locatorId = computed(() => workflowStore.nodeIdToNodeLocatorId(nodeId))
 
@@ -22,14 +20,14 @@ export const useNodePreviewState = (
     const key = locatorId.value
     if (!key) return undefined
     const urls = nodePreviewImages.value[key]
-    return urls && urls.length ? urls : undefined
+    return urls?.length ? urls : undefined
   })
 
   const hasPreview = computed(() => !!previewUrls.value?.length)
 
   const latestPreviewUrl = computed(() => {
     const urls = previewUrls.value
-    return urls && urls.length ? urls[urls.length - 1] : ''
+    return urls?.length ? urls.at(-1) : ''
   })
 
   const shouldShowPreviewImg = computed(() => {

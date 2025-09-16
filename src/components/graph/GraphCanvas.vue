@@ -74,7 +74,6 @@
 
 <script setup lang="ts">
 import { useEventListener, whenever } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import {
   computed,
   onMounted,
@@ -114,10 +113,7 @@ import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  NodePreviewImagesKey,
-  SelectedNodeIdsKey
-} from '@/renderer/core/canvas/injectionKeys'
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -132,7 +128,6 @@ import { newUserService } from '@/services/newUserService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -212,9 +207,6 @@ provide(SelectedNodeIdsKey, selectedNodeIds)
 
 // Provide execution state to all Vue nodes
 useExecutionStateProvider()
-// Provide preview images state to all Vue nodes
-const { nodePreviewImages } = storeToRefs(useNodeOutputStore())
-provide(NodePreviewImagesKey, nodePreviewImages)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
