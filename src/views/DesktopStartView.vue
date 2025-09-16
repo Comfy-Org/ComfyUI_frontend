@@ -1,11 +1,11 @@
 <template>
   <BaseViewTemplate dark>
-    <InstallationProgress />
+    <StartupDisplay :title="$t('desktopStart.initialising')" />
   </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
-import InstallationProgress from '@/components/desktop/InstallationProgress.vue'
+import StartupDisplay from '@/components/common/StartupDisplay.vue'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 </script>
