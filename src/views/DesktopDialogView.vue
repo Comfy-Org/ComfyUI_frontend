@@ -38,11 +38,8 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 const route = useRoute()
 const { id, title, message, buttons } = getDialog(route.params.dialogId)
 
-const handleButtonClick = (button: DialogAction) => {
-  if (button.action === 'openUrl' && button.url) {
-    window.open(button.url, '_blank')
-  }
-  void electronAPI().Dialog.clickButton(button.returnValue)
+const handleButtonClick = async (button: DialogAction) => {
+  await electronAPI().Dialog.clickButton(button.returnValue)
 }
 </script>
 
