@@ -64,16 +64,16 @@ const handleButtonClick = (button: DialogAction) => {
 }
 
 .p-button-danger {
-  background: rgba(241, 67, 82, 0.5);
+  background: var(--color-danger-button-default);
   border: 0;
 }
 
 .p-button-danger:hover {
-  background: rgba(241, 67, 82, 0.75);
+  background: var(--color-danger-button-hover);
 }
 
 .p-button-danger:active {
-  background: rgba(241, 67, 82, 0.88);
+  background: var(--color-danger-button-active);
 }
 
 .p-button-warn {
