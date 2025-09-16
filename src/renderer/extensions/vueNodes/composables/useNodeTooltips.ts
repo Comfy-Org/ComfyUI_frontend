@@ -2,8 +2,8 @@ import { type Ref, computed } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 /**
