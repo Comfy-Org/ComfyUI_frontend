@@ -7,7 +7,6 @@ export interface DialogAction {
 }
 
 export interface DesktopDialog {
-  id: string
   title: string
   message: string
   buttons: DialogAction[]
@@ -15,7 +14,6 @@ export interface DesktopDialog {
 
 export const DESKTOP_DIALOGS = {
   reinstallFreshStart: {
-    id: 'reinstallFreshStart',
     title: 'Reinstall ComfyUI (Fresh Start)?',
     message: `Sorry, we can't launch ComfyUI because some installed packages aren't compatible.
 
