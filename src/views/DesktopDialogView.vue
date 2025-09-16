@@ -3,10 +3,10 @@
     class="w-full h-full flex flex-col rounded-lg p-6 bg-[#2d2d2d] justify-between"
   >
     <h1 class="dialog-title font-semibold text-xl m-0 italic">
-      {{ t(`desktopDialogs.${dialogI18nKey}.title`, title) }}
+      {{ t(`desktopDialogs.${id}.title`, title) }}
     </h1>
     <p class="whitespace-pre-wrap">
-      {{ t(`desktopDialogs.${dialogI18nKey}.message`, message) }}
+      {{ t(`desktopDialogs.${id}.message`, message) }}
     </p>
     <div class="flex w-full gap-2">
       <Button
@@ -15,7 +15,7 @@
         class="first:mr-auto"
         :label="
           t(
-            `desktopDialogs.${dialogI18nKey}.buttons.${normalizeI18nKey(button.label)}`,
+            `desktopDialogs.${id}.buttons.${normalizeI18nKey(button.label)}`,
             button.label
           )
         "
@@ -37,7 +37,6 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const route = useRoute()
 const { id, title, message, buttons } = getDialog(route.params.dialogId)
-const dialogI18nKey = normalizeI18nKey(id)
 
 const handleButtonClick = (button: DialogAction) => {
   if (button.action === 'openUrl' && button.url) {
