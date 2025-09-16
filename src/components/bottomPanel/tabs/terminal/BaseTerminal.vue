@@ -104,11 +104,10 @@ onUnmounted(() => {
 @reference '../../../../assets/css/style.css';
 
 :deep(.p-terminal) .xterm {
-  overflow: hidden;
+  @apply overflow-hidden;
 }
 
 :deep(.p-terminal) .xterm-screen {
-  @apply bg-neutral-900;
-  overflow: hidden;
+  @apply bg-neutral-900 overflow-hidden;
 }
 </style>
