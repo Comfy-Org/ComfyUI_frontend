@@ -47,8 +47,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   /** Minimum gap between label and value */
   static labelValueGap = 5
 
-  declare computedHeight?: number
-  declare serialize?: boolean
+  computedHeight?: number
+  serialize?: boolean
   computeLayoutSize?(node: LGraphNode): {
     minHeight: number
     maxHeight?: number
