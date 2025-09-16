@@ -5,10 +5,11 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
+import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
-export default [
+export default defineConfig([
   {
     files: ['src/**/*.{js,mjs,cjs,ts,vue}']
   },
@@ -31,7 +32,7 @@ export default [
       },
       parser: tseslint.parser,
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.eslint.json'],
+        projectService: true,
         ecmaVersion: 2020,
         sourceType: 'module',
         extraFileExtensions: ['.vue']
@@ -39,9 +40,10 @@ export default [
     }
   },
   pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
+  tseslint.configs.recommended,
+  pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
+  storybook.configs['flat/recommended'],
   {
     files: ['src/**/*.vue'],
     languageOptions: {
@@ -53,6 +55,7 @@ export default [
   {
     plugins: {
       'unused-imports': unusedImports,
+      // @ts-expect-error Bad types in the plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
@@ -136,6 +139,5 @@ export default [
         }
       ]
     }
-  },
-  ...storybook.configs['flat/recommended']
-]
+  }
+])
