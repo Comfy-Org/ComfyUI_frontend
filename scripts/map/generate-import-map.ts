@@ -1,8 +1,7 @@
 #!/usr/bin/env tsx
-
+import glob from 'fast-glob'
 import fs from 'fs'
 import path from 'path'
-import glob from 'fast-glob'
 
 interface ImportInfo {
   source: string
@@ -15,11 +14,18 @@ interface DependencyGraph {
     label: string
     group: string
     size: number
+    inCircularDep?: boolean
+    circularChains?: string[][]
   }>
   links: Array<{
     source: string
     target: string
     value: number
+    isCircular?: boolean
+  }>
+  circularDependencies?: Array<{
+    chain: string[]
+    edges: Array<{ source: string; target: string }>
   }>
 }
 
@@ -27,21 +33,22 @@ interface DependencyGraph {
 function extractImports(filePath: string): ImportInfo {
   const content = fs.readFileSync(filePath, 'utf-8')
   const imports: string[] = []
-  
+
   // Match ES6 import statements
-  const importRegex = /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)\s+from\s+)?['"]([^'"]+)['"]/g
+  const importRegex =
+    /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)\s+from\s+)?['"]([^'"]+)['"]/g
   let match
-  
+
   while ((match = importRegex.exec(content)) !== null) {
     imports.push(match[1])
   }
-  
+
   // Also match dynamic imports
   const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g
   while ((match = dynamicImportRegex.exec(content)) !== null) {
     imports.push(match[1])
   }
-  
+
   return {
     source: filePath,
     imports: [...new Set(imports)] // Remove duplicates
@@ -51,7 +58,7 @@ function extractImports(filePath: string): ImportInfo {
 // Categorize file by its path
 function getFileGroup(filePath: string): string {
   const relativePath = path.relative(process.cwd(), filePath)
-  
+
   if (relativePath.includes('node_modules')) return 'external'
   if (relativePath.startsWith('src/components')) return 'components'
   if (relativePath.startsWith('src/stores')) return 'stores'
@@ -65,7 +72,7 @@ function getFileGroup(filePath: string): string {
   if (relativePath.startsWith('src/scripts')) return 'scripts'
   if (relativePath.startsWith('tests')) return 'tests'
   if (relativePath.startsWith('browser_tests')) return 'browser_tests'
-  
+
   return 'other'
 }
 
@@ -75,31 +82,127 @@ function resolveImportPath(importPath: string, sourceFile: string): string {
   if (importPath.startsWith('@/')) {
     return path.join(process.cwd(), 'src', importPath.slice(2))
   }
-  
+
   // Handle relative paths
   if (importPath.startsWith('.')) {
     const sourceDir = path.dirname(sourceFile)
     return path.resolve(sourceDir, importPath)
   }
-  
+
   // External module
   return importPath
+}
+
+// Detect circular dependencies using DFS
+function detectCircularDependencies(
+  nodes: Map<string, any>,
+  links: Map<string, any>
+): Array<{
+  chain: string[]
+  edges: Array<{ source: string; target: string }>
+}> {
+  const adjacencyList = new Map<string, Set<string>>()
+  const circularDeps: Array<{
+    chain: string[]
+    edges: Array<{ source: string; target: string }>
+  }> = []
+
+  // Build adjacency list
+  for (const link of links.values()) {
+    if (!adjacencyList.has(link.source)) {
+      adjacencyList.set(link.source, new Set())
+    }
+    adjacencyList.get(link.source)!.add(link.target)
+  }
+
+  // DFS to find cycles
+  const visited = new Set<string>()
+  const recStack = new Set<string>()
+  const parent = new Map<string, string>()
+
+  function findCycle(node: string, path: string[] = []): void {
+    visited.add(node)
+    recStack.add(node)
+    path.push(node)
+
+    const neighbors = adjacencyList.get(node) || new Set()
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor)) {
+        parent.set(neighbor, node)
+        findCycle(neighbor, [...path])
+      } else if (recStack.has(neighbor)) {
+        // Found a cycle
+        const cycleStartIndex = path.indexOf(neighbor)
+        if (cycleStartIndex !== -1) {
+          const chain = path.slice(cycleStartIndex)
+          chain.push(neighbor) // Complete the cycle
+
+          // Create edges for the circular dependency
+          const edges: Array<{ source: string; target: string }> = []
+          for (let i = 0; i < chain.length - 1; i++) {
+            edges.push({ source: chain[i], target: chain[i + 1] })
+          }
+
+          // Check if this cycle is already recorded (avoid duplicates)
+          const chainStr = [...chain].sort().join('->')
+          const isNew = !circularDeps.some((dep) => {
+            const existingChainStr = [...dep.chain].sort().join('->')
+            return existingChainStr === chainStr
+          })
+
+          if (isNew) {
+            circularDeps.push({ chain, edges })
+          }
+        }
+      }
+    }
+
+    recStack.delete(node)
+  }
+
+  // Run DFS from each unvisited node
+  for (const node of nodes.keys()) {
+    if (!visited.has(node) && !node.startsWith('external:')) {
+      findCycle(node)
+    }
+  }
+
+  return circularDeps
 }
 
 // Generate dependency graph
 async function generateDependencyGraph(): Promise<DependencyGraph> {
   const sourceFiles = await glob('src/**/*.{ts,tsx,vue,mts}', {
-    ignore: ['**/node_modules/**', '**/*.d.ts', '**/*.spec.ts', '**/*.test.ts', '**/*.stories.ts']
+    ignore: [
+      '**/node_modules/**',
+      '**/*.d.ts',
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      '**/*.stories.ts'
+    ]
   })
-  
-  const nodes = new Map<string, { id: string; label: string; group: string; size: number }>()
-  const links = new Map<string, { source: string; target: string; value: number }>()
-  
+
+  const nodes = new Map<
+    string,
+    {
+      id: string
+      label: string
+      group: string
+      size: number
+      inCircularDep?: boolean
+      circularChains?: string[][]
+    }
+  >()
+  const links = new Map<
+    string,
+    { source: string; target: string; value: number; isCircular?: boolean }
+  >()
+
   // Process each file
   for (const file of sourceFiles) {
     const importInfo = extractImports(file)
     const sourceId = path.relative(process.cwd(), file)
-    
+
     // Add source node
     if (!nodes.has(sourceId)) {
       nodes.set(sourceId, {
@@ -109,12 +212,12 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
         size: 1
       })
     }
-    
+
     // Process imports
     for (const importPath of importInfo.imports) {
       const resolvedPath = resolveImportPath(importPath, file)
       let targetId: string
-      
+
       // Check if it's an external module
       if (!resolvedPath.startsWith('/') && !resolvedPath.startsWith('.')) {
         targetId = `external:${importPath}`
@@ -128,16 +231,25 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
         }
       } else {
         // Try to find the actual file
-        const possibleExtensions = ['.ts', '.tsx', '.vue', '.mts', '.js', '.json', '/index.ts', '/index.js']
+        const possibleExtensions = [
+          '.ts',
+          '.tsx',
+          '.vue',
+          '.mts',
+          '.js',
+          '.json',
+          '/index.ts',
+          '/index.js'
+        ]
         let actualFile = resolvedPath
-        
+
         for (const ext of possibleExtensions) {
           if (fs.existsSync(resolvedPath + ext)) {
             actualFile = resolvedPath + ext
             break
           }
         }
-        
+
         if (fs.existsSync(actualFile)) {
           targetId = path.relative(process.cwd(), actualFile)
           if (!nodes.has(targetId)) {
@@ -152,7 +264,7 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
           continue // Skip unresolved imports
         }
       }
-      
+
       // Add link
       const linkKey = `${sourceId}->${targetId}`
       if (links.has(linkKey)) {
@@ -164,7 +276,7 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
           value: 1
         })
       }
-      
+
       // Increase target node size
       const targetNode = nodes.get(targetId)
       if (targetNode) {
@@ -172,10 +284,48 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
       }
     }
   }
-  
+
+  // Detect circular dependencies
+  const circularDeps = detectCircularDependencies(nodes, links)
+
+  // Mark nodes and links involved in circular dependencies
+  const nodesInCircularDeps = new Set<string>()
+  const circularLinkKeys = new Set<string>()
+
+  for (const dep of circularDeps) {
+    // Mark all nodes in the chain
+    for (const nodeId of dep.chain) {
+      nodesInCircularDeps.add(nodeId)
+      const node = nodes.get(nodeId)
+      if (node) {
+        node.inCircularDep = true
+        if (!node.circularChains) {
+          node.circularChains = []
+        }
+        node.circularChains.push(dep.chain)
+      }
+    }
+
+    // Mark all edges in the chain
+    for (const edge of dep.edges) {
+      const linkKey = `${edge.source}->${edge.target}`
+      circularLinkKeys.add(linkKey)
+      const link = links.get(linkKey)
+      if (link) {
+        link.isCircular = true
+      }
+    }
+  }
+
+  console.log(`Found ${circularDeps.length} circular dependencies:`)
+  circularDeps.forEach((dep, index) => {
+    console.log(`  ${index + 1}. ${dep.chain.join(' → ')}`)
+  })
+
   return {
     nodes: Array.from(nodes.values()),
-    links: Array.from(links.values())
+    links: Array.from(links.values()),
+    circularDependencies: circularDeps
   }
 }
 
@@ -282,7 +432,22 @@ function generateHTML(graph: DependencyGraph): string {
       opacity: 0;
       transition: opacity 0.3s;
       z-index: 1000;
-      max-width: 300px;
+      max-width: 400px;
+    }
+
+    .circular-dep-warning {
+      color: #ff6b6b;
+      font-weight: bold;
+      margin-top: 5px;
+      padding-top: 5px;
+      border-top: 1px solid #444;
+    }
+
+    .circular-chain {
+      color: #ffa500;
+      font-family: monospace;
+      font-size: 11px;
+      margin-top: 3px;
     }
     
     .search-box {
@@ -319,6 +484,10 @@ function generateHTML(graph: DependencyGraph): string {
         <div class="stat-item">
           <span>Total Dependencies:</span>
           <span id="total-links">${graph.links.length}</span>
+        </div>
+        <div class="stat-item" style="color: #ff6b6b;">
+          <span>Circular Dependencies:</span>
+          <span id="circular-deps">${graph.circularDependencies?.length || 0}</span>
         </div>
       </div>
       
@@ -361,6 +530,10 @@ function generateHTML(graph: DependencyGraph): string {
         <div class="legend-item">
           <div class="legend-color" style="background: #636e72;"></div>
           <span>Other</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: none; border: 2px solid #ff0000;"></div>
+          <span>Has Circular Dep</span>
         </div>
       </div>
       
@@ -413,9 +586,9 @@ function generateHTML(graph: DependencyGraph): string {
       .selectAll('line')
       .data(graphData.links)
       .enter().append('line')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', d => Math.sqrt(d.value));
+      .attr('stroke', d => d.isCircular ? '#ff6666' : '#999')
+      .attr('stroke-opacity', d => d.isCircular ? 0.8 : 0.6)
+      .attr('stroke-width', d => d.isCircular ? Math.sqrt(d.value) * 1.5 : Math.sqrt(d.value));
     
     // Create nodes
     const node = g.append('g')
@@ -424,8 +597,8 @@ function generateHTML(graph: DependencyGraph): string {
       .enter().append('circle')
       .attr('r', d => Math.sqrt(d.size) * 3 + 3)
       .attr('fill', d => colorScale(d.group))
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 1.5)
+      .attr('stroke', d => d.inCircularDep ? '#ff0000' : '#fff')
+      .attr('stroke-width', d => d.inCircularDep ? 3 : 1.5)
       .call(drag(simulation));
     
     // Add labels for important nodes
@@ -444,16 +617,40 @@ function generateHTML(graph: DependencyGraph): string {
     
     node.on('mouseover', (event, d) => {
       const connections = graphData.links.filter(l => l.source.id === d.id || l.target.id === d.id);
+
+      let tooltipContent = \`
+        <strong>\${d.label}</strong><br>
+        Type: \${d.group}<br>
+        Connections: \${connections.length}<br>
+        Path: \${d.id}
+      \`;
+
+      // Add circular dependency information if applicable
+      if (d.inCircularDep && d.circularChains) {
+        tooltipContent += '<div class="circular-dep-warning">⚠️ Circular Dependency Detected!</div>';
+        d.circularChains.forEach((chain, index) => {
+          // Only show chains that include this node
+          if (chain.includes(d.id)) {
+            // Format the chain to show the cycle clearly
+            const nodeIndex = chain.indexOf(d.id);
+            const formattedChain = chain.map((node, i) => {
+              const basename = node.split('/').pop();
+              if (i === nodeIndex) {
+                return \`<strong>\${basename}</strong>\`;
+              }
+              return basename;
+            }).join(' → ');
+
+            tooltipContent += \`<div class="circular-chain">Chain \${index + 1}: \${formattedChain}</div>\`;
+          }
+        });
+      }
+
       tooltip
         .style('opacity', 1)
         .style('left', (event.pageX + 10) + 'px')
         .style('top', (event.pageY - 10) + 'px')
-        .html(\`
-          <strong>\${d.label}</strong><br>
-          Type: \${d.group}<br>
-          Connections: \${connections.length}<br>
-          Path: \${d.id}
-        \`);
+        .html(tooltipContent);
     })
     .on('mouseout', () => {
       tooltip.style('opacity', 0);
@@ -562,25 +759,45 @@ function generateHTML(graph: DependencyGraph): string {
 // Main function
 async function main() {
   console.log('Generating import map...')
-  
+
   try {
     const graph = await generateDependencyGraph()
-    console.log(`Found ${graph.nodes.length} nodes and ${graph.links.length} dependencies`)
-    
+    console.log(
+      `Found ${graph.nodes.length} nodes and ${graph.links.length} dependencies`
+    )
+
+    if (graph.circularDependencies && graph.circularDependencies.length > 0) {
+      console.log(
+        `\n⚠️  Warning: Found ${graph.circularDependencies.length} circular dependencies!`
+      )
+    }
+
     // Save JSON data
-    const jsonPath = path.join(process.cwd(), 'docs', 'import-map.json')
+    const jsonPath = path.join(
+      process.cwd(),
+      'scripts',
+      'map',
+      'import-map.json'
+    )
     fs.mkdirSync(path.dirname(jsonPath), { recursive: true })
     fs.writeFileSync(jsonPath, JSON.stringify(graph, null, 2))
     console.log(`Saved JSON data to ${jsonPath}`)
-    
+
     // Generate and save HTML visualization
     const html = generateHTML(graph)
-    const htmlPath = path.join(process.cwd(), 'docs', 'import-map.html')
+    const htmlPath = path.join(
+      process.cwd(),
+      'scripts',
+      'map',
+      'import-map.html'
+    )
     fs.writeFileSync(htmlPath, html)
     console.log(`Saved HTML visualization to ${htmlPath}`)
-    
+
     console.log('✅ Import map generation complete!')
-    console.log('Open docs/import-map.html in a browser to view the visualization')
+    console.log(
+      'Open scripts/map/import-map.html in a browser to view the visualization'
+    )
   } catch (error) {
     console.error('Error generating import map:', error)
     process.exit(1)
