@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { markRaw } from 'vue'
 
-export type SlotEntry = {
+type SlotEntry = {
   el: HTMLElement
   index: number
   type: 'input' | 'output'
   cachedOffset?: { x: number; y: number }
 }
 
-export type NodeEntry = {
+type NodeEntry = {
   nodeId: string
   slots: Map<string, SlotEntry>
   stopWatch?: () => void
