@@ -45,7 +45,7 @@ const handleButtonClick = async (button: DialogAction) => {
 @reference '../assets/css/style.css';
 
 .p-button-secondary {
-  @apply text-white rounded-lg border-none bg-neutral-600;
+  @apply text-white border-none bg-neutral-600;
 }
 
 .p-button-secondary:hover {
