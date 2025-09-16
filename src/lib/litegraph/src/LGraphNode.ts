@@ -94,19 +94,19 @@ export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object
 
-export interface INodePropertyInfo {
+interface INodePropertyInfo {
   name: string
   type?: string
   default_value: NodeProperty | undefined
 }
 
-export interface IMouseOverData {
+interface IMouseOverData {
   inputId?: number
   outputId?: number
   overWidget?: IBaseWidget
 }
 
-export interface ConnectByTypeOptions {
+interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
   /** Allow our wildcard slot to connect to typed slots on remote node. Default: true */
@@ -118,12 +118,12 @@ export interface ConnectByTypeOptions {
 }
 
 /** Internal type used for type safety when implementing generic checks for inputs & outputs */
-export interface IGenericLinkOrLinks {
+interface IGenericLinkOrLinks {
   links?: INodeOutputSlot['links']
   link?: INodeInputSlot['link']
 }
 
-export interface FindFreeSlotOptions {
+interface FindFreeSlotOptions {
   /** Slots matching these types will be ignored.  Default: [] */
   typesNotAccepted?: ISlotType[]
   /** If true, the slot itself is returned instead of the index.  Default: false */
@@ -743,35 +743,6 @@ export class LGraphNode
       error: this.#getErrorStrokeStyle,
       selected: this.#getSelectedStrokeStyle
     }
-
-    // Assign onMouseDown implementation
-    this.onMouseDown = (
-      // @ts-expect-error - CanvasPointerEvent type needs fixing
-      e: CanvasPointerEvent,
-      pos: Point,
-      canvas: LGraphCanvas
-    ): boolean => {
-      // Check for title button clicks (only if not collapsed)
-      if (this.title_buttons?.length && !this.flags.collapsed) {
-        // pos contains the offset from the node's position, so we need to use node-relative coordinates
-        const nodeRelativeX = pos[0]
-        const nodeRelativeY = pos[1]
-
-        for (let i = 0; i < this.title_buttons.length; i++) {
-          const button = this.title_buttons[i]
-          if (
-            button.visible &&
-            button.isPointInside(nodeRelativeX, nodeRelativeY)
-          ) {
-            this.onTitleButtonClick(button, canvas)
-            return true // Prevent default behavior
-          }
-        }
-      }
-
-      return false // Allow default behavior
-    }
-
     // Initialize property manager with tracked properties
     this.changeTracker = new LGraphNodeProperties(this)
   }
@@ -3862,33 +3833,12 @@ export class LGraphNode
       ? this.getInputPos(slotIndex)
       : this.getOutputPos(slotIndex)
 
-    if (LiteGraph.vueNodesMode) {
-      // Vue-based slot dimensions
-      const dimensions = LiteGraph.COMFY_VUE_NODE_DIMENSIONS.components
-
-      if (slot.isWidgetInputSlot) {
-        // Widget slots have a 20x20 clickable area centered at the position
-        slot.boundingRect[0] = pos[0] - 10
-        slot.boundingRect[1] = pos[1] - 10
-        slot.boundingRect[2] = 20
-        slot.boundingRect[3] = 20
-      } else {
-        // Regular slots have a 20x20 clickable area for the connector
-        // but the full slot height for vertical spacing
-        slot.boundingRect[0] = pos[0] - 10
-        slot.boundingRect[1] = pos[1] - dimensions.SLOT_HEIGHT / 2
-        slot.boundingRect[2] = 20
-        slot.boundingRect[3] = dimensions.SLOT_HEIGHT
-      }
-    } else {
-      // Traditional LiteGraph dimensions
-      slot.boundingRect[0] = pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.boundingRect[1] = pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.boundingRect[2] = slot.isWidgetInputSlot
-        ? BaseWidget.margin
-        : LiteGraph.NODE_SLOT_HEIGHT
-      slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
-    }
+    slot.boundingRect[0] = pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[1] = pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[2] = slot.isWidgetInputSlot
+      ? BaseWidget.margin
+      : LiteGraph.NODE_SLOT_HEIGHT
+    slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
   }
 
   #measureSlots(): ReadOnlyRect | null {

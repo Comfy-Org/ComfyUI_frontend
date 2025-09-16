@@ -6,9 +6,20 @@
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
     "download": "Download",
+    "downloadImage": "Download image",
+    "editOrMaskImage": "Edit or mask image",
+    "removeImage": "Remove image",
+    "viewImageOfTotal": "View image {index} of {total}",
+    "imagePreview": "Image preview - Use arrow keys to navigate between images",
+    "galleryImage": "Gallery image",
+    "galleryThumbnail": "Gallery thumbnail",
+    "errorLoadingImage": "Error loading image",
+    "failedToDownloadImage": "Failed to download image",
+    "calculatingDimensions": "Calculating dimensions",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
     "refresh": "Refresh",
+    "refreshNode": "Refresh Node",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -30,7 +41,9 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
-    "help": "Help",
+    "info": "Node Info",
+    "bookmark": "Save to Library",
+    "moreOptions": "More Options",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -143,6 +156,8 @@
     "releaseTitle": "{package} {version} Release",
     "itemSelected": "{selectedCount} item selected",
     "itemsSelected": "{selectedCount} items selected",
+    "multiSelectDropdown": "Multi-select dropdown",
+    "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
@@ -157,7 +172,8 @@
     "nodeContentError": "Node Content Error",
     "nodeHeaderError": "Node Header Error",
     "nodeSlotsError": "Node Slots Error",
-    "nodeWidgetsError": "Node Widgets Error"
+    "nodeWidgetsError": "Node Widgets Error",
+    "frameNodes": "Frame Nodes"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -193,6 +209,8 @@
     "updateSelected": "Update Selected",
     "updateAll": "Update All",
     "updatingAllPacks": "Updating all packages",
+    "disabledNodesWontUpdate": "Disabled nodes will not be updated",
+    "enablePackToChangeVersion": "Enable this pack to change versions",
     "license": "License",
     "nightlyVersion": "Nightly",
     "latestVersion": "Latest",
@@ -211,6 +229,7 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All Missing Nodes",
+    "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
     "notAvailable": "Not Available",
@@ -308,7 +327,37 @@
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
     "Manage": "Manage",
-    "Search": "Search"
+    "Search": "Search",
+    "Open in Mask Editor": "Open in Mask Editor",
+    "Open Image": "Open Image",
+    "Copy Image": "Copy Image",
+    "Save Image": "Save Image",
+    "Rename": "Rename",
+    "Copy": "Copy",
+    "Duplicate": "Duplicate",
+    "Paste": "Paste",
+    "Node Info": "Node Info",
+    "Adjust Size": "Adjust Size",
+    "Minimize Node": "Minimize Node",
+    "Expand Node": "Expand Node",
+    "Shape": "Shape",
+    "Color": "Color",
+    "Add Subgraph to Library": "Add Subgraph to Library",
+    "Unpack Subgraph": "Unpack Subgraph",
+    "Convert to Subgraph": "Convert to Subgraph",
+    "Align Selected To": "Align Selected To",
+    "Distribute Nodes": "Distribute Nodes",
+    "Remove Bypass": "Remove Bypass",
+    "Run Branch": "Run Branch",
+    "Delete": "Delete",
+    "Top": "Top",
+    "Bottom": "Bottom",
+    "Left": "Left",
+    "Right": "Right",
+    "Horizontal": "Horizontal",
+    "Vertical": "Vertical",
+    "new": "new",
+    "deprecated": "deprecated"
   },
   "icon": {
     "bookmark": "Bookmark",
@@ -446,6 +495,8 @@
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
     "showTerminal": "Show Terminal",
+    "copySelectionTooltip": "Copy selection",
+    "copyAllTooltip": "Copy all",
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",
@@ -458,6 +509,14 @@
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
     "restart": "Restart"
+  },
+  "shape": {
+    "default": "Default",
+    "round": "Round",
+    "CARD": "Card",
+    "circle": "Circle",
+    "arrow": "Arrow",
+    "box": "Box"
   },
   "sideToolbar": {
     "themeToggle": "Toggle Theme",
@@ -949,6 +1008,18 @@
     "enterFilename": "Enter the filename",
     "saveWorkflow": "Save workflow"
   },
+  "subgraphStore": {
+    "confirmDeleteTitle": "Delete blueprint?",
+    "confirmDelete": "This action will permanently remove the blueprint from your library",
+    "saveBlueprint": "Save Subgraph to Library",
+    "overwriteBlueprintTitle": "Overwrite existing blueprint?",
+    "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
+    "blueprintName": "Subgraph name",
+    "publish": "Publish Subgraph",
+    "publishSuccess": "Saved to Nodes Library",
+    "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
+    "loadFailure": "Failed to load subgraph blueprints"
+  },
   "electronFileDownload": {
     "inProgress": "In Progress",
     "pause": "Pause Download",
@@ -1005,7 +1076,6 @@
     "Workflow": "Workflow",
     "Edit": "Edit",
     "View": "View",
-    "Manager": "Manager",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
@@ -1078,6 +1148,7 @@
     "Clipspace": "Clipspace",
     "Manager": "Manager",
     "Open": "Open",
+    "Publish": "Publish",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
@@ -1457,6 +1528,8 @@
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
   "loadWorkflowWarning": {
+    "missingNodesTitle": "Some Nodes Are Missing",
+    "missingNodesDescription": "When loading the graph, the following node types were not found.\nThis may also happen if your installed version is lower and that node type can’t be found.",
     "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
     "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Requires ComfyUI {version}:"
@@ -1735,7 +1808,10 @@
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
-    }
+    },
+    "Set Group Nodes to Never": "Set Group Nodes to Never",
+    "Bypass Group Nodes": "Bypass Group Nodes",
+    "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "chatHistory": {
     "cancelEdit": "Cancel",
@@ -1743,6 +1819,9 @@
     "cancelEditTooltip": "Cancel edit",
     "copiedTooltip": "Copied",
     "copyTooltip": "Copy message to clipboard"
+  },
+  "widgets": {
+    "selectModel": "Select model"
   },
   "nodeHelpPage": {
     "inputs": "Inputs",
@@ -1760,6 +1839,7 @@
     "duplicate": "Duplicate",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
+    "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name"
   },
   "shortcuts": {

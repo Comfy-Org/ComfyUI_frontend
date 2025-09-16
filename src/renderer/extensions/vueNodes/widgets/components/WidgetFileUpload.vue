@@ -20,6 +20,7 @@
           :model-value="selectedFile?.name"
           :options="[selectedFile?.name || '']"
           :disabled="true"
+          v-bind="transformCompatProps"
           class="min-w-[8em] max-w-[20em] text-xs"
           size="small"
           :pt="{
@@ -88,6 +89,7 @@
           :model-value="selectedFile?.name"
           :options="[selectedFile?.name || '']"
           :disabled="true"
+          v-bind="transformCompatProps"
           class="min-w-[8em] max-w-[20em] text-xs"
           size="small"
           :pt="{
@@ -182,9 +184,14 @@ import Select from 'primevue/select'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const props = defineProps<{
+const {
+  widget,
+  modelValue,
+  readonly = false
+} = defineProps<{
   widget: SimplifiedWidget<File[] | null>
   modelValue: File[] | null
   readonly?: boolean
@@ -195,11 +202,14 @@ const emit = defineEmits<{
 }>()
 
 const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
+  widget,
+  modelValue,
   defaultValue: null,
   emit
 })
+
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
@@ -274,7 +284,7 @@ const triggerFileInput = () => {
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (!props.readonly && target.files && target.files.length > 0) {
+  if (!readonly && target.files && target.files.length > 0) {
     // Since we only support single file, take the first one
     const file = target.files[0]
 

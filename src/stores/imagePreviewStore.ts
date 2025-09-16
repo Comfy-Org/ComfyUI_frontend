@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 import {
   LGraphNode,
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   ExecutedWsMessage,
   ResultItem,
@@ -13,7 +15,6 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
@@ -39,6 +40,8 @@ interface SetOutputOptions {
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId } = useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
+
+  const nodeOutputs = ref<Record<string, ExecutedWsMessage['output']>>({})
 
   function getNodeOutputs(
     node: LGraphNode
@@ -128,6 +131,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     app.nodeOutputs[nodeLocatorId] = outputs
+    nodeOutputs.value[nodeLocatorId] = outputs
   }
 
   function setNodeOutputs(
@@ -271,17 +275,49 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
+  /**
+   * Remove node outputs for a specific node
+   * Clears both outputs and preview images
+   */
+  function removeNodeOutputs(nodeId: number | string) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
+    if (!nodeLocatorId) return false
+
+    // Clear from app.nodeOutputs
+    const hadOutputs = !!app.nodeOutputs[nodeLocatorId]
+    delete app.nodeOutputs[nodeLocatorId]
+
+    // Clear from reactive state
+    delete nodeOutputs.value[nodeLocatorId]
+
+    // Clear preview images
+    if (app.nodePreviewImages[nodeLocatorId]) {
+      delete app.nodePreviewImages[nodeLocatorId]
+    }
+
+    return hadOutputs
+  }
+
   return {
+    // Getters
     getNodeOutputs,
     getNodeImageUrls,
     getNodePreviews,
+    getPreviewParam,
+
+    // Setters
     setNodeOutputs,
     setNodeOutputsByExecutionId,
     setNodePreviewsByExecutionId,
     setNodePreviewsByNodeId,
+
+    // Cleanup
     revokePreviewsByExecutionId,
     revokeAllPreviews,
     revokeSubgraphPreviews,
-    getPreviewParam
+    removeNodeOutputs,
+
+    // State
+    nodeOutputs
   }
 })

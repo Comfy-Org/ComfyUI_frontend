@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 
 import type { UpdateFlags } from '../types'

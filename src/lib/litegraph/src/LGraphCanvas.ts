@@ -6,6 +6,7 @@ import {
   type LinkRenderContext,
   LitegraphLinkAdapter
 } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -165,7 +166,7 @@ interface IDialogOptions {
 }
 
 /** @inheritdoc {@link LGraphCanvas.state} */
-export interface LGraphCanvasState {
+interface LGraphCanvasState {
   /** {@link Positionable} items are being dragged on the canvas. */
   draggingItems: boolean
   /** The canvas itself is being dragged. */
@@ -667,6 +668,7 @@ export class LGraphCanvas
   _bg_img?: HTMLImageElement
   _pattern?: CanvasPattern
   _pattern_img?: HTMLImageElement
+  bg_tint?: string | CanvasGradient | CanvasPattern
   // TODO: This looks like another panel thing
   prompt_box?: PromptDialog | null
   search_box?: HTMLDivElement
@@ -3754,13 +3756,7 @@ export class LGraphCanvas
       e.stopImmediatePropagation()
     }
   }
-
-  /**
-   * Copies canvas items to an internal, app-specific clipboard backed by local storage.
-   * When called without parameters, it copies {@link selectedItems}.
-   * @param items The items to copy.  If nullish, all selected items are copied.
-   */
-  copyToClipboard(items?: Iterable<Positionable>): void {
+  _serializeItems(items?: Iterable<Positionable>): ClipboardItems {
     const serialisable: Required<ClipboardItems> = {
       nodes: [],
       groups: [],
@@ -3818,10 +3814,18 @@ export class LGraphCanvas
       const cloned = subgraph.clone(true).asSerialisable()
       serialisable.subgraphs.push(cloned)
     }
+    return serialisable
+  }
 
+  /**
+   * Copies canvas items to an internal, app-specific clipboard backed by local storage.
+   * When called without parameters, it copies {@link selectedItems}.
+   * @param items The items to copy.  If nullish, all selected items are copied.
+   */
+  copyToClipboard(items?: Iterable<Positionable>): void {
     localStorage.setItem(
       'litegrapheditor_clipboard',
-      JSON.stringify(serialisable)
+      JSON.stringify(this._serializeItems(items))
     )
   }
 
@@ -3854,6 +3858,14 @@ export class LGraphCanvas
   _pasteFromClipboard(
     options: IPasteFromClipboardOptions = {}
   ): ClipboardPasteResult | undefined {
+    const data = localStorage.getItem('litegrapheditor_clipboard')
+    if (!data) return
+    return this._deserializeItems(JSON.parse(data), options)
+  }
+  _deserializeItems(
+    parsed: ClipboardItems,
+    options: IPasteFromClipboardOptions
+  ): ClipboardPasteResult | undefined {
     const { connectInputs = false, position = this.graph_mouse } = options
 
     // if ctrl + shift + v is off, return when isConnectUnselected is true (shift is pressed) to maintain old behavior
@@ -3863,15 +3875,11 @@ export class LGraphCanvas
     )
       return
 
-    const data = localStorage.getItem('litegrapheditor_clipboard')
-    if (!data) return
-
     const { graph } = this
     if (!graph) throw new NullGraphError()
     graph.beforeChange()
 
     // Parse & initialise
-    const parsed: ClipboardItems = JSON.parse(data)
     parsed.nodes ??= []
     parsed.groups ??= []
     parsed.reroutes ??= []
@@ -5093,6 +5101,16 @@ export class LGraphCanvas
         ctx.globalAlpha = 1.0
         ctx.imageSmoothingEnabled = true
       }
+      if (this.bg_tint) {
+        ctx.fillStyle = this.bg_tint
+        ctx.fillRect(
+          this.visible_area[0],
+          this.visible_area[1],
+          this.visible_area[2],
+          this.visible_area[3]
+        )
+        ctx.fillStyle = 'transparent'
+      }
 
       // groups
       if (this.graph._groups.length) {
@@ -5542,7 +5560,9 @@ export class LGraphCanvas
         const link = graph._links.get(link_id)
         if (!link) continue
 
-        const endPos = node.getInputPos(i)
+        const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
+          ? getSlotPosition(node, i, true)
+          : node.getInputPos(i)
 
         // find link info
         const start_node = graph.getNodeById(link.origin_id)
@@ -5552,7 +5572,9 @@ export class LGraphCanvas
         const startPos: Point =
           outputId === -1
             ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
-            : start_node.getOutputPos(outputId)
+            : LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
+              ? getSlotPosition(start_node, outputId, false)
+              : start_node.getOutputPos(outputId)
 
         const output = start_node.outputs[outputId]
         if (!output) continue
@@ -6292,7 +6314,14 @@ export class LGraphCanvas
         }
 
         // that.graph.beforeChange();
-        const newNode = LiteGraph.createNode(nodeNewType)
+        const xSizeFix = opts.posSizeFix[0] * LiteGraph.NODE_WIDTH
+        const ySizeFix = opts.posSizeFix[1] * LiteGraph.NODE_SLOT_HEIGHT
+        const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
+        const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
+        const pos = [nodeX, nodeY]
+        const newNode = LiteGraph.createNode(nodeNewType, nodeNewOpts.title, {
+          pos
+        })
         if (newNode) {
           // if is object pass options
           if (nodeNewOpts) {
@@ -6319,9 +6348,6 @@ export class LGraphCanvas
                 )
               }
             }
-            if (nodeNewOpts.title) {
-              newNode.title = nodeNewOpts.title
-            }
             if (nodeNewOpts.json) {
               newNode.configure(nodeNewOpts.json)
             }
@@ -6331,14 +6357,6 @@ export class LGraphCanvas
           if (!this.graph) throw new NullGraphError()
 
           this.graph.add(newNode)
-          newNode.pos = [
-            opts.position[0] +
-              opts.posAdd[0] +
-              (opts.posSizeFix[0] ? opts.posSizeFix[0] * newNode.size[0] : 0),
-            opts.position[1] +
-              opts.posAdd[1] +
-              (opts.posSizeFix[1] ? opts.posSizeFix[1] * newNode.size[1] : 0)
-          ]
 
           // Interim API - allow the link connection to be canceled.
           // TODO: https://github.com/Comfy-Org/litegraph.js/issues/946

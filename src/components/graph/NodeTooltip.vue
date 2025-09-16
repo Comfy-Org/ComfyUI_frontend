@@ -19,10 +19,10 @@ import {
   isOverNodeInput,
   isOverNodeOutput
 } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number

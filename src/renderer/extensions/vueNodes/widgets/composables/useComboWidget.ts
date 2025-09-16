@@ -1,8 +1,14 @@
 import { ref } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   ComboInputSpec,
@@ -28,7 +34,10 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
   return undefined
 }
 
-const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
+const addMultiSelectWidget = (
+  node: LGraphNode,
+  inputSpec: ComboInputSpec
+): IBaseWidget => {
   const widgetValue = ref<string[]>([])
   const widget = new ComponentWidgetImpl({
     node,
@@ -48,7 +57,32 @@ const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
   return widget
 }
 
-const addComboWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
+const addComboWidget = (
+  node: LGraphNode,
+  inputSpec: ComboInputSpec
+): IBaseWidget => {
+  const settingStore = useSettingStore()
+  const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
+  const isEligible = assetService.isAssetBrowserEligible(
+    inputSpec.name,
+    node.comfyClass || ''
+  )
+
+  if (isUsingAssetAPI && isEligible) {
+    // Get the default value for the button text (currently selected model)
+    const currentValue = getDefaultValue(inputSpec)
+    const displayLabel = currentValue ?? t('widgets.selectModel')
+
+    const widget = node.addWidget('asset', inputSpec.name, displayLabel, () => {
+      console.log(
+        `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
+      )
+    })
+
+    return widget
+  }
+
+  // Create normal combo widget
   const defaultValue = getDefaultValue(inputSpec)
   const comboOptions = inputSpec.options ?? []
   const widget = node.addWidget(
@@ -59,14 +93,14 @@ const addComboWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
     {
       values: comboOptions
     }
-  ) as IComboWidget
+  )
 
   if (inputSpec.remote) {
     const remoteWidget = useRemoteWidget({
       remoteConfig: inputSpec.remote,
       defaultValue,
       node,
-      widget
+      widget: widget as IComboWidget
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
@@ -84,14 +118,14 @@ const addComboWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
   if (inputSpec.control_after_generate) {
     widget.linkedWidgets = addValueControlWidgets(
       node,
-      widget,
+      widget as IComboWidget,
       undefined,
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )
   }
 
-  return widget
+  return widget as IBaseWidget
 }
 
 export const useComboWidget = () => {

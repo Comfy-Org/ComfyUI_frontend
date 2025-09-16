@@ -4,6 +4,7 @@
  */
 import { nextTick, reactive } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
@@ -19,14 +20,14 @@ export interface NodeState {
   culled: boolean
 }
 
-export interface NodeMetadata {
+interface NodeMetadata {
   lastRenderTime: number
   cachedBounds: DOMRect | null
   lodLevel: 'high' | 'medium' | 'low'
   spatialIndex?: QuadTree<string>
 }
 
-export interface PerformanceMetrics {
+interface PerformanceMetrics {
   fps: number
   frameTime: number
   updateTime: number
@@ -52,20 +53,22 @@ export interface VueNodeData {
   mode: number
   selected: boolean
   executing: boolean
+  subgraphId?: string | null
   widgets?: SafeWidgetData[]
   inputs?: unknown[]
   outputs?: unknown[]
+  hasErrors?: boolean
   flags?: {
     collapsed?: boolean
   }
 }
 
-export interface SpatialMetrics {
+interface SpatialMetrics {
   queryTime: number
   nodesInIndex: number
 }
 
-export interface GraphNodeManager {
+interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
   nodeState: ReadonlyMap<string, NodeState>
@@ -165,6 +168,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
   // Extract safe data from LiteGraph node for Vue consumption
   const extractVueNodeData = (node: LGraphNode): VueNodeData => {
+    // Determine subgraph ID - null for root graph, string for subgraphs
+    const subgraphId =
+      node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
+        ? String(node.graph.id)
+        : null
     // Extract safe widget data
     const safeWidgets = node.widgets?.map((widget) => {
       try {
@@ -200,13 +208,22 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       }
     })
 
+    const nodeType =
+      node.type ||
+      node.constructor?.comfyClass ||
+      node.constructor?.title ||
+      node.constructor?.name ||
+      'Unknown'
+
     return {
       id: String(node.id),
-      title: node.title || 'Untitled',
-      type: node.type || 'Unknown',
+      title: typeof node.title === 'string' ? node.title : '',
+      type: nodeType,
       mode: node.mode || 0,
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
+      subgraphId,
+      hasErrors: !!node.has_errors,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
       outputs: node.outputs ? [...node.outputs] : undefined,
@@ -235,11 +252,15 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     }
     if (typeof value === 'object') {
       // Check if it's a File array
-      if (Array.isArray(value) && value.every((item) => item instanceof File)) {
-        return value as File[]
+      if (
+        Array.isArray(value) &&
+        value.length > 0 &&
+        value.every((item): item is File => item instanceof File)
+      ) {
+        return value
       }
       // Otherwise it's a generic object
-      return value as object
+      return value
     }
     // If none of the above, return undefined
     console.warn(`Invalid widget value type: ${typeof value}`, value)
@@ -591,6 +612,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
   /**
    * Handles node addition to the graph - sets up Vue state and spatial indexing
+   * Defers position extraction until after potential configure() calls
    */
   const handleNodeAdded = (
     node: LGraphNode,
@@ -604,7 +626,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     // Set up widget callbacks BEFORE extracting data (critical order)
     setupNodeWidgetCallbacks(node)
 
-    // Extract safe data for Vue
+    // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
 
     // Set up reactive tracking state
@@ -614,27 +636,52 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       lastUpdate: performance.now(),
       culled: false
     })
-    nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-    nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
-    attachMetadata(node)
 
-    // Add to spatial index for viewport culling
-    const bounds: Bounds = {
-      x: node.pos[0],
-      y: node.pos[1],
-      width: node.size[0],
-      height: node.size[1]
+    const initializeVueNodeLayout = () => {
+      // Extract actual positions after configure() has potentially updated them
+      const nodePosition = { x: node.pos[0], y: node.pos[1] }
+      const nodeSize = { width: node.size[0], height: node.size[1] }
+
+      nodePositions.set(id, nodePosition)
+      nodeSizes.set(id, nodeSize)
+      attachMetadata(node)
+
+      // Add to spatial index for viewport culling with final positions
+      const nodeBounds: Bounds = {
+        x: nodePosition.x,
+        y: nodePosition.y,
+        width: nodeSize.width,
+        height: nodeSize.height
+      }
+      spatialIndex.insert(id, nodeBounds, id)
+
+      // Add node to layout store with final positions
+      setSource(LayoutSource.Canvas)
+      void createNode(id, {
+        position: nodePosition,
+        size: nodeSize,
+        zIndex: node.order || 0,
+        visible: true
+      })
     }
-    spatialIndex.insert(id, bounds, id)
 
-    // Add node to layout store
-    setSource(LayoutSource.Canvas)
-    void createNode(id, {
-      position: { x: node.pos[0], y: node.pos[1] },
-      size: { width: node.size[0], height: node.size[1] },
-      zIndex: node.order || 0,
-      visible: true
-    })
+    // Check if we're in the middle of configuring the graph (workflow loading)
+    if (window.app?.configuringGraph) {
+      // During workflow loading - defer layout initialization until configure completes
+      // Chain our callback with any existing onAfterGraphConfigured callback
+      node.onAfterGraphConfigured = useChainCallback(
+        node.onAfterGraphConfigured,
+        () => {
+          // Re-extract data now that configure() has populated title/slots/widgets/etc.
+          vueNodeData.set(id, extractVueNodeData(node))
+          initializeVueNodeLayout()
+        }
+      )
+    } else {
+      // Not during workflow loading - initialize layout immediately
+      // This handles individual node additions during normal operation
+      initializeVueNodeLayout()
+    }
 
     // Call original callback if provided
     if (originalCallback) {
@@ -742,19 +789,27 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         const currentData = vueNodeData.get(nodeId)
 
         if (currentData) {
-          if (event.property === 'title') {
-            vueNodeData.set(nodeId, {
-              ...currentData,
-              title: String(event.newValue)
-            })
-          } else if (event.property === 'flags.collapsed') {
-            vueNodeData.set(nodeId, {
-              ...currentData,
-              flags: {
-                ...currentData.flags,
-                collapsed: Boolean(event.newValue)
-              }
-            })
+          switch (event.property) {
+            case 'title':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                title: String(event.newValue)
+              })
+              break
+            case 'flags.collapsed':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                flags: {
+                  ...currentData.flags,
+                  collapsed: Boolean(event.newValue)
+                }
+              })
+              break
+            case 'mode':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                mode: typeof event.newValue === 'number' ? event.newValue : 0
+              })
           }
         }
       }

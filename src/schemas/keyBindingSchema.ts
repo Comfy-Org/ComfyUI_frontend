@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // KeyCombo schema
-export const zKeyCombo = z.object({
+const zKeyCombo = z.object({
   key: z.string(),
   ctrl: z.boolean().optional(),
   alt: z.boolean().optional(),

@@ -58,7 +58,7 @@ export interface LinkRenderContext {
   disabledPattern?: CanvasPattern | null
 }
 
-export interface LinkRenderOptions {
+interface LinkRenderOptions {
   color?: CanvasColour
   flow?: boolean
   skipBorder?: boolean
@@ -208,6 +208,9 @@ export class LitegraphLinkAdapter {
         return 'up'
       case LinkDirection.DOWN:
         return 'down'
+      case LinkDirection.CENTER:
+      case LinkDirection.NONE:
+        return 'none'
       default:
         return 'right'
     }

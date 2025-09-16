@@ -2,9 +2,10 @@
   <WidgetLayoutField :widget="widget">
     <MultiSelect
       v-model="localValue"
-      v-bind="filteredProps"
+      :options="multiSelectOptions"
+      v-bind="combinedProps"
       :disabled="readonly"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+      class="w-full text-xs"
       size="small"
       display="chip"
       :pt="{
@@ -15,38 +16,40 @@
   </WidgetLayoutField>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends WidgetValue = WidgetValue">
 import MultiSelect from 'primevue/multiselect'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<any[]>
-  modelValue: any[]
+  widget: SimplifiedWidget<T[]>
+  modelValue: T[]
   readonly?: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: any[]]
+  'update:modelValue': [value: T[]]
 }>()
 
 // Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
+const { localValue, onChange } = useWidgetValue<T[]>({
   widget: props.widget,
   modelValue: props.modelValue,
   defaultValue: [],
   emit
 })
+
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
 
 // MultiSelect specific excluded props include overlay styles
 const MULTISELECT_EXCLUDED_PROPS = [
@@ -54,18 +57,19 @@ const MULTISELECT_EXCLUDED_PROPS = [
   'overlayStyle'
 ] as const
 
-const filteredProps = computed(() => {
-  const filtered = filterWidgetProps(
-    props.widget.options,
-    MULTISELECT_EXCLUDED_PROPS
-  )
+const combinedProps = computed(() => ({
+  ...filterWidgetProps(props.widget.options, MULTISELECT_EXCLUDED_PROPS),
+  ...transformCompatProps.value
+}))
 
-  // Ensure options array is available for MultiSelect
-  const values = props.widget.options?.values
-  if (values && Array.isArray(values)) {
-    filtered.options = values
+// Extract multiselect options from widget options
+const multiSelectOptions = computed((): T[] => {
+  const options = props.widget.options
+
+  if (Array.isArray(options?.values)) {
+    return options.values
   }
 
-  return filtered
+  return []
 })
 </script>
