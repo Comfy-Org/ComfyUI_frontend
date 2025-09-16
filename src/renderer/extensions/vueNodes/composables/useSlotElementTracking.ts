@@ -52,7 +52,7 @@ function flushScheduledSlotLayoutSync() {
   }
 }
 
-function syncNodeSlotLayoutsFromDOM(
+export function syncNodeSlotLayoutsFromDOM(
   nodeId: string,
   conv?: ReturnType<typeof useSharedCanvasPositionConversion>
 ) {
@@ -217,8 +217,4 @@ export function useSlotElementTracking(options: {
   return {
     requestSlotLayoutSync: () => scheduleSlotLayoutSync(nodeId)
   }
-}
-
-export function syncNodeSlotLayoutsNow(nodeId: string) {
-  syncNodeSlotLayoutsFromDOM(nodeId)
 }
