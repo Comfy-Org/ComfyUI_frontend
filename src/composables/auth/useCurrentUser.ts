@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { t } from '@/i18n'
@@ -6,6 +6,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { AuthUserInfo } from '@/types/authTypes'
 
 export const useCurrentUser = () => {
   const authStore = useFirebaseAuthStore()
@@ -19,6 +20,32 @@ export const useCurrentUser = () => {
   const isLoggedIn = computed(
     () => !!isApiKeyLogin.value || firebaseUser.value !== null
   )
+
+  const resolvedUserInfo = computed<AuthUserInfo | null>(() => {
+    if (isApiKeyLogin.value && apiKeyStore.currentUser) {
+      return { id: apiKeyStore.currentUser.id }
+    }
+
+    if (firebaseUser.value) {
+      return { id: firebaseUser.value.uid }
+    }
+
+    return null
+  })
+
+  const onUserResolved = (callback: (user: AuthUserInfo) => void) => {
+    if (resolvedUserInfo.value) {
+      callback(resolvedUserInfo.value)
+    }
+
+    const stop = watch(resolvedUserInfo, (value) => {
+      if (value) {
+        callback(value)
+      }
+    })
+
+    return () => stop()
+  }
 
   const userDisplayName = computed(() => {
     if (isApiKeyLogin.value) {
@@ -112,8 +139,10 @@ export const useCurrentUser = () => {
     userPhotoUrl,
     providerName,
     providerIcon,
+    resolvedUserInfo,
     handleSignOut,
     handleSignIn,
-    handleDeleteAccount
+    handleDeleteAccount,
+    onUserResolved
   }
 }
