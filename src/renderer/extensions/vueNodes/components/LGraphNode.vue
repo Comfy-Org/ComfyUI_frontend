@@ -7,9 +7,9 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-white dark-theme:bg-charcoal-100',
+        'bg-white dark-theme:bg-charcoal-800',
         'lg-node absolute rounded-2xl',
-        'border border-solid border-sand-100 dark-theme:border-charcoal-300',
+        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         'outline-transparent -outline-offset-2 outline-2',
         borderClass,
@@ -309,7 +309,7 @@ const hasCustomContent = computed(() => {
 
 // Computed classes and conditions for better reusability
 const separatorClasses =
-  'bg-sand-100 dark-theme:bg-charcoal-300 h-[1px] mx-0 w-full'
+  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 // Common condition computations to avoid repetition
