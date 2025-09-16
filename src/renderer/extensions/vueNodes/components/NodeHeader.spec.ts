@@ -8,7 +8,8 @@ import { createI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import enMessages from '@/locales/en/main.json'
 import type { Settings } from '@/schemas/apiSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 import NodeHeader from './NodeHeader.vue'
@@ -49,13 +50,33 @@ const setupMockStores = () => {
   )
 
   // Mock node definition store
+  const baseMockNodeDef: ComfyNodeDef = {
+    name: 'KSampler',
+    display_name: 'KSampler',
+    category: 'sampling',
+    python_module: 'test_module',
+    description: 'Advanced sampling node for diffusion models',
+    input: {
+      required: {
+        model: ['MODEL', {}],
+        positive: ['CONDITIONING', {}],
+        negative: ['CONDITIONING', {}]
+      },
+      optional: {},
+      hidden: {}
+    },
+    output: ['LATENT'],
+    output_is_list: [false],
+    output_name: ['samples'],
+    output_node: false,
+    deprecated: false,
+    experimental: false
+  }
+
+  const mockNodeDef = new ComfyNodeDefImpl(baseMockNodeDef)
+
   vi.spyOn(nodeDefStore, 'nodeDefsByName', 'get').mockReturnValue({
-    KSampler: {
-      name: 'KSampler',
-      description: 'Advanced sampling node for diffusion models',
-      inputs: {} as any,
-      outputs: {} as any
-    } as any
+    KSampler: mockNodeDef
   })
 
   return { settingStore, nodeDefStore, pinia }
