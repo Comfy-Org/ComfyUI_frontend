@@ -13,7 +13,7 @@ export interface DesktopDialog {
   buttons: DialogAction[]
 }
 
-export const DESKTOP_DIALOGS = {
+const dialogsConfig = {
   reinstallFreshStart: {
     id: 'reinstallFreshStart',
     title: 'Reinstall ComfyUI (Fresh Start)?',
@@ -37,6 +37,12 @@ Please note: if you've added custom nodes, you'll need to reinstall them after t
       }
     ] as DialogAction[]
   }
-} satisfies Record<string, DesktopDialog>
+} as const
 
-export type DesktopDialogId = keyof typeof DESKTOP_DIALOGS
+export const DESKTOP_DIALOGS: Record<string, DesktopDialog> = dialogsConfig
+export type DesktopDialogId = keyof typeof dialogsConfig
+
+export function getDialog(id: string | string[]): DesktopDialog {
+  const dialogId = Array.isArray(id) ? id[0] : id
+  return DESKTOP_DIALOGS[dialogId] ?? DESKTOP_DIALOGS.reinstallFreshStart
+}

@@ -30,26 +30,13 @@
 import Button from 'primevue/button'
 import { useRoute } from 'vue-router'
 
-import {
-  DESKTOP_DIALOGS,
-  type DesktopDialog,
-  type DialogAction
-} from '@/constants/desktopDialogs'
+import { type DialogAction, getDialog } from '@/constants/desktopDialogs'
 import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-// Get dialog ID from route parameter
 const route = useRoute()
-const { dialogId } = route.params
-
-let dialog: DesktopDialog
-if (typeof dialogId === 'string' && Object.hasOwn(DESKTOP_DIALOGS, dialogId)) {
-  dialog = DESKTOP_DIALOGS[dialogId as keyof typeof DESKTOP_DIALOGS]
-} else {
-  dialog = DESKTOP_DIALOGS.reinstallFreshStart
-}
-
+const dialog = getDialog(route.params.dialogId)
 const dialogI18nKey = normalizeI18nKey(dialog.id)
 
 const handleButtonClick = (button: DialogAction) => {
