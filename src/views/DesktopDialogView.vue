@@ -37,8 +37,12 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Get dialog ID from route parameter
 const route = useRoute()
-const dialogId = route.params.dialogId as string
-const dialog = DESKTOP_DIALOGS[dialogId] || DESKTOP_DIALOGS.reinstallFreshStart
+const dialogId = route.params.dialogId
+
+// Fallback to reinstallFreshStart if dialog not found
+const dialog =
+  (typeof dialogId === 'string' && DESKTOP_DIALOGS[dialogId]) ||
+  DESKTOP_DIALOGS.reinstallFreshStart
 const dialogI18nKey = normalizeI18nKey(dialog.id)
 
 const handleButtonClick = (button: DialogAction) => {
