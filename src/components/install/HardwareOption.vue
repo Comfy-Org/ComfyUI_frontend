@@ -65,7 +65,6 @@ defineEmits<{ click: [] }>()
   flex-shrink: 0;
 }
 
-/* Custom border for selected state to ensure uniform color */
 .hardware-option.selected-border {
   @apply border-solid border-4 border-brand-yellow;
 }
