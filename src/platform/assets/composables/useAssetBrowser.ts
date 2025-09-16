@@ -100,13 +100,13 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     })
 
     return [
-      { id: 'all', label: 'All Models', icon: 'i-lucide:folder' },
+      { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
       ...Array.from(categorySet)
         .sort()
         .map((category) => ({
           id: category,
           label: category.charAt(0).toUpperCase() + category.slice(1),
-          icon: 'i-lucide:package'
+          icon: 'icon-[lucide--package]'
         }))
     ]
   })

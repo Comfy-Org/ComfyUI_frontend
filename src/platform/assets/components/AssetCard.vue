@@ -67,15 +67,15 @@
         "
       >
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
-          <i class="pi pi-star text-xs"></i>
+          <i-lucide:star class="size-3" />
           {{ asset.stats.stars }}
         </span>
         <span v-if="asset.stats.downloadCount" class="flex items-center gap-1">
-          <i class="pi pi-download text-xs"></i>
+          <i-lucide:download class="size-3" />
           {{ asset.stats.downloadCount }}
         </span>
         <span v-if="asset.stats.formattedDate" class="flex items-center gap-1">
-          <i class="pi pi-clock text-xs"></i>
+          <i-lucide:clock class="size-3" />
           {{ asset.stats.formattedDate }}
         </span>
       </div>

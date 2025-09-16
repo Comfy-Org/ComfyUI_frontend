@@ -1,8 +1,6 @@
 <template>
   <div :class="containerClasses" data-component-id="asset-filter-bar">
-    <!-- Left Side Filters -->
     <div :class="leftSideClasses" data-component-id="asset-filter-bar-left">
-      <!-- File Format MultiSelect -->
       <MultiSelect
         v-model="fileFormats"
         label="File formats"
@@ -12,7 +10,6 @@
         @update:model-value="handleFilterChange"
       />
 
-      <!-- Base Model MultiSelect -->
       <MultiSelect
         v-model="baseModels"
         label="Base models"
@@ -23,9 +20,7 @@
       />
     </div>
 
-    <!-- Right Side Sort -->
     <div :class="rightSideClasses" data-component-id="asset-filter-bar-right">
-      <!-- Sort SingleSelect -->
       <SingleSelect
         v-model="sortBy"
         label="Sort by"
@@ -35,7 +30,7 @@
         @update:model-value="handleFilterChange"
       >
         <template #icon>
-          <i class="icon-[lucide--arrow-up-down] size-3" />
+          <i-lucide:arrow-up-down class="size-3" />
         </template>
       </SingleSelect>
     </div>

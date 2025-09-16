@@ -29,7 +29,7 @@
         )
       "
     >
-      <i class="pi pi-search text-4xl mb-4"></i>
+      <i-lucide:search class="size-10 mb-4" />
       <h3 class="text-lg font-medium mb-2">
         {{ $t('assetBrowser.noAssetsFound') }}
       </h3>
@@ -41,15 +41,15 @@
       v-if="loading"
       class="col-span-full flex items-center justify-center py-16"
     >
-      <i
+      <i-lucide:loader
         :class="
           cn(
-            'pi pi-spinner pi-spin text-2xl',
+            'size-6 animate-spin',
             'text-stone-300',
             'dark-theme:text-stone-200'
           )
         "
-      ></i>
+      />
     </div>
   </div>
 </template>
