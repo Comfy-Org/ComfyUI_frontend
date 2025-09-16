@@ -1,4 +1,4 @@
-import { type ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 export function formatCamelCase(str: string): string {

@@ -4,7 +4,7 @@ import { type Ref, computed, ref } from 'vue'
 
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { type components } from '@/types/generatedManagerTypes'
+import type { components } from '@/types/generatedManagerTypes'
 import { normalizePackKeys } from '@/utils/packUtils'
 
 type ManagerTaskHistory = Record<

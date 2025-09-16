@@ -1,4 +1,4 @@
-import { type FirebaseOptions } from 'firebase/app'
+import type { FirebaseOptions } from 'firebase/app'
 
 const DEV_CONFIG: FirebaseOptions = {
   apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',

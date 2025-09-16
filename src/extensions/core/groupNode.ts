@@ -1,6 +1,6 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import { type NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import {
   type ExecutableLGraphNode,
   type ExecutionId,
@@ -10,17 +10,17 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import {
-  type ComfyLink,
-  type ComfyNode,
-  type ComfyWorkflowJSON
+import type {
+  ComfyLink,
+  ComfyNode,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { type ComfyExtension } from '@/types/comfy'
+import type { ComfyExtension } from '@/types/comfy'
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
 import { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'

@@ -1,4 +1,4 @@
-import { type FuseSearchOptions } from 'fuse.js'
+import type { FuseSearchOptions } from 'fuse.js'
 
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import {

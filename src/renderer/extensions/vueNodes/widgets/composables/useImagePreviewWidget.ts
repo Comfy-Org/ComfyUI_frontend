@@ -13,7 +13,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
-import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 const renderPreview = (

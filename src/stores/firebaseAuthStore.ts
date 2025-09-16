@@ -25,8 +25,8 @@ import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { type AuthHeader } from '@/types/authTypes'
-import { type operations } from '@/types/comfyRegistryTypes'
+import type { AuthHeader } from '@/types/authTypes'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']

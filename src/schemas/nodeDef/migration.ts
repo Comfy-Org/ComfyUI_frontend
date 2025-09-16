@@ -1,7 +1,7 @@
-import {
-  type ComfyNodeDef as ComfyNodeDefV2,
-  type InputSpec as InputSpecV2,
-  type OutputSpec as OutputSpecV2
+import type {
+  ComfyNodeDef,
+  InputSpec,
+  OutputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   type ComfyNodeDef as ComfyNodeDefV1,

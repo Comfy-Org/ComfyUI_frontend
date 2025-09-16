@@ -7,10 +7,10 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  type ExecutedWsMessage,
-  type ResultItem,
-  type ResultItemType
+import type {
+  ExecutedWsMessage,
+  ResultItem,
+  ResultItemType
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

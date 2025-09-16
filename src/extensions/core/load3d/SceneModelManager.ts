@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
-import { type GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils'
 
 import { ColoredShadowMaterial } from './conditional-lines/ColoredShadowMaterial'
@@ -10,12 +10,12 @@ import { ConditionalEdgesGeometry } from './conditional-lines/ConditionalEdgesGe
 import { ConditionalEdgesShader } from './conditional-lines/ConditionalEdgesShader.js'
 import { ConditionalLineMaterial } from './conditional-lines/Lines2/ConditionalLineMaterial'
 import { ConditionalLineSegmentsGeometry } from './conditional-lines/Lines2/ConditionalLineSegmentsGeometry'
-import {
-  type EventManagerInterface,
-  type Load3DOptions,
-  type MaterialMode,
-  type ModelManagerInterface,
-  type UpDirection
+import type {
+  EventManagerInterface,
+  Load3DOptions,
+  MaterialMode,
+  ModelManagerInterface,
+  UpDirection
 } from './interfaces'
 
 export class SceneModelManager implements ModelManagerInterface {

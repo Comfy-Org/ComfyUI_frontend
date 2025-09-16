@@ -1,5 +1,5 @@
 import { merge } from 'es-toolkit/compat'
-import { type Component } from 'vue'
+import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'

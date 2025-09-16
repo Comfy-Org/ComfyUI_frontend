@@ -8,10 +8,10 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import {
-  type EventManagerInterface,
-  type LoaderManagerInterface,
-  type ModelManagerInterface
+import type {
+  EventManagerInterface,
+  LoaderManagerInterface,
+  ModelManagerInterface
 } from './interfaces'
 
 export class LoaderManager implements LoaderManagerInterface {

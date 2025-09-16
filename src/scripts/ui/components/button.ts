@@ -1,4 +1,4 @@
-import { type Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 
 import type { ComfyComponent } from '.'

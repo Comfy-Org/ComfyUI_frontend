@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { type EventManagerInterface } from './interfaces'
+import type { EventManagerInterface } from './interfaces'
 
 export class RecordingManager {
   private mediaRecorder: MediaRecorder | null = null

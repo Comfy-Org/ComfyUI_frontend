@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'

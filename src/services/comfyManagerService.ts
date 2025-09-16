@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import { useManagerState } from '@/composables/useManagerState'
 import { api } from '@/scripts/api'
-import { type components } from '@/types/generatedManagerTypes'
+import type { components } from '@/types/generatedManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 type ManagerQueueStatus = components['schemas']['QueueStatus']

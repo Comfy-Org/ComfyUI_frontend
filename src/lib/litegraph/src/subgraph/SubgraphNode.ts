@@ -5,10 +5,10 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
-import {
-  type INodeInputSlot,
-  type ISlotType,
-  type NodeId
+import type {
+  INodeInputSlot,
+  ISlotType,
+  NodeId
 } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
