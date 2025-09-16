@@ -11,9 +11,6 @@ import tseslint from 'typescript-eslint'
 
 export default defineConfig([
   {
-    files: ['src/**/*.{js,mjs,cjs,ts,vue}']
-  },
-  {
     ignores: [
       'src/scripts/*',
       'src/extensions/core/*',
@@ -25,13 +22,14 @@ export default defineConfig([
     ]
   },
   {
+    files: ['src/**/*.{js,mjs,cjs,ts,mts,vue}', './*.{ts,mts}'],
     languageOptions: {
       globals: {
         ...globals.browser,
         __COMFYUI_FRONTEND_VERSION__: 'readonly'
       },
-      parser: tseslint.parser,
       parserOptions: {
+        parser: tseslint.parser,
         projectService: true,
         ecmaVersion: 2020,
         sourceType: 'module',
@@ -44,14 +42,6 @@ export default defineConfig([
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
-  {
-    files: ['src/**/*.vue'],
-    languageOptions: {
-      parserOptions: {
-        parser: tseslint.parser
-      }
-    }
-  },
   {
     plugins: {
       'unused-imports': unusedImports,
