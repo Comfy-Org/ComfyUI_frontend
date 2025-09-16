@@ -36,6 +36,18 @@ Please note: if you've added custom nodes, you'll need to reinstall them after t
         returnValue: 'resetVenv'
       }
     ]
+  },
+  /** A dialog that is shown when an invalid dialog ID is provided. */
+  invalidDialog: {
+    title: 'Invalid Dialog',
+    message: `Invalid dialog ID was provided.`,
+    buttons: [
+      {
+        label: 'Close',
+        action: 'cancel',
+        returnValue: 'cancel'
+      }
+    ]
   }
 } as const satisfies { [K: string]: DesktopDialog }
 
