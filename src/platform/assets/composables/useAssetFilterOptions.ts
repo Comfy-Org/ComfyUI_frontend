@@ -1,3 +1,4 @@
+import { uniqWith } from 'es-toolkit'
 import { computed } from 'vue'
 
 import type { SelectOption } from '@/components/input/types'
@@ -13,22 +14,19 @@ export function useAssetFilterOptions(assets: AssetItem[] = []) {
    * Returns sorted SelectOption array with extensions
    */
   const availableFileFormats = computed<SelectOption[]>(() => {
-    const formats = new Set<string>()
+    const extensions = assets
+      .map((asset) => {
+        const extension = asset.name.split('.').pop()
+        return extension && extension !== asset.name ? extension : null
+      })
+      .filter((extension): extension is string => extension !== null)
 
-    assets.forEach((asset) => {
-      const extension = asset.name.split('.').pop()
-      if (extension && extension !== asset.name) {
-        // Only add if there was actually an extension (not just the filename)
-        formats.add(extension)
-      }
-    })
+    const uniqueExtensions = uniqWith(extensions, (a, b) => a === b)
 
-    return Array.from(formats)
-      .sort()
-      .map((format) => ({
-        name: `.${format}`,
-        value: format
-      }))
+    return uniqueExtensions.sort().map((format) => ({
+      name: `.${format}`,
+      value: format
+    }))
   })
 
   /**
@@ -36,21 +34,19 @@ export function useAssetFilterOptions(assets: AssetItem[] = []) {
    * Returns sorted SelectOption array with base model names
    */
   const availableBaseModels = computed<SelectOption[]>(() => {
-    const models = new Set<string>()
+    const models = assets
+      .map((asset) => asset.user_metadata?.base_model)
+      .filter(
+        (baseModel): baseModel is string =>
+          baseModel !== undefined && typeof baseModel === 'string'
+      )
 
-    assets.forEach((asset) => {
-      const baseModel = asset.user_metadata?.base_model
-      if (baseModel && typeof baseModel === 'string') {
-        models.add(baseModel)
-      }
-    })
+    const uniqueModels = uniqWith(models, (a, b) => a === b)
 
-    return Array.from(models)
-      .sort()
-      .map((model) => ({
-        name: model,
-        value: model
-      }))
+    return uniqueModels.sort().map((model) => ({
+      name: model,
+      value: model
+    }))
   })
 
   return {
