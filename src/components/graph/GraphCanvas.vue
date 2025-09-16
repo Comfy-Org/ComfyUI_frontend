@@ -119,7 +119,6 @@ import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
-import { useSubgraphNavigation } from '@/renderer/core/canvas/useSubgraphNavigation'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -183,34 +182,26 @@ const viewportCulling = useViewportCulling(
 )
 const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
-useSubgraphNavigation({
-  onSubgraphEnter: () => {
-    if (isVueNodesEnabled.value) {
-      vueNodeLifecycle.disposeNodeManagerAndSyncs()
-      void nextTick(() => {
-        vueNodeLifecycle.initializeNodeManager()
-      })
-    }
-  },
-  onSubgraphExit: () => {
-    useWorkflowStore().updateActiveGraph()
-    if (isVueNodesEnabled.value) {
-      vueNodeLifecycle.disposeNodeManagerAndSyncs()
-      void nextTick(() => {
-        vueNodeLifecycle.initializeNodeManager()
-      })
-    }
-  },
-  onGraphChange: () => {
-    // Handle any graph context change (including tab restoration)
-    if (isVueNodesEnabled.value) {
-      vueNodeLifecycle.disposeNodeManagerAndSyncs()
-      void nextTick(() => {
-        vueNodeLifecycle.initializeNodeManager()
-      })
-    }
+const handleVueNodeLifecycleReset = () => {
+  if (isVueNodesEnabled.value) {
+    vueNodeLifecycle.disposeNodeManagerAndSyncs()
+    void nextTick(() => {
+      vueNodeLifecycle.initializeNodeManager()
+    })
   }
-})
+}
+
+watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
+
+watch(
+  () => canvasStore.isInSubgraph,
+  (newValue, oldValue) => {
+    if (oldValue && !newValue) {
+      useWorkflowStore().updateActiveGraph()
+    }
+    handleVueNodeLifecycleReset()
+  }
+)
 
 const nodePositions = vueNodeLifecycle.nodePositions
 const nodeSizes = vueNodeLifecycle.nodeSizes
