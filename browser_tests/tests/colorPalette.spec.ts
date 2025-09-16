@@ -21,12 +21,12 @@ const customColorPalettes: Record<string, Palette> = {
         MODEL: '#B39DDB',
         STYLE_MODEL: '#C2FFAE',
         VAE: '#FF6E6E',
-        TAESD: '#DCC274',
-        PIPE_LINE: '#7737AA',
-        PIPE_LINE_SDXL: '#7737AA',
-        INT: '#29699C',
-        XYPLOT: '#74DA5D',
-        X_Y: '#38291f'
+        TAESD: '#DCC274'
+        // PIPE_LINE: '#7737AA', // Not defined in type, commented out
+        // PIPE_LINE_SDXL: '#7737AA', // Not defined in type, commented out
+        // INT: '#29699C', // Not defined in type, commented out
+        // XYPLOT: '#74DA5D', // Not defined in type, commented out
+        // X_Y: '#38291f' // Not defined in type, commented out
       },
       litegraph_base: {
         BACKGROUND_IMAGE:
@@ -85,12 +85,12 @@ const customColorPalettes: Record<string, Palette> = {
         MODEL: '#B39DDB',
         STYLE_MODEL: '#C2FFAE',
         VAE: '#FF6E6E',
-        TAESD: '#DCC274',
-        PIPE_LINE: '#7737AA',
-        PIPE_LINE_SDXL: '#7737AA',
-        INT: '#29699C',
-        XYPLOT: '#74DA5D',
-        X_Y: '#38291f'
+        TAESD: '#DCC274'
+        // PIPE_LINE: '#7737AA', // Not defined in type, commented out
+        // PIPE_LINE_SDXL: '#7737AA', // Not defined in type, commented out
+        // INT: '#29699C', // Not defined in type, commented out
+        // XYPLOT: '#74DA5D', // Not defined in type, commented out
+        // X_Y: '#38291f' // Not defined in type, commented out
       },
       litegraph_base: {
         BACKGROUND_IMAGE:
@@ -172,7 +172,9 @@ test.describe('Color Palette', () => {
 
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate((p) => {
-      window['app'].extensionManager.colorPalette.addCustomColorPalette(p)
+      ;(
+        window['app'] as any
+      )?.extensionManager?.colorPalette?.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.getToastErrorCount()).toBe(0)
 

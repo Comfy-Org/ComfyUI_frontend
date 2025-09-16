@@ -9,7 +9,7 @@ interface ChatHistoryEntry {
 }
 
 async function renderChatHistory(page: Page, history: ChatHistoryEntry[]) {
-  const nodeId = await page.evaluate(() => window['app'].graph.nodes[0]?.id)
+  const nodeId = await page.evaluate(() => window['app']?.graph.nodes[0]?.id)
   // Simulate API sending display_component message
   await page.evaluate(
     ({ nodeId, history }) => {
@@ -22,7 +22,10 @@ async function renderChatHistory(page: Page, history: ChatHistoryEntry[]) {
           }
         }
       })
-      window['app'].api.dispatchEvent(event)
+      const api = window['app']?.api
+      if (api && 'dispatchEvent' in api) {
+        ;(api as any).dispatchEvent(event)
+      }
       return true
     },
     { nodeId, history }
@@ -32,10 +35,10 @@ async function renderChatHistory(page: Page, history: ChatHistoryEntry[]) {
 }
 
 test.describe('Chat History Widget', () => {
-  let nodeId: string
+  // let _nodeId: string // Commented out as unused
 
   test.beforeEach(async ({ comfyPage }) => {
-    nodeId = await renderChatHistory(comfyPage.page, [
+    await renderChatHistory(comfyPage.page, [
       { prompt: 'Hello', response: 'World', response_id: '123' }
     ])
     // Wait for chat history to be rendered
@@ -52,8 +55,8 @@ test.describe('Chat History Widget', () => {
 
   test('handles message editing interaction', async ({ comfyPage }) => {
     // Get first node's ID
-    nodeId = await comfyPage.page.evaluate(() => {
-      const node = window['app'].graph.nodes[0]
+    await comfyPage.page.evaluate(() => {
+      const node = window['app']?.graph.nodes[0]
 
       // Make sure the node has a prompt widget (for editing functionality)
       if (!node.widgets) {
@@ -61,7 +64,7 @@ test.describe('Chat History Widget', () => {
       }
 
       // Add a prompt widget if it doesn't exist
-      if (!node.widgets.find((w) => w.name === 'prompt')) {
+      if (!node.widgets.find((w: any) => w.name === 'prompt')) {
         node.widgets.push({
           name: 'prompt',
           type: 'text',

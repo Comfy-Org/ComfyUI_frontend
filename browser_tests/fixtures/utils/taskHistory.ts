@@ -128,7 +128,7 @@ export default class TaskHistory {
       const contentType = getContentType(filename, filetype)
       this.outputContentTypes.set(filename, contentType)
       return outputs
-    }, {})
+    }, {} as TaskOutput)
   }
 
   private addTask(task: HistoryTaskItem) {

@@ -1,9 +1,9 @@
 import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { StatusWsMessage } from '../../src/schemas/apiSchema.ts'
-import { comfyPageFixture } from '../fixtures/ComfyPage.ts'
-import { webSocketFixture } from '../fixtures/ws.ts'
+import type { StatusWsMessage } from '../../src/schemas/apiSchema'
+import { comfyPageFixture } from '../fixtures/ComfyPage'
+import { webSocketFixture } from '../fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -29,9 +29,9 @@ test.describe('Actionbar', () => {
 
     // Intercept the prompt queue endpoint
     let promptNumber = 0
-    comfyPage.page.route('**/api/prompt', async (route, req) => {
+    await comfyPage.page.route('**/api/prompt', async (route, req) => {
       await new Promise((r) => setTimeout(r, 100))
-      route.fulfill({
+      await route.fulfill({
         status: 200,
         body: JSON.stringify({
           prompt_id: promptNumber,
@@ -49,13 +49,15 @@ test.describe('Actionbar', () => {
     // Find and set the width on the latent node
     const triggerChange = async (value: number) => {
       return await comfyPage.page.evaluate((value) => {
-        const node = window['app'].graph._nodes.find(
-          (n) => n.type === 'EmptyLatentImage'
+        const app = window['app']
+        if (!app?.graph?._nodes) return
+        const node = app.graph._nodes.find(
+          (n: any) => n.type === 'EmptyLatentImage'
         )
-        node.widgets[0].value = value
-        window[
-          'app'
-        ].extensionManager.workflow.activeWorkflow.changeTracker.checkState()
+        if (node?.widgets?.[0]) {
+          node.widgets[0].value = value
+        }
+        app.extensionManager?.workflow?.activeWorkflow?.changeTracker?.checkState?.()
       }, value)
     }
 

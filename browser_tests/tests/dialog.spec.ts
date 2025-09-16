@@ -314,8 +314,10 @@ test.describe('Error dialog', () => {
   }) => {
     await comfyPage.page.evaluate(() => {
       const graph = window['graph']
-      graph.configure = () => {
-        throw new Error('Error on configure!')
+      if (graph?.configure) {
+        graph.configure = () => {
+          throw new Error('Error on configure!')
+        }
       }
     })
 
@@ -330,10 +332,12 @@ test.describe('Error dialog', () => {
   }) => {
     await comfyPage.page.evaluate(async () => {
       const app = window['app']
-      app.api.queuePrompt = () => {
-        throw new Error('Error on queuePrompt!')
+      if (app) {
+        app.api.queuePrompt = () => {
+          throw new Error('Error on queuePrompt!')
+        }
+        await app.queuePrompt(0)
       }
-      await app.queuePrompt(0)
     })
     const errorDialog = comfyPage.page.locator('.comfy-error-report')
     await expect(errorDialog).toBeVisible()
@@ -355,7 +359,7 @@ test.describe('Signin dialog', () => {
     await textBox.press('Control+c')
 
     await comfyPage.page.evaluate(() => {
-      void window['app'].extensionManager.dialog.showSignInDialog()
+      void window['app']?.extensionManager.dialog.showSignInDialog()
     })
 
     const input = comfyPage.page.locator('#comfy-org-sign-in-password')

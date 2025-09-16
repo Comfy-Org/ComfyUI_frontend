@@ -32,10 +32,16 @@ test.describe('Combo text widget', () => {
   }) => {
     const getComboValues = async () =>
       comfyPage.page.evaluate(() => {
-        return window['app'].graph.nodes
-          .find((node) => node.title === 'Node With Optional Combo Input')
-          .widgets.find((widget) => widget.name === 'optional_combo_input')
-          .options.values
+        const app = window['app']
+        if (!app?.graph?.nodes) return null
+        const node = app.graph.nodes.find(
+          (node: any) => node.title === 'Node With Optional Combo Input'
+        )
+        if (!node?.widgets) return null
+        const widget = node.widgets.find(
+          (widget: any) => widget.name === 'optional_combo_input'
+        )
+        return widget?.options?.values
       })
 
     await comfyPage.loadWorkflow('inputs/optional_combo_input')
@@ -67,9 +73,16 @@ test.describe('Combo text widget', () => {
     await comfyPage.nextFrame()
     // get the combo widget's values
     const comboValues = await comfyPage.page.evaluate(() => {
-      return window['app'].graph.nodes
-        .find((node) => node.title === 'Node With V2 Combo Input')
-        .widgets.find((widget) => widget.name === 'combo_input').options.values
+      const app = window['app']
+      if (!app?.graph?.nodes) return null
+      const node = app.graph.nodes.find(
+        (node: any) => node.title === 'Node With V2 Combo Input'
+      )
+      if (!node?.widgets) return null
+      const widget = node.widgets.find(
+        (widget: any) => widget.name === 'combo_input'
+      )
+      return widget?.options?.values
     })
     expect(comboValues).toEqual(['A', 'B'])
   })
@@ -96,16 +109,19 @@ test.describe('Slider widget', () => {
     const widget = await node.getWidget(0)
 
     await comfyPage.page.evaluate(() => {
-      const widget = window['app'].graph.nodes[0].widgets[0]
-      widget.callback = (value: number) => {
-        window['widgetValue'] = value
+      const app = window['app']
+      if (app?.graph?.nodes?.[0]?.widgets?.[0]) {
+        const widget = app.graph.nodes[0].widgets[0]
+        widget.callback = (value: number) => {
+          ;(window as any)['widgetValue'] = value
+        }
       }
     })
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
 
     expect(
-      await comfyPage.page.evaluate(() => window['widgetValue'])
+      await comfyPage.page.evaluate(() => (window as any)['widgetValue'])
     ).toBeDefined()
   })
 })
@@ -118,16 +134,19 @@ test.describe('Number widget', () => {
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
     await comfyPage.page.evaluate(() => {
-      const widget = window['app'].graph.nodes[0].widgets[0]
-      widget.callback = (value: number) => {
-        window['widgetValue'] = value
+      const app = window['app']
+      if (app?.graph?.nodes?.[0]?.widgets?.[0]) {
+        const widget = app.graph.nodes[0].widgets[0]
+        widget.callback = (value: number) => {
+          ;(window as any)['widgetValue'] = value
+        }
       }
     })
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
 
     expect(
-      await comfyPage.page.evaluate(() => window['widgetValue'])
+      await comfyPage.page.evaluate(() => (window as any)['widgetValue'])
     ).toBeDefined()
   })
 })
@@ -140,8 +159,14 @@ test.describe('Dynamic widget manipulation', () => {
     await comfyPage.page.waitForTimeout(300)
 
     await comfyPage.page.evaluate(() => {
-      window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
-      window['graph'].setDirtyCanvas(true, true)
+      window['graph']!.nodes[0].addWidget(
+        'number',
+        'new_widget',
+        10,
+        undefined,
+        undefined
+      )
+      window['graph']!.setDirtyCanvas(true, true)
     })
 
     await expect(comfyPage.canvas).toHaveScreenshot('ksampler_widget_added.png')
@@ -296,7 +321,9 @@ test.describe('Animated image widget', () => {
     await comfyPage.page.evaluate(
       ([loadId, saveId]) => {
         // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
-        window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
+        if (window['app']?.nodeOutputs) {
+          window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
+        }
       },
       [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
     )

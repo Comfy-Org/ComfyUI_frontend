@@ -13,7 +13,7 @@ test.describe('Menu', () => {
     )
 
     await comfyPage.page.evaluate(async () => {
-      window['app'].extensionManager.registerSidebarTab({
+      window['app']?.extensionManager.registerSidebarTab({
         id: 'search',
         icon: 'pi pi-search',
         title: 'search',
@@ -156,7 +156,7 @@ test.describe('Menu', () => {
 
     test('Can catch error when executing command', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        window['app'].registerExtension({
+        window['app']?.registerExtension({
           name: 'TestExtension1',
           commands: [
             {

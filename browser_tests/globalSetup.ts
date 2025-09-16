@@ -5,7 +5,7 @@ import { backupPath } from './utils/backupUtils'
 
 dotenv.config()
 
-export default function globalSetup(config: FullConfig) {
+export default function globalSetup(_config: FullConfig) {
   if (!process.env.CI) {
     if (process.env.TEST_COMFYUI_DIR) {
       backupPath([process.env.TEST_COMFYUI_DIR, 'user'])

@@ -8,7 +8,7 @@ test.describe('Group Node', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'
     const groupNodeBookmarkName = `workflow>${groupNodeName}`
-    let libraryTab
+    let libraryTab: any
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
@@ -17,7 +17,7 @@ test.describe('Group Node', () => {
       await libraryTab.open()
     })
 
-    test('Is added to node library sidebar', async ({ comfyPage }) => {
+    test('Is added to node library sidebar', async () => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
 
@@ -107,7 +107,7 @@ test.describe('Group Node', () => {
   test('Manage group opens with the correct group selected', async ({
     comfyPage
   }) => {
-    const makeGroup = async (name, type1, type2) => {
+    const makeGroup = async (name: string, type1: string, type2: string) => {
       const node1 = (await comfyPage.getNodeRefsByType(type1))[0]
       const node2 = (await comfyPage.getNodeRefsByType(type2))[0]
       await node1.click('title')
@@ -148,15 +148,15 @@ test.describe('Group Node', () => {
     const totalInputCount = await comfyPage.page.evaluate((nodeName) => {
       const {
         extra: { groupNodes }
-      } = window['app'].graph
-      const { nodes } = groupNodes[nodeName]
-      return nodes.reduce((acc: number, node) => {
+      } = window['app']?.graph || { extra: { groupNodes: {} } }
+      const { nodes } = groupNodes?.[nodeName] || { nodes: [] }
+      return nodes.reduce((acc: number, node: any) => {
         return acc + node.inputs.length
       }, 0)
     }, groupNodeName)
 
     const visibleInputCount = await comfyPage.page.evaluate((id) => {
-      const node = window['app'].graph.getNodeById(id)
+      const node = window['app']?.graph?.getNodeById?.(id)
       return node.inputs.length
     }, groupNodeId)
 
@@ -222,9 +222,11 @@ test.describe('Group Node', () => {
     const GROUP_NODE_TYPE = `${GROUP_NODE_PREFIX}${GROUP_NODE_NAME}`
 
     const isRegisteredLitegraph = async (comfyPage: ComfyPage) => {
-      return await comfyPage.page.evaluate((nodeType: string) => {
-        return !!window['LiteGraph'].registered_node_types[nodeType]
-      }, GROUP_NODE_TYPE)
+      return await comfyPage.page.evaluate((nodeType: any) => {
+        const liteGraph = (window as any)['LiteGraph']
+        if (!liteGraph?.registered_node_types) return false
+        return !!(liteGraph.registered_node_types as any)[nodeType]
+      }, GROUP_NODE_TYPE as any)
     }
 
     const isRegisteredNodeDefStore = async (comfyPage: ComfyPage) => {
@@ -298,12 +300,12 @@ test.describe('Group Node', () => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.ctrlV()
       const currentGraphState = await comfyPage.page.evaluate(() =>
-        window['app'].graph.serialize()
+        window['app']?.graph?.serialize()
       )
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
         await comfyPage.page.evaluate(
-          (workflow) => window['app'].loadGraphData(workflow),
+          (workflow) => window['app']?.loadGraphData?.(workflow),
           currentGraphState
         )
         await comfyPage.nextFrame()

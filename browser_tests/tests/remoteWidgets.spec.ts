@@ -25,22 +25,28 @@ test.describe('Remote COMBO Widget', () => {
     nodeName: string
   ): Promise<string[] | undefined> => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
+      const node = window['app']?.graph.nodes.find(
+        (node: any) => node.title === name
+      )
       return node.widgets[0].options.values
     }, nodeName)
   }
 
   const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
+      const node = window['app']?.graph.nodes.find(
+        (node: any) => node.title === name
+      )
       return node.widgets[0].value
     }, nodeName)
   }
 
   const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
     return comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
-      const buttonWidget = node.widgets.find((w) => w.name === 'refresh')
+      const node = window['app']?.graph.nodes.find(
+        (node: any) => node.title === name
+      )
+      const buttonWidget = node.widgets.find((w: any) => w.name === 'refresh')
       return buttonWidget?.callback()
     }, nodeName)
   }
@@ -61,7 +67,7 @@ test.describe('Remote COMBO Widget', () => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
-        async (route, request) => {
+        async (route: any, request: any) => {
           const params = new URL(request.url()).searchParams
           const sort = params.get('sort')
           await route.fulfill({
@@ -94,7 +100,9 @@ test.describe('Remote COMBO Widget', () => {
       await comfyPage.page.waitForTimeout(512)
 
       const node = await comfyPage.page.evaluate((name) => {
-        return window['app'].graph.nodes.find((node) => node.title === name)
+        return window['app']?.graph.nodes.find(
+          (node: any) => node.title === name
+        )
       }, nodeName)
       expect(node).toBeDefined()
 
@@ -200,7 +208,7 @@ test.describe('Remote COMBO Widget', () => {
       // Fulfill each request with a unique timestamp
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
-        async (route, request) => {
+        async (route: any, _request: any) => {
           await route.fulfill({
             body: JSON.stringify([Date.now()]),
             status: 200
