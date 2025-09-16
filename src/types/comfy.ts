@@ -6,6 +6,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
+import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
@@ -165,6 +166,12 @@ export interface ComfyExtension {
   afterConfigureGraph?(
     missingNodeTypes: MissingNodeType[]
   ): Promise<void> | void
+
+  /**
+   * Fired whenever authentication resolves, providing the user id.
+   * Extensions can register at any time and will receive the latest value immediately.
+   */
+  onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
 
   [key: string]: any
 }
