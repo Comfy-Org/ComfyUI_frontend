@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import enMessages from '@/locales/en/main.json'
+import type { Settings } from '@/schemas/apiSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -34,11 +35,18 @@ const setupMockStores = () => {
   const nodeDefStore = useNodeDefStore()
 
   // Mock tooltip delay setting
-  vi.spyOn(settingStore, 'get').mockImplementation((key) => {
-    if (key === 'Comfy.EnableTooltips') return true
-    if (key === 'LiteGraph.Node.TooltipDelay') return 500
-    return undefined
-  })
+  vi.spyOn(settingStore, 'get').mockImplementation(
+    <K extends keyof Settings>(key: K): Settings[K] => {
+      switch (key) {
+        case 'Comfy.EnableTooltips':
+          return true as Settings[K]
+        case 'LiteGraph.Node.TooltipDelay':
+          return 500 as Settings[K]
+        default:
+          return undefined as Settings[K]
+      }
+    }
+  )
 
   // Mock node definition store
   vi.spyOn(nodeDefStore, 'nodeDefsByName', 'get').mockReturnValue({
