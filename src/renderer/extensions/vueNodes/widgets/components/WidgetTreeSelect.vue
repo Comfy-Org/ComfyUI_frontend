@@ -25,6 +25,15 @@ import {
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
+export type TreeNode = {
+  key: string
+  label?: string
+  data?: unknown
+  children?: TreeNode[]
+  leaf?: boolean
+  selectable?: boolean
+}
+
 const props = defineProps<{
   widget: SimplifiedWidget<any>
   modelValue: any
