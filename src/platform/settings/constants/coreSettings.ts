@@ -1,4 +1,5 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
@@ -155,9 +156,6 @@ export const CORE_SETTINGS: SettingParams[] = [
       '1.25.0': 'legacy'
     },
     onChange: async (newValue: string) => {
-      const { useSettingStore } = await import(
-        '@/platform/settings/settingStore'
-      )
       const settingStore = useSettingStore()
 
       if (newValue === 'standard') {
@@ -184,9 +182,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     ],
     versionAdded: '1.27.4',
     onChange: async (newValue: string) => {
-      const { useSettingStore } = await import(
-        '@/platform/settings/settingStore'
-      )
       const settingStore = useSettingStore()
 
       const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
@@ -216,9 +211,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     ],
     versionAdded: '1.27.4',
     onChange: async (newValue: string) => {
-      const { useSettingStore } = await import(
-        '@/platform/settings/settingStore'
-      )
       const settingStore = useSettingStore()
 
       const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
