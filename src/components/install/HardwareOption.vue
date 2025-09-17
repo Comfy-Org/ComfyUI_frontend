@@ -20,6 +20,7 @@
           :alt="placeholderText"
           class="w-full h-full object-cover"
           style="object-position: 57% center"
+          draggable="false"
         />
         <span v-else class="text-xl font-medium text-neutral-400">
           {{ placeholderText }}
