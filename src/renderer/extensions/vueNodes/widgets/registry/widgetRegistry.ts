@@ -3,6 +3,7 @@
  */
 import type { Component } from 'vue'
 
+import WidgetAudioUI from '../components/WidgetAudioUI.vue'
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
 import WidgetColorPicker from '../components/WidgetColorPicker.vue'
@@ -18,7 +19,6 @@ import WidgetSelectButton from '../components/WidgetSelectButton.vue'
 import WidgetTextarea from '../components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
 import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
-import WidgetAudioUI from '../components/WidgetAudioUI.vue'
 
 interface WidgetDefinition {
   component: Component
