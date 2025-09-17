@@ -99,8 +99,7 @@ const descriptionText = computed(() => {
   return st(`install.gpuPicker.${key}Description`, '')
 })
 
-const pickGpu = (value: typeof selected.value) => {
-  const newValue = selected.value === value ? null : value
-  selected.value = newValue
+const pickGpu = (value: TorchDeviceType) => {
+  selected.value = value
 }
 </script>
