@@ -264,7 +264,7 @@ const onFocus = async () => {
 @reference '../../assets/css/style.css';
 
 /* Style the accordion to match the mockup */
-::deep(.location-picker-accordion) {
+:deep(.location-picker-accordion) {
   @apply px-12;
 
   .p-accordionpanel {
