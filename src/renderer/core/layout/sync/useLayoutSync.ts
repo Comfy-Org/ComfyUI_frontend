@@ -58,6 +58,40 @@ export function useLayoutSync() {
   }
 
   /**
+   * Force sync all layout data to LiteGraph immediately
+   * Useful before workflow serialization to ensure all changes are persisted
+   */
+  function forceSyncAll(canvas: any) {
+    if (!canvas?.graph) return
+
+    const allNodeLayouts = layoutStore.getAllNodeLayouts()
+    for (const [nodeId, layout] of allNodeLayouts) {
+      const liteNode = canvas.graph.getNodeById(nodeId)
+      if (!liteNode || !layout) continue
+
+      // Update position if changed
+      if (
+        liteNode.pos[0] !== layout.position.x ||
+        liteNode.pos[1] !== layout.position.y
+      ) {
+        liteNode.pos[0] = layout.position.x
+        liteNode.pos[1] = layout.position.y
+      }
+
+      // Update size if changed
+      if (
+        liteNode.size[0] !== layout.size.width ||
+        liteNode.size[1] !== layout.size.height
+      ) {
+        liteNode.size[0] = layout.size.width
+        liteNode.size[1] = layout.size.height
+      }
+    }
+
+    canvas.setDirty(true, true)
+  }
+
+  /**
    * Stop syncing
    */
   function stopSync() {
@@ -74,6 +108,7 @@ export function useLayoutSync() {
 
   return {
     startSync,
-    stopSync
+    stopSync,
+    forceSyncAll
   }
 }

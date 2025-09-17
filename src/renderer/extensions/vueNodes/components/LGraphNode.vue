@@ -27,7 +27,9 @@
     :style="[
       {
         transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
+        zIndex: zIndex,
+        ...(currentSize?.width && { width: `${currentSize.width}px` }),
+        ...(currentSize?.height && { height: `${currentSize.height}px` })
       },
       dragStyle
     ]"
@@ -116,6 +118,13 @@
         />
       </div>
     </template>
+
+    <!-- Resize handle -->
+    <div
+      v-if="!readonly"
+      class="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-0 hover:opacity-20 hover:bg-white transition-opacity duration-200"
+      @pointerdown.stop="startResize"
+    />
   </div>
 </template>
 
@@ -145,6 +154,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useNodeResize } from '../composables/useNodeResize'
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -188,7 +198,7 @@ const emit = defineEmits<{
   'update:title': [nodeId: string, newTitle: string]
 }>()
 
-useVueElementTracking(nodeData.id, 'node')
+const tracking = useVueElementTracking(nodeData.id, 'node')
 
 // Inject selection state from parent
 const selectedNodeIds = inject(SelectedNodeIdsKey)
@@ -277,6 +287,31 @@ onMounted(() => {
     resize(screenSize)
   }
 })
+
+// Resize with local state to avoid reactive loops
+const currentSize = ref<{ width: number; height: number } | null>(null)
+
+const { startResize } = useNodeResize(
+  (newSize) => {
+    // Update local state for immediate visual feedback
+    currentSize.value = newSize
+  },
+  {
+    minWidth: 200,
+    minHeight: 100,
+    maxWidth: 800,
+    maxHeight: 600,
+    transformState,
+    onStart: () => tracking.pause(), // Pause automatic tracking
+    onEnd: () => {
+      // Sync with layout system once at the end
+      if (currentSize.value) {
+        resize(currentSize.value)
+      }
+      tracking.resume() // Resume automatic tracking
+    }
+  }
+)
 
 // Drag state for styling
 const isDragging = ref(false)
