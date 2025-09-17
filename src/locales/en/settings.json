@@ -6,7 +6,7 @@
     "name": "Send anonymous usage metrics"
   },
   "Comfy-Desktop_UV_PypiInstallMirror": {
-    "name": "Pypi Install Mirror",
+    "name": "PyPI Install Mirror",
     "tooltip": "Default pip install mirror"
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
