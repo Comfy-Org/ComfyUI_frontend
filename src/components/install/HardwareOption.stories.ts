@@ -61,3 +61,13 @@ export const ManualInstall: Story = {
     selected: false
   }
 }
+
+export const NvidiaSelected: Story = {
+  args: {
+    imagePath: '/assets/images/nvidia-logo-square.jpg',
+    placeholderText: 'NVIDIA',
+    subtitle: 'NVIDIA',
+    value: 'nvidia',
+    selected: true
+  }
+}
