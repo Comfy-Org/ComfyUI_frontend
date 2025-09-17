@@ -410,9 +410,11 @@
     "gpuPicker": {
       "title": "Choose your hardware setup",
       "recommended": "RECOMMENDED",
+      "nvidiaSubtitle": "NVIDIA CUDA",
       "cpuSubtitle": "CPU Mode",
       "manualSubtitle": "Manual Setup",
       "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",
+      "nvidiaDescription": "Use your NVIDIA GPU with CUDA acceleration for the best performance.",
       "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
       "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
     },
