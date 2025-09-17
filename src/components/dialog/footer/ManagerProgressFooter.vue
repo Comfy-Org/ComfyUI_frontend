@@ -91,7 +91,7 @@ const dialogStore = useDialogStore()
 const progressDialogContent = useManagerProgressDialogStore()
 const comfyManagerStore = useComfyManagerStore()
 const settingStore = useSettingStore()
-const { performConflictDetection } = useConflictDetection()
+const { runFullConflictAnalysis } = useConflictDetection()
 
 // State management for restart process
 const isRestarting = ref<boolean>(false)
@@ -155,7 +155,7 @@ const handleRestart = async () => {
         await useWorkflowService().reloadCurrentWorkflow()
 
         // Run conflict detection after restart completion
-        await performConflictDetection()
+        await runFullConflictAnalysis()
       } finally {
         await settingStore.set(
           'Comfy.Toast.DisableReconnectingToast',
