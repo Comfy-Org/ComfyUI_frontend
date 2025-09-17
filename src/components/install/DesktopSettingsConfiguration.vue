@@ -10,14 +10,14 @@
       </p>
     </div>
 
-    <div class="flex flex-col bg-neutral-800 p-4 rounded-lg">
+    <div class="flex flex-col bg-neutral-800 p-4 rounded-lg text-sm">
       <!-- Auto Update Setting -->
       <div class="flex items-center gap-4">
         <div class="flex-1">
           <h3 class="text-lg font-medium text-neutral-100">
             {{ $t('install.settings.autoUpdate') }}
           </h3>
-          <p class="text-sm text-neutral-400 mt-1">
+          <p class="text-neutral-400 mt-1">
             {{ $t('install.settings.autoUpdateDescription') }}
           </p>
         </div>
@@ -32,14 +32,10 @@
           <h3 class="text-lg font-medium text-neutral-100">
             {{ $t('install.settings.allowMetrics') }}
           </h3>
-          <p class="text-sm text-neutral-400 mt-1">
+          <p class="text-neutral-400">
             {{ $t('install.settings.allowMetricsDescription') }}
           </p>
-          <a
-            href="#"
-            class="text-sm text-blue-400 hover:text-blue-300 mt-1 inline-block"
-            @click.prevent="showMetricsInfo"
-          >
+          <a href="#" @click.prevent="showMetricsInfo">
             {{ $t('install.settings.learnMoreAboutData') }}
           </a>
         </div>
@@ -53,6 +49,7 @@
       modal
       dismissable-mask
       :header="$t('install.settings.dataCollectionDialog.title')"
+      class="select-none"
     >
       <div class="text-neutral-300">
         <h4 class="font-medium mb-2">
@@ -111,11 +108,7 @@
         </ul>
 
         <div class="mt-4">
-          <a
-            href="https://comfy.org/privacy"
-            target="_blank"
-            class="text-blue-400 hover:text-blue-300 underline"
-          >
+          <a href="https://comfy.org/privacy" target="_blank">
             {{ $t('install.settings.dataCollectionDialog.viewFullPolicy') }}
           </a>
         </div>
