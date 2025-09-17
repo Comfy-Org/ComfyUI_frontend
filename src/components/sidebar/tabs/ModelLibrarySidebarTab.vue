@@ -56,12 +56,8 @@ import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import {
-  ComfyModelDef,
-  ModelFolder,
-  ResourceState,
-  useModelStore
-} from '@/stores/modelStore'
+import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
+import { ResourceState, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'

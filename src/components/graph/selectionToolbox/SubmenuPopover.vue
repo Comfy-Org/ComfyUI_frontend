@@ -48,9 +48,9 @@
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-import {
-  type MenuOption,
-  type SubMenuOption
+import type {
+  MenuOption,
+  SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 

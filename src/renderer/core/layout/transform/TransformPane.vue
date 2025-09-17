@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { computed, provide } from 'vue'
 
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'

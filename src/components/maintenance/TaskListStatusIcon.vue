@@ -8,7 +8,8 @@
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
 import ProgressSpinner from 'primevue/progressspinner'
-import { MaybeRef, computed } from 'vue'
+import type { MaybeRef } from 'vue'
+import { computed } from 'vue'
 
 import { t } from '@/i18n'
 

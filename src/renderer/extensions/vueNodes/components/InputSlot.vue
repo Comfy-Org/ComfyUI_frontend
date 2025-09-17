@@ -39,7 +39,7 @@ import {
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
-import { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
