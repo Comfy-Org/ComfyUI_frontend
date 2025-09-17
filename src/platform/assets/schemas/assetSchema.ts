@@ -4,7 +4,7 @@ import { z } from 'zod'
 const zAsset = z.object({
   id: z.string(),
   name: z.string(),
-  asset_hash: z.string(),
+  asset_hash: z.string().nullable(),
   size: z.number(),
   mime_type: z.string().nullable(),
   tags: z.array(z.string()),
