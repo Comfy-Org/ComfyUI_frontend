@@ -14,6 +14,11 @@
     unstyled
     :max-selected-labels="0"
     :pt="pt"
+    :aria-label="label || t('g.multiSelectDropdown')"
+    role="combobox"
+    :aria-expanded="false"
+    aria-haspopup="listbox"
+    :tabindex="0"
   >
     <template
       v-if="showSearchBox || showSelectedCount || showClearButton"
@@ -106,14 +111,16 @@ import MultiSelect, {
   MultiSelectPassThroughMethodOptions
 } from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/input/SearchBox.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
 import TextButton from '../button/TextButton.vue'
+import { type SelectOption } from './types'
 
-type Option = { name: string; value: string }
+type Option = SelectOption
 
 defineOptions({
   inheritAttrs: false
@@ -154,6 +161,8 @@ const selectedItems = defineModel<Option[]>({
   required: true
 })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
+
+const { t } = useI18n()
 const selectedCount = computed(() => selectedItems.value.length)
 
 const popoverStyle = usePopoverSizing({
@@ -191,7 +200,7 @@ const filteredOptions = computed(() => {
 
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
-    class: [
+    class: cn(
       'h-10 relative inline-flex cursor-pointer select-none',
       'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
       'transition-all duration-200 ease-in-out',
@@ -199,8 +208,9 @@ const pt = computed(() => ({
       selectedCount.value > 0
         ? 'border-blue-400 dark-theme:border-blue-500'
         : 'border-transparent',
+      'focus-within:border-blue-400 dark-theme:focus-within:border-blue-500',
       { 'opacity-60 cursor-default': props.disabled }
-    ]
+    )
   }),
   labelContainer: {
     class:

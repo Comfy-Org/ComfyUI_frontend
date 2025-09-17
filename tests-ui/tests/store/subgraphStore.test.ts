@@ -28,7 +28,7 @@ vi.mock('@/services/dialogService', () => ({
     confirm: () => true
   }))
 }))
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({
     getCanvas: () => comfyApp.canvas
   }))

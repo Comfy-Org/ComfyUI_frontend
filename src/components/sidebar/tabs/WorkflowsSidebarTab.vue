@@ -141,13 +141,13 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
-import { useWorkflowService } from '@/services/workflowService'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
-} from '@/stores/workflowStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'

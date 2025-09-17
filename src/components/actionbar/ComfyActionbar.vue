@@ -24,7 +24,7 @@ import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
 import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 

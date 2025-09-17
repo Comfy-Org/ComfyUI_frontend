@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import {
   useComfyManagerStore,
@@ -13,13 +14,12 @@ import {
 } from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { TaskLog } from '@/types/comfyManagerTypes'
 
 // Mock modules
 vi.mock('@/stores/comfyManagerStore')
 vi.mock('@/stores/dialogStore')
-vi.mock('@/stores/settingStore')
+vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/commandStore')
 vi.mock('@/services/comfyManagerService')
 vi.mock('@/composables/useConflictDetection', () => ({
@@ -44,7 +44,7 @@ vi.mock('@vueuse/core', async () => {
     )
   }
 })
-vi.mock('@/services/workflowService', () => ({
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: vi.fn(() => ({
     reloadCurrentWorkflow: vi.fn().mockResolvedValue(undefined)
   }))

@@ -23,8 +23,8 @@
 import Button from 'primevue/button'
 import { CSSProperties, computed, watchEffect } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 

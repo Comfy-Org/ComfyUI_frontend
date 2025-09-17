@@ -1,22 +1,25 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { assetService } from '@/platform/assets/services/assetService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { assetService } from '@/services/assetService'
 import { useModelStore } from '@/stores/modelStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
-    viewMetadata: vi.fn()
+    viewMetadata: vi.fn(),
+    apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
   }
 }))
 
 // Mock the assetService
-vi.mock('@/services/assetService', () => ({
+vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetModelFolders: vi.fn(),
     getAssetModels: vi.fn()
@@ -24,7 +27,7 @@ vi.mock('@/services/assetService', () => ({
 }))
 
 // Mock the settingStore
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn()
 }))
 

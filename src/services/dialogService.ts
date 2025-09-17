@@ -8,7 +8,6 @@ import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
 import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsDialogContent.vue'
 import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
@@ -22,6 +21,7 @@ import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { t } from '@/i18n'
+import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import {
   type DialogComponentProps,

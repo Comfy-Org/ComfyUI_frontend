@@ -2,11 +2,11 @@ import { storeToRefs } from 'pinia'
 import { computed, readonly } from 'vue'
 
 import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useToastStore } from '@/stores/toastStore'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
 export enum ManagerUIState {
