@@ -5,7 +5,7 @@
   <div
     v-else
     class="lg-node-header flex items-center justify-between p-4 rounded-t-2xl cursor-move"
-    :data-testid="`node-header-${nodeInfo?.id || ''}`"
+    :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
     <!-- Collapse/Expand Button -->
@@ -55,7 +55,7 @@ interface NodeHeaderProps {
   collapsed?: boolean
 }
 
-const props = defineProps<NodeHeaderProps>()
+const { nodeData, readonly, collapsed } = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -75,17 +75,15 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const nodeInfo = computed(() => props.nodeData)
-
 const tooltipContainer =
   inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
-  nodeInfo.value?.type || '',
+  nodeData?.type || '',
   tooltipContainer
 )
 
 const tooltipConfig = computed(() => {
-  if (props.readonly || isEditing.value) {
+  if (readonly || isEditing.value) {
     return { value: '', disabled: true }
   }
   const description = getNodeDescription.value
@@ -100,13 +98,13 @@ const resolveTitle = (info: VueNodeData | undefined) => {
 }
 
 // Local state for title to provide immediate feedback
-const displayTitle = ref(resolveTitle(nodeInfo.value))
+const displayTitle = ref(resolveTitle(nodeData))
 
 // Watch for external changes to the node title or type
 watch(
-  () => [nodeInfo.value?.title, nodeInfo.value?.type] as const,
+  () => [nodeData?.title, nodeData?.type] as const,
   () => {
-    const next = resolveTitle(nodeInfo.value)
+    const next = resolveTitle(nodeData)
     if (next !== displayTitle.value) {
       displayTitle.value = next
     }
@@ -119,7 +117,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
-  if (!props.readonly) {
+  if (!readonly) {
     isEditing.value = true
   }
 }
