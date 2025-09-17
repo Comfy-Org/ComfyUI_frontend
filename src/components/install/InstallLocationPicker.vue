@@ -263,7 +263,6 @@ const onFocus = async () => {
 <style scoped>
 @reference '../../assets/css/style.css';
 
-/* Style the accordion to match the mockup */
 :deep(.location-picker-accordion) {
   @apply px-12;
 
@@ -281,29 +280,29 @@ const onFocus = async () => {
   /* When panel is expanded, adjust header border radius */
   .p-accordionpanel-active {
     .p-accordionheader {
-      @apply rounded-t-xl rounded-b-none; /* Round only top corners when expanded */
+      @apply rounded-t-xl rounded-b-none;
     }
   }
 
   .p-accordioncontent {
-    @apply bg-neutral-800/50 border-0 rounded-b-xl rounded-t-none; /* Same background as header */
+    @apply bg-neutral-800/50 border-0 rounded-b-xl rounded-t-none;
   }
 
   .p-accordioncontent-content {
-    @apply bg-transparent pt-3 pr-5 pb-5 pl-5; /* Add padding for better spacing */
+    @apply bg-transparent pt-3 pr-5 pb-5 pl-5;
   }
 
-  /* Override default chevron icons to use right/down */
+  /* Override default chevron icons to use up/down */
   .p-accordionheader-toggle-icon {
     &::before {
-      content: '\e933'; /* pi-chevron-right */
+      content: '\e933';
     }
   }
 
   .p-accordionpanel-active {
     .p-accordionheader-toggle-icon {
       &::before {
-        content: '\e902'; /* pi-chevron-down */
+        content: '\e902';
       }
     }
   }
