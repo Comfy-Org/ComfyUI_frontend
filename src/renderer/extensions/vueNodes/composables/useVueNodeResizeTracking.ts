@@ -15,7 +15,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 
-import { syncNodeSlotLayoutsNow } from './useSlotElementTracking'
+import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
 /**
  * Generic update item for element bounds tracking
@@ -127,7 +127,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // After node bounds are updated, refresh slot cached offsets and layouts
   if (nodesNeedingSlotResync.size > 0) {
     for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsNow(nodeId)
+      syncNodeSlotLayoutsFromDOM(nodeId)
     }
   }
 })
