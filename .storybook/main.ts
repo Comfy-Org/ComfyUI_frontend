@@ -15,6 +15,7 @@ const config: StorybookConfig = {
   async viteFinal(config) {
     // Use dynamic import to avoid CJS deprecation warning
     const { mergeConfig } = await import('vite')
+    const { default: tailwindcss } = await import('@tailwindcss/vite')
 
     // Filter out any plugins that might generate import maps
     if (config.plugins) {
@@ -39,6 +40,7 @@ const config: StorybookConfig = {
       // Replace plugins entirely to avoid inheritance issues
       plugins: [
         // Only include plugins we explicitly need for Storybook
+        tailwindcss(),
         Icons({
           compiler: 'vue3',
           customCollections: {
