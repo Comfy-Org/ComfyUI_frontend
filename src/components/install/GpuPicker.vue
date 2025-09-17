@@ -2,7 +2,6 @@
   <div
     class="grid grid-rows-[1fr_auto_auto_1fr] w-full max-w-3xl mx-auto h-[40rem] select-none"
   >
-    <!-- Title at top -->
     <h2 class="font-inter font-bold text-3xl text-neutral-100 text-center">
       {{ $t('install.gpuPicker.title') }}
     </h2>
@@ -58,7 +57,6 @@
       </div>
     </div>
 
-    <!-- Description text at bottom -->
     <div class="text-neutral-300 px-24">
       <p v-show="descriptionText" class="leading-relaxed">
         {{ descriptionText }}
