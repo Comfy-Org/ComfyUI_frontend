@@ -12,7 +12,7 @@ const zAsset = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   last_access_time: z.string(),
-  user_metadata: z.record(z.any()).optional(),
+  user_metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
   preview_id: z.string().nullable().optional()
 })
 

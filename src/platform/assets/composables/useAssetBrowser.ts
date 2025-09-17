@@ -3,6 +3,10 @@ import { computed, ref } from 'vue'
 import { t } from '@/i18n'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  getAssetBaseModel,
+  getAssetDescription
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { formatSize } from '@/utils/formatUtil'
 
 type AssetBadge = {
@@ -37,7 +41,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     // Extract description from metadata or create from tags
     const typeTag = asset.tags.find((tag) => tag !== 'models')
     const description =
-      asset.user_metadata?.description ||
+      getAssetDescription(asset) ||
       `${typeTag || t('assetBrowser.unknown')} model`
 
     // Format file size
@@ -52,9 +56,10 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     }
 
     // Base model badge from metadata
-    if (asset.user_metadata?.base_model) {
+    const baseModel = getAssetBaseModel(asset)
+    if (baseModel) {
       badges.push({
-        label: asset.user_metadata.base_model,
+        label: baseModel,
         type: 'base'
       })
     }
@@ -126,9 +131,10 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   const filterByQuery = (query: string) => (asset: AssetItem) => {
     if (!query) return true
     const lowerQuery = query.toLowerCase()
+    const description = getAssetDescription(asset)
     return (
       asset.name.toLowerCase().includes(lowerQuery) ||
-      asset.user_metadata?.description?.toLowerCase().includes(lowerQuery) ||
+      (description && description.toLowerCase().includes(lowerQuery)) ||
       asset.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
     )
   }
