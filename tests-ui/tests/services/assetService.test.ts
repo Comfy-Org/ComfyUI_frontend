@@ -14,7 +14,13 @@ vi.mock('@/stores/modelToNodeStore', () => ({
           'VAELoader',
           'TestNode'
         ])
-    )
+    ),
+    modelToNodeMap: {
+      'test-category': [{ nodeDef: { name: 'TestNode' }, key: 'test_input' }],
+      'other-category': [{ nodeDef: { name: 'OtherNode' }, key: 'other_input' }],
+      'checkpoints': [{ nodeDef: { name: 'CheckpointLoaderSimple' }, key: 'ckpt_name' }],
+      'loras': [{ nodeDef: { name: 'LoraLoader' }, key: 'lora_name' }]
+    }
   }))
 }))
 
@@ -208,6 +214,120 @@ describe('assetService', () => {
       expect(
         assetService.isAssetBrowserEligible('lora_name', 'UnknownNode')
       ).toBe(false)
+    })
+  })
+
+  describe('getAssetsForNodeType', () => {
+    it('should return assets for registered node type', async () => {
+      const testAssets = [
+        createTestAsset({
+          id: 'uuid-1',
+          name: 'test-asset.ext',
+          user_metadata: { filename: 'test-asset.ext' },
+          tags: ['models', 'test-category']
+        })
+      ]
+      mockApiResponse(testAssets)
+
+      const assets = await assetService.getAssetsForNodeType('TestNode')
+
+      expect(api.fetchApi).toHaveBeenCalledWith('/assets?include_tags=models,test-category')
+      expect(assets).toEqual(testAssets)
+    })
+
+    it('should return empty array for unregistered node type', async () => {
+      const assets = await assetService.getAssetsForNodeType('UnknownNode')
+      expect(assets).toEqual([])
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    })
+
+    it('should return empty array for empty string', async () => {
+      const assets = await assetService.getAssetsForNodeType('')
+      expect(assets).toEqual([])
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    })
+
+    it('should handle API errors gracefully', async () => {
+      mockApiError(500)
+
+      await expect(assetService.getAssetsForNodeType('TestNode')).rejects.toThrow(
+        'Unable to load assets for TestNode: Server returned 500. Please try again.'
+      )
+    })
+
+    it('should preserve full AssetItem structure with user_metadata', async () => {
+      const testAssets = [
+        createTestAsset({
+          id: 'uuid-1',
+          name: 'test-asset.ext',
+          user_metadata: { filename: 'test-asset.ext' },
+          tags: ['models', 'test-category']
+        })
+      ]
+      mockApiResponse(testAssets)
+
+      const assets = await assetService.getAssetsForNodeType('TestNode')
+
+      expect(assets[0]).toHaveProperty('user_metadata.filename', 'test-asset.ext')
+      expect(assets[0]).toHaveProperty('id', 'uuid-1')
+      expect(assets[0]).toHaveProperty('tags')
+    })
+  })
+
+  describe('getAssetDetails', () => {
+    it('should fetch complete asset details by ID', async () => {
+      const assetWithDetails = createTestAsset({
+        id: 'asset-123',
+        name: 'detailed-asset.safetensors',
+        user_metadata: { filename: 'checkpoints/detailed-asset.safetensors' }
+      })
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(assetWithDetails)
+      } as Response)
+
+      const asset = await assetService.getAssetDetails('asset-123')
+
+      expect(api.fetchApi).toHaveBeenCalledWith('/assets/asset-123')
+      expect(asset).toEqual(assetWithDetails)
+    })
+
+    it('should return asset with user_metadata.filename', async () => {
+      const assetWithDetails = createTestAsset({
+        id: 'asset-456',
+        user_metadata: { filename: 'loras/test-lora.safetensors' }
+      })
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(assetWithDetails)
+      } as Response)
+
+      const asset = await assetService.getAssetDetails('asset-456')
+
+      expect(asset.user_metadata?.filename).toBe('loras/test-lora.safetensors')
+    })
+
+    it('should throw error when API returns 404', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: false,
+        status: 404
+      } as Response)
+
+      await expect(assetService.getAssetDetails('nonexistent-id')).rejects.toThrow(
+        'Unable to load asset details for nonexistent-id: Server returned 404. Please try again.'
+      )
+    })
+
+    it('should throw error when response fails schema validation', async () => {
+      // Return invalid asset data that fails schema validation
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ invalid: 'data' })
+      } as Response)
+
+      await expect(assetService.getAssetDetails('invalid-asset')).rejects.toThrow(
+        /Invalid asset response against zod schema/
+      )
     })
   })
 })

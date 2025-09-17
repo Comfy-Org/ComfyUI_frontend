@@ -69,7 +69,7 @@ const {
   availableCategories,
   contentTitle,
   filteredAssets,
-  selectAsset
+  selectAssetWithCallback
 } = useAssetBrowser(props.assets)
 
 // Dialog controls panel visibility via prop
@@ -84,13 +84,10 @@ const handleClose = () => {
 }
 
 // Handle asset selection and emit to parent
-const handleAssetSelectAndEmit = (asset: AssetDisplayItem) => {
-  selectAsset(asset) // This logs the selection for dev mode
+const handleAssetSelectAndEmit = async (asset: AssetDisplayItem) => {
   emit('asset-select', asset) // Emit the full asset object
 
-  // Call prop callback if provided
-  if (props.onSelect) {
-    props.onSelect(asset.name) // Use asset name as the asset path
-  }
+  // Use composable for detail fetching and callback execution
+  await selectAssetWithCallback(asset.id, props.onSelect)
 }
 </script>

@@ -1,6 +1,7 @@
 import { fromZodError } from 'zod-validation-error'
 
 import {
+  type AssetItem,
   type AssetResponse,
   type ModelFile,
   type ModelFolder,
@@ -127,10 +128,74 @@ function createAssetService() {
     )
   }
 
+  /**
+   * Gets assets for a specific node type by finding the matching category
+   * and fetching all assets with that category tag
+   *
+   * @param nodeType - The ComfyUI node type (e.g., 'CheckpointLoaderSimple')
+   * @returns Promise<AssetItem[]> - Full asset objects with preserved metadata
+   */
+  async function getAssetsForNodeType(nodeType: string): Promise<AssetItem[]> {
+    if (!nodeType || typeof nodeType !== 'string') {
+      return []
+    }
+
+    // Find the category for this node type by reverse lookup in modelToNodeMap
+    const modelToNodeStore = useModelToNodeStore()
+    const modelToNodeMap = modelToNodeStore.modelToNodeMap
+
+    const category = Object.keys(modelToNodeMap).find(categoryKey =>
+      modelToNodeMap[categoryKey].some(provider => provider.nodeDef.name === nodeType)
+    )
+
+    if (!category) {
+      return []
+    }
+
+    // Fetch assets for this category using same API pattern as getAssetModels
+    const data = await handleAssetRequest(
+      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${category}`,
+      `assets for ${nodeType}`
+    )
+
+    // Return full AssetItem[] objects (don't strip like getAssetModels does)
+    return data?.assets?.filter(asset =>
+      !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
+    ) ?? []
+  }
+
+  /**
+   * Gets complete details for a specific asset by ID
+   * Calls the detail endpoint which includes user_metadata and all fields
+   *
+   * @param id - The asset ID
+   * @returns Promise<AssetItem> - Complete asset object with user_metadata
+   */
+  async function getAssetDetails(id: string): Promise<AssetItem> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
+    if (!res.ok) {
+      throw new Error(
+        `Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
+      )
+    }
+    const data = await res.json()
+
+    // Validate the single asset response against our schema
+    const result = assetResponseSchema.safeParse({ assets: [data] })
+    if (result.success && result.data.assets?.[0]) {
+      return result.data.assets[0]
+    }
+
+    const error = fromZodError(result.error)
+    throw new Error(`Invalid asset response against zod schema:\n${error}`)
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
-    isAssetBrowserEligible
+    isAssetBrowserEligible,
+    getAssetsForNodeType,
+    getAssetDetails
   }
 }
 

@@ -10,7 +10,7 @@ vi.mock('@/stores/dialogStore')
 interface AssetBrowserProps {
   nodeType: string
   inputName: string
-  onAssetSelected?: ReturnType<typeof vi.fn>
+  onAssetSelected?: (filename: string) => void
 }
 
 function createAssetBrowserProps(
@@ -85,5 +85,6 @@ describe('useAssetBrowserDialog', () => {
         key: 'global-asset-browser'
       })
     })
+
   })
 })

@@ -4,9 +4,11 @@ import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
+  IAssetWidget,
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
@@ -73,10 +75,21 @@ const addComboWidget = (
     const currentValue = getDefaultValue(inputSpec)
     const displayLabel = currentValue ?? t('widgets.selectModel')
 
-    const widget = node.addWidget('asset', inputSpec.name, displayLabel, () => {
-      console.log(
-        `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
-      )
+    const assetBrowserDialog = useAssetBrowserDialog()
+
+    const widget = node.addWidget('asset', inputSpec.name, displayLabel, async () => {
+      const assetWidget = widget as IAssetWidget
+      await assetBrowserDialog.show({
+        nodeType: node.comfyClass || '',
+        inputName: inputSpec.name,
+        currentValue: assetWidget.value,
+        onAssetSelected: (filename: string) => {
+          assetWidget.value = filename
+          // Must call widget.callback to notify litegraph of value changes
+          // This ensures proper serialization and triggers any downstream effects
+          assetWidget.callback?.(assetWidget.value)
+        }
+      })
     })
 
     return widget

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { d, t } from '@/i18n'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import {
   getAssetBaseModel,
   getAssetDescription
@@ -162,12 +163,51 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return filtered.map(transformAssetForDisplay)
   })
 
-  // Actions
-  function selectAsset(asset: AssetDisplayItem): UUID {
+  /**
+   * Asset selection that fetches full details and executes callback with filename
+   * @param assetId - The asset ID to select and fetch details for
+   * @param onSelect - Optional callback to execute with the asset filename
+   */
+  async function selectAssetWithCallback(
+    assetId: string,
+    onSelect?: (filename: string) => void
+  ): Promise<void> {
+    // Always log selection for debugging
     if (import.meta.env.DEV) {
-      console.log('Asset selected:', asset.id, asset.name)
+      console.log('Asset selected:', assetId)
     }
-    return asset.id
+
+    // If no callback provided, just return (no need to fetch details)
+    if (!onSelect) {
+      return
+    }
+
+    try {
+      // Fetch complete asset details to get user_metadata
+      const detailAsset = await assetService.getAssetDetails(assetId)
+
+      // Extract filename from user_metadata
+      const filename = detailAsset.user_metadata?.filename
+
+      // Validate filename exists and is not empty
+      if (!filename || typeof filename !== 'string' || filename.trim() === '') {
+        console.error(
+          'Invalid asset filename from user_metadata:',
+          filename || null,
+          'for asset:',
+          assetId
+        )
+        return
+      }
+
+      // Execute callback with validated filename
+      onSelect(filename)
+    } catch (error) {
+      console.error(
+        `Failed to fetch asset details for ${assetId}:`,
+        error
+      )
+    }
   }
 
   return {
@@ -182,7 +222,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     filteredAssets,
 
     // Actions
-    selectAsset,
-    transformAssetForDisplay
+    selectAssetWithCallback
   }
 }

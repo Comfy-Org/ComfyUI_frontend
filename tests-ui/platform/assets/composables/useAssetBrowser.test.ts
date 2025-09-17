@@ -1,10 +1,33 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    getAssetDetails: vi.fn()
+  }
+}))
+
+vi.mock('@/i18n', () => ({
+  t: (key: string) => {
+    const translations: Record<string, string> = {
+      'assetBrowser.allModels': 'All Models',
+      'assetBrowser.assets': 'Assets',
+      'assetBrowser.unknown': 'unknown'
+    }
+    return translations[key] || key
+  },
+  d: (date: Date, options?: any) => date.toLocaleDateString()
+}))
 
 describe('useAssetBrowser', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
   // Test fixtures - minimal data focused on functionality being tested
   const createApiAsset = (overrides: Partial<AssetItem> = {}): AssetItem => ({
     id: 'test-id',
@@ -26,8 +49,8 @@ describe('useAssetBrowser', () => {
         user_metadata: { description: 'Test model' }
       })
 
-      const { transformAssetForDisplay } = useAssetBrowser([apiAsset])
-      const result = transformAssetForDisplay(apiAsset)
+      const { filteredAssets } = useAssetBrowser([apiAsset])
+      const result = filteredAssets.value[0] // Get the transformed asset from filteredAssets
 
       // Preserves API properties
       expect(result.id).toBe(apiAsset.id)
@@ -49,15 +72,13 @@ describe('useAssetBrowser', () => {
         user_metadata: undefined
       })
 
-      const { transformAssetForDisplay } = useAssetBrowser([apiAsset])
-      const result = transformAssetForDisplay(apiAsset)
+      const { filteredAssets } = useAssetBrowser([apiAsset])
+      const result = filteredAssets.value[0]
 
       expect(result.description).toBe('loras model')
     })
 
     it('formats various file sizes correctly', () => {
-      const { transformAssetForDisplay } = useAssetBrowser([])
-
       const testCases = [
         { size: 512, expected: '512 B' },
         { size: 1536, expected: '1.5 KB' },
@@ -67,7 +88,8 @@ describe('useAssetBrowser', () => {
 
       testCases.forEach(({ size, expected }) => {
         const asset = createApiAsset({ size })
-        const result = transformAssetForDisplay(asset)
+        const { filteredAssets } = useAssetBrowser([asset])
+        const result = filteredAssets.value[0]
         expect(result.formattedSize).toBe(expected)
       })
     })
@@ -236,18 +258,87 @@ describe('useAssetBrowser', () => {
     })
   })
 
-  describe('Asset Selection', () => {
-    it('returns selected asset UUID for efficient handling', () => {
+
+  describe('Async Asset Selection with Detail Fetching', () => {
+    it('should fetch asset details and call onSelect with filename when provided', async () => {
+      const onSelectSpy = vi.fn()
       const asset = createApiAsset({
-        id: 'test-uuid-123',
-        name: 'selected_model.safetensors'
+        id: 'asset-123',
+        name: 'test-model.safetensors'
       })
-      const { selectAsset, transformAssetForDisplay } = useAssetBrowser([asset])
 
-      const displayAsset = transformAssetForDisplay(asset)
-      const result = selectAsset(displayAsset)
+      const detailAsset = createApiAsset({
+        id: 'asset-123',
+        name: 'test-model.safetensors',
+        user_metadata: { filename: 'checkpoints/test-model.safetensors' }
+      })
+      vi.mocked(assetService.getAssetDetails).mockResolvedValue(detailAsset)
 
-      expect(result).toBe('test-uuid-123')
+      const { selectAssetWithCallback } = useAssetBrowser([asset])
+
+      await selectAssetWithCallback(asset.id, onSelectSpy)
+
+      expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-123')
+      expect(onSelectSpy).toHaveBeenCalledWith('checkpoints/test-model.safetensors')
+    })
+
+    it('should handle missing user_metadata.filename as error', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const onSelectSpy = vi.fn()
+      const asset = createApiAsset({ id: 'asset-456' })
+
+      const detailAsset = createApiAsset({
+        id: 'asset-456',
+        user_metadata: { filename: '' } // Invalid empty filename
+      })
+      vi.mocked(assetService.getAssetDetails).mockResolvedValue(detailAsset)
+
+      const { selectAssetWithCallback } = useAssetBrowser([asset])
+
+      await selectAssetWithCallback(asset.id, onSelectSpy)
+
+      expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-456')
+      expect(onSelectSpy).not.toHaveBeenCalled()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Invalid asset filename from user_metadata:',
+        null,
+        'for asset:',
+        'asset-456'
+      )
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should handle API errors gracefully', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const onSelectSpy = vi.fn()
+      const asset = createApiAsset({ id: 'asset-789' })
+
+      const apiError = new Error('API Error')
+      vi.mocked(assetService.getAssetDetails).mockRejectedValue(apiError)
+
+      const { selectAssetWithCallback } = useAssetBrowser([asset])
+
+      await selectAssetWithCallback(asset.id, onSelectSpy)
+
+      expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-789')
+      expect(onSelectSpy).not.toHaveBeenCalled()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to fetch asset details for asset-789'),
+        apiError
+      )
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should not fetch details when no callback provided', async () => {
+      const asset = createApiAsset({ id: 'asset-no-callback' })
+
+      const { selectAssetWithCallback } = useAssetBrowser([asset])
+
+      await selectAssetWithCallback(asset.id)
+
+      expect(assetService.getAssetDetails).not.toHaveBeenCalled()
     })
   })
 
