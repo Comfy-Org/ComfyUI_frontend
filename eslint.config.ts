@@ -181,9 +181,9 @@ export default defineConfig([
               'aria-placeholder',
               'aria-roledescription',
               'aria-valuetext',
-              'title'
+              'title',
+              'placeholder'
             ],
-            input: ['placeholder'],
             img: ['alt']
           },
           // Ignore strings that are:
