@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 
-import { t } from '@/i18n'
+import { d, t } from '@/i18n'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -69,7 +69,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
 
     // Create display stats from API data
     const stats = {
-      formattedDate: new Date(asset.created_at).toLocaleDateString(),
+      formattedDate: d(new Date(asset.created_at), { dateStyle: 'short' }),
       downloadCount: undefined, // Not available in API
       stars: undefined // Not available in API
     }
