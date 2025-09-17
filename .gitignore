@@ -78,8 +78,8 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
-
-
+# MCP Servers
+.playwright-mcp/*
 
 .nx/cache
 .nx/workspace-data

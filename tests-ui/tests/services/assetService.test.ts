@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
@@ -17,26 +18,39 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   }))
 }))
 
+// Helper to create API-compliant test assets
+function createTestAsset(overrides: Partial<AssetItem> = {}) {
+  return {
+    id: 'test-uuid',
+    name: 'test-model.safetensors',
+    asset_hash: 'blake3:test123',
+    size: 123456,
+    mime_type: 'application/octet-stream',
+    tags: ['models', 'checkpoints'],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+    last_access_time: '2024-01-01T00:00:00Z',
+    ...overrides
+  }
+}
+
 // Test data constants
 const MOCK_ASSETS = {
-  checkpoints: {
+  checkpoints: createTestAsset({
     id: 'uuid-1',
     name: 'model1.safetensors',
-    tags: ['models', 'checkpoints'],
-    size: 123456
-  },
-  loras: {
+    tags: ['models', 'checkpoints']
+  }),
+  loras: createTestAsset({
     id: 'uuid-2',
     name: 'model2.safetensors',
-    tags: ['models', 'loras'],
-    size: 654321
-  },
-  vae: {
+    tags: ['models', 'loras']
+  }),
+  vae: createTestAsset({
     id: 'uuid-3',
     name: 'vae1.safetensors',
-    tags: ['models', 'vae'],
-    size: 789012
-  }
+    tags: ['models', 'vae']
+  })
 } as const
 
 // Helper functions
@@ -66,24 +80,21 @@ describe('assetService', () => {
   describe('getAssetModelFolders', () => {
     it('should extract directory names from asset tags and filter blacklisted ones', async () => {
       const assets = [
-        {
+        createTestAsset({
           id: 'uuid-1',
           name: 'checkpoint1.safetensors',
-          tags: ['models', 'checkpoints'],
-          size: 123456
-        },
-        {
+          tags: ['models', 'checkpoints']
+        }),
+        createTestAsset({
           id: 'uuid-2',
           name: 'config.yaml',
-          tags: ['models', 'configs'], // Blacklisted
-          size: 654321
-        },
-        {
+          tags: ['models', 'configs'] // Blacklisted
+        }),
+        createTestAsset({
           id: 'uuid-3',
           name: 'vae1.safetensors',
-          tags: ['models', 'vae'],
-          size: 789012
-        }
+          tags: ['models', 'vae']
+        })
       ]
       mockApiResponse(assets)
 
@@ -123,12 +134,11 @@ describe('assetService', () => {
       const assets = [
         { ...MOCK_ASSETS.checkpoints, name: 'valid.safetensors' },
         { ...MOCK_ASSETS.loras, name: 'lora.safetensors' }, // Wrong tag
-        {
+        createTestAsset({
           id: 'uuid-4',
           name: 'missing-model.safetensors',
-          tags: ['models', 'checkpoints', 'missing'], // Has missing tag
-          size: 654321
-        }
+          tags: ['models', 'checkpoints', 'missing'] // Has missing tag
+        })
       ]
       mockApiResponse(assets)
 
