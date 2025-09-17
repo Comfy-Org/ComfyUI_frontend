@@ -48,6 +48,8 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
+import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
+
 const moveSelectedNodesVersionAdded = '1.22.2'
 
 export function useCoreCommands(): ComfyCommand[] {
@@ -261,7 +263,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: () => {
-        dialogService.showTemplateWorkflowsDialog()
+        useWorkflowTemplateSelectorDialog().show()
       }
     },
     {
