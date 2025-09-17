@@ -22,7 +22,7 @@
       />
       <HardwareOption
         v-else
-        :image-path="'/assets/images/nvidia-logo.svg'"
+        :image-path="'/assets/images/nvidia-logo-square.jpg'"
         placeholder-text="NVIDIA"
         :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
         :value="'nvidia'"
