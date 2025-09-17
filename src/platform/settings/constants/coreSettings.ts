@@ -203,7 +203,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Canvas.MouseWheelScroll',
     category: ['LiteGraph', 'Canvas Navigation', 'MouseWheelScroll'],
     name: 'Mouse Wheel Scroll',
-    defaultValue: 'panning',
+    defaultValue: 'zoom',
     type: 'radio',
     options: [
       { value: 'panning', text: 'Panning' },
