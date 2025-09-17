@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import AssetBrowserModal from '../components/AssetBrowserModal.vue'
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import { mockAssets } from '@/platform/assets/fixtures/ui-mock-assets'
 
 // Component that simulates the useAssetBrowserDialog functionality with working close
 const DialogDemoComponent = {
@@ -49,7 +50,8 @@ const DialogDemoComponent = {
       handleOpenDialog,
       handleOpenWithCurrentValue,
       handleCloseDialog,
-      handleAssetSelected
+      handleAssetSelected,
+      mockAssets
     }
   },
   template: `
@@ -116,6 +118,7 @@ const DialogDemoComponent = {
       >
         <div class="w-[80vw] h-[80vh] max-w-[80vw] max-h-[80vh] rounded-2xl overflow-hidden">
           <AssetBrowserModal
+            :assets="mockAssets"
             :node-type="currentNodeType"
             :input-name="currentInputName"
             :current-value="currentValue"

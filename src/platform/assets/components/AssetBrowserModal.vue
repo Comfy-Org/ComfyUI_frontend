@@ -46,7 +46,6 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import { useAssetBrowser } from '../composables/useAssetBrowser'
-import { mockAssets } from '../fixtures/ui-mock-assets'
 import AssetGrid from './AssetGrid.vue'
 
 // Props
@@ -65,9 +64,6 @@ const emit = defineEmits<{
   close: []
 }>()
 
-// Use provided assets or fallback to mock data
-const assetsToUse = props.assets !== undefined ? props.assets : mockAssets
-
 // Use AssetBrowser composable for all business logic
 const {
   searchQuery,
@@ -76,7 +72,7 @@ const {
   contentTitle,
   filteredAssets,
   selectAsset
-} = useAssetBrowser(assetsToUse)
+} = useAssetBrowser(props.assets)
 
 // Dialog controls panel visibility via prop
 const shouldShowLeftPanel = computed(() => {

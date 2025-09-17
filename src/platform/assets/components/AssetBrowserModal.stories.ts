@@ -48,7 +48,7 @@ export const Default: Story = {
     nodeType: 'CheckpointLoaderSimple',
     inputName: 'ckpt_name',
     currentValue: '',
-    showLeftPanel: undefined
+    showLeftPanel: false
   },
   render: (args) => ({
     components: { AssetBrowserModal },
