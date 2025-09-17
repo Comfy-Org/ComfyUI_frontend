@@ -352,8 +352,8 @@ export class LitegraphLinkAdapter {
     } = {}
   ): void {
     // Apply same defaults as original renderLink
-    const startDir = start_dir ?? LinkDirection.RIGHT
-    const endDir = end_dir ?? LinkDirection.LEFT
+    const startDir = start_dir || LinkDirection.RIGHT
+    const endDir = end_dir || LinkDirection.LEFT
 
     // Convert flow to boolean
     const flowBool = flow === true || (typeof flow === 'number' && flow > 0)
