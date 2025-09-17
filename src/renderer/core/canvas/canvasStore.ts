@@ -1,6 +1,6 @@
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { type Raw, computed, markRaw, ref, shallowRef } from 'vue'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -99,7 +99,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   const currentGraph = shallowRef<LGraph | null>(null)
   const isInSubgraph = ref(false)
 
-  watch(
+  whenever(
     () => canvas.value,
     (newCanvas) => {
       if (newCanvas) {
@@ -118,7 +118,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         })
       }
     },
-    { immediate: true, once: true }
+    { immediate: true }
   )
 
   return {
