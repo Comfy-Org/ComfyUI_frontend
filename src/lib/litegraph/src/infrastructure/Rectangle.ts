@@ -4,42 +4,47 @@ import type {
   ReadOnlyPoint,
   ReadOnlyRect,
   ReadOnlySize,
-  ReadOnlyTypedArray,
   Size
 } from '@/lib/litegraph/src/interfaces'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**
- * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
+ * A rectangle, represented as an array of 4 numbers: [x, y, width, height].
  *
- * This class is a subclass of Float64Array, and so has all the methods of that class.  Notably,
- * {@link Rectangle.from} can be used to convert a {@link ReadOnlyRect}. Typing of this however,
- * is broken due to the base TS lib returning Float64Array rather than `this`.
- *
- * Sub-array properties ({@link Float64Array.subarray}):
- * - {@link pos}: The position of the top-left corner of the rectangle.
- * - {@link size}: The size of the rectangle.
+ * This class extends Array and provides both array access (rect[0], rect[1], etc.)
+ * and convenient property access (rect.x, rect.y, rect.width, rect.height).
  */
-export class Rectangle extends Float64Array {
-  #pos: Point | undefined
-  #size: Size | undefined
-
+export class Rectangle extends Array<number> {
   constructor(
     x: number = 0,
     y: number = 0,
     width: number = 0,
     height: number = 0
   ) {
-    super(4)
-
+    super()
     this[0] = x
     this[1] = y
     this[2] = width
     this[3] = height
+    this.length = 4
   }
 
   static override from([x, y, width, height]: ReadOnlyRect): Rectangle {
     return new Rectangle(x, y, width, height)
+  }
+
+  /** Set all values from an array (for TypedArray compatibility) */
+  set(values: ArrayLike<number>): void {
+    this[0] = values[0] ?? 0
+    this[1] = values[1] ?? 0
+    this[2] = values[2] ?? 0
+    this[3] = values[3] ?? 0
+  }
+
+  /** Create a subarray (for TypedArray compatibility) */
+  subarray(begin: number = 0, end?: number): number[] {
+    const endIndex = end ?? this.length
+    return this.slice(begin, endIndex)
   }
 
   /**
@@ -65,23 +70,11 @@ export class Rectangle extends Float64Array {
       : new Rectangle(rect[0], rect[1], rect[2], rect[3])
   }
 
-  override subarray(
-    begin: number = 0,
-    end?: number
-  ): Float64Array<ArrayBuffer> {
-    const byteOffset = begin << 3
-    const length = end === undefined ? end : end - begin
-    return new Float64Array(this.buffer, byteOffset, length)
-  }
-
   /**
-   * A reference to the position of the top-left corner of this rectangle.
-   *
-   * Updating the values of the returned object will update this rectangle.
+   * The position of the top-left corner of this rectangle.
    */
   get pos(): Point {
-    this.#pos ??= this.subarray(0, 2)
-    return this.#pos!
+    return [this[0], this[1]]
   }
 
   set pos(value: ReadOnlyPoint) {
@@ -90,13 +83,10 @@ export class Rectangle extends Float64Array {
   }
 
   /**
-   * A reference to the size of this rectangle.
-   *
-   * Updating the values of the returned object will update this rectangle.
+   * The size of this rectangle.
    */
   get size(): Size {
-    this.#size ??= this.subarray(2, 4)
-    return this.#size!
+    return [this[2], this[3]]
   }
 
   set size(value: ReadOnlySize) {
@@ -471,7 +461,7 @@ export class Rectangle extends Float64Array {
 }
 
 export type ReadOnlyRectangle = Omit<
-  ReadOnlyTypedArray<Rectangle>,
+  Readonly<Rectangle>,
   | 'setHeightBottomAnchored'
   | 'setWidthRightAnchored'
   | 'resizeTopLeft'
