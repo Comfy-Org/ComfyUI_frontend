@@ -225,18 +225,10 @@ export interface IFoundSlot extends IInputOrOutput {
 }
 
 /** A point represented as `[x, y]` co-ordinates */
-export type Point =
-  | [x: number, y: number]
-  | Float32Array
-  | Float64Array
-  | number[]
+export type Point = [x: number, y: number]
 
 /** A size represented as `[width, height]` */
-export type Size =
-  | [width: number, height: number]
-  | Float32Array
-  | Float64Array
-  | number[]
+export type Size = [width: number, height: number]
 
 /** A very firm array */
 type ArRect = [x: number, y: number, width: number, height: number]
