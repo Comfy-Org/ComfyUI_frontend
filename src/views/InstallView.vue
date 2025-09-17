@@ -107,12 +107,14 @@ const hasError = computed(() => pathError.value !== '')
 const noGpu = computed(() => typeof device.value !== 'string')
 
 // Computed property to determine if user can proceed to next step
+const regex = /^Insufficient space - minimum free space: \d+ GB$/
+
 const canProceed = computed(() => {
   switch (currentStep.value) {
     case '1':
       return typeof device.value === 'string'
     case '2':
-      return pathError.value === ''
+      return pathError.value === '' || regex.test(pathError.value)
     case '3':
       return !hasError.value
     default:
