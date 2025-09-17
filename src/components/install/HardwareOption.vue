@@ -2,11 +2,12 @@
   <div class="relative">
     <!-- Recommended Badge -->
     <button
-      class="hardware-option w-[170px] h-[190px] p-5 flex flex-col items-center rounded-3xl transition-all duration-200 bg-neutral-900/70"
-      :class="{
-        'border-solid border-4 border-brand-yellow': selected,
-        'border-4 border-transparent': !selected
-      }"
+      :class="
+        cn(
+          'hardware-option w-[170px] h-[190px] p-5 flex flex-col items-center rounded-3xl transition-all duration-200 bg-neutral-900/70 border-4',
+          selected ? 'border-solid border-brand-yellow' : 'border-transparent'
+        )
+      "
       @click="$emit('click')"
     >
       <!-- Icon/Logo Area - Rounded square container -->
@@ -35,6 +36,8 @@
 
 <script setup lang="ts">
 import { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
+
+import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
   imagePath?: string
