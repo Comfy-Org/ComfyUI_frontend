@@ -2,8 +2,10 @@
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
   <div
     v-else
-    class="lg-slot lg-slot--input flex items-center cursor-crosshair group rounded-r-lg h-6"
+    class="lg-slot lg-slot--input flex items-center group rounded-r-lg h-6"
     :class="{
+      'cursor-crosshair': !readonly,
+      'cursor-default': readonly,
       'opacity-70': readonly,
       'lg-slot--connected': connected,
       'lg-slot--compatible': compatible,
@@ -16,6 +18,7 @@
       ref="connectionDotRef"
       :color="slotColor"
       class="-translate-x-1/2"
+      v-on="readonly ? {} : { pointerdown: onPointerDown }"
     />
 
     <!-- Slot Name -->
@@ -41,6 +44,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -87,5 +91,11 @@ useSlotElementTracking({
   index: props.index,
   type: 'input',
   element: slotElRef
+})
+
+const { onPointerDown } = useSlotLinkInteraction({
+  nodeId: props.nodeId ?? '',
+  index: props.index,
+  type: 'input'
 })
 </script>

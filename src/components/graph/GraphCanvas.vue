@@ -119,6 +119,7 @@ import { useWorkflowPersistence } from '@/platform/workflow/persistence/composab
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import { attachSlotLinkPreviewRenderer } from '@/renderer/core/linkInteractions/slotLinkPreviewRenderer'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -404,6 +405,7 @@ onMounted(async () => {
 
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
+  attachSlotLinkPreviewRenderer(comfyApp.canvas)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false

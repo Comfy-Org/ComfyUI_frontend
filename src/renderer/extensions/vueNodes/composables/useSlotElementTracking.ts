@@ -184,6 +184,8 @@ export function useSlotElementTracking(options: {
 
         // Register slot
         const slotKey = getSlotKey(nodeId, index, type === 'input')
+
+        el.dataset.slotKey = slotKey
         node.slots.set(slotKey, { el, index, type })
 
         // Seed initial sync from DOM
@@ -203,7 +205,11 @@ export function useSlotElementTracking(options: {
 
     // Remove this slot from registry and layout
     const slotKey = getSlotKey(nodeId, index, type === 'input')
-    node.slots.delete(slotKey)
+    const entry = node.slots.get(slotKey)
+    if (entry) {
+      delete entry.el.dataset.slotKey
+      node.slots.delete(slotKey)
+    }
     layoutStore.deleteSlotLayout(slotKey)
 
     // If node has no more slots, clean up
