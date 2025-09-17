@@ -52,7 +52,7 @@
       <div v-show="showRecommendedBadge" class="flex items-center gap-2">
         <Tag
           :value="$t('install.gpuPicker.recommended')"
-          class="bg-neutral-300 text-neutral-900 rounded-full normal-case text-sm font-medium px-3"
+          class="bg-neutral-300 text-neutral-900 rounded-full text-sm font-bold px-2 py-[1px]"
         />
         <i-lucide:badge-check class="text-neutral-300 text-lg" />
       </div>
