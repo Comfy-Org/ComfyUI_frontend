@@ -18,10 +18,7 @@
           :show-value="false"
           class="w-90 h-2 mt-8"
         />
-        <h1
-          v-if="title"
-          class="font-inter font-medium text-3xl text-neutral-300"
-        >
+        <h1 v-if="title" class="font-inter font-bold text-3xl text-neutral-300">
           {{ title }}
         </h1>
         <p v-if="statusText" class="text-lg text-neutral-400">
