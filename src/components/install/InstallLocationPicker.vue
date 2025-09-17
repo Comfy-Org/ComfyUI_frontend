@@ -296,14 +296,14 @@ const onFocus = async () => {
   /* Override default chevron icons to use right/down */
   .p-accordionheader-toggle-icon {
     &::before {
-      content: '\e933' !important; /* pi-chevron-right */
+      content: '\e933'; /* pi-chevron-right */
     }
   }
 
   .p-accordionpanel-active {
     .p-accordionheader-toggle-icon {
       &::before {
-        content: '\e902' !important; /* pi-chevron-down */
+        content: '\e902'; /* pi-chevron-down */
       }
     }
   }
