@@ -7,7 +7,7 @@
     :class="
       cn(
         // Base layout and container styles (always applied)
-        'rounded-xl overflow-hidden transition-all duration-200 min-w-60 max-w-64',
+        'rounded-xl overflow-hidden transition-all duration-200',
         // Button-specific styles
         interactive && [
           'appearance-none bg-transparent p-0 m-0 font-inherit text-inherit outline-none cursor-pointer text-left',

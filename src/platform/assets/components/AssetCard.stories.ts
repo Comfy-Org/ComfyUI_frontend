@@ -48,6 +48,12 @@ export const Interactive: Story = {
     asset: createAssetData(),
     interactive: true
   },
+  decorators: [
+    () => ({
+      template:
+        '<div class="p-8 bg-gray-50 dark-theme:bg-gray-900 max-w-96"><story /></div>'
+    })
+  ],
   parameters: {
     docs: {
       description: {
@@ -63,6 +69,12 @@ export const NonInteractive: Story = {
     asset: createAssetData(),
     interactive: false
   },
+  decorators: [
+    () => ({
+      template:
+        '<div class="p-8 bg-gray-50 dark-theme:bg-gray-900 max-w-96"><story /></div>'
+    })
+  ],
   parameters: {
     docs: {
       description: {
