@@ -10,16 +10,22 @@
     <nav class="flex-1 px-3 py-4 flex flex-col gap-1">
       <template v-for="(item, index) in navItems" :key="index">
         <div v-if="'items' in item" class="flex flex-col gap-2">
-          <NavTitle :title="item.title" />
-          <NavItem
-            v-for="subItem in item.items"
-            :key="subItem.id"
-            :icon="subItem.icon"
-            :active="activeItem === subItem.id"
-            @click="activeItem = subItem.id"
-          >
-            {{ subItem.label }}
-          </NavItem>
+          <NavTitle
+            v-model="collapsedGroups[item.title]"
+            :title="item.title"
+            :collapsible="item.collapsible"
+          />
+          <template v-if="!item.collapsible || !collapsedGroups[item.title]">
+            <NavItem
+              v-for="subItem in item.items"
+              :key="subItem.id"
+              :icon="subItem.icon"
+              :active="activeItem === subItem.id"
+              @click="activeItem = subItem.id"
+            >
+              {{ subItem.label }}
+            </NavItem>
+          </template>
         </div>
         <div v-else class="flex flex-col gap-2">
           <NavItem
@@ -36,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
@@ -52,6 +58,9 @@ const { navItems = [], modelValue } = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string | null]
 }>()
+
+// Track collapsed state for each group
+const collapsedGroups = ref<Record<string, boolean>>({})
 
 const getFirstItemId = () => {
   if (!navItems || navItems.length === 0) {
