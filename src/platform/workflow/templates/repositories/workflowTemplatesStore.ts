@@ -324,6 +324,13 @@ export const useWorkflowTemplatesStore = defineStore(
           return enhancedTemplates.value // deprecated filters; return all
 
         default:
+          // Handle extension-specific filters
+          if (categoryId.startsWith('extension-')) {
+            const moduleName = categoryId.replace('extension-', '')
+            return enhancedTemplates.value.filter(
+              (t) => t.sourceModule === moduleName
+            )
+          }
           return enhancedTemplates.value
       }
     }
@@ -455,12 +462,32 @@ export const useWorkflowTemplatesStore = defineStore(
         })
       }
 
-      // Extensions - as a simple selector
+      // Extensions - as a group with sub-items
       if (extensionCounts > 0) {
+        // Get unique extension modules
+        const extensionModules = Array.from(
+          new Set(
+            enhancedTemplates.value
+              .filter((t) => t.sourceModule !== 'default')
+              .map((t) => t.sourceModule)
+          )
+        ).sort()
+
+        const extensionItems: NavItemData[] = extensionModules.map(
+          (moduleName) => ({
+            id: `extension-${moduleName}`,
+            label: st(
+              `templateWorkflows.category.${normalizeI18nKey(moduleName)}`,
+              moduleName
+            ),
+            icon: getCategoryIcon('extensions')
+          })
+        )
+
         items.push({
-          id: 'extensions',
-          label: st('templateWorkflows.category.Extensions', 'Extensions'),
-          icon: getCategoryIcon('extensions')
+          title: st('templateWorkflows.category.Extensions', 'Extensions'),
+          items: extensionItems,
+          collapsible: true
         })
       }
 
