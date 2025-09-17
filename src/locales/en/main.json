@@ -1871,6 +1871,8 @@
     "loadingModels": "Loading {type}...",
     "connectionError": "Please check your connection and try again",
     "noModelsInFolder": "No {type} available in this folder",
-    "searchAssetsPlaceholder": "Search assets..."
+    "searchAssetsPlaceholder": "Search assets...",
+    "allModels": "All Models",
+    "unknown": "Unknown"
   }
 }

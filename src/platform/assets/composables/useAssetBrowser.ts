@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { formatSize } from '@/utils/formatUtil'
@@ -36,7 +37,8 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     // Extract description from metadata or create from tags
     const typeTag = asset.tags.find((tag) => tag !== 'models')
     const description =
-      asset.user_metadata?.description || `${typeTag || 'Unknown'} model`
+      asset.user_metadata?.description ||
+      `${typeTag || t('assetBrowser.unknown')} model`
 
     // Format file size
     const formattedSize = formatSize(asset.size)
@@ -88,7 +90,11 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     })
 
     return [
-      { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
+      {
+        id: 'all',
+        label: t('assetBrowser.allModels'),
+        icon: 'icon-[lucide--folder]'
+      },
       ...Array.from(categorySet)
         .sort()
         .map((category) => ({
@@ -102,13 +108,13 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   // Compute content title from selected category
   const contentTitle = computed(() => {
     if (selectedCategory.value === 'all') {
-      return 'All Models'
+      return t('assetBrowser.allModels')
     }
 
     const category = availableCategories.value.find(
       (cat) => cat.id === selectedCategory.value
     )
-    return category?.label || 'Assets'
+    return category?.label || t('assetBrowser.assets')
   })
 
   // Filter functions
