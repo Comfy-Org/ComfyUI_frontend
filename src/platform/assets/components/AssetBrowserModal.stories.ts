@@ -51,7 +51,7 @@ export const Default: Story = {
     nodeType: 'CheckpointLoaderSimple',
     inputName: 'ckpt_name',
     currentValue: '',
-    showLeftPanel: false
+    showLeftPanel: true
   },
   render: (args) => ({
     components: { AssetBrowserModal },
@@ -71,7 +71,7 @@ export const Default: Story = {
       }
     },
     template: `
-      <div class="flex items-center justify-center min-h-screen bg-stone-200 dark-theme:bg-stone-200 p-4">
+      <div class="flex items-center justify-center min-h-screen bg-stone-200 p-4">
         <AssetBrowserModal
           :node-type="nodeType"
           :input-name="inputName"
@@ -112,7 +112,7 @@ export const SingleAssetType: Story = {
       return { ...args, onAssetSelect, onClose, assets: singleTypeAssets }
     },
     template: `
-      <div class="flex items-center justify-center min-h-screen bg-stone-200 dark-theme:bg-stone-200 p-4">
+      <div class="flex items-center justify-center min-h-screen bg-stone-200 p-4">
         <AssetBrowserModal
           :node-type="nodeType"
           :input-name="inputName"
@@ -155,7 +155,7 @@ export const NoLeftPanel: Story = {
       return { ...args, onAssetSelect, onClose, assets: mockAssets }
     },
     template: `
-      <div class="flex items-center justify-center min-h-screen bg-stone-200 dark-theme:bg-stone-200 p-4">
+      <div class="flex items-center justify-center min-h-screen bg-stone-200 p-4">
         <AssetBrowserModal
           :node-type="nodeType"
           :input-name="inputName"

@@ -27,7 +27,7 @@
         )
       "
     >
-      <i-lucide:search class="size-10 mb-4" />
+      <div :class="cn('icon-[lucide--search]', 'size-10 mb-4')" />
       <h3 class="text-lg font-medium mb-2">
         {{ $t('assetBrowser.noAssetsFound') }}
       </h3>
@@ -39,9 +39,13 @@
       v-if="loading"
       class="col-span-full flex items-center justify-center py-16"
     >
-      <i-lucide:loader
+      <div
         :class="
-          cn('size-6 animate-spin', 'text-stone-300 dark-theme:text-stone-200')
+          cn(
+            'icon-[lucide--loader-circle]',
+            'size-6 animate-spin',
+            'text-stone-300 dark-theme:text-stone-200'
+          )
         "
       />
     </div>

@@ -30,7 +30,7 @@
         @update:model-value="handleFilterChange"
       >
         <template #icon>
-          <i-lucide:arrow-up-down class="size-3" />
+          <div :class="cn('icon-[lucide--arrow-up-down]', 'size-3')" />
         </template>
       </SingleSelect>
     </div>

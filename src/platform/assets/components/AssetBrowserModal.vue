@@ -12,7 +12,7 @@
         :nav-items="availableCategories"
       >
         <template #header-icon>
-          <i-lucide:folder class="size-4" />
+          <div :class="cn('icon-[lucide--folder]', 'size-4')" />
         </template>
         <template #header-title>{{ $t('assetBrowser.browseAssets') }}</template>
       </LeftSidePanel>
@@ -46,6 +46,7 @@ import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   nodeType?: string
