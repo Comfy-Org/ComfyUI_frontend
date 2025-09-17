@@ -17,6 +17,7 @@
           :value="progressPercentage ?? 0"
           :show-value="false"
           class="w-90 h-2 mt-8"
+          :pt="{ value: { class: 'bg-brand-yellow' } }"
         />
         <h1 v-if="title" class="font-inter font-bold text-3xl text-neutral-300">
           {{ title }}
@@ -68,13 +69,3 @@ const wrapperClass = computed(() =>
     : 'flex items-center justify-center'
 )
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-/* Override PrimeVue ProgressBar color to brand yellow */
-:deep(.p-progressbar-indeterminate .p-progressbar-value),
-:deep(.p-progressbar-determinate .p-progressbar-value) {
-  @apply bg-brand-yellow;
-}
-</style>
