@@ -6,6 +6,16 @@ import { iconCollection } from './build/customIconCollection'
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
 
+  safelist: [
+    'icon-[lucide--folder]',
+    'icon-[lucide--package]',
+    'icon-[lucide--image]',
+    'icon-[lucide--video]',
+    'icon-[lucide--box]',
+    'icon-[lucide--audio-waveform]',
+    'icon-[lucide--message-circle]'
+  ],
+
   plugins: [
     addDynamicIconSelectors({
       iconSets: {
