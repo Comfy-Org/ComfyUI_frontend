@@ -22,7 +22,7 @@
       <SearchBox
         v-model="searchQuery"
         size="lg"
-        placeholder="Search assets..."
+        :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
         class="max-w-96"
       />
     </template>

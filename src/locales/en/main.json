@@ -1870,6 +1870,7 @@
     "tryAdjustingFilters": "Try adjusting your search or filters",
     "loadingModels": "Loading {type}...",
     "connectionError": "Please check your connection and try again",
-    "noModelsInFolder": "No {type} available in this folder"
+    "noModelsInFolder": "No {type} available in this folder",
+    "searchAssetsPlaceholder": "Search assets..."
   }
 }
