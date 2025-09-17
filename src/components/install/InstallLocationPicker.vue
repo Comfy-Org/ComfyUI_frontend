@@ -73,8 +73,8 @@
           </AccordionHeader>
           <AccordionContent>
             <MigrationPicker
-              v-model:sourcePath="migrationSourcePath"
-              v-model:migrationItemIds="migrationItemIds"
+              v-model:source-path="migrationSourcePath"
+              v-model:migration-item-ids="migrationItemIds"
             />
           </AccordionContent>
         </AccordionPanel>
@@ -114,12 +114,16 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import { ModelRef, computed, onMounted, ref } from 'vue'
+import { type ModelRef, computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
-import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
+import {
+  PYPI_MIRROR,
+  PYTHON_MIRROR,
+  type UVMirror
+} from '@/constants/uvMirrors'
 import { electronAPI } from '@/utils/envUtil'
 import { isInChina } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
