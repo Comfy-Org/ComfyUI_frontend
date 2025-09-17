@@ -6,7 +6,6 @@ import { nextTick } from 'vue'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
 
 // Mock assetService
 vi.mock('@/platform/assets/services/assetService', () => ({
@@ -106,11 +105,8 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/i18n', () => ({
   t: (key: string) => key,
-  d: (date: Date, options?: any) => date.toLocaleDateString()
+  d: (date: Date) => date.toLocaleDateString()
 }))
-
-// Mock console.error for error handling tests
-const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 describe('AssetBrowserModal', () => {
   const createTestAsset = (
@@ -271,9 +267,7 @@ describe('AssetBrowserModal', () => {
       const emittedAsset = emitted![0][0] as AssetDisplayItem
       expect(emittedAsset.id).toBe('asset1')
     })
-
   })
-
 
   describe('Left Panel Conditional Logic', () => {
     it('hides left panel by default when showLeftPanel prop is undefined', () => {

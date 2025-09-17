@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
@@ -20,7 +20,7 @@ vi.mock('@/i18n', () => ({
     }
     return translations[key] || key
   },
-  d: (date: Date, options?: any) => date.toLocaleDateString()
+  d: (date: Date) => date.toLocaleDateString()
 }))
 
 describe('useAssetBrowser', () => {
@@ -258,7 +258,6 @@ describe('useAssetBrowser', () => {
     })
   })
 
-
   describe('Async Asset Selection with Detail Fetching', () => {
     it('should fetch asset details and call onSelect with filename when provided', async () => {
       const onSelectSpy = vi.fn()
@@ -279,11 +278,15 @@ describe('useAssetBrowser', () => {
       await selectAssetWithCallback(asset.id, onSelectSpy)
 
       expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-123')
-      expect(onSelectSpy).toHaveBeenCalledWith('checkpoints/test-model.safetensors')
+      expect(onSelectSpy).toHaveBeenCalledWith(
+        'checkpoints/test-model.safetensors'
+      )
     })
 
     it('should handle missing user_metadata.filename as error', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
       const onSelectSpy = vi.fn()
       const asset = createApiAsset({ id: 'asset-456' })
 
@@ -310,7 +313,9 @@ describe('useAssetBrowser', () => {
     })
 
     it('should handle API errors gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
       const onSelectSpy = vi.fn()
       const asset = createApiAsset({ id: 'asset-789' })
 

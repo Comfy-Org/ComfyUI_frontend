@@ -144,8 +144,10 @@ function createAssetService() {
     const modelToNodeStore = useModelToNodeStore()
     const modelToNodeMap = modelToNodeStore.modelToNodeMap
 
-    const category = Object.keys(modelToNodeMap).find(categoryKey =>
-      modelToNodeMap[categoryKey].some(provider => provider.nodeDef.name === nodeType)
+    const category = Object.keys(modelToNodeMap).find((categoryKey) =>
+      modelToNodeMap[categoryKey].some(
+        (provider) => provider.nodeDef.name === nodeType
+      )
     )
 
     if (!category) {
@@ -159,9 +161,12 @@ function createAssetService() {
     )
 
     // Return full AssetItem[] objects (don't strip like getAssetModels does)
-    return data?.assets?.filter(asset =>
-      !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
-    ) ?? []
+    return (
+      data?.assets?.filter(
+        (asset) =>
+          !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
+      ) ?? []
+    )
   }
 
   /**
@@ -186,7 +191,9 @@ function createAssetService() {
       return result.data.assets[0]
     }
 
-    const error = fromZodError(result.error)
+    const error = result.error
+      ? fromZodError(result.error)
+      : 'Unknown validation error'
     throw new Error(`Invalid asset response against zod schema:\n${error}`)
   }
 

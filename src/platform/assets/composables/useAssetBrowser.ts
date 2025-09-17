@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 
 import { d, t } from '@/i18n'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import {
@@ -203,10 +202,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       // Execute callback with validated filename
       onSelect(filename)
     } catch (error) {
-      console.error(
-        `Failed to fetch asset details for ${assetId}:`,
-        error
-      )
+      console.error(`Failed to fetch asset details for ${assetId}:`, error)
     }
   }
 

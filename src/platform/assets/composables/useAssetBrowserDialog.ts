@@ -27,8 +27,8 @@ export const useAssetBrowserDialog = () => {
 
   async function show(props: AssetBrowserDialogProps) {
     const handleAssetSelected = (assetPath: string) => {
+      hide() // Auto-close on selection before async operations
       props.onAssetSelected?.(assetPath)
-      hide() // Auto-close on selection
     }
 
     const handleClose = () => {
@@ -39,7 +39,7 @@ export const useAssetBrowserDialog = () => {
     const dialogComponentProps = {
       headless: true,
       modal: true,
-      closable: false,
+      closable: true,
       pt: {
         root: {
           class: 'rounded-2xl overflow-hidden'
@@ -58,7 +58,11 @@ export const useAssetBrowserDialog = () => {
     try {
       assets = await assetService.getAssetsForNodeType(props.nodeType)
     } catch (error) {
-      console.error('Failed to fetch assets for node type:', props.nodeType, error)
+      console.error(
+        'Failed to fetch assets for node type:',
+        props.nodeType,
+        error
+      )
     }
 
     dialogStore.showDialog({
