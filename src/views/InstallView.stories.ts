@@ -260,6 +260,25 @@ export const WindowsPlatform: Story = {
   }
 }
 
+// Story with macOS platform (Apple Metal option)
+export const MacOSPlatform: Story = {
+  name: 'macOS Platform',
+  render: () => {
+    // Override the platform to macOS
+    ;(window as any).electronAPI.getPlatform = () => 'darwin'
+    ;(window as any).electronAPI.Config.getDetectedGpu = () =>
+      Promise.resolve('mps')
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      template: '<InstallView />'
+    }
+  }
+}
+
 // Story with CPU selected
 export const CpuSelected: Story = {
   render: () => ({
