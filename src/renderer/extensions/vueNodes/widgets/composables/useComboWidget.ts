@@ -7,10 +7,11 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
-  ComboInputSpec,
   type InputSpec,
   isComboInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -23,7 +24,6 @@ import {
   type ComfyWidgetConstructorV2,
   addValueControlWidgets
 } from '@/scripts/widgets'
-import { assetService } from '@/services/assetService'
 
 import { useRemoteWidget } from './useRemoteWidget'
 

@@ -789,19 +789,27 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         const currentData = vueNodeData.get(nodeId)
 
         if (currentData) {
-          if (event.property === 'title') {
-            vueNodeData.set(nodeId, {
-              ...currentData,
-              title: String(event.newValue)
-            })
-          } else if (event.property === 'flags.collapsed') {
-            vueNodeData.set(nodeId, {
-              ...currentData,
-              flags: {
-                ...currentData.flags,
-                collapsed: Boolean(event.newValue)
-              }
-            })
+          switch (event.property) {
+            case 'title':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                title: String(event.newValue)
+              })
+              break
+            case 'flags.collapsed':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                flags: {
+                  ...currentData.flags,
+                  collapsed: Boolean(event.newValue)
+                }
+              })
+              break
+            case 'mode':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                mode: typeof event.newValue === 'number' ? event.newValue : 0
+              })
           }
         }
       }

@@ -156,6 +156,8 @@
     "releaseTitle": "{package} {version} Release",
     "itemSelected": "{selectedCount} item selected",
     "itemsSelected": "{selectedCount} items selected",
+    "multiSelectDropdown": "Multi-select dropdown",
+    "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
@@ -493,6 +495,8 @@
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
     "showTerminal": "Show Terminal",
+    "copySelectionTooltip": "Copy selection",
+    "copyAllTooltip": "Copy all",
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",

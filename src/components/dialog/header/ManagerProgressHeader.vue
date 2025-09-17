@@ -4,7 +4,7 @@
     class="px-4 py-2 flex items-center"
   >
     <TabMenu
-      v-model:activeIndex="activeTabIndex"
+      v-model:active-index="activeTabIndex"
       :model="tabs"
       class="w-full border-none"
       :pt="{

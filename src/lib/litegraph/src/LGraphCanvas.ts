@@ -64,10 +64,10 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { Subgraph } from './subgraph/Subgraph'
+import type { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
-import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
@@ -2348,7 +2348,7 @@ export class LGraphCanvas
     if (
       ctrlOrMeta &&
       !e.altKey &&
-      LiteGraph.canvasNavigationMode === 'legacy'
+      LiteGraph.leftMouseClickBehavior === 'panning'
     ) {
       this.#setupNodeSelectionDrag(e, pointer, node)
 
@@ -2616,8 +2616,8 @@ export class LGraphCanvas
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      // allow dragging canvas if canvas is not in standard, or read-only (pan mode in standard)
-      if (LiteGraph.canvasNavigationMode !== 'standard' || this.read_only) {
+      // allow dragging canvas based on leftMouseClickBehavior or read-only mode
+      if (LiteGraph.leftMouseClickBehavior === 'panning' || this.read_only) {
         pointer.onClick = () => this.processSelect(null, e)
         pointer.finally = () => (this.dragging_canvas = false)
         this.dragging_canvas = true
@@ -3629,8 +3629,8 @@ export class LGraphCanvas
       e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
     const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
-      // Legacy mode or standard mode with ctrl - use wheel for zoom
+    if (isZoomModifier || LiteGraph.mouseWheelScroll === 'zoom') {
+      // Zoom mode or modifier key pressed - use wheel for zoom
       if (isTrackpad) {
         // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
@@ -3645,7 +3645,6 @@ export class LGraphCanvas
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
-      // Standard mode without ctrl - use wheel / gestures to pan
       // Trackpads and mice work on significantly different scales
       const factor = isTrackpad ? 0.18 : 0.008_333
 
@@ -6314,7 +6313,14 @@ export class LGraphCanvas
         }
 
         // that.graph.beforeChange();
-        const newNode = LiteGraph.createNode(nodeNewType)
+        const xSizeFix = opts.posSizeFix[0] * LiteGraph.NODE_WIDTH
+        const ySizeFix = opts.posSizeFix[1] * LiteGraph.NODE_SLOT_HEIGHT
+        const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
+        const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
+        const pos = [nodeX, nodeY]
+        const newNode = LiteGraph.createNode(nodeNewType, nodeNewOpts.title, {
+          pos
+        })
         if (newNode) {
           // if is object pass options
           if (nodeNewOpts) {
@@ -6341,9 +6347,6 @@ export class LGraphCanvas
                 )
               }
             }
-            if (nodeNewOpts.title) {
-              newNode.title = nodeNewOpts.title
-            }
             if (nodeNewOpts.json) {
               newNode.configure(nodeNewOpts.json)
             }
@@ -6353,14 +6356,6 @@ export class LGraphCanvas
           if (!this.graph) throw new NullGraphError()
 
           this.graph.add(newNode)
-          newNode.pos = [
-            opts.position[0] +
-              opts.posAdd[0] +
-              (opts.posSizeFix[0] ? opts.posSizeFix[0] * newNode.size[0] : 0),
-            opts.position[1] +
-              opts.posAdd[1] +
-              (opts.posSizeFix[1] ? opts.posSizeFix[1] * newNode.size[1] : 0)
-          ]
 
           // Interim API - allow the link connection to be canceled.
           // TODO: https://github.com/Comfy-Org/litegraph.js/issues/946

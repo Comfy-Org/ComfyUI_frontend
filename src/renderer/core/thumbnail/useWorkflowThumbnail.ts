@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 import { createGraphThumbnail } from './graphThumbnailRenderer'
 

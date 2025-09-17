@@ -1,8 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
+import type { ISlotType, LGraph } from '@/lib/litegraph/src/litegraph'
 import {
-  ISlotType,
-  LGraph,
   LGraphGroup,
   LGraphNode,
   LiteGraph

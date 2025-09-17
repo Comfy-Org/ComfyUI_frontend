@@ -1,5 +1,5 @@
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useChatHistoryWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChatHistoryWidget'
 
 const CHAT_HISTORY_WIDGET_NAME = '$$node-chat-history'
