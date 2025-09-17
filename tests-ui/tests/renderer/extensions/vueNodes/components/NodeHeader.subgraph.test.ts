@@ -16,7 +16,12 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByLocatorId: vi.fn()
+  getNodeByLocatorId: vi.fn(),
+  getLocatorIdFromNodeData: vi.fn((nodeData) =>
+    nodeData.subgraphId
+      ? `${nodeData.subgraphId}:${String(nodeData.id)}`
+      : String(nodeData.id)
+  )
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({
