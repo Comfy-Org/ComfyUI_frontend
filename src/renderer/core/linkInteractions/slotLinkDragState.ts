@@ -5,7 +5,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 
-export type SlotDragType = 'input' | 'output'
+type SlotDragType = 'input' | 'output'
 
 export interface SlotDragSource {
   nodeId: string
@@ -20,12 +20,12 @@ export interface SlotDropCandidate {
   compatible: boolean
 }
 
-export interface PointerPosition {
+interface PointerPosition {
   client: Readonly<{ x: number; y: number }>
   canvas: Readonly<{ x: number; y: number }>
 }
 
-export interface SlotDragState {
+interface SlotDragState {
   active: boolean
   pointerId: number | null
   source: SlotDragSource | null

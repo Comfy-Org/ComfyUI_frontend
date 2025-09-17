@@ -9,7 +9,7 @@ import type {
 } from '@/renderer/core/linkInteractions/slotLinkDragState'
 import { app } from '@/scripts/app'
 
-export interface CompatibilityResult {
+interface CompatibilityResult {
   allowable: boolean
   targetNode?: LGraphNode
   targetSlot?: INodeInputSlot | INodeOutputSlot
