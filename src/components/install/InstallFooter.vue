@@ -19,9 +19,6 @@
       <Step value="2" :disabled="disableLocationStep" :pt="stepPassthrough">
         {{ $t('install.installLocation') }}
       </Step>
-      <!-- <Step value="3" :disabled="disableMigrationStep">
-        {{ $t('install.migration') }}
-      </Step> -->
       <Step value="3" :disabled="disableSettingsStep" :pt="stepPassthrough">
         {{ $t('install.desktopSettings') }}
       </Step>
