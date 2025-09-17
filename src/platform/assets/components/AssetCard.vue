@@ -25,7 +25,6 @@
     "
     @click="interactive && $emit('select', asset)"
     @keydown.enter="interactive && $emit('select', asset)"
-    @keydown.space.prevent="interactive && $emit('select', asset)"
   >
     <div class="relative w-full aspect-square overflow-hidden">
       <div
