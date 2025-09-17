@@ -62,9 +62,8 @@
 
 <script setup lang="ts">
 import { stubTrue } from 'es-toolkit/compat'
-import AutoComplete, {
-  AutoCompleteOptionSelectEvent
-} from 'primevue/autocomplete'
+import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
+import AutoComplete from 'primevue/autocomplete'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -77,7 +76,7 @@ import {
   type SearchOption,
   SortableAlgoliaField
 } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import type {
   QuerySuggestion,
   SearchMode,

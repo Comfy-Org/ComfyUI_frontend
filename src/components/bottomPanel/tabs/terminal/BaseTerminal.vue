@@ -26,7 +26,8 @@
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
 import Button from 'primevue/button'
-import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'

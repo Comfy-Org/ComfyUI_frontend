@@ -64,10 +64,10 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { Subgraph } from './subgraph/Subgraph'
+import type { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
-import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions

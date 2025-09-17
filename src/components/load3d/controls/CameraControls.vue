@@ -40,7 +40,7 @@ import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 
 const vTooltip = Tooltip

@@ -6,7 +6,8 @@ import {
   type InputSpec as InputSpecV1,
   getInputSpecType
 } from '@/schemas/nodeDefSchema'
-import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
+import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import { ComfyWidgets } from '@/scripts/widgets'
 
 export const useWidgetStore = defineStore('widget', () => {
   const coreWidgets = ComfyWidgets

@@ -17,7 +17,8 @@
 import Button from 'primevue/button'
 
 import { st } from '@/i18n'
-import { ComfyCommand, useCommandStore } from '@/stores/commandStore'
+import type { ComfyCommand } from '@/stores/commandStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{
