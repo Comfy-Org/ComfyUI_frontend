@@ -199,10 +199,6 @@ const mirrors = computed<[UVMirror, ModelRef<string>][]>(() =>
 const validationStates = ref<ValidationState[]>(
   mirrors.value.map(() => ValidationState.IDLE)
 )
-// Validation state is not currently used in the UI but kept for future use
-// const validationState = computed(() => {
-//   return mergeValidationStates(validationStates.value)
-// })
 
 // Get default install path on component mount
 onMounted(async () => {
