@@ -29,7 +29,6 @@
 
     <template #content>
       <AssetGrid
-        :class="{ 'max-w-5xl': !shouldShowLeftPanel }"
         :assets="filteredAssets"
         @asset-select="handleAssetSelectAndEmit"
       />

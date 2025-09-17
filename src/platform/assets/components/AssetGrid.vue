@@ -1,7 +1,7 @@
 <template>
   <div
     data-component-id="AssetGrid"
-    class="grid grid-cols-2 md:grid-cols-4 gap-6 p-8"
+    :style="gridStyle"
     role="grid"
     aria-label="Asset collection"
     :aria-rowcount="-1"
@@ -49,7 +49,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { createGridStyle } from '@/utils/gridUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import AssetCard from './AssetCard.vue'
@@ -62,4 +65,7 @@ defineProps<{
 defineEmits<{
   assetSelect: [asset: AssetDisplayItem]
 }>()
+
+// Use same grid style as BaseModalLayout
+const gridStyle = computed(() => createGridStyle())
 </script>
