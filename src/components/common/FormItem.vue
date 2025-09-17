@@ -21,7 +21,7 @@
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
-        v-model:modelValue="formValue"
+        v-model:model-value="formValue"
         :aria-labelledby="`${props.id}-label`"
         v-bind="getFormAttrs(props.item)"
       />
