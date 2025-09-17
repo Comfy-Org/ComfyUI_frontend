@@ -20,14 +20,12 @@ interface SlotInteractionOptions {
   nodeId: string
   index: number
   type: 'input' | 'output'
-  readonly?: boolean
 }
 
 export function useSlotLinkInteraction({
   nodeId,
   index,
-  type,
-  readonly
+  type
 }: SlotInteractionOptions) {
   const { state, beginDrag, endDrag, updatePointerPosition } =
     useSlotLinkDragState()
@@ -145,7 +143,6 @@ export function useSlotLinkInteraction({
   }
 
   const onPointerDown = (event: PointerEvent) => {
-    if (readonly) return
     if (event.button !== 0) return
     if (!nodeId) return
     if (activePointerId !== null) return
