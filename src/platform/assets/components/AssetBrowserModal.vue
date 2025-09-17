@@ -42,13 +42,11 @@ import { computed } from 'vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-import { useAssetBrowser } from '../composables/useAssetBrowser'
-import AssetGrid from './AssetGrid.vue'
-
-// Props
 const props = defineProps<{
   nodeType?: string
   inputName?: string
@@ -58,7 +56,6 @@ const props = defineProps<{
   assets?: AssetItem[]
 }>()
 
-// Emits
 const emit = defineEmits<{
   'asset-select': [asset: AssetDisplayItem]
   close: []

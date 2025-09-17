@@ -1,6 +1,5 @@
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-
-import AssetBrowserModal from '../components/AssetBrowserModal.vue'
 
 interface AssetBrowserDialogProps {
   /** ComfyUI node type for context (e.g., 'CheckpointLoaderSimple') */

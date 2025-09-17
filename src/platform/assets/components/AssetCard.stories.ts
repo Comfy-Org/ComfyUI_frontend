@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { mockAssets } from '@/platform/assets/fixtures/ui-mock-assets'
-
-import AssetCard from './AssetCard.vue'
 
 // Use the first mock asset as base and transform it to display format
 const baseAsset = mockAssets[0]

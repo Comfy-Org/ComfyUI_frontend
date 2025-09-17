@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import { createMockAssets, mockAssets } from '../fixtures/ui-mock-assets'
-import AssetBrowserModal from './AssetBrowserModal.vue'
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import {
+  createMockAssets,
+  mockAssets
+} from '@/platform/assets/fixtures/ui-mock-assets'
 
 // Story arguments interface
 interface StoryArgs {
