@@ -51,6 +51,7 @@
     <Dialog
       v-model:visible="showDialog"
       modal
+      dismissable-mask
       :header="$t('install.settings.dataCollectionDialog.title')"
     >
       <div class="text-neutral-300">
