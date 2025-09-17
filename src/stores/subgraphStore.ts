@@ -6,9 +6,9 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   ComfyWorkflow,
-  LoadedComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -26,7 +26,7 @@ import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { UserFile } from '@/stores/userFileStore'
+import type { UserFile } from '@/stores/userFileStore'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({

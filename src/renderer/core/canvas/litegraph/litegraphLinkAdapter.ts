@@ -7,7 +7,7 @@
  * Maintains backward compatibility with existing litegraph integration.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type {
   CanvasColour,

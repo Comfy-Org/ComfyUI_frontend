@@ -1012,6 +1012,8 @@ test.describe('Canvas Navigation', () => {
   test('Shift + mouse wheel should pan canvas horizontally', async ({
     comfyPage
   }) => {
+    await comfyPage.setSetting('Comfy.Canvas.MouseWheelScroll', 'panning')
+
     await comfyPage.page.click('canvas')
     await comfyPage.nextFrame()
 

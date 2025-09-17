@@ -16,7 +16,7 @@
     <div class="flex flex-1 relative overflow-hidden">
       <ManagerNavSidebar
         v-if="isSideNavOpen"
-        v-model:selectedTab="selectedTab"
+        v-model:selected-tab="selectedTab"
         :tabs="tabs"
       />
       <div
@@ -57,9 +57,9 @@
             </IconButton>
           </div>
           <RegistrySearchBar
-            v-model:searchQuery="searchQuery"
-            v-model:searchMode="searchMode"
-            v-model:sortField="sortField"
+            v-model:search-query="searchQuery"
+            v-model:search-mode="searchMode"
+            v-model:sort-field="sortField"
             :search-results="searchResults"
             :suggestions="suggestions"
             :is-missing-tab="isMissingTab"
@@ -160,7 +160,7 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 const { initialTab } = defineProps<{
   initialTab?: ManagerTab

@@ -12,22 +12,11 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
-
-type SlotEntry = {
-  el: HTMLElement
-  index: number
-  type: 'input' | 'output'
-  cachedOffset?: { x: number; y: number }
-}
-
-type NodeEntry = {
-  nodeId: string
-  slots: Map<string, SlotEntry>
-  stopWatch?: () => void
-}
-
-// Registry of nodes and their slots
-const nodeRegistry = new Map<string, NodeEntry>()
+import {
+  isPointEqual,
+  isSizeEqual
+} from '@/renderer/core/layout/utils/geometry'
+import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 // RAF batching
 const pendingNodes = new Set<string>()
@@ -52,11 +41,12 @@ function flushScheduledSlotLayoutSync() {
   }
 }
 
-function syncNodeSlotLayoutsFromDOM(
+export function syncNodeSlotLayoutsFromDOM(
   nodeId: string,
   conv?: ReturnType<typeof useSharedCanvasPositionConversion>
 ) {
-  const node = nodeRegistry.get(nodeId)
+  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+  const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
@@ -103,7 +93,8 @@ function syncNodeSlotLayoutsFromDOM(
 }
 
 function updateNodeSlotsFromCache(nodeId: string) {
-  const node = nodeRegistry.get(nodeId)
+  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+  const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
@@ -150,6 +141,7 @@ export function useSlotElementTracking(options: {
   element: Ref<HTMLElement | null>
 }) {
   const { nodeId, index, type, element } = options
+  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
 
   onMounted(() => {
     if (!nodeId) return
@@ -158,28 +150,35 @@ export function useSlotElementTracking(options: {
       (el) => {
         if (!el) return
 
-        // Ensure node entry
-        let node = nodeRegistry.get(nodeId)
-        if (!node) {
-          const entry: NodeEntry = {
-            nodeId,
-            slots: new Map()
-          }
-          nodeRegistry.set(nodeId, entry)
+        const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
-          const unsubscribe = layoutStore.onChange((change) => {
-            const op = change.operation
-            if (
-              op &&
-              op.entity === 'node' &&
-              op.nodeId === nodeId &&
-              op.type === 'moveNode'
-            ) {
-              updateNodeSlotsFromCache(nodeId)
+        if (!node.stopWatch) {
+          const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+
+          const stopPositionWatch = watch(
+            () => layoutRef.value?.position,
+            (newPosition, oldPosition) => {
+              if (!newPosition) return
+              if (!oldPosition || !isPointEqual(newPosition, oldPosition)) {
+                updateNodeSlotsFromCache(nodeId)
+              }
             }
-          })
-          entry.stopWatch = () => unsubscribe()
-          node = entry
+          )
+
+          const stopSizeWatch = watch(
+            () => layoutRef.value?.size,
+            (newSize, oldSize) => {
+              if (!newSize) return
+              if (!oldSize || !isSizeEqual(newSize, oldSize)) {
+                scheduleSlotLayoutSync(nodeId)
+              }
+            }
+          )
+
+          node.stopWatch = () => {
+            stopPositionWatch()
+            stopSizeWatch()
+          }
         }
 
         // Register slot
@@ -200,7 +199,7 @@ export function useSlotElementTracking(options: {
 
   onUnmounted(() => {
     if (!nodeId) return
-    const node = nodeRegistry.get(nodeId)
+    const node = nodeSlotRegistryStore.getNode(nodeId)
     if (!node) return
 
     // Remove this slot from registry and layout
@@ -214,9 +213,8 @@ export function useSlotElementTracking(options: {
 
     // If node has no more slots, clean up
     if (node.slots.size === 0) {
-      // Stop the node-level watcher when the last slot is gone
       if (node.stopWatch) node.stopWatch()
-      nodeRegistry.delete(nodeId)
+      nodeSlotRegistryStore.deleteNode(nodeId)
     }
   })
 
