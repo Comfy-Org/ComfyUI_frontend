@@ -46,7 +46,7 @@ const hasSelection = ref(false)
 const isHovered = useElementHover(rootEl)
 
 const terminalData = useTerminal(terminalEl)
-emit('created', terminalData, rootEl)
+emit('created', terminalData, ref(rootEl))
 
 const { terminal } = terminalData
 let selectionDisposable: IDisposable | undefined

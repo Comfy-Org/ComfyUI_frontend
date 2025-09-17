@@ -5,13 +5,14 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
+import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+import vueParser from 'vue-eslint-parser'
 
-export default [
-  {
-    files: ['src/**/*.{js,mjs,cjs,ts,vue}']
-  },
+const extraFileExtensions = ['.vue']
+
+export default defineConfig([
   {
     ignores: [
       'src/scripts/*',
@@ -24,35 +25,49 @@ export default [
     ]
   },
   {
+    files: ['./**/*.{ts,mts}'],
     languageOptions: {
       globals: {
         ...globals.browser,
         __COMFYUI_FRONTEND_VERSION__: 'readonly'
       },
-      parser: tseslint.parser,
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.eslint.json'],
+        parser: tseslint.parser,
+        projectService: true,
+        tsConfigRootDir: import.meta.dirname,
         ecmaVersion: 2020,
         sourceType: 'module',
-        extraFileExtensions: ['.vue']
+        extraFileExtensions
+      }
+    }
+  },
+  {
+    files: ['./**/*.vue'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        __COMFYUI_FRONTEND_VERSION__: 'readonly'
+      },
+      parser: vueParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        projectService: true,
+        tsConfigRootDir: import.meta.dirname,
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        extraFileExtensions
       }
     }
   },
   pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
+  tseslint.configs.recommended,
+  pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
-  {
-    files: ['src/**/*.vue'],
-    languageOptions: {
-      parserOptions: {
-        parser: tseslint.parser
-      }
-    }
-  },
+  storybook.configs['flat/recommended'],
   {
     plugins: {
       'unused-imports': unusedImports,
+      // @ts-expect-error Bad types in the plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
@@ -67,6 +82,7 @@ export default [
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/one-component-per-file': 'off', // TODO: fix
+      'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
       // Restrict deprecated PrimeVue components
       'no-restricted-imports': [
         'error',
@@ -135,6 +151,5 @@ export default [
         }
       ]
     }
-  },
-  ...storybook.configs['flat/recommended']
-]
+  }
+])
