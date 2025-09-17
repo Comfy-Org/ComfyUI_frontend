@@ -4,10 +4,14 @@
   </div>
   <div
     v-else
-    :class="cn(
-      'lg-node-widgets flex flex-col gap-2 pr-4',
-      shouldHandleNodePointerEvents ? 'pointer-events-auto' : 'pointer-events-none'
-    )"
+    :class="
+      cn(
+        'lg-node-widgets flex flex-col gap-2 pr-4',
+        shouldHandleNodePointerEvents
+          ? 'pointer-events-auto'
+          : 'pointer-events-none'
+      )
+    "
     @pointerdown="handleWidgetPointerEvent"
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"

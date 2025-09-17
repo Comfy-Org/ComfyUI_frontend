@@ -21,6 +21,10 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
   useLayoutMutations: vi.fn()
 }))
 
+vi.mock('@/composables/graph/useGraphNodeManager', () => ({
+  useGraphNodeManager: vi.fn()
+}))
+
 function createMockCanvas(): Pick<
   LGraphCanvas,
   'select' | 'deselect' | 'deselectAll'

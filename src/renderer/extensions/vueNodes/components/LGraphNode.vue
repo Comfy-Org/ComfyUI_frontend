@@ -23,7 +23,9 @@
           'will-change-transform': isDragging
         },
         lodCssClass,
-        shouldHandleNodePointerEvents ? 'pointer-events-auto' : 'pointer-events-none'
+        shouldHandleNodePointerEvents
+          ? 'pointer-events-auto'
+          : 'pointer-events-none'
       )
     "
     :style="[
