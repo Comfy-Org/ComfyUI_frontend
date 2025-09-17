@@ -1,4 +1,5 @@
 import './clipspace'
+import './cloud/sentry'
 import './contextMenuFilter'
 import './dynamicPrompts'
 import './editAttention'
