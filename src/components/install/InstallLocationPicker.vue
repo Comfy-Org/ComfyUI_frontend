@@ -88,7 +88,7 @@
               v-for="([item, modelValue], index) in mirrors"
               :key="item.settingId + item.mirror"
             >
-              <Divider v-if="index > 0" />
+              <Divider v-if="index > 0" class="my-8" />
 
               <MirrorItem
                 v-model="modelValue.value"
