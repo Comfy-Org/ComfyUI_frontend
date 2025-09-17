@@ -33,6 +33,7 @@
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
     "global.d.ts",
+    "eslint.config.ts",
     "vite.config.mts",
     ".storybook/**/*"
   ]

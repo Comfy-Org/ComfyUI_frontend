@@ -39,6 +39,10 @@ import {
   type SlotLayout
 } from '@/renderer/core/layout/types'
 import {
+  isBoundsEqual,
+  isPointEqual
+} from '@/renderer/core/layout/utils/geometry'
+import {
   REROUTE_RADIUS,
   boundsIntersect,
   pointInBounds
@@ -395,12 +399,8 @@ class LayoutStoreImpl implements LayoutStore {
     // Short-circuit if bounds and centerPos unchanged
     if (
       existing &&
-      existing.bounds.x === layout.bounds.x &&
-      existing.bounds.y === layout.bounds.y &&
-      existing.bounds.width === layout.bounds.width &&
-      existing.bounds.height === layout.bounds.height &&
-      existing.centerPos.x === layout.centerPos.x &&
-      existing.centerPos.y === layout.centerPos.y
+      isBoundsEqual(existing.bounds, layout.bounds) &&
+      isPointEqual(existing.centerPos, layout.centerPos)
     ) {
       // Only update path if provided (for hit detection)
       if (layout.path) {
@@ -439,6 +439,13 @@ class LayoutStoreImpl implements LayoutStore {
     const existing = this.slotLayouts.get(key)
 
     if (existing) {
+      // Short-circuit if geometry is unchanged
+      if (
+        isPointEqual(existing.position, layout.position) &&
+        isBoundsEqual(existing.bounds, layout.bounds)
+      ) {
+        return
+      }
       // Update spatial index
       this.slotSpatialIndex.update(key, layout.bounds)
     } else {
@@ -447,6 +454,34 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     this.slotLayouts.set(key, layout)
+  }
+
+  /**
+   * Batch update slot layouts and spatial index in one pass
+   */
+  batchUpdateSlotLayouts(
+    updates: Array<{ key: string; layout: SlotLayout }>
+  ): void {
+    if (!updates.length) return
+
+    // Update spatial index and map entries (skip unchanged)
+    for (const { key, layout } of updates) {
+      const existing = this.slotLayouts.get(key)
+
+      if (existing) {
+        // Short-circuit if geometry is unchanged
+        if (
+          isPointEqual(existing.position, layout.position) &&
+          isBoundsEqual(existing.bounds, layout.bounds)
+        ) {
+          continue
+        }
+        this.slotSpatialIndex.update(key, layout.bounds)
+      } else {
+        this.slotSpatialIndex.insert(key, layout.bounds)
+      }
+      this.slotLayouts.set(key, layout)
+    }
   }
 
   /**
@@ -557,12 +592,8 @@ class LayoutStoreImpl implements LayoutStore {
     // Short-circuit if bounds and centerPos unchanged (prevents spatial index churn)
     if (
       existing &&
-      existing.bounds.x === layout.bounds.x &&
-      existing.bounds.y === layout.bounds.y &&
-      existing.bounds.width === layout.bounds.width &&
-      existing.bounds.height === layout.bounds.height &&
-      existing.centerPos.x === layout.centerPos.x &&
-      existing.centerPos.y === layout.centerPos.y
+      isBoundsEqual(existing.bounds, layout.bounds) &&
+      isPointEqual(existing.centerPos, layout.centerPos)
     ) {
       // Only update path if provided (for hit detection)
       if (layout.path) {
@@ -971,9 +1002,6 @@ class LayoutStoreImpl implements LayoutStore {
     // Hit detection queries can run before CRDT updates complete
     this.spatialIndex.update(operation.nodeId, newBounds)
 
-    // Update associated slot positions synchronously
-    this.updateNodeSlotPositions(operation.nodeId, operation.position)
-
     // Then update CRDT
     ynode.set('position', operation.position)
     this.updateNodeBounds(ynode, operation.position, size)
@@ -999,9 +1027,6 @@ class LayoutStoreImpl implements LayoutStore {
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
     this.spatialIndex.update(operation.nodeId, newBounds)
-
-    // Update associated slot positions synchronously (size changes may affect slot positions)
-    this.updateNodeSlotPositions(operation.nodeId, position)
 
     // Then update CRDT
     ynode.set('size', operation.size)
@@ -1280,29 +1305,6 @@ class LayoutStoreImpl implements LayoutStore {
         width: REROUTE_RADIUS * 2,
         height: REROUTE_RADIUS * 2
       }
-    }
-  }
-
-  /**
-   * Update slot positions when a node moves
-   * TODO: This should be handled by the layout sync system (useSlotLayoutSync)
-   * rather than manually here. For now, we'll mark affected slots as needing recalculation.
-   */
-  private updateNodeSlotPositions(nodeId: NodeId, _nodePosition: Point): void {
-    // Mark all slots for this node as potentially stale
-    // The layout sync system will recalculate positions on the next frame
-    const slotsToRemove: string[] = []
-
-    for (const [key, slotLayout] of this.slotLayouts) {
-      if (slotLayout.nodeId === nodeId) {
-        slotsToRemove.push(key)
-      }
-    }
-
-    // Remove from spatial index so they'll be recalculated
-    for (const key of slotsToRemove) {
-      this.slotSpatialIndex.remove(key)
-      this.slotLayouts.delete(key)
     }
   }
 

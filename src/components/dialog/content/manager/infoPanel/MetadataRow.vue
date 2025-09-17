@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-const { value = 'N/A', label = 'N/A' } = defineProps<{
+const { value = 'N/A', label } = defineProps<{
   label: string
   value?: string | number
 }>()
