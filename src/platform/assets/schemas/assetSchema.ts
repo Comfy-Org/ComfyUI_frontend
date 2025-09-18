@@ -33,6 +33,13 @@ const zModelFile = z.object({
   pathIndex: z.number()
 })
 
+// Filename validation schema
+export const assetFilenameSchema = z
+  .string()
+  .min(1, 'Filename cannot be empty')
+  .regex(/^[^/\\:*?"<>|]+$/, 'Invalid filename characters')
+  .trim()
+
 // Export schemas following repository patterns
 export const assetResponseSchema = zAssetResponse
 

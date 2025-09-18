@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import { d, t } from '@/i18n'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import {
   getAssetBaseModel,
@@ -188,11 +189,12 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       // Extract filename from user_metadata
       const filename = detailAsset.user_metadata?.filename
 
-      // Validate filename exists and is not empty
-      if (!filename || typeof filename !== 'string' || filename.trim() === '') {
+      // Validate filename using Zod schema
+      const validatedFilename = assetFilenameSchema.safeParse(filename)
+      if (!validatedFilename.success) {
         console.error(
-          'Invalid asset filename from user_metadata:',
-          filename || null,
+          'Invalid asset filename:',
+          validatedFilename.error.errors,
           'for asset:',
           assetId
         )
@@ -200,7 +202,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       }
 
       // Execute callback with validated filename
-      onSelect(filename)
+      onSelect(validatedFilename.data)
     } catch (error) {
       console.error(`Failed to fetch asset details for ${assetId}:`, error)
     }
