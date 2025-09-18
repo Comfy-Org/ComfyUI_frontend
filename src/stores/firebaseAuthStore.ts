@@ -75,6 +75,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const isAuthenticated = computed(() => !!currentUser.value)
   const userEmail = computed(() => currentUser.value?.email)
   const userId = computed(() => currentUser.value?.uid)
+  const isEmailVerified = computed(
+    () => currentUser.value?.emailVerified ?? false
+  )
 
   // Get auth from VueFire and listen for auth state changes
   // From useFirebaseAuth docs:
@@ -364,6 +367,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     // State
     loading,
     currentUser,
+    isEmailVerified,
     isInitialized,
     balance,
     lastBalanceUpdateTime,
