@@ -10,9 +10,9 @@
  */
 import type { Ref } from 'vue'
 
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 
 interface NodeManager {
