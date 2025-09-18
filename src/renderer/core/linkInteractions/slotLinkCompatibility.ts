@@ -28,10 +28,7 @@ export function evaluateCompatibility(
   source: SlotDragSource,
   candidate: SlotDropCandidate
 ): CompatibilityResult {
-  if (
-    candidate.layout.nodeId === source.nodeId &&
-    candidate.layout.index === source.slotIndex
-  ) {
+  if (candidate.layout.nodeId === source.nodeId) {
     return { allowable: false }
   }
 
