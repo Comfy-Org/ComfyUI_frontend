@@ -46,7 +46,6 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
@@ -62,7 +61,6 @@ interface NodeWidgetsProps {
   node?: LGraphNode
   nodeData?: VueNodeData
   readonly?: boolean
-  lodLevel?: LODLevel
 }
 
 const props = defineProps<NodeWidgetsProps>()
@@ -94,12 +92,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   if (!info?.widgets) return []
 
   const widgets = info.widgets as SafeWidgetData[]
-  const lodLevel = props.lodLevel
   const result: ProcessedWidget[] = []
-
-  if (lodLevel === LODLevel.MINIMAL) {
-    return []
-  }
 
   for (const widget of widgets) {
     if (widget.options?.hidden) continue
@@ -107,7 +100,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    if (lodLevel === LODLevel.REDUCED && !isEssential(widget.type)) continue
+    if (!isEssential(widget.type)) continue
 
     const vueComponent = getComponent(widget.type) || WidgetInputText
 

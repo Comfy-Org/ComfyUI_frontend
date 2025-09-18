@@ -4,33 +4,38 @@
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between p-4 rounded-t-2xl cursor-move"
+    class="lg-node-header p-4 rounded-t-2xl cursor-move"
     :data-testid="`node-header-${nodeInfo?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <!-- Collapse/Expand Button -->
-    <button
-      v-show="!readonly"
-      class="bg-transparent border-transparent flex items-center"
-      data-testid="node-collapse-button"
-      @click.stop="handleCollapse"
-      @dblclick.stop
-    >
-      <i
-        :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-        class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
-      ></i>
-    </button>
-
-    <!-- Node Title -->
-    <div class="text-sm font-bold truncate flex-1" data-testid="node-title">
-      <EditableText
-        :model-value="displayTitle"
-        :is-editing="isEditing"
-        :input-attrs="{ 'data-testid': 'node-title-input' }"
-        @edit="handleTitleEdit"
-        @cancel="handleTitleCancel"
-      />
+    <div class="relative flex items-center justify-between">
+      <!-- Collapse/Expand Button -->
+      <button
+        v-show="!readonly"
+        class="bg-transparent border-transparent flex items-center lod-toggle"
+        data-testid="node-collapse-button"
+        @click.stop="handleCollapse"
+        @dblclick.stop
+      >
+        <i
+          :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+          class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
+        ></i>
+      </button>
+      <!-- Node Title -->
+      <div
+        class="text-sm font-bold truncate flex-1 lod-toggle"
+        data-testid="node-title"
+      >
+        <EditableText
+          :model-value="displayTitle"
+          :is-editing="isEditing"
+          :input-attrs="{ 'data-testid': 'node-title-input' }"
+          @edit="handleTitleEdit"
+          @cancel="handleTitleCancel"
+        />
+      </div>
+      <LODFallback />
     </div>
   </div>
 </template>
@@ -42,13 +47,13 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
+
+import LODFallback from './LODFallback.vue'
 
 interface NodeHeaderProps {
   node?: LGraphNode // For backwards compatibility
   nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
-  lodLevel?: LODLevel
   collapsed?: boolean
 }
 

@@ -12,14 +12,16 @@
       'justify-center': dotOnly
     }"
   >
-    <!-- Slot Name -->
-    <span
-      v-if="!dotOnly"
-      class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200"
-    >
-      {{ slotData.name || `Output ${index}` }}
-    </span>
-
+    <div class="relative">
+      <!-- Slot Name -->
+      <span
+        v-if="!dotOnly"
+        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+      >
+        {{ slotData.name || `Output ${index}` }}
+      </span>
+      <LODFallback />
+    </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
@@ -43,6 +45,7 @@ import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
+import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {
