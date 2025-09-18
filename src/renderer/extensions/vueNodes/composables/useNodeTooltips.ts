@@ -1,4 +1,4 @@
-import { type Ref, computed } from 'vue'
+import { type MaybeRef, type Ref, computed, unref } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'
@@ -11,7 +11,7 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
  * Provides tooltip text for node headers, slots, and widgets
  */
 export function useNodeTooltips(
-  nodeType: string,
+  nodeType: MaybeRef<string>,
   containerRef?: Ref<HTMLElement | undefined>
 ) {
   const nodeDefStore = useNodeDefStore()
@@ -23,7 +23,7 @@ export function useNodeTooltips(
   )
 
   // Get node definition for tooltip data
-  const nodeDef = computed(() => nodeDefStore.nodeDefsByName[nodeType])
+  const nodeDef = computed(() => nodeDefStore.nodeDefsByName[unref(nodeType)])
 
   /**
    * Get tooltip text for node description (header hover)
@@ -31,7 +31,7 @@ export function useNodeTooltips(
   const getNodeDescription = computed(() => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.description`
+    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.description`
     return st(key, nodeDef.value.description || '')
   })
 
@@ -41,7 +41,7 @@ export function useNodeTooltips(
   const getInputSlotTooltip = (slotName: string) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.inputs.${normalizeI18nKey(slotName)}.tooltip`
+    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(slotName)}.tooltip`
     const inputTooltip = nodeDef.value.inputs?.[slotName]?.tooltip ?? ''
     return st(key, inputTooltip)
   }
@@ -52,7 +52,7 @@ export function useNodeTooltips(
   const getOutputSlotTooltip = (slotIndex: number) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.outputs.${slotIndex}.tooltip`
+    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.outputs.${slotIndex}.tooltip`
     const outputTooltip = nodeDef.value.outputs?.[slotIndex]?.tooltip ?? ''
     return st(key, outputTooltip)
   }
@@ -68,7 +68,7 @@ export function useNodeTooltips(
     if (widgetTooltip) return widgetTooltip
 
     // Then try input-based tooltip lookup
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.inputs.${normalizeI18nKey(widget.name)}.tooltip`
+    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(widget.name)}.tooltip`
     const inputTooltip = nodeDef.value.inputs?.[widget.name]?.tooltip ?? ''
     return st(key, inputTooltip)
   }
