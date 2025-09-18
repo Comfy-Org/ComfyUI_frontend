@@ -318,14 +318,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const saveAs = (
     existingWorkflow: ComfyWorkflow,
-    path: string
+    path: string,
+    workflowData: ComfyWorkflowJSON
   ): ComfyWorkflow => {
     const workflow: ComfyWorkflow = new (existingWorkflow.constructor as any)({
       path,
       modified: Date.now(),
       size: -1
     })
-    workflow.originalContent = workflow.content = existingWorkflow.content
+    workflow.originalContent = workflow.content = JSON.stringify(workflowData)
     workflowLookup.value[workflow.path] = workflow
     return workflow
   }

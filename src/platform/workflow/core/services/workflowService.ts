@@ -119,7 +119,7 @@ export const useWorkflowService = () => {
       ) as ComfyWorkflowJSON
       state.id = id
 
-      const tempWorkflow = workflowStore.saveAs(workflow, newPath)
+      const tempWorkflow = workflowStore.saveAs(workflow, newPath, state)
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
