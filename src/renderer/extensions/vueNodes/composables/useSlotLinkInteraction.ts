@@ -17,13 +17,23 @@ interface SlotInteractionOptions {
   nodeId: string
   index: number
   type: 'input' | 'output'
+  readonly?: boolean
+}
+
+interface SlotInteractionHandlers {
+  onPointerDown: (event: PointerEvent) => void
 }
 
 export function useSlotLinkInteraction({
   nodeId,
   index,
-  type
-}: SlotInteractionOptions) {
+  type,
+  readonly
+}: SlotInteractionOptions): SlotInteractionHandlers | null {
+  if (readonly) {
+    return null
+  }
+
   const { state, beginDrag, endDrag, updatePointerPosition } =
     useSlotLinkDragState()
 
