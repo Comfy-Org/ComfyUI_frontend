@@ -7,14 +7,14 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@/renderer/core/layout/types'
-import { evaluateCompatibility } from '@/renderer/core/linkInteractions/slotLinkCompatibility'
+import { evaluateCompatibility } from '@/renderer/core/canvas/links/slotLinkCompatibility'
 import {
   type SlotDropCandidate,
   useSlotLinkDragState
-} from '@/renderer/core/linkInteractions/slotLinkDragState'
+} from '@/renderer/core/canvas/links/slotLinkDragState'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { SlotLayout } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 
 interface SlotInteractionOptions {

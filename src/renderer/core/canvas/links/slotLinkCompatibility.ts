@@ -9,7 +9,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   SlotDragSource,
   SlotDropCandidate
-} from '@/renderer/core/linkInteractions/slotLinkDragState'
+} from '@/renderer/core/canvas/links/slotLinkDragState'
 import { app } from '@/scripts/app'
 
 interface CompatibilityResult {

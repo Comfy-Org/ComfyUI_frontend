@@ -6,11 +6,11 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveConnectingLinkColor } from '@/lib/litegraph/src/utils/linkColors'
-import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import {
   type SlotDragSource,
   useSlotLinkDragState
-} from '@/renderer/core/linkInteractions/slotLinkDragState'
+} from '@/renderer/core/canvas/links/slotLinkDragState'
+import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 
 function buildContext(canvas: LGraphCanvas): LinkRenderContext {
   return {
