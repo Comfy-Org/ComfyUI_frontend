@@ -4,7 +4,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   SlotDragSource,
@@ -18,7 +18,7 @@ interface CompatibilityResult {
   targetSlot?: INodeInputSlot | INodeOutputSlot
 }
 
-function resolveNode(nodeId: string | number) {
+function resolveNode(nodeId: NodeId) {
   const pinia = getActivePinia()
   const canvasStore = pinia ? useCanvasStore() : null
   const graph = canvasStore?.canvas?.graph ?? app.canvas?.graph
