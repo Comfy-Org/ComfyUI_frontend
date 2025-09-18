@@ -115,6 +115,12 @@ const router = createRouter({
           name: 'DesktopUpdateView',
           component: () => import('@/views/DesktopUpdateView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'desktop-dialog/:dialogId',
+          name: 'DesktopDialogView',
+          component: () => import('@/views/DesktopDialogView.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }
