@@ -145,7 +145,7 @@ export function useSlotLinkInteraction({
   const handlePointerCancel = (event: PointerEvent) => {
     if (event.pointerId !== activePointerId) return
     cleanupListeners()
-    app.canvas?.setDirty(true, true)
+    app.canvas?.setDirty(true)
   }
 
   const onPointerDown = (event: PointerEvent) => {
@@ -189,7 +189,7 @@ export function useSlotLinkInteraction({
     window.addEventListener('pointermove', handlePointerMove, true)
     window.addEventListener('pointerup', handlePointerUp, true)
     window.addEventListener('pointercancel', handlePointerCancel, true)
-    app.canvas?.setDirty(true, true)
+    app.canvas?.setDirty(true)
     event.preventDefault()
     event.stopPropagation()
   }
