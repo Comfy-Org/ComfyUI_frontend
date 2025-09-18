@@ -31,12 +31,12 @@ function buildContext(canvas: LGraphCanvas): LinkRenderContext {
 }
 
 export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
-  const originalOnRender = canvas.onRender?.bind(canvas)
+  const originalOnDrawForeground = canvas.onDrawForeground?.bind(canvas)
   const patched = (
-    canvasElement: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D
+    ctx: CanvasRenderingContext2D,
+    area: LGraphCanvas['visible_area']
   ) => {
-    originalOnRender?.(canvasElement, ctx)
+    originalOnDrawForeground?.(ctx, area)
 
     const { state } = useSlotLinkDragState()
     if (!state.active || !state.source) return
@@ -59,7 +59,6 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     const colour = resolveConnectingLinkColor(sourceSlot?.type)
 
     ctx.save()
-    canvas.ds.toCanvasContext(ctx)
 
     linkRenderer.renderDraggingLink(
       ctx,
@@ -74,7 +73,7 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     ctx.restore()
   }
 
-  canvas.onRender = patched
+  canvas.onDrawForeground = patched
 }
 
 function resolveSourceSlot(
