@@ -27,7 +27,8 @@ const config: KnipConfig = {
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
     // Staged for for use with subgraph widget promotion
-    'src/lib/litegraph/src/widgets/DisconnectedWidget.ts'
+    'src/lib/litegraph/src/widgets/DisconnectedWidget.ts',
+    'src/core/graph/operations/types.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
