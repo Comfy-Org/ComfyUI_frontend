@@ -1,5 +1,5 @@
 {
-  // "extends": "../tsconfig.json",
+  "extends": "../tsconfig.json",
   "compilerOptions": {
     /* Test files should not be compiled */
     "noEmit": true,

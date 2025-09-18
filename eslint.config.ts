@@ -153,5 +153,14 @@ export default defineConfig([
         }
       ]
     }
+  },
+  {
+    files: ['tests-ui/**/*'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { disallowTypeAnnotations: false }
+      ]
+    }
   }
 ])
