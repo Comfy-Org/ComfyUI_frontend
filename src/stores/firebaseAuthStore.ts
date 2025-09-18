@@ -6,12 +6,10 @@ import {
   GoogleAuthProvider,
   type User,
   type UserCredential,
-  browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -80,8 +78,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Retrieves the Firebase Auth instance. Returns `null` on the server.
   // When using this function on the client in TypeScript, you can force the type with `useFirebaseAuth()!`.
   const auth = useFirebaseAuth()!
-  // Set persistence to localStorage (works in both browser and Electron)
-  void setPersistence(auth, browserLocalPersistence)
 
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user
