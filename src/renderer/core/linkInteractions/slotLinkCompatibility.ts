@@ -1,8 +1,11 @@
+import { getActivePinia } from 'pinia'
+
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   SlotDragSource,
   SlotDropCandidate
@@ -16,8 +19,9 @@ interface CompatibilityResult {
 }
 
 function resolveNode(nodeId: string | number) {
-  const canvas = app.canvas
-  const graph = canvas?.graph
+  const pinia = getActivePinia()
+  const canvasStore = pinia ? useCanvasStore() : null
+  const graph = canvasStore?.canvas?.graph ?? app.canvas?.graph
   if (!graph) return null
   const id = typeof nodeId === 'string' ? Number(nodeId) : nodeId
   if (Number.isNaN(id)) return null
