@@ -50,7 +50,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
   getComponent,
-  isEssential,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -99,8 +98,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
-
-    if (!isEssential(widget.type)) continue
 
     const vueComponent = getComponent(widget.type) || WidgetInputText
 
