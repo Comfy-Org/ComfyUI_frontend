@@ -1,6 +1,7 @@
 import './clipspace'
 import './contextMenuFilter'
 import './dynamicPrompts'
+import './dynamicTyping'
 import './editAttention'
 import './electronAdapter'
 import './groupNode'
