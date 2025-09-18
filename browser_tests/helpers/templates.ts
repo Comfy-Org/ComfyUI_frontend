@@ -1,7 +1,7 @@
-import { Locator, Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import path from 'path'
 
-import {
+import type {
   TemplateInfo,
   WorkflowTemplates
 } from '../../src/platform/workflow/templates/types/template'

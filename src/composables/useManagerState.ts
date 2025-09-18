@@ -42,7 +42,12 @@ export function useManagerState() {
       )
 
       // Check command line args first (highest priority)
-      if (systemStats.value?.system?.argv?.includes('--disable-manager')) {
+      // --enable-manager flag enables the manager (opposite of old --disable-manager)
+      const hasEnableManager =
+        systemStats.value?.system?.argv?.includes('--enable-manager')
+
+      // If --enable-manager is NOT present, manager is disabled
+      if (!hasEnableManager) {
         return ManagerUIState.DISABLED
       }
 
