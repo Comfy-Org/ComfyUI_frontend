@@ -40,7 +40,16 @@ export function useSlotLinkInteraction({
     const layout = layoutStore.getSlotLayout(key)
     if (!layout) return null
 
-    return { layout, compatible: true }
+    const candidate: SlotDropCandidate = { layout, compatible: false }
+
+    if (state.source) {
+      candidate.compatible = evaluateCompatibility(
+        state.source,
+        candidate
+      ).allowable
+    }
+
+    return candidate
   }
 
   const conversion = useSharedCanvasPositionConversion()
@@ -120,11 +129,8 @@ export function useSlotLinkInteraction({
 
     if (state.source) {
       const candidate = candidateFromTarget(event.target)
-      if (candidate) {
-        const result = evaluateCompatibility(state.source, candidate)
-        if (result.allowable) {
-          connectSlots(candidate.layout)
-        }
+      if (candidate?.compatible) {
+        connectSlots(candidate.layout)
       }
     }
 
