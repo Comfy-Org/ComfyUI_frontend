@@ -330,7 +330,7 @@ export class LinkConnector {
               network.outputNode,
               output
             )
-            renderLink.fromDirection = LinkDirection.NONE
+            renderLink.fromDirection = LinkDirection.CENTER
             renderLinks.push(renderLink)
 
             continue
@@ -486,7 +486,7 @@ export class LinkConnector {
         input,
         reroute
       )
-      renderLink.fromDirection = LinkDirection.NONE
+      renderLink.fromDirection = LinkDirection.CENTER
       this.renderLinks.push(renderLink)
 
       this.state.connectingTo = 'input'
@@ -513,7 +513,7 @@ export class LinkConnector {
       outputSlot,
       reroute
     )
-    renderLink.fromDirection = LinkDirection.NONE
+    renderLink.fromDirection = LinkDirection.CENTER
     this.renderLinks.push(renderLink)
 
     this.state.connectingTo = 'input'
@@ -550,7 +550,7 @@ export class LinkConnector {
         output,
         reroute
       )
-      renderLink.fromDirection = LinkDirection.NONE
+      renderLink.fromDirection = LinkDirection.CENTER
       this.renderLinks.push(renderLink)
 
       this.state.connectingTo = 'output'
@@ -600,7 +600,7 @@ export class LinkConnector {
 
     const reroute = network.getReroute(linkSegment.parentId)
     const renderLink = new ToInputRenderLink(network, node, slot, reroute)
-    renderLink.fromDirection = LinkDirection.NONE
+    renderLink.fromDirection = LinkDirection.CENTER
     this.renderLinks.push(renderLink)
 
     state.connectingTo = 'input'

@@ -36,7 +36,7 @@ export class MovingInputLink extends MovingLinkBase {
     this.node = this.outputNode
     this.fromSlot = this.outputSlot
     this.fromPos = fromReroute?.pos ?? this.outputPos
-    this.fromDirection = LinkDirection.NONE
+    this.fromDirection = LinkDirection.CENTER
     this.fromSlotIndex = this.outputIndex
   }
 

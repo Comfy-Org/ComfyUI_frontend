@@ -241,7 +241,7 @@ describe('LinkConnector', () => {
       expect(renderLink.node).toEqual(originNode)
       expect(renderLink.fromSlot).toEqual(output)
       expect(renderLink.fromReroute).toEqual(reroute)
-      expect(renderLink.fromDirection).toEqual(LinkDirection.NONE)
+      expect(renderLink.fromDirection).toEqual(LinkDirection.CENTER)
       expect(renderLink.network).toEqual(network)
     })
   })

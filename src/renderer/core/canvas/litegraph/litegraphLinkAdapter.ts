@@ -205,7 +205,6 @@ export class LitegraphLinkAdapter {
       case LinkDirection.DOWN:
         return 'down'
       case LinkDirection.CENTER:
-      case LinkDirection.NONE:
         return 'none'
       default:
         return 'right'

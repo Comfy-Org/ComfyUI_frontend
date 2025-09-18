@@ -54,7 +54,7 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     const to: ReadOnlyPoint = [pointer.canvas.x, pointer.canvas.y]
 
     const startDir = source.direction ?? LinkDirection.RIGHT
-    const endDir = LinkDirection.NONE
+    const endDir = LinkDirection.CENTER
 
     const colour = resolveConnectingLinkColor(sourceSlot?.type)
 
