@@ -6,21 +6,13 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 
-// Create a mock LGraphNode type for testing
-interface MockLGraphNode {
-  isSubgraphNode: () => boolean
-}
-
-// Mock dependencies with proper types
-const mockApp = {
-  graph: null as LGraph | null
-}
-
+// Mock dependencies
 vi.mock('@/scripts/app', () => ({
-  app: mockApp
+  app: {
+    graph: null as any
+  }
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -48,8 +40,6 @@ vi.mock('vue-i18n', () => ({
 describe('NodeHeader - Subgraph Functionality', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset mock app state
-    mockApp.graph = null
   })
 
   const createMockNodeData = (
@@ -85,17 +75,13 @@ describe('NodeHeader - Subgraph Functionality', () => {
 
   it('should show subgraph button for subgraph nodes', async () => {
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
+    const { app } = await import('@/scripts/app')
 
     // Mock graph and subgraph node
-    const mockGraph = { rootGraph: {} } as LGraph
-    mockApp.graph = mockGraph
-
-    const mockSubgraphNode: MockLGraphNode = {
+    ;(app as any).graph = { rootGraph: {} }
+    ;(getNodeByLocatorId as any).mockReturnValue({
       isSubgraphNode: () => true
-    }
-
-    const mockGetNodeByLocatorId = vi.mocked(getNodeByLocatorId)
-    mockGetNodeByLocatorId.mockReturnValue(mockSubgraphNode as LGraphNode)
+    })
 
     const wrapper = createWrapper({
       nodeData: createMockNodeData('test-node-1'),
@@ -110,17 +96,13 @@ describe('NodeHeader - Subgraph Functionality', () => {
 
   it('should not show subgraph button for regular nodes', async () => {
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
+    const { app } = await import('@/scripts/app')
 
     // Mock graph and regular node
-    const mockGraph = { rootGraph: {} } as LGraph
-    mockApp.graph = mockGraph
-
-    const mockRegularNode: MockLGraphNode = {
+    ;(app as any).graph = { rootGraph: {} }
+    ;(getNodeByLocatorId as any).mockReturnValue({
       isSubgraphNode: () => false
-    }
-
-    const mockGetNodeByLocatorId = vi.mocked(getNodeByLocatorId)
-    mockGetNodeByLocatorId.mockReturnValue(mockRegularNode as LGraphNode)
+    })
 
     const wrapper = createWrapper({
       nodeData: createMockNodeData('test-node-1'),
@@ -135,17 +117,13 @@ describe('NodeHeader - Subgraph Functionality', () => {
 
   it('should not show subgraph button in readonly mode', async () => {
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
+    const { app } = await import('@/scripts/app')
 
     // Mock graph and subgraph node
-    const mockGraph = { rootGraph: {} } as LGraph
-    mockApp.graph = mockGraph
-
-    const mockSubgraphNode: MockLGraphNode = {
+    ;(app as any).graph = { rootGraph: {} }
+    ;(getNodeByLocatorId as any).mockReturnValue({
       isSubgraphNode: () => true
-    }
-
-    const mockGetNodeByLocatorId = vi.mocked(getNodeByLocatorId)
-    mockGetNodeByLocatorId.mockReturnValue(mockSubgraphNode as LGraphNode)
+    })
 
     const wrapper = createWrapper({
       nodeData: createMockNodeData('test-node-1'),
@@ -160,17 +138,13 @@ describe('NodeHeader - Subgraph Functionality', () => {
 
   it('should emit enter-subgraph event when button is clicked', async () => {
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
+    const { app } = await import('@/scripts/app')
 
     // Mock graph and subgraph node
-    const mockGraph = { rootGraph: {} } as LGraph
-    mockApp.graph = mockGraph
-
-    const mockSubgraphNode: MockLGraphNode = {
+    ;(app as any).graph = { rootGraph: {} }
+    ;(getNodeByLocatorId as any).mockReturnValue({
       isSubgraphNode: () => true
-    }
-
-    const mockGetNodeByLocatorId = vi.mocked(getNodeByLocatorId)
-    mockGetNodeByLocatorId.mockReturnValue(mockSubgraphNode as LGraphNode)
+    })
 
     const wrapper = createWrapper({
       nodeData: createMockNodeData('test-node-1'),
@@ -189,16 +163,13 @@ describe('NodeHeader - Subgraph Functionality', () => {
   it('should handle subgraph context correctly', async () => {
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
 
+    const { app } = await import('@/scripts/app')
+
     // Mock graph and node in subgraph context
-    const mockGraph = { rootGraph: {} } as LGraph
-    mockApp.graph = mockGraph
-
-    const mockSubgraphNode: MockLGraphNode = {
+    ;(app as any).graph = { rootGraph: {} }
+    ;(getNodeByLocatorId as any).mockReturnValue({
       isSubgraphNode: () => true
-    }
-
-    const mockGetNodeByLocatorId = vi.mocked(getNodeByLocatorId)
-    mockGetNodeByLocatorId.mockReturnValue(mockSubgraphNode as LGraphNode)
+    })
 
     const wrapper = createWrapper({
       nodeData: createMockNodeData('test-node-1', 'subgraph-id'),
@@ -218,8 +189,10 @@ describe('NodeHeader - Subgraph Functionality', () => {
   })
 
   it('should handle missing graph gracefully', async () => {
+    const { app } = await import('@/scripts/app')
+
     // Mock missing graph
-    mockApp.graph = null
+    ;(app as any).graph = null
 
     const wrapper = createWrapper({
       nodeData: createMockNodeData('test-node-1'),
@@ -234,17 +207,13 @@ describe('NodeHeader - Subgraph Functionality', () => {
 
   it('should prevent event propagation on double click', async () => {
     const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
+    const { app } = await import('@/scripts/app')
 
     // Mock graph and subgraph node
-    const mockGraph = { rootGraph: {} } as LGraph
-    mockApp.graph = mockGraph
-
-    const mockSubgraphNode: MockLGraphNode = {
+    ;(app as any).graph = { rootGraph: {} }
+    ;(getNodeByLocatorId as any).mockReturnValue({
       isSubgraphNode: () => true
-    }
-
-    const mockGetNodeByLocatorId = vi.mocked(getNodeByLocatorId)
-    mockGetNodeByLocatorId.mockReturnValue(mockSubgraphNode as LGraphNode)
+    })
 
     const wrapper = createWrapper({
       nodeData: createMockNodeData('test-node-1'),
