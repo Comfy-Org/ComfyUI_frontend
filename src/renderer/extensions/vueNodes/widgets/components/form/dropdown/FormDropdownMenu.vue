@@ -5,8 +5,14 @@ import { cn } from '@/utils/tailwindUtil'
 
 const actionButtonStyle =
   'h-8 bg-zinc-800 rounded-lg outline outline-1 outline-offset-[-1px] outline-neutral-700'
+
+const filterIndex = ref(0)
 const filterButtonStyle =
-  'px-4 py-2 rounded-md inline-flex justify-center items-center'
+  'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer hover:text-white'
+
+const layoutMode = ref<'list' | 'grid'>('grid')
+const layoutSwitchItemStyle =
+  'size-6 flex justify-center items-center rounded-sm cursor-pointer hover:scale-108 hover:text-white'
 
 const selectedIndex = ref(0)
 </script>
@@ -19,23 +25,75 @@ const selectedIndex = ref(0)
   >
     <!-- Filter -->
     <div class="flex gap-1 text-zinc-400 px-4 mb-4">
-      <div :class="cn(filterButtonStyle, 'bg-zinc-800')">Inputs</div>
-      <div :class="cn(filterButtonStyle, 'bg-transparent')">Outputs</div>
+      <div
+        :class="
+          cn(
+            filterButtonStyle,
+            filterIndex === 0 ? '!bg-zinc-800 text-white' : 'bg-transparent'
+          )
+        "
+        @click="filterIndex = 0"
+      >
+        Inputs
+      </div>
+      <div
+        :class="
+          cn(
+            filterButtonStyle,
+            filterIndex === 1 ? '!bg-zinc-800 text-white' : 'bg-transparent'
+          )
+        "
+        @click="filterIndex = 1"
+      >
+        Outputs
+      </div>
     </div>
     <!-- Actions -->
     <div class="flex gap-2 text-zinc-400 px-4">
-      <div :class="cn(actionButtonStyle, 'flex-1 flex px-2 items-center')">
-        <span class="mr-2">▼</span><span> Search </span>
+      <div
+        :class="
+          cn(
+            actionButtonStyle,
+            'flex-1 flex px-2 items-center text-base leading-none'
+          )
+        "
+      >
+        <i-lucide:search class="mr-2 size-4" /><span> Search </span>
       </div>
+      <!-- Sort Select -->
       <div
         :class="cn(actionButtonStyle, 'w-8 flex justify-center items-center')"
       >
-        S
+        <i-lucide:arrow-up-down class="size-4" />
       </div>
+      <!-- Layout Switch -->
       <div
-        :class="cn(actionButtonStyle, 'w-8 flex justify-center items-center')"
+        :class="
+          cn(actionButtonStyle, 'flex justify-center items-center p-1 gap-1')
+        "
       >
-        V
+        <div
+          :class="
+            cn(
+              layoutSwitchItemStyle,
+              layoutMode === 'list' ? '!bg-neutral-700 !text-white' : ''
+            )
+          "
+          @click="layoutMode = 'list'"
+        >
+          <i-lucide:list class="size-4" />
+        </div>
+        <div
+          :class="
+            cn(
+              layoutSwitchItemStyle,
+              layoutMode === 'grid' ? '!bg-neutral-700 !text-white' : ''
+            )
+          "
+          @click="layoutMode = 'grid'"
+        >
+          <i-lucide:layout-grid class="size-4" />
+        </div>
       </div>
     </div>
     <!-- List -->
@@ -67,10 +125,13 @@ const selectedIndex = ref(0)
               )
             "
           >
+            <!-- Selected Icon -->
             <div
               v-if="i === selectedIndex"
               class="rounded-full bg-blue-500 border-1 border-white size-4 absolute top-1 left-1"
-            />
+            >
+              <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
+            </div>
             <img
               :src="`https://picsum.photos/120/100?random=${i}`"
               class="size-full object-cover"
