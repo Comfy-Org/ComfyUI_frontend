@@ -5,7 +5,8 @@
  * performance with large node graphs. Uses zoom thresholds to determine
  * how much detail to render for each node component.
  **/
-import { Ref, watchEffect } from 'vue'
+import type { Ref } from 'vue'
+import { watchEffect } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
