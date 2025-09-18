@@ -5763,8 +5763,8 @@ export class LGraphCanvas
     )
       return
 
-    const start_dir = startDirection || LinkDirection.RIGHT
-    const end_dir = endDirection || LinkDirection.LEFT
+    const start_dir = startDirection ?? LinkDirection.RIGHT
+    const end_dir = endDirection ?? LinkDirection.LEFT
 
     // Has reroutes
     if (reroutes.length) {
