@@ -29,6 +29,15 @@ import {
 
 import { useRemoteWidget } from './useRemoteWidget'
 
+// Type guards for widget safety
+function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
+  return widget.type === 'asset'
+}
+
+function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
+  return widget.type === 'combo'
+}
+
 const getDefaultValue = (inputSpec: ComboInputSpec) => {
   if (inputSpec.default) return inputSpec.default
   if (inputSpec.options?.length) return inputSpec.options[0]
@@ -82,7 +91,10 @@ const addComboWidget = (
       inputSpec.name,
       displayLabel,
       async () => {
-        const assetWidget = widget as IAssetWidget
+        if (!isAssetWidget(widget)) {
+          throw new Error(`Expected asset widget but received ${widget.type}`)
+        }
+        const assetWidget = widget
         await assetBrowserDialog.show({
           nodeType: node.comfyClass || '',
           inputName: inputSpec.name,
@@ -114,11 +126,14 @@ const addComboWidget = (
   )
 
   if (inputSpec.remote) {
+    if (!isComboWidget(widget)) {
+      throw new Error(`Expected combo widget but received ${widget.type}`)
+    }
     const remoteWidget = useRemoteWidget({
       remoteConfig: inputSpec.remote,
       defaultValue,
       node,
-      widget: widget as IComboWidget
+      widget
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
@@ -134,16 +149,19 @@ const addComboWidget = (
   }
 
   if (inputSpec.control_after_generate) {
+    if (!isComboWidget(widget)) {
+      throw new Error(`Expected combo widget but received ${widget.type}`)
+    }
     widget.linkedWidgets = addValueControlWidgets(
       node,
-      widget as IComboWidget,
+      widget,
       undefined,
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )
   }
 
-  return widget as IBaseWidget
+  return widget
 }
 
 export const useComboWidget = () => {
