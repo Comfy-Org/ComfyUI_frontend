@@ -175,17 +175,29 @@ export default {
         onAssetSelected: (assetPath) => {
           console.log('Selected:', assetPath)
           // Update your component state
+          // Dialog auto-closes with animation via animateHide()
         }
       })
     }
 
-    return { openBrowser }
+    // Manual close with animation (if needed)
+    const closeBrowser = () => {
+      assetBrowserDialog.hide() // Triggers animateHide() internally
+    }
+
+    return { openBrowser, closeBrowser }
   }
 }</code></pre>
           </div>
           <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <p class="text-sm text-blue-800">
               <strong>💡 Try it:</strong> Use the interactive buttons above to see this code in action!
+            </p>
+          </div>
+          <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+            <p class="text-sm text-green-800">
+              <strong>✨ Animation:</strong> The close button now uses <code>animateHide()</code> for smooth transitions,
+              just like pressing ESC. Both auto-close on selection and manual close trigger proper animations.
             </p>
           </div>
         </div>

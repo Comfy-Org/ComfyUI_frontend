@@ -104,6 +104,39 @@ export const useDialogStore = defineStore('dialog', () => {
     }
   }
 
+  /**
+   * Triggers the dialog hide animation without immediately removing from stack.
+   * This is the preferred way to hide dialogs as it provides smooth visual transitions.
+   *
+   * Flow: animateHide() → PrimeVue animation → PrimeVue calls onAfterHide → closeDialog()
+   *
+   * Use this when:
+   * - User clicks close button
+   * - Programmatically hiding a dialog
+   * - You want the same smooth animation as ESC key
+   */
+  function animateHide(options?: { key: string }) {
+    const targetDialog = options
+      ? dialogStack.value.find((d) => d.key === options.key)
+      : dialogStack.value.find((d) => d.key === activeKey.value)
+    if (!targetDialog) return
+
+    // Set visible to false to trigger PrimeVue's close animation
+    // PrimeVue will call onAfterHide when animation completes, which calls closeDialog()
+    targetDialog.visible = false
+  }
+
+  /**
+   * Immediately removes dialog from stack without animation.
+   * This is called internally after animations complete.
+   *
+   * Use this when:
+   * - Called from onAfterHide callback (PrimeVue animation already done)
+   * - Force-closing without animation (rare)
+   * - Cleaning up dialog state
+   *
+   * For user-initiated closes, prefer animateClose() instead.
+   */
   function closeDialog(options?: { key: string }) {
     const targetDialog = options
       ? dialogStack.value.find((d) => d.key === options.key)
@@ -246,6 +279,7 @@ export const useDialogStore = defineStore('dialog', () => {
     dialogStack,
     riseDialog,
     showDialog,
+    animateHide,
     closeDialog,
     showExtensionDialog,
     isDialogOpen,

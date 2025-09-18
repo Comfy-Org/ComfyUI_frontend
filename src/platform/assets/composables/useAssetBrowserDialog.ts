@@ -20,15 +20,21 @@ interface AssetBrowserDialogProps {
 export const useAssetBrowserDialog = () => {
   const dialogStore = useDialogStore()
   const dialogKey = 'global-asset-browser'
+  let onHideComplete: (() => void) | null = null
 
-  function hide() {
-    dialogStore.closeDialog({ key: dialogKey })
+  function hide(): Promise<void> {
+    return new Promise((resolve) => {
+      onHideComplete = resolve
+      dialogStore.animateHide({ key: dialogKey })
+    })
   }
 
   async function show(props: AssetBrowserDialogProps) {
-    const handleAssetSelected = (assetPath: string) => {
-      hide() // Auto-close on selection before async operations
+    const handleAssetSelected = async (assetPath: string) => {
+      // Update the widget value immediately - don't wait for animation
       props.onAssetSelected?.(assetPath)
+      // Then trigger the hide animation
+      await hide()
     }
 
     // Default dialog configuration for AssetBrowserModal
@@ -36,6 +42,13 @@ export const useAssetBrowserDialog = () => {
       headless: true,
       modal: true,
       closable: true,
+      onAfterHide: () => {
+        // Resolve the hide() promise when animation completes
+        if (!onHideComplete) return
+
+        onHideComplete()
+        onHideComplete = null
+      },
       pt: {
         root: {
           class: 'rounded-2xl overflow-hidden'
