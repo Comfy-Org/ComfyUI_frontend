@@ -4,15 +4,15 @@ import { ref } from 'vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const actionButtonStyle =
-  'h-8 bg-zinc-800 rounded-lg outline outline-1 outline-offset-[-1px] outline-neutral-700'
+  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-sand-100 dark-theme:outline-neutral-700'
 
 const filterIndex = ref(0)
 const filterButtonStyle =
-  'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer hover:text-white'
+  'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer hover:text-black hover:dark-theme:text-white'
 
 const layoutMode = ref<'list' | 'grid'>('grid')
 const layoutSwitchItemStyle =
-  'size-6 flex justify-center items-center rounded-sm cursor-pointer hover:scale-108 hover:text-white'
+  'size-6 flex justify-center items-center rounded-sm cursor-pointer hover:scale-108 hover:text-black hover:dark-theme:text-white'
 
 const selectedIndex = ref(0)
 </script>
@@ -21,7 +21,7 @@ const selectedIndex = ref(0)
   <!-- TODO: remove this ⬇️ -->
   <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
   <div
-    class="w-103 h-[640px] pt-4 bg-neutral-900 rounded-lg outline outline-offset-[-1px] outline-zinc-800 flex flex-col"
+    class="w-103 h-[640px] pt-4 bg-white dark-theme:bg-charcoal-800 rounded-lg outline outline-offset-[-1px] outline-sand-100 dark-theme:outline-zinc-800 flex flex-col"
   >
     <!-- Filter -->
     <div class="flex gap-1 text-zinc-400 px-4 mb-4">
@@ -29,7 +29,9 @@ const selectedIndex = ref(0)
         :class="
           cn(
             filterButtonStyle,
-            filterIndex === 0 ? '!bg-zinc-800 text-white' : 'bg-transparent'
+            filterIndex === 0
+              ? '!bg-zinc-500/20 text-black dark-theme:text-white'
+              : 'bg-transparent'
           )
         "
         @click="filterIndex = 0"
@@ -40,7 +42,9 @@ const selectedIndex = ref(0)
         :class="
           cn(
             filterButtonStyle,
-            filterIndex === 1 ? '!bg-zinc-800 text-white' : 'bg-transparent'
+            filterIndex === 1
+              ? '!bg-zinc-500/20 text-black dark-theme:text-white'
+              : 'bg-transparent'
           )
         "
         @click="filterIndex = 1"
@@ -76,7 +80,9 @@ const selectedIndex = ref(0)
           :class="
             cn(
               layoutSwitchItemStyle,
-              layoutMode === 'list' ? '!bg-neutral-700 !text-white' : ''
+              layoutMode === 'list'
+                ? 'bg-neutral-500/50 text-black dark-theme:text-white'
+                : ''
             )
           "
           @click="layoutMode = 'list'"
@@ -87,7 +93,9 @@ const selectedIndex = ref(0)
           :class="
             cn(
               layoutSwitchItemStyle,
-              layoutMode === 'grid' ? '!bg-neutral-700 !text-white' : ''
+              layoutMode === 'grid'
+                ? 'bg-neutral-500/50 text-black dark-theme:text-white'
+                : ''
             )
           "
           @click="layoutMode = 'grid'"
@@ -99,11 +107,11 @@ const selectedIndex = ref(0)
     <!-- List -->
     <div class="flex overflow-hidden relative">
       <div
-        class="absolute top-0 inset-x-0 h-5 bg-gradient-to-b from-neutral-900 to-transparent pointer-events-none z-10"
-      />
-      <div
         class="h-full max-h-full grid grid-cols-4 gap-x-2 gap-y-4 overflow-y-auto px-4 pt-4 pb-4"
       >
+        <div
+          class="absolute top-0 inset-x-3 h-5 bg-gradient-to-b from-white dark-theme:from-neutral-900 to-transparent pointer-events-none z-10"
+        />
         <!-- Item -->
         <div
           v-for="i in 4 * 10"
