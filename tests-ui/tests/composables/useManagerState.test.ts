@@ -229,7 +229,8 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.managerUIState.value).toBe(ManagerUIState.NEW_UI)
+      // When systemStats is null, we can't check for --enable-manager flag, so manager is disabled
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.DISABLED)
     })
   })
 
