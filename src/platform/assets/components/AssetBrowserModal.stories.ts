@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { provide } from 'vue'
 
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import {
   createMockAssets,
   mockAssets
 } from '@/platform/assets/fixtures/ui-mock-assets'
+import { OnCloseKey } from '@/types/widgetTypes'
 
 // Story arguments interface
 interface StoryArgs {
@@ -63,6 +65,9 @@ export const Default: Story = {
         console.log('Modal closed')
       }
 
+      // Provide the close function for BaseModalLayout to inject
+      provide(OnCloseKey, onClose)
+
       return {
         ...args,
         onAssetSelect,
@@ -102,6 +107,9 @@ export const SingleAssetType: Story = {
       const onClose = () => {
         console.log('Modal closed')
       }
+
+      // Provide the close function for BaseModalLayout to inject
+      provide(OnCloseKey, onClose)
 
       // Create assets with only one type (checkpoints)
       const singleTypeAssets = createMockAssets(15).map((asset) => ({
@@ -151,6 +159,9 @@ export const NoLeftPanel: Story = {
       const onClose = () => {
         console.log('Modal closed')
       }
+
+      // Provide the close function for BaseModalLayout to inject
+      provide(OnCloseKey, onClose)
 
       return { ...args, onAssetSelect, onClose, assets: mockAssets }
     },

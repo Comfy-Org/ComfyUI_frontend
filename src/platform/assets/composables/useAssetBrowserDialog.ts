@@ -31,10 +31,6 @@ export const useAssetBrowserDialog = () => {
       props.onAssetSelected?.(assetPath)
     }
 
-    const handleClose = () => {
-      hide()
-    }
-
     // Default dialog configuration for AssetBrowserModal
     const dialogComponentProps = {
       headless: true,
@@ -74,7 +70,7 @@ export const useAssetBrowserDialog = () => {
         currentValue: props.currentValue,
         assets,
         onSelect: handleAssetSelected,
-        onClose: handleClose
+        onClose: () => hide()
       },
       dialogComponentProps
     })

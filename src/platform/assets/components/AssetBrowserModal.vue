@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 
 import SearchBox from '@/components/input/SearchBox.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
@@ -46,6 +46,7 @@ import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
@@ -61,6 +62,9 @@ const emit = defineEmits<{
   'asset-select': [asset: AssetDisplayItem]
   close: []
 }>()
+
+// Provide the close function for BaseModalLayout to inject
+provide(OnCloseKey, props.onClose || (() => {}))
 
 // Use AssetBrowser composable for all business logic
 const {
