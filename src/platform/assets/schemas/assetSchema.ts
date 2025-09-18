@@ -4,13 +4,13 @@ import { z } from 'zod'
 const zAsset = z.object({
   id: z.string(),
   name: z.string(),
-  asset_hash: z.string(),
+  asset_hash: z.string().nullable(),
   size: z.number(),
-  mime_type: z.string(),
+  mime_type: z.string().nullable(),
   tags: z.array(z.string()),
   preview_url: z.string().optional(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string().optional(),
   last_access_time: z.string(),
   user_metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
   preview_id: z.string().nullable().optional()
