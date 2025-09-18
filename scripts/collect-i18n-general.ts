@@ -4,9 +4,10 @@ import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { DESKTOP_DIALOGS } from '../src/constants/desktopDialogs'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
-import type { FormItem, SettingParams } from '../src/platform/settings/types'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
+import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
+import './setup-browser-globals.js'
 
 const localePath = './src/locales/en/main.json'
 const commandsPath = './src/locales/en/commands.json'
@@ -48,15 +49,28 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     Array.from(allLabels).map((label) => [normalizeI18nKey(label), label])
   )
 
-  const allCommandsLocale = Object.fromEntries(
-    commands.map((command) => [
+  // Load existing commands to preserve Desktop commands
+  const existingCommands = JSON.parse(fs.readFileSync(commandsPath, 'utf-8'))
+
+  // Filter out Desktop commands from existing commands
+  const desktopCommands = Object.fromEntries(
+    Object.entries(existingCommands).filter(([key]) =>
+      key.startsWith('Comfy-Desktop')
+    )
+  )
+
+  const allCommandsLocale = Object.fromEntries([
+    // Keep Desktop commands that aren't in the current collection
+    ...Object.entries(desktopCommands),
+    // Add/update commands from current collection
+    ...commands.map((command) => [
       normalizeI18nKey(command.id),
       {
         label: command.label,
         tooltip: command.tooltip
       }
     ])
-  )
+  ])
 
   // Settings
   const settings = await comfyPage.page.evaluate(() => {
@@ -79,8 +93,21 @@ test('collect-i18n-general', async ({ comfyPage }) => {
       }))
   })
 
-  const allSettingsLocale = Object.fromEntries(
-    settings.map((setting) => [
+  // Load existing settings to preserve Desktop settings
+  const existingSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+
+  // Filter out Desktop settings from existing settings
+  const desktopSettings = Object.fromEntries(
+    Object.entries(existingSettings).filter(([key]) =>
+      key.startsWith('Comfy-Desktop')
+    )
+  )
+
+  const allSettingsLocale = Object.fromEntries([
+    // Keep Desktop settings that aren't in the current collection
+    ...Object.entries(desktopSettings),
+    // Add/update settings from current collection
+    ...settings.map((setting) => [
       normalizeI18nKey(setting.id),
       {
         name: setting.name,
@@ -99,7 +126,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
             : undefined
       }
     ])
-  )
+  ])
 
   const allSettingCategoriesLocale = Object.fromEntries(
     settings
