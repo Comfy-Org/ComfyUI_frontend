@@ -192,8 +192,9 @@ export default defineConfig([
               'aria-placeholder',
               'aria-roledescription',
               'aria-valuetext',
-              'title',
-              'placeholder'
+              'label',
+              'placeholder',
+              'title'
             ],
             img: ['alt']
           },
