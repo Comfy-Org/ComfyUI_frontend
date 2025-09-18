@@ -396,10 +396,6 @@
       "Topbar (2nd-row)": "Topbar (2nd-row)"
     }
   },
-  "LiteGraph_Canvas_MinFontSizeForLOD": {
-    "name": "Zoom Node Level of Detail - font size threshold",
-    "tooltip": "Controls when the nodes switch to low quality LOD rendering. Uses font size in pixels to determine when to switch. Set to 0 to disable. Values 1-24 set the minimum font size threshold for LOD - higher values (24px) = switch nodes to simplified rendering sooner when zooming out, lower values (1px) = maintain full node quality longer."
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Maximum FPS",
     "tooltip": "The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0"

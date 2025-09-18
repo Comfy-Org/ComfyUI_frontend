@@ -12,8 +12,6 @@ import type { SubgraphOutputNode } from './SubgraphOutputNode'
  * A virtual slot that simply creates a new output slot when connected to.
  */
 export class EmptySubgraphOutput extends SubgraphOutput {
-  declare parent: SubgraphOutputNode
-
   constructor(parent: SubgraphOutputNode) {
     super(
       {
@@ -30,7 +28,7 @@ export class EmptySubgraphOutput extends SubgraphOutput {
     node: LGraphNode,
     afterRerouteId?: RerouteId
   ): LLink | undefined {
-    const { subgraph } = this.parent
+    const { subgraph } = this.parent as SubgraphOutputNode
     const existingNames = subgraph.outputs.map((x) => x.name)
 
     const name = nextUniqueName(slot.name, existingNames)
