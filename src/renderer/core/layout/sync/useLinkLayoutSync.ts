@@ -93,8 +93,8 @@ export function useLinkLayoutSync() {
     const endPos = getSlotPosition(targetNode, link.target_slot, true)
 
     // Get directions
-    const startDir = sourceSlot.dir ?? LinkDirection.RIGHT
-    const endDir = targetSlot.dir ?? LinkDirection.LEFT
+    const startDir = sourceSlot.dir || LinkDirection.RIGHT
+    const endDir = targetSlot.dir || LinkDirection.LEFT
 
     // Get reroutes for this link
     const reroutes = LLink.getReroutes(graph, link)

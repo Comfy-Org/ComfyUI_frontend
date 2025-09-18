@@ -112,8 +112,8 @@ export class LitegraphLinkAdapter {
     )
 
     // Get directions from slots
-    const startDir = sourceSlot.dir ?? LinkDirection.RIGHT
-    const endDir = targetSlot.dir ?? LinkDirection.LEFT
+    const startDir = sourceSlot.dir || LinkDirection.RIGHT
+    const endDir = targetSlot.dir || LinkDirection.LEFT
 
     // Convert to pure render data
     const linkData = this.convertToLinkRenderData(
@@ -352,8 +352,8 @@ export class LitegraphLinkAdapter {
     } = {}
   ): void {
     // Apply same defaults as original renderLink
-    const startDir = start_dir ?? LinkDirection.RIGHT
-    const endDir = end_dir ?? LinkDirection.LEFT
+    const startDir = start_dir || LinkDirection.RIGHT
+    const endDir = end_dir || LinkDirection.LEFT
 
     // Convert flow to boolean
     const flowBool = flow === true || (typeof flow === 'number' && flow > 0)
