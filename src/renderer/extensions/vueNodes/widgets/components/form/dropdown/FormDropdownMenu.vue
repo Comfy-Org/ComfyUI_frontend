@@ -3,6 +3,8 @@ import { ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
+import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
+
 const actionButtonStyle =
   'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-sand-100 dark-theme:outline-neutral-700'
 
@@ -113,54 +115,16 @@ const selectedIndex = ref(0)
           class="absolute top-0 inset-x-3 h-5 bg-gradient-to-b from-white dark-theme:from-neutral-900 to-transparent pointer-events-none z-10"
         />
         <!-- Item -->
-        <div
+        <FormDropdownMenuItem
           v-for="i in 4 * 10"
           :key="i"
-          class="flex flex-col gap-1 text-center select-none group/item cursor-pointer"
-          @click="selectedIndex = i"
-        >
-          <!-- Image -->
-          <div
-            :class="
-              cn(
-                'relative',
-                'aspect-square w-full overflow-hidden rounded-sm outline-1 outline-offset-[-1px] outline-zinc-300/10',
-                'transition-all duration-150',
-                'group-hover/item:scale-108',
-                'group-active/item:scale-95',
-                // selection
-                !!(i === selectedIndex) && 'ring-2 ring-blue-500'
-              )
-            "
-          >
-            <!-- Selected Icon -->
-            <div
-              v-if="i === selectedIndex"
-              class="rounded-full bg-blue-500 border-1 border-white size-4 absolute top-1 left-1"
-            >
-              <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
-            </div>
-            <img
-              :src="`https://picsum.photos/120/100?random=${i}`"
-              class="size-full object-cover"
-            />
-          </div>
-          <!-- Name -->
-          <span
-            :class="
-              cn(
-                'block text-[15px] line-clamp-2 wrap-break-word',
-                'transition-colors duration-150',
-                // selection
-                !!(i === selectedIndex) && 'text-blue-500'
-              )
-            "
-          >
-            ImageName.png
-          </span>
-          <!-- Meta Data -->
-          <span class="block text-xs text-slate-400">1024 x 1024</span>
-        </div>
+          :index="i"
+          :selected-index="selectedIndex"
+          :image-src="`https://picsum.photos/120/100?random=${i}`"
+          name="ImageName.png"
+          metadata="1024 x 1024"
+          @click="selectedIndex = $event"
+        />
       </div>
     </div>
   </div>
