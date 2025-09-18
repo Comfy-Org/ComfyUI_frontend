@@ -1,6 +1,6 @@
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
-import { LiteGraphGlobal } from './LiteGraphGlobal'
+import { LiteGraphInternal } from './LiteGraphInternal'
 import type { ConnectingLink, Point } from './interfaces'
 import type { IContextMenuOptions, Size } from './interfaces'
 import { loadPolyfills } from './polyfills'
@@ -10,7 +10,10 @@ import type { RenderShape, TitleMode } from './types/globalEnums'
 // Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
 export { Subgraph } from './subgraph/Subgraph'
 
-export const LiteGraph = new LiteGraphGlobal()
+// Note: To prevent circular dependency in litegraph/itself.ts -> litegraph.ts -> litegraph/itself.ts
+// For all src/lib/litegraph/**/*.ts files, We should import litegraph instance from LiteGraphInternal
+// And for imports outside from litegraph, We can import it directly from here for simplicity
+export const LiteGraph = LiteGraphInternal
 
 // Load legacy polyfills
 loadPolyfills()
