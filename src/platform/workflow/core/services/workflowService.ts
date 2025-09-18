@@ -17,7 +17,7 @@ import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
+import { appendJsonExt } from '@/utils/formatUtil'
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -112,14 +112,7 @@ export const useWorkflowService = () => {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
-      // Generate new id when saving existing workflow as a new file
-      const id = generateUUID()
-      const state = JSON.parse(
-        JSON.stringify(workflow.activeState)
-      ) as ComfyWorkflowJSON
-      state.id = id
-
-      const tempWorkflow = workflowStore.saveAs(workflow, newPath, state)
+      const tempWorkflow = workflowStore.saveAs(workflow, newPath)
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
