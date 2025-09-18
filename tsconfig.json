@@ -34,7 +34,9 @@
     "tests-ui/**/*",
     "global.d.ts",
     "eslint.config.ts",
+    "scripts/**/*.ts",
     "vite.config.mts",
+    "tailwind.config.ts",
     ".storybook/**/*"
   ]
 }
