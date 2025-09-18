@@ -60,10 +60,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
+  googleProvider.addScope('email')
   googleProvider.setCustomParameters({
     prompt: 'select_account'
   })
   const githubProvider = new GithubAuthProvider()
+  githubProvider.addScope('user:email')
   githubProvider.setCustomParameters({
     prompt: 'select_account'
   })
