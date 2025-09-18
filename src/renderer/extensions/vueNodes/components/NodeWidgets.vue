@@ -61,7 +61,6 @@ import type {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
@@ -77,10 +76,9 @@ import InputSlot from './InputSlot.vue'
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
   readonly?: boolean
-  lodLevel?: LODLevel
 }
 
-const { nodeData, readonly, lodLevel } = defineProps<NodeWidgetsProps>()
+const { nodeData, readonly } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -125,17 +123,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const widgets = nodeData.widgets as SafeWidgetData[]
   const result: ProcessedWidget[] = []
 
-  if (lodLevel === LODLevel.MINIMAL) {
-    return []
-  }
-
   for (const widget of widgets) {
     if (widget.options?.hidden) continue
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    if (lodLevel === LODLevel.REDUCED && !isEssential(widget.type)) continue
+    if (!isEssential(widget.type)) continue
 
     const vueComponent = getComponent(widget.type) || WidgetInputText
 

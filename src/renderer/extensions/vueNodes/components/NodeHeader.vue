@@ -4,53 +4,56 @@
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between p-4 rounded-t-2xl cursor-move w-full"
+    class="lg-node-header p-4 rounded-t-2xl cursor-move w-full relative"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <!-- Collapse/Expand Button -->
-    <button
-      v-show="!readonly"
-      class="bg-transparent border-transparent flex items-center"
-      data-testid="node-collapse-button"
-      @click.stop="handleCollapse"
-      @dblclick.stop
-    >
-      <i
-        :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-        class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
-      ></i>
-    </button>
-
-    <!-- Node Title -->
-    <div
-      v-tooltip.top="tooltipConfig"
-      class="text-sm font-bold truncate flex-1"
-      data-testid="node-title"
-    >
-      <EditableText
-        :model-value="displayTitle"
-        :is-editing="isEditing"
-        :input-attrs="{ 'data-testid': 'node-title-input' }"
-        @edit="handleTitleEdit"
-        @cancel="handleTitleCancel"
-      />
-    </div>
-
-    <!-- Title Buttons -->
-    <div v-if="!readonly" class="flex items-center">
-      <IconButton
-        v-if="isSubgraphNode"
-        size="sm"
-        type="transparent"
-        class="text-stone-200 dark-theme:text-slate-300"
-        data-testid="subgraph-enter-button"
-        title="Enter Subgraph"
-        @click.stop="handleEnterSubgraph"
+    <div class="flex items-center justify-between relative">
+      <!-- Collapse/Expand Button -->
+      <button
+        v-show="!readonly"
+        class="bg-transparent border-transparent flex items-center lod-toggle"
+        data-testid="node-collapse-button"
+        @click.stop="handleCollapse"
         @dblclick.stop
       >
-        <i class="pi pi-external-link"></i>
-      </IconButton>
+        <i
+          :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+          class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
+        ></i>
+      </button>
+
+      <!-- Node Title -->
+      <div
+        v-tooltip.top="tooltipConfig"
+        class="text-sm font-bold truncate flex-1 lod-toggle"
+        data-testid="node-title"
+      >
+        <EditableText
+          :model-value="displayTitle"
+          :is-editing="isEditing"
+          :input-attrs="{ 'data-testid': 'node-title-input' }"
+          @edit="handleTitleEdit"
+          @cancel="handleTitleCancel"
+        />
+      </div>
+
+      <!-- Title Buttons -->
+      <div v-if="!readonly" class="flex items-center lod-toggle">
+        <IconButton
+          v-if="isSubgraphNode"
+          size="sm"
+          type="transparent"
+          class="text-stone-200 dark-theme:text-slate-300"
+          data-testid="subgraph-enter-button"
+          title="Enter Subgraph"
+          @click.stop="handleEnterSubgraph"
+          @dblclick.stop
+        >
+          <i class="pi pi-external-link"></i>
+        </IconButton>
+      </div>
+      <LODFallback />
     </div>
   </div>
 </template>
@@ -68,6 +71,8 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
+
+import LODFallback from './LODFallback.vue'
 
 interface NodeHeaderProps {
   nodeData?: VueNodeData
