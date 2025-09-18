@@ -14,6 +14,7 @@ import WidgetInputNumber from '../components/WidgetInputNumber.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
 import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
+import WidgetRecordAudio from '../components/WidgetRecordAudio.vue'
 import WidgetSelect from '../components/WidgetSelect.vue'
 import WidgetSelectButton from '../components/WidgetSelectButton.vue'
 import WidgetTextarea from '../components/WidgetTextarea.vue'
@@ -112,7 +113,19 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   [
     'audioUI',
-    { component: WidgetAudioUI, aliases: ['AUDIOUI'], essential: false }
+    {
+      component: WidgetAudioUI,
+      aliases: ['AUDIOUI', 'AUDIO_UI'],
+      essential: false
+    }
+  ],
+  [
+    'audioRecord',
+    {
+      component: WidgetRecordAudio,
+      aliases: ['AUDIO_RECORD'],
+      essential: false
+    }
   ]
 ]
 
