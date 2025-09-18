@@ -2,10 +2,6 @@ import { type Fn, useEventListener } from '@vueuse/core'
 import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { evaluateCompatibility } from '@/renderer/core/canvas/links/slotLinkCompatibility'
 import {
@@ -98,20 +94,9 @@ export function useSlotLinkInteraction({
     const targetNode = graph.getNodeById(Number(slotLayout.nodeId))
     if (!sourceNode || !targetNode) return
 
-    const sourceSlot =
-      source.type === 'output'
-        ? sourceNode.outputs?.[source.slotIndex]
-        : sourceNode.inputs?.[source.slotIndex]
-    const targetSlot =
-      slotLayout.type === 'input'
-        ? targetNode.inputs?.[slotLayout.index]
-        : targetNode.outputs?.[slotLayout.index]
-
-    if (!sourceSlot || !targetSlot) return
-
     if (source.type === 'output' && slotLayout.type === 'input') {
-      const outputSlot = sourceSlot as INodeOutputSlot | undefined
-      const inputSlot = targetSlot as INodeInputSlot | undefined
+      const outputSlot = sourceNode.outputs?.[source.slotIndex]
+      const inputSlot = targetNode.inputs?.[slotLayout.index]
       if (!outputSlot || !inputSlot) return
       graph.beforeChange()
       sourceNode.connectSlots(outputSlot, targetNode, inputSlot, undefined)
@@ -119,8 +104,8 @@ export function useSlotLinkInteraction({
     }
 
     if (source.type === 'input' && slotLayout.type === 'output') {
-      const inputSlot = sourceSlot as INodeInputSlot | undefined
-      const outputSlot = targetSlot as INodeOutputSlot | undefined
+      const inputSlot = sourceNode.inputs?.[source.slotIndex]
+      const outputSlot = targetNode.outputs?.[slotLayout.index]
       if (!inputSlot || !outputSlot) return
       graph.beforeChange()
       sourceNode.disconnectInput(source.slotIndex, true)
