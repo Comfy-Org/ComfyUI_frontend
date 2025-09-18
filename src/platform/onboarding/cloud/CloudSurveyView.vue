@@ -80,6 +80,13 @@
                 >
               </div>
             </div>
+            <div v-if="surveyData.useCase === 'other'" class="mt-4 ml-8">
+              <InputText
+                v-model="surveyData.useCaseOther"
+                class="w-full"
+                placeholder="Please specify"
+              />
+            </div>
           </div>
 
           <div class="flex gap-6 pt-4">
@@ -243,6 +250,7 @@ const isSubmitting = ref(false)
 const surveyData = ref({
   familiarity: '',
   useCase: '',
+  useCaseOther: '',
   industry: '',
   industryOther: '',
   making: [] as string[]
@@ -265,7 +273,8 @@ const purposeOptions = [
   },
   { label: 'Client work (freelance)', value: 'client' },
   { label: 'My own workplace (in-house)', value: 'inhouse' },
-  { label: 'Academic research', value: 'research' }
+  { label: 'Academic research', value: 'research' },
+  { label: 'Other', value: 'other' }
 ]
 
 const industryOptions = [
@@ -290,7 +299,13 @@ const makingOptions = [
 
 // Validation per step
 const validStep1 = computed(() => !!surveyData.value.familiarity)
-const validStep2 = computed(() => !!surveyData.value.useCase)
+const validStep2 = computed(() => {
+  if (!surveyData.value.useCase) return false
+  if (surveyData.value.useCase === 'other') {
+    return !!surveyData.value.useCaseOther?.trim()
+  }
+  return true
+})
 const validStep3 = computed(() => {
   if (!surveyData.value.industry) return false
   if (surveyData.value.industry === 'other') {
@@ -314,13 +329,16 @@ const goTo = (step: number, activate: (val: string | number) => void) => {
 const onSubmitSurvey = async () => {
   try {
     isSubmitting.value = true
-    // prepare payload: collapse "other" field
+    // prepare payload with consistent structure
     const payload = {
       familiarity: surveyData.value.familiarity,
-      useCase: surveyData.value.useCase,
+      useCase:
+        surveyData.value.useCase === 'other'
+          ? surveyData.value.useCaseOther?.trim() || 'other'
+          : surveyData.value.useCase,
       industry:
         surveyData.value.industry === 'other'
-          ? { type: 'other', text: surveyData.value.industryOther }
+          ? surveyData.value.industryOther?.trim() || 'other'
           : surveyData.value.industry,
       making: surveyData.value.making
     }
