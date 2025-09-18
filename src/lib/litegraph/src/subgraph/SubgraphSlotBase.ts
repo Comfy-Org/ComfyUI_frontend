@@ -14,7 +14,6 @@ import type {
   ReadOnlyRect,
   ReadOnlySize
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
@@ -23,6 +22,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import { type UUID, createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
+import { LiteGraphInternal } from '../LiteGraphInternal'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
@@ -42,7 +42,7 @@ export abstract class SubgraphSlot
   implements SubgraphIO, Hoverable, Serialisable<SubgraphIO>
 {
   static get defaultHeight() {
-    return LiteGraph.NODE_SLOT_HEIGHT
+    return LiteGraphInternal.NODE_SLOT_HEIGHT
   }
 
   readonly #pos: Point = new Float32Array(2)
@@ -228,7 +228,9 @@ export abstract class SubgraphSlot
     if (this.displayName) {
       const [labelX, labelY] = this.labelPos
       // Also apply highlight logic to text color
-      ctx.fillStyle = highlight ? 'white' : LiteGraph.NODE_TEXT_COLOR || '#AAA'
+      ctx.fillStyle = highlight
+        ? 'white'
+        : LiteGraphInternal.NODE_TEXT_COLOR || '#AAA'
       ctx.fillText(this.displayName, labelX, labelY)
     }
 

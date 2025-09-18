@@ -1,4 +1,4 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphInternal } from '../LiteGraphInternal'
 
 /** Guard against unbound allocation. */
 const UNIQUE_MESSAGE_LIMIT = 10_000
@@ -11,7 +11,7 @@ const sentWarnings: Set<string> = new Set()
  * @param source A reference object to include alongside the message, e.g. `this`.
  */
 export function warnDeprecated(message: string, source?: object): void {
-  if (!LiteGraph.alwaysRepeatWarnings) {
+  if (!LiteGraphInternal.alwaysRepeatWarnings) {
     // Do not repeat
     if (sentWarnings.has(message)) return
 
@@ -21,7 +21,7 @@ export function warnDeprecated(message: string, source?: object): void {
     sentWarnings.add(message)
   }
 
-  for (const callback of LiteGraph.onDeprecationWarning) {
+  for (const callback of LiteGraphInternal.onDeprecationWarning) {
     callback(message, source)
   }
 }

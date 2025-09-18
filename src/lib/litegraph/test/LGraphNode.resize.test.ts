@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect } from 'vitest'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
+import { LiteGraphInternal } from '../src/LiteGraphInternal'
 import { test } from './testExtensions'
 
 describe('LGraphNode resize functionality', () => {
@@ -9,7 +10,7 @@ describe('LGraphNode resize functionality', () => {
 
   beforeEach(() => {
     // Set up LiteGraph constants needed for measure
-    LiteGraph.NODE_TITLE_HEIGHT = 20
+    LiteGraphInternal.NODE_TITLE_HEIGHT = 20
 
     node = new LGraphNode('Test Node')
     node.pos = [100, 100]

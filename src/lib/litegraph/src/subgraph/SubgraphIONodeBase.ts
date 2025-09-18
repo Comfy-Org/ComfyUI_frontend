@@ -9,12 +9,11 @@ import type {
   Point,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import {
-  type CanvasColour,
-  type CanvasPointer,
-  type CanvasPointerEvent,
-  type IContextMenuValue,
-  LiteGraph
+import type {
+  CanvasColour,
+  CanvasPointer,
+  CanvasPointerEvent,
+  IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
@@ -23,6 +22,7 @@ import type {
   Serialisable
 } from '@/lib/litegraph/src/types/serialisation'
 
+import { LiteGraphInternal } from '../LiteGraphInternal'
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
 import type { Subgraph } from './Subgraph'
@@ -194,7 +194,7 @@ export abstract class SubgraphIONodeBase<
     const options: (IContextMenuValue | null)[] = this.#getSlotMenuOptions(slot)
     if (!(options.length > 0)) return
 
-    new LiteGraph.ContextMenu(options, {
+    new LiteGraphInternal.ContextMenu(options, {
       event: event as any,
       title: slot.name || 'Subgraph Output',
       callback: (item: IContextMenuValue) => {

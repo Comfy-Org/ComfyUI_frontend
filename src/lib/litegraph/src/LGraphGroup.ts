@@ -3,6 +3,7 @@ import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphErro
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphNode } from './LGraphNode'
+import { LiteGraphInternal } from './LiteGraphInternal'
 import { strokeShape } from './draw'
 import type {
   ColorOption,
@@ -13,7 +14,6 @@ import type {
   Positionable,
   Size
 } from './interfaces'
-import { LiteGraph } from './litegraph'
 import {
   containsCentre,
   containsRect,
@@ -39,7 +39,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   color?: string
   title: string
   font?: string
-  font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
+  font_size: number = LiteGraphInternal.DEFAULT_GROUP_FONT || 24
   _bounding: Float32Array = new Float32Array([
     10,
     10,
@@ -170,7 +170,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    */
   draw(graphCanvas: LGraphCanvas, ctx: CanvasRenderingContext2D): void {
     const { padding, resizeLength, defaultColour } = LGraphGroup
-    const font_size = this.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
+    const font_size =
+      this.font_size || LiteGraphInternal.DEFAULT_GROUP_FONT_SIZE
 
     const [x, y] = this._pos
     const [width, height] = this._size
@@ -201,7 +202,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     ctx.fill()
 
     // Title
-    ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
+    ctx.font = `${font_size}px ${LiteGraphInternal.GROUP_FONT}`
     ctx.textAlign = 'left'
     ctx.fillText(
       this.title + (this.pinned ? '📌' : ''),
@@ -209,7 +210,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       y + font_size
     )
 
-    if (LiteGraph.highlight_selected_group && this.selected) {
+    if (LiteGraphInternal.highlight_selected_group && this.selected) {
       strokeShape(ctx, this._bounding, {
         title_height: this.titleHeight,
         padding
