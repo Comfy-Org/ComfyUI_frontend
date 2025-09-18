@@ -51,20 +51,9 @@ export function evaluateCompatibility(
     return { allowable: false }
   }
 
-  const sourceSlot = isOutputToInput
-    ? sourceNode.outputs?.[source.slotIndex]
-    : sourceNode.inputs?.[source.slotIndex]
-  const targetSlot = isOutputToInput
-    ? targetNode.inputs?.[candidate.layout.index]
-    : targetNode.outputs?.[candidate.layout.index]
-
-  if (!sourceSlot || !targetSlot) {
-    return { allowable: false }
-  }
-
   if (isOutputToInput) {
-    const outputSlot = sourceSlot as INodeOutputSlot | undefined
-    const inputSlot = targetSlot as INodeInputSlot | undefined
+    const outputSlot = sourceNode.outputs?.[source.slotIndex]
+    const inputSlot = targetNode.inputs?.[candidate.layout.index]
     if (!outputSlot || !inputSlot) {
       return { allowable: false }
     }
@@ -73,8 +62,8 @@ export function evaluateCompatibility(
     return { allowable, targetNode, targetSlot: inputSlot }
   }
 
-  const inputSlot = sourceSlot as INodeInputSlot | undefined
-  const outputSlot = targetSlot as INodeOutputSlot | undefined
+  const inputSlot = sourceNode.inputs?.[source.slotIndex]
+  const outputSlot = targetNode.outputs?.[candidate.layout.index]
   if (!inputSlot || !outputSlot) {
     return { allowable: false }
   }
