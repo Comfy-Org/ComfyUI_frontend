@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.json",
+  // "extends": "../tsconfig.json",
   "compilerOptions": {
     /* Test files should not be compiled */
     "noEmit": true,
@@ -9,13 +9,6 @@
     "resolveJsonModule": true
   },
   "include": [
-    "*.ts",
-    "*.mts",
-    "*.config.js",
-    "browser_tests/**/*.ts",
-    "scripts/**/*.js",
-    "scripts/**/*.ts",
-    "tests-ui/**/*.ts",
-    ".storybook/**/*.ts"
+    "**/*.ts",
   ]
 }
