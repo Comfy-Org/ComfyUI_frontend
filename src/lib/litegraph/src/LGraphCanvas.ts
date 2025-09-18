@@ -4721,22 +4721,16 @@ export class LGraphCanvas
 
           // the connection being dragged by the mouse
           if (this.linkRenderer) {
-            this.linkRenderer.renderLinkDirect(
+            this.linkRenderer.renderDraggingLink(
               ctx,
               pos,
               highlightPos,
-              null,
-              false,
-              null,
               colour,
               fromDirection,
               dragDirection,
               {
                 ...this.buildLinkRenderContext(),
                 linkMarkerShape: LinkMarkerShape.None
-              },
-              {
-                disabled: false
               }
             )
           }

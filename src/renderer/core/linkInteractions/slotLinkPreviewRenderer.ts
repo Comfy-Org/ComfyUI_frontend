@@ -61,7 +61,7 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     ctx.save()
     canvas.ds.toCanvasContext(ctx)
 
-    linkRenderer.renderDragPreview(
+    linkRenderer.renderDraggingLink(
       ctx,
       from,
       to,

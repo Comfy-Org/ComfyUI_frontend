@@ -498,7 +498,7 @@ export class LitegraphLinkAdapter {
     }
   }
 
-  renderDragPreview(
+  renderDraggingLink(
     ctx: CanvasRenderingContext2D,
     from: ReadOnlyPoint,
     to: ReadOnlyPoint,
