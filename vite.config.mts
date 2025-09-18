@@ -19,6 +19,9 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const DISABLE_VUE_PLUGINS = false // Always enable Vue DevTools for development
 
+// CLOUD PERFORMANCE: ImportMap entries for Vue/PrimeVue temporarily disabled (see generateImportMapPlugin below)
+// This reduces 600+ HTTP requests to ~8 bundled files for better cloud deployment performance
+
 // Hardcoded to staging cloud for testing frontend changes against cloud backend
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'https://stagingcloud.comfy.org'
@@ -122,39 +125,61 @@ export default defineConfig({
       : [vue()]),
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
-      {
-        name: 'vue',
-        pattern: 'vue',
-        entry: './dist/vue.esm-browser.prod.js'
-      },
-      {
-        name: 'vue-i18n',
-        pattern: 'vue-i18n',
-        entry: './dist/vue-i18n.esm-browser.prod.js'
-      },
-      {
-        name: 'primevue',
-        pattern: /^primevue\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/themes',
-        pattern: /^@primevue\/themes\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/forms',
-        pattern: /^@primevue\/forms\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true,
-        override: {
-          '@primeuix/forms': {
-            entry: ''
-          }
-        }
-      }
+      // TEMPORARY CLOUD OPTIMIZATION: Vue/PrimeVue entries commented out for better performance
+      //
+      // CONTEXT: ImportMap generates 600+ individual files (recursiveDependence: true) which
+      // causes poor performance in cloud deployment due to lack of CDN cache headers.
+      // This selective approach bundles Vue/PrimeVue normally (~3-5 chunks) while preserving
+      // the ImportMap system for future extension API imports.
+      //
+      // PERFORMANCE IMPACT:
+      // - Before: 600+ HTTP requests to dist/assets/lib/ directory
+      // - After: ~8 bundled JS files with proper compression
+      // - Cloud load time improvement: significant reduction in initial requests
+      //
+      // LONG-TERM CONSIDERATIONS:
+      // 1. Extension ecosystem: Core extensions don't import PrimeVue directly,
+      //    so this change doesn't break existing extensions
+      // 2. Future extensions: May need ImportMap for dynamic Vue component imports
+      // 3. Deployment optimization: Implement proper CDN cache headers as permanent solution
+      // 4. Hybrid approach: Could selectively enable ImportMap for specific packages only
+      //
+      // TO RESTORE FULL IMPORTMAP: Uncomment entries below and rebuild
+      // NOTE: Verify extension compatibility before restoring in production
+      //
+      // {
+      //   name: 'vue',
+      //   pattern: 'vue',
+      //   entry: './dist/vue.esm-browser.prod.js'
+      // },
+      // {
+      //   name: 'vue-i18n',
+      //   pattern: 'vue-i18n',
+      //   entry: './dist/vue-i18n.esm-browser.prod.js'
+      // },
+      // {
+      //   name: 'primevue',
+      //   pattern: /^primevue\/?.*/,
+      //   entry: './index.mjs',
+      //   recursiveDependence: true  // This generates 600+ files
+      // },
+      // {
+      //   name: '@primevue/themes',
+      //   pattern: /^@primevue\/themes\/?.*/,
+      //   entry: './index.mjs',
+      //   recursiveDependence: true
+      // },
+      // {
+      //   name: '@primevue/forms',
+      //   pattern: /^@primevue\/forms\/?.*/,
+      //   entry: './index.mjs',
+      //   recursiveDependence: true,
+      //   override: {
+      //     '@primeuix/forms': {
+      //       entry: ''
+      //     }
+      //   }
+      // }
     ]),
 
     Icons({
