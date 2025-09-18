@@ -72,16 +72,14 @@ export function useSlotLinkInteraction({
   }
 
   const updatePointerState = (event: PointerEvent) => {
-    const client = { x: event.clientX, y: event.clientY }
+    const clientX = event.clientX
+    const clientY = event.clientY
     const [canvasX, canvasY] = conversion.clientPosToCanvasPos([
-      client.x,
-      client.y
+      clientX,
+      clientY
     ])
 
-    updatePointerPosition({
-      client,
-      canvas: { x: canvasX, y: canvasY }
-    })
+    updatePointerPosition(clientX, clientY, canvasX, canvasY)
   }
 
   const handlePointerMove = (event: PointerEvent) => {

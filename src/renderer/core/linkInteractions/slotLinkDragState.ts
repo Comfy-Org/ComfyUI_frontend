@@ -1,4 +1,4 @@
-import { reactive, readonly, shallowReactive } from 'vue'
+import { reactive, readonly } from 'vue'
 
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -20,9 +20,14 @@ export interface SlotDropCandidate {
   compatible: boolean
 }
 
+interface MutablePoint {
+  x: number
+  y: number
+}
+
 interface PointerPosition {
-  client: Readonly<{ x: number; y: number }>
-  canvas: Readonly<{ x: number; y: number }>
+  client: MutablePoint
+  canvas: MutablePoint
 }
 
 interface SlotDragState {
@@ -33,24 +38,27 @@ interface SlotDragState {
   candidate: SlotDropCandidate | null
 }
 
-const defaultPointer: PointerPosition = Object.freeze({
-  client: { x: 0, y: 0 },
-  canvas: { x: 0, y: 0 }
-})
-
 const state = reactive<SlotDragState>({
   active: false,
   pointerId: null,
   source: null,
-  pointer: defaultPointer,
+  pointer: {
+    client: { x: 0, y: 0 },
+    canvas: { x: 0, y: 0 }
+  },
   candidate: null
 })
 
-function updatePointerPosition(position: PointerPosition) {
-  state.pointer = shallowReactive({
-    client: position.client,
-    canvas: position.canvas
-  })
+function updatePointerPosition(
+  clientX: number,
+  clientY: number,
+  canvasX: number,
+  canvasY: number
+) {
+  state.pointer.client.x = clientX
+  state.pointer.client.y = clientY
+  state.pointer.canvas.x = canvasX
+  state.pointer.canvas.y = canvasY
 }
 
 function setCandidate(candidate: SlotDropCandidate | null) {
@@ -68,7 +76,10 @@ function endDrag() {
   state.active = false
   state.pointerId = null
   state.source = null
-  state.pointer = defaultPointer
+  state.pointer.client.x = 0
+  state.pointer.client.y = 0
+  state.pointer.canvas.x = 0
+  state.pointer.canvas.y = 0
   state.candidate = null
 }
 
