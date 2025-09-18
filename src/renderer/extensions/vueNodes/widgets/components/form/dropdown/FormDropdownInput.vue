@@ -18,13 +18,14 @@ import { WidgetInputBaseClass } from '../../layout'
     <!-- Dropdown -->
     <div class="flex justify-between items-center flex-1 h-8">
       <span class="px-4 py-2">Select Image</span>
-      <span class="p-2">▼</span>
+      <!-- <span class="p-2">▼</span> -->
+      <i-lucide:chevron-down class="mr-2 size-4" />
     </div>
     <!-- Open File -->
     <div
       class="size-8 flex justify-center items-center border-l border-zinc-300/10"
     >
-      <span>F</span>
+      <i-lucide:folder-search class="size-4" />
     </div>
   </div>
 </template>
