@@ -1,18 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
-  <div
-    v-else
-    class="lg-slot lg-slot--input flex items-center group rounded-r-lg h-6"
-    :class="{
-      'cursor-crosshair': !readonly,
-      'cursor-default': readonly,
-      'opacity-70': readonly,
-      'lg-slot--connected': connected,
-      'lg-slot--compatible': compatible,
-      'lg-slot--dot-only': dotOnly,
-      'pr-6 hover:bg-black/5 hover:dark:bg-white/5': !dotOnly
-    }"
-  >
+  <div v-else :class="slotWrapperClass">
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
@@ -45,6 +33,7 @@ import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { cn } from '@/utils/tailwindUtil'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -73,6 +62,20 @@ onErrorCaptured((error) => {
 
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
+
+const slotWrapperClass = computed(() =>
+  cn(
+    'lg-slot lg-slot--input flex items-center group rounded-r-lg h-6',
+    props.readonly ? 'cursor-default opacity-70' : 'cursor-crosshair',
+    props.dotOnly
+      ? 'lg-slot--dot-only'
+      : 'pr-6 hover:bg-black/5 hover:dark:bg-white/5',
+    {
+      'lg-slot--connected': props.connected,
+      'lg-slot--compatible': props.compatible
+    }
+  )
+)
 
 const connectionDotRef = ref<ComponentPublicInstance<{
   slotElRef: HTMLElement | undefined
