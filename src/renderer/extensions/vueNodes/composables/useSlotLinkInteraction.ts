@@ -1,3 +1,4 @@
+import { type Fn, useEventListener } from '@vueuse/core'
 import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -55,11 +56,17 @@ export function useSlotLinkInteraction({
   const conversion = useSharedCanvasPositionConversion()
 
   let activePointerId: number | null = null
+  let stopPointerMove: Fn | null = null
+  let stopPointerUp: Fn | null = null
+  let stopPointerCancel: Fn | null = null
 
   const cleanupListeners = () => {
-    window.removeEventListener('pointermove', handlePointerMove, true)
-    window.removeEventListener('pointerup', handlePointerUp, true)
-    window.removeEventListener('pointercancel', handlePointerCancel, true)
+    stopPointerMove?.()
+    stopPointerUp?.()
+    stopPointerCancel?.()
+    stopPointerMove = null
+    stopPointerUp = null
+    stopPointerCancel = null
     activePointerId = null
     endDrag()
   }
@@ -186,9 +193,21 @@ export function useSlotLinkInteraction({
 
     updatePointerState(event)
 
-    window.addEventListener('pointermove', handlePointerMove, true)
-    window.addEventListener('pointerup', handlePointerUp, true)
-    window.addEventListener('pointercancel', handlePointerCancel, true)
+    stopPointerMove = useEventListener(
+      window,
+      'pointermove',
+      handlePointerMove,
+      { capture: true }
+    )
+    stopPointerUp = useEventListener(window, 'pointerup', handlePointerUp, {
+      capture: true
+    })
+    stopPointerCancel = useEventListener(
+      window,
+      'pointercancel',
+      handlePointerCancel,
+      { capture: true }
+    )
     app.canvas?.setDirty(true)
     event.preventDefault()
     event.stopPropagation()
