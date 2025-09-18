@@ -3,11 +3,8 @@ import { ref } from 'vue'
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IAssetWidget,
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -28,15 +25,6 @@ import {
 } from '@/scripts/widgets'
 
 import { useRemoteWidget } from './useRemoteWidget'
-
-// Type guards for widget safety
-function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
-  return widget.type === 'asset'
-}
-
-function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
-  return widget.type === 'combo'
-}
 
 const getDefaultValue = (inputSpec: ComboInputSpec) => {
   if (inputSpec.default) return inputSpec.default
@@ -94,16 +82,15 @@ const addComboWidget = (
         if (!isAssetWidget(widget)) {
           throw new Error(`Expected asset widget but received ${widget.type}`)
         }
-        const assetWidget = widget
         await assetBrowserDialog.show({
           nodeType: node.comfyClass || '',
           inputName: inputSpec.name,
-          currentValue: assetWidget.value,
+          currentValue: widget.value,
           onAssetSelected: (filename: string) => {
-            assetWidget.value = filename
+            widget.value = filename
             // Must call widget.callback to notify litegraph of value changes
             // This ensures proper serialization and triggers any downstream effects
-            assetWidget.callback?.(assetWidget.value)
+            widget.callback?.(widget.value)
           }
         })
       }

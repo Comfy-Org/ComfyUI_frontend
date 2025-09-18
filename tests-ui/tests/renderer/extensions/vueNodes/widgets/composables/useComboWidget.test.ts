@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -29,12 +30,14 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-const mockAssetBrowserDialogShow = vi.fn()
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
-  useAssetBrowserDialog: vi.fn(() => ({
-    show: mockAssetBrowserDialogShow
-  }))
-}))
+vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
+  const mockAssetBrowserDialogShow = vi.fn()
+  return {
+    useAssetBrowserDialog: vi.fn(() => ({
+      show: mockAssetBrowserDialogShow
+    }))
+  }
+})
 
 // Test factory functions
 function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
@@ -80,10 +83,9 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
 describe('useComboWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset to defaults
     mockSettingStoreGet.mockReturnValue(false)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
-    mockAssetBrowserDialogShow.mockClear()
+    vi.mocked(useAssetBrowserDialog).mockClear()
   })
 
   it('should handle undefined spec', () => {

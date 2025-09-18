@@ -12,7 +12,7 @@
         :nav-items="availableCategories"
       >
         <template #header-icon>
-          <div :class="cn('icon-[lucide--folder]', 'size-4')" />
+          <div class="icon-[lucide--folder] size-4" />
         </template>
         <template #header-title>{{ $t('assetBrowser.browseAssets') }}</template>
       </LeftSidePanel>
@@ -47,7 +47,6 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   nodeType?: string
@@ -63,10 +62,8 @@ const emit = defineEmits<{
   close: []
 }>()
 
-// Provide the close function for BaseModalLayout to inject
-provide(OnCloseKey, props.onClose || (() => {}))
+provide(OnCloseKey, props.onClose ?? (() => {}))
 
-// Use AssetBrowser composable for all business logic
 const {
   searchQuery,
   selectedCategory,
@@ -76,22 +73,17 @@ const {
   selectAssetWithCallback
 } = useAssetBrowser(props.assets)
 
-// Dialog controls panel visibility via prop
 const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true
 })
 
-// Handle close button - call both the prop callback and emit the event
 const handleClose = () => {
   props.onClose?.()
   emit('close')
 }
 
-// Handle asset selection and emit to parent
 const handleAssetSelectAndEmit = async (asset: AssetDisplayItem) => {
-  emit('asset-select', asset) // Emit the full asset object
-
-  // Use composable for detail fetching and callback execution
+  emit('asset-select', asset)
   await selectAssetWithCallback(asset.id, props.onSelect)
 }
 </script>

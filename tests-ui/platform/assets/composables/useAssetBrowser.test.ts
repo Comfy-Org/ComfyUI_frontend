@@ -25,7 +25,7 @@ vi.mock('@/i18n', () => ({
 
 describe('useAssetBrowser', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
+    vi.restoreAllMocks()
   })
 
   // Test fixtures - minimal data focused on functionality being tested

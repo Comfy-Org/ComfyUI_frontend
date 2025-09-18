@@ -172,24 +172,17 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     assetId: string,
     onSelect?: (filename: string) => void
   ): Promise<void> {
-    // Always log selection for debugging
     if (import.meta.env.DEV) {
-      console.log('Asset selected:', assetId)
+      console.debug('Asset selected:', assetId)
     }
 
-    // If no callback provided, just return (no need to fetch details)
     if (!onSelect) {
       return
     }
 
     try {
-      // Fetch complete asset details to get user_metadata
       const detailAsset = await assetService.getAssetDetails(assetId)
-
-      // Extract filename from user_metadata
       const filename = detailAsset.user_metadata?.filename
-
-      // Validate filename using Zod schema
       const validatedFilename = assetFilenameSchema.safeParse(filename)
       if (!validatedFilename.success) {
         console.error(
@@ -201,7 +194,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
         return
       }
 
-      // Execute callback with validated filename
       onSelect(validatedFilename.data)
     } catch (error) {
       console.error(`Failed to fetch asset details for ${assetId}:`, error)

@@ -30,6 +30,7 @@ interface CustomDialogComponentProps {
   dismissableMask?: boolean
   unstyled?: boolean
   headless?: boolean
+  onAfterHide?: () => void
 }
 
 export type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
@@ -74,6 +75,12 @@ export const useDialogStore = defineStore('dialog', () => {
    */
   const activeKey = ref<string | null>(null)
 
+  /**
+   * Reference to GlobalDialog's triggerDialogClose function.
+   * This allows us to call the Dialog component's actual close() method.
+   */
+  let globalDialogCloseFn: ((dialogKey: string) => void) | null = null
+
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
   /**
@@ -105,12 +112,43 @@ export const useDialogStore = defineStore('dialog', () => {
   }
 
   /**
+   * Registers GlobalDialog's triggerDialogClose function.
+   * This allows us to call the Dialog component's actual close() method.
+   */
+  function registerGlobalDialogCloseFn(closeFn: (dialogKey: string) => void) {
+    globalDialogCloseFn = closeFn
+  }
+
+  /**
    * Triggers the dialog hide animation without immediately removing from stack.
    * This is the preferred way to hide dialogs as it provides smooth visual transitions.
    *
-   * Flow: animateHide() → PrimeVue animation → PrimeVue calls onAfterHide → closeDialog()
+   * ## Why this method was needed:
    *
-   * Use this when:
+   * **Problem**: Asset browser dialog closing without animation
+   * - ESC key and close button worked fine (smooth 300ms animation)
+   * - Programmatic close after asset selection had no animation (instant removal)
+   *
+   * **Root Cause**: PrimeVue Dialog animation system requirements
+   * - ESC/close button call Dialog.close() method internally
+   * - Our programmatic approach used visible=false directly
+   * - PrimeVue needs Dialog.close() to trigger proper animation lifecycle
+   *
+   * **Technical Details**:
+   * - PrimeVue Dialog uses Vue <transition> with specific lifecycle hooks
+   * - Dialog.close() sets up animation state before setting visible=false
+   * - Direct visible=false bypasses this setup, causing instant hide
+   * - Animation timing depends on CSS transition duration (duration-200 = 200ms)
+   *
+   * **Solution Implementation**:
+   * 1. GlobalDialog registers close function via registerGlobalDialogCloseFn()
+   * 2. animateHide() calls this registered function (Dialog.close())
+   * 3. Dialog.close() triggers proper PrimeVue animation sequence
+   * 4. onAfterHide callback fires when animation completes → closeDialog()
+   *
+   * ## Flow: animateHide() → Dialog.close() → PrimeVue animation → onAfterHide → closeDialog()
+   *
+   * ## Use this when:
    * - User clicks close button
    * - Programmatically hiding a dialog
    * - You want the same smooth animation as ESC key
@@ -121,9 +159,15 @@ export const useDialogStore = defineStore('dialog', () => {
       : dialogStack.value.find((d) => d.key === activeKey.value)
     if (!targetDialog) return
 
-    // Set visible to false to trigger PrimeVue's close animation
-    // PrimeVue will call onAfterHide when animation completes, which calls closeDialog()
-    targetDialog.visible = false
+    const dialogKey = targetDialog.key
+
+    // Use Dialog.close() method (like ESC and outside click do) for proper animation
+    if (globalDialogCloseFn) {
+      globalDialogCloseFn(dialogKey)
+    } else {
+      // Fallback to setting visible = false
+      targetDialog.visible = false
+    }
   }
 
   /**
@@ -199,6 +243,9 @@ export const useDialogStore = defineStore('dialog', () => {
           dialog.dialogComponentProps.maximized = false
         },
         onAfterHide: () => {
+          // First call any custom onAfterHide from options
+          options.dialogComponentProps?.onAfterHide?.()
+          // Then do the default cleanup
           closeDialog(dialog)
         },
         pt: merge(options.dialogComponentProps?.pt || {}, {
@@ -283,6 +330,7 @@ export const useDialogStore = defineStore('dialog', () => {
     closeDialog,
     showExtensionDialog,
     isDialogOpen,
-    activeKey
+    activeKey,
+    registerGlobalDialogCloseFn
   }
 })

@@ -140,15 +140,9 @@ function createAssetService() {
       return []
     }
 
-    // Find the category for this node type by reverse lookup in modelToNodeMap
+    // Find the category for this node type using efficient O(1) lookup
     const modelToNodeStore = useModelToNodeStore()
-    const modelToNodeMap = modelToNodeStore.modelToNodeMap
-
-    const category = Object.keys(modelToNodeMap).find((categoryKey) =>
-      modelToNodeMap[categoryKey].some(
-        (provider) => provider.nodeDef.name === nodeType
-      )
-    )
+    const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
     if (!category) {
       return []
