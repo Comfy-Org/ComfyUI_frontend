@@ -12,7 +12,7 @@ const route = useRoute()
 const router = useRouter()
 
 onMounted(async () => {
-  const inviteCode = route.params.inviteCode
+  const inviteCode = route.params.code
   await router.push({
     name: 'cloud-login',
     query: {

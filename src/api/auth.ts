@@ -88,7 +88,7 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
 
 export async function getInviteCodeStatus(
   inviteCode: string
-): Promise<{ expired: boolean }> {
+): Promise<{ claimed: boolean; expired: boolean }> {
   try {
     const response = await api.fetchApi(
       `/invite/${encodeURIComponent(inviteCode)}/status`,
@@ -293,7 +293,9 @@ export async function submitSurvey(
   }
 }
 
-export async function claimInvite(code: string): Promise<void> {
+export async function claimInvite(
+  code: string
+): Promise<Promise<{ success: boolean; message: string }>> {
   try {
     Sentry.addBreadcrumb({
       category: 'auth',
@@ -340,6 +342,8 @@ export async function claimInvite(code: string): Promise<void> {
       message: 'Invite claimed successfully',
       level: 'info'
     })
+
+    return res.json()
   } catch (error) {
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to claim invite:')) {

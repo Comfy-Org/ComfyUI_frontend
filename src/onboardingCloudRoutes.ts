@@ -46,6 +46,13 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'code/:code',
+        name: 'cloud-invite-code',
+        component: () =>
+          import('@/platform/onboarding/cloud/CloudInviteEntryView.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'invite-check',
         name: 'cloud-invite-check',
         component: () =>

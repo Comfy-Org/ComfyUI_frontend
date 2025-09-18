@@ -17,19 +17,22 @@ onMounted(async () => {
   await nextTick()
 
   const inviteCode = route.query.inviteCode as string
-  const inviteCodeStatus = await getInviteCodeStatus(inviteCode)
 
-  // TODO: should be deleted when api is ready
-  // if (!status.emailVerified) {
-  //   await router.push({ name: 'cloud-verify-email' })
-  //   return
-  // }
-
-  if (inviteCodeStatus.expired) {
+  try {
+    const inviteCodeStatus = await getInviteCodeStatus(inviteCode)
+    // TODO: should be deleted when api is ready
+    // if (!status.emailVerified) {
+    //   await router.push({ name: 'cloud-verify-email' })
+    //   return
+    // }
+    if (inviteCodeStatus.claimed || inviteCodeStatus.expired) {
+      await router.push({ name: 'cloud-sorry-contact-support' })
+      return
+    }
+    await router.push({ name: 'cloud-claim-invite' })
+  } catch (e) {
     await router.push({ name: 'cloud-sorry-contact-support' })
     return
   }
-
-  await router.push({ name: 'cloud-claim-invite' })
 })
 </script>
