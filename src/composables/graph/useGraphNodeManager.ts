@@ -23,7 +23,6 @@ export interface NodeState {
 interface NodeMetadata {
   lastRenderTime: number
   cachedBounds: DOMRect | null
-  lodLevel: 'high' | 'medium' | 'low'
   spatialIndex?: QuadTree<string>
 }
 
@@ -161,7 +160,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     nodeMetadata.set(node, {
       lastRenderTime: performance.now(),
       cachedBounds: null,
-      lodLevel: 'high',
       spatialIndex: undefined
     })
   }

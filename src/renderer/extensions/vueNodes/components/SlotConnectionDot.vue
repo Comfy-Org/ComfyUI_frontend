@@ -24,6 +24,7 @@ defineExpose({
   >
     <div
       ref="slot-el"
+      class="slot-dot"
       :style="{ backgroundColor: color }"
       :class="
         cn(

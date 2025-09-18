@@ -7,7 +7,6 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 export const useNodePreviewState = (
   nodeId: string,
   options?: {
-    isMinimalLOD?: Ref<boolean>
     isCollapsed?: Ref<boolean>
   }
 ) => {
@@ -31,14 +30,10 @@ export const useNodePreviewState = (
   })
 
   const shouldShowPreviewImg = computed(() => {
-    if (!options?.isMinimalLOD || !options?.isCollapsed) {
+    if (!options?.isCollapsed) {
       return hasPreview.value
     }
-    return (
-      !options.isMinimalLOD.value &&
-      !options.isCollapsed.value &&
-      hasPreview.value
-    )
+    return !options.isCollapsed.value && hasPreview.value
   })
 
   return {

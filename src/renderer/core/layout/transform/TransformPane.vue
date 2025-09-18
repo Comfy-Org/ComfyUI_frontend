@@ -1,7 +1,10 @@
 <template>
   <div
-    class="transform-pane"
-    :class="{ 'transform-pane--interacting': isInteracting }"
+    class="absolute inset-0 w-full h-full pointer-events-none"
+    :class="[
+      isInteracting ? 'transform-pane--interacting' : 'will-change-auto',
+      isLOD ? 'isLOD' : ''
+    ]"
     :style="transformStyle"
     @pointerdown="handlePointerDown"
   >
@@ -11,13 +14,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, provide } from 'vue'
+import { computed, provide, ref } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas
@@ -33,6 +37,10 @@ const {
   screenToCanvas,
   isNodeInViewport
 } = useTransformState()
+
+const isLOD = ref(false)
+
+useLOD(camera, isLOD)
 
 const canvasElement = computed(() => props.canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {

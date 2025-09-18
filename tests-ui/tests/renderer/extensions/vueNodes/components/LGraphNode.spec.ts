@@ -32,17 +32,6 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   })
 }))
 
-vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
-  useLOD: () => ({
-    lodLevel: { value: 0 },
-    shouldRenderWidgets: { value: true },
-    shouldRenderSlots: { value: true },
-    shouldRenderContent: { value: false },
-    lodCssClass: { value: '' }
-  }),
-  LODLevel: { MINIMAL: 0 }
-}))
-
 vi.mock(
   '@/renderer/extensions/vueNodes/execution/useNodeExecutionState',
   () => ({
