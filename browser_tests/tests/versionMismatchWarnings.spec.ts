@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { SystemStats } from '../../src/schemas/apiSchema'
+import type { SystemStats } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Version Mismatch Warnings', () => {
