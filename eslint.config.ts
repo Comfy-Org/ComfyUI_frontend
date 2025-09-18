@@ -20,6 +20,7 @@ export default defineConfig([
       'src/types/vue-shim.d.ts',
       'src/types/comfyRegistryTypes.ts',
       'src/types/generatedManagerTypes.ts',
+      'browser_tests/**/*',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*'
     ]
