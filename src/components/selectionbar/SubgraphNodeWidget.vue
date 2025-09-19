@@ -30,6 +30,7 @@ function onClick() {
     <Button
       size="small"
       class="shrink-0"
+      text
       severity="secondary"
       @click.stop="onClick"
     >
@@ -44,6 +45,8 @@ function onClick() {
   display: flex;
   padding: 4px 16px 4px 0;
   word-break: break-all;
+  border-radius: 4px;
+  background: var(--bg-color, #202020);
 }
 .widget-node {
   color: var(--color-slate-100, #9c9eab);
