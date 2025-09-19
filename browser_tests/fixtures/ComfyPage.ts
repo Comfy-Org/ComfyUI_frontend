@@ -29,6 +29,8 @@ dotenv.config()
 
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
+type Bounds = readonly [number, number, number, number]
+
 class ComfyMenu {
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
@@ -336,6 +338,99 @@ export class ComfyPage {
 
   public assetPath(fileName: string) {
     return `./browser_tests/assets/${fileName}`
+  }
+
+  async fitToView(
+    options: {
+      selectionOnly?: boolean
+      zoom?: number
+      padding?: number
+    } = {}
+  ) {
+    const { selectionOnly = false, zoom = 0.75, padding = 10 } = options
+
+    const rectangles = await this.page.evaluate<
+      Bounds[] | null,
+      { selectionOnly: boolean }
+    >(
+      ({ selectionOnly }) => {
+        const app = window['app']
+        if (!app?.canvas) return null
+
+        const canvas = app.canvas
+        const items = (() => {
+          if (selectionOnly && canvas.selectedItems?.size) {
+            return Array.from(canvas.selectedItems)
+          }
+          try {
+            return Array.from(canvas.positionableItems ?? [])
+          } catch {
+            return []
+          }
+        })()
+
+        if (!items.length) return null
+
+        const rects: Bounds[] = []
+        for (const item of items) {
+          const rect = item?.boundingRect
+          if (!rect) continue
+
+          const x = Number(rect[0])
+          const y = Number(rect[1])
+          const width = Number(rect[2])
+          const height = Number(rect[3])
+
+          rects.push([x, y, width, height] as Bounds)
+        }
+
+        return rects.length ? rects : null
+      },
+      { selectionOnly }
+    )
+
+    if (!rectangles || rectangles.length === 0) return
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const [x, y, width, height] of rectangles) {
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x + width)
+      maxY = Math.max(maxY, y + height)
+    }
+
+    const hasFiniteBounds =
+      Number.isFinite(minX) &&
+      Number.isFinite(minY) &&
+      Number.isFinite(maxX) &&
+      Number.isFinite(maxY)
+
+    if (!hasFiniteBounds) return
+
+    const boundsArray = [
+      minX - padding,
+      minY - padding,
+      maxX - minX + 2 * padding,
+      maxY - minY + 2 * padding
+    ] as Bounds
+
+    await this.page.evaluate(
+      ({ bounds, zoom }) => {
+        const app = window['app']
+        if (!app?.canvas) return
+
+        const canvas = app.canvas
+        canvas.ds.fitToBounds(bounds, { zoom })
+        canvas.setDirty(true, true)
+      },
+      { bounds: boundsArray, zoom }
+    )
+
+    await this.nextFrame()
   }
 
   async executeCommand(commandId: string) {
