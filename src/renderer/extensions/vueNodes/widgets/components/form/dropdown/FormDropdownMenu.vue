@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import FormDropdownActions from './FormDropdownActions.vue'
-import FormDropdownFilter from './FormDropdownFilter.vue'
+import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
+import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
 
 const filterIndex = ref(0)
@@ -17,9 +17,9 @@ const selectedIndex = ref(0)
     class="w-103 h-[640px] pt-4 bg-white dark-theme:bg-charcoal-800 rounded-lg outline outline-offset-[-1px] outline-sand-100 dark-theme:outline-zinc-800 flex flex-col"
   >
     <!-- Filter -->
-    <FormDropdownFilter v-model:filter-index="filterIndex" />
+    <FormDropdownMenuFilter v-model:filter-index="filterIndex" />
     <!-- Actions -->
-    <FormDropdownActions v-model:layout-mode="layoutMode" />
+    <FormDropdownMenuActions v-model:layout-mode="layoutMode" />
     <!-- List -->
     <div class="flex overflow-hidden relative">
       <div
