@@ -36,7 +36,7 @@
     "global.d.ts",
     "eslint.config.ts",
     "vite.config.mts",
-    "knip.config.ts",
-    ".storybook/**/*"
+    ".storybook/**/*",
+    "*.config.ts"
   ]
 }
