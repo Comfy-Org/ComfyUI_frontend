@@ -4,8 +4,8 @@ import Button from 'primevue/button'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import NodeConflictDialogContent from '@/components/dialog/content/manager/NodeConflictDialogContent.vue'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 
 // Mock getConflictMessage utility
 vi.mock('@/utils/conflictMessageUtil', () => ({
