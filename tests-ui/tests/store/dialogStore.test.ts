@@ -146,21 +146,6 @@ describe('dialogStore', () => {
       expect(store.isDialogOpen('test-dialog')).toBe(false)
     })
 
-    it('should hide dialog by setting visible to false', () => {
-      const store = useDialogStore()
-      store.showDialog({ key: 'test-dialog', component: MockComponent })
-
-      const dialog = store.dialogStack[0]
-      expect(dialog.visible).toBe(true)
-
-      store.animateHide({ key: 'test-dialog' })
-
-      // Dialog should be hidden but still in stack
-      expect(dialog.visible).toBe(false)
-      expect(store.dialogStack).toHaveLength(1)
-      expect(store.isDialogOpen('test-dialog')).toBe(true)
-    })
-
     it('should reuse existing dialog when showing with same key', () => {
       const store = useDialogStore()
 

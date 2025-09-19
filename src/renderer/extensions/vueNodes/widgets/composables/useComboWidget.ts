@@ -87,10 +87,14 @@ const addComboWidget = (
           inputName: inputSpec.name,
           currentValue: widget.value,
           onAssetSelected: (filename: string) => {
+            const oldValue = widget.value
             widget.value = filename
-            // Must call widget.callback to notify litegraph of value changes
-            // This ensures proper serialization and triggers any downstream effects
-            widget.callback?.(widget.value)
+            // Litegraph separates user interactions from programmatic value changes:
+            // - widget.callback: handles UI events like button clicks (opens this dialog)
+            // - node.onWidgetChanged: notifies graph of value updates (serialization, downstream effects)
+            // Using onWidgetChanged prevents a callback race where asset selection could reopen the dialog
+            node.onWidgetChanged?.(widget.name, filename, oldValue, widget)
+            node.graph?.setDirtyCanvas?.(true, true)
           }
         })
       }

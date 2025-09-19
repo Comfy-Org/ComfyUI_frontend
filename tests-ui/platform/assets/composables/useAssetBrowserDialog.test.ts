@@ -35,11 +35,11 @@ describe('useAssetBrowserDialog', () => {
     it('auto-closes dialog when asset is selected', async () => {
       // Create fresh mocks for this test
       const mockShowDialog = vi.fn()
-      const mockAnimateHide = vi.fn()
+      const mockCloseDialog = vi.fn()
 
       vi.mocked(useDialogStore).mockReturnValue({
         showDialog: mockShowDialog,
-        animateHide: mockAnimateHide
+        closeDialog: mockCloseDialog
       } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
         typeof useDialogStore
       >)
@@ -59,7 +59,7 @@ describe('useAssetBrowserDialog', () => {
 
       // Should call the original callback and trigger hide animation
       expect(onAssetSelected).toHaveBeenCalledWith('selected-asset-path')
-      expect(mockAnimateHide).toHaveBeenCalledWith({
+      expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'global-asset-browser'
       })
     })
@@ -67,11 +67,11 @@ describe('useAssetBrowserDialog', () => {
     it('closes dialog when close handler is called', async () => {
       // Create fresh mocks for this test
       const mockShowDialog = vi.fn()
-      const mockAnimateHide = vi.fn()
+      const mockCloseDialog = vi.fn()
 
       vi.mocked(useDialogStore).mockReturnValue({
         showDialog: mockShowDialog,
-        animateHide: mockAnimateHide
+        closeDialog: mockCloseDialog
       } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
         typeof useDialogStore
       >)
@@ -88,7 +88,7 @@ describe('useAssetBrowserDialog', () => {
       // Simulate dialog close
       onCloseHandler()
 
-      expect(mockAnimateHide).toHaveBeenCalledWith({
+      expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'global-asset-browser'
       })
     })

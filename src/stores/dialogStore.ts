@@ -30,7 +30,6 @@ interface CustomDialogComponentProps {
   dismissableMask?: boolean
   unstyled?: boolean
   headless?: boolean
-  onAfterHide?: () => void
 }
 
 export type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
@@ -106,18 +105,6 @@ export const useDialogStore = defineStore('dialog', () => {
   }
 
   /**
-   * Hides a dialog by setting visible to false.
-   * PrimeVue will trigger onAfterHide callback which calls closeDialog().
-   */
-  function animateHide(options?: { key: string }) {
-    const key = options?.key ?? activeKey.value
-    const targetDialog = dialogStack.value.find((d) => d.key === key)
-    if (!targetDialog) return
-
-    targetDialog.visible = false
-  }
-
-  /**
    * Immediately removes dialog from stack without animation.
    * This is called internally after animations complete.
    *
@@ -189,9 +176,6 @@ export const useDialogStore = defineStore('dialog', () => {
           dialog.dialogComponentProps.maximized = false
         },
         onAfterHide: () => {
-          // First call any custom onAfterHide from options
-          options.dialogComponentProps?.onAfterHide?.()
-          // Then do the default cleanup
           closeDialog(dialog)
         },
         pt: merge(options.dialogComponentProps?.pt || {}, {
@@ -272,7 +256,6 @@ export const useDialogStore = defineStore('dialog', () => {
     dialogStack,
     riseDialog,
     showDialog,
-    animateHide,
     closeDialog,
     showExtensionDialog,
     isDialogOpen,
