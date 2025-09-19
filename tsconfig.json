@@ -45,6 +45,7 @@
     "dist",
     "browser_tests",
     "tests-ui",
-    "scripts"
+    "scripts",
+    "build"
   ]
 }
