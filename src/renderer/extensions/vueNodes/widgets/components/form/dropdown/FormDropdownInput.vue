@@ -28,7 +28,7 @@ const selectedItems = computed(() => {
 })
 
 const chevronClass = computed(() =>
-  cn('mr-2 size-4 transition-transform duration-200', {
+  cn('mr-2 size-4 transition-transform duration-200 flex-shrink-0', {
     'rotate-180': props.isOpen
   })
 )
@@ -51,11 +51,11 @@ const theButtonStyle = [
       "
       @click="emit('select-click', $event)"
     >
-      <span class="px-4 py-2">
-        <span v-if="!selectedItems.length">
+      <span class="px-4 py-2 min-w-0">
+        <span v-if="!selectedItems.length" class="min-w-0">
           {{ props.placeholder }}
         </span>
-        <span v-else class="line-clamp-1">
+        <span v-else class="line-clamp-1 min-w-0">
           {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
         </span>
       </span>
