@@ -92,7 +92,7 @@
 
 <script setup lang="ts">
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
-import { onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -102,6 +102,7 @@ const props = defineProps<{
   widget?: any
   nodeData?: any
   showControls?: boolean
+  readonly?: boolean
 }>()
 
 const modelValue = defineModel<any>('modelValue')
@@ -173,13 +174,21 @@ const updateWaveform = () => {
 // Start recording
 async function startRecording() {
   try {
+    if (props.readonly) {
+      console.log('[WidgetRecordAudio] Recording blocked - readonly mode')
+      return
+    }
+
+    console.log('[WidgetRecordAudio] Starting recording...')
     audioChunks.value = []
     recordedURL.value = null
     timer.value = 0
 
     await useAudioService().registerWavEncoder()
+    console.log('[WidgetRecordAudio] WAV encoder registered')
 
     stream.value = await navigator.mediaDevices.getUserMedia({ audio: true })
+    console.log('[WidgetRecordAudio] Microphone access granted')
 
     // Setup audio context for visualization
     audioContext.value = new (window.AudioContext ||
@@ -190,37 +199,67 @@ async function startRecording() {
 
     analyser.value.fftSize = 256
     dataArray.value = new Uint8Array(analyser.value.frequencyBinCount)
+    console.log('[WidgetRecordAudio] Audio context and analyser setup complete')
 
     // Create recorder
     mediaRecorder.value = new ExtendableMediaRecorder(stream.value, {
       mimeType: 'audio/wav'
     }) as unknown as MediaRecorder
+    console.log('[WidgetRecordAudio] MediaRecorder created')
 
     mediaRecorder.value.ondataavailable = (e) => {
       audioChunks.value.push(e.data)
     }
 
     mediaRecorder.value.onstop = async () => {
+      console.log('[WidgetRecordAudio] Recording stopped, processing...')
+
       const blob = new Blob(audioChunks.value, { type: 'audio/wav' })
+      console.log('[WidgetRecordAudio] Audio blob created:', {
+        size: blob.size,
+        type: blob.type,
+        chunks: audioChunks.value.length
+      })
+
+      if (recordedURL.value?.startsWith('blob:')) {
+        URL.revokeObjectURL(recordedURL.value)
+      }
       recordedURL.value = URL.createObjectURL(blob)
+      console.log('[WidgetRecordAudio] Blob URL created:', recordedURL.value)
 
-      // Upload to server
-      const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-      modelValue.value = path
+      // Immediately upload and update widget values so execution has a valid path
+      try {
+        const path = await useAudioService().convertBlobToFileAndSubmit(blob)
+        modelValue.value = path
+        console.log('[WidgetRecordAudio] Uploaded and set modelValue:', path)
 
-      // Update audio widget if exists
-      if (props.nodeData?.widgets) {
-        const audioWidget = props.nodeData.widgets.find(
-          (w: any) => w.name === 'audio'
-        )
-        if (audioWidget) audioWidget.value = path
+        if (props.nodeData?.widgets) {
+          const audioWidget = props.nodeData.widgets.find(
+            (w: any) => w.name === 'audio'
+          )
+          if (audioWidget) {
+            if (
+              audioWidget.options?.values &&
+              !audioWidget.options.values.includes(path)
+            ) {
+              audioWidget.options.values.push(path)
+            }
+            audioWidget.value = path
+            console.log('[WidgetRecordAudio] Audio widget updated:', path)
+          }
+        }
+      } catch (e) {
+        console.error('[WidgetRecordAudio] Upload failed:', e)
+        useToastStore().addAlert('Failed to upload recorded audio')
       }
 
+      console.log('[WidgetRecordAudio] Recording process complete')
       cleanup()
     }
 
     mediaRecorder.value.start()
     isRecording.value = true
+    console.log('[WidgetRecordAudio] Recording started')
 
     // Start timer
     timerInterval.value = window.setInterval(() => {
@@ -238,10 +277,14 @@ async function startRecording() {
 
 // Stop recording
 function stopRecording() {
+  console.log('[WidgetRecordAudio] Stop recording requested')
   if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+    console.log('[WidgetRecordAudio] Stopping MediaRecorder...')
     mediaRecorder.value.stop()
+  } else {
+    console.log('[WidgetRecordAudio] MediaRecorder already inactive or null')
+    cleanup()
   }
-  cleanup()
 }
 
 // Cleanup recording resources
@@ -344,10 +387,35 @@ function clearRecording() {
   }
   timer.value = 0
   modelValue.value = null
+  if (props.nodeData?.widgets) {
+    const audioWidget = props.nodeData.widgets.find(
+      (w: any) => w.name === 'audio'
+    )
+    if (audioWidget) audioWidget.value = ''
+  }
 }
 
 // Initialize on mount
-initWaveform()
+onMounted(() => {
+  console.log('[WidgetRecordAudio] Mounted:', {
+    nodeClass:
+      props.nodeData?.constructor?.comfyClass ||
+      props.nodeData?.type ||
+      'Unknown',
+    nodeTitle: props.nodeData?.title,
+    hasNodeData: !!props.nodeData,
+    showControls: props.showControls,
+    readonly: props.readonly,
+    modelValue: modelValue.value,
+    availableWidgets:
+      props.nodeData?.widgets?.map((w: any) => ({
+        name: w.name,
+        type: w.type
+      })) || []
+  })
+
+  initWaveform()
+})
 
 // Cleanup on unmount
 onUnmounted(() => {
@@ -357,4 +425,76 @@ onUnmounted(() => {
     URL.revokeObjectURL(recordedURL.value)
   }
 })
+
+async function serializeValue() {
+  console.log('[WidgetRecordAudio] serializeValue called:', {
+    isRecording: isRecording.value,
+    hasRecordedURL: !!recordedURL.value,
+    modelValue: modelValue.value
+  })
+
+  // If still recording, stop and wait for completion
+  if (isRecording.value && mediaRecorder.value) {
+    console.log('[WidgetRecordAudio] Still recording, stopping first...')
+    mediaRecorder.value.stop()
+
+    // Wait for recording to complete
+    await new Promise((resolve) => {
+      const checkRecording = () => {
+        if (!isRecording.value) {
+          console.log(
+            '[WidgetRecordAudio] Recording stopped, continuing serialization'
+          )
+          resolve(undefined)
+        } else {
+          setTimeout(checkRecording, 100)
+        }
+      }
+      checkRecording()
+    })
+  }
+
+  // If we have a recorded audio blob but no uploaded path yet, upload now
+  if (recordedURL.value && !modelValue.value) {
+    console.log(
+      '[WidgetRecordAudio] Have recorded audio, uploading during serialization...'
+    )
+    try {
+      const blob = await fetch(recordedURL.value).then((r) => r.blob())
+      const path = await useAudioService().convertBlobToFileAndSubmit(blob)
+      modelValue.value = path
+      console.log(
+        '[WidgetRecordAudio] Upload during serialization successful:',
+        path
+      )
+
+      // Update audio widget
+      if (props.nodeData?.widgets) {
+        const audioWidget = props.nodeData.widgets.find(
+          (w: any) => w.name === 'audio'
+        )
+        if (audioWidget) {
+          audioWidget.value = path
+          console.log(
+            '[WidgetRecordAudio] Audio widget updated during serialization:',
+            path
+          )
+        }
+      }
+    } catch (error) {
+      console.error(
+        '[WidgetRecordAudio] Upload during serialization failed:',
+        error
+      )
+      useToastStore().addAlert('Failed to upload recorded audio')
+      return ''
+    }
+  }
+
+  const finalValue = modelValue.value || ''
+  console.log('[WidgetRecordAudio] serializeValue returning:', finalValue)
+  return finalValue
+}
+
+defineExpose({ serializeValue })
 </script>

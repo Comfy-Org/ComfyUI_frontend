@@ -1,7 +1,19 @@
 <template>
   <div class="w-full">
-    <!-- Standard Audio UI -->
+    <!-- RecordAudio Widget for RecordAudio nodes -->
+    <WidgetRecordAudio
+      v-if="isRecordAudioNode"
+      :widget="widget"
+      :model-value="modelValue"
+      :readonly="readonly"
+      :node-data="nodeData"
+      :node="node"
+      @update:model-value="$emit('update:modelValue', $event)"
+    />
+
+    <!-- Standard Audio UI for other audio nodes -->
     <div
+      v-else
       :class="widgetClasses"
       @dragover="handleDragOver"
       @drop="handleDrop"
@@ -24,155 +36,106 @@
         @ended="handleEnded"
       />
 
-      <!-- Recording Mode -->
-      <template v-if="isRecording">
-        <!-- Recording Feedback -->
-        <div class="flex gap-2 items-center justify-start relative shrink-0">
-          <div class="text-xs text-white">
-            {{ t('g.listening') || 'Listening...' }}
-          </div>
-          <div class="text-sm text-white font-normal">
-            {{ formatTime(recordingTime) }}
-          </div>
-        </div>
-
-        <!-- Waveform Visualization -->
-        <div class="flex-1 flex gap-2 items-center justify-start h-8 min-w-0">
-          <div
-            v-for="i in waveformBars"
-            :key="i"
-            class="w-0.5 bg-gray-500 rounded transition-all duration-75"
-            :style="{ height: `${getWaveformHeight(i)}px` }"
-          />
-        </div>
-
-        <!-- Stop Recording Button -->
+      <!-- Playback Mode -->
+      <!-- Left Actions -->
+      <div class="flex gap-2 items-center justify-start relative shrink-0">
+        <!-- Play/Pause Button -->
         <div
           role="button"
           :tabindex="0"
-          aria-label="Stop Recording"
-          class="bg-red-500/20 rounded-full size-8 flex items-center justify-center cursor-pointer hover:bg-red-500/30"
-          @click="stopRecording"
+          aria-label="Play/Pause"
+          class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
+          @click="togglePlayPause"
         >
-          <i class="icon-[lucide--square] size-4 text-red-500" />
-        </div>
-      </template>
-
-      <!-- Playback Mode -->
-      <template v-else>
-        <!-- Left Actions -->
-        <div class="flex gap-2 items-center justify-start relative shrink-0">
-          <!-- Play/Pause Button -->
-          <div
-            role="button"
-            :tabindex="0"
-            aria-label="Play/Pause"
-            class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
-            @click="togglePlayPause"
-          >
-            <i
-              v-if="!isPlaying"
-              class="icon-[lucide--play] size-4 text-[#8a8a8a]"
-            />
-            <i v-else class="icon-[lucide--pause] size-4 text-[#8a8a8a]" />
-          </div>
-
-          <!-- Time Display -->
-          <div class="text-sm font-normal text-white text-nowrap">
-            {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
-          </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="flex-1 h-0.5 bg-[#444444] rounded-full relative">
-          <div
-            class="absolute left-0 top-0 h-full bg-white/50 rounded-full transition-all"
-            :style="{ width: `${progressPercentage}%` }"
+          <i
+            v-if="!isPlaying"
+            class="icon-[lucide--play] size-4 text-[#8a8a8a]"
           />
-          <input
-            type="range"
-            :value="progressPercentage"
-            min="0"
-            max="100"
-            step="0.1"
-            class="absolute inset-0 w-full opacity-0 cursor-pointer"
-            @input="handleSeek"
+          <i v-else class="icon-[lucide--pause] size-4 text-[#8a8a8a]" />
+        </div>
+
+        <!-- Time Display -->
+        <div class="text-sm font-normal text-white text-nowrap">
+          {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="flex-1 h-0.5 bg-[#444444] rounded-full relative">
+        <div
+          class="absolute left-0 top-0 h-full bg-white/50 rounded-full transition-all"
+          :style="{ width: `${progressPercentage}%` }"
+        />
+        <input
+          type="range"
+          :value="progressPercentage"
+          min="0"
+          max="100"
+          step="0.1"
+          class="absolute inset-0 w-full opacity-0 cursor-pointer"
+          @input="handleSeek"
+        />
+      </div>
+
+      <!-- Right Actions -->
+      <div class="flex gap-2 items-center justify-start relative shrink-0">
+        <!-- Volume Button -->
+        <div
+          role="button"
+          :tabindex="0"
+          aria-label="Volume"
+          class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
+          @click="toggleMute"
+        >
+          <i
+            v-if="!isMuted && volume > 0.5"
+            class="icon-[lucide--volume-2] size-4 text-[#8a8a8a]"
           />
+          <i
+            v-else-if="!isMuted && volume > 0"
+            class="icon-[lucide--volume-1] size-4 text-[#8a8a8a]"
+          />
+          <i v-else class="icon-[lucide--volume-x] size-4 text-[#8a8a8a]" />
         </div>
 
-        <!-- Right Actions -->
-        <div class="flex gap-2 items-center justify-start relative shrink-0">
-          <!-- Volume Button -->
-          <div
-            role="button"
-            :tabindex="0"
-            aria-label="Volume"
-            class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
-            @click="toggleMute"
-          >
-            <i
-              v-if="!isMuted && volume > 0.5"
-              class="icon-[lucide--volume-2] size-4 text-[#8a8a8a]"
-            />
-            <i
-              v-else-if="!isMuted && volume > 0"
-              class="icon-[lucide--volume-1] size-4 text-[#8a8a8a]"
-            />
-            <i v-else class="icon-[lucide--volume-x] size-4 text-[#8a8a8a]" />
-          </div>
-
-          <!-- Upload Button (optional) -->
-          <div
-            v-if="showUploadButton"
-            role="button"
-            :tabindex="0"
-            aria-label="Upload Audio"
-            class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
-            @click="openFileSelection"
-          >
-            <i class="icon-[lucide--upload] size-4 text-[#8a8a8a]" />
-          </div>
-
-          <!-- Record Button (optional) -->
-          <div
-            v-if="showRecordButton"
-            role="button"
-            :tabindex="0"
-            aria-label="Start Recording"
-            class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
-            @click="startRecording"
-          >
-            <i class="icon-[lucide--mic] size-4 text-[#8a8a8a]" />
-          </div>
-
-          <!-- Options Button -->
-          <div
-            role="button"
-            :tabindex="0"
-            aria-label="More Options"
-            class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
-            @click="handleOptionsClick"
-          >
-            <i class="icon-[lucide--more-vertical] size-4 text-[#8a8a8a]" />
-          </div>
+        <!-- Upload Button (optional) -->
+        <div
+          v-if="showUploadButton"
+          role="button"
+          :tabindex="0"
+          aria-label="Upload Audio"
+          class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
+          @click="openFileSelection"
+        >
+          <i class="icon-[lucide--upload] size-4 text-[#8a8a8a]" />
         </div>
-      </template>
+
+        <!-- Options Button -->
+        <div
+          role="button"
+          :tabindex="0"
+          aria-label="More Options"
+          class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-white/10"
+          @click="handleOptionsClick"
+        >
+          <i class="icon-[lucide--more-vertical] size-4 text-[#8a8a8a]" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useAudioService } from '@/services/audioService'
 import { cn } from '@/utils/tailwindUtil'
+
+import WidgetRecordAudio from './WidgetRecordAudio.vue'
 
 interface NodeDataType {
   widgets?: Array<{
@@ -186,6 +149,8 @@ interface NodeDataType {
   constructor?: {
     comfyClass?: string
   }
+  type?: string
+  title?: string
 }
 
 interface AudioOutputMessage {
@@ -201,6 +166,10 @@ const props = defineProps<{
   readonly?: boolean
   nodeData?: NodeDataType
   node?: LGraphNode
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: any]
 }>()
 
 const modelValue = defineModel<any>('modelValue')
@@ -243,32 +212,27 @@ const currentTime = ref(0)
 const duration = ref(0)
 const hasAudio = ref(false)
 
-// Recording state
-const isRecording = ref(false)
-const recordingTime = ref(0)
-const mediaRecorder = ref<MediaRecorder | null>(null)
-const audioChunks = ref<Blob[]>([])
-const currentStream = ref<MediaStream | null>(null)
-const recordingInterval = ref<number | null>(null)
-const waveformBars = ref<number[]>(Array(30).fill(16)) // Waveform bars array
+// Audio playback state only
 
 // Check if this is an output node (PreviewAudio, SaveAudio, etc)
 const isOutputNode = computed(() => {
   return props.nodeData?.output_node === true
 })
 
+// Check if this is a RecordAudio node
+const isRecordAudioNode = computed(() => {
+  const nodeClass =
+    props.nodeData?.constructor?.comfyClass ||
+    props.node?.constructor?.comfyClass ||
+    props.nodeData?.type ||
+    'Unknown'
+  return nodeClass === 'RecordAudio'
+})
+
 // Check if we should show upload functionality
 const showUploadButton = computed(() => {
   // Show upload button if there's an AUDIOUPLOAD widget on the same node
   return props.nodeData?.widgets?.some((w) => w.type === 'AUDIOUPLOAD') ?? false
-})
-
-// Check if we should show record functionality
-const showRecordButton = computed(() => {
-  // Show record button if there's an AUDIO_RECORD widget on the same node
-  return (
-    props.nodeData?.widgets?.some((w) => w.type === 'AUDIO_RECORD') ?? false
-  )
 })
 
 // Progress percentage for the seek bar
@@ -282,8 +246,7 @@ const widgetClasses = computed(() => {
   return cn(
     'bg-[#262729] box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
     {
-      'empty-audio-widget':
-        isOutputNode.value && !hasAudio.value && !isRecording.value
+      'empty-audio-widget': isOutputNode.value && !hasAudio.value
     }
   )
 })
@@ -302,6 +265,13 @@ const audioFileName = computed(() => {
 // File upload handling
 async function uploadFile(file: File, pasted = false) {
   try {
+    console.log('[WidgetAudioUI] uploadFile started:', {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      pasted
+    })
+
     const body = new FormData()
     body.append('image', file)
     if (pasted) body.append('subfolder', 'pasted')
@@ -316,27 +286,44 @@ async function uploadFile(file: File, pasted = false) {
       let path = data.name
       if (data.subfolder) path = data.subfolder + '/' + path
 
+      console.log('[WidgetAudioUI] Upload successful:', {
+        originalName: file.name,
+        serverPath: path,
+        data
+      })
+
       // Update the audio widget value if it exists
       const audioWidget = props.nodeData?.widgets?.find(
         (w) => w.name === 'audio'
       )
       if (audioWidget) {
+        console.log('[WidgetAudioUI] Updating audio widget:', {
+          oldValue: audioWidget.value,
+          newValue: path
+        })
+
         // Add to options if combo widget
         if (
           audioWidget.options?.values &&
           !audioWidget.options.values.includes(path)
         ) {
           audioWidget.options.values.push(path)
+          console.log(
+            '[WidgetAudioUI] Added to combo options:',
+            audioWidget.options.values
+          )
         }
         // Update value
         audioWidget.value = path
       }
 
       // Load the audio
+      console.log('[WidgetAudioUI] Loading audio from uploaded path:', path)
       loadAudioFromPath(path)
 
       // Update model value
       modelValue.value = path
+      console.log('[WidgetAudioUI] Model value updated:', path)
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
     }
@@ -428,13 +415,6 @@ const handleEnded = () => {
   currentTime.value = 0
 }
 
-// Get waveform bar height for inline recording visualization
-const getWaveformHeight = (index: number): number => {
-  // Simple animated waveform during recording
-  const base = Math.sin(Date.now() / 200 + index) * 0.5 + 0.5
-  return 4 + base * 28
-}
-
 const togglePlayPause = () => {
   if (!audioRef.value || !audioRef.value.src) {
     return
@@ -459,92 +439,6 @@ const handleOptionsClick = () => {
   // Options button functionality - could implement playback speed, loop, etc.
 }
 
-// Recording functions
-async function startRecording() {
-  try {
-    // Reset previous recording
-    audioChunks.value = []
-    recordingTime.value = 0
-
-    // Register WAV encoder if needed
-    await useAudioService().registerWavEncoder()
-
-    // Get user media
-    currentStream.value = await navigator.mediaDevices.getUserMedia({
-      audio: true
-    })
-
-    // Create media recorder
-    mediaRecorder.value = new ExtendableMediaRecorder(currentStream.value, {
-      mimeType: 'audio/wav'
-    }) as unknown as MediaRecorder
-
-    // Set up event handlers
-    mediaRecorder.value.ondataavailable = (event) => {
-      audioChunks.value.push(event.data)
-    }
-
-    mediaRecorder.value.onstop = async () => {
-      // Create blob from chunks
-      const audioBlob = new Blob(audioChunks.value, { type: 'audio/wav' })
-
-      // Stop all tracks
-      useAudioService().stopAllTracks(currentStream.value)
-      currentStream.value = null
-
-      // Convert and upload
-      const path = await useAudioService().convertBlobToFileAndSubmit(audioBlob)
-
-      // Update audio widget value if exists
-      const audioWidget = props.nodeData?.widgets?.find(
-        (w) => w.name === 'audio'
-      )
-      if (audioWidget) {
-        audioWidget.value = path
-      }
-
-      // Load the recorded audio
-      loadAudioFromPath(path)
-      modelValue.value = path
-
-      isRecording.value = false
-      clearInterval(recordingInterval.value!)
-    }
-
-    mediaRecorder.value.onerror = (event) => {
-      console.error('MediaRecorder error:', event)
-      stopRecording()
-      useToastStore().addAlert(t('g.recordingError') || 'Recording error')
-    }
-
-    // Start recording
-    mediaRecorder.value.start()
-    isRecording.value = true
-
-    // Start timer
-    recordingInterval.value = window.setInterval(() => {
-      recordingTime.value += 1
-    }, 1000)
-  } catch (err) {
-    console.error('Error accessing microphone:', err)
-    useToastStore().addAlert(
-      t('g.micPermissionDenied') || 'Microphone permission denied'
-    )
-  }
-}
-
-function stopRecording() {
-  if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
-    mediaRecorder.value.stop()
-  } else {
-    // Cleanup if stop was called without active recording
-    useAudioService().stopAllTracks(currentStream.value)
-    currentStream.value = null
-    isRecording.value = false
-    clearInterval(recordingInterval.value!)
-  }
-}
-
 const formatTime = (seconds: number): string => {
   if (isNaN(seconds) || seconds === 0) return '0:00'
 
@@ -555,14 +449,29 @@ const formatTime = (seconds: number): string => {
 
 // Load audio from path
 function loadAudioFromPath(path: string) {
-  if (!path || !audioRef.value) return
+  if (!path || !audioRef.value) {
+    console.log('[WidgetAudioUI] loadAudioFromPath skipped:', {
+      path,
+      hasAudioRef: !!audioRef.value
+    })
+    return
+  }
 
   const [subfolder, filename] = splitFilePath(path)
   const audioUrl = api.apiURL(getResourceURL(subfolder, filename))
 
+  console.log('[WidgetAudioUI] loadAudioFromPath:', {
+    path,
+    subfolder,
+    filename,
+    audioUrl
+  })
+
   audioRef.value.src = audioUrl
   audioRef.value.load()
   hasAudio.value = true
+
+  console.log('[WidgetAudioUI] Audio loaded, hasAudio set to true')
 }
 
 // Handle node execution output for output nodes
@@ -619,37 +528,35 @@ watch(
 
 // Load audio on mount if filename is available
 onMounted(() => {
+  console.log('[WidgetAudioUI] Mounted:', {
+    nodeClass:
+      props.nodeData?.constructor?.comfyClass ||
+      props.node?.constructor?.comfyClass ||
+      props.nodeData?.type ||
+      'Unknown',
+    nodeTitle: props.nodeData?.title || props.node?.title,
+    audioFileName: audioFileName.value,
+    hasAudio: hasAudio.value,
+    isOutputNode: isOutputNode.value,
+    showUploadButton: showUploadButton.value,
+    modelValue: modelValue.value,
+    availableWidgets:
+      props.nodeData?.widgets?.map((w) => ({ name: w.name, type: w.type })) ||
+      []
+  })
+
   if (audioFileName.value) {
+    console.log('[WidgetAudioUI] Loading audio from path:', audioFileName.value)
     loadAudioFromPath(audioFileName.value)
   }
 })
 
 // Cleanup
 onUnmounted(() => {
-  // Stop recording if active
-  if (isRecording.value) {
-    stopRecording()
-  }
-
   // Pause audio and clear source
   if (audioRef.value) {
     audioRef.value.pause()
     audioRef.value.src = ''
-  }
-
-  // Clear recording interval
-  if (recordingInterval.value) {
-    clearInterval(recordingInterval.value)
-  }
-
-  // Stop stream tracks
-  if (currentStream.value) {
-    currentStream.value.getTracks().forEach((track) => track.stop())
-  }
-
-  // Restore original onExecuted if we modified it
-  if (props.node && isOutputNode.value) {
-    // Note: The original is already stored in the closure
   }
 })
 
