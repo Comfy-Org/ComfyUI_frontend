@@ -35,8 +35,8 @@
     "tests-ui/**/*",
     "global.d.ts",
     "eslint.config.ts",
-    "*.config.mts",
     ".storybook/**/*",
+    "*.config.mts",
     "*.config.ts",
     "scripts/**/*.ts",
     "build/**/*.ts"
