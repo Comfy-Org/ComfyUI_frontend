@@ -209,7 +209,6 @@ const emit = defineEmits<{
     slotIndex: number,
     isInput: boolean
   ]
-  dragStart: [event: DragEvent, nodeData: VueNodeData]
   'update:collapsed': [nodeId: string, collapsed: boolean]
   'update:title': [nodeId: string, newTitle: string]
 }>()
