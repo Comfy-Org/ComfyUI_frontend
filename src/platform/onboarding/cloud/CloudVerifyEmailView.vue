@@ -47,7 +47,13 @@ const route = useRoute()
 const { t } = useI18n()
 
 const authStore = useFirebaseAuthStore()
-const goBack = () => router.back()
+const goBack = async () => {
+  const inviteCode = route.query.inviteCode as string | undefined
+  await router.push({
+    name: 'cloud-invite-check',
+    query: inviteCode ? { inviteCode } : {}
+  })
+}
 
 async function onSend() {
   try {
@@ -79,7 +85,7 @@ onMounted(async () => {
       query: inviteCode ? { inviteCode } : {}
     })
   } else {
-    // await onSend()
+    await onSend()
   }
 })
 </script>
