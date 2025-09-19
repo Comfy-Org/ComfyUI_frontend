@@ -1121,6 +1121,13 @@ export class ComfyApp {
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
     ) => {
+      if (!nodes || !Array.isArray(nodes)) {
+        console.warn(
+          'Workflow nodes data is missing or invalid, skipping node processing',
+          { nodes, path }
+        )
+        return
+      }
       for (let n of nodes) {
         // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
         if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
