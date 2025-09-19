@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import * as semver from 'semver'
+import { valid as validSemver } from 'semver'
 import { computed, ref, watch } from 'vue'
 
 import PackVersionSelectorPopover from '@/components/dialog/content/manager/PackVersionSelectorPopover.vue'
@@ -81,7 +81,7 @@ const installedVersion = computed(() => {
     'nightly'
 
   // If Git hash, truncate to 7 characters
-  return semver.valid(version)
+  return validSemver(version)
     ? version
     : version.slice(0, TRUNCATED_HASH_LENGTH)
 })
