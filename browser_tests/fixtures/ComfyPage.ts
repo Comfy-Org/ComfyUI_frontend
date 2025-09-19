@@ -4,7 +4,11 @@ import { test as base } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
-import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
+import type { HasBoundingRect } from '../../src/lib/litegraph/src/interfaces'
+import {
+  type LGraphNode,
+  createBounds
+} from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
@@ -28,6 +32,8 @@ import TaskHistory from './utils/taskHistory'
 dotenv.config()
 
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
+
+type Bounds = readonly [number, number, number, number]
 
 class ComfyMenu {
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
@@ -336,6 +342,87 @@ export class ComfyPage {
 
   public assetPath(fileName: string) {
     return `./browser_tests/assets/${fileName}`
+  }
+
+  async fitToView(
+    options: {
+      selectionOnly?: boolean
+      zoom?: number
+      padding?: number
+    } = {}
+  ) {
+    const { selectionOnly = false, zoom = 0.75, padding = 10 } = options
+
+    const rectangles = await this.page.evaluate<
+      Bounds[] | null,
+      { selectionOnly: boolean }
+    >(
+      ({ selectionOnly }) => {
+        const app = window['app']
+        if (!app?.canvas) return null
+
+        const canvas = app.canvas
+        const items = (() => {
+          if (selectionOnly && canvas.selectedItems?.size) {
+            return Array.from(canvas.selectedItems)
+          }
+          try {
+            return Array.from(canvas.positionableItems ?? [])
+          } catch {
+            return []
+          }
+        })()
+
+        if (!items.length) return null
+
+        const rects: Bounds[] = []
+        for (const item of items) {
+          const rect = item?.boundingRect
+          if (!rect) continue
+
+          const x = Number(rect[0])
+          const y = Number(rect[1])
+          const width = Number(rect[2])
+          const height = Number(rect[3])
+
+          rects.push([x, y, width, height] as Bounds)
+        }
+
+        return rects.length ? rects : null
+      },
+      { selectionOnly }
+    )
+
+    if (!rectangles?.length) return
+
+    const sources: HasBoundingRect[] = rectangles.map(
+      (rect) => ({ boundingRect: rect }) satisfies HasBoundingRect
+    )
+
+    const bounds = createBounds(sources, padding)
+
+    if (!bounds) return
+
+    const boundsArray = [
+      Number(bounds[0]),
+      Number(bounds[1]),
+      Number(bounds[2]),
+      Number(bounds[3])
+    ] as Bounds
+
+    await this.page.evaluate(
+      ({ bounds, zoom }) => {
+        const app = window['app']
+        if (!app?.canvas) return
+
+        const canvas = app.canvas
+        canvas.ds.fitToBounds(bounds, { zoom })
+        canvas.setDirty(true, true)
+      },
+      { bounds: boundsArray, zoom }
+    )
+
+    await this.nextFrame()
   }
 
   async executeCommand(commandId: string) {
