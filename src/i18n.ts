@@ -28,6 +28,10 @@ import ruCommands from './locales/ru/commands.json' with { type: 'json' }
 import ru from './locales/ru/main.json' with { type: 'json' }
 import ruNodes from './locales/ru/nodeDefs.json' with { type: 'json' }
 import ruSettings from './locales/ru/settings.json' with { type: 'json' }
+import trCommands from './locales/tr/commands.json' with { type: 'json' }
+import tr from './locales/tr/main.json' with { type: 'json' }
+import trNodes from './locales/tr/nodeDefs.json' with { type: 'json' }
+import trSettings from './locales/tr/settings.json' with { type: 'json' }
 import zhTWCommands from './locales/zh-TW/commands.json' with { type: 'json' }
 import zhTW from './locales/zh-TW/main.json' with { type: 'json' }
 import zhTWNodes from './locales/zh-TW/nodeDefs.json' with { type: 'json' }
@@ -55,7 +59,8 @@ const messages = {
   ko: buildLocale(ko, koNodes, koCommands, koSettings),
   fr: buildLocale(fr, frNodes, frCommands, frSettings),
   es: buildLocale(es, esNodes, esCommands, esSettings),
-  ar: buildLocale(ar, arNodes, arCommands, arSettings)
+  ar: buildLocale(ar, arNodes, arCommands, arSettings),
+  tr: buildLocale(tr, trNodes, trCommands, trSettings)
 }
 
 export const i18n = createI18n({

@@ -115,11 +115,11 @@ const defaultSettingStore = {
   set: vi.fn().mockResolvedValue(undefined)
 }
 
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => defaultCanvasStore)
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)
 }))
 
@@ -147,7 +147,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     activeSubgraph: null
   }))

@@ -51,7 +51,7 @@ tests-ui/workflows/examples
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
-browser-tests/local/
+browser_tests/local/
 
 .env
 
@@ -78,8 +78,8 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
-
-
+# MCP Servers
+.playwright-mcp/*
 
 .nx/cache
 .nx/workspace-data

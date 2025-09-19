@@ -4,10 +4,10 @@ import { computed, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useToastStore } from '@/stores/toastStore'
-import { ApiKeyAuthHeader } from '@/types/authTypes'
-import { operations } from '@/types/comfyRegistryTypes'
+import type { ApiKeyAuthHeader } from '@/types/authTypes'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type ComfyApiUser =
   operations['createCustomer']['responses']['201']['content']['application/json']

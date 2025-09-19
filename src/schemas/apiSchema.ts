@@ -1,8 +1,11 @@
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
+import {
+  zComfyWorkflow,
+  zNodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
-import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflowSchema'
 import { zKeybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -466,6 +469,8 @@ const zSettings = z.object({
   'Comfy.Minimap.RenderBypassState': z.boolean(),
   'Comfy.Minimap.RenderErrorState': z.boolean(),
   'Comfy.Canvas.NavigationMode': z.string(),
+  'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
+  'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),

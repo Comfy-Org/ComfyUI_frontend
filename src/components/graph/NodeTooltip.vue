@@ -19,10 +19,10 @@ import {
   isOverNodeInput,
   isOverNodeOutput
 } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number
@@ -68,7 +68,7 @@ const onIdle = () => {
     ctor.title_mode !== LiteGraph.NO_TITLE &&
     canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
   ) {
-    return showTooltip(nodeDef.description)
+    return showTooltip(nodeDef?.description)
   }
 
   if (node.flags?.collapsed) return
@@ -83,7 +83,7 @@ const onIdle = () => {
     const inputName = node.inputs[inputSlot].name
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
-      nodeDef.inputs[inputName]?.tooltip ?? ''
+      nodeDef?.inputs[inputName]?.tooltip ?? ''
     )
     return showTooltip(translatedTooltip)
   }
@@ -97,7 +97,7 @@ const onIdle = () => {
   if (outputSlot !== -1) {
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.outputs.${outputSlot}.tooltip`,
-      nodeDef.outputs[outputSlot]?.tooltip ?? ''
+      nodeDef?.outputs[outputSlot]?.tooltip ?? ''
     )
     return showTooltip(translatedTooltip)
   }
@@ -107,7 +107,7 @@ const onIdle = () => {
   if (widget && !isDOMWidget(widget)) {
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
-      nodeDef.inputs[widget.name]?.tooltip ?? ''
+      nodeDef?.inputs[widget.name]?.tooltip ?? ''
     )
     // Widget tooltip can be set dynamically, current translation collection does not support this.
     return showTooltip(widget.tooltip ?? translatedTooltip)

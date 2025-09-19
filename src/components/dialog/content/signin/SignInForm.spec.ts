@@ -1,5 +1,6 @@
 import { Form } from '@primevue/forms'
-import { VueWrapper, mount } from '@vue/test-utils'
+import type { VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'

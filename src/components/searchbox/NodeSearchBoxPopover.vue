@@ -38,21 +38,19 @@ import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
-import { Point } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphNode,
-  LiteGraph,
-  LiteGraphCanvasEvent
-} from '@/lib/litegraph/src/litegraph'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useCanvasStore } from '@/stores/graphStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
-import { FuseFilterWithValue } from '@/utils/fuseUtil'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBox from './NodeSearchBox.vue'
 

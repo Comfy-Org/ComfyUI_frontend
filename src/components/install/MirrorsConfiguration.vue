@@ -34,16 +34,16 @@
 </template>
 
 <script setup lang="ts">
-import {
-  TorchDeviceType,
-  TorchMirrorUrl
-} from '@comfyorg/comfyui-electron-types'
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
+import { TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
-import { ModelRef, computed, onMounted, ref } from 'vue'
+import type { ModelRef } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
-import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
+import type { UVMirror } from '@/constants/uvMirrors'
+import { PYPI_MIRROR, PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { isInChina } from '@/utils/networkUtil'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'

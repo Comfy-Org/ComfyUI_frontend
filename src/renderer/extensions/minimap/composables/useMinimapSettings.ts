@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 /**

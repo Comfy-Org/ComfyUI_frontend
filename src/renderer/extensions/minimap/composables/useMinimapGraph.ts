@@ -3,8 +3,8 @@ import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 
 import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'

@@ -135,14 +135,15 @@
 </template>
 
 <script setup lang="ts">
-import { Button, InputNumber, InputNumberInputEvent } from 'primevue'
+import type { InputNumberInputEvent } from 'primevue'
+import { Button, InputNumber } from 'primevue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 const { t } = useI18n()
 const minimap = useMinimap()

@@ -8,7 +8,8 @@
         v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
         :slot-data="input"
-        :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
+        :node-type="nodeData?.type || ''"
+        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :index="getActualInputIndex(input, index)"
         :readonly="readonly"
       />
@@ -19,7 +20,8 @@
         v-for="(output, index) in filteredOutputs"
         :key="`output-${index}`"
         :slot-data="output"
-        :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
+        :node-type="nodeData?.type || ''"
+        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :index="index"
         :readonly="readonly"
       />
@@ -32,7 +34,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
@@ -40,21 +42,18 @@ import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
-  node?: LGraphNode // For backwards compatibility
-  nodeData?: VueNodeData // New clean data structure
+  nodeData?: VueNodeData
   readonly?: boolean
   lodLevel?: LODLevel
 }
 
-const props = defineProps<NodeSlotsProps>()
-
-const nodeInfo = computed(() => props.nodeData || props.node || null)
+const { nodeData = null, readonly } = defineProps<NodeSlotsProps>()
 
 // Filter out input slots that have corresponding widgets
 const filteredInputs = computed(() => {
-  if (!nodeInfo.value?.inputs) return []
+  if (!nodeData?.inputs) return []
 
-  return nodeInfo.value.inputs
+  return nodeData.inputs
     .filter((input) => {
       // Check if this slot has a widget property (indicating it has a corresponding widget)
       if (isSlotObject(input) && 'widget' in input && input.widget) {
@@ -76,7 +75,7 @@ const filteredInputs = computed(() => {
 
 // Outputs don't have widgets, so we don't need to filter them
 const filteredOutputs = computed(() => {
-  const outputs = nodeInfo.value?.outputs || []
+  const outputs = nodeData?.outputs || []
   return outputs.map((output) =>
     isSlotObject(output)
       ? output
@@ -94,10 +93,10 @@ const getActualInputIndex = (
   input: INodeSlot,
   filteredIndex: number
 ): number => {
-  if (!nodeInfo.value?.inputs) return filteredIndex
+  if (!nodeData?.inputs) return filteredIndex
 
   // Find the actual index in the unfiltered inputs array
-  const actualIndex = nodeInfo.value.inputs.findIndex((i) => i === input)
+  const actualIndex = nodeData.inputs.findIndex((i) => i === input)
   return actualIndex !== -1 ? actualIndex : filteredIndex
 }
 

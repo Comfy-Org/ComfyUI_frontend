@@ -5,7 +5,7 @@ import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformS
 
 // Mock canvas store
 let mockGetCanvas = vi.fn()
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({
     getCanvas: mockGetCanvas
   }))

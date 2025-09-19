@@ -2,7 +2,7 @@
  * Minimap-specific type definitions
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * Minimal interface for what the minimap needs from the canvas

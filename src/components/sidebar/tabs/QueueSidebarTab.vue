@@ -86,7 +86,7 @@
   <ConfirmPopup />
   <ContextMenu ref="menu" :model="menuItems" />
   <ResultGallery
-    v-model:activeIndex="galleryActiveIndex"
+    v-model:active-index="galleryActiveIndex"
     :all-gallery-items="allGalleryItems"
   />
 </template>
@@ -104,17 +104,14 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import { ComfyNode } from '@/schemas/comfyWorkflowSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
-import {
-  ResultItemImpl,
-  TaskItemImpl,
-  useQueueStore
-} from '@/stores/queueStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import ResultGallery from './queue/ResultGallery.vue'
