@@ -9,9 +9,11 @@ import type {
   CreateGroupParams,
   CreateNodeParams,
   CreateSubgraphParams,
+  CreateSubgraphResult,
   DisconnectParams,
   GraphMutationOperation,
   NodeInputSlotParams,
+  OperationResultType,
   Result,
   SubgraphIndexParams,
   SubgraphNameTypeParams,
@@ -26,15 +28,15 @@ import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export interface IGraphMutationService {
-  applyOperation(
-    operation: GraphMutationOperation
-  ): Promise<Result<any, GraphMutationError>>
+  applyOperation<T extends GraphMutationOperation>(
+    operation: T
+  ): Promise<Result<OperationResultType<T>, GraphMutationError>>
 
   createNode(
     params: CreateNodeParams
   ): Promise<Result<NodeId, GraphMutationError>>
 
-  getNodeById(nodeId: NodeId): LGraphNode
+  getNodeById(nodeId: NodeId): Promise<Result<LGraphNode, GraphMutationError>>
 
   removeNode(nodeId: NodeId): Promise<Result<void, GraphMutationError>>
 
@@ -106,15 +108,9 @@ export interface IGraphMutationService {
     params: NodeInputSlotParams
   ): Promise<Result<void, GraphMutationError>>
 
-  createSubgraph(params: CreateSubgraphParams): Promise<
-    Result<
-      {
-        subgraph: any
-        node: any
-      },
-      GraphMutationError
-    >
-  >
+  createSubgraph(
+    params: CreateSubgraphParams
+  ): Promise<Result<CreateSubgraphResult, GraphMutationError>>
 
   unpackSubgraph(
     subgraphNodeId: NodeId

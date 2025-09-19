@@ -4,10 +4,15 @@
  * Defines command types for graph mutation operations with CRDT support.
  * Each command represents an atomic operation that can be applied, undone, and synchronized.
  */
-import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { GroupId, LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { SubgraphId } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type {
+  SubgraphId,
+  SubgraphNode
+} from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export type Result<T, E> =
@@ -16,15 +21,14 @@ export type Result<T, E> =
 
 export interface CreateNodeParams {
   type: string
-  properties?: Record<string, any>
+  properties?: Record<string, string | number | boolean | object>
   title?: string
-  id?: NodeId // Support custom ID for loading workflows
 }
 
 export interface UpdateNodePropertyParams {
   nodeId: NodeId
   property: string
-  value: any
+  value: string | number | boolean | object | string[] | undefined
 }
 
 export interface UpdateNodeTitleParams {
@@ -78,18 +82,18 @@ export interface AddNodeInputParams {
   nodeId: NodeId
   name: string
   type: string
-  extra_info?: Record<string, any>
+  extra_info?: Record<string, unknown>
 }
 
 export interface AddNodeOutputParams {
   nodeId: NodeId
   name: string
   type: string
-  extra_info?: Record<string, any>
+  extra_info?: Record<string, unknown>
 }
 
 export interface CreateSubgraphParams {
-  selectedItems: Set<any>
+  selectedItems: Set<LGraphNode | LGraphGroup>
 }
 
 export interface NodeInputSlotParams {
@@ -113,7 +117,7 @@ export enum CommandOrigin {
 }
 
 export type GraphMutationOperation =
-  | createNodeCommand
+  | CreateNodeCommand
   | RemoveNodeCommand
   | UpdateNodePropertyCommand
   | UpdateNodeTitleCommand
@@ -145,10 +149,8 @@ export type GraphMutationOperation =
   | RemoveSubgraphInputCommand
   | RemoveSubgraphOutputCommand
   | ClearGraphCommand
-  | bypassNodeCommand
-  | unbypassNodeCommand
-  | undoCommand
-  | redoCommand
+  | UndoCommand
+  | RedoCommand
 
 interface GraphOpBase {
   /** Timestamp for ordering commands */
@@ -157,7 +159,7 @@ interface GraphOpBase {
   origin: CommandOrigin
 }
 
-export interface createNodeCommand extends GraphOpBase {
+export interface CreateNodeCommand extends GraphOpBase {
   type: 'createNode'
   params: CreateNodeParams
 }
@@ -316,20 +318,50 @@ export interface ClearGraphCommand extends GraphOpBase {
   type: 'clearGraph'
 }
 
-export interface bypassNodeCommand extends GraphOpBase {
-  type: 'bypassNode'
-  params: NodeId
-}
-
-export interface unbypassNodeCommand extends GraphOpBase {
-  type: 'unbypassNode'
-  params: NodeId
-}
-
-export interface undoCommand extends GraphOpBase {
+export interface UndoCommand extends GraphOpBase {
   type: 'undo'
 }
 
-export interface redoCommand extends GraphOpBase {
+export interface RedoCommand extends GraphOpBase {
   type: 'redo'
 }
+
+export type NodeIdReturnOperations = CreateNodeCommand | CloneNodeCommand
+
+export type LinkIdReturnOperations = ConnectCommand
+
+export type BooleanReturnOperations = DisconnectCommand
+
+export type GroupIdReturnOperations = CreateGroupCommand
+
+export type RerouteIdReturnOperations = AddRerouteCommand
+
+export type NodeIdArrayReturnOperations = PasteNodesCommand
+
+export type NumberReturnOperations =
+  | AddSubgraphNodeInputCommand
+  | AddSubgraphNodeOutputCommand
+
+export interface CreateSubgraphResult {
+  subgraph: Subgraph
+  node: SubgraphNode
+}
+
+export type OperationResultType<T extends GraphMutationOperation> =
+  T extends NodeIdReturnOperations
+    ? NodeId
+    : T extends LinkIdReturnOperations
+      ? LinkId
+      : T extends BooleanReturnOperations
+        ? boolean
+        : T extends GroupIdReturnOperations
+          ? GroupId
+          : T extends RerouteIdReturnOperations
+            ? RerouteId
+            : T extends NodeIdArrayReturnOperations
+              ? NodeId[]
+              : T extends NumberReturnOperations
+                ? number
+                : T extends CreateSubgraphCommand
+                  ? CreateSubgraphResult
+                  : void

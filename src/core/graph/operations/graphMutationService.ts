@@ -10,9 +10,11 @@ import type {
   CreateGroupParams,
   CreateNodeParams,
   CreateSubgraphParams,
+  CreateSubgraphResult,
   DisconnectParams,
   GraphMutationOperation,
   NodeInputSlotParams,
+  OperationResultType,
   Result,
   SubgraphIndexParams,
   SubgraphNameTypeParams,
@@ -50,13 +52,27 @@ export class GraphMutationService implements IGraphMutationService {
     return app.graph
   }
 
+  private getCanvas() {
+    return app.canvas
+  }
+
   private getChangeTracker() {
     return this.workflowStore.activeWorkflow?.changeTracker
   }
 
-  async applyOperation(
+  async applyOperation<T extends GraphMutationOperation>(
+    operation: T
+  ): Promise<Result<OperationResultType<T>, GraphMutationError>> {
+    const result = await this._executeOperation(operation)
+
+    return result as Result<OperationResultType<T>, GraphMutationError>
+  }
+
+  private async _executeOperation(
     operation: GraphMutationOperation
-  ): Promise<Result<any, GraphMutationError>> {
+  ): Promise<
+    Result<OperationResultType<typeof operation>, GraphMutationError>
+  > {
     switch (operation.type) {
       case 'createNode':
         return await this.createNode(operation.params)
@@ -127,7 +143,7 @@ export class GraphMutationService implements IGraphMutationService {
       case 'redo':
         return await this.redo()
       default: {
-        const unknownOp = operation as any
+        const unknownOp = operation as { type: string }
         console.warn('Unknown operation type:', unknownOp)
         return {
           success: false,
@@ -146,22 +162,13 @@ export class GraphMutationService implements IGraphMutationService {
     params: CreateNodeParams
   ): Promise<Result<NodeId, GraphMutationError>> {
     try {
-      const { type, properties, title, id } = params
+      const { type, properties, title } = params
       const graph = this.getGraph()
 
-      const node = LiteGraph.createNode(type)
+      const node = LiteGraph.createNode(type, title)
 
       if (!node) {
         throw new Error(`Failed to create node of type: ${type}`)
-      }
-
-      // Set custom ID if provided (for loading workflows)
-      if (id !== undefined) {
-        node.id = id
-      }
-
-      if (title) {
-        node.title = title
       }
 
       if (properties) {
@@ -190,15 +197,26 @@ export class GraphMutationService implements IGraphMutationService {
     }
   }
 
-  getNodeById(nodeId: NodeId): LGraphNode {
-    const graph = this.getGraph()
-    const node = graph.getNodeById(nodeId)
+  getNodeById(nodeId: NodeId): Promise<Result<LGraphNode, GraphMutationError>> {
+    try {
+      const graph = this.getGraph()
+      const node = graph.getNodeById(nodeId)
 
-    if (!node) {
-      throw new Error(`Node with id ${nodeId} not found`)
+      if (!node) {
+        throw new Error(`Node with id ${nodeId} not found`)
+      }
+
+      return Promise.resolve({ success: true, data: node })
+    } catch (error) {
+      return Promise.resolve({
+        success: false,
+        error: new GraphMutationError('Failed to get node by id', {
+          operation: 'getNodeById',
+          params: nodeId,
+          cause: error
+        })
+      })
     }
-
-    return node
   }
 
   async removeNode(nodeId: NodeId): Promise<Result<void, GraphMutationError>> {
@@ -1004,15 +1022,9 @@ export class GraphMutationService implements IGraphMutationService {
     }
   }
 
-  async createSubgraph(params: CreateSubgraphParams): Promise<
-    Result<
-      {
-        subgraph: any
-        node: any
-      },
-      GraphMutationError
-    >
-  > {
+  async createSubgraph(
+    params: CreateSubgraphParams
+  ): Promise<Result<CreateSubgraphResult, GraphMutationError>> {
     try {
       const graph = this.getGraph()
 
@@ -1197,12 +1209,15 @@ export class GraphMutationService implements IGraphMutationService {
 
   async clearGraph(): Promise<Result<void, GraphMutationError>> {
     try {
-      // No params to validate for clear operation
       const graph = this.getGraph()
+      const canvas = this.getCanvas()
 
-      graph.beforeChange()
-      graph.clear()
-      graph.afterChange()
+      //TODO same behavior as app.clear() to skip if it's a subgraph
+      if (graph && !canvas.subgraph) {
+        graph.beforeChange()
+        graph.clear()
+        graph.afterChange()
+      }
       return { success: true, data: undefined }
     } catch (error) {
       return {

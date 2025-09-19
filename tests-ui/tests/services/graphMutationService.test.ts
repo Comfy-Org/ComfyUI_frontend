@@ -10,6 +10,8 @@ import {
   CommandOrigin,
   type GraphMutationOperation
 } from '@/core/graph/operations/types'
+import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 const mockGraph = vi.hoisted(() => ({
   beforeChange: vi.fn(),
@@ -21,8 +23,8 @@ const mockGraph = vi.hoisted(() => ({
   clear: vi.fn(),
   setDirtyCanvas: vi.fn(),
   _links: new Map(),
-  _groups: [] as any[],
-  _nodes: [] as any[],
+  _groups: [] as LGraphGroup[],
+  _nodes: [] as LGraphNode[],
   reroutes: new Map(),
   createReroute: vi.fn(),
   removeReroute: vi.fn(),
@@ -34,7 +36,8 @@ const mockGraph = vi.hoisted(() => ({
 
 const mockApp = vi.hoisted(() => ({
   graph: null as any,
-  changeTracker: null as any
+  changeTracker: null as any,
+  canvas: null as any
 }))
 
 Object.defineProperty(mockApp, 'graph', {
@@ -42,6 +45,10 @@ Object.defineProperty(mockApp, 'graph', {
   value: null
 })
 Object.defineProperty(mockApp, 'changeTracker', {
+  writable: true,
+  value: null
+})
+Object.defineProperty(mockApp, 'canvas', {
   writable: true,
   value: null
 })
@@ -103,6 +110,7 @@ vi.mock('@/scripts/app', () => ({
 
 mockApp.graph = mockGraph
 mockApp.changeTracker = mockWorkflowStore.activeWorkflow.changeTracker
+mockApp.canvas = { subgraph: null }
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => mockWorkflowStore)
@@ -240,7 +248,10 @@ describe('GraphMutationService', () => {
         if (result.success) {
           expect(result.data).toBe('node-1')
         }
-        expect(mockLiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
+        expect(mockLiteGraph.createNode).toHaveBeenCalledWith(
+          'LoadImage',
+          'My Image Loader'
+        )
         expect(mockGraph.beforeChange).toHaveBeenCalled()
         expect(mockGraph.add).toHaveBeenCalledWith(mockNode)
         expect(mockGraph.afterChange).toHaveBeenCalled()
