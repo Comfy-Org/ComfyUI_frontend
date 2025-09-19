@@ -145,7 +145,6 @@ import {
   inject,
   onErrorCaptured,
   onMounted,
-  provide,
   ref,
   toRef,
   watch
@@ -447,11 +446,4 @@ watch(
   },
   { deep: true }
 )
-
-// Template ref for tooltip positioning
-const nodeContainerRef = ref<HTMLElement>()
-
-// Provide nodeImageUrls and tooltip container to child components
-provide('nodeImageUrls', nodeImageUrls)
-provide('tooltipContainer', nodeContainerRef)
 </script>
