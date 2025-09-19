@@ -33,7 +33,7 @@
 
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
-    v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
@@ -169,12 +169,11 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
-const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
 
 // Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle(isVueNodesEnabled)
+const vueNodeLifecycle = useVueNodeLifecycle(shouldRenderVueNodes)
 const viewportCulling = useViewportCulling(
-  isVueNodesEnabled,
+  shouldRenderVueNodes,
   vueNodeLifecycle.vueNodeData,
   vueNodeLifecycle.nodeDataTrigger,
   vueNodeLifecycle.nodeManager
@@ -182,7 +181,7 @@ const viewportCulling = useViewportCulling(
 const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
 const handleVueNodeLifecycleReset = async () => {
-  if (isVueNodesEnabled.value) {
+  if (shouldRenderVueNodes.value) {
     vueNodeLifecycle.disposeNodeManagerAndSyncs()
     await nextTick()
     vueNodeLifecycle.initializeNodeManager()

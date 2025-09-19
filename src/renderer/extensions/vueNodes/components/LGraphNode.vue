@@ -215,7 +215,6 @@ const emit = defineEmits<{
 
 useVueElementTracking(nodeData.id, 'node')
 
-// Inject selection state from parent
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
 // Inject transform state for coordinate conversion
