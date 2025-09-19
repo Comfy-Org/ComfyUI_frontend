@@ -5,9 +5,10 @@ import { describe, expect, it, vi } from 'vitest'
 import FormSelectButton from './FormSelectButton.vue'
 
 describe('FormSelectButton Core Component', () => {
+  // Type-safe helper for mounting component
   const mountComponent = (
     modelValue: string | null | undefined = null,
-    options: any[] = [],
+    options: (string | number | Record<string, any>)[] = [],
     props: Record<string, unknown> = {}
   ) => {
     return mount(FormSelectButton, {
@@ -16,7 +17,7 @@ describe('FormSelectButton Core Component', () => {
       },
       props: {
         modelValue,
-        options,
+        options: options as any,
         ...props
       }
     })
