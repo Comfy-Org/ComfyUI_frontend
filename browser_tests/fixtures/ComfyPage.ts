@@ -4,11 +4,7 @@ import { test as base } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
-import type { HasBoundingRect } from '../../src/lib/litegraph/src/interfaces'
-import {
-  type LGraphNode,
-  createBounds
-} from '../../src/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
@@ -393,21 +389,33 @@ export class ComfyPage {
       { selectionOnly }
     )
 
-    if (!rectangles?.length) return
+    if (!rectangles || rectangles.length === 0) return
 
-    const sources: HasBoundingRect[] = rectangles.map(
-      (rect) => ({ boundingRect: rect }) satisfies HasBoundingRect
-    )
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
 
-    const bounds = createBounds(sources, padding)
+    for (const [x, y, width, height] of rectangles) {
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x + width)
+      maxY = Math.max(maxY, y + height)
+    }
 
-    if (!bounds) return
+    const hasFiniteBounds =
+      Number.isFinite(minX) &&
+      Number.isFinite(minY) &&
+      Number.isFinite(maxX) &&
+      Number.isFinite(maxY)
+
+    if (!hasFiniteBounds) return
 
     const boundsArray = [
-      Number(bounds[0]),
-      Number(bounds[1]),
-      Number(bounds[2]),
-      Number(bounds[3])
+      minX - padding,
+      minY - padding,
+      maxX - minX + 2 * padding,
+      maxY - minY + 2 * padding
     ] as Bounds
 
     await this.page.evaluate(
