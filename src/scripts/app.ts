@@ -41,6 +41,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -532,7 +533,7 @@ export class ComfyApp {
           event.dataTransfer.files.length &&
           event.dataTransfer.files[0].type !== 'image/bmp'
         ) {
-          await this.handleFile(event.dataTransfer.files[0])
+          await this.handleFile(event.dataTransfer.files[0], 'drag_drop')
         } else {
           // Try loading the first URI in the transfer list
           const validTypes = ['text/uri-list', 'text/x-moz-url']
@@ -543,7 +544,10 @@ export class ComfyApp {
             const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
             if (uri) {
               const blob = await (await fetch(uri)).blob()
-              await this.handleFile(new File([blob], uri, { type: blob.type }))
+              await this.handleFile(
+                new File([blob], uri, { type: blob.type }),
+                'drag_drop'
+              )
             }
           }
         }
@@ -1418,7 +1422,10 @@ export class ComfyApp {
    * Loads workflow data from the specified file
    * @param {File} file
    */
-  async handleFile(file: File) {
+  async handleFile(
+    file: File,
+    source: 'drag_drop' | 'file_dialog' = 'file_dialog'
+  ) {
     const removeExt = (f: string) => {
       if (!f) return f
       const p = f.lastIndexOf('.')
@@ -1426,9 +1433,51 @@ export class ComfyApp {
       return f.substring(0, p)
     }
     const fileName = removeExt(file.name)
+
+    // Track workflow opening based on file type and source
+    // Completely fail-safe - will never throw errors or break app flow
+    const trackWorkflowOpening = (fileType: string, hasWorkflow: boolean) => {
+      try {
+        if (!hasWorkflow) return
+
+        if (fileType.startsWith('image/')) {
+          trackTypedEvent(
+            TelemetryEvents.WORKFLOW_OPENED_FROM_DRAG_DROP_IMAGE,
+            {
+              file_type: fileType,
+              source_method: source,
+              file_name: fileName
+            }
+          )
+        } else if (
+          fileType === 'application/json' ||
+          fileName.endsWith('.json')
+        ) {
+          trackTypedEvent(TelemetryEvents.WORKFLOW_OPENED_FROM_DRAG_DROP_JSON, {
+            file_type: fileType,
+            source_method: source,
+            file_name: fileName
+          })
+        } else {
+          // Other file types (audio, video, etc.)
+          trackTypedEvent(TelemetryEvents.WORKFLOW_OPENED_FROM_FILE_DIALOG, {
+            file_type: fileType,
+            source_method: source,
+            file_name: fileName
+          })
+        }
+      } catch (error) {
+        // Absolutely silent failure - telemetry must never break file loading
+        if (import.meta.env.DEV) {
+          console.warn('[Telemetry] trackWorkflowOpening failed:', error)
+        }
+      }
+    }
+
     if (file.type === 'image/png') {
       const pngInfo = await getPngMetadata(file)
       if (pngInfo?.workflow) {
+        trackWorkflowOpening(file.type, true)
         await this.loadGraphData(
           JSON.parse(pngInfo.workflow),
           true,
@@ -1436,10 +1485,12 @@ export class ComfyApp {
           fileName
         )
       } else if (pngInfo?.prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
       } else if (pngInfo?.parameters) {
         // Note: Not putting this in `importA1111` as it is mostly not used
         // by external callers, and `importA1111` has no access to `app`.
+        trackWorkflowOpening(file.type, true)
         useWorkflowService().beforeLoadNewGraph()
         importA1111(this.graph, pngInfo.parameters)
         useWorkflowService().afterLoadNewGraph(
@@ -1453,8 +1504,10 @@ export class ComfyApp {
       const { workflow, prompt } = await getAvifMetadata(file)
 
       if (workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1466,8 +1519,10 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1475,8 +1530,10 @@ export class ComfyApp {
     } else if (file.type === 'audio/mpeg') {
       const { workflow, prompt } = await getMp3Metadata(file)
       if (workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(workflow, true, true, fileName)
       } else if (prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1484,8 +1541,10 @@ export class ComfyApp {
     } else if (file.type === 'audio/ogg') {
       const { workflow, prompt } = await getOggMetadata(file)
       if (workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(workflow, true, true, fileName)
       } else if (prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1496,8 +1555,10 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1505,8 +1566,10 @@ export class ComfyApp {
     } else if (file.type === 'video/webm') {
       const webmInfo = await getFromWebmFile(file)
       if (webmInfo.workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(webmInfo.workflow, true, true, fileName)
       } else if (webmInfo.prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(webmInfo.prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1521,15 +1584,19 @@ export class ComfyApp {
     ) {
       const mp4Info = await getFromIsobmffFile(file)
       if (mp4Info.workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(mp4Info.workflow, true, true, fileName)
       } else if (mp4Info.prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(mp4Info.prompt, fileName)
       }
     } else if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
       const svgInfo = await getSvgMetadata(file)
       if (svgInfo.workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(svgInfo.workflow, true, true, fileName)
       } else if (svgInfo.prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(svgInfo.prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1540,8 +1607,10 @@ export class ComfyApp {
     ) {
       const gltfInfo = await getGltfBinaryMetadata(file)
       if (gltfInfo.workflow) {
+        trackWorkflowOpening(file.type, true)
         this.loadGraphData(gltfInfo.workflow, true, true, fileName)
       } else if (gltfInfo.prompt) {
+        trackWorkflowOpening(file.type, true)
         this.loadApiJson(gltfInfo.prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
@@ -1555,10 +1624,13 @@ export class ComfyApp {
         const readerResult = reader.result as string
         const jsonContent = JSON.parse(readerResult)
         if (jsonContent?.templates) {
+          // Template data, not a workflow
           this.loadTemplateData(jsonContent)
         } else if (this.isApiJson(jsonContent)) {
+          trackWorkflowOpening(file.type, true)
           this.loadApiJson(jsonContent, fileName)
         } else {
+          trackWorkflowOpening(file.type, true)
           await this.loadGraphData(
             JSON.parse(readerResult),
             true,
@@ -1576,6 +1648,7 @@ export class ComfyApp {
       // TODO define schema to LatentMetadata
       // @ts-expect-error
       if (info.workflow) {
+        trackWorkflowOpening(file.type || 'application/octet-stream', true)
         await this.loadGraphData(
           // @ts-expect-error
           JSON.parse(info.workflow),
@@ -1585,6 +1658,7 @@ export class ComfyApp {
         )
         // @ts-expect-error
       } else if (info.prompt) {
+        trackWorkflowOpening(file.type || 'application/octet-stream', true)
         // @ts-expect-error
         this.loadApiJson(JSON.parse(info.prompt))
       } else {

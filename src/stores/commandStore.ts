@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
@@ -99,6 +100,15 @@ export const useCommandStore = defineStore('command', () => {
   ) => {
     const command = getCommand(commandId)
     if (command) {
+      // Track menu/command usage
+      trackTypedEvent(TelemetryEvents.MENU_ITEM_CLICKED, {
+        command_id: commandId,
+        command_label: command.label || commandId,
+        source: command.source || 'core',
+        category: command.category || 'uncategorized',
+        access_method: 'command_execute'
+      })
+
       await wrapWithErrorHandlingAsync(command.function, errorHandler)()
     } else {
       throw new Error(`Command ${commandId} not found`)

@@ -6,6 +6,7 @@ import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibra
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { useWorkflowsSidebarTab } from '@/composables/sidebarTabs/useWorkflowsSidebarTab'
 import { t, te } from '@/i18n'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { SidebarTabExtension } from '@/types/extensionTypes'
@@ -22,7 +23,19 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
   })
 
   const toggleSidebarTab = (tabId: string) => {
-    activeSidebarTabId.value = activeSidebarTabId.value === tabId ? null : tabId
+    const wasActive = activeSidebarTabId.value === tabId
+    const previousTab = activeSidebarTabId.value
+    activeSidebarTabId.value = wasActive ? null : tabId
+
+    // Track sidebar panel interactions
+    if (!wasActive && activeSidebarTabId.value) {
+      // Panel was opened
+      trackTypedEvent(TelemetryEvents.SIDEBAR_PANEL_OPENED, {
+        panel_type: tabId,
+        previous_panel: previousTab || 'none',
+        action: 'opened'
+      })
+    }
   }
 
   const registerSidebarTab = (tab: SidebarTabExtension) => {

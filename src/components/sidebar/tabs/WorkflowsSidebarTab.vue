@@ -141,6 +141,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useSettingStore } from '@/stores/settingStore'
 import {
@@ -234,6 +235,13 @@ const renderTreeNode = (
     e: MouseEvent
   ) {
     if (this.leaf) {
+      // Track workflow opening from sidebar
+      trackTypedEvent(TelemetryEvents.WORKFLOW_OPENED_FROM_SIDEBAR, {
+        workflow_path: workflow.path,
+        workflow_type: type,
+        is_bookmarked: type === WorkflowTreeType.Bookmarks,
+        is_open: type === WorkflowTreeType.Open
+      })
       await workflowService.openWorkflow(workflow)
     } else {
       toggleNodeOnEvent(e, this)

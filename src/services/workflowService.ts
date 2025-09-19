@@ -9,6 +9,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { TaskItemImpl } from '@/stores/queueStore'
@@ -149,6 +150,13 @@ export const useWorkflowService = () => {
    */
   const loadDefaultWorkflow = async () => {
     await app.loadGraphData(defaultGraph)
+
+    // Track workflow creation from default template
+    trackTypedEvent(TelemetryEvents.WORKFLOW_CREATED_FROM_TEMPLATE, {
+      template_name: 'default',
+      creation_method: 'default_workflow',
+      node_count: defaultGraph?.nodes?.length || 0
+    })
   }
 
   /**
@@ -156,6 +164,12 @@ export const useWorkflowService = () => {
    */
   const loadBlankWorkflow = async () => {
     await app.loadGraphData(blankGraph)
+
+    // Track workflow creation from scratch
+    trackTypedEvent(TelemetryEvents.WORKFLOW_CREATED_FROM_SCRATCH, {
+      creation_method: 'blank_workflow',
+      node_count: 0
+    })
   }
 
   /**

@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
@@ -73,6 +74,22 @@ export const useSettingStore = defineStore('setting', () => {
     onChange(settingsById.value[key], newValue, oldValue)
     settingValues.value[key] = newValue
     await api.storeSetting(key, newValue)
+
+    // Track setting changes (completely fail-safe)
+    try {
+      const setting = settingsById.value[key]
+      trackTypedEvent(TelemetryEvents.SETTINGS_PREFERENCE_CHANGED, {
+        setting_id: key as string,
+        setting_category: setting?.category?.[0] || 'unknown',
+        setting_type: String(setting?.type || 'unknown'),
+        has_custom_value: true
+      })
+    } catch (error) {
+      // Absolutely silent failure - telemetry must never break settings
+      if (import.meta.env.DEV) {
+        console.warn('[Telemetry] Settings tracking failed:', error)
+      }
+    }
   }
 
   /**
