@@ -96,10 +96,10 @@ useSlotElementTracking({
   element: slotElRef
 })
 
-const onPointerDown = useSlotLinkInteraction({
+const { onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'input',
   readonly: props.readonly
-})?.onPointerDown
+})
 </script>

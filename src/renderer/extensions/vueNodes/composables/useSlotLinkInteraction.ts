@@ -29,9 +29,11 @@ export function useSlotLinkInteraction({
   index,
   type,
   readonly
-}: SlotInteractionOptions): SlotInteractionHandlers | null {
+}: SlotInteractionOptions): SlotInteractionHandlers {
   if (readonly) {
-    return null
+    return {
+      onPointerDown: () => {}
+    }
   }
 
   const { state, beginDrag, endDrag, updatePointerPosition } =
