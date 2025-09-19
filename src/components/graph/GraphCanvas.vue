@@ -76,6 +76,7 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import {
   computed,
+  nextTick,
   onMounted,
   onUnmounted,
   provide,
@@ -181,6 +182,26 @@ const viewportCulling = useViewportCulling(
   vueNodeLifecycle.nodeManager
 )
 const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
+
+const handleVueNodeLifecycleReset = async () => {
+  if (isVueNodesEnabled.value) {
+    vueNodeLifecycle.disposeNodeManagerAndSyncs()
+    await nextTick()
+    vueNodeLifecycle.initializeNodeManager()
+  }
+}
+
+watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
+
+watch(
+  () => canvasStore.isInSubgraph,
+  async (newValue, oldValue) => {
+    if (oldValue && !newValue) {
+      useWorkflowStore().updateActiveGraph()
+    }
+    await handleVueNodeLifecycleReset()
+  }
+)
 
 const nodePositions = vueNodeLifecycle.nodePositions
 const nodeSizes = vueNodeLifecycle.nodeSizes
