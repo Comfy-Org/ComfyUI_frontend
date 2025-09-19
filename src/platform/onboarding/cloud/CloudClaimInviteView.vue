@@ -23,7 +23,6 @@
         {{ t('cloudInvite_subtitle') }}
       </p>
 
-      <!-- Switch accounts -->
       <div v-if="inviteCodeClaimed || inviteCodeExpired" class="mb-2">
         <span
           class="text-blue-400 no-underline cursor-pointer"
@@ -110,7 +109,10 @@ const inviteCode = computed(() => route.query.inviteCode as string)
 const userInitial = computed(() => (userEmail?.[0] || 'U').toUpperCase())
 
 const onSwitchAccounts = () => {
-  void router.push({ name: 'cloud-login' })
+  void router.push({
+    name: 'cloud-login',
+    query: { inviteCode: inviteCode.value }
+  })
 }
 const onClickSupport = () => {
   window.open('https://support.comfy.org', '_blank', 'noopener')
