@@ -34,7 +34,22 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: vi.fn((key) => key)
-  })
+  }),
+  createI18n: vi.fn(() => ({
+    global: {
+      t: vi.fn((key) => key)
+    }
+  }))
+}))
+
+vi.mock('@/i18n', () => ({
+  st: vi.fn((key) => key),
+  t: vi.fn((key) => key),
+  i18n: {
+    global: {
+      t: vi.fn((key) => key)
+    }
+  }
 }))
 
 describe('NodeHeader - Subgraph Functionality', () => {
