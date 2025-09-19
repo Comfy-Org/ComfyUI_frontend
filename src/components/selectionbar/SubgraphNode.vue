@@ -143,6 +143,28 @@ function hideAll() {
   node.properties.proxyWidgets = JSON.stringify(toKeep)
   triggerUpdate.value++
 }
+const recommendedNodes = [
+  'CLIPTextEncode',
+  'LoadImage',
+  'SaveImage',
+  'PreviewImage'
+]
+const recommendedWidgetNames = ['seed']
+function showRecommended() {
+  const node = activeNode.value
+  if (!node) return //Not reachable
+  const recommendedWidgets = filteredCandidates.value.filter(
+    ([node, widget]: WidgetItem) =>
+      recommendedNodes.includes(node.type) ||
+      recommendedWidgetNames.includes(widget.name)
+  )
+  node.properties.proxyWidgets = JSON.stringify(
+    recommendedWidgets.map(([node, widget]) => [`${node.id}`, widget.name])
+  )
+  triggerUpdate.value++
+  //TODO: Add sort step here
+  //Input should always be before output by default
+}
 
 const filteredActive = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
@@ -227,6 +249,9 @@ const filteredActive = computed<WidgetItem[]>(() => {
           />
         </div>
       </div>
+      <a @click.stop="showRecommended">
+        {{ t('subgraphStore.showRecommended') }}</a
+      >
     </template>
   </SidebarTabTemplate>
 </template>
@@ -244,7 +269,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
   font-weight: 600;
   text-transform: uppercase;
 }
-.widgets-section-header a {
+a {
   cursor: pointer;
   color: var(--color-blue-100, #0b8ce9);
   text-align: right;

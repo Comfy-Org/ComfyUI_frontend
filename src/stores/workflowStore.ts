@@ -3,7 +3,11 @@ import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
 import { t } from '@/i18n'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
@@ -185,6 +189,7 @@ interface WorkflowStore {
   updateActiveGraph: () => void
   executionIdToCurrentId: (id: string) => any
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
+  nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
   nodeExecutionIdToNodeLocatorId: (
     nodeExecutionId: NodeExecutionId | string
   ) => NodeLocatorId | null
@@ -575,6 +580,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     return createNodeLocatorId(targetSubgraph.id, nodeId)
   }
+  /**
+   * Convert a node to a NodeLocatorId
+   * Does not assume the node resides in  the active graph
+   * @param The actual node instance
+   * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
+   */
+  const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
+    if (isSubgraph(node.graph))
+      return createNodeLocatorId(node.graph.id, node.id)
+    return String(node.id)
+  }
 
   /**
    * Convert an execution ID to a NodeLocatorId
@@ -717,6 +733,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     updateActiveGraph,
     executionIdToCurrentId,
     nodeIdToNodeLocatorId,
+    nodeToNodeLocatorId,
     nodeExecutionIdToNodeLocatorId,
     nodeLocatorIdToNodeId,
     nodeLocatorIdToNodeExecutionId

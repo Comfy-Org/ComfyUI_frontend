@@ -1,3 +1,4 @@
+import { useNodeImage } from '@/composables/node/useNodeImage'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
@@ -6,6 +7,7 @@ import { parseProxyWidgets } from '@/schemas/proxyWidget'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 const originalConfigureAfterSlots =
   SubgraphNode.prototype._internalConfigureAfterSlots
@@ -63,6 +65,7 @@ type Overlay = Partial<IBaseWidget> & {
   nodeId: string
   widgetName: string
   isProxyWidget: boolean
+  node?: LGraphNode
 }
 type ProxyWidget = IBaseWidget & { _overlay: Overlay }
 function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
@@ -87,12 +90,13 @@ function addProxyWidget(
     width: undefined,
     computedHeight: undefined,
     afterQueued: undefined,
-    onRemove: undefined,
-    node: subgraphNode
+    onRemove: undefined
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
-function resolveLinkedWidget(overlay: Overlay): IBaseWidget | undefined {
+function resolveLinkedWidget(
+  overlay: Overlay
+): [LGraphNode | undefined, IBaseWidget | undefined] {
   const { graph, nodeId, widgetName } = overlay
   let g: LGraph | undefined = graph
   let n: LGraphNode | SubgraphNode | undefined = undefined
@@ -100,12 +104,29 @@ function resolveLinkedWidget(overlay: Overlay): IBaseWidget | undefined {
     n = g?._nodes_by_id?.[id]
     g = n?.isSubgraphNode?.() ? n.subgraph : undefined
   }
-  if (!n) return undefined
-  return n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
+  if (!n) return [undefined, undefined]
+  return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
 }
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
-  let linkedWidget = resolveLinkedWidget(overlay)
+  let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
   const bw = linkedWidget ?? disconnectedWidget
+  overlay.node = new Proxy(subgraphNode, {
+    get(_t, p) {
+      if (p == 'imgs') {
+        if (linkedNode) {
+          const images =
+            useNodeOutputStore().getNodeOutputs(linkedNode)?.images ?? []
+          if (images !== linkedNode.images) {
+            linkedNode.images = images
+            useNodeImage(linkedNode).showPreview()
+          }
+          return linkedNode.imgs
+        }
+        return []
+      }
+      return Reflect.get(subgraphNode, p)
+    }
+  })
   const handler = Object.fromEntries(
     ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function (t: object, p: string, ...rest: object[]) {
