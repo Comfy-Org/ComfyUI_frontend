@@ -84,7 +84,7 @@ import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import * as semver from 'semver'
+import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -142,9 +142,7 @@ onMounted(() => {
     getInitialSelectedVersion() ?? SelectedVersionValues.LATEST
   selectedVersion.value =
     // Use NIGHTLY when version is a Git hash
-    semver.valid(initialVersion)
-      ? initialVersion
-      : SelectedVersionValues.NIGHTLY
+    validSemver(initialVersion) ? initialVersion : SelectedVersionValues.NIGHTLY
 })
 
 const getInitialSelectedVersion = () => {
