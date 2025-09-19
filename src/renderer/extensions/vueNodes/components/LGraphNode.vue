@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    ref="nodeContainerRef"
     :data-node-id="nodeData.id"
     :class="
       cn(
@@ -493,6 +494,10 @@ watch(
   { deep: true }
 )
 
-// Provide nodeImageUrls to child components
+// Template ref for tooltip positioning
+const nodeContainerRef = ref<HTMLElement>()
+
+// Provide nodeImageUrls and tooltip container to child components
 provide('nodeImageUrls', nodeImageUrls)
+provide('tooltipContainer', nodeContainerRef)
 </script>
