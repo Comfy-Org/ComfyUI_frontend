@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 // Mock dependencies
 vi.mock('@/scripts/app', () => ({
@@ -40,7 +41,6 @@ vi.mock('vue-i18n', () => ({
 describe('NodeHeader - Subgraph Functionality', () => {
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
-    const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
     const { app } = await import('@/scripts/app')
 
     if (hasGraph) {
@@ -49,9 +49,9 @@ describe('NodeHeader - Subgraph Functionality', () => {
       ;(app as any).graph = null
     }
 
-    ;(getNodeByLocatorId as any).mockReturnValue({
+    vi.mocked(getNodeByLocatorId).mockReturnValue({
       isSubgraphNode: () => isSubgraph
-    })
+    } as any)
   }
 
   beforeEach(() => {
@@ -159,8 +159,7 @@ describe('NodeHeader - Subgraph Functionality', () => {
     await wrapper.vm.$nextTick()
 
     // Should call getNodeByLocatorId with correct locator ID
-    const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
-    expect(getNodeByLocatorId).toHaveBeenCalledWith(
+    expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
       expect.anything(),
       'subgraph-id:test-node-1'
     )
