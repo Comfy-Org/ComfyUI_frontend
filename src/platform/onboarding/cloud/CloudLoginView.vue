@@ -88,6 +88,7 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
 import { type SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useToastStore } from '@/stores/toastStore'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 
 const { t } = useI18n()
@@ -104,10 +105,23 @@ const navigateToSignup = () => {
 const onSuccess = async () => {
   // Check if there's an invite code
   const inviteCode = route.query.inviteCode as string
-  const { isEmailVerified } = useFirebaseAuthStore()
+  const { isEmailVerified, verifyEmail, currentUser } = useFirebaseAuthStore()
 
   if (!isEmailVerified) {
-    await router.push({ name: 'cloud-verify-email' })
+    try {
+      await verifyEmail()
+      useToastStore().add({
+        severity: 'success',
+        summary: t('cloudVerifyEmail_toast_message', {
+          email: currentUser?.email || ''
+        })
+      })
+    } catch (e) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('cloudVerifyEmail_failed_toast_message')
+      })
+    }
     return
   } else if (inviteCode) {
     // Handle invite code flow - go to invite check
@@ -115,9 +129,11 @@ const onSuccess = async () => {
       name: 'cloud-invite-check',
       query: { inviteCode }
     })
+    return
   } else {
     // Normal login flow - go to user check
     await router.push({ name: 'cloud-user-check' })
+    return
   }
 }
 

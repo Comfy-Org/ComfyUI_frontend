@@ -1835,6 +1835,8 @@
   "cloudClaimInvite_processingTitle": "Processing Invite Code...",
   "cloudClaimInvite_claimButton": "Claim Invite",
   "cloudSorryContactSupport_title": "Sorry, contact support",
+  "cloudVerifyEmail_toast_message": "We've sent a verification email to {email}. Please check your inbox and click the link to verify your email address.",
+  "cloudVerifyEmail_failed_toast_message": "Failed to send verification email. Please contact support.",
   "cloudVerifyEmail_title": "Email Verification",
   "cloudPrivateBeta_title": "Cloud is currently in private beta",
   "cloudPrivateBeta_desc": "Sign in to join the waitlist. We'll notify you when it's your turn. Already been notified? Sign in start using Cloud.",
