@@ -1,17 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
-  <div
-    v-else
-    class="lg-slot lg-slot--output flex items-center cursor-crosshair justify-end group rounded-l-lg h-6"
-    :class="{
-      'opacity-70': readonly,
-      'lg-slot--connected': connected,
-      'lg-slot--compatible': compatible,
-      'lg-slot--dot-only': dotOnly,
-      'pl-6 hover:bg-black/5 hover:dark:bg-white/5': !dotOnly,
-      'justify-center': dotOnly
-    }"
-  >
+  <div v-else :class="slotWrapperClass">
     <!-- Slot Name -->
     <span
       v-if="!dotOnly"
@@ -25,6 +14,7 @@
       ref="connectionDotRef"
       :color="slotColor"
       class="translate-x-1/2"
+      v-on="readonly ? {} : { pointerdown: onPointerDown }"
     />
   </div>
 </template>
@@ -42,6 +32,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { cn } from '@/utils/tailwindUtil'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -72,6 +64,20 @@ onErrorCaptured((error) => {
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
 
+const slotWrapperClass = computed(() =>
+  cn(
+    'lg-slot lg-slot--output flex items-center justify-end group rounded-l-lg h-6',
+    props.readonly ? 'cursor-default opacity-70' : 'cursor-crosshair',
+    props.dotOnly
+      ? 'lg-slot--dot-only justify-center'
+      : 'pl-6 hover:bg-black/5 hover:dark:bg-white/5',
+    {
+      'lg-slot--connected': props.connected,
+      'lg-slot--compatible': props.compatible
+    }
+  )
+)
+
 const connectionDotRef = ref<ComponentPublicInstance<{
   slotElRef: HTMLElement | undefined
 }> | null>(null)
@@ -89,5 +95,12 @@ useSlotElementTracking({
   index: props.index,
   type: 'output',
   element: slotElRef
+})
+
+const { onPointerDown } = useSlotLinkInteraction({
+  nodeId: props.nodeId ?? '',
+  index: props.index,
+  type: 'output',
+  readonly: props.readonly
 })
 </script>
