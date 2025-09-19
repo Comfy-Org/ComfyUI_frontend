@@ -18,7 +18,6 @@ const PUBLIC_ROUTE_NAMES = new Set([
   'cloud-login',
   'cloud-signup',
   'cloud-forgot-password',
-  'cloud-verify-email',
   'cloud-sorry-contact-support'
 ])
 
@@ -30,7 +29,6 @@ const isPublicRoute = (to: RouteLocationNormalized) => {
     path === '/cloud/login' ||
     path === '/cloud/signup' ||
     path === '/cloud/forgot-password' ||
-    path === '/cloud/verify-email' ||
     path === '/cloud/sorry-contact-support'
   )
     return true
