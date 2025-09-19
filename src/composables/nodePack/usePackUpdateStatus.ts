@@ -1,4 +1,4 @@
-import * as semver from 'semver'
+import { compare, valid } from 'semver'
 import { computed } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
@@ -16,14 +16,14 @@ export const usePackUpdateStatus = (
   const latestVersion = computed(() => nodePack.latest_version?.version)
 
   const isNightlyPack = computed(
-    () => !!installedVersion.value && !semver.valid(installedVersion.value)
+    () => !!installedVersion.value && !valid(installedVersion.value)
   )
 
   const isUpdateAvailable = computed(() => {
     if (!isInstalled.value || isNightlyPack.value || !latestVersion.value) {
       return false
     }
-    return semver.compare(latestVersion.value, installedVersion.value) > 0
+    return compare(latestVersion.value, installedVersion.value) > 0
   })
 
   return {

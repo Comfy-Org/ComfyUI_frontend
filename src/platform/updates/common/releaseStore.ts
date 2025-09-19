@@ -1,6 +1,6 @@
 import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import * as semver from 'semver'
+import { compare } from 'semver'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -57,7 +57,7 @@ export const useReleaseStore = defineStore('release', () => {
   const isNewVersionAvailable = computed(
     () =>
       !!recentRelease.value &&
-      semver.compare(
+      compare(
         recentRelease.value.version,
         currentComfyUIVersion.value || '0.0.0'
       ) > 0
@@ -66,7 +66,7 @@ export const useReleaseStore = defineStore('release', () => {
   const isLatestVersion = computed(
     () =>
       !!recentRelease.value &&
-      semver.compare(
+      compare(
         recentRelease.value.version,
         currentComfyUIVersion.value || '0.0.0'
       ) === 0

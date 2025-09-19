@@ -1,4 +1,4 @@
-import * as semver from 'semver'
+import { compare, valid } from 'semver'
 import { computed, onMounted } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
@@ -25,13 +25,13 @@ export const useUpdateAvailableNodes = () => {
     )
     const latestVersion = pack.latest_version?.version
 
-    const isNightlyPack = !!installedVersion && !semver.valid(installedVersion)
+    const isNightlyPack = !!installedVersion && !valid(installedVersion)
 
     if (isNightlyPack || !latestVersion) {
       return false
     }
 
-    return semver.compare(latestVersion, installedVersion) > 0
+    return compare(latestVersion, installedVersion) > 0
   }
 
   // Same filtering logic as ManagerDialogContent.vue

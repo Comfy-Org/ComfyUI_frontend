@@ -1,6 +1,6 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import * as semver from 'semver'
+import { compare, valid } from 'semver'
 import { ref } from 'vue'
 
 import type { SettingParams } from '@/platform/settings/types'
@@ -132,16 +132,16 @@ export const useSettingStore = defineStore('setting', () => {
 
       if (installedVersion) {
         const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
-          (a, b) => semver.compare(b, a)
+          (a, b) => compare(b, a)
         )
 
         for (const version of sortedVersions) {
           // Ensure the version is in a valid format before comparing
-          if (!semver.valid(version)) {
+          if (!valid(version)) {
             continue
           }
 
-          if (semver.compare(installedVersion, version) >= 0) {
+          if (compare(installedVersion, version) >= 0) {
             const versionedDefault =
               defaultsByInstallVersion[
                 version as keyof typeof defaultsByInstallVersion

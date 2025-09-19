@@ -1,5 +1,4 @@
-// Import mocked utils
-import * as semver from 'semver'
+import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -33,8 +32,8 @@ vi.mock('semver', () => ({
 const mockUseInstalledPacks = vi.mocked(useInstalledPacks)
 const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
 
-const mockSemverCompare = vi.mocked(semver.compare)
-const mockSemverValid = vi.mocked(semver.valid)
+const mockSemverCompare = vi.mocked(compare)
+const mockSemverValid = vi.mocked(valid)
 
 describe('useUpdateAvailableNodes', () => {
   const mockInstalledPacks = [

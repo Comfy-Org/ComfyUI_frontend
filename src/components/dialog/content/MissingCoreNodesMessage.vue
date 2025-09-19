@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import Message from 'primevue/message'
-import * as semver from 'semver'
+import { compare } from 'semver'
 import { computed } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -68,7 +68,7 @@ const currentComfyUIVersion = computed<string | null>(() => {
 const sortedMissingCoreNodes = computed(() => {
   return Object.entries(props.missingCoreNodes).sort(([a], [b]) => {
     // Sort by version in descending order (newest first)
-    return semver.compare(b, a) // Reversed for descending order
+    return compare(b, a) // Reversed for descending order
   })
 })
 
