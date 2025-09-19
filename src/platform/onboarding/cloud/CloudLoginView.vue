@@ -104,7 +104,7 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -176,4 +176,8 @@ const signInWithEmail = async (values: SignInData) => {
     await onSuccess()
   }
 }
+
+onMounted(async () => {
+  await authActions.logout()
+})
 </script>

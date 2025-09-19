@@ -6,7 +6,6 @@
 import { nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getInviteCodeStatus } from '@/api/auth'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import CloudClaimInviteViewSkeleton from './skeletons/CloudClaimInviteViewSkeleton.vue'
@@ -27,16 +26,12 @@ onMounted(async () => {
     }
 
     const { isEmailVerified } = useFirebaseAuthStore()
-    const inviteCodeStatus = await getInviteCodeStatus(inviteCode)
 
     if (!isEmailVerified) {
       await router.push({ name: 'cloud-verify-email', query: { inviteCode } })
       return
-    } else if (inviteCodeStatus.claimed || inviteCodeStatus.expired) {
-      window.open('https://support.comfy.org', '_blank', 'noopener')
-      return
     }
-    await router.push({ name: 'cloud-claim-invite' })
+    await router.push({ name: 'cloud-claim-invite', query: { inviteCode } })
   } catch (e) {
     window.open('https://support.comfy.org', '_blank', 'noopener')
     return
