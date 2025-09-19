@@ -138,7 +138,7 @@ const allMissingNodesInstalled = computed(() => {
 })
 // Watch for completion and close dialog
 watch(allMissingNodesInstalled, async (allInstalled) => {
-  if (allInstalled) {
+  if (allInstalled && showInstallAllButton.value) {
     // Use nextTick to ensure state updates are complete
     await nextTick()
 
