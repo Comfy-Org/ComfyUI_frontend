@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { INodeInputSlot, Point } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -571,7 +572,7 @@ describe('LGraphNode', () => {
         name: 'test_in',
         type: 'string',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: new Rectangle(0, 0, 0, 0)
       }
     })
     test('should return position based on title height when collapsed', () => {
@@ -594,7 +595,7 @@ describe('LGraphNode', () => {
         name: 'test_in_2',
         type: 'number',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: new Rectangle(0, 0, 0, 0)
       }
       node.inputs = [inputSlot, inputSlot2]
       const slotIndex = 0
@@ -629,13 +630,13 @@ describe('LGraphNode', () => {
         name: 'in0',
         type: 'string',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: new Rectangle(0, 0, 0, 0)
       }
       const input1: INodeInputSlot = {
         name: 'in1',
         type: 'number',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0]),
+        boundingRect: new Rectangle(0, 0, 0, 0),
         pos: [5, 45]
       }
       node.inputs = [input0, input1]

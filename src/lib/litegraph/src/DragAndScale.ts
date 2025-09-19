@@ -1,4 +1,4 @@
-import type { Point, ReadOnlyRect, Rect } from './interfaces'
+import type { Point, Rect } from './interfaces'
 import { EaseFunction, Rectangle } from './litegraph'
 
 export interface DragAndScaleState {
@@ -188,10 +188,7 @@ export class DragAndScale {
    * Fits the view to the specified bounds.
    * @param bounds The bounds to fit the view to, defined by a rectangle.
    */
-  fitToBounds(
-    bounds: ReadOnlyRect,
-    { zoom = 0.75 }: { zoom?: number } = {}
-  ): void {
+  fitToBounds(bounds: Rect, { zoom = 0.75 }: { zoom?: number } = {}): void {
     const cw = this.element.width / window.devicePixelRatio
     const ch = this.element.height / window.devicePixelRatio
     let targetScale = this.scale
@@ -223,7 +220,7 @@ export class DragAndScale {
    * @param bounds The bounds to animate the view to, defined by a rectangle.
    */
   animateToBounds(
-    bounds: ReadOnlyRect,
+    bounds: Rect | Rectangle,
     setDirty: () => void,
     {
       duration = 350,

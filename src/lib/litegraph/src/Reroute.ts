@@ -1,3 +1,4 @@
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -12,8 +13,8 @@ import type {
   LinkSegment,
   Point,
   Positionable,
-  ReadOnlyRect,
-  ReadonlyLinkNetwork
+  ReadonlyLinkNetwork,
+  Rect
 } from './interfaces'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
@@ -87,17 +88,17 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  get boundingRect(): ReadOnlyRect {
+  get boundingRect(): Rectangle {
     const { radius } = Reroute
     const [x, y] = this.#pos
-    return [x - radius, y - radius, 2 * radius, 2 * radius]
+    return Rectangle.from([x - radius, y - radius, 2 * radius, 2 * radius])
   }
 
   /**
    * Slightly over-sized rectangle, guaranteed to contain the entire surface area for hover detection.
    * Eliminates most hover positions using an extremely cheap check.
    */
-  get #hoverArea(): ReadOnlyRect {
+  get #hoverArea(): Rect {
     const xOffset = 2 * Reroute.slotOffset
     const yOffset = 2 * Math.max(Reroute.radius, Reroute.slotRadius)
 

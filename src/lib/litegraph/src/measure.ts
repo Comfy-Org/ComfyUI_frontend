@@ -1,10 +1,5 @@
-import type {
-  HasBoundingRect,
-  Point,
-  ReadOnlyPoint,
-  ReadOnlyRect,
-  Rect
-} from './interfaces'
+import type { Rectangle } from './infrastructure/Rectangle'
+import type { HasBoundingRect, Point, Rect } from './interfaces'
 import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
 
 /**
@@ -13,7 +8,7 @@ import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
  * @param b Point b as `x, y`
  * @returns Distance between point {@link a} & {@link b}
  */
-export function distance(a: ReadOnlyPoint, b: ReadOnlyPoint): number {
+export function distance(a: Point, b: Point): number {
   return Math.sqrt(
     (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
   )
@@ -61,10 +56,7 @@ export function isInRectangle(
  * @param rect The rectangle, as `x, y, width, height`
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
-export function isPointInRect(
-  point: ReadOnlyPoint,
-  rect: ReadOnlyRect
-): boolean {
+export function isPointInRect(point: Point, rect: Rect | Rectangle): boolean {
   return (
     point[0] >= rect[0] &&
     point[0] < rect[0] + rect[2] &&
@@ -80,7 +72,11 @@ export function isPointInRect(
  * @param rect The rectangle, as `x, y, width, height`
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
-export function isInRect(x: number, y: number, rect: ReadOnlyRect): boolean {
+export function isInRect(
+  x: number,
+  y: number,
+  rect: Rect | Rectangle
+): boolean {
   return (
     x >= rect[0] &&
     x < rect[0] + rect[2] &&
@@ -121,7 +117,10 @@ export function isInsideRectangle(
  * @param b Rectangle B as `x, y, width, height`
  * @returns `true` if rectangles overlap, otherwise `false`
  */
-export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
+export function overlapBounding(
+  a: Rect | Rectangle,
+  b: Rect | Rectangle
+): boolean {
   const aRight = a[0] + a[2]
   const aBottom = a[1] + a[3]
   const bRight = b[0] + b[2]
@@ -137,7 +136,7 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
  * @param rect The rectangle, as `x, y, width, height`
  * @returns The centre of the rectangle, as `x, y`
  */
-export function getCentre(rect: ReadOnlyRect): Point {
+export function getCentre(rect: Rect | Rectangle): Point {
   return [rect[0] + rect[2] * 0.5, rect[1] + rect[3] * 0.5]
 }
 
@@ -147,7 +146,10 @@ export function getCentre(rect: ReadOnlyRect): Point {
  * @param b Sub-rectangle B as `x, y, width, height`
  * @returns `true` if {@link a} contains most of {@link b}, otherwise `false`
  */
-export function containsCentre(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
+export function containsCentre(
+  a: Rect | Rectangle,
+  b: Rect | Rectangle
+): boolean {
   const centreX = b[0] + b[2] * 0.5
   const centreY = b[1] + b[3] * 0.5
   return isInRect(centreX, centreY, a)
@@ -159,7 +161,10 @@ export function containsCentre(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
  * @param b Sub-rectangle B as `x, y, width, height`
  * @returns `true` if {@link a} wholly contains {@link b}, otherwise `false`
  */
-export function containsRect(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
+export function containsRect(
+  a: Rect | Rectangle,
+  b: Rect | Rectangle
+): boolean {
   const aRight = a[0] + a[2]
   const aBottom = a[1] + a[3]
   const bRight = b[0] + b[2]
@@ -289,8 +294,8 @@ export function rotateLink(
  * the right
  */
 export function getOrientation(
-  lineStart: ReadOnlyPoint,
-  lineEnd: ReadOnlyPoint,
+  lineStart: Point,
+  lineEnd: Point,
   x: number,
   y: number
 ): number {
@@ -310,10 +315,10 @@ export function getOrientation(
  */
 export function findPointOnCurve(
   out: Point,
-  a: ReadOnlyPoint,
-  b: ReadOnlyPoint,
-  controlA: ReadOnlyPoint,
-  controlB: ReadOnlyPoint,
+  a: Point,
+  b: Point,
+  controlA: Point,
+  controlB: Point,
   t: number = 0.5
 ): void {
   const iT = 1 - t
@@ -330,7 +335,7 @@ export function findPointOnCurve(
 export function createBounds(
   objects: Iterable<HasBoundingRect>,
   padding: number = 10
-): ReadOnlyRect | null {
+): Rect | null {
   const bounds: [number, number, number, number] = [
     Infinity,
     Infinity,
@@ -384,11 +389,11 @@ export function snapPoint(pos: Point | Rect, snapTo: number): boolean {
  * @returns The original {@link rect}, modified in place.
  */
 export function alignToContainer(
-  rect: Rect,
+  rect: Rect | Rectangle,
   anchors: Alignment,
-  [containerX, containerY, containerWidth, containerHeight]: ReadOnlyRect,
-  [insetX, insetY]: ReadOnlyPoint = [0, 0]
-): Rect {
+  [containerX, containerY, containerWidth, containerHeight]: Rect | Rectangle,
+  [insetX, insetY]: Point = [0, 0]
+): Rect | Rectangle {
   if (hasFlag(anchors, Alignment.Left)) {
     // Left
     rect[0] = containerX + insetX
@@ -427,11 +432,11 @@ export function alignToContainer(
  * @returns The original {@link rect}, modified in place.
  */
 export function alignOutsideContainer(
-  rect: Rect,
+  rect: Rect | Rectangle,
   anchors: Alignment,
-  [otherX, otherY, otherWidth, otherHeight]: ReadOnlyRect,
-  [outsetX, outsetY]: ReadOnlyPoint = [0, 0]
-): Rect {
+  [otherX, otherY, otherWidth, otherHeight]: Rect | Rectangle,
+  [outsetX, outsetY]: Point = [0, 0]
+): Rect | Rectangle {
   if (hasFlag(anchors, Alignment.Left)) {
     // Left
     rect[0] = otherX - outsetX - rect[2]

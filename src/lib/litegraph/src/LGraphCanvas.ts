@@ -47,8 +47,6 @@ import type {
   NullableProperties,
   Point,
   Positionable,
-  ReadOnlyPoint,
-  ReadOnlyRect,
   Rect,
   Size
 } from './interfaces'
@@ -628,7 +626,7 @@ export class LGraphCanvas
   dirty_area?: Rect | null
   /** @deprecated Unused */
   node_in_panel?: LGraphNode | null
-  last_mouse: ReadOnlyPoint = [0, 0]
+  last_mouse: Point = [0, 0]
   last_mouseclick: number = 0
   graph: LGraph | Subgraph | null
   get _graph(): LGraph | Subgraph {
@@ -3174,7 +3172,7 @@ export class LGraphCanvas
 
     LGraphCanvas.active_canvas = this
     this.adjustMouseEvent(e)
-    const mouse: ReadOnlyPoint = [e.clientX, e.clientY]
+    const mouse: Point = [e.clientX, e.clientY]
     this.mouse[0] = mouse[0]
     this.mouse[1] = mouse[1]
     const delta = [mouse[0] - this.last_mouse[0], mouse[1] - this.last_mouse[1]]
@@ -4851,7 +4849,7 @@ export class LGraphCanvas
   }
 
   /** Get the target snap / highlight point in graph space */
-  #getHighlightPosition(): ReadOnlyPoint {
+  #getHighlightPosition(): Point {
     return LiteGraph.snaps_for_comfy
       ? this.linkConnector.state.snapLinksPos ??
           this._highlight_pos ??
@@ -4866,7 +4864,7 @@ export class LGraphCanvas
    */
   #renderSnapHighlight(
     ctx: CanvasRenderingContext2D,
-    highlightPos: ReadOnlyPoint
+    highlightPos: Point
   ): void {
     const linkConnectorSnap = !!this.linkConnector.state.snapLinksPos
     if (!this._highlight_pos && !linkConnectorSnap) return
@@ -5952,8 +5950,8 @@ export class LGraphCanvas
    */
   renderLink(
     ctx: CanvasRenderingContext2D,
-    a: ReadOnlyPoint,
-    b: ReadOnlyPoint,
+    a: Point,
+    b: Point,
     link: LLink | null,
     skip_border: boolean,
     flow: number | null,
@@ -5970,9 +5968,9 @@ export class LGraphCanvas
       /** When defined, render data will be saved to this reroute instead of the {@link link}. */
       reroute?: Reroute
       /** Offset of the bezier curve control point from {@link a point a} (output side) */
-      startControl?: ReadOnlyPoint
+      startControl?: Point
       /** Offset of the bezier curve control point from {@link b point b} (input side) */
-      endControl?: ReadOnlyPoint
+      endControl?: Point
       /** Number of sublines (useful to represent vec3 or rgb) @todo If implemented, refactor calculations out of the loop */
       num_sublines?: number
       /** Whether this is a floating link segment */
@@ -8443,7 +8441,7 @@ export class LGraphCanvas
    * Starts an animation to fit the view around the specified selection of nodes.
    * @param bounds The bounds to animate the view to, defined by a rectangle.
    */
-  animateToBounds(bounds: ReadOnlyRect, options: AnimationOptions = {}) {
+  animateToBounds(bounds: Rect | Rectangle, options: AnimationOptions = {}) {
     const setDirty = () => this.setDirty(true, true)
     this.ds.animateToBounds(bounds, setDirty, options)
   }

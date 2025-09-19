@@ -18,7 +18,6 @@ import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { NullGraphError } from './infrastructure/NullGraphError'
-import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
   ColorOption,
@@ -37,8 +36,6 @@ import type {
   ISlotType,
   Point,
   Positionable,
-  ReadOnlyPoint,
-  ReadOnlyRect,
   Rect,
   Size
 } from './interfaces'
@@ -387,7 +384,7 @@ export class LGraphNode
    * Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}.
    * WARNING: Making changes to boundingRect via onBounding is poorly supported, and will likely result in strange behaviour.
    */
-  onBounding?(this: LGraphNode, out: Rect): void
+  onBounding?(this: LGraphNode, out: Rectangle): void
   console?: string[]
   _level?: number
   _shape?: RenderShape
@@ -418,7 +415,7 @@ export class LGraphNode
    * Rect describing the node area, including shadows and any protrusions.
    * Determines if the node is visible.  Calculated once at the start of every frame.
    */
-  get renderArea(): ReadOnlyRect {
+  get renderArea(): Rect {
     return this.#renderArea
   }
 
@@ -429,12 +426,12 @@ export class LGraphNode
    *
    * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
    */
-  get boundingRect(): ReadOnlyRectangle {
+  get boundingRect(): Rectangle {
     return this.#boundingRect
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
-  get boundingOffset(): ReadOnlyPoint {
+  get boundingOffset(): Point {
     const {
       pos: [posX, posY],
       boundingRect: [bX, bY]
@@ -1978,7 +1975,7 @@ export class LGraphNode
    * @param out `x, y, width, height` are written to this array.
    * @param ctx The canvas context to use for measuring text.
    */
-  measure(out: Rect, ctx: CanvasRenderingContext2D): void {
+  measure(out: Rectangle, ctx: CanvasRenderingContext2D): void {
     const titleMode = this.title_mode
     const renderTitle =
       titleMode != TitleMode.TRANSPARENT_TITLE &&
@@ -3842,7 +3839,7 @@ export class LGraphNode
     slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
   }
 
-  #measureSlots(): ReadOnlyRect | null {
+  #measureSlots(): Rect | null {
     const slots: (NodeInputSlot | NodeOutputSlot)[] = []
 
     for (const [slotIndex, slot] of this.#concreteInputs.entries()) {
