@@ -3,7 +3,7 @@ import { reactive, readonly } from 'vue'
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { Point, SlotLayout } from '@/renderer/core/layout/types'
 
 type SlotDragType = 'input' | 'output'
 
@@ -12,7 +12,7 @@ export interface SlotDragSource {
   slotIndex: number
   type: SlotDragType
   direction: LinkDirection
-  position: Readonly<{ x: number; y: number }>
+  position: Readonly<Point>
 }
 
 export interface SlotDropCandidate {
@@ -20,14 +20,9 @@ export interface SlotDropCandidate {
   compatible: boolean
 }
 
-interface MutablePoint {
-  x: number
-  y: number
-}
-
 interface PointerPosition {
-  client: MutablePoint
-  canvas: MutablePoint
+  client: Point
+  canvas: Point
 }
 
 interface SlotDragState {
