@@ -37,7 +37,8 @@ const zModelFile = z.object({
 export const assetFilenameSchema = z
   .string()
   .min(1, 'Filename cannot be empty')
-  .regex(/^[^/\\:*?"<>|]+$/, 'Invalid filename characters')
+  .regex(/^[^\\:*?"<>|]+$/, 'Invalid filename characters') // Allow forward slashes, block backslashes and other unsafe chars
+  .regex(/^(?!\/|.*\.\.)/, 'Path must not start with / or contain ..') // Prevent absolute paths and directory traversal
   .trim()
 
 // Export schemas following repository patterns
