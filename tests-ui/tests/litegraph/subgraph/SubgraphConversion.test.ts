@@ -1,8 +1,9 @@
 // TODO: Fix these tests after migration
 import { assert, describe, expect, it } from 'vitest'
 
-import type { ISlotType, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
+  type ISlotType,
   LGraphGroup,
   LGraphNode,
   LiteGraph
