@@ -36,11 +36,15 @@
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",
-    "tests-ui/**/*",
     "*.config.mts",
     "vitest.config.ts",
-    "*.config.ts",
-    "scripts/**/*.ts",
-    "build/**/*.ts"
+    "*.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "browser_tests",
+    "tests-ui",
+    "scripts"
   ]
 }
