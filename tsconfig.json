@@ -32,13 +32,18 @@
     "src/**/*",
     "src/**/*.vue",
     "src/types/**/*.d.ts",
-    "tests-ui/**/*",
     "global.d.ts",
     "eslint.config.ts",
     ".storybook/**/*",
     "*.config.mts",
     "*.config.ts",
-    "scripts/**/*.ts",
     "build/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "browser_tests",
+    "tests-ui",
+    "scripts"
   ]
 }

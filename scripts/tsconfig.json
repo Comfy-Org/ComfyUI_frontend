@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    /* Test files should not be compiled */
+    /* Script files configuration */
     "noEmit": true,
     "strict": false,
     "noUnusedLocals": true,
@@ -9,6 +9,6 @@
     "resolveJsonModule": true
   },
   "include": [
-    "**/*.ts",
+    "**/*.ts"
   ]
 }
