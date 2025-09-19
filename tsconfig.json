@@ -37,6 +37,8 @@
     "eslint.config.ts",
     "vite.config.mts",
     ".storybook/**/*",
-    "*.config.ts"
+    "*.config.ts",
+    "scripts/**/*.ts",
+    "build/**/*.ts"
   ]
 }
