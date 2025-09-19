@@ -28,14 +28,16 @@ describe('FormSelectButton Core Component', () => {
     buttonText: string
   ) => {
     const buttons = wrapper.findAll('button')
-    const targetButton = buttons.find((button) =>
+    const targetButtonIndex = buttons.findIndex((button) =>
       button.text().includes(buttonText)
     )
 
-    if (!targetButton) {
+    if (targetButtonIndex === -1) {
       throw new Error(`Button with text "${buttonText}" not found`)
     }
 
+    // Use get() which throws if element doesn't exist, providing better error messages
+    const targetButton = buttons.at(targetButtonIndex)!
     await targetButton.trigger('click')
     return targetButton
   }
