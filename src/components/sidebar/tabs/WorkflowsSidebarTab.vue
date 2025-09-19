@@ -150,7 +150,7 @@ import {
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 

@@ -107,9 +107,8 @@
 <script setup lang="ts">
 import Fuse from 'fuse.js'
 import Button from 'primevue/button'
-import MultiSelect, {
-  MultiSelectPassThroughMethodOptions
-} from 'primevue/multiselect'
+import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
+import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -118,7 +117,7 @@ import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
 import TextButton from '../button/TextButton.vue'
-import { type SelectOption } from './types'
+import type { SelectOption } from './types'
 
 type Option = SelectOption
 

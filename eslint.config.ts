@@ -75,6 +75,8 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
+      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-import-type-side-effects': 'error',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
@@ -149,6 +151,15 @@ export default defineConfig([
             'App Path:'
           ]
         }
+      ]
+    }
+  },
+  {
+    files: ['tests-ui/**/*'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { disallowTypeAnnotations: false }
       ]
     }
   }

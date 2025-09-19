@@ -67,7 +67,7 @@ function createAssetService() {
     )
 
     // Blacklist directories we don't want to show
-    const blacklistedDirectories = ['configs']
+    const blacklistedDirectories = new Set(['configs'])
 
     // Extract directory names from assets that actually exist, exclude missing assets
     const discoveredFolders = new Set<string>(
@@ -75,7 +75,7 @@ function createAssetService() {
         ?.filter((asset) => !asset.tags.includes(MISSING_TAG))
         ?.flatMap((asset) => asset.tags)
         ?.filter(
-          (tag) => tag !== MODELS_TAG && !blacklistedDirectories.includes(tag)
+          (tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag)
         ) ?? []
     )
 
