@@ -99,6 +99,16 @@ export const useCanvasStore = defineStore('canvas', () => {
   const currentGraph = shallowRef<LGraph | null>(null)
   const isInSubgraph = ref(false)
 
+  // Provide selection state to all Vue nodes
+  const selectedNodeIds = computed(
+    () =>
+      new Set(
+        selectedItems.value
+          .filter((item) => item.id !== undefined)
+          .map((item) => String(item.id))
+      )
+  )
+
   whenever(
     () => canvas.value,
     (newCanvas) => {
@@ -122,6 +132,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   return {
     canvas,
     selectedItems,
+    selectedNodeIds,
     nodeSelected,
     groupSelected,
     rerouteSelected,

@@ -139,6 +139,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import {
   computed,
   inject,
@@ -153,7 +154,7 @@ import {
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -216,12 +217,7 @@ const emit = defineEmits<{
 useVueElementTracking(nodeData.id, 'node')
 
 // Inject selection state from parent
-const selectedNodeIds = inject(SelectedNodeIdsKey)
-if (!selectedNodeIds) {
-  throw new Error(
-    'SelectedNodeIds not provided - LGraphNode must be used within a component that provides selection state'
-  )
-}
+const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
 // Inject transform state for coordinate conversion
 const transformState = inject(TransformStateKey)

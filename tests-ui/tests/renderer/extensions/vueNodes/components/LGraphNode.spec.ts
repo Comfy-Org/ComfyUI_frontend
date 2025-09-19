@@ -1,14 +1,21 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => {
+  const useCanvasStore = vi.fn()
+  return {
+    useCanvasStore
+  }
+})
 
 vi.mock(
   '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
@@ -72,6 +79,29 @@ const i18n = createI18n({
     }
   }
 })
+function mountLGraphNode(props: any, selectedNodeIds = new Set<string>()) {
+  vi.mocked(useCanvasStore, { partial: true }).mockReturnValue({
+    selectedNodeIds
+  })
+  return mount(LGraphNode, {
+    props,
+    global: {
+      plugins: [
+        createTestingPinia({
+          createSpy: vi.fn
+        }),
+        i18n
+      ],
+      stubs: {
+        NodeHeader: true,
+        NodeSlots: true,
+        NodeWidgets: true,
+        NodeContent: true,
+        SlotConnectionDot: true
+      }
+    }
+  })
+}
 
 describe('LGraphNode', () => {
   const mockNodeData: VueNodeData = {
@@ -87,40 +117,16 @@ describe('LGraphNode', () => {
     executing: false
   }
 
-  const mountLGraphNode = (props: any, selectedNodeIds = new Set()) => {
-    return mount(LGraphNode, {
-      props,
-      global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
-        provide: {
-          [SelectedNodeIdsKey as symbol]: ref(selectedNodeIds)
-        },
-        stubs: {
-          NodeHeader: true,
-          NodeSlots: true,
-          NodeWidgets: true,
-          NodeContent: true,
-          SlotConnectionDot: true
-        }
-      }
-    })
-  }
-
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
     // Reset to default mock
-    vi.mocked(useNodeExecutionState).mockReturnValue({
-      executing: computed(() => false),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined as any),
-      executionState: computed(() => 'idle' as const)
-    })
+    // vi.mocked(useNodeExecutionState).mockReturnValue({
+    //   executing: computed(() => false),
+    //   progress: computed(() => undefined),
+    //   progressPercentage: computed(() => undefined),
+    //   progressState: computed(() => undefined as any),
+    //   executionState: computed(() => 'idle' as const)
+    // })
   })
 
   it('should call resize tracking composable with node ID', () => {
@@ -146,9 +152,6 @@ describe('LGraphNode', () => {
           }),
           i18n
         ],
-        provide: {
-          [SelectedNodeIdsKey as symbol]: ref(new Set())
-        },
         stubs: {
           NodeSlots: true,
           NodeWidgets: true,
