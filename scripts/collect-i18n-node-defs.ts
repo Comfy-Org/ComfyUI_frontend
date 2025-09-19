@@ -29,6 +29,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   const nodeDefs: ComfyNodeDefImpl[] = (
     Object.values(
       await comfyPage.page.evaluate(async () => {
+        // @ts-expect-error - app is dynamically added to window
         const api = window['app'].api as ComfyApi
         return await api.getNodeDefs()
       })
@@ -79,7 +80,9 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
             if (!node.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
-                .filter((w: WidgetInfo) => w?.name && !inputNames.includes(w.name))
+                .filter(
+                  (w: WidgetInfo) => w?.name && !inputNames.includes(w.name)
+                )
                 .map((w: WidgetInfo) => [w.name, w.label])
             )
           },
