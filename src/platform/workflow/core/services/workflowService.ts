@@ -2,14 +2,14 @@ import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -17,7 +17,7 @@ import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
+import { appendJsonExt } from '@/utils/formatUtil'
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -112,13 +112,6 @@ export const useWorkflowService = () => {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
-      // Generate new id when saving existing workflow as a new file
-      const id = generateUUID()
-      const state = JSON.parse(
-        JSON.stringify(workflow.activeState)
-      ) as ComfyWorkflowJSON
-      state.id = id
-
       const tempWorkflow = workflowStore.saveAs(workflow, newPath)
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
@@ -346,7 +339,7 @@ export const useWorkflowService = () => {
    */
   const insertWorkflow = async (
     workflow: ComfyWorkflow,
-    options: { position?: Vector2 } = {}
+    options: { position?: Point } = {}
   ) => {
     const loadedWorkflow = await workflow.load()
     const workflowJSON = toRaw(loadedWorkflow.initialState)

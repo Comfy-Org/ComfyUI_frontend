@@ -1,5 +1,5 @@
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import {
-  ComfyPage,
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'

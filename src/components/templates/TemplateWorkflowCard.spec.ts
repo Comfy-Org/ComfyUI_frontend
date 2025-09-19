@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
-import { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 vi.mock('@/components/templates/thumbnails/AudioThumbnail.vue', () => ({
   default: {

@@ -88,6 +88,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
       - name: Build types
         run: pnpm build:types
@@ -131,7 +133,7 @@ jobs:
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
-        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}"
+        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}" --no-git-checks
         working-directory: dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

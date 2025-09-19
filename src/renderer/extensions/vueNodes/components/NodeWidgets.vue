@@ -2,7 +2,20 @@
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
     {{ $t('Node Widgets Error') }}
   </div>
-  <div v-else class="lg-node-widgets flex flex-col gap-2 pr-4">
+  <div
+    v-else
+    :class="
+      cn(
+        'lg-node-widgets flex flex-col gap-2 pr-4',
+        shouldHandleNodePointerEvents
+          ? 'pointer-events-auto'
+          : 'pointer-events-none'
+      )
+    "
+    @pointerdown="handleWidgetPointerEvent"
+    @pointermove="handleWidgetPointerEvent"
+    @pointerup="handleWidgetPointerEvent"
+  >
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
@@ -18,7 +31,7 @@
             type: widget.type,
             boundingRect: [0, 0, 0, 0]
           }"
-          :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
+          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="getWidgetInputIndex(widget)"
           :readonly="readonly"
           :dot-only="true"
@@ -27,6 +40,7 @@
       <!-- Widget Component -->
       <component
         :is="widget.vueComponent"
+        v-tooltip.left="widget.tooltipConfig"
         :widget="widget.simplified"
         :model-value="widget.value"
         :readonly="readonly"
@@ -38,14 +52,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { type Ref, computed, inject, onErrorCaptured, ref } from 'vue'
 
 import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
@@ -55,17 +70,25 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
-  node?: LGraphNode
   nodeData?: VueNodeData
   readonly?: boolean
   lodLevel?: LODLevel
 }
 
-const props = defineProps<NodeWidgetsProps>()
+const { nodeData, readonly, lodLevel } = defineProps<NodeWidgetsProps>()
+
+const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
+  useCanvasInteractions()
+const handleWidgetPointerEvent = (event: PointerEvent) => {
+  if (!shouldHandleNodePointerEvents.value) {
+    forwardEventToCanvas(event)
+  }
+}
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -78,7 +101,13 @@ onErrorCaptured((error) => {
   return false
 })
 
-const nodeInfo = computed(() => props.nodeData || props.node)
+const nodeType = computed(() => nodeData?.type || '')
+const tooltipContainer =
+  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
+const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
+  nodeType.value,
+  tooltipContainer
+)
 
 interface ProcessedWidget {
   name: string
@@ -87,14 +116,13 @@ interface ProcessedWidget {
   simplified: SimplifiedWidget
   value: WidgetValue
   updateHandler: (value: unknown) => void
+  tooltipConfig: any
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
-  const info = nodeInfo.value
-  if (!info?.widgets) return []
+  if (!nodeData?.widgets) return []
 
-  const widgets = info.widgets as SafeWidgetData[]
-  const lodLevel = props.lodLevel
+  const widgets = nodeData.widgets as SafeWidgetData[]
   const result: ProcessedWidget[] = []
 
   if (lodLevel === LODLevel.MINIMAL) {
@@ -125,13 +153,17 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       }
     }
 
+    const tooltipText = getWidgetTooltip(widget)
+    const tooltipConfig = createTooltipConfig(tooltipText)
+
     result.push({
       name: widget.name,
       type: widget.type,
       vueComponent,
       simplified,
       value: widget.value,
-      updateHandler
+      updateHandler,
+      tooltipConfig
     })
   }
 
@@ -142,7 +174,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 // or restructuring data model to unify widgets and inputs
 // Map a widget to its corresponding input slot index
 const getWidgetInputIndex = (widget: ProcessedWidget): number => {
-  const inputs = nodeInfo.value?.inputs
+  const inputs = nodeData?.inputs
   if (!inputs) return 0
 
   const idx = inputs.findIndex((input: any) => {

@@ -32,10 +32,9 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    locale: { value: 'en' },
+  useI18n: () => ({
     t: vi.fn((key) => key)
-  }))
+  })
 }))
 
 describe('NodeHeader - Subgraph Functionality', () => {

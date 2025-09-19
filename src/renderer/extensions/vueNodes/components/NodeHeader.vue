@@ -5,7 +5,7 @@
   <div
     v-else
     class="lg-node-header flex items-center justify-between p-4 rounded-t-2xl cursor-move w-full"
-    :data-testid="`node-header-${nodeInfo?.id || ''}`"
+    :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
     <!-- Collapse/Expand Button -->
@@ -23,7 +23,11 @@
     </button>
 
     <!-- Node Title -->
-    <div class="text-sm font-bold truncate flex-1" data-testid="node-title">
+    <div
+      v-tooltip.top="tooltipConfig"
+      class="text-sm font-bold truncate flex-1"
+      data-testid="node-title"
+    >
       <EditableText
         :model-value="displayTitle"
         :is-editing="isEditing"
@@ -52,13 +56,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { app } from '@/scripts/app'
 import {
@@ -67,14 +71,13 @@ import {
 } from '@/utils/graphTraversalUtil'
 
 interface NodeHeaderProps {
-  node?: LGraphNode // For backwards compatibility
-  nodeData?: VueNodeData // New clean data structure
+  nodeData?: VueNodeData
   readonly?: boolean
   lodLevel?: LODLevel
   collapsed?: boolean
 }
 
-const props = defineProps<NodeHeaderProps>()
+const { nodeData, readonly, collapsed } = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -95,9 +98,22 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const nodeInfo = computed(() => props.nodeData || props.node)
+const tooltipContainer =
+  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
+const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
+  nodeData?.type || '',
+  tooltipContainer
+)
 
-const resolveTitle = (info: LGraphNode | VueNodeData | undefined) => {
+const tooltipConfig = computed(() => {
+  if (readonly || isEditing.value) {
+    return { value: '', disabled: true }
+  }
+  const description = getNodeDescription.value
+  return createTooltipConfig(description)
+})
+
+const resolveTitle = (info: VueNodeData | undefined) => {
   const title = (info?.title ?? '').trim()
   if (title.length > 0) return title
   const type = (info?.type ?? '').trim()
@@ -105,13 +121,13 @@ const resolveTitle = (info: LGraphNode | VueNodeData | undefined) => {
 }
 
 // Local state for title to provide immediate feedback
-const displayTitle = ref(resolveTitle(nodeInfo.value))
+const displayTitle = ref(resolveTitle(nodeData))
 
 // Watch for external changes to the node title or type
 watch(
-  () => [nodeInfo.value?.title, nodeInfo.value?.type] as const,
+  () => [nodeData?.title, nodeData?.type] as const,
   () => {
-    const next = resolveTitle(nodeInfo.value)
+    const next = resolveTitle(nodeData)
     if (next !== displayTitle.value) {
       displayTitle.value = next
     }
@@ -120,13 +136,13 @@ watch(
 
 // Subgraph detection
 const isSubgraphNode = computed(() => {
-  if (!nodeInfo.value?.id) return false
+  if (!nodeData?.id) return false
 
   // Get the underlying LiteGraph node
   const graph = app.graph?.rootGraph || app.graph
   if (!graph) return false
 
-  const locatorId = getLocatorIdFromNodeData(nodeInfo.value)
+  const locatorId = getLocatorIdFromNodeData(nodeData)
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
 
@@ -140,7 +156,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
-  if (!props.readonly) {
+  if (!readonly) {
     isEditing.value = true
   }
 }

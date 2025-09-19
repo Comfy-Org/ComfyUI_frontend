@@ -11,7 +11,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { Subgraph } from './Subgraph'
+import type { Subgraph } from './Subgraph'
 import type { SubgraphNode } from './SubgraphNode'
 
 export type ExecutionId = string

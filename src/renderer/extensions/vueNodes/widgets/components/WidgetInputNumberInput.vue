@@ -2,7 +2,7 @@
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
   INPUT_EXCLUDED_PROPS,

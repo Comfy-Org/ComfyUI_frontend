@@ -2,13 +2,10 @@ import { useTimeoutFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import {
-  LGraphNode,
-  Subgraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import {
+import type {
   ExecutedWsMessage,
   ResultItem,
   ResultItemType

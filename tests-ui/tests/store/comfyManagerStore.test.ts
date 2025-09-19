@@ -2,9 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useComfyManagerService } from '@/services/comfyManagerService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
@@ -13,7 +13,7 @@ type ManagerDatabaseSource =
   ManagerComponents['schemas']['ManagerDatabaseSource']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 
-vi.mock('@/services/comfyManagerService', () => ({
+vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
 }))
 
@@ -23,7 +23,7 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock('@/composables/useManagerQueue', () => {
+vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
   const enqueueTaskMock = vi.fn()
 
   return {

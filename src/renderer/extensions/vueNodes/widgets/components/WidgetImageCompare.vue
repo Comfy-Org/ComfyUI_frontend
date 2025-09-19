@@ -30,7 +30,7 @@ import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-interface ImageCompareValue {
+export interface ImageCompareValue {
   before: string
   after: string
   beforeAlt?: string

@@ -2,7 +2,7 @@
   <div class="settings-container">
     <ScrollPanel class="settings-sidebar shrink-0 p-2 w-48 2xl:w-64">
       <SearchBox
-        v-model:modelValue="searchQuery"
+        v-model:model-value="searchQuery"
         class="settings-search-box w-full mb-2"
         :placeholder="$t('g.searchSettings') + '...'"
         :debounce-time="128"
@@ -73,8 +73,8 @@ import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMess
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
-import { SettingTreeNode } from '@/platform/settings/settingStore'
-import { ISettingGroup, SettingParams } from '@/platform/settings/types'
+import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { flattenTree } from '@/utils/treeUtil'
 
 const { defaultPanel } = defineProps<{
