@@ -8,6 +8,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 const originalConfigureAfterSlots =
   SubgraphNode.prototype._internalConfigureAfterSlots
@@ -98,12 +99,8 @@ function resolveLinkedWidget(
   overlay: Overlay
 ): [LGraphNode | undefined, IBaseWidget | undefined] {
   const { graph, nodeId, widgetName } = overlay
-  let g: LGraph | undefined = graph
-  let n: LGraphNode | SubgraphNode | undefined = undefined
-  for (const id of nodeId.split(':')) {
-    n = g?._nodes_by_id?.[id]
-    g = n?.isSubgraphNode?.() ? n.subgraph : undefined
-  }
+  //Note: This uses partial execution ids and therefore does not pass the root graph
+  const n = getNodeByExecutionId(graph, nodeId)
   if (!n) return [undefined, undefined]
   return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
 }
