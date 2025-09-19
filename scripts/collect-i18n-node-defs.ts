@@ -9,9 +9,18 @@ import { normalizeI18nKey } from '../src/utils/formatUtil'
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
+interface WidgetInfo {
+  name?: string
+  label?: string
+}
+
+interface WidgetLabels {
+  [key: string]: Record<string, { name: string }>
+}
+
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
   // Mock view route
-  comfyPage.page.route('**/view**', async (route) => {
+  await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
@@ -52,7 +61,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   )
 
   async function extractWidgetLabels() {
-    const nodeLabels = {}
+    const nodeLabels: WidgetLabels = {}
 
     for (const nodeDef of nodeDefs) {
       const inputNames = Object.values(nodeDef.inputs).map(
@@ -65,12 +74,13 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         const widgetsMappings = await comfyPage.page.evaluate(
           (args) => {
             const [nodeName, displayName, inputNames] = args
+            // @ts-expect-error - LiteGraph is dynamically added to window
             const node = window['LiteGraph'].createNode(nodeName, displayName)
             if (!node.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
-                .filter((w) => w?.name && !inputNames.includes(w.name))
-                .map((w) => [w.name, w.label])
+                .filter((w: WidgetInfo) => w?.name && !inputNames.includes(w.name))
+                .map((w: WidgetInfo) => [w.name, w.label])
             )
           },
           [nodeDef.name, nodeDef.display_name, inputNames]

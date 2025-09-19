@@ -72,7 +72,7 @@ function capture(srcLocaleDir: string, tempBaseDir: string) {
     const relativePath = file.replace(srcLocaleDir, '')
     const targetPath = join(tempBaseDir, relativePath)
     ensureDir(dirname(targetPath))
-    writeFileSync(targetPath, readFileSync(file))
+    writeFileSync(targetPath, readFileSync(file, 'utf8'))
   }
   console.log('Captured current locale files to temp/base/')
 }
