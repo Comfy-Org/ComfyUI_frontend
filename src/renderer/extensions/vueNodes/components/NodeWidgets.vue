@@ -22,6 +22,7 @@
       class="lg-widget-container relative flex items-center group"
     >
       <!-- Widget Input Slot Dot -->
+
       <div
         class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
       >

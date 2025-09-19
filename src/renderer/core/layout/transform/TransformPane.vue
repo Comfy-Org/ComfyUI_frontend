@@ -1,10 +1,12 @@
 <template>
   <div
     class="absolute inset-0 w-full h-full pointer-events-none"
-    :class="[
-      isInteracting ? 'transform-pane--interacting' : 'will-change-auto',
-      isLOD ? 'isLOD' : ''
-    ]"
+    :class="
+      cn(
+        isInteracting ? 'transform-pane--interacting' : 'will-change-auto',
+        isLOD ? 'isLOD' : ''
+      )
+    "
     :style="transformStyle"
     @pointerdown="handlePointerDown"
   >
@@ -22,6 +24,7 @@ import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanv
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { cn } from '@/utils/tailwindUtil'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas

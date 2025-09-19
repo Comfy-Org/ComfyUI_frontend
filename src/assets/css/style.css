@@ -959,19 +959,18 @@ audio.comfy-audio.empty-audio-widget {
 
 .isLOD .lg-node {
   /* Remove ALL expensive paint effects */
-  box-shadow: none !important;
-  filter: none !important;
-  backdrop-filter: none !important;
-  text-shadow: none !important;
-  -webkit-mask-image: none !important;
-  mask-image: none !important;
-  clip-path: none !important;
-  /* border-radius: 0 !important; */
-  background-image: none !important;
-  text-rendering: optimizeSpeed !important;
-  border-radius: 0 !important;
-  contain: layout content paint;
-   transition: none !important;
+  box-shadow: none;
+  filter: none;
+  backdrop-filter: none;
+  text-shadow: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  clip-path: none;
+  background-image: none;
+  text-rendering: optimizeSpeed;
+  border-radius: 0;
+  contain: layout style;
+  transition: none;
  
 }
 
@@ -1002,6 +1001,6 @@ audio.comfy-audio.empty-audio-widget {
 
 
 .isLOD .slot-dot {
-  border-radius: 0 !important;
+  border-radius: 0;
 }
 /* END LOD specific styles */
