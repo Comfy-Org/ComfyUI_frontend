@@ -1121,7 +1121,7 @@ export class ComfyApp {
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
     ) => {
-      if (!nodes || !Array.isArray(nodes)) {
+      if (!Array.isArray(nodes)) {
         console.warn(
           'Workflow nodes data is missing or invalid, skipping node processing',
           { nodes, path }
