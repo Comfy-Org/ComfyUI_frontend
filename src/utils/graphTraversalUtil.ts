@@ -8,6 +8,23 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
+interface NodeWithId {
+  id: string | number
+  subgraphId?: string | null
+}
+
+/**
+ * Constructs a locator ID from node data with optional subgraph context.
+ *
+ * @param nodeData - Node data containing id and optional subgraphId
+ * @returns The locator ID string
+ */
+export function getLocatorIdFromNodeData(nodeData: NodeWithId): string {
+  return nodeData.subgraphId
+    ? `${nodeData.subgraphId}:${String(nodeData.id)}`
+    : String(nodeData.id)
+}
+
 /**
  * Parses an execution ID into its component parts.
  *

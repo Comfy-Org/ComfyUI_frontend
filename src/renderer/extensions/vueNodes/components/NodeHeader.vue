@@ -4,7 +4,7 @@
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between p-4 rounded-t-2xl cursor-move"
+    class="lg-node-header flex items-center justify-between p-4 rounded-t-2xl cursor-move w-full"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -36,17 +36,39 @@
         @cancel="handleTitleCancel"
       />
     </div>
+
+    <!-- Title Buttons -->
+    <div v-if="!readonly" class="flex items-center">
+      <IconButton
+        v-if="isSubgraphNode"
+        size="sm"
+        type="transparent"
+        class="text-stone-200 dark-theme:text-slate-300"
+        data-testid="subgraph-enter-button"
+        title="Enter Subgraph"
+        @click.stop="handleEnterSubgraph"
+        @dblclick.stop
+      >
+        <i class="pi pi-external-link"></i>
+      </IconButton>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
 
+import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { app } from '@/scripts/app'
+import {
+  getLocatorIdFromNodeData,
+  getNodeByLocatorId
+} from '@/utils/graphTraversalUtil'
 
 interface NodeHeaderProps {
   nodeData?: VueNodeData
@@ -60,6 +82,7 @@ const { nodeData, readonly, collapsed } = defineProps<NodeHeaderProps>()
 const emit = defineEmits<{
   collapse: []
   'update:title': [newTitle: string]
+  'enter-subgraph': []
 }>()
 
 // Error boundary implementation
@@ -111,6 +134,22 @@ watch(
   }
 )
 
+// Subgraph detection
+const isSubgraphNode = computed(() => {
+  if (!nodeData?.id) return false
+
+  // Get the underlying LiteGraph node
+  const graph = app.graph?.rootGraph || app.graph
+  if (!graph) return false
+
+  const locatorId = getLocatorIdFromNodeData(nodeData)
+
+  const litegraphNode = getNodeByLocatorId(graph, locatorId)
+
+  // Use the official type guard method
+  return litegraphNode?.isSubgraphNode() ?? false
+})
+
 // Event handlers
 const handleCollapse = () => {
   emit('collapse')
@@ -133,5 +172,9 @@ const handleTitleEdit = (newTitle: string) => {
 
 const handleTitleCancel = () => {
   isEditing.value = false
+}
+
+const handleEnterSubgraph = () => {
+  emit('enter-subgraph')
 }
 </script>

@@ -1,8 +1,10 @@
+import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef } from 'vue'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
+  LGraph,
   LGraphCanvas,
   LGraphGroup,
   LGraphNode
@@ -94,6 +96,29 @@ export const useCanvasStore = defineStore('canvas', () => {
     appScalePercentage.value = Math.round(newScale * 100)
   }
 
+  const currentGraph = shallowRef<LGraph | null>(null)
+  const isInSubgraph = ref(false)
+
+  whenever(
+    () => canvas.value,
+    (newCanvas) => {
+      useEventListener(
+        newCanvas.canvas,
+        'litegraph:set-graph',
+        (event: CustomEvent<{ newGraph: LGraph; oldGraph: LGraph }>) => {
+          const newGraph = event.detail?.newGraph || app.canvas?.graph
+          currentGraph.value = newGraph
+          isInSubgraph.value = Boolean(app.canvas?.subgraph)
+        }
+      )
+
+      useEventListener(newCanvas.canvas, 'subgraph-opened', () => {
+        isInSubgraph.value = true
+      })
+    },
+    { immediate: true }
+  )
+
   return {
     canvas,
     selectedItems,
@@ -105,6 +130,8 @@ export const useCanvasStore = defineStore('canvas', () => {
     getCanvas,
     setAppZoomFromPercentage,
     initScaleSync,
-    cleanupScaleSync
+    cleanupScaleSync,
+    currentGraph,
+    isInSubgraph
   }
 })

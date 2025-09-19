@@ -1,5 +1,4 @@
-import { whenever } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { t } from '@/i18n'
@@ -39,7 +38,12 @@ export const useCurrentUser = () => {
       callback(resolvedUserInfo.value)
     }
 
-    const stop = whenever(resolvedUserInfo, callback)
+    const stop = watch(resolvedUserInfo, (value) => {
+      if (value) {
+        callback(value)
+      }
+    })
+
     return () => stop()
   }
 
