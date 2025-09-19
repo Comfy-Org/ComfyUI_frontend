@@ -3,6 +3,7 @@
  */
 import type { Component } from 'vue'
 
+import WidgetAudioUI from '../components/WidgetAudioUI.vue'
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
 import WidgetColorPicker from '../components/WidgetColorPicker.vue'
@@ -108,6 +109,10 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
+  ],
+  [
+    'audioUI',
+    { component: WidgetAudioUI, aliases: ['AUDIOUI'], essential: false }
   ]
 ]
 
