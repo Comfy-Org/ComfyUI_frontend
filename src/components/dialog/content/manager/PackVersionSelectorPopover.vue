@@ -84,6 +84,7 @@ import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
+import * as semver from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -96,7 +97,6 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
-import { isSemVer } from '@/utils/formatUtil'
 
 type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
 type ManagerDatabaseSource =
@@ -142,7 +142,9 @@ onMounted(() => {
     getInitialSelectedVersion() ?? SelectedVersionValues.LATEST
   selectedVersion.value =
     // Use NIGHTLY when version is a Git hash
-    isSemVer(initialVersion) ? initialVersion : SelectedVersionValues.NIGHTLY
+    semver.valid(initialVersion)
+      ? initialVersion
+      : SelectedVersionValues.NIGHTLY
 })
 
 const getInitialSelectedVersion = () => {

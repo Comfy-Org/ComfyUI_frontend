@@ -1,8 +1,8 @@
+import * as semver from 'semver'
 import { computed } from 'vue'
 
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 export const usePackUpdateStatus = (
   nodePack: components['schemas']['Node']
@@ -16,14 +16,14 @@ export const usePackUpdateStatus = (
   const latestVersion = computed(() => nodePack.latest_version?.version)
 
   const isNightlyPack = computed(
-    () => !!installedVersion.value && !isSemVer(installedVersion.value)
+    () => !!installedVersion.value && !semver.valid(installedVersion.value)
   )
 
   const isUpdateAvailable = computed(() => {
     if (!isInstalled.value || isNightlyPack.value || !latestVersion.value) {
       return false
     }
-    return compareVersions(latestVersion.value, installedVersion.value) > 0
+    return semver.compare(latestVersion.value, installedVersion.value) > 0
   })
 
   return {
