@@ -3,7 +3,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
   index: number
-  selectedIndex: number
+  selected: boolean
   imageSrc: string
   name: string
   metadata: string
@@ -35,13 +35,13 @@ const handleClick = () => {
           'group-hover/item:scale-108',
           'group-active/item:scale-95',
           // selection
-          !!(index === selectedIndex) && 'ring-2 ring-blue-500'
+          !!selected && 'ring-2 ring-blue-500'
         )
       "
     >
       <!-- Selected Icon -->
       <div
-        v-if="index === selectedIndex"
+        v-if="selected"
         class="rounded-full bg-blue-500 border-1 border-white size-4 absolute top-1 left-1"
       >
         <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
@@ -55,7 +55,7 @@ const handleClick = () => {
           'block text-[15px] line-clamp-2 wrap-break-word',
           'transition-colors duration-150',
           // selection
-          !!(index === selectedIndex) && 'text-blue-500'
+          !!selected && 'text-blue-500'
         )
       "
     >

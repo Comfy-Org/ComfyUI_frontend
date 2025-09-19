@@ -9,6 +9,8 @@ interface Props {
   isOpen?: boolean
   placeholder?: string
   files: File[]
+  items: unknown[]
+  selected: Set<number>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -20,6 +22,10 @@ const emit = defineEmits<{
   (e: 'select-click', event: MouseEvent): void
   (e: 'file-change', event: Event): void
 }>()
+
+const selectedItems = computed(() => {
+  return Array.from(props.selected).map((index) => props.items[index])
+})
 
 const chevronClass = computed(() =>
   cn('mr-2 size-4 transition-transform duration-200', {
@@ -45,7 +51,14 @@ const theButtonStyle = [
       "
       @click="emit('select-click', $event)"
     >
-      <span class="px-4 py-2">{{ props.placeholder }}</span>
+      <span class="px-4 py-2">
+        <span v-if="!selectedItems.length">
+          {{ props.placeholder }}
+        </span>
+        <span v-else class="line-clamp-1">
+          {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
+        </span>
+      </span>
       <i-lucide:chevron-down :class="chevronClass" />
     </button>
     <!-- Open File -->

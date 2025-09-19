@@ -1,13 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
 
-const filterIndex = ref(0)
-const layoutMode = ref<'list' | 'grid'>('grid')
-const selectedIndex = ref(0)
+// Data structure interfaces
+interface DropdownItem {
+  id: string | number
+  imageSrc: string
+  name: string
+  metadata: string
+}
+
+interface Props {
+  items: DropdownItem[]
+  isSelected: (item: DropdownItem, index: number) => boolean
+}
+
+defineProps<Props>()
+const emit = defineEmits<{
+  (e: 'item-click', item: DropdownItem, index: number): void
+}>()
+
+// Define models for two-way binding
+const filterIndex = defineModel<number>('filterIndex', { default: 0 })
+const layoutMode = defineModel<'list' | 'grid'>('layoutMode', {
+  default: 'grid'
+})
+
+// Handle item selection
 </script>
 
 <template>
@@ -30,14 +50,14 @@ const selectedIndex = ref(0)
         />
         <!-- Item -->
         <FormDropdownMenuItem
-          v-for="i in 4 * 10"
-          :key="i"
-          :index="i"
-          :selected-index="selectedIndex"
-          :image-src="`https://picsum.photos/120/100?random=${i}`"
-          name="ImageName.png"
-          metadata="1024 x 1024"
-          @click="selectedIndex = $event"
+          v-for="(item, index) in items"
+          :key="item.id"
+          :index="index"
+          :selected="isSelected(item, index)"
+          :image-src="item.imageSrc"
+          :name="item.name"
+          :metadata="item.metadata"
+          @click="emit('item-click', item, index)"
         />
       </div>
     </div>
