@@ -24,6 +24,46 @@ interface SlotInteractionHandlers {
   onPointerDown: (event: PointerEvent) => void
 }
 
+interface PointerSession {
+  begin: (pointerId: number) => void
+  register: (...stops: Array<Fn | null | undefined>) => void
+  matches: (event: PointerEvent) => boolean
+  isActive: () => boolean
+  clear: () => void
+}
+
+function createPointerSession(): PointerSession {
+  let pointerId: number | null = null
+  let stops: Fn[] = []
+
+  const begin = (id: number) => {
+    pointerId = id
+  }
+
+  const register = (...newStops: Array<Fn | null | undefined>) => {
+    for (const stop of newStops) {
+      if (typeof stop === 'function') {
+        stops.push(stop)
+      }
+    }
+  }
+
+  const matches = (event: PointerEvent) =>
+    pointerId !== null && event.pointerId === pointerId
+
+  const isActive = () => pointerId !== null
+
+  const clear = () => {
+    for (const stop of stops) {
+      stop()
+    }
+    stops = []
+    pointerId = null
+  }
+
+  return { begin, register, matches, isActive, clear }
+}
+
 export function useSlotLinkInteraction({
   nodeId,
   index,
@@ -63,19 +103,10 @@ export function useSlotLinkInteraction({
 
   const conversion = useSharedCanvasPositionConversion()
 
-  let activePointerId: number | null = null
-  let stopPointerMove: Fn | null = null
-  let stopPointerUp: Fn | null = null
-  let stopPointerCancel: Fn | null = null
+  const pointerSession = createPointerSession()
 
-  const cleanupListeners = () => {
-    stopPointerMove?.()
-    stopPointerUp?.()
-    stopPointerCancel?.()
-    stopPointerMove = null
-    stopPointerUp = null
-    stopPointerCancel = null
-    activePointerId = null
+  const cleanupInteraction = () => {
+    pointerSession.clear()
     endDrag()
   }
 
@@ -91,7 +122,7 @@ export function useSlotLinkInteraction({
   }
 
   const handlePointerMove = (event: PointerEvent) => {
-    if (event.pointerId !== activePointerId) return
+    if (!pointerSession.matches(event)) return
     updatePointerState(event)
     app.canvas?.setDirty(true)
   }
@@ -126,7 +157,7 @@ export function useSlotLinkInteraction({
   }
 
   const finishInteraction = (event: PointerEvent) => {
-    if (event.pointerId !== activePointerId) return
+    if (!pointerSession.matches(event)) return
     event.preventDefault()
 
     if (state.source) {
@@ -136,7 +167,7 @@ export function useSlotLinkInteraction({
       }
     }
 
-    cleanupListeners()
+    cleanupInteraction()
     app.canvas?.setDirty(true)
   }
 
@@ -145,15 +176,15 @@ export function useSlotLinkInteraction({
   }
 
   const handlePointerCancel = (event: PointerEvent) => {
-    if (event.pointerId !== activePointerId) return
-    cleanupListeners()
+    if (!pointerSession.matches(event)) return
+    cleanupInteraction()
     app.canvas?.setDirty(true)
   }
 
   const onPointerDown = (event: PointerEvent) => {
     if (event.button !== 0) return
     if (!nodeId) return
-    if (activePointerId !== null) return
+    if (pointerSession.isActive()) return
 
     const canvas = app.canvas
     const graph = canvas?.graph
@@ -184,24 +215,20 @@ export function useSlotLinkInteraction({
       event.pointerId
     )
 
-    activePointerId = event.pointerId
+    pointerSession.begin(event.pointerId)
 
     updatePointerState(event)
 
-    stopPointerMove = useEventListener(
-      window,
-      'pointermove',
-      handlePointerMove,
-      { capture: true }
-    )
-    stopPointerUp = useEventListener(window, 'pointerup', handlePointerUp, {
-      capture: true
-    })
-    stopPointerCancel = useEventListener(
-      window,
-      'pointercancel',
-      handlePointerCancel,
-      { capture: true }
+    pointerSession.register(
+      useEventListener(window, 'pointermove', handlePointerMove, {
+        capture: true
+      }),
+      useEventListener(window, 'pointerup', handlePointerUp, {
+        capture: true
+      }),
+      useEventListener(window, 'pointercancel', handlePointerCancel, {
+        capture: true
+      })
     )
     app.canvas?.setDirty(true)
     event.preventDefault()
@@ -209,8 +236,8 @@ export function useSlotLinkInteraction({
   }
 
   onBeforeUnmount(() => {
-    if (activePointerId !== null) {
-      cleanupListeners()
+    if (pointerSession.isActive()) {
+      cleanupInteraction()
     }
   })
 
