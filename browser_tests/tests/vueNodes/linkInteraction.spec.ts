@@ -1,5 +1,6 @@
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
+import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import { getSlotKey } from '../../../src/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -13,6 +14,48 @@ async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
     x: box.x + box.width / 2,
     y: box.y + box.height / 2
   }
+}
+
+async function getInputLinkDetails(
+  page: Page,
+  nodeId: NodeId,
+  slotIndex: number
+) {
+  return await page.evaluate(
+    ([targetNodeId, targetSlot]) => {
+      const app = window['app']
+      const graph = app?.canvas?.graph ?? app?.graph
+      if (!graph) return null
+
+      const node = graph.getNodeById(targetNodeId)
+      if (!node) return null
+
+      const input = node.inputs?.[targetSlot]
+      if (!input) return null
+
+      const linkId = input.link
+      if (linkId == null) return null
+
+      const link = graph.getLink?.(linkId)
+      if (!link) return null
+
+      return {
+        id: link.id,
+        originId: link.origin_id,
+        originSlot:
+          typeof link.origin_slot === 'string'
+            ? Number.parseInt(link.origin_slot, 10)
+            : link.origin_slot,
+        targetId: link.target_id,
+        targetSlot:
+          typeof link.target_slot === 'string'
+            ? Number.parseInt(link.target_slot, 10)
+            : link.target_slot,
+        parentId: link.parentId ?? null
+      }
+    },
+    [nodeId, slotIndex] as const
+  )
 }
 
 test.describe('Vue Node Link Interaction', () => {
@@ -96,12 +139,8 @@ test.describe('Vue Node Link Interaction', () => {
     const target = await getCenter(inputSlot)
 
     await comfyMouse.move(start)
-
-    try {
-      await comfyMouse.drag(target)
-    } finally {
-      await comfyMouse.drop()
-    }
+    await comfyMouse.drag(target)
+    await comfyMouse.drop()
 
     await comfyPage.nextFrame()
 
@@ -171,12 +210,8 @@ test.describe('Vue Node Link Interaction', () => {
     const target = await getCenter(inputSlot)
 
     await comfyMouse.move(start)
-
-    try {
-      await comfyMouse.drag(target)
-    } finally {
-      await comfyMouse.drop()
-    }
+    await comfyMouse.drag(target)
+    await comfyMouse.drop()
 
     await comfyPage.nextFrame()
 
@@ -225,12 +260,8 @@ test.describe('Vue Node Link Interaction', () => {
     const target = await getCenter(inputSlot)
 
     await comfyMouse.move(start)
-
-    try {
-      await comfyMouse.drag(target)
-    } finally {
-      await comfyMouse.drop()
-    }
+    await comfyMouse.drag(target)
+    await comfyMouse.drop()
 
     await comfyPage.nextFrame()
 
@@ -249,5 +280,206 @@ test.describe('Vue Node Link Interaction', () => {
     }, samplerNode.id)
 
     expect(graphLinkCount).toBe(0)
+  })
+
+  test('should reuse the existing origin when dragging an input link', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+    const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+
+    expect(samplerNodes.length).toBeGreaterThan(0)
+    expect(vaeNodes.length).toBeGreaterThan(0)
+
+    const samplerNode = samplerNodes[0]
+    const vaeNode = vaeNodes[0]
+
+    const samplerOutputKey = getSlotKey(String(samplerNode.id), 0, false)
+    const vaeInputKey = getSlotKey(String(vaeNode.id), 0, true)
+
+    const samplerOutputLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerOutputKey}"]`
+    )
+    const vaeInputLocator = comfyPage.page.locator(
+      `[data-slot-key="${vaeInputKey}"]`
+    )
+
+    await expect(samplerOutputLocator).toBeVisible()
+    await expect(vaeInputLocator).toBeVisible()
+
+    const samplerOutputCenter = await getCenter(samplerOutputLocator)
+    const vaeInputCenter = await getCenter(vaeInputLocator)
+
+    await comfyMouse.move(samplerOutputCenter)
+    await comfyMouse.drag(vaeInputCenter)
+    await comfyMouse.drop()
+
+    const dragTarget = {
+      x: vaeInputCenter.x + 160,
+      y: vaeInputCenter.y - 100
+    }
+
+    await comfyMouse.move(vaeInputCenter)
+    await comfyMouse.drag(dragTarget)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'vue-node-input-drag-reuses-origin.png'
+    )
+    await comfyMouse.drop()
+  })
+
+  test('ctrl+alt drag from an input starts a fresh link', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+    const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+
+    expect(samplerNodes.length).toBeGreaterThan(0)
+    expect(vaeNodes.length).toBeGreaterThan(0)
+
+    const samplerNode = samplerNodes[0]
+    const vaeNode = vaeNodes[0]
+
+    const samplerOutput = await samplerNode.getOutput(0)
+    const vaeInput = await vaeNode.getInput(0)
+
+    const samplerOutputKey = getSlotKey(String(samplerNode.id), 0, false)
+    const vaeInputKey = getSlotKey(String(vaeNode.id), 0, true)
+
+    const samplerOutputLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerOutputKey}"]`
+    )
+    const vaeInputLocator = comfyPage.page.locator(
+      `[data-slot-key="${vaeInputKey}"]`
+    )
+
+    await expect(samplerOutputLocator).toBeVisible()
+    await expect(vaeInputLocator).toBeVisible()
+
+    const samplerOutputCenter = await getCenter(samplerOutputLocator)
+    const vaeInputCenter = await getCenter(vaeInputLocator)
+
+    await comfyMouse.move(samplerOutputCenter)
+    await comfyMouse.drag(vaeInputCenter)
+    await comfyMouse.drop()
+
+    await comfyPage.nextFrame()
+
+    const dragTarget = {
+      x: vaeInputCenter.x + 140,
+      y: vaeInputCenter.y - 110
+    }
+
+    await comfyMouse.move(vaeInputCenter)
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.keyboard.down('Alt')
+
+    try {
+      await comfyMouse.drag(dragTarget)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-node-input-drag-ctrl-alt.png'
+      )
+    } finally {
+      await comfyMouse.drop().catch(() => {})
+      await comfyPage.page.keyboard.up('Alt').catch(() => {})
+      await comfyPage.page.keyboard.up('Control').catch(() => {})
+    }
+
+    await comfyPage.nextFrame()
+
+    // Tcehnically intended to disconnect existing as well
+    expect(await vaeInput.getLinkCount()).toBe(0)
+    expect(await samplerOutput.getLinkCount()).toBe(0)
+  })
+
+  test('dropping an input link back on its slot restores the original connection', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+    const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+
+    expect(samplerNodes.length).toBeGreaterThan(0)
+    expect(vaeNodes.length).toBeGreaterThan(0)
+
+    const samplerNode = samplerNodes[0]
+    const vaeNode = vaeNodes[0]
+
+    const samplerOutput = await samplerNode.getOutput(0)
+    const vaeInput = await vaeNode.getInput(0)
+
+    const samplerOutputKey = getSlotKey(String(samplerNode.id), 0, false)
+    const vaeInputKey = getSlotKey(String(vaeNode.id), 0, true)
+
+    const samplerOutputLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerOutputKey}"]`
+    )
+    const vaeInputLocator = comfyPage.page.locator(
+      `[data-slot-key="${vaeInputKey}"]`
+    )
+
+    await expect(samplerOutputLocator).toBeVisible()
+    await expect(vaeInputLocator).toBeVisible()
+
+    const samplerOutputCenter = await getCenter(samplerOutputLocator)
+    const vaeInputCenter = await getCenter(vaeInputLocator)
+
+    await comfyMouse.move(samplerOutputCenter)
+    try {
+      await comfyMouse.drag(vaeInputCenter)
+    } finally {
+      await comfyMouse.drop()
+    }
+
+    await comfyPage.nextFrame()
+
+    const originalLink = await getInputLinkDetails(
+      comfyPage.page,
+      vaeNode.id,
+      0
+    )
+    expect(originalLink).not.toBeNull()
+
+    const dragTarget = {
+      x: vaeInputCenter.x + 150,
+      y: vaeInputCenter.y - 100
+    }
+
+    // To prevent needing a screenshot expectation for whether the link's off
+    const inputBox = await vaeInputLocator.boundingBox()
+    if (!inputBox) throw new Error('Input slot bounding box not available')
+    const isOutsideX =
+      dragTarget.x < inputBox.x || dragTarget.x > inputBox.x + inputBox.width
+    const isOutsideY =
+      dragTarget.y < inputBox.y || dragTarget.y > inputBox.y + inputBox.height
+    expect(isOutsideX || isOutsideY).toBe(true)
+
+    await comfyMouse.move(vaeInputCenter)
+    await comfyMouse.drag(dragTarget)
+    await comfyMouse.move(vaeInputCenter)
+    await comfyMouse.drop()
+
+    await comfyPage.nextFrame()
+
+    const restoredLink = await getInputLinkDetails(
+      comfyPage.page,
+      vaeNode.id,
+      0
+    )
+
+    expect(restoredLink).not.toBeNull()
+    if (!restoredLink || !originalLink) {
+      throw new Error('Expected both original and restored links to exist')
+    }
+    expect(restoredLink).toMatchObject({
+      originId: originalLink.originId,
+      originSlot: originalLink.originSlot,
+      targetId: originalLink.targetId,
+      targetSlot: originalLink.targetSlot,
+      parentId: originalLink.parentId
+    })
+    expect(await samplerOutput.getLinkCount()).toBe(1)
+    expect(await vaeInput.getLinkCount()).toBe(1)
   })
 })
