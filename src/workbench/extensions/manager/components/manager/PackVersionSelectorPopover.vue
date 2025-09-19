@@ -84,6 +84,7 @@ import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
+import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -94,7 +95,6 @@ import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
-import { isSemVer } from '@/utils/formatUtil'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
@@ -142,7 +142,7 @@ onMounted(() => {
     getInitialSelectedVersion() ?? SelectedVersionValues.LATEST
   selectedVersion.value =
     // Use NIGHTLY when version is a Git hash
-    isSemVer(initialVersion) ? initialVersion : SelectedVersionValues.NIGHTLY
+    validSemver(initialVersion) ? initialVersion : SelectedVersionValues.NIGHTLY
 })
 
 const getInitialSelectedVersion = () => {
