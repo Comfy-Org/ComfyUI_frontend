@@ -5,11 +5,12 @@
     data-key="name"
     :lazy="true"
     pt:root="h-full grid grid-rows-[auto_1fr_auto]"
+    pt:header="p-0"
     pt:content="p-2 overflow-auto"
   >
     <template #header>
-      <div class="flex flex-col">
-        <div class="flex justify-between items-center mb-4">
+      <div class="flex flex-col mb-4">
+        <div class="flex justify-between items-center">
           <h2 class="text-lg">{{ title }}</h2>
           <SelectButton
             v-model="layout"
