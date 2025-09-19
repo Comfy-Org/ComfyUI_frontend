@@ -5,7 +5,7 @@ import { nextTick, ref } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 // Mock Vue's onMounted to execute immediately for testing
 vi.mock('vue', async () => {
@@ -21,7 +21,7 @@ vi.mock('@/composables/nodePack/useInstalledPacks', () => ({
   useInstalledPacks: vi.fn()
 }))
 
-vi.mock('@/stores/comfyManagerStore', () => ({
+vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn()
 }))
 

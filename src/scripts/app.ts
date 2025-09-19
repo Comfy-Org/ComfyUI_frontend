@@ -19,7 +19,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import {
-  ComfyApiWorkflow,
+  type ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
   type NodeId,
@@ -61,9 +61,9 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { ExtensionManager } from '@/types/extensionTypes'
+import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -1121,6 +1121,13 @@ export class ComfyApp {
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
     ) => {
+      if (!Array.isArray(nodes)) {
+        console.warn(
+          'Workflow nodes data is missing or invalid, skipping node processing',
+          { nodes, path }
+        )
+        return
+      }
       for (let n of nodes) {
         // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
         if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'

@@ -4,13 +4,16 @@
   </div>
   <div
     v-else
+    ref="nodeContainerRef"
     :data-node-id="nodeData.id"
     :class="
       cn(
         'bg-white dark-theme:bg-charcoal-800',
         'lg-node absolute rounded-2xl',
         'border border-solid border-sand-100 dark-theme:border-charcoal-600',
-        'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
+        // hover (only when node should handle events)
+        shouldHandleNodePointerEvents &&
+          'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         'outline-transparent -outline-offset-2 outline-2',
         borderClass,
         outlineClass,
@@ -21,7 +24,9 @@
           'will-change-transform': isDragging
         },
         lodCssClass,
-        'pointer-events-auto'
+        shouldHandleNodePointerEvents
+          ? 'pointer-events-auto'
+          : 'pointer-events-none'
       )
     "
     :style="[
@@ -34,6 +39,7 @@
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
+    @wheel="handleWheel"
   >
     <div class="flex items-center">
       <template v-if="isCollapsed">
@@ -147,6 +153,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
@@ -236,6 +243,14 @@ const hasAnyError = computed(
 )
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
+
+// Use canvas interactions for proper wheel event handling and pointer event capture control
+const {
+  handleWheel,
+  handlePointer,
+  forwardEventToCanvas,
+  shouldHandleNodePointerEvents
+} = useCanvasInteractions()
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => zoomLevel)
@@ -362,6 +377,12 @@ const handlePointerDown = (event: PointerEvent) => {
     return
   }
 
+  // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
+  if (!shouldHandleNodePointerEvents.value) {
+    forwardEventToCanvas(event)
+    return
+  }
+
   // Start drag using layout system
   isDragging.value = true
 
@@ -374,6 +395,9 @@ const handlePointerDown = (event: PointerEvent) => {
 }
 
 const handlePointerMove = (event: PointerEvent) => {
+  // Check if this should be forwarded to canvas (e.g., space panning, middle mouse)
+  handlePointer(event)
+
   if (isDragging.value) {
     void handleLayoutDrag(event)
   }
@@ -387,6 +411,13 @@ const handlePointerUp = (event: PointerEvent) => {
     // Clear Vue node dragging state for selection toolbox
     layoutStore.isDraggingVueNodes.value = false
   }
+
+  // Don't emit node-click when canvas is in panning mode - forward to canvas instead
+  if (!shouldHandleNodePointerEvents.value) {
+    forwardEventToCanvas(event)
+    return
+  }
+
   // Emit node-click for selection handling in GraphCanvas
   const dx = event.clientX - lastX.value
   const dy = event.clientY - lastY.value
@@ -409,6 +440,12 @@ const handleSlotClick = (
     console.warn('LGraphNode: nodeData is null/undefined in handleSlotClick')
     return
   }
+
+  // Don't handle slot clicks when canvas is in panning mode
+  if (!shouldHandleNodePointerEvents.value) {
+    return
+  }
+
   emit('slot-click', event, nodeData, slotIndex, isInput)
 }
 
@@ -457,6 +494,10 @@ watch(
   { deep: true }
 )
 
-// Provide nodeImageUrls to child components
+// Template ref for tooltip positioning
+const nodeContainerRef = ref<HTMLElement>()
+
+// Provide nodeImageUrls and tooltip container to child components
 provide('nodeImageUrls', nodeImageUrls)
+provide('tooltipContainer', nodeContainerRef)
 </script>

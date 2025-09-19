@@ -1,8 +1,8 @@
 import * as semver from 'semver'
 import { computed } from 'vue'
 
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 export const usePackUpdateStatus = (
   nodePack: components['schemas']['Node']

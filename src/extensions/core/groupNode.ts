@@ -11,16 +11,16 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
-  ComfyLink,
-  ComfyNode,
-  ComfyWorkflowJSON
+  type ComfyLink,
+  type ComfyNode,
+  type ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { ComfyExtension } from '@/types/comfy'
+import { type ComfyExtension } from '@/types/comfy'
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
 import { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'

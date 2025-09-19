@@ -2,8 +2,8 @@ import * as semver from 'semver'
 import { computed, onMounted } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 /**
  * Composable to find NodePacks that have updates available

@@ -1,17 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
-  <div
-    v-else
-    class="lg-slot lg-slot--output flex items-center cursor-crosshair justify-end group rounded-l-lg h-6"
-    :class="{
-      'opacity-70': readonly,
-      'lg-slot--connected': connected,
-      'lg-slot--compatible': compatible,
-      'lg-slot--dot-only': dotOnly,
-      'pl-6 hover:bg-black/5 hover:dark:bg-white/5': !dotOnly,
-      'justify-center': dotOnly
-    }"
-  >
+  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <!-- Slot Name -->
     <span
       v-if="!dotOnly"
@@ -25,6 +14,7 @@
       ref="connectionDotRef"
       :color="slotColor"
       class="translate-x-1/2"
+      v-on="readonly ? {} : { pointerdown: onPointerDown }"
     />
   </div>
 </template>
@@ -32,7 +22,9 @@
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
+  type Ref,
   computed,
+  inject,
   onErrorCaptured,
   ref,
   watchEffect
@@ -40,13 +32,16 @@ import {
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
-import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { cn } from '@/utils/tailwindUtil'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {
-  node?: LGraphNode
+  nodeType?: string
   nodeId?: string
   slotData: INodeSlot
   index: number
@@ -63,6 +58,20 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
+const tooltipContainer =
+  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
+const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
+  props.nodeType || '',
+  tooltipContainer
+)
+
+const tooltipConfig = computed(() => {
+  const slotName = props.slotData.name || ''
+  const tooltipText = getOutputSlotTooltip(props.index)
+  const fallbackText = tooltipText || `Output: ${slotName}`
+  return createTooltipConfig(fallbackText)
+})
+
 onErrorCaptured((error) => {
   renderError.value = error.message
   toastErrorHandler(error)
@@ -71,6 +80,20 @@ onErrorCaptured((error) => {
 
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
+
+const slotWrapperClass = computed(() =>
+  cn(
+    'lg-slot lg-slot--output flex items-center justify-end group rounded-l-lg h-6',
+    props.readonly ? 'cursor-default opacity-70' : 'cursor-crosshair',
+    props.dotOnly
+      ? 'lg-slot--dot-only justify-center'
+      : 'pl-6 hover:bg-black/5 hover:dark:bg-white/5',
+    {
+      'lg-slot--connected': props.connected,
+      'lg-slot--compatible': props.compatible
+    }
+  )
+)
 
 const connectionDotRef = ref<ComponentPublicInstance<{
   slotElRef: HTMLElement | undefined
@@ -89,5 +112,12 @@ useSlotElementTracking({
   index: props.index,
   type: 'output',
   element: slotElRef
+})
+
+const { onPointerDown } = useSlotLinkInteraction({
+  nodeId: props.nodeId ?? '',
+  index: props.index,
+  type: 'output',
+  readonly: props.readonly
 })
 </script>

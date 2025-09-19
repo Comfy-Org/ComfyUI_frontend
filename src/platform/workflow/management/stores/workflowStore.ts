@@ -20,7 +20,7 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { getPathDetails } from '@/utils/formatUtil'
+import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -320,12 +320,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
     existingWorkflow: ComfyWorkflow,
     path: string
   ): ComfyWorkflow => {
+    // Generate new id when saving existing workflow as a new file
+    const id = generateUUID()
+    const state = JSON.parse(
+      JSON.stringify(existingWorkflow.activeState)
+    ) as ComfyWorkflowJSON
+    state.id = id
+
     const workflow: ComfyWorkflow = new (existingWorkflow.constructor as any)({
       path,
       modified: Date.now(),
       size: -1
     })
-    workflow.originalContent = workflow.content = existingWorkflow.content
+    workflow.originalContent = workflow.content = JSON.stringify(state)
     workflowLookup.value[workflow.path] = workflow
     return workflow
   }
