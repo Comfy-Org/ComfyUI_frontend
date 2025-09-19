@@ -104,20 +104,10 @@ export const useDialogStore = defineStore('dialog', () => {
     }
   }
 
-  /**
-   * Immediately removes dialog from stack without animation.
-   * This is called internally after animations complete.
-   *
-   * Use this when:
-   * - Called from onAfterHide callback (PrimeVue animation already done)
-   * - Force-closing without animation (rare)
-   * - Cleaning up dialog state
-   *
-   * For user-initiated closes, prefer animateClose() instead.
-   */
   function closeDialog(options?: { key: string }) {
-    const key = options?.key ?? activeKey.value
-    const targetDialog = dialogStack.value.find((d) => d.key === key)
+    const targetDialog = options
+      ? dialogStack.value.find((d) => d.key === options.key)
+      : dialogStack.value.find((d) => d.key === activeKey.value)
     if (!targetDialog) return
 
     targetDialog.dialogComponentProps?.onClose?.()

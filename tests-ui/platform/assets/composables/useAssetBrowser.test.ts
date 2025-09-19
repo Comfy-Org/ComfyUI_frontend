@@ -312,8 +312,6 @@ describe('useAssetBrowser', () => {
         'for asset:',
         'asset-456'
       )
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('should handle API errors gracefully', async () => {
@@ -336,8 +334,6 @@ describe('useAssetBrowser', () => {
         expect.stringContaining('Failed to fetch asset details for asset-789'),
         apiError
       )
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('should not fetch details when no callback provided', async () => {
@@ -407,8 +403,6 @@ describe('useAssetBrowser', () => {
           'validation-test'
         )
       }
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('rejects invalid filename characters', async () => {
@@ -440,8 +434,6 @@ describe('useAssetBrowser', () => {
           'validation-test'
         )
       }
-
-      consoleErrorSpy.mockRestore()
     })
   })
 
