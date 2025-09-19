@@ -2,7 +2,9 @@
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
+  <LiteGraphCanvasSplitterOverlay
+    v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
+  >
     <template v-if="!workspaceStore.focusMode" #side-bar-panel>
       <SideToolbar />
     </template>
