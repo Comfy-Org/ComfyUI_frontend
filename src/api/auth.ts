@@ -91,7 +91,7 @@ export async function getInviteCodeStatus(
 ): Promise<{ claimed: boolean; expired: boolean }> {
   try {
     const response = await api.fetchApi(
-      `/invite/${encodeURIComponent(inviteCode)}/status`,
+      `/invite_code/${encodeURIComponent(inviteCode)}/status`,
       {
         method: 'GET',
         headers: {
@@ -105,22 +105,22 @@ export async function getInviteCodeStatus(
       )
       captureApiError(
         error,
-        '/invite/{code}/status',
+        '/invite_code/{code}/status',
         'http_error',
         response.status,
         undefined,
         {
           api: {
             method: 'GET',
-            endpoint: `/invite/${inviteCode}/status`,
+            endpoint: `/invite_code/${inviteCode}/status`,
             status_code: response.status,
             status_text: response.statusText
           },
           extra: {
             invite_code_length: inviteCode.length
           },
-          route_template: '/invite/{code}/status',
-          route_actual: `/invite/${inviteCode}/status`
+          route_template: '/invite_code/{code}/status',
+          route_actual: `/invite_code/${inviteCode}/status`
         }
       )
       throw error
@@ -132,13 +132,13 @@ export async function getInviteCodeStatus(
     if (!isHttpError(error, 'Failed to get invite code status:')) {
       captureApiError(
         error as Error,
-        '/invite/{code}/status',
+        '/invite_code/{code}/status',
         'network_error',
         undefined,
         undefined,
         {
-          route_template: '/invite/{code}/status',
-          route_actual: `/invite/${inviteCode}/status`
+          route_template: '/invite_code/{code}/status',
+          route_actual: `/invite_code/${inviteCode}/status`
         }
       )
     }
@@ -307,7 +307,7 @@ export async function claimInvite(
     })
 
     const res = await api.fetchApi(
-      `/invite/${encodeURIComponent(code)}/claim`,
+      `/invite_code/${encodeURIComponent(code)}/claim`,
       {
         method: 'POST'
       }
@@ -319,7 +319,7 @@ export async function claimInvite(
       )
       captureApiError(
         error,
-        '/invite/{code}/claim',
+        '/invite_code/{code}/claim',
         'http_error',
         res.status,
         'claim_invite',
@@ -329,8 +329,8 @@ export async function claimInvite(
             status_code: res.status,
             status_text: res.statusText
           },
-          route_template: '/invite/{code}/claim',
-          route_actual: `/invite/${encodeURIComponent(code)}/claim`
+          route_template: '/invite_code/{code}/claim',
+          route_actual: `/invite_code/${encodeURIComponent(code)}/claim`
         }
       )
       throw error
@@ -349,13 +349,13 @@ export async function claimInvite(
     if (!isHttpError(error, 'Failed to claim invite:')) {
       captureApiError(
         error as Error,
-        '/invite/{code}/claim',
+        '/invite_code/{code}/claim',
         'network_error',
         undefined,
         'claim_invite',
         {
-          route_template: '/invite/{code}/claim',
-          route_actual: `/invite/${encodeURIComponent(code)}/claim`
+          route_template: '/invite_code/{code}/claim',
+          route_actual: `/invite_code/${encodeURIComponent(code)}/claim`
         }
       )
     }
