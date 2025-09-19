@@ -42,7 +42,7 @@
         class="text-stone-200 dark-theme:text-slate-300"
         data-testid="subgraph-enter-button"
         title="Enter Subgraph"
-        @click="handleEnterSubgraph"
+        @click.stop="handleEnterSubgraph"
         @dblclick.stop
       >
         <i class="pi pi-external-link"></i>
@@ -158,8 +158,7 @@ const handleTitleCancel = () => {
   isEditing.value = false
 }
 
-const handleEnterSubgraph = (event: Event) => {
-  event.stopPropagation()
+const handleEnterSubgraph = () => {
   emit('enter-subgraph')
 }
 </script>
