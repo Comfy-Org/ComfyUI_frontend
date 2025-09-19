@@ -39,6 +39,7 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -959,6 +960,7 @@ export const useLitegraphService = () => {
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
     options: Record<string, any> = {}
   ): LGraphNode {
+    const source = options.telemetrySource || 'unknown'
     options.pos ??= getCanvasCenter()
 
     if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
@@ -987,6 +989,23 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
+
+    // Track node addition with source information
+    const eventMap: Record<string, string> = {
+      'sidebar-click': TelemetryEvents.NODE_ADDED_FROM_SIDEBAR,
+      'sidebar-drag': TelemetryEvents.NODE_ADDED_FROM_SIDEBAR,
+      'search-popover': TelemetryEvents.NODE_ADDED_FROM_SEARCH_POPOVER,
+      'context-menu': TelemetryEvents.NODE_ADDED_FROM_CONTEXT_MENU,
+      'drag-drop': TelemetryEvents.NODE_ADDED_FROM_DRAG_DROP
+    }
+
+    const eventName = eventMap[source] || TelemetryEvents.WORKFLOW_NODE_ADDED
+    trackTypedEvent(eventName as any, {
+      node_type: nodeDef.name,
+      node_display_name: nodeDef.display_name || nodeDef.name,
+      source: source,
+      is_subgraph: !!useWorkflowStore().activeSubgraph
+    })
 
     // @ts-expect-error fixme ts strict error
     graph.add(node)

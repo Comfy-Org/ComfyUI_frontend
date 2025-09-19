@@ -143,6 +143,7 @@ import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLe
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
@@ -234,6 +235,13 @@ const renderTreeNode = (
     e: MouseEvent
   ) {
     if (this.leaf) {
+      // Track workflow opening from sidebar
+      trackTypedEvent(TelemetryEvents.WORKFLOW_OPENED_FROM_SIDEBAR, {
+        workflow_path: workflow.path,
+        workflow_type: type,
+        is_bookmarked: type === WorkflowTreeType.Bookmarks,
+        is_open: type === WorkflowTreeType.Open
+      })
       await workflowService.openWorkflow(workflow)
     } else {
       toggleNodeOnEvent(e, this)

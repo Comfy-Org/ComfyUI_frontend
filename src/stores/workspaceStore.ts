@@ -7,6 +7,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
@@ -89,7 +90,22 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     shiftDown,
     focusMode,
     toggleFocusMode: () => {
+      const wasEnabled = focusMode.value
       focusMode.value = !focusMode.value
+
+      // Track focus mode toggle with context about workflow complexity
+      trackTypedEvent(TelemetryEvents.WORKSPACE_FOCUS_MODE_ENABLED, {
+        focus_enabled: focusMode.value,
+        previous_state: wasEnabled,
+        device_type:
+          window.innerWidth < 768
+            ? 'mobile'
+            : window.innerWidth < 1024
+              ? 'tablet'
+              : 'desktop',
+        screen_width: window.innerWidth,
+        screen_height: window.innerHeight
+      })
     },
     toast,
     queueSettings,

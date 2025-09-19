@@ -9,6 +9,7 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 export function useTemplateWorkflows() {
@@ -51,6 +52,16 @@ export function useTemplateWorkflows() {
    */
   const selectTemplateCategory = (category: WorkflowTemplates | null) => {
     selectedTemplate.value = category
+
+    // Track template category browsing
+    if (category) {
+      trackTypedEvent(TelemetryEvents.TEMPLATE_BROWSED, {
+        category_name: category.title,
+        category_module: category.moduleName,
+        template_count: category.templates.length
+      })
+    }
+
     return category !== null
   }
 
@@ -131,6 +142,15 @@ export function useTemplateWorkflows() {
         dialogStore.closeDialog()
         await app.loadGraphData(json, true, true, workflowName)
 
+        // Track template usage
+        trackTypedEvent(TelemetryEvents.TEMPLATE_USED, {
+          template_id: id,
+          template_name: workflowName,
+          source_module: actualSourceModule,
+          category: 'All',
+          creation_method: 'template'
+        })
+
         return true
       }
 
@@ -144,6 +164,15 @@ export function useTemplateWorkflows() {
 
       dialogStore.closeDialog()
       await app.loadGraphData(json, true, true, workflowName)
+
+      // Track template usage for regular categories
+      trackTypedEvent(TelemetryEvents.TEMPLATE_USED, {
+        template_id: id,
+        template_name: workflowName,
+        source_module: sourceModule,
+        category: selectedTemplate.value?.title || 'unknown',
+        creation_method: 'template'
+      })
 
       return true
     } catch (error) {

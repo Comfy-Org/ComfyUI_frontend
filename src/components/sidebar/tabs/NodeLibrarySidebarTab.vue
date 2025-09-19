@@ -265,7 +265,9 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       handleClick(e: MouseEvent) {
         if (this.leaf) {
           // @ts-expect-error fixme ts strict error
-          useLitegraphService().addNodeOnGraph(this.data)
+          useLitegraphService().addNodeOnGraph(this.data, {
+            telemetrySource: 'sidebar-click'
+          })
         } else {
           toggleNodeOnEvent(e, this)
         }

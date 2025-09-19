@@ -18,6 +18,7 @@ import type {
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 // Task type used in the API.
@@ -521,11 +522,31 @@ export const useQueueStore = defineStore('queue', () => {
     if (targets.length === 0) {
       return
     }
+
+    // Track queue clearing
+    trackTypedEvent(TelemetryEvents.QUEUE_CLEARED, {
+      targets_count: targets.length,
+      queue_length: pendingTasks.value.length + runningTasks.value.length,
+      history_length: historyTasks.value.length,
+      clear_type:
+        targets.includes('queue') && targets.includes('history')
+          ? 'all'
+          : targets[0]
+    })
+
     await Promise.all(targets.map((type) => api.clearItems(type)))
     await update()
   }
 
   const deleteTask = async (task: TaskItemImpl) => {
+    // Track individual task deletion
+    trackTypedEvent(TelemetryEvents.QUEUE_ITEM_DELETED, {
+      task_type: task.apiTaskType,
+      task_status: task.status?.status_str || 'unknown',
+      queue_position: task.queueIndex,
+      is_running: runningTasks.value.some((t) => t.promptId === task.promptId)
+    })
+
     await api.deleteItem(task.apiTaskType, task.promptId)
     await update()
   }

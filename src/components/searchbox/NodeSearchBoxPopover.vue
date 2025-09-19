@@ -88,7 +88,8 @@ const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl) {
   const node = litegraphService.addNodeOnGraph(nodeDef, {
-    pos: getNewNodeLocation()
+    pos: getNewNodeLocation(),
+    telemetrySource: 'search-popover'
   })
 
   if (disconnectOnReset && triggerEvent) {

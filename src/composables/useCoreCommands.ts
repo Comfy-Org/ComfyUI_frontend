@@ -31,6 +31,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
@@ -550,6 +551,11 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        const selectedNodes = getSelectedNodes()
+        trackTypedEvent(TelemetryEvents.NODE_MUTED, {
+          node_count: selectedNodes.length,
+          action_type: 'keyboard_shortcut'
+        })
         toggleSelectedNodesMode(LGraphEventMode.NEVER)
         app.canvas.setDirty(true, true)
       }
@@ -561,6 +567,11 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        const selectedNodes = getSelectedNodes()
+        trackTypedEvent(TelemetryEvents.NODE_BYPASSED, {
+          node_count: selectedNodes.length,
+          action_type: 'keyboard_shortcut'
+        })
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
       }
@@ -896,6 +907,7 @@ export function useCoreCommands(): ComfyCommand[] {
         const graph = canvas.subgraph ?? canvas.graph
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
 
+        const selectedCount = canvas.selectedItems.size
         const res = graph.convertToSubgraph(canvas.selectedItems)
         if (!res) {
           toastStore.add({
@@ -906,6 +918,12 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
+
+        // Track subgraph creation
+        trackTypedEvent(TelemetryEvents.SUBGRAPH_CREATED, {
+          selected_item_count: selectedCount,
+          action_type: 'keyboard_shortcut'
+        })
 
         const { node } = res
         canvas.select(node)
