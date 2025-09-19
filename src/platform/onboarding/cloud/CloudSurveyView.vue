@@ -46,7 +46,7 @@
             <Button
               label="Next"
               :disabled="!validStep1"
-              class="w-full h-10 bg-gray-800 border-none text-white"
+              class="w-full h-10 border-none text-white"
               @click="goTo(2, activateCallback)"
             />
           </div>
@@ -93,7 +93,7 @@
             <Button
               label="Back"
               severity="secondary"
-              class="border border-white text-white flex-1"
+              class="text-white flex-1"
               @click="goTo(1, activateCallback)"
             />
             <Button
@@ -146,13 +146,13 @@
             <Button
               label="Back"
               severity="secondary"
-              class="border border-white text-white flex-1"
+              class="text-white flex-1"
               @click="goTo(2, activateCallback)"
             />
             <Button
               label="Next"
               :disabled="!validStep3"
-              class="flex-1 h-10 bg-gray-800 border-none text-white"
+              class="flex-1 h-10 border-none text-white"
               @click="goTo(4, activateCallback)"
             />
           </div>
@@ -191,14 +191,14 @@
             <Button
               label="Back"
               severity="secondary"
-              class="border border-white text-white flex-1"
+              class="text-white flex-1"
               @click="goTo(3, activateCallback)"
             />
             <Button
               label="Submit"
               :disabled="!validStep4 || isSubmitting"
               :loading="isSubmitting"
-              class="flex-1 h-10 bg-gray-800 border-none text-white"
+              class="flex-1 h-10 border-none text-white"
               @click="onSubmitSurvey"
             />
           </div>
