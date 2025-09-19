@@ -146,9 +146,11 @@ export const useSettingStore = defineStore('setting', () => {
               defaultsByInstallVersion[
                 version as keyof typeof defaultsByInstallVersion
               ]
-            return typeof versionedDefault === 'function'
-              ? versionedDefault()
-              : versionedDefault
+            if (versionedDefault !== undefined) {
+              return typeof versionedDefault === 'function'
+                ? versionedDefault()
+                : versionedDefault
+            }
           }
         }
       }
