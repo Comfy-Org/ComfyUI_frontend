@@ -39,5 +39,6 @@
     "tests-ui/**/*",
     "vite.config.mts",
     "vitest.config.ts",
+    "*.config.ts"
   ]
 }
