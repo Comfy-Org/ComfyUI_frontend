@@ -30,6 +30,35 @@ jobs:
       issues: write
 
     steps:
+      - name: Validate inputs for manual triggers
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # Validate PR number format
+          if ! [[ "${{ inputs.pr_number }}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid PR number format. Must be a positive integer."
+            exit 1
+          fi
+          
+          # Validate PR exists and is merged
+          if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
+            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
+            exit 1
+          fi
+          
+          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json merged --jq '.merged')
+          if [ "$MERGED" != "true" ]; then
+            echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
+            exit 1
+          fi
+          
+          # Validate PR has needs-backport label
+          if ! gh pr view "${{ inputs.pr_number }}" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
+            echo "::error::PR #${{ inputs.pr_number }} does not have 'needs-backport' label."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
