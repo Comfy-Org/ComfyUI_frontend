@@ -7,8 +7,8 @@ import {
   calculateMinimapScale,
   enforceMinimumBounds
 } from '@/renderer/core/spatial/boundsCalculator'
+import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 
-import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
 import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
 
 export function useMinimapViewport(

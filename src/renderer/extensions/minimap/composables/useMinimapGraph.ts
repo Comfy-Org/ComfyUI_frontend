@@ -114,7 +114,7 @@ export function useMinimapGraph(
     // Check for node position/size changes
     const nodes = dataSource.getNodes()
     for (const node of nodes) {
-      const nodeId = node.id as NodeId
+      const nodeId = node.id
       const currentState = `${node.x},${node.y},${node.width},${node.height}`
 
       if (nodeStatesCache.get(nodeId) !== currentState) {
@@ -124,7 +124,7 @@ export function useMinimapGraph(
     }
 
     // Clean up removed nodes from cache
-    const currentNodeIds = new Set(nodes.map((n) => n.id as NodeId))
+    const currentNodeIds = new Set(nodes.map((n) => n.id))
     for (const [nodeId] of nodeStatesCache) {
       if (!currentNodeIds.has(nodeId)) {
         nodeStatesCache.delete(nodeId)

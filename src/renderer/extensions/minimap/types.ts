@@ -2,6 +2,7 @@
  * Minimap-specific type definitions
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 
 /**
  * Minimal interface for what the minimap needs from the canvas
@@ -71,7 +72,7 @@ export type MinimapSettingsKey =
  * Node data required for minimap rendering
  */
 export interface MinimapNodeData {
-  id: string
+  id: NodeId
   x: number
   y: number
   width: number
