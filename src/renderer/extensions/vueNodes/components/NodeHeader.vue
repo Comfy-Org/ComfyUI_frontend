@@ -42,7 +42,7 @@
         class="text-stone-200 dark-theme:text-slate-300"
         data-testid="subgraph-enter-button"
         title="Enter Subgraph"
-        :on-click="handleEnterSubgraph"
+        @click="handleEnterSubgraph"
         @dblclick.stop
       >
         <i class="pi pi-external-link"></i>

@@ -182,12 +182,11 @@ const viewportCulling = useViewportCulling(
 )
 const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
-const handleVueNodeLifecycleReset = () => {
+const handleVueNodeLifecycleReset = async () => {
   if (isVueNodesEnabled.value) {
     vueNodeLifecycle.disposeNodeManagerAndSyncs()
-    void nextTick(() => {
-      vueNodeLifecycle.initializeNodeManager()
-    })
+    await nextTick()
+    vueNodeLifecycle.initializeNodeManager()
   }
 }
 
@@ -195,11 +194,11 @@ watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
 
 watch(
   () => canvasStore.isInSubgraph,
-  (newValue, oldValue) => {
+  async (newValue, oldValue) => {
     if (oldValue && !newValue) {
       useWorkflowStore().updateActiveGraph()
     }
-    handleVueNodeLifecycleReset()
+    await handleVueNodeLifecycleReset()
   }
 )
 

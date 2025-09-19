@@ -102,21 +102,19 @@ export const useCanvasStore = defineStore('canvas', () => {
   whenever(
     () => canvas.value,
     (newCanvas) => {
-      if (newCanvas) {
-        useEventListener(
-          newCanvas.canvas,
-          'litegraph:set-graph',
-          (event: CustomEvent<{ newGraph: LGraph; oldGraph: LGraph }>) => {
-            const newGraph = event.detail?.newGraph || app.canvas?.graph
-            currentGraph.value = newGraph
-            isInSubgraph.value = Boolean(app.canvas?.subgraph)
-          }
-        )
+      useEventListener(
+        newCanvas.canvas,
+        'litegraph:set-graph',
+        (event: CustomEvent<{ newGraph: LGraph; oldGraph: LGraph }>) => {
+          const newGraph = event.detail?.newGraph || app.canvas?.graph
+          currentGraph.value = newGraph
+          isInSubgraph.value = Boolean(app.canvas?.subgraph)
+        }
+      )
 
-        useEventListener(newCanvas.canvas, 'subgraph-opened', () => {
-          isInSubgraph.value = true
-        })
-      }
+      useEventListener(newCanvas.canvas, 'subgraph-opened', () => {
+        isInSubgraph.value = true
+      })
     },
     { immediate: true }
   )
