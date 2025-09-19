@@ -156,7 +156,8 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
@@ -171,7 +172,6 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -190,8 +190,8 @@ interface LGraphNodeProps {
 
 const {
   nodeData,
-  position,
-  size,
+  position = { x: 0, y: 0 },
+  size = { width: 100, height: 50 },
   error = null,
   readonly = false,
   zoomLevel = 1
@@ -249,12 +249,7 @@ const hasAnyError = computed(
 const bypassed = computed((): boolean => nodeData.mode === 4)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
-const {
-  handleWheel,
-  handlePointer,
-  forwardEventToCanvas,
-  shouldHandleNodePointerEvents
-} = useCanvasInteractions()
+const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => zoomLevel)
@@ -280,14 +275,16 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
+const { position: layoutPosition, zIndex, resize } = useNodeLayout(nodeData.id)
 const {
-  position: layoutPosition,
-  zIndex,
-  startDrag,
-  handleDrag: handleLayoutDrag,
-  endDrag,
-  resize
-} = useNodeLayout(nodeData.id)
+  handlePointerDown,
+  handlePointerUp,
+  handlePointerMove,
+  isDragging,
+  dragStyle
+} = useNodePointerInteractions(nodeData, (event, nodeData, wasDragging) => {
+  emit('node-click', event, nodeData, wasDragging)
+})
 
 onMounted(() => {
   if (size && transformState?.camera) {
@@ -299,16 +296,6 @@ onMounted(() => {
     resize(screenSize)
   }
 })
-
-// Drag state for styling
-const isDragging = ref(false)
-const dragStyle = computed(() => ({
-  cursor: isDragging.value ? 'grabbing' : 'grab'
-}))
-const lastY = ref(0)
-const lastX = ref(0)
-// Treat tiny pointer jitter as a click, not a drag
-const DRAG_THRESHOLD_PX = 4
 
 // Track collapsed state
 const isCollapsed = ref(nodeData.flags?.collapsed ?? false)
@@ -375,60 +362,6 @@ const outlineClass = computed(() => {
 })
 
 // Event handlers
-const handlePointerDown = (event: PointerEvent) => {
-  if (!nodeData) {
-    console.warn('LGraphNode: nodeData is null/undefined in handlePointerDown')
-    return
-  }
-
-  // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
-  if (!shouldHandleNodePointerEvents.value) {
-    forwardEventToCanvas(event)
-    return
-  }
-
-  // Start drag using layout system
-  isDragging.value = true
-
-  // Set Vue node dragging state for selection toolbox
-  layoutStore.isDraggingVueNodes.value = true
-
-  startDrag(event)
-  lastY.value = event.clientY
-  lastX.value = event.clientX
-}
-
-const handlePointerMove = (event: PointerEvent) => {
-  // Check if this should be forwarded to canvas (e.g., space panning, middle mouse)
-  handlePointer(event)
-
-  if (isDragging.value) {
-    void handleLayoutDrag(event)
-  }
-}
-
-const handlePointerUp = (event: PointerEvent) => {
-  if (isDragging.value) {
-    isDragging.value = false
-    void endDrag(event)
-
-    // Clear Vue node dragging state for selection toolbox
-    layoutStore.isDraggingVueNodes.value = false
-  }
-
-  // Don't emit node-click when canvas is in panning mode - forward to canvas instead
-  if (!shouldHandleNodePointerEvents.value) {
-    forwardEventToCanvas(event)
-    return
-  }
-
-  // Emit node-click for selection handling in GraphCanvas
-  const dx = event.clientX - lastX.value
-  const dy = event.clientY - lastY.value
-  const wasDragging = Math.hypot(dx, dy) > DRAG_THRESHOLD_PX
-  emit('node-click', event, nodeData, wasDragging)
-}
-
 const handleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
   // Emit event so parent can sync with LiteGraph if needed
