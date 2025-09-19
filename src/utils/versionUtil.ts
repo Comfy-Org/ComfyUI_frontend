@@ -1,4 +1,4 @@
-import * as semver from 'semver'
+import { clean, satisfies } from 'semver'
 
 import type {
   ConflictDetail,
@@ -11,7 +11,7 @@ import type {
  * @returns Cleaned version string or original if cleaning fails
  */
 export function cleanVersion(version: string): string {
-  return semver.clean(version) || version
+  return clean(version) || version
 }
 
 /**
@@ -23,7 +23,7 @@ export function cleanVersion(version: string): string {
 export function satisfiesVersion(version: string, range: string): boolean {
   try {
     const cleanedVersion = cleanVersion(version)
-    return semver.satisfies(cleanedVersion, range)
+    return satisfies(cleanedVersion, range)
   } catch {
     return false
   }
