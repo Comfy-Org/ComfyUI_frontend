@@ -46,7 +46,7 @@ import { WidgetInputBaseClass } from '../layout'
 
 interface Props {
   modelValue: string | null | undefined
-  options: T[] // Now using generic type instead of any[]
+  options: T[]
   optionLabel?: string // PrimeVue compatible prop
   optionValue?: string // PrimeVue compatible prop
   disabled?: boolean
