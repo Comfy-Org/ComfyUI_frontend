@@ -1827,6 +1827,10 @@
   "cloudStart_learnAboutButton": "Learn about Cloud",
   "cloudStart_wantToRun": "Want to run comfyUI locally instead?",
   "cloudStart_download": "Download ComfyUI",
+  "cloudStart_invited": "YOU'RE INVITED",
+  "cloudStart_invited_signin": "Sign in to continue onto Cloud.",
+  "cloudStart_invited_signup_title": "Don’t have an account yet?",
+  "cloudStart_invited_signup_description": "Sign up instead",
   "cloudWaitlist_titleLine1": "YOU'RE ON THE",
   "cloudWaitlist_titleLine2": "WAITLIST 🎉",
   "cloudWaitlist_message": "You have been added to the waitlist. We will notify you when access is available.",
@@ -1837,7 +1841,6 @@
   "cloudSorryContactSupport_title": "Sorry, contact support",
   "cloudVerifyEmail_toast_message": "We've sent a verification email to {email}. Please check your inbox and click the link to verify your email address.",
   "cloudVerifyEmail_failed_toast_message": "Failed to send verification email. Please contact support.",
-  "cloudVerifyEmail_title": "Email Verification",
   "cloudPrivateBeta_title": "Cloud is currently in private beta",
   "cloudPrivateBeta_desc": "Sign in to join the waitlist. We'll notify you when it's your turn. Already been notified? Sign in start using Cloud.",
   "cloudForgotPassword_title": "Forgot Password",
@@ -1853,5 +1856,13 @@
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
   "cloudSurvey_steps_purpose": "What will you primarily use ComfyUI for?",
   "cloudSurvey_steps_industry": "What's your primary industry?",
-  "cloudSurvey_steps_making": "What do you plan on making?"
+  "cloudSurvey_steps_making": "What do you plan on making?",
+  "cloudVerifyEmail_title": "Check your email",
+  "cloudVerifyEmail_back": "Back",
+  "cloudVerifyEmail_sent": "We've sent a verification link to:",
+  "cloudVerifyEmail_clickToContinue": "Click the link in that email to automatically continue onto the next steps.",
+  "cloudVerifyEmail_didntReceive": "Didn't receive the email?",
+  "cloudVerifyEmail_resend": "Resend email",
+  "cloudVerifyEmail_toast_success": "Verification email has been sent to {email}.",
+  "cloudVerifyEmail_toast_failed": "Failed to send verification email. Please try again."
 }

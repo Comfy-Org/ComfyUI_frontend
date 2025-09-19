@@ -99,7 +99,7 @@
             <Button
               label="Next"
               :disabled="!validStep2"
-              class="flex-1 h-10 bg-gray-800 border-none text-white"
+              class="flex-1 h-10 text-white"
               @click="goTo(3, activateCallback)"
             />
           </div>

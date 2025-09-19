@@ -9,17 +9,6 @@
         <p class="text-white">
           {{ t('cloudWaitlist_message') }}
         </p>
-        <p class="text-white">
-          {{ t('cloudWaitlist_questionsText') }}
-          <a
-            href="https://support.comfy.org"
-            class="text-blue-400 no-underline cursor-pointer"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ t('cloudWaitlist_contactLink') }}</a
-          >.
-        </p>
       </div>
     </div>
   </div>
