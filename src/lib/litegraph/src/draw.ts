@@ -67,7 +67,7 @@ interface IDrawTextInAreaOptions {
  */
 export function strokeShape(
   ctx: CanvasRenderingContext2D,
-  area: Rect,
+  area: Rect | Rectangle,
   {
     shape = RenderShape.BOX,
     round_radius,

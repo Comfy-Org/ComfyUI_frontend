@@ -1,4 +1,5 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -11,7 +12,6 @@ import type {
   IPinnable,
   Point,
   Positionable,
-  ReadOnlyRect,
   Size
 } from './interfaces'
 import { LiteGraph } from './litegraph'
@@ -108,8 +108,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this._size[1] = Math.max(LGraphGroup.minHeight, v[1])
   }
 
-  get boundingRect(): ReadOnlyRect {
-    return [this._pos[0], this._pos[1], this._size[0], this._size[1]] as const
+  get boundingRect(): Rectangle {
+    return Rectangle.from([
+      this._pos[0],
+      this._pos[1],
+      this._size[0],
+      this._size[1]
+    ])
   }
 
   get nodes() {
@@ -214,7 +219,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     )
 
     if (LiteGraph.highlight_selected_group && this.selected) {
-      strokeShape(ctx, [...this.boundingRect], {
+      strokeShape(ctx, this.boundingRect, {
         title_height: this.titleHeight,
         padding
       })

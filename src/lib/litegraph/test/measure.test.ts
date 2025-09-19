@@ -1,5 +1,6 @@
 import { test as baseTest } from 'vitest'
 
+import { Rectangle } from '../src/infrastructure/Rectangle'
 import type { Point, Rect } from '../src/interfaces'
 import {
   addDirectionalOffset,
@@ -131,8 +132,8 @@ test('snapPoint correctly snaps points to grid', ({ expect }) => {
 
 test('createBounds correctly creates bounding box', ({ expect }) => {
   const objects = [
-    { boundingRect: [0, 0, 10, 10] as Rect },
-    { boundingRect: [5, 5, 10, 10] as Rect }
+    { boundingRect: new Rectangle(0, 0, 10, 10) },
+    { boundingRect: new Rectangle(5, 5, 10, 10) }
   ]
 
   const defaultBounds = createBounds(objects)

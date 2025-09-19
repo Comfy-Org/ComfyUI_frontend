@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { computeUnionBounds, gcd, lcm } from '@/utils/mathUtil'
 
 describe('mathUtil', () => {
@@ -27,9 +27,9 @@ describe('mathUtil', () => {
       expect(computeUnionBounds([])).toBe(null)
     })
 
-    // Tests for tuple format (ReadOnlyRect)
-    it('should work with ReadOnlyRect tuple format', () => {
-      const tuples: ReadOnlyRect[] = [
+    // Tests for tuple format (Rect)
+    it('should work with Rect tuple format', () => {
+      const tuples: Rect[] = [
         [10, 20, 30, 40] as const, // bounds: 10,20 to 40,60
         [50, 10, 20, 30] as const // bounds: 50,10 to 70,40
       ]
@@ -44,8 +44,8 @@ describe('mathUtil', () => {
       })
     })
 
-    it('should handle single ReadOnlyRect tuple', () => {
-      const tuple: ReadOnlyRect = [10, 20, 30, 40] as const
+    it('should handle single Rect tuple', () => {
+      const tuple: Rect = [10, 20, 30, 40] as const
       const result = computeUnionBounds([tuple])
 
       expect(result).toEqual({
@@ -57,7 +57,7 @@ describe('mathUtil', () => {
     })
 
     it('should handle tuple format with negative dimensions', () => {
-      const tuples: ReadOnlyRect[] = [
+      const tuples: Rect[] = [
         [100, 50, -20, -10] as const, // x+width=80, y+height=40
         [90, 45, 15, 20] as const // x+width=105, y+height=65
       ]
@@ -74,7 +74,7 @@ describe('mathUtil', () => {
 
     it('should maintain optimal performance with SoA tuples', () => {
       // Test that array access is as expected for typical selection sizes
-      const tuples: ReadOnlyRect[] = Array.from(
+      const tuples: Rect[] = Array.from(
         { length: 10 },
         (_, i) =>
           [

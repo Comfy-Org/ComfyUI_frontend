@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -71,7 +71,7 @@ export function useSelectionToolboxPosition(
     visible.value = true
 
     // Get bounds for all selected items
-    const allBounds: ReadOnlyRect[] = []
+    const allBounds: Rect[] = []
     for (const item of selectableItems) {
       // Skip items without valid IDs
       if (item.id == null) continue

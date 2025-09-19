@@ -1,9 +1,7 @@
 import type {
   CompassCorners,
   Point,
-  ReadOnlyPoint,
-  ReadOnlyRect,
-  ReadOnlySize,
+  Rect,
   Size
 } from '@/lib/litegraph/src/interfaces'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
@@ -29,7 +27,7 @@ export class Rectangle extends Array<number> {
     this.length = 4
   }
 
-  static override from([x, y, width, height]: ReadOnlyRect): Rectangle {
+  static override from([x, y, width, height]: Rect): Rectangle {
     return new Rectangle(x, y, width, height)
   }
 
@@ -54,17 +52,13 @@ export class Rectangle extends Array<number> {
    * @param height The height of the rectangle.  Default: {@link width}
    * @returns A new rectangle whose centre is at {@link x}
    */
-  static fromCentre(
-    [x, y]: ReadOnlyPoint,
-    width: number,
-    height = width
-  ): Rectangle {
+  static fromCentre([x, y]: Point, width: number, height = width): Rectangle {
     const left = x - width * 0.5
     const top = y - height * 0.5
     return new Rectangle(left, top, width, height)
   }
 
-  static ensureRect(rect: ReadOnlyRect): Rectangle {
+  static ensureRect(rect: Rect | Rectangle): Rectangle {
     return rect instanceof Rectangle
       ? rect
       : new Rectangle(rect[0], rect[1], rect[2], rect[3])
@@ -77,7 +71,7 @@ export class Rectangle extends Array<number> {
     return [this[0], this[1]]
   }
 
-  set pos(value: ReadOnlyPoint) {
+  set pos(value: Point) {
     this[0] = value[0]
     this[1] = value[1]
   }
@@ -89,7 +83,7 @@ export class Rectangle extends Array<number> {
     return [this[2], this[3]]
   }
 
-  set size(value: ReadOnlySize) {
+  set size(value: Size) {
     this[2] = value[0]
     this[3] = value[1]
   }
@@ -182,7 +176,7 @@ export class Rectangle extends Array<number> {
    * Updates the rectangle to the values of {@link rect}.
    * @param rect The rectangle to update to.
    */
-  updateTo(rect: ReadOnlyRect) {
+  updateTo(rect: Rect) {
     this[0] = rect[0]
     this[1] = rect[1]
     this[2] = rect[2]
@@ -205,7 +199,7 @@ export class Rectangle extends Array<number> {
    * @param point The point to check
    * @returns `true` if {@link point} is inside this rectangle, otherwise `false`.
    */
-  containsPoint([x, y]: ReadOnlyPoint): boolean {
+  containsPoint([x, y]: Point): boolean {
     const [left, top, width, height] = this
     return x >= left && x < left + width && y >= top && y < top + height
   }
@@ -216,7 +210,7 @@ export class Rectangle extends Array<number> {
    * @param other The rectangle to check
    * @returns `true` if {@link other} is inside this rectangle, otherwise `false`.
    */
-  containsRect(other: ReadOnlyRect): boolean {
+  containsRect(other: Rect | Rectangle): boolean {
     const { right, bottom } = this
     const otherRight = other[0] + other[2]
     const otherBottom = other[1] + other[3]
@@ -241,7 +235,7 @@ export class Rectangle extends Array<number> {
    * @param rect The rectangle to check
    * @returns `true` if {@link rect} overlaps with this rectangle, otherwise `false`.
    */
-  overlaps(rect: ReadOnlyRect): boolean {
+  overlaps(rect: Rect | Rectangle): boolean {
     return (
       this.x < rect[0] + rect[2] &&
       this.y < rect[1] + rect[3] &&
@@ -374,12 +368,12 @@ export class Rectangle extends Array<number> {
   }
 
   /** @returns The offset from the top-left of this rectangle to the point [{@link x}, {@link y}], as a new {@link Point}. */
-  getOffsetTo([x, y]: ReadOnlyPoint): Point {
+  getOffsetTo([x, y]: Point): Point {
     return [x - this[0], y - this[1]]
   }
 
   /** @returns The offset from the point [{@link x}, {@link y}] to the top-left of this rectangle, as a new {@link Point}. */
-  getOffsetFrom([x, y]: ReadOnlyPoint): Point {
+  getOffsetFrom([x, y]: Point): Point {
     return [this[0] - x, this[1] - y]
   }
 
@@ -460,14 +454,4 @@ export class Rectangle extends Array<number> {
   }
 }
 
-export type ReadOnlyRectangle = Omit<
-  Readonly<Rectangle>,
-  | 'setHeightBottomAnchored'
-  | 'setWidthRightAnchored'
-  | 'resizeTopLeft'
-  | 'resizeBottomLeft'
-  | 'resizeTopRight'
-  | 'resizeBottomRight'
-  | 'resizeBottomRight'
-  | 'updateTo'
->
+// ReadOnlyRectangle is now just Rectangle since we unified the types

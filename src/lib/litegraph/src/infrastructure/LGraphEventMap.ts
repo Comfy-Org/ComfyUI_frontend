@@ -1,6 +1,6 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type {
   ExportedSubgraph,
@@ -29,7 +29,7 @@ export interface LGraphEventMap {
     /** The type of subgraph to create. */
     subgraph: Subgraph
     /** The boundary around every item that was moved into the subgraph. */
-    bounds: ReadOnlyRect
+    bounds: Rect
     /** The raw data that was used to create the subgraph. */
     exportedSubgraph: ExportedSubgraph
     /** The links that were used to create the subgraph. */

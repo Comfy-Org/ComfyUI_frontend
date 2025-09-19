@@ -7,11 +7,14 @@
  * Maintains backward compatibility with existing litegraph integration.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type {
   CanvasColour,
-  ReadOnlyPoint
+  INodeInputSlot,
+  INodeOutputSlot,
+  Point as LitegraphPoint
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -24,6 +27,7 @@ import {
   type ArrowShape,
   CanvasPathRenderer,
   type Direction,
+  type DragLinkData,
   type LinkRenderData,
   type RenderContext as PathRenderContext,
   type Point,
@@ -205,6 +209,7 @@ export class LitegraphLinkAdapter {
       case LinkDirection.DOWN:
         return 'down'
       case LinkDirection.CENTER:
+      case LinkDirection.NONE:
         return 'none'
       default:
         return 'right'
@@ -306,22 +311,22 @@ export class LitegraphLinkAdapter {
    * Critically: does nothing for CENTER/NONE directions (no case for them)
    */
   private applySplineOffset(
-    point: Point,
+    point: LitegraphPoint,
     direction: LinkDirection,
     distance: number
   ): void {
     switch (direction) {
       case LinkDirection.LEFT:
-        point.x -= distance
+        point[0] -= distance
         break
       case LinkDirection.RIGHT:
-        point.x += distance
+        point[0] += distance
         break
       case LinkDirection.UP:
-        point.y -= distance
+        point[1] -= distance
         break
       case LinkDirection.DOWN:
-        point.y += distance
+        point[1] += distance
         break
       // CENTER and NONE: no offset applied (original behavior)
     }
@@ -333,8 +338,8 @@ export class LitegraphLinkAdapter {
    */
   renderLinkDirect(
     ctx: CanvasRenderingContext2D,
-    a: ReadOnlyPoint,
-    b: ReadOnlyPoint,
+    a: LitegraphPoint,
+    b: LitegraphPoint,
     link: LLink | null,
     skip_border: boolean,
     flow: number | boolean | null,
@@ -344,8 +349,8 @@ export class LitegraphLinkAdapter {
     context: LinkRenderContext,
     extras: {
       reroute?: Reroute
-      startControl?: ReadOnlyPoint
-      endControl?: ReadOnlyPoint
+      startControl?: LitegraphPoint
+      endControl?: LitegraphPoint
       num_sublines?: number
       disabled?: boolean
     } = {}
@@ -406,13 +411,19 @@ export class LitegraphLinkAdapter {
           y: a[1] + (extras.startControl![1] || 0)
         }
         const end = { x: b[0], y: b[1] }
-        this.applySplineOffset(end, endDir, dist * factor)
+        const endArray: LitegraphPoint = [end.x, end.y]
+        this.applySplineOffset(endArray, endDir, dist * factor)
+        end.x = endArray[0]
+        end.y = endArray[1]
         cps.push(start, end)
         linkData.controlPoints = cps
       } else if (!hasStartCtrl && hasEndCtrl) {
         // End provided, derive start via direction offset (CENTER => no offset)
         const start = { x: a[0], y: a[1] }
-        this.applySplineOffset(start, startDir, dist * factor)
+        const startArray: LitegraphPoint = [start.x, start.y]
+        this.applySplineOffset(startArray, startDir, dist * factor)
+        start.x = startArray[0]
+        start.y = startArray[1]
         const end = {
           x: b[0] + (extras.endControl![0] || 0),
           y: b[1] + (extras.endControl![1] || 0)
@@ -423,8 +434,14 @@ export class LitegraphLinkAdapter {
         // Neither provided: derive both from directions (CENTER => no offset)
         const start = { x: a[0], y: a[1] }
         const end = { x: b[0], y: b[1] }
-        this.applySplineOffset(start, startDir, dist * factor)
-        this.applySplineOffset(end, endDir, dist * factor)
+        const startArray: LitegraphPoint = [start.x, start.y]
+        const endArray: LitegraphPoint = [end.x, end.y]
+        this.applySplineOffset(startArray, startDir, dist * factor)
+        this.applySplineOffset(endArray, endDir, dist * factor)
+        start.x = startArray[0]
+        start.y = startArray[1]
+        end.x = endArray[0]
+        end.y = endArray[1]
         cps.push(start, end)
         linkData.controlPoints = cps
       }
@@ -463,8 +480,8 @@ export class LitegraphLinkAdapter {
       if (this.enableLayoutStoreWrites && link && link.id !== -1) {
         // Calculate bounds and center only when writing
         const bounds = this.calculateLinkBounds(
-          [linkData.startPoint.x, linkData.startPoint.y] as ReadOnlyPoint,
-          [linkData.endPoint.x, linkData.endPoint.y] as ReadOnlyPoint,
+          [linkData.startPoint.x, linkData.startPoint.y] as LitegraphPoint,
+          [linkData.endPoint.x, linkData.endPoint.y] as LitegraphPoint,
           linkData
         )
         const centerPos = linkData.centerPos || {
@@ -497,33 +514,57 @@ export class LitegraphLinkAdapter {
     }
   }
 
+  /**
+   * Render a link being dragged from a slot to mouse position
+   * Used during link creation/reconnection
+   */
   renderDraggingLink(
     ctx: CanvasRenderingContext2D,
-    from: ReadOnlyPoint,
-    to: ReadOnlyPoint,
-    colour: CanvasColour,
-    startDir: LinkDirection,
-    endDir: LinkDirection,
-    context: LinkRenderContext
+    fromNode: LGraphNode | null,
+    fromSlot: INodeOutputSlot | INodeInputSlot,
+    fromSlotIndex: number,
+    toPosition: LitegraphPoint,
+    context: LinkRenderContext,
+    options: {
+      fromInput?: boolean
+      color?: CanvasColour
+      disabled?: boolean
+    } = {}
   ): void {
-    this.renderLinkDirect(
-      ctx,
-      from,
-      to,
-      null,
-      false,
-      null,
-      colour,
-      startDir,
-      endDir,
-      {
-        ...context,
-        linkMarkerShape: LinkMarkerShape.None
-      },
-      {
-        disabled: false
-      }
+    if (!fromNode) return
+
+    // Get slot position using layout tree if available
+    const slotPos = getSlotPosition(
+      fromNode,
+      fromSlotIndex,
+      options.fromInput || false
     )
+    if (!slotPos) return
+
+    // Get slot direction
+    const slotDir =
+      fromSlot.dir ||
+      (options.fromInput ? LinkDirection.LEFT : LinkDirection.RIGHT)
+
+    // Create drag data
+    const dragData: DragLinkData = {
+      fixedPoint: { x: slotPos[0], y: slotPos[1] },
+      fixedDirection: this.convertDirection(slotDir),
+      dragPoint: { x: toPosition[0], y: toPosition[1] },
+      color: options.color ? String(options.color) : undefined,
+      type: fromSlot.type !== undefined ? String(fromSlot.type) : undefined,
+      disabled: options.disabled || false,
+      fromInput: options.fromInput || false
+    }
+
+    // Convert context
+    const pathContext = this.convertToPathRenderContext(context)
+
+    // Hide center marker when dragging links
+    pathContext.style.showCenterMarker = false
+
+    // Render using pure renderer
+    this.pathRenderer.drawDraggingLink(ctx, dragData, pathContext)
   }
 
   /**
@@ -531,8 +572,8 @@ export class LitegraphLinkAdapter {
    * Includes padding for line width and control points
    */
   private calculateLinkBounds(
-    startPos: ReadOnlyPoint,
-    endPos: ReadOnlyPoint,
+    startPos: LitegraphPoint,
+    endPos: LitegraphPoint,
     linkData: LinkRenderData
   ): Bounds {
     let minX = Math.min(startPos[0], endPos[0])
