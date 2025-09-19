@@ -75,7 +75,6 @@ export const useDialogStore = defineStore('dialog', () => {
    */
   const activeKey = ref<string | null>(null)
 
-
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
   /**
@@ -105,7 +104,6 @@ export const useDialogStore = defineStore('dialog', () => {
       updateCloseOnEscapeStates()
     }
   }
-
 
   /**
    * Hides a dialog by setting visible to false.
