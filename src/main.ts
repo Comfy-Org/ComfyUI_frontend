@@ -37,8 +37,15 @@ Sentry.init({
   enabled: __SENTRY_ENABLED__,
   release: __COMFYUI_FRONTEND_VERSION__,
   normalizeDepth: 8,
+  integrations: [Sentry.browserTracingIntegration({ router })],
   tracesSampleRate: 1.0
 })
+
+if (__SENTRY_ENABLED__) {
+  // @ts-expect-error temporary solution to expose Sentry globally for cloud extensions
+  window.Sentry = Sentry
+}
+
 app.directive('tooltip', Tooltip)
 app
   .use(router)
