@@ -5,6 +5,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../fixtures/ComfyPage'
+import { fitToViewInstant } from '../../helpers/fitToView'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -22,7 +23,7 @@ test.describe('Vue Node Link Interaction', () => {
     await comfyPage.setup()
     await comfyPage.loadWorkflow('vueNodes/simple-triple')
     await comfyPage.vueNodes.waitForNodes()
-    await comfyPage.fitToView()
+    await fitToViewInstant(comfyPage)
   })
 
   test('should show a link dragging out from a slot when dragging on a slot', async ({
@@ -65,8 +66,7 @@ test.describe('Vue Node Link Interaction', () => {
   })
 
   test('should create a link when dropping on a compatible slot', async ({
-    comfyPage,
-    comfyMouse
+    comfyPage
   }) => {
     const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
     expect(samplerNodes.length).toBeGreaterThan(0)
@@ -92,17 +92,7 @@ test.describe('Vue Node Link Interaction', () => {
     await expect(outputSlot).toBeVisible()
     await expect(inputSlot).toBeVisible()
 
-    const start = await getCenter(outputSlot)
-    const target = await getCenter(inputSlot)
-
-    await comfyMouse.move(start)
-
-    try {
-      await comfyMouse.drag(target)
-    } finally {
-      await comfyMouse.drop()
-    }
-
+    await outputSlot.dragTo(inputSlot)
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(1)
@@ -140,8 +130,7 @@ test.describe('Vue Node Link Interaction', () => {
   })
 
   test('should not create a link when slot types are incompatible', async ({
-    comfyPage,
-    comfyMouse
+    comfyPage
   }) => {
     const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
     expect(samplerNodes.length).toBeGreaterThan(0)
@@ -167,17 +156,7 @@ test.describe('Vue Node Link Interaction', () => {
     await expect(outputSlot).toBeVisible()
     await expect(inputSlot).toBeVisible()
 
-    const start = await getCenter(outputSlot)
-    const target = await getCenter(inputSlot)
-
-    await comfyMouse.move(start)
-
-    try {
-      await comfyMouse.drag(target)
-    } finally {
-      await comfyMouse.drop()
-    }
-
+    await outputSlot.dragTo(inputSlot)
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
@@ -198,8 +177,7 @@ test.describe('Vue Node Link Interaction', () => {
   })
 
   test('should not create a link when dropping onto a slot on the same node', async ({
-    comfyPage,
-    comfyMouse
+    comfyPage
   }) => {
     const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
     expect(samplerNodes.length).toBeGreaterThan(0)
@@ -221,17 +199,7 @@ test.describe('Vue Node Link Interaction', () => {
     await expect(outputSlot).toBeVisible()
     await expect(inputSlot).toBeVisible()
 
-    const start = await getCenter(outputSlot)
-    const target = await getCenter(inputSlot)
-
-    await comfyMouse.move(start)
-
-    try {
-      await comfyMouse.drag(target)
-    } finally {
-      await comfyMouse.drop()
-    }
-
+    await outputSlot.dragTo(inputSlot)
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
