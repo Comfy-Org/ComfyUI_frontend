@@ -29,6 +29,8 @@
     "insert": "Insert",
     "systemInfo": "System Info",
     "devices": "Devices",
+    "deviceNotAvailable": "Device information is not available.",
+    "noDevicesDetected": "No devices detected. This may occur if no GPU devices are available or device enumeration failed.",
     "about": "About",
     "add": "Add",
     "confirm": "Confirm",

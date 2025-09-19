@@ -27,8 +27,8 @@ describe('DeviceInfo', () => {
 
       expect(wrapper.text()).toContain('NVIDIA GeForce RTX 4090')
       expect(wrapper.text()).toContain('cuda')
-      expect(wrapper.text()).toContain('22.9 GB') // vram_total formatted
-      expect(wrapper.text()).toContain('19.1 GB') // vram_free formatted
+      expect(wrapper.text()).toContain('22.88 GB') // vram_total formatted
+      expect(wrapper.text()).toContain('19.15 GB') // vram_free formatted
     })
 
     it('should display all device columns', () => {
@@ -45,23 +45,23 @@ describe('DeviceInfo', () => {
     })
   })
 
-  describe('Sentry Issue CLOUD-FRONTEND-STAGING-13: undefined device prop', () => {
-    it('should throw TypeError when device prop is undefined', () => {
-      // This test reproduces the exact Sentry error
-      expect(() => {
-        createWrapper(undefined as any)
-      }).toThrow()
+  describe('Sentry Issue CLOUD-FRONTEND-STAGING-13: undefined device prop - FIXED', () => {
+    it('should gracefully handle undefined device prop instead of throwing', () => {
+      // Previously this threw TypeError, now it should render error message
+      const wrapper = createWrapper(undefined as any)
+      expect(wrapper.text()).toContain('g.deviceNotAvailable')
+      expect(wrapper.find('.text-red-500').exists()).toBe(true)
     })
 
-    it('should throw TypeError when accessing undefined device properties', () => {
-      // Test the specific error: Cannot read properties of undefined (reading 'name')
-      expect(() => {
-        const wrapper = mount(DeviceInfo, {
-          props: { device: undefined as any }
-        })
-        // This will trigger the error when Vue tries to render the template
-        wrapper.html()
-      }).toThrow(TypeError)
+    it('should gracefully handle undefined device properties instead of throwing', () => {
+      // Previously threw TypeError: Cannot read properties of undefined (reading 'name')
+      // Now should render fallback message
+      const wrapper = mount(DeviceInfo, {
+        props: { device: undefined as any }
+      })
+
+      expect(wrapper.html()).toContain('g.deviceNotAvailable')
+      expect(() => wrapper.html()).not.toThrow()
     })
 
     it('should fail when formatValue tries to access undefined device fields', () => {
@@ -84,19 +84,20 @@ describe('DeviceInfo', () => {
     })
   })
 
-  describe('Edge cases that could lead to undefined device', () => {
-    it('should handle device with missing required fields', () => {
+  describe('Edge cases that could lead to undefined device - FIXED', () => {
+    it('should gracefully handle device with missing required fields', () => {
       const incompleteDevice = {
         name: 'Test Device'
         // Missing required fields: type, index, vram_total, etc.
       } as any
 
-      expect(() => {
-        createWrapper(incompleteDevice)
-      }).toThrow()
+      const wrapper = createWrapper(incompleteDevice)
+      expect(wrapper.exists()).toBe(true)
+      expect(wrapper.text()).toContain('Test Device')
+      expect(wrapper.text()).toContain('N/A') // Missing fields show as N/A
     })
 
-    it('should handle device with null values', () => {
+    it('should handle device with null values gracefully', () => {
       const deviceWithNulls = {
         name: null,
         type: null,
@@ -108,24 +109,25 @@ describe('DeviceInfo', () => {
       } as any
 
       const wrapper = createWrapper(deviceWithNulls)
-      // The component should render but may show null values
       expect(wrapper.exists()).toBe(true)
+      expect(wrapper.text()).toContain('N/A') // Null values show as N/A
     })
   })
 
-  describe('SystemStatsPanel integration scenarios', () => {
-    it('should fail when devices array is empty and accessing devices[0]', () => {
+  describe('SystemStatsPanel integration scenarios - FIXED', () => {
+    it('should gracefully handle when devices array is empty and accessing devices[0]', () => {
       // This simulates the scenario where props.stats.devices[0] is undefined
       // because the devices array is empty
       const emptyDevicesArray: DeviceStats[] = []
 
-      expect(() => {
-        const deviceFromEmptyArray = emptyDevicesArray[0] // undefined
-        createWrapper(deviceFromEmptyArray)
-      }).toThrow()
+      const deviceFromEmptyArray = emptyDevicesArray[0] // undefined
+      const wrapper = createWrapper(deviceFromEmptyArray)
+
+      expect(wrapper.text()).toContain('g.deviceNotAvailable')
+      expect(() => createWrapper(deviceFromEmptyArray)).not.toThrow()
     })
 
-    it('should fail when SystemStats API returns malformed data', () => {
+    it('should gracefully handle when SystemStats API returns malformed data', () => {
       // Simulate API returning data that doesn't match expected schema
       const malformedApiResponse = {
         system: {
@@ -134,15 +136,16 @@ describe('DeviceInfo', () => {
         devices: null // This should be an array but API returned null
       }
 
-      expect(() => {
-        const deviceFromMalformedData = malformedApiResponse.devices?.[0]
-        createWrapper(deviceFromMalformedData)
-      }).toThrow()
+      const deviceFromMalformedData = malformedApiResponse.devices?.[0]
+      const wrapper = createWrapper(deviceFromMalformedData)
+
+      expect(wrapper.text()).toContain('g.deviceNotAvailable')
+      expect(() => createWrapper(deviceFromMalformedData)).not.toThrow()
     })
   })
 
-  describe('formatValue function edge cases', () => {
-    it('should handle undefined values in VRAM fields', () => {
+  describe('formatValue function edge cases - FIXED', () => {
+    it('should gracefully handle undefined values in VRAM fields', () => {
       const deviceWithUndefinedVram = {
         name: 'Test Device',
         type: 'cuda',
@@ -153,10 +156,12 @@ describe('DeviceInfo', () => {
         torch_vram_free: undefined
       } as any
 
-      // The component should render but formatValue might fail
-      expect(() => {
-        createWrapper(deviceWithUndefinedVram)
-      }).toThrow()
+      // Previously would fail, now should show N/A for undefined VRAM values
+      const wrapper = createWrapper(deviceWithUndefinedVram)
+      expect(wrapper.exists()).toBe(true)
+      expect(wrapper.text()).toContain('Test Device')
+      expect(wrapper.text()).toContain('cuda')
+      expect(wrapper.text()).toContain('N/A') // Undefined VRAM values show as N/A
     })
   })
 })

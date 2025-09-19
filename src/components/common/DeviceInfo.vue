@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 gap-2">
+  <div v-if="props.device" class="grid grid-cols-2 gap-2">
     <template v-for="col in deviceColumns" :key="col.field">
       <div class="font-medium">
         {{ col.header }}
@@ -9,6 +9,9 @@
       </div>
     </template>
   </div>
+  <div v-else class="text-red-500">
+    {{ $t('g.deviceNotAvailable') }}
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -16,7 +19,7 @@ import type { DeviceStats } from '@/schemas/apiSchema'
 import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
-  device: DeviceStats
+  device: DeviceStats | undefined
 }>()
 
 const deviceColumns: { field: keyof DeviceStats; header: string }[] = [
@@ -29,6 +32,10 @@ const deviceColumns: { field: keyof DeviceStats; header: string }[] = [
 ]
 
 const formatValue = (value: any, field: string) => {
+  if (value === undefined || value === null) {
+    return 'N/A'
+  }
+
   if (
     ['vram_total', 'vram_free', 'torch_vram_total', 'torch_vram_free'].includes(
       field

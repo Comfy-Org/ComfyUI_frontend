@@ -20,17 +20,22 @@
       <h2 class="text-2xl font-semibold mb-4">
         {{ $t('g.devices') }}
       </h2>
-      <TabView v-if="props.stats.devices.length > 1">
-        <TabPanel
-          v-for="device in props.stats.devices"
-          :key="device.index"
-          :header="device.name"
-          :value="device.index"
-        >
-          <DeviceInfo :device="device" />
-        </TabPanel>
-      </TabView>
-      <DeviceInfo v-else :device="props.stats.devices[0]" />
+      <div v-if="props.stats.devices && props.stats.devices.length > 0">
+        <TabView v-if="props.stats.devices.length > 1">
+          <TabPanel
+            v-for="device in props.stats.devices"
+            :key="device.index"
+            :header="device.name"
+            :value="device.index"
+          >
+            <DeviceInfo :device="device" />
+          </TabPanel>
+        </TabView>
+        <DeviceInfo v-else :device="props.stats.devices[0]" />
+      </div>
+      <div v-else class="text-yellow-600">
+        {{ $t('g.noDevicesDetected') }}
+      </div>
     </div>
   </div>
 </template>
@@ -39,7 +44,7 @@
 import Divider from 'primevue/divider'
 import TabPanel from 'primevue/tabpanel'
 import TabView from 'primevue/tabview'
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
 import type { SystemStats } from '@/schemas/apiSchema'
@@ -71,4 +76,15 @@ const formatValue = (value: any, field: string) => {
   }
   return value
 }
+
+// Monitor for missing devices scenario for debugging
+watchEffect(() => {
+  if (!props.stats?.devices || props.stats.devices.length === 0) {
+    console.warn('[SystemStatsPanel] No devices available in SystemStats:', {
+      hasDevices: !!props.stats?.devices,
+      deviceCount: props.stats?.devices?.length || 0,
+      statsStructure: props.stats ? Object.keys(props.stats) : null
+    })
+  }
+})
 </script>
