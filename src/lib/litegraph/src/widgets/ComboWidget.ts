@@ -1,13 +1,13 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IComboWidget,
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
+import { LiteGraphInternal } from '../LiteGraphInternal'
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
@@ -133,7 +133,7 @@ export class ComboWidget
 
     // Handle center click - show dropdown menu
     const text_values = values != values_list ? Object.values(values) : values
-    new LiteGraph.ContextMenu(text_values, {
+    new LiteGraphInternal.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
