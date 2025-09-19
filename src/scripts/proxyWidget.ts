@@ -91,7 +91,8 @@ function addProxyWidget(
     width: undefined,
     computedHeight: undefined,
     afterQueued: undefined,
-    onRemove: undefined
+    onRemove: undefined,
+    node: subgraphNode
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
@@ -107,23 +108,24 @@ function resolveLinkedWidget(
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
   let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
   const bw = linkedWidget ?? disconnectedWidget
-  overlay.node = new Proxy(subgraphNode, {
-    get(_t, p) {
-      if (p == 'imgs') {
-        if (linkedNode) {
-          const images =
-            useNodeOutputStore().getNodeOutputs(linkedNode)?.images ?? []
-          if (images !== linkedNode.images) {
-            linkedNode.images = images
-            useNodeImage(linkedNode).showPreview()
+  if (overlay.widgetName == '$$canvas-image-preview')
+    overlay.node = new Proxy(subgraphNode, {
+      get(_t, p) {
+        if (p == 'imgs') {
+          if (linkedNode) {
+            const images =
+              useNodeOutputStore().getNodeOutputs(linkedNode)?.images ?? []
+            if (images !== linkedNode.images) {
+              linkedNode.images = images
+              useNodeImage(linkedNode).showPreview()
+            }
+            return linkedNode.imgs
           }
-          return linkedNode.imgs
+          return []
         }
-        return []
+        return Reflect.get(subgraphNode, p)
       }
-      return Reflect.get(subgraphNode, p)
-    }
-  })
+    })
   const handler = Object.fromEntries(
     ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function (t: object, p: string, ...rest: object[]) {
