@@ -94,6 +94,7 @@
     "vite-plugin-html": "^3.2.2",
     "vite-plugin-vue-devtools": "^7.7.6",
     "vitest": "^3.2.4",
+    "vue-component-type-helpers": "^3.0.7",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.0.7",
     "zip-dir": "^2.0.0",
