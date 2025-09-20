@@ -1,3 +1,4 @@
+import { storeToRefs } from 'pinia'
 /**
  * Composable for individual Vue node components
  *
@@ -6,7 +7,7 @@
  */
 import { computed, inject } from 'vue'
 
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -17,14 +18,14 @@ import { LayoutSource, type Point } from '@/renderer/core/layout/types'
  * Uses customRef for shared write access with Canvas renderer
  */
 export function useNodeLayout(nodeId: string) {
-  const store = layoutStore
   const mutations = useLayoutMutations()
+  const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
   // Get transform utilities from TransformPane if available
   const transformState = inject(TransformStateKey)
 
   // Get the customRef for this node (shared write access)
-  const layoutRef = store.getNodeLayoutRef(nodeId)
+  const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
 
   // Computed properties for easy access
   const position = computed(() => {
@@ -52,8 +53,6 @@ export function useNodeLayout(nodeId: string) {
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
-
-  const selectedNodeIds = inject(SelectedNodeIdsKey, null)
 
   /**
    * Start dragging the node
