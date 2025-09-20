@@ -1,7 +1,11 @@
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
+// Allowed property value types - excludes objects, arrays, and functions to prevent sensitive data leaks
+type SafeTelemetryValue = string | number | boolean | undefined
+
+// Safe telemetry properties interface with runtime validation (sensitive properties blocked in implementation)
 export interface TelemetryEventProperties {
-  [key: string]: string | number | boolean | undefined
+  [key: string]: SafeTelemetryValue
 }
 
 export interface TelemetryService {
@@ -59,24 +63,29 @@ class UnifiedTelemetryService implements TelemetryService {
     eventName: string,
     properties: TelemetryEventProperties = {}
   ): void {
-    // Fail silently if disabled, invalid input, or not in sample
+    // Enhanced validation: fail silently if disabled, invalid input, or not in sample
     if (
       !this.isEnabled ||
       !eventName ||
       typeof eventName !== 'string' ||
+      eventName.trim().length === 0 ||
+      eventName.length > 200 || // Prevent excessively long event names
       !this.shouldSample()
     ) {
       return
     }
 
     try {
-      // Additional input validation
+      // Additional input validation and type casting for external API
       const safeProperties =
         properties && typeof properties === 'object' ? properties : {}
 
       if (this.isElectronEnv) {
         // Use existing electron telemetry infrastructure
-        electronAPI().Events.trackEvent(eventName, safeProperties)
+        electronAPI().Events.trackEvent(
+          eventName,
+          safeProperties as Record<string, unknown>
+        )
       } else {
         // Cloud environment - placeholder for Mixpanel web SDK
         this.trackCloudEvent(eventName, safeProperties)
@@ -94,8 +103,14 @@ class UnifiedTelemetryService implements TelemetryService {
    * Completely fail-safe - will never throw errors or break app flow
    */
   incrementUserProperty(propertyName: string, value: number): void {
-    // Fail silently if disabled or invalid input
-    if (!this.isEnabled || !propertyName || typeof propertyName !== 'string') {
+    // Enhanced validation: fail silently if disabled or invalid input
+    if (
+      !this.isEnabled ||
+      !propertyName ||
+      typeof propertyName !== 'string' ||
+      propertyName.trim().length === 0 ||
+      propertyName.length > 100 // Prevent excessively long property names
+    ) {
       return
     }
 
@@ -202,17 +217,53 @@ export function trackEvent(
   properties?: TelemetryEventProperties
 ): void {
   try {
-    // Validate inputs to prevent serialization errors
-    if (!eventName || typeof eventName !== 'string') {
+    // Enhanced input validation for edge cases
+    if (
+      !eventName ||
+      typeof eventName !== 'string' ||
+      eventName.trim().length === 0
+    ) {
       return
     }
 
-    // Safely serialize properties to avoid circular references or other issues
+    // Sanitize event name - remove potential injection attempts
+    const sanitizedEventName = eventName.trim().replace(/[^\w:.-]/g, '_')
+    if (sanitizedEventName !== eventName && import.meta.env.DEV) {
+      console.warn(
+        `[Telemetry] Event name sanitized: "${eventName}" -> "${sanitizedEventName}"`
+      )
+    }
+
+    // Efficiently filter and sanitize properties
     const safeProperties: TelemetryEventProperties = {}
     if (properties && typeof properties === 'object') {
+      // Pre-compile sensitive property patterns for better performance
+      const sensitivePatterns = [
+        /password/i,
+        /token/i,
+        /secret/i,
+        /key$/i,
+        /auth/i,
+        /credential/i,
+        /email/i,
+        /phone/i,
+        /ssn/i,
+        /credit_card/i
+      ]
+
       for (const [key, value] of Object.entries(properties)) {
         try {
-          // Only include serializable primitive values
+          // Skip potentially sensitive property names
+          if (sensitivePatterns.some((pattern) => pattern.test(key))) {
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[Telemetry] Skipped potentially sensitive property: ${key}`
+              )
+            }
+            continue
+          }
+
+          // Only include safe primitive values
           if (value !== null && value !== undefined) {
             const valueType = typeof value
             if (
@@ -220,11 +271,18 @@ export function trackEvent(
               valueType === 'number' ||
               valueType === 'boolean'
             ) {
-              safeProperties[key] = value
-            } else {
-              // Convert complex objects to strings safely
-              safeProperties[key] = String(value)
+              // Additional validation for string length to prevent log bombing
+              if (valueType === 'string' && (value as string).length > 1000) {
+                safeProperties[key] =
+                  (value as string).substring(0, 1000) + '...[truncated]'
+              } else if (valueType === 'number' && !isFinite(value as number)) {
+                // Skip non-finite numbers (NaN, Infinity)
+                continue
+              } else {
+                safeProperties[key] = value as SafeTelemetryValue
+              }
             }
+            // Note: We no longer convert complex objects to strings to prevent data leaks
           }
         } catch {
           // Skip properties that can't be serialized
@@ -233,7 +291,7 @@ export function trackEvent(
       }
     }
 
-    telemetryService.trackEvent(eventName, safeProperties)
+    telemetryService.trackEvent(sanitizedEventName, safeProperties)
   } catch (error) {
     // Absolutely silent failure - telemetry must never break the app
     // Only log in development to avoid production console noise
@@ -252,8 +310,38 @@ export function incrementUserProperty(
   value: number = 1
 ): void {
   try {
-    // Validate inputs
-    if (!propertyName || typeof propertyName !== 'string') {
+    // Enhanced input validation for edge cases
+    if (
+      !propertyName ||
+      typeof propertyName !== 'string' ||
+      propertyName.trim().length === 0
+    ) {
+      return
+    }
+
+    // Sanitize property name and validate against sensitive patterns
+    const sanitizedPropertyName = propertyName.trim().replace(/[^\w:.-]/g, '_')
+    const sensitivePatterns = [
+      /password/i,
+      /token/i,
+      /secret/i,
+      /key$/i,
+      /auth/i,
+      /credential/i,
+      /email/i,
+      /phone/i,
+      /ssn/i,
+      /credit_card/i
+    ]
+
+    if (
+      sensitivePatterns.some((pattern) => pattern.test(sanitizedPropertyName))
+    ) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[Telemetry] Blocked potentially sensitive user property: ${sanitizedPropertyName}`
+        )
+      }
       return
     }
 
@@ -261,7 +349,13 @@ export function incrementUserProperty(
       value = 1
     }
 
-    telemetryService.incrementUserProperty(propertyName, value)
+    // Clamp value to reasonable bounds to prevent abuse
+    const clampedValue = Math.max(
+      -1000000,
+      Math.min(1000000, Math.round(value))
+    )
+
+    telemetryService.incrementUserProperty(sanitizedPropertyName, clampedValue)
   } catch (error) {
     // Absolutely silent failure - telemetry must never break the app
     // Only log in development to avoid production console noise
