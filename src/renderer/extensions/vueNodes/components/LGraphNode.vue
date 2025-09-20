@@ -199,11 +199,6 @@ const {
 } = defineProps<LGraphNodeProps>()
 
 const emit = defineEmits<{
-  'node-click': [
-    event: PointerEvent,
-    nodeData: VueNodeData,
-    wasDragging: boolean
-  ]
   'slot-click': [
     event: PointerEvent,
     nodeData: VueNodeData,
@@ -212,7 +207,8 @@ const emit = defineEmits<{
   ]
 }>()
 
-const { handleNodeCollapse, handleNodeTitleUpdate } = useNodeEventHandlers()
+const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
+  useNodeEventHandlers()
 
 useVueElementTracking(nodeData.id, 'node')
 
@@ -276,9 +272,7 @@ const {
   handlePointerMove,
   isDragging,
   dragStyle
-} = useNodePointerInteractions(nodeData, (event, nodeData, wasDragging) => {
-  emit('node-click', event, nodeData, wasDragging)
-})
+} = useNodePointerInteractions(nodeData, handleNodeSelect)
 
 onMounted(() => {
   if (size && transformState?.camera) {

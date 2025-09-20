@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 const mockData = vi.hoisted(() => ({
@@ -24,6 +25,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
     useCanvasStore
   }
 })
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+  () => {
+    const handleNodeSelect = vi.fn()
+    return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
+  }
+)
 
 vi.mock(
   '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
@@ -179,12 +188,16 @@ describe('LGraphNode', () => {
   })
 
   it('should emit node-click event on pointer up', async () => {
+    const { handleNodeSelect } = useNodeEventHandlers()
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
     await wrapper.trigger('pointerup')
 
-    expect(wrapper.emitted('node-click')).toHaveLength(1)
-    expect(wrapper.emitted('node-click')?.[0]).toHaveLength(3)
-    expect(wrapper.emitted('node-click')?.[0][1]).toEqual(mockNodeData)
+    expect(handleNodeSelect).toHaveBeenCalledOnce()
+    expect(handleNodeSelect).toHaveBeenCalledWith(
+      expect.any(PointerEvent),
+      mockNodeData,
+      expect.any(Boolean)
+    )
   })
 })
