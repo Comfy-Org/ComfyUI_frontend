@@ -42,17 +42,30 @@ import { useRoute, useRouter } from 'vue-router'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useToastStore } from '@/stores/toastStore'
 
+const authStore = useFirebaseAuthStore()
+
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 
-const authStore = useFirebaseAuthStore()
 const goBack = async () => {
   const inviteCode = route.query.inviteCode as string | undefined
-  await router.push({
-    name: 'cloud-invite-check',
-    query: inviteCode ? { inviteCode } : {}
-  })
+  const authStore = useFirebaseAuthStore()
+  // If the user is already verified (email link already clicked),
+  // continue to the next step automatically.
+  if (authStore.isEmailVerified) {
+    await router.push({
+      name: 'cloud-invite-check',
+      query: inviteCode ? { inviteCode } : {}
+    })
+  } else {
+    await router.push({
+      name: 'cloud-login',
+      query: {
+        inviteCode
+      }
+    })
+  }
 }
 
 async function onSend() {
@@ -80,10 +93,14 @@ onMounted(async () => {
   // If the user is already verified (email link already clicked),
   // continue to the next step automatically.
   if (authStore.isEmailVerified) {
-    await router.push({
-      name: 'cloud-invite-check',
-      query: inviteCode ? { inviteCode } : {}
-    })
+    if (inviteCode) {
+      await router.push({
+        name: 'cloud-invite-check',
+        query: inviteCode ? { inviteCode } : {}
+      })
+    } else {
+      await router.push({ name: 'cloud-user-check' })
+    }
   } else {
     await onSend()
   }
