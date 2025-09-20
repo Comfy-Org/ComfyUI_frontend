@@ -9,6 +9,7 @@
 import { type Ref, computed } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app as comfyApp } from '@/scripts/app'
 
@@ -17,15 +18,15 @@ interface NodeManager {
 }
 
 export function useViewportCulling(
-  isVueNodesEnabled: Ref<boolean>,
   vueNodeData: Ref<ReadonlyMap<string, VueNodeData>>,
   nodeDataTrigger: Ref<number>,
   nodeManager: Ref<NodeManager | null>
 ) {
   const canvasStore = useCanvasStore()
+  const { shouldRenderVueNodes } = useVueFeatureFlags()
 
   const allNodes = computed(() => {
-    if (!isVueNodesEnabled.value) return []
+    if (!shouldRenderVueNodes.value) return []
     void nodeDataTrigger.value // Force re-evaluation when nodeManager initializes
     return Array.from(vueNodeData.value.values())
   })
@@ -84,7 +85,7 @@ export function useViewportCulling(
    * Uses RAF to batch updates for smooth performance
    */
   const handleTransformUpdate = () => {
-    if (!isVueNodesEnabled.value) return
+    if (!shouldRenderVueNodes.value) return
 
     // Cancel previous RAF if still pending
     if (rafId !== null) {

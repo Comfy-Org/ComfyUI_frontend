@@ -173,7 +173,6 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
 const viewportCulling = useViewportCulling(
-  shouldRenderVueNodes,
   vueNodeLifecycle.vueNodeData,
   vueNodeLifecycle.nodeDataTrigger,
   vueNodeLifecycle.nodeManager
