@@ -31,7 +31,8 @@ export default defineConfig({
       ignored: [
         '**/coverage/**',
         '**/playwright-report/**',
-        '**/*.{test,spec}.ts'
+        '**/*.{test,spec}.ts',
+        '*.config.{ts,mts}'
       ]
     },
     proxy: {

@@ -44,6 +44,7 @@ components.d.ts
 tests-ui/data/*
 tests-ui/ComfyUI_examples
 tests-ui/workflows/examples
+coverage/
 
 # Browser tests
 /test-results/

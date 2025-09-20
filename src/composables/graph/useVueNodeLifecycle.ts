@@ -8,13 +8,16 @@
  * - Reactive state management for node data, positions, and sizes
  * - Memory management and proper cleanup
  */
-import { type Ref, computed, readonly, ref, shallowRef, watch } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type {
+  GraphNodeManager,
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -24,13 +27,12 @@ import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
 
-export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
+function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
+  const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-  const nodeManager = shallowRef<ReturnType<typeof useGraphNodeManager> | null>(
-    null
-  )
+  const nodeManager = shallowRef<GraphNodeManager | null>(null)
   const cleanupNodeManager = shallowRef<(() => void) | null>(null)
 
   // Sync management
@@ -145,7 +147,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
   // Watch for Vue nodes enabled state changes
   watch(
     () =>
-      isVueNodesEnabled.value &&
+      shouldRenderVueNodes.value &&
       Boolean(comfyApp.canvas?.graph || comfyApp.graph),
     (enabled) => {
       if (enabled) {
@@ -159,7 +161,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
 
   // Consolidated watch for slot layout sync management
   watch(
-    [() => canvasStore.canvas, () => isVueNodesEnabled.value],
+    [() => canvasStore.canvas, () => shouldRenderVueNodes.value],
     ([canvas, vueMode], [, oldVueMode]) => {
       const modeChanged = vueMode !== oldVueMode
 
@@ -191,7 +193,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
   // Handle case where Vue nodes are enabled but graph starts empty
   const setupEmptyGraphListener = () => {
     if (
-      isVueNodesEnabled.value &&
+      shouldRenderVueNodes.value &&
       comfyApp.graph &&
       !nodeManager.value &&
       comfyApp.graph._nodes.length === 0
@@ -202,7 +204,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
         comfyApp.graph.onNodeAdded = originalOnNodeAdded
 
         // Initialize node manager if needed
-        if (isVueNodesEnabled.value && !nodeManager.value) {
+        if (shouldRenderVueNodes.value && !nodeManager.value) {
           initializeNodeManager()
         }
 
@@ -248,3 +250,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
     cleanup
   }
 }
+
+export const useVueNodeLifecycle = createSharedComposable(
+  useVueNodeLifecycleIndividual
+)

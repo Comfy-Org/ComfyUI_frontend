@@ -68,7 +68,7 @@ interface SpatialMetrics {
   nodesInIndex: number
 }
 
-interface GraphNodeManager {
+export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
   nodeState: ReadonlyMap<string, NodeState>
