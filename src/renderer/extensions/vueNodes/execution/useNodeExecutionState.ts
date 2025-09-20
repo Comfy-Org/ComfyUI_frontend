@@ -1,10 +1,7 @@
-import { computed, inject, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
-import {
-  ExecutingNodeIdsKey,
-  NodeProgressStatesKey
-} from '@/renderer/core/canvas/injectionKeys'
-import type { NodeProgressState } from '@/schemas/apiSchema'
+import { useExecutionStore } from '@/stores/executionStore'
 
 /**
  * Composable for managing execution state of Vue-based nodes
@@ -16,14 +13,11 @@ import type { NodeProgressState } from '@/schemas/apiSchema'
  * @returns Object containing reactive execution state and progress
  */
 export const useNodeExecutionState = (nodeId: string) => {
-  const executingNodeIds = inject(ExecutingNodeIdsKey, ref(new Set<string>()))
-  const nodeProgressStates = inject(
-    NodeProgressStatesKey,
-    ref<Record<string, NodeProgressState>>({})
-  )
+  const { uniqueExecutingNodeIdStrings, nodeProgressStates } =
+    storeToRefs(useExecutionStore())
 
   const executing = computed(() => {
-    return executingNodeIds.value.has(nodeId)
+    return uniqueExecutingNodeIdStrings.value.has(nodeId)
   })
 
   const progress = computed(() => {

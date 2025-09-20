@@ -122,7 +122,6 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useExecutionStateProvider } from '@/renderer/extensions/vueNodes/execution/useExecutionStateProvider'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -207,9 +206,6 @@ const handleTransformUpdate = () => {
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
 const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
 const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
-
-// Provide execution state to all Vue nodes
-useExecutionStateProvider()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')

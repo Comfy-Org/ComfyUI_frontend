@@ -170,6 +170,10 @@ export const useExecutionStore = defineStore('execution', () => {
     return executingNodeIds.value[0] ?? null
   })
 
+  const uniqueExecutingNodeIdStrings = computed(
+    () => new Set(executingNodeIds.value.map(String))
+  )
+
   // For backward compatibility - returns the primary executing node
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
@@ -439,6 +443,7 @@ export const useExecutionStore = defineStore('execution', () => {
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
+    uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
