@@ -1,6 +1,7 @@
-import { Plugin, defineConfig } from 'vite'
-import { mergeConfig } from 'vite'
+import { defineConfig, mergeConfig } from 'vite'
+import type { Plugin } from 'vite'
 
+// @ts-expect-error - TypeScript cannot resolve .mts extension without allowImportingTsExtensions
 import baseConfig from './vite.config.mts'
 
 const mockElectronAPI: Plugin = {

@@ -32,11 +32,18 @@
     "src/**/*",
     "src/**/*.vue",
     "src/types/**/*.d.ts",
-    "tests-ui/**/*",
     "global.d.ts",
     "eslint.config.ts",
-    "vite.config.mts",
-    "knip.config.ts",
-    ".storybook/**/*"
+    ".storybook/**/*",
+    "*.config.mts",
+    "*.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "browser_tests",
+    "tests-ui",
+    "scripts",
+    "build"
   ]
 }
