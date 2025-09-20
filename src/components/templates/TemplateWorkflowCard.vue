@@ -67,7 +67,7 @@
           <h3 class="line-clamp-2 text-lg font-normal mb-0" :title="title">
             {{ title }}
           </h3>
-          <p class="line-clamp-2 text-sm text-muted grow" :title="description">
+          <p class="line-clamp-4 text-sm text-muted grow" :title="description">
             {{ description }}
           </p>
         </div>

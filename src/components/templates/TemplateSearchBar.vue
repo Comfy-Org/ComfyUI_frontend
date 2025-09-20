@@ -1,7 +1,7 @@
 <template>
-  <div class="relative w-full p-4">
+  <div class="relative w-full">
     <div class="h-12 flex items-center gap-4 justify-between">
-      <div class="flex-1 max-w-md">
+      <div class="flex-1 max-w-xs">
         <AutoComplete
           v-model.lazy="searchQuery"
           :placeholder="$t('templateWorkflows.searchPlaceholder')"
