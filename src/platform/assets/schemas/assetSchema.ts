@@ -4,13 +4,13 @@ import { z } from 'zod'
 const zAsset = z.object({
   id: z.string(),
   name: z.string(),
-  asset_hash: z.string(),
+  asset_hash: z.string().nullable(),
   size: z.number(),
-  mime_type: z.string(),
+  mime_type: z.string().nullable(),
   tags: z.array(z.string()),
   preview_url: z.string().optional(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string().optional(),
   last_access_time: z.string(),
   user_metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
   preview_id: z.string().nullable().optional()
@@ -32,6 +32,14 @@ const zModelFile = z.object({
   name: z.string(),
   pathIndex: z.number()
 })
+
+// Filename validation schema
+export const assetFilenameSchema = z
+  .string()
+  .min(1, 'Filename cannot be empty')
+  .regex(/^[^\\:*?"<>|]+$/, 'Invalid filename characters') // Allow forward slashes, block backslashes and other unsafe chars
+  .regex(/^(?!\/|.*\.\.)/, 'Path must not start with / or contain ..') // Prevent absolute paths and directory traversal
+  .trim()
 
 // Export schemas following repository patterns
 export const assetResponseSchema = zAssetResponse

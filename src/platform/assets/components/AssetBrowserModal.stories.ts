@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import {
   createMockAssets,
   mockAssets
@@ -56,7 +57,7 @@ export const Default: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (asset: any) => {
+      const onAssetSelect = (asset: AssetDisplayItem) => {
         console.log('Selected asset:', asset)
       }
       const onClose = () => {
@@ -96,7 +97,7 @@ export const SingleAssetType: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (asset: any) => {
+      const onAssetSelect = (asset: AssetDisplayItem) => {
         console.log('Selected asset:', asset)
       }
       const onClose = () => {
@@ -145,7 +146,7 @@ export const NoLeftPanel: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (asset: any) => {
+      const onAssetSelect = (asset: AssetDisplayItem) => {
         console.log('Selected asset:', asset)
       }
       const onClose = () => {

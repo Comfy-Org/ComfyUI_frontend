@@ -3,7 +3,7 @@
     <div :class="leftSideClasses" data-component-id="asset-filter-bar-left">
       <MultiSelect
         v-model="fileFormats"
-        label="File formats"
+        :label="$t('assetBrowser.fileFormats')"
         :options="fileFormatOptions"
         :class="selectClasses"
         data-component-id="asset-filter-file-formats"
@@ -12,7 +12,7 @@
 
       <MultiSelect
         v-model="baseModels"
-        label="Base models"
+        :label="$t('assetBrowser.baseModels')"
         :options="baseModelOptions"
         :class="selectClasses"
         data-component-id="asset-filter-base-models"
@@ -23,7 +23,7 @@
     <div :class="rightSideClasses" data-component-id="asset-filter-bar-right">
       <SingleSelect
         v-model="sortBy"
-        label="Sort by"
+        :label="$t('assetBrowser.sortBy')"
         :options="sortOptions"
         :class="selectClasses"
         data-component-id="asset-filter-sort"
@@ -43,6 +43,7 @@ import { ref } from 'vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
+import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
 export interface FilterState {
@@ -74,10 +75,10 @@ const baseModelOptions = [
 // TODO: Make sortOptions configurable via props
 // Different asset types might need different sorting options
 const sortOptions = [
-  { name: 'A-Z', value: 'name-asc' },
-  { name: 'Z-A', value: 'name-desc' },
-  { name: 'Recent', value: 'recent' },
-  { name: 'Popular', value: 'popular' }
+  { name: t('assetBrowser.sortAZ'), value: 'name-asc' },
+  { name: t('assetBrowser.sortZA'), value: 'name-desc' },
+  { name: t('assetBrowser.sortRecent'), value: 'recent' },
+  { name: t('assetBrowser.sortPopular'), value: 'popular' }
 ]
 
 const emit = defineEmits<{

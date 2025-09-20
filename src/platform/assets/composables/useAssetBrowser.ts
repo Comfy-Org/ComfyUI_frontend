@@ -1,8 +1,9 @@
 import { computed, ref } from 'vue'
 
-import { t } from '@/i18n'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { d, t } from '@/i18n'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import {
   getAssetBaseModel,
   getAssetDescription
@@ -69,7 +70,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
 
     // Create display stats from API data
     const stats = {
-      formattedDate: new Date(asset.created_at).toLocaleDateString(),
+      formattedDate: d(new Date(asset.created_at), { dateStyle: 'short' }),
       downloadCount: undefined, // Not available in API
       stars: undefined // Not available in API
     }
@@ -162,12 +163,41 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return filtered.map(transformAssetForDisplay)
   })
 
-  // Actions
-  function selectAsset(asset: AssetDisplayItem): UUID {
+  /**
+   * Asset selection that fetches full details and executes callback with filename
+   * @param assetId - The asset ID to select and fetch details for
+   * @param onSelect - Optional callback to execute with the asset filename
+   */
+  async function selectAssetWithCallback(
+    assetId: string,
+    onSelect?: (filename: string) => void
+  ): Promise<void> {
     if (import.meta.env.DEV) {
-      console.log('Asset selected:', asset.id, asset.name)
+      console.debug('Asset selected:', assetId)
     }
-    return asset.id
+
+    if (!onSelect) {
+      return
+    }
+
+    try {
+      const detailAsset = await assetService.getAssetDetails(assetId)
+      const filename = detailAsset.user_metadata?.filename
+      const validatedFilename = assetFilenameSchema.safeParse(filename)
+      if (!validatedFilename.success) {
+        console.error(
+          'Invalid asset filename:',
+          validatedFilename.error.errors,
+          'for asset:',
+          assetId
+        )
+        return
+      }
+
+      onSelect(validatedFilename.data)
+    } catch (error) {
+      console.error(`Failed to fetch asset details for ${assetId}:`, error)
+    }
   }
 
   return {
@@ -182,7 +212,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     filteredAssets,
 
     // Actions
-    selectAsset,
-    transformAssetForDisplay
+    selectAssetWithCallback
   }
 }

@@ -27,6 +27,8 @@
     "preview": "nx preview",
     "lint": "eslint src --cache",
     "lint:fix": "eslint src --cache --fix",
+    "lint:unstaged": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache",
+    "lint:unstaged:fix": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache --fix",
     "lint:no-cache": "eslint src",
     "lint:fix:no-cache": "eslint src --fix",
     "knip": "knip --cache",

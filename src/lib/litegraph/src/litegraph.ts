@@ -140,7 +140,7 @@ export { BaseWidget } from './widgets/BaseWidget'
 
 export { LegacyWidget } from './widgets/LegacyWidget'
 
-export { isComboWidget } from './widgets/widgetMap'
+export { isComboWidget, isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'
 export { MovingOutputLink } from './canvas/MovingOutputLink'

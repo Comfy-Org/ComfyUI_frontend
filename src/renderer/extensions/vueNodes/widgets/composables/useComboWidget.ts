@@ -3,10 +3,9 @@ import { ref } from 'vue'
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
@@ -73,11 +72,29 @@ const addComboWidget = (
     const currentValue = getDefaultValue(inputSpec)
     const displayLabel = currentValue ?? t('widgets.selectModel')
 
-    const widget = node.addWidget('asset', inputSpec.name, displayLabel, () => {
-      console.log(
-        `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
-      )
-    })
+    const assetBrowserDialog = useAssetBrowserDialog()
+
+    const widget = node.addWidget(
+      'asset',
+      inputSpec.name,
+      displayLabel,
+      async () => {
+        if (!isAssetWidget(widget)) {
+          throw new Error(`Expected asset widget but received ${widget.type}`)
+        }
+        await assetBrowserDialog.show({
+          nodeType: node.comfyClass || '',
+          inputName: inputSpec.name,
+          currentValue: widget.value,
+          onAssetSelected: (filename: string) => {
+            const oldValue = widget.value
+            widget.value = filename
+            // Using onWidgetChanged prevents a callback race where asset selection could reopen the dialog
+            node.onWidgetChanged?.(widget.name, filename, oldValue, widget)
+          }
+        })
+      }
+    )
 
     return widget
   }
@@ -96,11 +113,14 @@ const addComboWidget = (
   )
 
   if (inputSpec.remote) {
+    if (!isComboWidget(widget)) {
+      throw new Error(`Expected combo widget but received ${widget.type}`)
+    }
     const remoteWidget = useRemoteWidget({
       remoteConfig: inputSpec.remote,
       defaultValue,
       node,
-      widget: widget as IComboWidget
+      widget
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
@@ -116,16 +136,19 @@ const addComboWidget = (
   }
 
   if (inputSpec.control_after_generate) {
+    if (!isComboWidget(widget)) {
+      throw new Error(`Expected combo widget but received ${widget.type}`)
+    }
     widget.linkedWidgets = addValueControlWidgets(
       node,
-      widget as IComboWidget,
+      widget,
       undefined,
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )
   }
 
-  return widget as IBaseWidget
+  return widget
 }
 
 export const useComboWidget = () => {
