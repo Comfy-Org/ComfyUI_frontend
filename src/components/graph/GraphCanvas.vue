@@ -54,7 +54,6 @@
       :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
       @node-click="handleNodeSelect"
-      @update:collapsed="handleNodeCollapse"
       @update:title="handleNodeTitleUpdate"
     />
   </TransformPane>
@@ -204,7 +203,6 @@ const handleTransformUpdate = () => {
   vueNodeLifecycle.detectChangesInRAF.value()
 }
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
-const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
 const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
 
 watchEffect(() => {

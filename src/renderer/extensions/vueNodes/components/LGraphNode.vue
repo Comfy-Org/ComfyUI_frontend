@@ -156,6 +156,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
@@ -209,9 +210,10 @@ const emit = defineEmits<{
     slotIndex: number,
     isInput: boolean
   ]
-  'update:collapsed': [nodeId: string, collapsed: boolean]
   'update:title': [nodeId: string, newTitle: string]
 }>()
+
+const { handleNodeCollapse } = useNodeEventHandlers()
 
 useVueElementTracking(nodeData.id, 'node')
 
@@ -357,8 +359,7 @@ const outlineClass = computed(() => {
 // Event handlers
 const handleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
-  // Emit event so parent can sync with LiteGraph if needed
-  emit('update:collapsed', nodeData.id, isCollapsed.value)
+  handleNodeCollapse(nodeData.id, isCollapsed.value)
 }
 
 const handleSlotClick = (
