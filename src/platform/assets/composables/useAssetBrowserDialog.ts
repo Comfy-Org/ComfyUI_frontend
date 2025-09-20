@@ -1,5 +1,7 @@
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
-import { useDialogStore } from '@/stores/dialogStore'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
+import { type DialogComponentProps, useDialogStore } from '@/stores/dialogStore'
 
 interface AssetBrowserDialogProps {
   /** ComfyUI node type for context (e.g., 'CheckpointLoaderSimple') */
@@ -8,36 +10,29 @@ interface AssetBrowserDialogProps {
   inputName: string
   /** Current selected asset value */
   currentValue?: string
-  /** Callback for when an asset is selected */
-  onAssetSelected?: (assetPath: string) => void
+  /**
+   * Callback for when an asset is selected
+   * @param {string} filename - The validated filename from user_metadata.filename
+   */
+  onAssetSelected?: (filename: string) => void
 }
 
 export const useAssetBrowserDialog = () => {
   const dialogStore = useDialogStore()
   const dialogKey = 'global-asset-browser'
 
-  function hide() {
-    dialogStore.closeDialog({ key: dialogKey })
-  }
-
-  function show(props: AssetBrowserDialogProps) {
-    const handleAssetSelected = (assetPath: string) => {
-      props.onAssetSelected?.(assetPath)
-      hide() // Auto-close on selection
+  async function show(props: AssetBrowserDialogProps) {
+    const handleAssetSelected = (filename: string) => {
+      props.onAssetSelected?.(filename)
+      dialogStore.closeDialog({ key: dialogKey })
     }
-
-    const handleClose = () => {
-      hide()
-    }
-
-    // Default dialog configuration for AssetBrowserModal
-    const dialogComponentProps = {
+    const dialogComponentProps: DialogComponentProps = {
       headless: true,
       modal: true,
-      closable: false,
+      closable: true,
       pt: {
         root: {
-          class: 'rounded-2xl overflow-hidden'
+          class: 'rounded-2xl overflow-hidden asset-browser-dialog'
         },
         header: {
           class: 'p-0 hidden'
@@ -48,6 +43,17 @@ export const useAssetBrowserDialog = () => {
       }
     }
 
+    const assets: AssetItem[] = await assetService
+      .getAssetsForNodeType(props.nodeType)
+      .catch((error) => {
+        console.error(
+          'Failed to fetch assets for node type:',
+          props.nodeType,
+          error
+        )
+        return []
+      })
+
     dialogStore.showDialog({
       key: dialogKey,
       component: AssetBrowserModal,
@@ -55,12 +61,13 @@ export const useAssetBrowserDialog = () => {
         nodeType: props.nodeType,
         inputName: props.inputName,
         currentValue: props.currentValue,
+        assets,
         onSelect: handleAssetSelected,
-        onClose: handleClose
+        onClose: () => dialogStore.closeDialog({ key: dialogKey })
       },
       dialogComponentProps
     })
   }
 
-  return { show, hide }
+  return { show }
 }

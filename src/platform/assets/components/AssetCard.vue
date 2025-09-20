@@ -14,7 +14,7 @@
           'bg-ivory-100 border border-gray-300 dark-theme:bg-charcoal-400 dark-theme:border-charcoal-600',
           'hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/10 hover:border-gray-400',
           'dark-theme:hover:shadow-lg dark-theme:hover:shadow-black/30 dark-theme:hover:border-charcoal-700',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 dark-theme:focus:ring-blue-400'
+          'focus:outline-none focus:transform focus:-translate-y-0.5 focus:shadow-lg focus:shadow-black/10 dark-theme:focus:shadow-black/30'
         ],
         // Div-specific styles
         !interactive && [
