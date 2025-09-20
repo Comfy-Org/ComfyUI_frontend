@@ -171,7 +171,7 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle(shouldRenderVueNodes)
+const vueNodeLifecycle = useVueNodeLifecycle()
 const viewportCulling = useViewportCulling(
   shouldRenderVueNodes,
   vueNodeLifecycle.vueNodeData,

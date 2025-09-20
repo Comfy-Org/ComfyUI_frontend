@@ -2,13 +2,14 @@
  * Vue-related feature flags composable
  * Manages local settings-driven flags and LiteGraph integration
  */
+import { createSharedComposable } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LiteGraph } from '../lib/litegraph/src/litegraph'
 
-export const useVueFeatureFlags = () => {
+function useVueFeatureFlagsIndividual() {
   const settingStore = useSettingStore()
 
   const shouldRenderVueNodes = computed(() => {
@@ -32,3 +33,7 @@ export const useVueFeatureFlags = () => {
     shouldRenderVueNodes
   }
 }
+
+export const useVueFeatureFlags = createSharedComposable(
+  useVueFeatureFlagsIndividual
+)
