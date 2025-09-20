@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -9,10 +9,13 @@ import { useExecutionStore } from '@/stores/executionStore'
  * Provides reactive access to execution state and progress for a specific node
  * by injecting execution data from the parent GraphCanvas provider.
  *
- * @param nodeId - The ID of the node to track execution state for
+ * @param nodeIdMaybe - The ID of the node to track execution state for
  * @returns Object containing reactive execution state and progress
  */
-export const useNodeExecutionState = (nodeId: string) => {
+export const useNodeExecutionState = (
+  nodeIdMaybe: MaybeRefOrGetter<string>
+) => {
+  const nodeId = toValue(nodeIdMaybe)
   const { uniqueExecutingNodeIdStrings, nodeProgressStates } =
     storeToRefs(useExecutionStore())
 

@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
  * Uses customRef for shared write access with Canvas renderer.
  * Provides dragging functionality and reactive layout state.
  */
-import { computed, inject } from 'vue'
+import { type MaybeRefOrGetter, computed, inject, toValue } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -17,7 +17,8 @@ import { LayoutSource, type Point } from '@/renderer/core/layout/types'
  * Composable for individual Vue node components
  * Uses customRef for shared write access with Canvas renderer
  */
-export function useNodeLayout(nodeId: string) {
+export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
+  const nodeId = toValue(nodeIdMaybe)
   const mutations = useLayoutMutations()
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
 

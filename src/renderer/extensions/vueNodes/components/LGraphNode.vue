@@ -139,7 +139,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -191,7 +191,7 @@ const {
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
   useNodeEventHandlers()
 
-useVueElementTracking(nodeData.id, 'node')
+useVueElementTracking(() => nodeData.id, 'node')
 
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
@@ -204,7 +204,7 @@ const isSelected = computed(() => {
 })
 
 // Use execution state composable
-const { executing, progress } = useNodeExecutionState(nodeData.id)
+const { executing, progress } = useNodeExecutionState(() => nodeData.id)
 
 // Direct access to execution store for error state
 const executionStore = useExecutionStore()
@@ -229,7 +229,7 @@ const {
   shouldRenderSlots,
   shouldRenderContent,
   lodCssClass
-} = useLOD(zoomLevel)
+} = useLOD(() => zoomLevel)
 
 // Computed properties for template usage
 const isMinimalLOD = computed(() => lodLevel.value === LODLevel.MINIMAL)
@@ -245,14 +245,18 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const { position: layoutPosition, zIndex, resize } = useNodeLayout(nodeData.id)
+const {
+  position: layoutPosition,
+  zIndex,
+  resize
+} = useNodeLayout(() => nodeData.id)
 const {
   handlePointerDown,
   handlePointerUp,
   handlePointerMove,
   isDragging,
   dragStyle
-} = useNodePointerInteractions(nodeData, handleNodeSelect)
+} = useNodePointerInteractions(() => nodeData, handleNodeSelect)
 
 onMounted(() => {
   if (size && transformState?.camera) {
@@ -281,7 +285,7 @@ const separatorClasses = cn(
 const progressClasses = cn('h-2 bg-primary-500 transition-all duration-300')
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
-  nodeData.id,
+  () => nodeData.id,
   {
     isMinimalLOD,
     isCollapsed
@@ -380,4 +384,7 @@ const nodeImageUrls = computed(() => {
   // Clear URLs if no outputs or no images
   return []
 })
+
+const nodeContainerRef = ref()
+provide('tooltipContainer', nodeContainerRef)
 </script>
