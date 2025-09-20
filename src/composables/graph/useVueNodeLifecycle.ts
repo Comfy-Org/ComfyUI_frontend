@@ -8,6 +8,7 @@
  * - Reactive state management for node data, positions, and sizes
  * - Memory management and proper cleanup
  */
+import { createSharedComposable } from '@vueuse/core'
 import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
@@ -26,7 +27,7 @@ import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
 
-export function useVueNodeLifecycle() {
+function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
@@ -249,3 +250,7 @@ export function useVueNodeLifecycle() {
     cleanup
   }
 }
+
+export const useVueNodeLifecycle = createSharedComposable(
+  useVueNodeLifecycleIndividual
+)

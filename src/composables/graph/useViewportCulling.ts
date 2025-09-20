@@ -6,24 +6,17 @@
  * 2. Set display none on element to avoid cascade resolution overhead
  * 3. Only run when transform changes (event driven)
  */
-import { type Ref, computed } from 'vue'
+import { computed } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app as comfyApp } from '@/scripts/app'
 
-interface NodeManager {
-  getNode: (id: string) => any
-}
-
-export function useViewportCulling(
-  vueNodeData: Ref<ReadonlyMap<string, VueNodeData>>,
-  nodeDataTrigger: Ref<number>,
-  nodeManager: Ref<NodeManager | null>
-) {
+export function useViewportCulling() {
   const canvasStore = useCanvasStore()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
+  const { vueNodeData, nodeDataTrigger, nodeManager } = useVueNodeLifecycle()
 
   const allNodes = computed(() => {
     if (!shouldRenderVueNodes.value) return []

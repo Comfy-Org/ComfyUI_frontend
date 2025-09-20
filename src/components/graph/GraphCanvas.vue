@@ -172,11 +172,7 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
-const viewportCulling = useViewportCulling(
-  vueNodeLifecycle.vueNodeData,
-  vueNodeLifecycle.nodeDataTrigger,
-  vueNodeLifecycle.nodeManager
-)
+const viewportCulling = useViewportCulling()
 const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
 const handleVueNodeLifecycleReset = async () => {
