@@ -101,7 +101,6 @@
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
-          @slot-click="handleSlotClick"
         />
 
         <!-- Widgets rendered at reduced+ detail -->
@@ -197,15 +196,6 @@ const {
   readonly = false,
   zoomLevel = 1
 } = defineProps<LGraphNodeProps>()
-
-const emit = defineEmits<{
-  'slot-click': [
-    event: PointerEvent,
-    nodeData: VueNodeData,
-    slotIndex: number,
-    isInput: boolean
-  ]
-}>()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
   useNodeEventHandlers()
@@ -353,24 +343,6 @@ const outlineClass = computed(() => {
 const handleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
   handleNodeCollapse(nodeData.id, isCollapsed.value)
-}
-
-const handleSlotClick = (
-  event: PointerEvent,
-  slotIndex: number,
-  isInput: boolean
-) => {
-  if (!nodeData) {
-    console.warn('LGraphNode: nodeData is null/undefined in handleSlotClick')
-    return
-  }
-
-  // Don't handle slot clicks when canvas is in panning mode
-  if (!shouldHandleNodePointerEvents.value) {
-    return
-  }
-
-  emit('slot-click', event, nodeData, slotIndex, isInput)
 }
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
