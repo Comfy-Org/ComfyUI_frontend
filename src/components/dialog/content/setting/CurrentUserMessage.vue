@@ -1,4 +1,17 @@
 <!-- A message that displays the current user -->
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Message from 'primevue/message'
+
+import { useUserStore } from '@/stores/userStore'
+
+const userStore = useUserStore()
+const logout = async () => {
+  await userStore.logout()
+  window.location.reload()
+}
+</script>
+
 <template>
   <Message
     v-if="userStore.isMultiUserServer"
@@ -14,16 +27,3 @@
     </div>
   </Message>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Message from 'primevue/message'
-
-import { useUserStore } from '@/stores/userStore'
-
-const userStore = useUserStore()
-const logout = async () => {
-  await userStore.logout()
-  window.location.reload()
-}
-</script>

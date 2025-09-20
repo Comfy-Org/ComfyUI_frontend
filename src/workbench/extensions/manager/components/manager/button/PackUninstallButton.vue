@@ -1,19 +1,3 @@
-<template>
-  <IconTextButton
-    v-bind="$attrs"
-    type="transparent"
-    :label="
-      nodePacks.length > 1
-        ? $t('manager.uninstallSelected')
-        : $t('manager.uninstall')
-    "
-    :border="true"
-    :size="size"
-    class="border-red-500"
-    @click="uninstallItems"
-  />
-</template>
-
 <script setup lang="ts">
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import type { ButtonSize } from '@/types/buttonTypes'
@@ -51,3 +35,19 @@ const uninstallItems = async () => {
   await Promise.all(nodePacks.map(uninstallPack))
 }
 </script>
+
+<template>
+  <IconTextButton
+    v-bind="$attrs"
+    type="transparent"
+    :label="
+      nodePacks.length > 1
+        ? $t('manager.uninstallSelected')
+        : $t('manager.uninstall')
+    "
+    :border="true"
+    :size="size"
+    class="border-red-500"
+    @click="uninstallItems"
+  />
+</template>

@@ -1,28 +1,4 @@
 <!-- Needs custom color picker for alpha support -->
-<template>
-  <WidgetLayoutField :widget="widget">
-    <label
-      :class="
-        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full px-4 py-2')
-      "
-    >
-      <ColorPicker
-        v-model="localValue"
-        v-bind="filteredProps"
-        :disabled="readonly"
-        class="w-8 h-4 !rounded-full overflow-hidden border-none"
-        :pt="{
-          preview: '!w-full !h-full !border-none'
-        }"
-        @update:model-value="onPickerUpdate"
-      />
-      <span class="text-xs" data-testid="widget-color-text">{{
-        toHexFromFormat(localValue, format)
-      }}</span>
-    </label>
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts">
 import ColorPicker from 'primevue/colorpicker'
 import { computed, ref, watch } from 'vue'
@@ -89,3 +65,27 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, COLOR_PICKER_EXCLUDED_PROPS)
 )
 </script>
+
+<template>
+  <WidgetLayoutField :widget="widget">
+    <label
+      :class="
+        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full px-4 py-2')
+      "
+    >
+      <ColorPicker
+        v-model="localValue"
+        v-bind="filteredProps"
+        :disabled="readonly"
+        class="w-8 h-4 !rounded-full overflow-hidden border-none"
+        :pt="{
+          preview: '!w-full !h-full !border-none'
+        }"
+        @update:model-value="onPickerUpdate"
+      />
+      <span class="text-xs" data-testid="widget-color-text">{{
+        toHexFromFormat(localValue, format)
+      }}</span>
+    </label>
+  </WidgetLayoutField>
+</template>

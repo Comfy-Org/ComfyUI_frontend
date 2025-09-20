@@ -1,17 +1,3 @@
-<template>
-  <TreeExplorerTreeNode :node="node">
-    <template #actions>
-      <Button
-        :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-        text
-        severity="secondary"
-        size="small"
-        @click.stop="handleBookmarkClick"
-      />
-    </template>
-  </TreeExplorerTreeNode>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
@@ -36,3 +22,17 @@ const handleBookmarkClick = async () => {
   }
 }
 </script>
+
+<template>
+  <TreeExplorerTreeNode :node="node">
+    <template #actions>
+      <Button
+        :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+        text
+        severity="secondary"
+        size="small"
+        @click.stop="handleBookmarkClick"
+      />
+    </template>
+  </TreeExplorerTreeNode>
+</template>

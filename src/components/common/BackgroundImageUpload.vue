@@ -1,36 +1,3 @@
-<template>
-  <div class="flex gap-2">
-    <InputText
-      v-model="modelValue"
-      class="flex-1"
-      :placeholder="$t('g.imageUrl')"
-    />
-    <Button
-      v-tooltip="$t('g.upload')"
-      :icon="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
-      size="small"
-      :disabled="isUploading"
-      @click="triggerFileInput"
-    />
-    <Button
-      v-tooltip="$t('g.clear')"
-      outlined
-      icon="pi pi-trash"
-      severity="danger"
-      size="small"
-      :disabled="!modelValue"
-      @click="clearImage"
-    />
-    <input
-      ref="fileInput"
-      type="file"
-      class="hidden"
-      accept="image/*"
-      @change="handleFileUpload"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -101,3 +68,36 @@ const clearImage = () => {
   }
 }
 </script>
+
+<template>
+  <div class="flex gap-2">
+    <InputText
+      v-model="modelValue"
+      class="flex-1"
+      :placeholder="$t('g.imageUrl')"
+    />
+    <Button
+      v-tooltip="$t('g.upload')"
+      :icon="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
+      size="small"
+      :disabled="isUploading"
+      @click="triggerFileInput"
+    />
+    <Button
+      v-tooltip="$t('g.clear')"
+      outlined
+      icon="pi pi-trash"
+      severity="danger"
+      size="small"
+      :disabled="!modelValue"
+      @click="clearImage"
+    />
+    <input
+      ref="fileInput"
+      type="file"
+      class="hidden"
+      accept="image/*"
+      @change="handleFileUpload"
+    />
+  </div>
+</template>

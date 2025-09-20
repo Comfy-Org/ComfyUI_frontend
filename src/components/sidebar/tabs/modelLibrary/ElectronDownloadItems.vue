@@ -1,3 +1,14 @@
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+
+import DownloadItem from './DownloadItem.vue'
+
+const electronDownloadStore = useElectronDownloadStore()
+const { inProgressDownloads } = storeToRefs(electronDownloadStore)
+</script>
+
 <template>
   <div v-if="inProgressDownloads.length > 0" class="mx-6 mb-4">
     <div class="text-lg my-4">
@@ -9,14 +20,3 @@
     </template>
   </div>
 </template>
-
-<script setup lang="ts">
-import { storeToRefs } from 'pinia'
-
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
-
-import DownloadItem from './DownloadItem.vue'
-
-const electronDownloadStore = useElectronDownloadStore()
-const { inProgressDownloads } = storeToRefs(electronDownloadStore)
-</script>

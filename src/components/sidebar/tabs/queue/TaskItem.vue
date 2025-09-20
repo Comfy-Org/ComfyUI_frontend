@@ -1,78 +1,3 @@
-<template>
-  <div class="task-item" @contextmenu="handleContextMenu">
-    <div class="task-result-preview">
-      <template
-        v-if="
-          task.displayStatus === TaskItemDisplayStatus.Completed ||
-          cancelledWithResults
-        "
-      >
-        <ResultItem
-          v-if="flatOutputs.length && coverResult"
-          :result="coverResult"
-          @preview="handlePreview"
-        />
-      </template>
-      <template v-if="task.displayStatus === TaskItemDisplayStatus.Running">
-        <i v-if="!progressPreviewBlobUrl" class="pi pi-spin pi-spinner" />
-        <img
-          v-else
-          :src="progressPreviewBlobUrl"
-          class="progress-preview-img"
-        />
-      </template>
-      <span v-else-if="task.displayStatus === TaskItemDisplayStatus.Pending"
-        >...</span
-      >
-      <i
-        v-else-if="cancelledWithoutResults"
-        class="pi pi-exclamation-triangle"
-      />
-      <i
-        v-else-if="task.displayStatus === TaskItemDisplayStatus.Failed"
-        class="pi pi-exclamation-circle"
-      />
-    </div>
-
-    <div class="task-item-details">
-      <div class="tag-wrapper status-tag-group">
-        <Tag v-if="isFlatTask && task.isHistory" class="node-name-tag">
-          <Button
-            class="task-node-link"
-            :label="`${node?.type} (#${node?.id})`"
-            link
-            size="small"
-            @click="
-              () => {
-                if (!node) return
-                litegraphService.goToNode(node.id)
-              }
-            "
-          />
-        </Tag>
-        <Tag :severity="taskTagSeverity(task.displayStatus)">
-          <span v-html="taskStatusText(task.displayStatus)" />
-          <span v-if="task.isHistory" class="task-time">
-            {{ formatTime(task.executionTimeInSeconds) }}
-          </span>
-          <span v-if="isFlatTask" class="task-prompt-id">
-            {{ task.promptId.split('-')[0] }}
-          </span>
-        </Tag>
-      </div>
-      <div class="tag-wrapper">
-        <Button
-          v-if="task.isHistory && flatOutputs.length > 1"
-          outlined
-          @click="handleOutputLengthClick"
-        >
-          <span style="font-weight: bold">{{ flatOutputs.length }}</span>
-        </Button>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
@@ -197,6 +122,81 @@ const cancelledWithoutResults = computed(() => {
   )
 })
 </script>
+
+<template>
+  <div class="task-item" @contextmenu="handleContextMenu">
+    <div class="task-result-preview">
+      <template
+        v-if="
+          task.displayStatus === TaskItemDisplayStatus.Completed ||
+          cancelledWithResults
+        "
+      >
+        <ResultItem
+          v-if="flatOutputs.length && coverResult"
+          :result="coverResult"
+          @preview="handlePreview"
+        />
+      </template>
+      <template v-if="task.displayStatus === TaskItemDisplayStatus.Running">
+        <i v-if="!progressPreviewBlobUrl" class="pi pi-spin pi-spinner" />
+        <img
+          v-else
+          :src="progressPreviewBlobUrl"
+          class="progress-preview-img"
+        />
+      </template>
+      <span v-else-if="task.displayStatus === TaskItemDisplayStatus.Pending"
+        >...</span
+      >
+      <i
+        v-else-if="cancelledWithoutResults"
+        class="pi pi-exclamation-triangle"
+      />
+      <i
+        v-else-if="task.displayStatus === TaskItemDisplayStatus.Failed"
+        class="pi pi-exclamation-circle"
+      />
+    </div>
+
+    <div class="task-item-details">
+      <div class="tag-wrapper status-tag-group">
+        <Tag v-if="isFlatTask && task.isHistory" class="node-name-tag">
+          <Button
+            class="task-node-link"
+            :label="`${node?.type} (#${node?.id})`"
+            link
+            size="small"
+            @click="
+              () => {
+                if (!node) return
+                litegraphService.goToNode(node.id)
+              }
+            "
+          />
+        </Tag>
+        <Tag :severity="taskTagSeverity(task.displayStatus)">
+          <span v-html="taskStatusText(task.displayStatus)" />
+          <span v-if="task.isHistory" class="task-time">
+            {{ formatTime(task.executionTimeInSeconds) }}
+          </span>
+          <span v-if="isFlatTask" class="task-prompt-id">
+            {{ task.promptId.split('-')[0] }}
+          </span>
+        </Tag>
+      </div>
+      <div class="tag-wrapper">
+        <Button
+          v-if="task.isHistory && flatOutputs.length > 1"
+          outlined
+          @click="handleOutputLengthClick"
+        >
+          <span style="font-weight: bold">{{ flatOutputs.length }}</span>
+        </Button>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .task-result-preview {

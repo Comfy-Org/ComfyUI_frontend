@@ -1,34 +1,4 @@
 <!-- A generalized form item for rendering in a form. -->
-<template>
-  <div class="flex flex-row items-center gap-2">
-    <div class="form-label flex grow items-center">
-      <span
-        :id="`${props.id}-label`"
-        class="text-muted"
-        :class="props.labelClass"
-      >
-        <slot name="name-prefix" />
-        {{ props.item.name }}
-        <i
-          v-if="props.item.tooltip"
-          v-tooltip="props.item.tooltip"
-          class="pi pi-info-circle bg-transparent"
-        />
-        <slot name="name-suffix" />
-      </span>
-    </div>
-    <div class="form-input flex justify-end">
-      <component
-        :is="markRaw(getFormComponent(props.item))"
-        :id="props.id"
-        v-model:model-value="formValue"
-        :aria-labelledby="`${props.id}-label`"
-        v-bind="getFormAttrs(props.item)"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
@@ -114,6 +84,36 @@ function getFormComponent(item: FormItem): Component {
   }
 }
 </script>
+
+<template>
+  <div class="flex flex-row items-center gap-2">
+    <div class="form-label flex grow items-center">
+      <span
+        :id="`${props.id}-label`"
+        class="text-muted"
+        :class="props.labelClass"
+      >
+        <slot name="name-prefix" />
+        {{ props.item.name }}
+        <i
+          v-if="props.item.tooltip"
+          v-tooltip="props.item.tooltip"
+          class="pi pi-info-circle bg-transparent"
+        />
+        <slot name="name-suffix" />
+      </span>
+    </div>
+    <div class="form-input flex justify-end">
+      <component
+        :is="markRaw(getFormComponent(props.item))"
+        :id="props.id"
+        v-model:model-value="formValue"
+        :aria-labelledby="`${props.id}-label`"
+        v-bind="getFormAttrs(props.item)"
+      />
+    </div>
+  </div>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

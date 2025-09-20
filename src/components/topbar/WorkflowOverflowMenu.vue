@@ -1,23 +1,3 @@
-<template>
-  <div>
-    <Button
-      v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-      class="rounded-none"
-      icon="pi pi-ellipsis-h"
-      text
-      severity="secondary"
-      :aria-label="$t('g.moreWorkflows')"
-      @click="menu?.toggle($event)"
-    />
-    <Menu
-      ref="menu"
-      :model="menuItems"
-      :popup="true"
-      class="max-h-[40vh] overflow-auto"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Menu from 'primevue/menu'
@@ -45,3 +25,23 @@ const menuItems = computed(() =>
   }))
 )
 </script>
+
+<template>
+  <div>
+    <Button
+      v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
+      class="rounded-none"
+      icon="pi pi-ellipsis-h"
+      text
+      severity="secondary"
+      :aria-label="$t('g.moreWorkflows')"
+      @click="menu?.toggle($event)"
+    />
+    <Menu
+      ref="menu"
+      :model="menuItems"
+      :popup="true"
+      class="max-h-[40vh] overflow-auto"
+    />
+  </div>
+</template>

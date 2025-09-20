@@ -1,3 +1,27 @@
+<script setup lang="ts">
+import Badge from 'primevue/badge'
+import { useI18n } from 'vue-i18n'
+
+import type { MenuOption } from '@/composables/graph/useMoreOptionsMenu'
+
+const { t } = useI18n()
+
+interface Props {
+  option: MenuOption
+}
+
+interface Emits {
+  (e: 'click', option: MenuOption, event: Event): void
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+const handleClick = (event: Event) => {
+  emit('click', props.option, event)
+}
+</script>
+
 <template>
   <div
     v-if="option.type === 'divider'"
@@ -33,27 +57,3 @@
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import Badge from 'primevue/badge'
-import { useI18n } from 'vue-i18n'
-
-import type { MenuOption } from '@/composables/graph/useMoreOptionsMenu'
-
-const { t } = useI18n()
-
-interface Props {
-  option: MenuOption
-}
-
-interface Emits {
-  (e: 'click', option: MenuOption, event: Event): void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
-
-const handleClick = (event: Event) => {
-  emit('click', props.option, event)
-}
-</script>

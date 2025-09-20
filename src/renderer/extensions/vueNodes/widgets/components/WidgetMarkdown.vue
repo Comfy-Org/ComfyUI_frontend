@@ -1,36 +1,3 @@
-<template>
-  <div
-    class="widget-markdown relative w-full cursor-text"
-    @click="startEditing"
-  >
-    <!-- Display mode: Rendered markdown -->
-    <div
-      v-if="!isEditing"
-      class="comfy-markdown-content text-xs min-h-[60px] rounded-lg px-4 py-2 overflow-y-auto"
-      v-html="renderedHtml"
-    />
-
-    <!-- Edit mode: Textarea -->
-    <Textarea
-      v-else
-      ref="textareaRef"
-      v-model="localValue"
-      :disabled="readonly"
-      class="w-full text-xs"
-      size="small"
-      :rows="6"
-      :pt="{
-        root: {
-          onBlur: handleBlur
-        }
-      }"
-      @update:model-value="onChange"
-      @click.stop
-      @keydown.stop
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Textarea from 'primevue/textarea'
 import { computed, nextTick, ref } from 'vue'
@@ -81,6 +48,39 @@ const handleBlur = () => {
   isEditing.value = false
 }
 </script>
+
+<template>
+  <div
+    class="widget-markdown relative w-full cursor-text"
+    @click="startEditing"
+  >
+    <!-- Display mode: Rendered markdown -->
+    <div
+      v-if="!isEditing"
+      class="comfy-markdown-content text-xs min-h-[60px] rounded-lg px-4 py-2 overflow-y-auto"
+      v-html="renderedHtml"
+    />
+
+    <!-- Edit mode: Textarea -->
+    <Textarea
+      v-else
+      ref="textareaRef"
+      v-model="localValue"
+      :disabled="readonly"
+      class="w-full text-xs"
+      size="small"
+      :rows="6"
+      :pt="{
+        root: {
+          onBlur: handleBlur
+        }
+      }"
+      @update:model-value="onChange"
+      @click.stop
+      @keydown.stop
+    />
+  </div>
+</template>
 
 <style scoped>
 .widget-markdown {

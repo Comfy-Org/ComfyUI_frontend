@@ -1,92 +1,3 @@
-<template>
-  <div>
-    <div v-if="loading" class="flex items-center justify-center p-8">
-      <ProgressSpinner />
-    </div>
-    <div v-else-if="error" class="p-4">
-      <Message severity="error" :closable="false">{{ error }}</Message>
-    </div>
-    <DataTable
-      v-else
-      :value="events"
-      :paginator="true"
-      :rows="pagination.limit"
-      :total-records="pagination.total"
-      :first="dataTableFirst"
-      :lazy="true"
-      class="p-datatable-sm custom-datatable"
-      @page="onPageChange"
-    >
-      <Column field="event_type" :header="$t('credits.eventType')">
-        <template #body="{ data }">
-          <Badge
-            :value="customerEventService.formatEventType(data.event_type)"
-            :severity="customerEventService.getEventSeverity(data.event_type)"
-          />
-        </template>
-      </Column>
-      <Column field="details" :header="$t('credits.details')">
-        <template #body="{ data }">
-          <div class="event-details">
-            <!-- Credits Added -->
-            <template v-if="data.event_type === EventType.CREDIT_ADDED">
-              <div class="text-green-500 font-semibold">
-                {{ $t('credits.added') }} ${{
-                  customerEventService.formatAmount(data.params?.amount)
-                }}
-              </div>
-            </template>
-
-            <!-- Account Created -->
-            <template v-else-if="data.event_type === EventType.ACCOUNT_CREATED">
-              <div>{{ $t('credits.accountInitialized') }}</div>
-            </template>
-
-            <!-- API Usage -->
-            <template
-              v-else-if="data.event_type === EventType.API_USAGE_COMPLETED"
-            >
-              <div class="flex flex-col gap-1">
-                <div class="font-semibold">
-                  {{ data.params?.api_name || 'API' }}
-                </div>
-                <div class="text-sm text-gray-400">
-                  {{ $t('credits.model') }}: {{ data.params?.model || '-' }}
-                </div>
-              </div>
-            </template>
-          </div>
-        </template>
-      </Column>
-      <Column field="createdAt" :header="$t('credits.time')">
-        <template #body="{ data }">
-          {{ customerEventService.formatDate(data.createdAt) }}
-        </template>
-      </Column>
-      <Column field="params" :header="$t('credits.additionalInfo')">
-        <template #body="{ data }">
-          <Button
-            v-if="customerEventService.hasAdditionalInfo(data)"
-            v-tooltip.top="{
-              escape: false,
-              value: tooltipContentMap.get(data.event_id) || '',
-              pt: {
-                text: {
-                  style: {
-                    width: 'max-content !important'
-                  }
-                }
-              }
-            }"
-            icon="pi pi-info-circle"
-            class="p-button-text p-button-sm"
-          />
-        </template>
-      </Column>
-    </DataTable>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Badge from 'primevue/badge'
 import Button from 'primevue/button'
@@ -186,3 +97,92 @@ defineExpose({
   refresh
 })
 </script>
+
+<template>
+  <div>
+    <div v-if="loading" class="flex items-center justify-center p-8">
+      <ProgressSpinner />
+    </div>
+    <div v-else-if="error" class="p-4">
+      <Message severity="error" :closable="false">{{ error }}</Message>
+    </div>
+    <DataTable
+      v-else
+      :value="events"
+      :paginator="true"
+      :rows="pagination.limit"
+      :total-records="pagination.total"
+      :first="dataTableFirst"
+      :lazy="true"
+      class="p-datatable-sm custom-datatable"
+      @page="onPageChange"
+    >
+      <Column field="event_type" :header="$t('credits.eventType')">
+        <template #body="{ data }">
+          <Badge
+            :value="customerEventService.formatEventType(data.event_type)"
+            :severity="customerEventService.getEventSeverity(data.event_type)"
+          />
+        </template>
+      </Column>
+      <Column field="details" :header="$t('credits.details')">
+        <template #body="{ data }">
+          <div class="event-details">
+            <!-- Credits Added -->
+            <template v-if="data.event_type === EventType.CREDIT_ADDED">
+              <div class="text-green-500 font-semibold">
+                {{ $t('credits.added') }} ${{
+                  customerEventService.formatAmount(data.params?.amount)
+                }}
+              </div>
+            </template>
+
+            <!-- Account Created -->
+            <template v-else-if="data.event_type === EventType.ACCOUNT_CREATED">
+              <div>{{ $t('credits.accountInitialized') }}</div>
+            </template>
+
+            <!-- API Usage -->
+            <template
+              v-else-if="data.event_type === EventType.API_USAGE_COMPLETED"
+            >
+              <div class="flex flex-col gap-1">
+                <div class="font-semibold">
+                  {{ data.params?.api_name || 'API' }}
+                </div>
+                <div class="text-sm text-gray-400">
+                  {{ $t('credits.model') }}: {{ data.params?.model || '-' }}
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </Column>
+      <Column field="createdAt" :header="$t('credits.time')">
+        <template #body="{ data }">
+          {{ customerEventService.formatDate(data.createdAt) }}
+        </template>
+      </Column>
+      <Column field="params" :header="$t('credits.additionalInfo')">
+        <template #body="{ data }">
+          <Button
+            v-if="customerEventService.hasAdditionalInfo(data)"
+            v-tooltip.top="{
+              escape: false,
+              value: tooltipContentMap.get(data.event_id) || '',
+              pt: {
+                text: {
+                  style: {
+                    width: 'max-content !important'
+                  }
+                }
+              }
+            }"
+            icon="pi pi-info-circle"
+            class="p-button-text p-button-sm"
+          />
+        </template>
+      </Column>
+    </DataTable>
+  </div>
+</template>

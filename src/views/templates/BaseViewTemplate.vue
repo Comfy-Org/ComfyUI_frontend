@@ -1,24 +1,3 @@
-<template>
-  <div
-    class="font-sans w-screen h-screen flex flex-col"
-    :class="[
-      dark
-        ? 'text-neutral-300 bg-neutral-900 dark-theme'
-        : 'text-neutral-900 bg-neutral-300'
-    ]"
-  >
-    <!-- Virtual top menu for native window (drag handle) -->
-    <div
-      v-show="isNativeWindow()"
-      ref="topMenuRef"
-      class="app-drag w-full h-(--comfy-topbar-height)"
-    />
-    <div class="grow w-full flex items-center justify-center overflow-auto">
-      <slot />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
 
@@ -50,3 +29,24 @@ onMounted(async () => {
   }
 })
 </script>
+
+<template>
+  <div
+    class="font-sans w-screen h-screen flex flex-col"
+    :class="[
+      dark
+        ? 'text-neutral-300 bg-neutral-900 dark-theme'
+        : 'text-neutral-900 bg-neutral-300'
+    ]"
+  >
+    <!-- Virtual top menu for native window (drag handle) -->
+    <div
+      v-show="isNativeWindow()"
+      ref="topMenuRef"
+      class="app-drag w-full h-(--comfy-topbar-height)"
+    />
+    <div class="grow w-full flex items-center justify-center overflow-auto">
+      <slot />
+    </div>
+  </div>
+</template>

@@ -1,21 +1,3 @@
-<template>
-  <div class="prompt-dialog-content flex flex-col gap-2 pt-8">
-    <FloatLabel>
-      <InputText
-        ref="inputRef"
-        v-model="inputValue"
-        autofocus
-        @keyup.enter="onConfirm"
-        @focus="selectAllText"
-      />
-      <label>{{ message }}</label>
-    </FloatLabel>
-    <Button @click="onConfirm">
-      {{ $t('g.confirm') }}
-    </Button>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import FloatLabel from 'primevue/floatlabel'
@@ -45,3 +27,21 @@ const selectAllText = () => {
   inputElement.setSelectionRange(0, inputElement.value.length)
 }
 </script>
+
+<template>
+  <div class="prompt-dialog-content flex flex-col gap-2 pt-8">
+    <FloatLabel>
+      <InputText
+        ref="inputRef"
+        v-model="inputValue"
+        autofocus
+        @keyup.enter="onConfirm"
+        @focus="selectAllText"
+      />
+      <label>{{ message }}</label>
+    </FloatLabel>
+    <Button @click="onConfirm">
+      {{ $t('g.confirm') }}
+    </Button>
+  </div>
+</template>

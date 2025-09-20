@@ -1,75 +1,3 @@
-<template>
-  <div
-    class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
-    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
-  >
-    <Button
-      v-if="showOverflowArrows"
-      icon="pi pi-chevron-left"
-      text
-      severity="secondary"
-      class="overflow-arrow overflow-arrow-left"
-      :disabled="!leftArrowEnabled"
-      @mousedown="whileMouseDown($event, () => scroll(-1))"
-    />
-    <ScrollPanel
-      ref="scrollPanelRef"
-      class="overflow-hidden no-drag"
-      :pt:content="{
-        class: 'p-0 w-full flex',
-        onwheel: handleWheel
-      }"
-      pt:bar-x="h-1"
-    >
-      <SelectButton
-        class="workflow-tabs bg-transparent"
-        :class="props.class"
-        :model-value="selectedWorkflow"
-        :options="options"
-        option-label="label"
-        data-key="value"
-        @update:model-value="onWorkflowChange"
-      >
-        <template #option="{ option }">
-          <WorkflowTab
-            :workflow-option="option"
-            @contextmenu="showContextMenu($event, option)"
-            @click.middle="onCloseWorkflow(option)"
-          />
-        </template>
-      </SelectButton>
-    </ScrollPanel>
-    <Button
-      v-if="showOverflowArrows"
-      icon="pi pi-chevron-right"
-      text
-      severity="secondary"
-      class="overflow-arrow overflow-arrow-right"
-      :disabled="!rightArrowEnabled"
-      @mousedown="whileMouseDown($event, () => scroll(1))"
-    />
-    <WorkflowOverflowMenu
-      v-if="showOverflowArrows"
-      :workflows="workflowStore.openWorkflows"
-      :active-workflow="workflowStore.activeWorkflow"
-    />
-    <Button
-      v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button shrink-0 no-drag rounded-none"
-      icon="pi pi-plus"
-      text
-      severity="secondary"
-      :aria-label="$t('sideToolbar.newBlankWorkflow')"
-      @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
-    />
-    <ContextMenu ref="menu" :model="contextMenuItems" />
-    <div
-      v-if="menuSetting !== 'Bottom' && isDesktop"
-      class="window-actions-spacer shrink-0 app-drag"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useScroll } from '@vueuse/core'
 import Button from 'primevue/button'
@@ -301,6 +229,78 @@ onUpdated(() => {
   }
 })
 </script>
+
+<template>
+  <div
+    class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
+    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
+  >
+    <Button
+      v-if="showOverflowArrows"
+      icon="pi pi-chevron-left"
+      text
+      severity="secondary"
+      class="overflow-arrow overflow-arrow-left"
+      :disabled="!leftArrowEnabled"
+      @mousedown="whileMouseDown($event, () => scroll(-1))"
+    />
+    <ScrollPanel
+      ref="scrollPanelRef"
+      class="overflow-hidden no-drag"
+      :pt:content="{
+        class: 'p-0 w-full flex',
+        onwheel: handleWheel
+      }"
+      pt:bar-x="h-1"
+    >
+      <SelectButton
+        class="workflow-tabs bg-transparent"
+        :class="props.class"
+        :model-value="selectedWorkflow"
+        :options="options"
+        option-label="label"
+        data-key="value"
+        @update:model-value="onWorkflowChange"
+      >
+        <template #option="{ option }">
+          <WorkflowTab
+            :workflow-option="option"
+            @contextmenu="showContextMenu($event, option)"
+            @click.middle="onCloseWorkflow(option)"
+          />
+        </template>
+      </SelectButton>
+    </ScrollPanel>
+    <Button
+      v-if="showOverflowArrows"
+      icon="pi pi-chevron-right"
+      text
+      severity="secondary"
+      class="overflow-arrow overflow-arrow-right"
+      :disabled="!rightArrowEnabled"
+      @mousedown="whileMouseDown($event, () => scroll(1))"
+    />
+    <WorkflowOverflowMenu
+      v-if="showOverflowArrows"
+      :workflows="workflowStore.openWorkflows"
+      :active-workflow="workflowStore.activeWorkflow"
+    />
+    <Button
+      v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
+      class="new-blank-workflow-button shrink-0 no-drag rounded-none"
+      icon="pi pi-plus"
+      text
+      severity="secondary"
+      :aria-label="$t('sideToolbar.newBlankWorkflow')"
+      @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+    />
+    <ContextMenu ref="menu" :model="contextMenuItems" />
+    <div
+      v-if="menuSetting !== 'Bottom' && isDesktop"
+      class="window-actions-spacer shrink-0 app-drag"
+    />
+  </div>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

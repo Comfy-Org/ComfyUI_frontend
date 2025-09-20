@@ -1,14 +1,3 @@
-<template>
-  <Drawer
-    v-model:visible="terminalVisible"
-    :header
-    position="bottom"
-    style="height: max(50vh, 34rem)"
-  >
-    <BaseTerminal @created="terminalCreated" @unmounted="terminalUnmounted" />
-  </Drawer>
-</template>
-
 <script setup lang="ts">
 import type { Terminal } from '@xterm/xterm'
 import Drawer from 'primevue/drawer'
@@ -60,3 +49,14 @@ onMounted(async () => {
   })
 })
 </script>
+
+<template>
+  <Drawer
+    v-model:visible="terminalVisible"
+    :header
+    position="bottom"
+    style="height: max(50vh, 34rem)"
+  >
+    <BaseTerminal @created="terminalCreated" @unmounted="terminalUnmounted" />
+  </Drawer>
+</template>

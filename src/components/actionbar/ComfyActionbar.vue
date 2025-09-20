@@ -1,16 +1,3 @@
-<template>
-  <Panel
-    class="actionbar w-fit"
-    :style="style"
-    :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
-  >
-    <div ref="panelRef" class="actionbar-content flex items-center select-none">
-      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
-      <ComfyQueueButton />
-    </div>
-  </Panel>
-</template>
-
 <script lang="ts" setup>
 import {
   useDraggable,
@@ -227,6 +214,19 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
   })
 })
 </script>
+
+<template>
+  <Panel
+    class="actionbar w-fit"
+    :style="style"
+    :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
+  >
+    <div ref="panelRef" class="actionbar-content flex items-center select-none">
+      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
+      <ComfyQueueButton />
+    </div>
+  </Panel>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

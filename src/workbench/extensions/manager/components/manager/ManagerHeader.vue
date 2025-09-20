@@ -1,3 +1,5 @@
+<script setup lang="ts"></script>
+
 <template>
   <div class="w-full">
     <div class="flex items-center">
@@ -7,5 +9,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts"></script>

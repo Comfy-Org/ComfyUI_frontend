@@ -1,38 +1,3 @@
-<template>
-  <Panel
-    :header="$t('install.settings.mirrorSettings')"
-    toggleable
-    :collapsed="!showMirrorInputs"
-    pt:root="bg-neutral-800 border-none w-[600px]"
-  >
-    <template
-      v-for="([item, modelValue], index) in mirrors"
-      :key="item.settingId + item.mirror"
-    >
-      <Divider v-if="index > 0" />
-
-      <MirrorItem
-        v-model="modelValue.value"
-        :item="item"
-        @state-change="validationStates[index] = $event"
-      />
-    </template>
-    <template #icons>
-      <i
-        v-tooltip="validationStateTooltip"
-        :class="{
-          'pi pi-spin pi-spinner text-neutral-400':
-            validationState === ValidationState.LOADING,
-          'pi pi-check text-green-500':
-            validationState === ValidationState.VALID,
-          'pi pi-times text-red-500':
-            validationState === ValidationState.INVALID
-        }"
-      />
-    </template>
-  </Panel>
-</template>
-
 <script setup lang="ts">
 import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import { TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
@@ -119,3 +84,38 @@ const validationStateTooltip = computed(() => {
   }
 })
 </script>
+
+<template>
+  <Panel
+    :header="$t('install.settings.mirrorSettings')"
+    toggleable
+    :collapsed="!showMirrorInputs"
+    pt:root="bg-neutral-800 border-none w-[600px]"
+  >
+    <template
+      v-for="([item, modelValue], index) in mirrors"
+      :key="item.settingId + item.mirror"
+    >
+      <Divider v-if="index > 0" />
+
+      <MirrorItem
+        v-model="modelValue.value"
+        :item="item"
+        @state-change="validationStates[index] = $event"
+      />
+    </template>
+    <template #icons>
+      <i
+        v-tooltip="validationStateTooltip"
+        :class="{
+          'pi pi-spin pi-spinner text-neutral-400':
+            validationState === ValidationState.LOADING,
+          'pi pi-check text-green-500':
+            validationState === ValidationState.VALID,
+          'pi pi-times text-red-500':
+            validationState === ValidationState.INVALID
+        }"
+      />
+    </template>
+  </Panel>
+</template>

@@ -1,3 +1,19 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+
+const props = defineProps<{
+  class?: string
+  icon?: string
+  title: string
+  message: string
+  textClass?: string
+  buttonLabel?: string
+}>()
+
+defineEmits(['action'])
+</script>
+
 <template>
   <div class="no-results-placeholder p-8 h-full" :class="props.class">
     <Card>
@@ -19,22 +35,6 @@
     </Card>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-
-const props = defineProps<{
-  class?: string
-  icon?: string
-  title: string
-  message: string
-  textClass?: string
-  buttonLabel?: string
-}>()
-
-defineEmits(['action'])
-</script>
 
 <style scoped>
 .no-results-placeholder :deep(.p-card) {

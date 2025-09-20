@@ -1,133 +1,3 @@
-<template>
-  <PanelTemplate value="Keybinding" class="keybinding-panel">
-    <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="$t('g.searchKeybindings') + '...'"
-      />
-    </template>
-
-    <DataTable
-      v-model:selection="selectedCommandData"
-      :value="commandsData"
-      :global-filter-fields="['id', 'label']"
-      :filters="filters"
-      selection-mode="single"
-      striped-rows
-      :pt="{
-        header: 'px-0'
-      }"
-      @row-dblclick="editKeybinding($event.data)"
-    >
-      <Column field="actions" header="">
-        <template #body="slotProps">
-          <div class="actions invisible flex flex-row">
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-text"
-              @click="editKeybinding(slotProps.data)"
-            />
-            <Button
-              icon="pi pi-replay"
-              class="p-button-text p-button-warn"
-              :disabled="
-                !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
-              "
-              @click="resetKeybinding(slotProps.data)"
-            />
-            <Button
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger"
-              :disabled="!slotProps.data.keybinding"
-              @click="removeKeybinding(slotProps.data)"
-            />
-          </div>
-        </template>
-      </Column>
-      <Column
-        field="id"
-        :header="$t('g.command')"
-        sortable
-        class="max-w-64 2xl:max-w-full"
-      >
-        <template #body="slotProps">
-          <div
-            class="overflow-hidden text-ellipsis whitespace-nowrap"
-            :title="slotProps.data.id"
-          >
-            {{ slotProps.data.label }}
-          </div>
-        </template>
-      </Column>
-      <Column field="keybinding" :header="$t('g.keybinding')">
-        <template #body="slotProps">
-          <KeyComboDisplay
-            v-if="slotProps.data.keybinding"
-            :key-combo="slotProps.data.keybinding.combo"
-            :is-modified="
-              keybindingStore.isCommandKeybindingModified(slotProps.data.id)
-            "
-          />
-          <span v-else>-</span>
-        </template>
-      </Column>
-      <Column field="source" :header="$t('g.source')">
-        <template #body="slotProps">
-          <span class="overflow-hidden text-ellipsis">{{
-            slotProps.data.source || '-'
-          }}</span>
-        </template>
-      </Column>
-    </DataTable>
-
-    <Dialog
-      v-model:visible="editDialogVisible"
-      class="min-w-96"
-      modal
-      :header="currentEditingCommand?.label"
-      @hide="cancelEdit"
-    >
-      <div>
-        <InputText
-          ref="keybindingInput"
-          class="mb-2 text-center"
-          :model-value="newBindingKeyCombo?.toString() ?? ''"
-          placeholder="Press keys for new binding"
-          autocomplete="off"
-          fluid
-          @keydown.stop.prevent="captureKeybinding"
-        />
-        <Message v-if="existingKeybindingOnCombo" severity="warn">
-          {{ $t('g.keybindingAlreadyExists') }}
-          <Tag
-            severity="secondary"
-            :value="existingKeybindingOnCombo.commandId"
-          />
-        </Message>
-      </div>
-      <template #footer>
-        <Button
-          :label="existingKeybindingOnCombo ? 'Overwrite' : 'Save'"
-          :icon="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
-          :severity="existingKeybindingOnCombo ? 'warn' : undefined"
-          autofocus
-          @click="saveKeybinding"
-        />
-      </template>
-    </Dialog>
-    <Button
-      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
-      class="mt-4"
-      :label="$t('g.resetAll')"
-      icon="pi pi-replay"
-      severity="danger"
-      fluid
-      text
-      @click="resetAllKeybindings"
-    />
-  </PanelTemplate>
-</template>
-
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
 import Button from 'primevue/button'
@@ -293,6 +163,136 @@ async function resetAllKeybindings() {
   })
 }
 </script>
+
+<template>
+  <PanelTemplate value="Keybinding" class="keybinding-panel">
+    <template #header>
+      <SearchBox
+        v-model="filters['global'].value"
+        :placeholder="$t('g.searchKeybindings') + '...'"
+      />
+    </template>
+
+    <DataTable
+      v-model:selection="selectedCommandData"
+      :value="commandsData"
+      :global-filter-fields="['id', 'label']"
+      :filters="filters"
+      selection-mode="single"
+      striped-rows
+      :pt="{
+        header: 'px-0'
+      }"
+      @row-dblclick="editKeybinding($event.data)"
+    >
+      <Column field="actions" header="">
+        <template #body="slotProps">
+          <div class="actions invisible flex flex-row">
+            <Button
+              icon="pi pi-pencil"
+              class="p-button-text"
+              @click="editKeybinding(slotProps.data)"
+            />
+            <Button
+              icon="pi pi-replay"
+              class="p-button-text p-button-warn"
+              :disabled="
+                !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
+              "
+              @click="resetKeybinding(slotProps.data)"
+            />
+            <Button
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              :disabled="!slotProps.data.keybinding"
+              @click="removeKeybinding(slotProps.data)"
+            />
+          </div>
+        </template>
+      </Column>
+      <Column
+        field="id"
+        :header="$t('g.command')"
+        sortable
+        class="max-w-64 2xl:max-w-full"
+      >
+        <template #body="slotProps">
+          <div
+            class="overflow-hidden text-ellipsis whitespace-nowrap"
+            :title="slotProps.data.id"
+          >
+            {{ slotProps.data.label }}
+          </div>
+        </template>
+      </Column>
+      <Column field="keybinding" :header="$t('g.keybinding')">
+        <template #body="slotProps">
+          <KeyComboDisplay
+            v-if="slotProps.data.keybinding"
+            :key-combo="slotProps.data.keybinding.combo"
+            :is-modified="
+              keybindingStore.isCommandKeybindingModified(slotProps.data.id)
+            "
+          />
+          <span v-else>-</span>
+        </template>
+      </Column>
+      <Column field="source" :header="$t('g.source')">
+        <template #body="slotProps">
+          <span class="overflow-hidden text-ellipsis">{{
+            slotProps.data.source || '-'
+          }}</span>
+        </template>
+      </Column>
+    </DataTable>
+
+    <Dialog
+      v-model:visible="editDialogVisible"
+      class="min-w-96"
+      modal
+      :header="currentEditingCommand?.label"
+      @hide="cancelEdit"
+    >
+      <div>
+        <InputText
+          ref="keybindingInput"
+          class="mb-2 text-center"
+          :model-value="newBindingKeyCombo?.toString() ?? ''"
+          placeholder="Press keys for new binding"
+          autocomplete="off"
+          fluid
+          @keydown.stop.prevent="captureKeybinding"
+        />
+        <Message v-if="existingKeybindingOnCombo" severity="warn">
+          {{ $t('g.keybindingAlreadyExists') }}
+          <Tag
+            severity="secondary"
+            :value="existingKeybindingOnCombo.commandId"
+          />
+        </Message>
+      </div>
+      <template #footer>
+        <Button
+          :label="existingKeybindingOnCombo ? 'Overwrite' : 'Save'"
+          :icon="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
+          :severity="existingKeybindingOnCombo ? 'warn' : undefined"
+          autofocus
+          @click="saveKeybinding"
+        />
+      </template>
+    </Dialog>
+    <Button
+      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
+      class="mt-4"
+      :label="$t('g.resetAll')"
+      icon="pi pi-replay"
+      severity="danger"
+      fluid
+      text
+      @click="resetAllKeybindings"
+    />
+  </PanelTemplate>
+</template>
 
 <style scoped>
 @reference '../../../../assets/css/style.css';

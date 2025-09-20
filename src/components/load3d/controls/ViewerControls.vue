@@ -1,19 +1,3 @@
-<template>
-  <div class="relative bg-gray-700/30 rounded-lg">
-    <div class="flex flex-col gap-2">
-      <Button class="p-button-rounded p-button-text" @click="openIn3DViewer">
-        <i
-          v-tooltip.right="{
-            value: t('load3d.openIn3DViewer'),
-            showDelay: 300
-          }"
-          class="pi pi-expand text-white text-lg"
-        />
-      </Button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
@@ -48,5 +32,21 @@ const openIn3DViewer = () => {
   })
 }
 </script>
+
+<template>
+  <div class="relative bg-gray-700/30 rounded-lg">
+    <div class="flex flex-col gap-2">
+      <Button class="p-button-rounded p-button-text" @click="openIn3DViewer">
+        <i
+          v-tooltip.right="{
+            value: t('load3d.openIn3DViewer'),
+            showDelay: 300
+          }"
+          class="pi pi-expand text-white text-lg"
+        />
+      </Button>
+    </div>
+  </div>
+</template>
 
 <style scoped></style>

@@ -1,3 +1,20 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+
+import type { components } from '@/types/comfyRegistryTypes'
+
+const DEFAULT_BANNER = '/assets/images/fallback-gradient-avatar.svg'
+
+const { nodePack } = defineProps<{
+  nodePack: components['schemas']['Node']
+}>()
+
+const isImageError = ref(false)
+
+const showDefaultBanner = computed(() => !nodePack.banner_url && !nodePack.icon)
+const imgSrc = computed(() => nodePack.banner_url || nodePack.icon)
+</script>
+
 <template>
   <div class="w-full aspect-7/3 overflow-hidden">
     <!-- default banner show -->
@@ -33,20 +50,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed, ref } from 'vue'
-
-import type { components } from '@/types/comfyRegistryTypes'
-
-const DEFAULT_BANNER = '/assets/images/fallback-gradient-avatar.svg'
-
-const { nodePack } = defineProps<{
-  nodePack: components['schemas']['Node']
-}>()
-
-const isImageError = ref(false)
-
-const showDefaultBanner = computed(() => !nodePack.banner_url && !nodePack.icon)
-const imgSrc = computed(() => nodePack.banner_url || nodePack.icon)
-</script>

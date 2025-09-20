@@ -1,133 +1,3 @@
-<template>
-  <div class="help-center-menu" role="menu" aria-label="Help Center Menu">
-    <!-- Main Menu Items -->
-    <nav class="help-menu-section" role="menubar">
-      <button
-        v-for="menuItem in menuItems"
-        v-show="menuItem.visible !== false"
-        :key="menuItem.key"
-        type="button"
-        class="help-menu-item"
-        :class="{ 'more-item': menuItem.key === 'more' }"
-        role="menuitem"
-        @click="menuItem.action"
-        @mouseenter="onMenuItemHover(menuItem.key, $event)"
-        @mouseleave="onMenuItemLeave(menuItem.key)"
-      >
-        <div class="help-menu-icon-container">
-          <div class="help-menu-icon">
-            <component
-              :is="menuItem.icon"
-              v-if="typeof menuItem.icon === 'object'"
-              :size="16"
-            />
-            <i v-else :class="menuItem.icon" />
-          </div>
-          <div v-if="menuItem.showRedDot" class="menu-red-dot" />
-        </div>
-        <span class="menu-label">{{ menuItem.label }}</span>
-        <i v-if="menuItem.key === 'more'" class="pi pi-chevron-right" />
-      </button>
-    </nav>
-
-    <!-- More Submenu -->
-    <Teleport to="body">
-      <div
-        v-if="isSubmenuVisible"
-        ref="submenuRef"
-        class="more-submenu"
-        :style="submenuStyle"
-        @mouseenter="onSubmenuHover"
-        @mouseleave="onSubmenuLeave"
-      >
-        <template
-          v-for="submenuItem in moreMenuItem?.items"
-          :key="submenuItem.key"
-        >
-          <div
-            v-if="submenuItem.type === 'divider'"
-            v-show="submenuItem.visible !== false"
-            class="submenu-divider"
-          />
-          <button
-            v-else
-            v-show="submenuItem.visible !== false"
-            type="button"
-            class="help-menu-item submenu-item"
-            role="menuitem"
-            @click="submenuItem.action"
-          >
-            <span class="menu-label">{{ submenuItem.label }}</span>
-          </button>
-        </template>
-      </div>
-    </Teleport>
-
-    <!-- What's New Section -->
-    <section v-if="showVersionUpdates" class="whats-new-section">
-      <h3 class="section-description">{{ $t('helpCenter.whatsNew') }}</h3>
-
-      <!-- Release Items -->
-      <div v-if="hasReleases" role="group" aria-label="Recent releases">
-        <article
-          v-for="release in releaseStore.recentReleases"
-          :key="release.id || release.version"
-          class="help-menu-item release-menu-item"
-          role="button"
-          tabindex="0"
-          @click="onReleaseClick(release)"
-          @keydown.enter="onReleaseClick(release)"
-          @keydown.space.prevent="onReleaseClick(release)"
-        >
-          <i class="pi pi-refresh help-menu-icon" aria-hidden="true" />
-          <div class="release-content">
-            <span class="release-title">
-              {{
-                $t('g.releaseTitle', {
-                  package: 'Comfy',
-                  version: release.version
-                })
-              }}
-            </span>
-            <time class="release-date" :datetime="release.published_at">
-              <span class="normal-state">
-                {{ formatReleaseDate(release.published_at) }}
-              </span>
-              <span class="hover-state">
-                {{ $t('helpCenter.clickToLearnMore') }}
-              </span>
-            </time>
-          </div>
-          <Button
-            v-if="shouldShowUpdateButton(release)"
-            :label="$t('helpCenter.updateAvailable')"
-            size="small"
-            class="update-button"
-            @click.stop="onUpdate(release)"
-          />
-        </article>
-      </div>
-
-      <!-- Loading State -->
-      <div
-        v-else-if="releaseStore.isLoading"
-        class="help-menu-item"
-        role="status"
-        aria-live="polite"
-      >
-        <i class="pi pi-spin pi-spinner help-menu-icon" aria-hidden="true" />
-        <span>{{ $t('helpCenter.loadingReleases') }}</span>
-      </div>
-
-      <!-- No Releases State -->
-      <div v-else class="help-menu-item" role="status">
-        <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
-        <span>{{ $t('helpCenter.noRecentReleases') }}</span>
-      </div>
-    </section>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import {
@@ -513,6 +383,136 @@ onMounted(async () => {
   }
 })
 </script>
+
+<template>
+  <div class="help-center-menu" role="menu" aria-label="Help Center Menu">
+    <!-- Main Menu Items -->
+    <nav class="help-menu-section" role="menubar">
+      <button
+        v-for="menuItem in menuItems"
+        v-show="menuItem.visible !== false"
+        :key="menuItem.key"
+        type="button"
+        class="help-menu-item"
+        :class="{ 'more-item': menuItem.key === 'more' }"
+        role="menuitem"
+        @click="menuItem.action"
+        @mouseenter="onMenuItemHover(menuItem.key, $event)"
+        @mouseleave="onMenuItemLeave(menuItem.key)"
+      >
+        <div class="help-menu-icon-container">
+          <div class="help-menu-icon">
+            <component
+              :is="menuItem.icon"
+              v-if="typeof menuItem.icon === 'object'"
+              :size="16"
+            />
+            <i v-else :class="menuItem.icon" />
+          </div>
+          <div v-if="menuItem.showRedDot" class="menu-red-dot" />
+        </div>
+        <span class="menu-label">{{ menuItem.label }}</span>
+        <i v-if="menuItem.key === 'more'" class="pi pi-chevron-right" />
+      </button>
+    </nav>
+
+    <!-- More Submenu -->
+    <Teleport to="body">
+      <div
+        v-if="isSubmenuVisible"
+        ref="submenuRef"
+        class="more-submenu"
+        :style="submenuStyle"
+        @mouseenter="onSubmenuHover"
+        @mouseleave="onSubmenuLeave"
+      >
+        <template
+          v-for="submenuItem in moreMenuItem?.items"
+          :key="submenuItem.key"
+        >
+          <div
+            v-if="submenuItem.type === 'divider'"
+            v-show="submenuItem.visible !== false"
+            class="submenu-divider"
+          />
+          <button
+            v-else
+            v-show="submenuItem.visible !== false"
+            type="button"
+            class="help-menu-item submenu-item"
+            role="menuitem"
+            @click="submenuItem.action"
+          >
+            <span class="menu-label">{{ submenuItem.label }}</span>
+          </button>
+        </template>
+      </div>
+    </Teleport>
+
+    <!-- What's New Section -->
+    <section v-if="showVersionUpdates" class="whats-new-section">
+      <h3 class="section-description">{{ $t('helpCenter.whatsNew') }}</h3>
+
+      <!-- Release Items -->
+      <div v-if="hasReleases" role="group" aria-label="Recent releases">
+        <article
+          v-for="release in releaseStore.recentReleases"
+          :key="release.id || release.version"
+          class="help-menu-item release-menu-item"
+          role="button"
+          tabindex="0"
+          @click="onReleaseClick(release)"
+          @keydown.enter="onReleaseClick(release)"
+          @keydown.space.prevent="onReleaseClick(release)"
+        >
+          <i class="pi pi-refresh help-menu-icon" aria-hidden="true" />
+          <div class="release-content">
+            <span class="release-title">
+              {{
+                $t('g.releaseTitle', {
+                  package: 'Comfy',
+                  version: release.version
+                })
+              }}
+            </span>
+            <time class="release-date" :datetime="release.published_at">
+              <span class="normal-state">
+                {{ formatReleaseDate(release.published_at) }}
+              </span>
+              <span class="hover-state">
+                {{ $t('helpCenter.clickToLearnMore') }}
+              </span>
+            </time>
+          </div>
+          <Button
+            v-if="shouldShowUpdateButton(release)"
+            :label="$t('helpCenter.updateAvailable')"
+            size="small"
+            class="update-button"
+            @click.stop="onUpdate(release)"
+          />
+        </article>
+      </div>
+
+      <!-- Loading State -->
+      <div
+        v-else-if="releaseStore.isLoading"
+        class="help-menu-item"
+        role="status"
+        aria-live="polite"
+      >
+        <i class="pi pi-spin pi-spinner help-menu-icon" aria-hidden="true" />
+        <span>{{ $t('helpCenter.loadingReleases') }}</span>
+      </div>
+
+      <!-- No Releases State -->
+      <div v-else class="help-menu-item" role="status">
+        <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
+        <span>{{ $t('helpCenter.noRecentReleases') }}</span>
+      </div>
+    </section>
+  </div>
+</template>
 
 <style scoped>
 .help-center-menu {

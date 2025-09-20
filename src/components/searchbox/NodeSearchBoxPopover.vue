@@ -1,37 +1,3 @@
-<template>
-  <div>
-    <Dialog
-      v-model:visible="visible"
-      modal
-      :dismissable-mask="dismissable"
-      :pt="{
-        root: {
-          class: 'invisible-dialog-root',
-          role: 'search'
-        },
-        mask: { class: 'node-search-box-dialog-mask' },
-        transition: {
-          enterFromClass: 'opacity-0 scale-75',
-          // 100ms is the duration of the transition in the dialog component
-          enterActiveClass: 'transition-all duration-100 ease-out',
-          leaveActiveClass: 'transition-all duration-100 ease-in',
-          leaveToClass: 'opacity-0 scale-75'
-        }
-      }"
-      @hide="clearFilters"
-    >
-      <template #container>
-        <NodeSearchBox
-          :filters="nodeFilters"
-          @add-filter="addFilter"
-          @remove-filter="removeFilter"
-          @add-node="addNode"
-        />
-      </template>
-    </Dialog>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -302,6 +268,40 @@ watch(visible, () => {
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 defineExpose({ showSearchBox })
 </script>
+
+<template>
+  <div>
+    <Dialog
+      v-model:visible="visible"
+      modal
+      :dismissable-mask="dismissable"
+      :pt="{
+        root: {
+          class: 'invisible-dialog-root',
+          role: 'search'
+        },
+        mask: { class: 'node-search-box-dialog-mask' },
+        transition: {
+          enterFromClass: 'opacity-0 scale-75',
+          // 100ms is the duration of the transition in the dialog component
+          enterActiveClass: 'transition-all duration-100 ease-out',
+          leaveActiveClass: 'transition-all duration-100 ease-in',
+          leaveToClass: 'opacity-0 scale-75'
+        }
+      }"
+      @hide="clearFilters"
+    >
+      <template #container>
+        <NodeSearchBox
+          :filters="nodeFilters"
+          @add-filter="addFilter"
+          @remove-filter="removeFilter"
+          @add-node="addNode"
+        />
+      </template>
+    </Dialog>
+  </div>
+</template>
 
 <style>
 .invisible-dialog-root {

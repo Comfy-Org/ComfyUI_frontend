@@ -1,76 +1,3 @@
-<template>
-  <div
-    class="comfyui-logo-wrapper p-1 flex justify-center items-center cursor-pointer rounded-md mr-2"
-    :class="{
-      'comfyui-logo-menu-visible': menuRef?.visible
-    }"
-    :style="{
-      minWidth: isLargeSidebar ? '4rem' : 'auto'
-    }"
-    @click="menuRef?.toggle($event)"
-  >
-    <img
-      src="/assets/images/comfy-logo-mono.svg"
-      alt="ComfyUI Logo"
-      class="comfyui-logo h-7"
-      @contextmenu="showNativeSystemMenu"
-    />
-    <i class="pi pi-angle-down ml-1 text-[10px]" />
-  </div>
-  <TieredMenu
-    ref="menuRef"
-    :model="translatedItems"
-    :popup="true"
-    class="comfy-command-menu"
-    :class="{
-      'comfy-command-menu-top': isTopMenu
-    }"
-    @show="onMenuShow"
-  >
-    <template #item="{ item, props }">
-      <a
-        class="p-menubar-item-link px-4 py-2"
-        v-bind="props.action"
-        :href="item.url"
-        target="_blank"
-        :class="typeof item.class === 'function' ? item.class() : item.class"
-        @mousedown="
-          isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
-        "
-        @click="handleItemClick(item, $event)"
-      >
-        <i
-          v-if="hasActiveStateSiblings(item)"
-          class="p-menubar-item-icon pi pi-check text-sm"
-          :class="{ invisible: !item.comfyCommand?.active?.() }"
-        />
-        <span
-          v-else-if="
-            item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
-          "
-          class="p-menubar-item-icon"
-          :class="item.icon"
-        />
-        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <i
-          v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
-          class="ml-auto"
-          :class="item.icon"
-        />
-        <span
-          v-if="item?.comfyCommand?.keybinding"
-          class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
-        >
-          {{ item.comfyCommand.keybinding.combo.toString() }}
-        </span>
-        <i v-if="item.items" class="ml-auto pi pi-angle-right" />
-      </a>
-    </template>
-  </TieredMenu>
-
-  <SubgraphBreadcrumb />
-</template>
-
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
 import TieredMenu, {
@@ -278,6 +205,79 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
   )
 }
 </script>
+
+<template>
+  <div
+    class="comfyui-logo-wrapper p-1 flex justify-center items-center cursor-pointer rounded-md mr-2"
+    :class="{
+      'comfyui-logo-menu-visible': menuRef?.visible
+    }"
+    :style="{
+      minWidth: isLargeSidebar ? '4rem' : 'auto'
+    }"
+    @click="menuRef?.toggle($event)"
+  >
+    <img
+      src="/assets/images/comfy-logo-mono.svg"
+      alt="ComfyUI Logo"
+      class="comfyui-logo h-7"
+      @contextmenu="showNativeSystemMenu"
+    />
+    <i class="pi pi-angle-down ml-1 text-[10px]" />
+  </div>
+  <TieredMenu
+    ref="menuRef"
+    :model="translatedItems"
+    :popup="true"
+    class="comfy-command-menu"
+    :class="{
+      'comfy-command-menu-top': isTopMenu
+    }"
+    @show="onMenuShow"
+  >
+    <template #item="{ item, props }">
+      <a
+        class="p-menubar-item-link px-4 py-2"
+        v-bind="props.action"
+        :href="item.url"
+        target="_blank"
+        :class="typeof item.class === 'function' ? item.class() : item.class"
+        @mousedown="
+          isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
+        "
+        @click="handleItemClick(item, $event)"
+      >
+        <i
+          v-if="hasActiveStateSiblings(item)"
+          class="p-menubar-item-icon pi pi-check text-sm"
+          :class="{ invisible: !item.comfyCommand?.active?.() }"
+        />
+        <span
+          v-else-if="
+            item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
+          "
+          class="p-menubar-item-icon"
+          :class="item.icon"
+        />
+        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <i
+          v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
+          class="ml-auto"
+          :class="item.icon"
+        />
+        <span
+          v-if="item?.comfyCommand?.keybinding"
+          class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
+        >
+          {{ item.comfyCommand.keybinding.combo.toString() }}
+        </span>
+        <i v-if="item.items" class="ml-auto pi pi-angle-right" />
+      </a>
+    </template>
+  </TieredMenu>
+
+  <SubgraphBreadcrumb />
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

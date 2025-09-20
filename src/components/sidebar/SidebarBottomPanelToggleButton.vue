@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+
+import SidebarIcon from './SidebarIcon.vue'
+
+const bottomPanelStore = useBottomPanelStore()
+</script>
+
 <template>
   <SidebarIcon
     :tooltip="$t('menu.toggleBottomPanel')"
@@ -9,11 +17,3 @@
     </template>
   </SidebarIcon>
 </template>
-
-<script setup lang="ts">
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-
-import SidebarIcon from './SidebarIcon.vue'
-
-const bottomPanelStore = useBottomPanelStore()
-</script>

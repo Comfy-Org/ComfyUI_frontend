@@ -1,15 +1,3 @@
-<template>
-  <label>{{ t('load3d.lightIntensity') }}</label>
-
-  <Slider
-    v-model="lightIntensity"
-    class="w-full"
-    :min="lightIntensityMinimum"
-    :max="lightIntensityMaximum"
-    :step="lightAdjustmentIncrement"
-  />
-</template>
-
 <script setup lang="ts">
 import Slider from 'primevue/slider'
 
@@ -28,3 +16,15 @@ const lightAdjustmentIncrement = useSettingStore().get(
   'Comfy.Load3D.LightAdjustmentIncrement'
 )
 </script>
+
+<template>
+  <label>{{ t('load3d.lightIntensity') }}</label>
+
+  <Slider
+    v-model="lightIntensity"
+    class="w-full"
+    :min="lightIntensityMinimum"
+    :max="lightIntensityMaximum"
+    :step="lightAdjustmentIncrement"
+  />
+</template>

@@ -1,18 +1,3 @@
-<template>
-  <Button
-    v-tooltip.top="{
-      value:
-        st(`commands.${normalizeI18nKey(command.id)}.label`, '') || undefined,
-      showDelay: 1000
-    }"
-    severity="secondary"
-    text
-    icon-class="w-4 h-4"
-    :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
-    @click="() => commandStore.execute(command.id)"
-  />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 
@@ -27,3 +12,18 @@ defineProps<{
 
 const commandStore = useCommandStore()
 </script>
+
+<template>
+  <Button
+    v-tooltip.top="{
+      value:
+        st(`commands.${normalizeI18nKey(command.id)}.label`, '') || undefined,
+      showDelay: 1000
+    }"
+    severity="secondary"
+    text
+    icon-class="w-4 h-4"
+    :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
+    @click="() => commandStore.execute(command.id)"
+  />
+</template>

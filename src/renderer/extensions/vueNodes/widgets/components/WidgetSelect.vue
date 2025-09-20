@@ -1,20 +1,3 @@
-<template>
-  <WidgetLayoutField :widget>
-    <Select
-      v-model="localValue"
-      :options="selectOptions"
-      v-bind="combinedProps"
-      :disabled="readonly"
-      class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
-      size="small"
-      :pt="{
-        option: 'text-xs'
-      }"
-      @update:model-value="onChange"
-    />
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts">
 import Select from 'primevue/select'
 import { computed } from 'vue'
@@ -66,3 +49,20 @@ const selectOptions = computed(() => {
   return []
 })
 </script>
+
+<template>
+  <WidgetLayoutField :widget>
+    <Select
+      v-model="localValue"
+      :options="selectOptions"
+      v-bind="combinedProps"
+      :disabled="readonly"
+      class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
+      size="small"
+      :pt="{
+        option: 'text-xs'
+      }"
+      @update:model-value="onChange"
+    />
+  </WidgetLayoutField>
+</template>

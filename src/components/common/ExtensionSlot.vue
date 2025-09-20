@@ -1,19 +1,3 @@
-<template>
-  <component :is="extension.component" v-if="extension.type === 'vue'" />
-  <div
-    v-else
-    :ref="
-      (el) => {
-        if (el)
-          mountCustomExtension(
-            props.extension as CustomExtension,
-            el as HTMLElement
-          )
-      }
-    "
-  />
-</template>
-
 <script setup lang="ts">
 import { onBeforeUnmount } from 'vue'
 
@@ -33,3 +17,19 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<template>
+  <component :is="extension.component" v-if="extension.type === 'vue'" />
+  <div
+    v-else
+    :ref="
+      (el) => {
+        if (el)
+          mountCustomExtension(
+            props.extension as CustomExtension,
+            el as HTMLElement
+          )
+      }
+    "
+  />
+</template>

@@ -1,14 +1,3 @@
-<template>
-  <div
-    v-if="tooltipText"
-    ref="tooltipRef"
-    class="node-tooltip"
-    :style="{ left, top }"
-  >
-    {{ tooltipText }}
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
@@ -128,6 +117,17 @@ const onMouseMove = (e: MouseEvent) => {
 useEventListener(window, 'mousemove', onMouseMove)
 useEventListener(window, 'click', hideTooltip)
 </script>
+
+<template>
+  <div
+    v-if="tooltipText"
+    ref="tooltipRef"
+    class="node-tooltip"
+    :style="{ left, top }"
+  >
+    {{ tooltipText }}
+  </div>
+</template>
 
 <style lang="css" scoped>
 .node-tooltip {

@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import type { NavItemData } from '@/types/navTypes'
+
+import NavIcon from './NavIcon.vue'
+
+const { icon, active, onClick } = defineProps<{
+  icon: NavItemData['icon']
+  active?: boolean
+  onClick: () => void
+}>()
+</script>
+
 <template>
   <div
     class="flex items-center gap-2 px-4 py-3 text-sm rounded-md transition-colors cursor-pointer"
@@ -16,15 +28,3 @@
     </span>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { NavItemData } from '@/types/navTypes'
-
-import NavIcon from './NavIcon.vue'
-
-const { icon, active, onClick } = defineProps<{
-  icon: NavItemData['icon']
-  active?: boolean
-  onClick: () => void
-}>()
-</script>

@@ -1,45 +1,3 @@
-<template>
-  <Galleria
-    v-model:visible="galleryVisible"
-    :active-index="activeIndex"
-    :value="allGalleryItems"
-    :show-indicators="false"
-    change-item-on-indicator-hover
-    show-item-navigators
-    full-screen
-    circular
-    :show-thumbnails="false"
-    :pt="{
-      mask: {
-        onMousedown: onMaskMouseDown,
-        onMouseup: onMaskMouseUp,
-        'data-mask': true
-      },
-      prevButton: {
-        style: 'position: fixed !important'
-      },
-      nextButton: {
-        style: 'position: fixed !important'
-      }
-    }"
-    @update:visible="handleVisibilityChange"
-    @update:active-index="handleActiveIndexChange"
-  >
-    <template #item="{ item }">
-      <ComfyImage
-        v-if="item.isImage"
-        :key="item.url"
-        :src="item.url"
-        :contain="false"
-        :alt="item.filename"
-        class="galleria-image"
-      />
-      <ResultVideo v-else-if="item.isVideo" :result="item" />
-      <ResultAudio v-else-if="item.isAudio" :result="item" />
-    </template>
-  </Galleria>
-</template>
-
 <script setup lang="ts">
 import Galleria from 'primevue/galleria'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
@@ -130,6 +88,48 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
+
+<template>
+  <Galleria
+    v-model:visible="galleryVisible"
+    :active-index="activeIndex"
+    :value="allGalleryItems"
+    :show-indicators="false"
+    change-item-on-indicator-hover
+    show-item-navigators
+    full-screen
+    circular
+    :show-thumbnails="false"
+    :pt="{
+      mask: {
+        onMousedown: onMaskMouseDown,
+        onMouseup: onMaskMouseUp,
+        'data-mask': true
+      },
+      prevButton: {
+        style: 'position: fixed !important'
+      },
+      nextButton: {
+        style: 'position: fixed !important'
+      }
+    }"
+    @update:visible="handleVisibilityChange"
+    @update:active-index="handleActiveIndexChange"
+  >
+    <template #item="{ item }">
+      <ComfyImage
+        v-if="item.isImage"
+        :key="item.url"
+        :src="item.url"
+        :contain="false"
+        :alt="item.filename"
+        class="galleria-image"
+      />
+      <ResultVideo v-else-if="item.isVideo" :result="item" />
+      <ResultAudio v-else-if="item.isAudio" :result="item" />
+    </template>
+  </Galleria>
+</template>
 
 <style>
 /* PrimeVue's galleria teleports the fullscreen gallery out of subtree so we

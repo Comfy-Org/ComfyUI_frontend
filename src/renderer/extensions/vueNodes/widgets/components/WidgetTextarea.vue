@@ -1,16 +1,3 @@
-<template>
-  <Textarea
-    v-model="localValue"
-    v-bind="filteredProps"
-    :disabled="readonly"
-    :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-    :placeholder="placeholder || widget.name || ''"
-    size="small"
-    rows="3"
-    @update:model-value="onChange"
-  />
-</template>
-
 <script setup lang="ts">
 import Textarea from 'primevue/textarea'
 import { computed } from 'vue'
@@ -47,3 +34,16 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
 )
 </script>
+
+<template>
+  <Textarea
+    v-model="localValue"
+    v-bind="filteredProps"
+    :disabled="readonly"
+    :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+    :placeholder="placeholder || widget.name || ''"
+    size="small"
+    rows="3"
+    @update:model-value="onChange"
+  />
+</template>

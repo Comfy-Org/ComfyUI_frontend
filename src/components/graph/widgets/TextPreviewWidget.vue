@@ -1,16 +1,3 @@
-<template>
-  <div
-    class="relative w-full text-xs min-h-[28px] max-h-[200px] rounded-lg px-4 py-2 overflow-y-auto"
-  >
-    <div class="flex items-center gap-2">
-      <div class="flex-1 break-all flex items-center gap-2">
-        <span v-html="formattedText"></span>
-        <Skeleton v-if="isParentNodeExecuting" class="flex-1! h-4!" />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -62,3 +49,16 @@ const stopWatching = watch(
   }
 )
 </script>
+
+<template>
+  <div
+    class="relative w-full text-xs min-h-[28px] max-h-[200px] rounded-lg px-4 py-2 overflow-y-auto"
+  >
+    <div class="flex items-center gap-2">
+      <div class="flex-1 break-all flex items-center gap-2">
+        <span v-html="formattedText"></span>
+        <Skeleton v-if="isParentNodeExecuting" class="flex-1! h-4!" />
+      </div>
+    </div>
+  </div>
+</template>

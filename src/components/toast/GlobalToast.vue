@@ -1,7 +1,3 @@
-<template>
-  <Toast />
-</template>
-
 <script setup lang="ts">
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
@@ -88,3 +84,7 @@ watch(
   { immediate: true }
 )
 </script>
+
+<template>
+  <Toast />
+</template>

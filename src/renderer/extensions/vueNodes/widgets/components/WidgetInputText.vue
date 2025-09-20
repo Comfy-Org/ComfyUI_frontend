@@ -1,16 +1,3 @@
-<template>
-  <WidgetLayoutField :widget="widget">
-    <InputText
-      v-model="localValue"
-      v-bind="filteredProps"
-      :disabled="readonly"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
-      size="small"
-      @update:model-value="onChange"
-    />
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
@@ -47,3 +34,16 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
 )
 </script>
+
+<template>
+  <WidgetLayoutField :widget="widget">
+    <InputText
+      v-model="localValue"
+      v-bind="filteredProps"
+      :disabled="readonly"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
+      size="small"
+      @update:model-value="onChange"
+    />
+  </WidgetLayoutField>
+</template>

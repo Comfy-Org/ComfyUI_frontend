@@ -1,42 +1,3 @@
-<template>
-  <div class="overflow-hidden">
-    <Tabs :value="activeTab">
-      <TabList class="overflow-x-auto scrollbar-hide">
-        <Tab v-if="hasCompatibilityIssues" value="warning" class="p-2 mr-6">
-          <div class="flex items-center gap-1">
-            <span>⚠️</span>
-            {{ importFailed ? $t('g.error') : $t('g.warning') }}
-          </div>
-        </Tab>
-        <Tab value="description" class="p-2 mr-6">
-          {{ $t('g.description') }}
-        </Tab>
-        <Tab value="nodes" class="p-2">
-          {{ $t('g.nodes') }}
-        </Tab>
-      </TabList>
-      <TabPanels class="overflow-auto py-4 px-2">
-        <TabPanel
-          v-if="hasCompatibilityIssues"
-          value="warning"
-          class="bg-transparent"
-        >
-          <WarningTabPanel
-            :node-pack="nodePack"
-            :conflict-result="conflictResult"
-          />
-        </TabPanel>
-        <TabPanel value="description">
-          <DescriptionTabPanel :node-pack="nodePack" />
-        </TabPanel>
-        <TabPanel value="nodes">
-          <NodesTabPanel :node-pack="nodePack" :node-names="nodeNames" />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
@@ -83,3 +44,42 @@ watchEffect(
   { flush: 'post' }
 )
 </script>
+
+<template>
+  <div class="overflow-hidden">
+    <Tabs :value="activeTab">
+      <TabList class="overflow-x-auto scrollbar-hide">
+        <Tab v-if="hasCompatibilityIssues" value="warning" class="p-2 mr-6">
+          <div class="flex items-center gap-1">
+            <span>⚠️</span>
+            {{ importFailed ? $t('g.error') : $t('g.warning') }}
+          </div>
+        </Tab>
+        <Tab value="description" class="p-2 mr-6">
+          {{ $t('g.description') }}
+        </Tab>
+        <Tab value="nodes" class="p-2">
+          {{ $t('g.nodes') }}
+        </Tab>
+      </TabList>
+      <TabPanels class="overflow-auto py-4 px-2">
+        <TabPanel
+          v-if="hasCompatibilityIssues"
+          value="warning"
+          class="bg-transparent"
+        >
+          <WarningTabPanel
+            :node-pack="nodePack"
+            :conflict-result="conflictResult"
+          />
+        </TabPanel>
+        <TabPanel value="description">
+          <DescriptionTabPanel :node-pack="nodePack" />
+        </TabPanel>
+        <TabPanel value="nodes">
+          <NodesTabPanel :node-pack="nodePack" :node-names="nodeNames" />
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
+  </div>
+</template>

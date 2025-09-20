@@ -2,6 +2,57 @@
 https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c683087a3e168db/app/js/functions/sb_fn.js#L149
 -->
 
+<script setup lang="ts">
+import _ from 'es-toolkit/compat'
+import { computed } from 'vue'
+
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+
+const { nodeDef } = defineProps<{
+  nodeDef: ComfyNodeDefV2
+}>()
+
+const colorPaletteStore = useColorPaletteStore()
+const litegraphColors = computed(
+  () => colorPaletteStore.completedActivePalette.colors.litegraph_base
+)
+
+const widgetStore = useWidgetStore()
+
+const { description } = nodeDef
+const renderedDescription = computed(() => {
+  if (!description) return ''
+  return renderMarkdownToHtml(description)
+})
+
+const allInputDefs = Object.values(nodeDef.inputs)
+const allOutputDefs = nodeDef.outputs
+const slotInputDefs = allInputDefs.filter(
+  (input) => !widgetStore.inputIsWidget(input)
+)
+const widgetInputDefs = allInputDefs.filter((input) =>
+  widgetStore.inputIsWidget(input)
+)
+const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
+  let stringValue: string
+
+  if (typeof value === 'object' && value !== null) {
+    stringValue = JSON.stringify(value)
+  } else if (Array.isArray(value)) {
+    stringValue = JSON.stringify(value)
+  } else if (typeof value === 'string') {
+    stringValue = value
+  } else {
+    stringValue = String(value)
+  }
+
+  return _.truncate(stringValue, { length: charLimit })
+}
+</script>
+
 <template>
   <div class="_sb_node_preview">
     <div class="_sb_table">
@@ -80,57 +131,6 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import _ from 'es-toolkit/compat'
-import { computed } from 'vue'
-
-import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useWidgetStore } from '@/stores/widgetStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
-const { nodeDef } = defineProps<{
-  nodeDef: ComfyNodeDefV2
-}>()
-
-const colorPaletteStore = useColorPaletteStore()
-const litegraphColors = computed(
-  () => colorPaletteStore.completedActivePalette.colors.litegraph_base
-)
-
-const widgetStore = useWidgetStore()
-
-const { description } = nodeDef
-const renderedDescription = computed(() => {
-  if (!description) return ''
-  return renderMarkdownToHtml(description)
-})
-
-const allInputDefs = Object.values(nodeDef.inputs)
-const allOutputDefs = nodeDef.outputs
-const slotInputDefs = allInputDefs.filter(
-  (input) => !widgetStore.inputIsWidget(input)
-)
-const widgetInputDefs = allInputDefs.filter((input) =>
-  widgetStore.inputIsWidget(input)
-)
-const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
-  let stringValue: string
-
-  if (typeof value === 'object' && value !== null) {
-    stringValue = JSON.stringify(value)
-  } else if (Array.isArray(value)) {
-    stringValue = JSON.stringify(value)
-  } else if (typeof value === 'string') {
-    stringValue = value
-  } else {
-    stringValue = String(value)
-  }
-
-  return _.truncate(stringValue, { length: charLimit })
-}
-</script>
 
 <style scoped>
 .slot_row {

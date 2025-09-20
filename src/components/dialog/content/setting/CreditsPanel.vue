@@ -1,3 +1,70 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import Divider from 'primevue/divider'
+import Skeleton from 'primevue/skeleton'
+import TabPanel from 'primevue/tabpanel'
+import { computed, ref, watch } from 'vue'
+
+import UserCredit from '@/components/common/UserCredit.vue'
+import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useDialogService } from '@/services/dialogService'
+import { useCommandStore } from '@/stores/commandStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { formatMetronomeCurrency } from '@/utils/formatUtil'
+
+interface CreditHistoryItemData {
+  title: string
+  timestamp: string
+  amount: number
+  isPositive: boolean
+}
+
+const dialogService = useDialogService()
+const authStore = useFirebaseAuthStore()
+const authActions = useFirebaseAuthActions()
+const commandStore = useCommandStore()
+const loading = computed(() => authStore.loading)
+const balanceLoading = computed(() => authStore.isFetchingBalance)
+
+const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
+
+const formattedLastUpdateTime = computed(() =>
+  authStore.lastBalanceUpdateTime
+    ? authStore.lastBalanceUpdateTime.toLocaleString()
+    : ''
+)
+
+watch(
+  () => authStore.lastBalanceUpdateTime,
+  (newTime, oldTime) => {
+    if (newTime && newTime !== oldTime && usageLogsTableRef.value) {
+      usageLogsTableRef.value.refresh()
+    }
+  }
+)
+
+const handlePurchaseCreditsClick = () => {
+  dialogService.showTopUpCreditsDialog()
+}
+
+const handleCreditsHistoryClick = async () => {
+  await authActions.accessBillingPortal()
+}
+
+const handleMessageSupport = async () => {
+  await commandStore.execute('Comfy.ContactSupport')
+}
+
+const handleFaqClick = () => {
+  window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
+}
+
+const creditHistory = ref<CreditHistoryItemData[]>([])
+</script>
+
 <template>
   <TabPanel value="Credits" class="credits-container h-full">
     <div class="flex flex-col h-full">
@@ -103,70 +170,3 @@
     </div>
   </TabPanel>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Divider from 'primevue/divider'
-import Skeleton from 'primevue/skeleton'
-import TabPanel from 'primevue/tabpanel'
-import { computed, ref, watch } from 'vue'
-
-import UserCredit from '@/components/common/UserCredit.vue'
-import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
-
-interface CreditHistoryItemData {
-  title: string
-  timestamp: string
-  amount: number
-  isPositive: boolean
-}
-
-const dialogService = useDialogService()
-const authStore = useFirebaseAuthStore()
-const authActions = useFirebaseAuthActions()
-const commandStore = useCommandStore()
-const loading = computed(() => authStore.loading)
-const balanceLoading = computed(() => authStore.isFetchingBalance)
-
-const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
-
-const formattedLastUpdateTime = computed(() =>
-  authStore.lastBalanceUpdateTime
-    ? authStore.lastBalanceUpdateTime.toLocaleString()
-    : ''
-)
-
-watch(
-  () => authStore.lastBalanceUpdateTime,
-  (newTime, oldTime) => {
-    if (newTime && newTime !== oldTime && usageLogsTableRef.value) {
-      usageLogsTableRef.value.refresh()
-    }
-  }
-)
-
-const handlePurchaseCreditsClick = () => {
-  dialogService.showTopUpCreditsDialog()
-}
-
-const handleCreditsHistoryClick = async () => {
-  await authActions.accessBillingPortal()
-}
-
-const handleMessageSupport = async () => {
-  await commandStore.execute('Comfy.ContactSupport')
-}
-
-const handleFaqClick = () => {
-  window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
-}
-
-const creditHistory = ref<CreditHistoryItemData[]>([])
-</script>

@@ -1,50 +1,3 @@
-<template>
-  <div class="shortcuts-list flex justify-center">
-    <div class="grid gap-4 md:gap-24 h-full grid-cols-1 md:grid-cols-3 w-[90%]">
-      <div
-        v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
-        :key="subcategory"
-        class="flex flex-col"
-      >
-        <h3
-          class="subcategory-title text-xs font-bold uppercase tracking-wide text-surface-600 dark-theme:text-surface-400 mb-4"
-        >
-          {{ getSubcategoryTitle(subcategory) }}
-        </h3>
-
-        <div class="flex flex-col gap-1">
-          <div
-            v-for="command in subcategoryCommands"
-            :key="command.id"
-            class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors duration-200"
-          >
-            <div class="shortcut-info grow pr-4">
-              <div class="shortcut-name text-sm font-medium">
-                {{ t(`commands.${normalizeI18nKey(command.id)}.label`) }}
-              </div>
-            </div>
-
-            <div class="keybinding-display shrink-0">
-              <div
-                class="keybinding-combo flex gap-1"
-                :aria-label="`Keyboard shortcut: ${command.keybinding!.combo.getKeySequences().join(' + ')}`"
-              >
-                <span
-                  v-for="key in command.keybinding!.combo.getKeySequences()"
-                  :key="key"
-                  class="key-badge px-2 py-1 text-xs font-mono bg-surface-200 dark-theme:bg-surface-600 rounded border min-w-6 text-center"
-                >
-                  {{ formatKey(key) }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -100,6 +53,53 @@ const formatKey = (key: string): string => {
   return keyMap[key] || key
 }
 </script>
+
+<template>
+  <div class="shortcuts-list flex justify-center">
+    <div class="grid gap-4 md:gap-24 h-full grid-cols-1 md:grid-cols-3 w-[90%]">
+      <div
+        v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
+        :key="subcategory"
+        class="flex flex-col"
+      >
+        <h3
+          class="subcategory-title text-xs font-bold uppercase tracking-wide text-surface-600 dark-theme:text-surface-400 mb-4"
+        >
+          {{ getSubcategoryTitle(subcategory) }}
+        </h3>
+
+        <div class="flex flex-col gap-1">
+          <div
+            v-for="command in subcategoryCommands"
+            :key="command.id"
+            class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors duration-200"
+          >
+            <div class="shortcut-info grow pr-4">
+              <div class="shortcut-name text-sm font-medium">
+                {{ t(`commands.${normalizeI18nKey(command.id)}.label`) }}
+              </div>
+            </div>
+
+            <div class="keybinding-display shrink-0">
+              <div
+                class="keybinding-combo flex gap-1"
+                :aria-label="`Keyboard shortcut: ${command.keybinding!.combo.getKeySequences().join(' + ')}`"
+              >
+                <span
+                  v-for="key in command.keybinding!.combo.getKeySequences()"
+                  :key="key"
+                  class="key-badge px-2 py-1 text-xs font-mono bg-surface-200 dark-theme:bg-surface-600 rounded border min-w-6 text-center"
+                >
+                  {{ formatKey(key) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .subcategory-title {

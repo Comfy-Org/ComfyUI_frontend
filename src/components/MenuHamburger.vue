@@ -1,24 +1,3 @@
-<template>
-  <div
-    v-show="workspaceState.focusMode"
-    class="comfy-menu-hamburger no-drag"
-    :style="positionCSS"
-  >
-    <Button
-      v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
-      icon="pi pi-bars"
-      severity="secondary"
-      text
-      size="large"
-      :aria-label="$t('menu.showMenu')"
-      aria-live="assertive"
-      @click="exitFocusMode"
-      @contextmenu="showNativeSystemMenu"
-    />
-    <div v-show="menuSetting !== 'Bottom'" class="window-actions-spacer" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import type { CSSProperties } from 'vue'
@@ -55,6 +34,27 @@ const positionCSS = computed<CSSProperties>(() =>
     : { top: '0px', right: '0px' }
 )
 </script>
+
+<template>
+  <div
+    v-show="workspaceState.focusMode"
+    class="comfy-menu-hamburger no-drag"
+    :style="positionCSS"
+  >
+    <Button
+      v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
+      icon="pi pi-bars"
+      severity="secondary"
+      text
+      size="large"
+      :aria-label="$t('menu.showMenu')"
+      aria-live="assertive"
+      @click="exitFocusMode"
+      @contextmenu="showNativeSystemMenu"
+    />
+    <div v-show="menuSetting !== 'Bottom'" class="window-actions-spacer" />
+  </div>
+</template>
 
 <style scoped>
 @reference '../assets/css/style.css';

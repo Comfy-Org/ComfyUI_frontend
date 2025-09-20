@@ -1,40 +1,3 @@
-<template>
-  <Tree
-    v-model:expanded-keys="expandedKeys"
-    v-model:selection-keys="selectionKeys"
-    class="tree-explorer py-0 px-2 2xl:px-4"
-    :class="props.class"
-    :value="renderedRoot.children"
-    selection-mode="single"
-    :pt="{
-      nodeLabel: 'tree-explorer-node-label',
-      nodeContent: ({ context }) => ({
-        class: 'group/tree-node',
-        onClick: (e: MouseEvent) =>
-          onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
-        onContextmenu: (e: MouseEvent) =>
-          handleContextMenu(e, context.node as RenderedTreeExplorerNode)
-      }),
-      nodeToggleButton: () => ({
-        onClick: (e: MouseEvent) => {
-          e.stopImmediatePropagation()
-        }
-      })
-    }"
-  >
-    <template #folder="{ node }">
-      <slot name="folder" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
-    </template>
-    <template #node="{ node }">
-      <slot name="node" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
-    </template>
-  </Tree>
-  <ContextMenu ref="menu" :model="menuItems" />
-</template>
 <script setup lang="ts">
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
@@ -241,6 +204,43 @@ defineExpose({
   }
 })
 </script>
+<template>
+  <Tree
+    v-model:expanded-keys="expandedKeys"
+    v-model:selection-keys="selectionKeys"
+    class="tree-explorer py-0 px-2 2xl:px-4"
+    :class="props.class"
+    :value="renderedRoot.children"
+    selection-mode="single"
+    :pt="{
+      nodeLabel: 'tree-explorer-node-label',
+      nodeContent: ({ context }) => ({
+        class: 'group/tree-node',
+        onClick: (e: MouseEvent) =>
+          onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
+        onContextmenu: (e: MouseEvent) =>
+          handleContextMenu(e, context.node as RenderedTreeExplorerNode)
+      }),
+      nodeToggleButton: () => ({
+        onClick: (e: MouseEvent) => {
+          e.stopImmediatePropagation()
+        }
+      })
+    }"
+  >
+    <template #folder="{ node }">
+      <slot name="folder" :node="node">
+        <TreeExplorerTreeNode :node="node" />
+      </slot>
+    </template>
+    <template #node="{ node }">
+      <slot name="node" :node="node">
+        <TreeExplorerTreeNode :node="node" />
+      </slot>
+    </template>
+  </Tree>
+  <ContextMenu ref="menu" :model="menuItems" />
+</template>
 
 <style scoped>
 :deep(.tree-explorer-node-label) {

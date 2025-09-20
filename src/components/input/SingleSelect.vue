@@ -1,62 +1,3 @@
-<template>
-  <!--
-    Note: We explicitly pass options here (not just via $attrs) because:
-    1. Our custom value template needs options to look up labels from values
-    2. PrimeVue's value slot only provides 'value' and 'placeholder', not the selected item's label
-    3. We need to maintain the icon slot functionality in the value template
-    option-label="name" is required because our option template directly accesses option.name
-  -->
-  <Select
-    v-model="selectedItem"
-    v-bind="$attrs"
-    :options="options"
-    option-label="name"
-    option-value="value"
-    unstyled
-    :pt="pt"
-    :aria-label="label || t('g.singleSelectDropdown')"
-    role="combobox"
-    :aria-expanded="false"
-    aria-haspopup="listbox"
-    :tabindex="0"
-  >
-    <!-- Trigger value -->
-    <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm text-neutral-500">
-        <slot name="icon" />
-        <span
-          v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-zinc-700 dark-theme:text-gray-200"
-        >
-          {{ getLabel(slotProps.value) }}
-        </span>
-        <span v-else class="text-zinc-700 dark-theme:text-gray-200">
-          {{ label }}
-        </span>
-      </div>
-    </template>
-
-    <!-- Trigger caret -->
-    <template #dropdownicon>
-      <i-lucide:chevron-down class="text-base text-neutral-500" />
-    </template>
-
-    <!-- Option row -->
-    <template #option="{ option, selected }">
-      <div
-        class="flex items-center justify-between gap-3 w-full"
-        :style="optionStyle"
-      >
-        <span class="truncate">{{ option.name }}</span>
-        <i-lucide:check
-          v-if="selected"
-          class="text-neutral-600 dark-theme:text-white"
-        />
-      </div>
-    </template>
-  </Select>
-</template>
-
 <script setup lang="ts">
 import type { SelectPassThroughMethodOptions } from 'primevue/select'
 import Select from 'primevue/select'
@@ -189,3 +130,62 @@ const pt = computed(() => ({
   }
 }))
 </script>
+
+<template>
+  <!--
+    Note: We explicitly pass options here (not just via $attrs) because:
+    1. Our custom value template needs options to look up labels from values
+    2. PrimeVue's value slot only provides 'value' and 'placeholder', not the selected item's label
+    3. We need to maintain the icon slot functionality in the value template
+    option-label="name" is required because our option template directly accesses option.name
+  -->
+  <Select
+    v-model="selectedItem"
+    v-bind="$attrs"
+    :options="options"
+    option-label="name"
+    option-value="value"
+    unstyled
+    :pt="pt"
+    :aria-label="label || t('g.singleSelectDropdown')"
+    role="combobox"
+    :aria-expanded="false"
+    aria-haspopup="listbox"
+    :tabindex="0"
+  >
+    <!-- Trigger value -->
+    <template #value="slotProps">
+      <div class="flex items-center gap-2 text-sm text-neutral-500">
+        <slot name="icon" />
+        <span
+          v-if="slotProps.value !== null && slotProps.value !== undefined"
+          class="text-zinc-700 dark-theme:text-gray-200"
+        >
+          {{ getLabel(slotProps.value) }}
+        </span>
+        <span v-else class="text-zinc-700 dark-theme:text-gray-200">
+          {{ label }}
+        </span>
+      </div>
+    </template>
+
+    <!-- Trigger caret -->
+    <template #dropdownicon>
+      <i-lucide:chevron-down class="text-base text-neutral-500" />
+    </template>
+
+    <!-- Option row -->
+    <template #option="{ option, selected }">
+      <div
+        class="flex items-center justify-between gap-3 w-full"
+        :style="optionStyle"
+      >
+        <span class="truncate">{{ option.name }}</span>
+        <i-lucide:check
+          v-if="selected"
+          class="text-neutral-600 dark-theme:text-white"
+        />
+      </div>
+    </template>
+  </Select>
+</template>

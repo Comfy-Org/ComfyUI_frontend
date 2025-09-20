@@ -1,90 +1,3 @@
-<template>
-  <BaseViewTemplate dark>
-    <div
-      class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme overflow-y-auto"
-    >
-      <div class="max-w-(--breakpoint-sm) w-screen m-8 relative">
-        <!-- Header -->
-        <h1 class="backspan pi-wrench text-4xl font-bold">
-          {{ t('maintenance.title') }}
-        </h1>
-
-        <!-- Toolbar -->
-        <div class="w-full flex flex-wrap gap-4 items-center">
-          <span class="grow">
-            {{ t('maintenance.status') }}:
-            <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
-          </span>
-          <div class="flex gap-4 items-center">
-            <SelectButton
-              v-model="displayAsList"
-              :options="[PrimeIcons.LIST, PrimeIcons.TH_LARGE]"
-              :allow-empty="false"
-            >
-              <template #option="opts">
-                <i :class="opts.option" />
-              </template>
-            </SelectButton>
-            <SelectButton
-              v-model="filter"
-              :options="filterOptions"
-              :allow-empty="false"
-              option-label="value"
-              data-key="value"
-              area-labelledby="custom"
-              @change="clearResolved"
-            >
-              <template #option="opts">
-                <i :class="opts.option.icon" />
-                <span class="max-sm:hidden">{{ opts.option.value }}</span>
-              </template>
-            </SelectButton>
-            <RefreshButton
-              v-model="isRefreshing"
-              severity="secondary"
-              @refresh="refreshDesktopTasks"
-            />
-          </div>
-        </div>
-
-        <!-- Tasks -->
-        <TaskListPanel
-          class="border-neutral-700 border-solid border-x-0 border-y"
-          :filter
-          :display-as-list
-          :is-refreshing
-        />
-
-        <!-- Actions -->
-        <div class="flex justify-between gap-4 flex-row">
-          <Button
-            :label="t('maintenance.consoleLogs')"
-            icon="pi pi-desktop"
-            icon-pos="left"
-            severity="secondary"
-            @click="toggleConsoleDrawer"
-          />
-          <Button
-            :label="t('g.continue')"
-            icon="pi pi-arrow-right"
-            icon-pos="left"
-            :severity="anyErrors ? 'secondary' : 'primary'"
-            :loading="isRefreshing"
-            @click="() => completeValidation()"
-          />
-        </div>
-      </div>
-
-      <TerminalOutputDrawer
-        v-model="terminalVisible"
-        :header="t('g.terminal')"
-        :default-message="t('maintenance.terminalDefaultMessage')"
-      />
-      <Toast />
-    </div>
-  </BaseViewTemplate>
-</template>
-
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
 import Button from 'primevue/button'
@@ -176,6 +89,93 @@ onMounted(async () => {
 
 onUnmounted(() => electron.Validation.dispose())
 </script>
+
+<template>
+  <BaseViewTemplate dark>
+    <div
+      class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme overflow-y-auto"
+    >
+      <div class="max-w-(--breakpoint-sm) w-screen m-8 relative">
+        <!-- Header -->
+        <h1 class="backspan pi-wrench text-4xl font-bold">
+          {{ t('maintenance.title') }}
+        </h1>
+
+        <!-- Toolbar -->
+        <div class="w-full flex flex-wrap gap-4 items-center">
+          <span class="grow">
+            {{ t('maintenance.status') }}:
+            <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
+          </span>
+          <div class="flex gap-4 items-center">
+            <SelectButton
+              v-model="displayAsList"
+              :options="[PrimeIcons.LIST, PrimeIcons.TH_LARGE]"
+              :allow-empty="false"
+            >
+              <template #option="opts">
+                <i :class="opts.option" />
+              </template>
+            </SelectButton>
+            <SelectButton
+              v-model="filter"
+              :options="filterOptions"
+              :allow-empty="false"
+              option-label="value"
+              data-key="value"
+              area-labelledby="custom"
+              @change="clearResolved"
+            >
+              <template #option="opts">
+                <i :class="opts.option.icon" />
+                <span class="max-sm:hidden">{{ opts.option.value }}</span>
+              </template>
+            </SelectButton>
+            <RefreshButton
+              v-model="isRefreshing"
+              severity="secondary"
+              @refresh="refreshDesktopTasks"
+            />
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <TaskListPanel
+          class="border-neutral-700 border-solid border-x-0 border-y"
+          :filter
+          :display-as-list
+          :is-refreshing
+        />
+
+        <!-- Actions -->
+        <div class="flex justify-between gap-4 flex-row">
+          <Button
+            :label="t('maintenance.consoleLogs')"
+            icon="pi pi-desktop"
+            icon-pos="left"
+            severity="secondary"
+            @click="toggleConsoleDrawer"
+          />
+          <Button
+            :label="t('g.continue')"
+            icon="pi pi-arrow-right"
+            icon-pos="left"
+            :severity="anyErrors ? 'secondary' : 'primary'"
+            :loading="isRefreshing"
+            @click="() => completeValidation()"
+          />
+        </div>
+      </div>
+
+      <TerminalOutputDrawer
+        v-model="terminalVisible"
+        :header="t('g.terminal')"
+        :default-message="t('maintenance.terminalDefaultMessage')"
+      />
+      <Toast />
+    </div>
+  </BaseViewTemplate>
+</template>
 
 <style scoped>
 @reference '../assets/css/style.css';

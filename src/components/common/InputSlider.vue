@@ -1,29 +1,3 @@
-<template>
-  <div class="input-slider flex flex-row items-center gap-2">
-    <Slider
-      :model-value="modelValue"
-      class="slider-part"
-      :class="sliderClass"
-      :min="min"
-      :max="max"
-      :step="step"
-      v-bind="$attrs"
-      @update:model-value="(value) => updateValue(value as number)"
-    />
-    <InputNumber
-      :model-value="modelValue"
-      class="input-part"
-      :max-fraction-digits="3"
-      :class="inputClass"
-      :min="min"
-      :max="max"
-      :step="step"
-      :allow-empty="false"
-      @update:model-value="updateValue"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Slider from 'primevue/slider'
@@ -76,3 +50,29 @@ defineOptions({
   inheritAttrs: false
 })
 </script>
+
+<template>
+  <div class="input-slider flex flex-row items-center gap-2">
+    <Slider
+      :model-value="modelValue"
+      class="slider-part"
+      :class="sliderClass"
+      :min="min"
+      :max="max"
+      :step="step"
+      v-bind="$attrs"
+      @update:model-value="(value) => updateValue(value as number)"
+    />
+    <InputNumber
+      :model-value="modelValue"
+      class="input-part"
+      :max-fraction-digits="3"
+      :class="inputClass"
+      :min="min"
+      :max="max"
+      :step="step"
+      :allow-empty="false"
+      @update:model-value="updateValue"
+    />
+  </div>
+</template>

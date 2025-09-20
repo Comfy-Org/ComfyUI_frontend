@@ -1,14 +1,3 @@
-<template>
-  <WidgetLayoutField :widget="widget">
-    <ToggleSwitch
-      v-model="localValue"
-      v-bind="filteredProps"
-      :disabled="readonly"
-      @update:model-value="onChange"
-    />
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
@@ -43,6 +32,17 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
 )
 </script>
+
+<template>
+  <WidgetLayoutField :widget="widget">
+    <ToggleSwitch
+      v-model="localValue"
+      v-bind="filteredProps"
+      :disabled="readonly"
+      @update:model-value="onChange"
+    />
+  </WidgetLayoutField>
+</template>
 
 <style scoped>
 :deep(.p-toggleswitch .p-toggleswitch-slider) {

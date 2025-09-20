@@ -1,7 +1,3 @@
-<template>
-  <div ref="container" />
-</template>
-
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
@@ -23,3 +19,7 @@ onMounted(renderContent)
 
 watch(() => props.renderFunction, renderContent)
 </script>
+
+<template>
+  <div ref="container" />
+</template>

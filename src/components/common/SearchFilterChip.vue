@@ -1,12 +1,3 @@
-<template>
-  <Chip removable @remove="$emit('remove', $event)">
-    <Badge size="small" :class="badgeClass">
-      {{ badge }}
-    </Badge>
-    {{ text }}
-  </Chip>
-</template>
-
 <script setup lang="ts">
 import Badge from 'primevue/badge'
 import Chip from 'primevue/chip'
@@ -21,6 +12,15 @@ export interface SearchFilter {
 defineProps<Omit<SearchFilter, 'id'>>()
 defineEmits(['remove'])
 </script>
+
+<template>
+  <Chip removable @remove="$emit('remove', $event)">
+    <Badge size="small" :class="badgeClass">
+      {{ badge }}
+    </Badge>
+    {{ text }}
+  </Chip>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

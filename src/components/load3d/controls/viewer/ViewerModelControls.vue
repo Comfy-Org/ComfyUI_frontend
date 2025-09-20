@@ -1,27 +1,3 @@
-<template>
-  <div class="space-y-4">
-    <div>
-      <label>{{ t('load3d.upDirection') }}</label>
-      <Select
-        v-model="upDirection"
-        :options="upDirectionOptions"
-        option-label="label"
-        option-value="value"
-      />
-    </div>
-
-    <div>
-      <label>{{ t('load3d.materialMode') }}</label>
-      <Select
-        v-model="materialMode"
-        :options="materialModeOptions"
-        option-label="label"
-        option-value="value"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Select from 'primevue/select'
 import { computed } from 'vue'
@@ -53,3 +29,27 @@ const materialModeOptions = computed(() => {
   ]
 })
 </script>
+
+<template>
+  <div class="space-y-4">
+    <div>
+      <label>{{ t('load3d.upDirection') }}</label>
+      <Select
+        v-model="upDirection"
+        :options="upDirectionOptions"
+        option-label="label"
+        option-value="value"
+      />
+    </div>
+
+    <div>
+      <label>{{ t('load3d.materialMode') }}</label>
+      <Select
+        v-model="materialMode"
+        :options="materialModeOptions"
+        option-label="label"
+        option-value="value"
+      />
+    </div>
+  </div>
+</template>

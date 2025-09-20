@@ -1,79 +1,3 @@
-<template>
-  <DataView
-    :value="displayTemplates"
-    :layout="layout"
-    data-key="name"
-    :lazy="true"
-    pt:root="h-full grid grid-rows-[auto_1fr_auto]"
-    pt:content="p-2 overflow-auto"
-  >
-    <template #header>
-      <div class="flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg">{{ title }}</h2>
-          <SelectButton
-            v-model="layout"
-            :options="['grid', 'list']"
-            :allow-empty="false"
-          >
-            <template #option="{ option }">
-              <i :class="[option === 'list' ? 'pi pi-bars' : 'pi pi-table']" />
-            </template>
-          </SelectButton>
-        </div>
-        <TemplateSearchBar
-          v-model:search-query="searchQuery"
-          :filtered-count="filteredCount"
-          @clear-filters="() => reset()"
-        />
-      </div>
-    </template>
-
-    <template #list="{ items }">
-      <TemplateWorkflowList
-        :source-module="sourceModule"
-        :templates="items"
-        :loading="loading"
-        :category-title="categoryTitle"
-        @load-workflow="onLoadWorkflow"
-      />
-    </template>
-
-    <template #grid="{ items }">
-      <div>
-        <div
-          class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-8 px-4 justify-items-center"
-        >
-          <TemplateWorkflowCard
-            v-for="template in items"
-            :key="template.name"
-            :source-module="sourceModule"
-            :template="template"
-            :loading="loading === template.name"
-            :category-title="categoryTitle"
-            @load-workflow="onLoadWorkflow"
-          />
-          <TemplateWorkflowCardSkeleton
-            v-for="n in shouldUsePagination && isLoadingMore
-              ? skeletonCount
-              : 0"
-            :key="`skeleton-${n}`"
-          />
-        </div>
-        <div
-          v-if="shouldUsePagination && hasMoreTemplates"
-          ref="loadTrigger"
-          class="w-full h-4 flex justify-center items-center"
-        >
-          <div v-if="isLoadingMore" class="text-sm text-muted">
-            {{ t('templateWorkflows.loadingMore') }}
-          </div>
-        </div>
-      </div>
-    </template>
-  </DataView>
-</template>
-
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import DataView from 'primevue/dataview'
@@ -166,3 +90,79 @@ const onLoadWorkflow = (name: string) => {
   emit('loadWorkflow', name)
 }
 </script>
+
+<template>
+  <DataView
+    :value="displayTemplates"
+    :layout="layout"
+    data-key="name"
+    :lazy="true"
+    pt:root="h-full grid grid-rows-[auto_1fr_auto]"
+    pt:content="p-2 overflow-auto"
+  >
+    <template #header>
+      <div class="flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg">{{ title }}</h2>
+          <SelectButton
+            v-model="layout"
+            :options="['grid', 'list']"
+            :allow-empty="false"
+          >
+            <template #option="{ option }">
+              <i :class="[option === 'list' ? 'pi pi-bars' : 'pi pi-table']" />
+            </template>
+          </SelectButton>
+        </div>
+        <TemplateSearchBar
+          v-model:search-query="searchQuery"
+          :filtered-count="filteredCount"
+          @clear-filters="() => reset()"
+        />
+      </div>
+    </template>
+
+    <template #list="{ items }">
+      <TemplateWorkflowList
+        :source-module="sourceModule"
+        :templates="items"
+        :loading="loading"
+        :category-title="categoryTitle"
+        @load-workflow="onLoadWorkflow"
+      />
+    </template>
+
+    <template #grid="{ items }">
+      <div>
+        <div
+          class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-8 px-4 justify-items-center"
+        >
+          <TemplateWorkflowCard
+            v-for="template in items"
+            :key="template.name"
+            :source-module="sourceModule"
+            :template="template"
+            :loading="loading === template.name"
+            :category-title="categoryTitle"
+            @load-workflow="onLoadWorkflow"
+          />
+          <TemplateWorkflowCardSkeleton
+            v-for="n in shouldUsePagination && isLoadingMore
+              ? skeletonCount
+              : 0"
+            :key="`skeleton-${n}`"
+          />
+        </div>
+        <div
+          v-if="shouldUsePagination && hasMoreTemplates"
+          ref="loadTrigger"
+          class="w-full h-4 flex justify-center items-center"
+        >
+          <div v-if="isLoadingMore" class="text-sm text-muted">
+            {{ t('templateWorkflows.loadingMore') }}
+          </div>
+        </div>
+      </div>
+    </template>
+  </DataView>
+</template>

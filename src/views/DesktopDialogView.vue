@@ -1,3 +1,20 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import { useRoute } from 'vue-router'
+
+import { type DialogAction, getDialog } from '@/constants/desktopDialogs'
+import { t } from '@/i18n'
+import { electronAPI } from '@/utils/envUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+
+const route = useRoute()
+const { id, title, message, buttons } = getDialog(route.params.dialogId)
+
+const handleButtonClick = async (button: DialogAction) => {
+  await electronAPI().Dialog.clickButton(button.returnValue)
+}
+</script>
+
 <template>
   <div class="w-full h-full flex flex-col rounded-lg p-6 justify-between">
     <h1 class="font-inter font-semibold text-xl m-0 italic">
@@ -23,23 +40,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import { useRoute } from 'vue-router'
-
-import { type DialogAction, getDialog } from '@/constants/desktopDialogs'
-import { t } from '@/i18n'
-import { electronAPI } from '@/utils/envUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-
-const route = useRoute()
-const { id, title, message, buttons } = getDialog(route.params.dialogId)
-
-const handleButtonClick = async (button: DialogAction) => {
-  await electronAPI().Dialog.clickButton(button.returnValue)
-}
-</script>
 
 <style scoped>
 @reference '../assets/css/style.css';

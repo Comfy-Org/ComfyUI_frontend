@@ -1,42 +1,3 @@
-<template>
-  <div
-    ref="positionRef"
-    class="absolute left-1/2 -translate-x-1/2"
-    :class="positions.positioner"
-  ></div>
-  <Popover
-    ref="popoverRef"
-    append-to="body"
-    :pt="{
-      root: {
-        class: 'workflow-popover-fade fit-content ' + positions.root,
-        'data-popover-id': id,
-        style: {
-          transform: positions.active
-        }
-      }
-    }"
-    @mouseenter="cancelHidePopover"
-    @mouseleave="hidePopover"
-  >
-    <div class="workflow-preview-content">
-      <div
-        v-if="thumbnailUrl && !isActiveTab"
-        class="workflow-preview-thumbnail relative"
-      >
-        <img
-          :src="thumbnailUrl"
-          class="block h-[200px] object-cover rounded-lg p-2"
-          :style="{ width: `${POPOVER_WIDTH}px` }"
-        />
-      </div>
-      <div class="workflow-preview-footer">
-        <span class="workflow-preview-name">{{ workflowFilename }}</span>
-      </div>
-    </div>
-  </Popover>
-</template>
-
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { computed, nextTick, ref, toRefs, useId } from 'vue'
@@ -167,6 +128,45 @@ defineExpose({
   togglePopover
 })
 </script>
+
+<template>
+  <div
+    ref="positionRef"
+    class="absolute left-1/2 -translate-x-1/2"
+    :class="positions.positioner"
+  ></div>
+  <Popover
+    ref="popoverRef"
+    append-to="body"
+    :pt="{
+      root: {
+        class: 'workflow-popover-fade fit-content ' + positions.root,
+        'data-popover-id': id,
+        style: {
+          transform: positions.active
+        }
+      }
+    }"
+    @mouseenter="cancelHidePopover"
+    @mouseleave="hidePopover"
+  >
+    <div class="workflow-preview-content">
+      <div
+        v-if="thumbnailUrl && !isActiveTab"
+        class="workflow-preview-thumbnail relative"
+      >
+        <img
+          :src="thumbnailUrl"
+          class="block h-[200px] object-cover rounded-lg p-2"
+          :style="{ width: `${POPOVER_WIDTH}px` }"
+        />
+      </div>
+      <div class="workflow-preview-footer">
+        <span class="workflow-preview-name">{{ workflowFilename }}</span>
+      </div>
+    </div>
+  </Popover>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

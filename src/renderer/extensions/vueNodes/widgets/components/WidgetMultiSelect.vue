@@ -1,21 +1,3 @@
-<template>
-  <WidgetLayoutField :widget="widget">
-    <MultiSelect
-      v-model="localValue"
-      :options="multiSelectOptions"
-      v-bind="combinedProps"
-      :disabled="readonly"
-      class="w-full text-xs"
-      size="small"
-      display="chip"
-      :pt="{
-        option: 'text-xs'
-      }"
-      @update:model-value="onChange"
-    />
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts" generic="T extends WidgetValue = WidgetValue">
 import MultiSelect from 'primevue/multiselect'
 import { computed } from 'vue'
@@ -73,3 +55,21 @@ const multiSelectOptions = computed((): T[] => {
   return []
 })
 </script>
+
+<template>
+  <WidgetLayoutField :widget="widget">
+    <MultiSelect
+      v-model="localValue"
+      :options="multiSelectOptions"
+      v-bind="combinedProps"
+      :disabled="readonly"
+      class="w-full text-xs"
+      size="small"
+      display="chip"
+      :pt="{
+        option: 'text-xs'
+      }"
+      @update:model-value="onChange"
+    />
+  </WidgetLayoutField>
+</template>

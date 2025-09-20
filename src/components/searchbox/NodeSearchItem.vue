@@ -1,3 +1,42 @@
+<script setup lang="ts">
+import Chip from 'primevue/chip'
+import Tag from 'primevue/tag'
+import { computed } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { NodeSourceType } from '@/types/nodeSource'
+import { highlightQuery } from '@/utils/formatUtil'
+import { formatNumberWithSuffix } from '@/utils/formatUtil'
+
+const settingStore = useSettingStore()
+const showCategory = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.ShowCategory')
+)
+const showIdName = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
+)
+const showNodeFrequency = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.ShowNodeFrequency')
+)
+const nodeFrequencyStore = useNodeFrequencyStore()
+const nodeFrequency = computed(() =>
+  nodeFrequencyStore.getNodeFrequency(props.nodeDef)
+)
+
+const nodeBookmarkStore = useNodeBookmarkStore()
+const isBookmarked = computed(() =>
+  nodeBookmarkStore.isBookmarked(props.nodeDef)
+)
+
+const props = defineProps<{
+  nodeDef: ComfyNodeDefImpl
+  currentQuery: string
+}>()
+</script>
+
 <template>
   <div
     class="option-container flex justify-between items-center px-2 py-0 cursor-pointer overflow-hidden w-full"
@@ -45,45 +84,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Chip from 'primevue/chip'
-import Tag from 'primevue/tag'
-import { computed } from 'vue'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
-import { highlightQuery } from '@/utils/formatUtil'
-import { formatNumberWithSuffix } from '@/utils/formatUtil'
-
-const settingStore = useSettingStore()
-const showCategory = computed(() =>
-  settingStore.get('Comfy.NodeSearchBoxImpl.ShowCategory')
-)
-const showIdName = computed(() =>
-  settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
-)
-const showNodeFrequency = computed(() =>
-  settingStore.get('Comfy.NodeSearchBoxImpl.ShowNodeFrequency')
-)
-const nodeFrequencyStore = useNodeFrequencyStore()
-const nodeFrequency = computed(() =>
-  nodeFrequencyStore.getNodeFrequency(props.nodeDef)
-)
-
-const nodeBookmarkStore = useNodeBookmarkStore()
-const isBookmarked = computed(() =>
-  nodeBookmarkStore.isBookmarked(props.nodeDef)
-)
-
-const props = defineProps<{
-  nodeDef: ComfyNodeDefImpl
-  currentQuery: string
-}>()
-</script>
 
 <style scoped>
 :deep(.highlight) {

@@ -1,49 +1,3 @@
-<template>
-  <Popover
-    ref="popover"
-    :auto-z-index="true"
-    :base-z-index="1100"
-    :dismissable="true"
-    :close-on-escape="true"
-    unstyled
-    :pt="submenuPt"
-  >
-    <div
-      :class="
-        isColorSubmenu
-          ? 'flex flex-col gap-1 p-2'
-          : 'flex flex-col p-2 min-w-40'
-      "
-    >
-      <div
-        v-for="subOption in option.submenu"
-        :key="subOption.label"
-        :class="
-          isColorSubmenu
-            ? 'w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
-            : 'flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
-        "
-        :title="subOption.label"
-        @click="handleSubmenuClick(subOption)"
-      >
-        <div
-          v-if="subOption.color"
-          class="w-5 h-5 rounded-full border border-gray-300 dark-theme:border-zinc-600"
-          :style="{ backgroundColor: subOption.color }"
-        />
-        <template v-else-if="!subOption.color">
-          <i-lucide:check
-            v-if="isShapeSelected(subOption)"
-            class="w-4 h-4 flex-shrink-0"
-          />
-          <div v-else class="w-4 flex-shrink-0" />
-          <span>{{ subOption.label }}</span>
-        </template>
-      </div>
-    </div>
-  </Popover>
-</template>
-
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
@@ -125,3 +79,49 @@ const submenuPt = computed(() => ({
   }
 }))
 </script>
+
+<template>
+  <Popover
+    ref="popover"
+    :auto-z-index="true"
+    :base-z-index="1100"
+    :dismissable="true"
+    :close-on-escape="true"
+    unstyled
+    :pt="submenuPt"
+  >
+    <div
+      :class="
+        isColorSubmenu
+          ? 'flex flex-col gap-1 p-2'
+          : 'flex flex-col p-2 min-w-40'
+      "
+    >
+      <div
+        v-for="subOption in option.submenu"
+        :key="subOption.label"
+        :class="
+          isColorSubmenu
+            ? 'w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
+            : 'flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
+        "
+        :title="subOption.label"
+        @click="handleSubmenuClick(subOption)"
+      >
+        <div
+          v-if="subOption.color"
+          class="w-5 h-5 rounded-full border border-gray-300 dark-theme:border-zinc-600"
+          :style="{ backgroundColor: subOption.color }"
+        />
+        <template v-else-if="!subOption.color">
+          <i-lucide:check
+            v-if="isShapeSelected(subOption)"
+            class="w-4 h-4 flex-shrink-0"
+          />
+          <div v-else class="w-4 flex-shrink-0" />
+          <span>{{ subOption.label }}</span>
+        </template>
+      </div>
+    </div>
+  </Popover>
+</template>
