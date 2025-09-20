@@ -8,22 +8,17 @@
  * - Layout mutations for visual feedback
  * - Integration with LiteGraph canvas selection system
  */
-import type { DeepReadonly, ShallowRef, UnwrapNestedRefs } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 
-import type {
-  GraphNodeManager,
-  VueNodeData
-} from '@/composables/graph/useGraphNodeManager'
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 
-export function useNodeEventHandlers(
-  nodeManager: DeepReadonly<
-    UnwrapNestedRefs<ShallowRef<GraphNodeManager | null>>
-  >
-) {
+function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
+  const { nodeManager } = useVueNodeLifecycle()
   const { bringNodeToFront } = useNodeZIndex()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
@@ -240,3 +235,7 @@ export function useNodeEventHandlers(
     deselectNodes
   }
 }
+
+export const useNodeEventHandlers = createSharedComposable(
+  useNodeEventHandlersIndividual
+)
