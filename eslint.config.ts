@@ -77,7 +77,12 @@ export default defineConfig([
       '@typescript-eslint/prefer-as-const': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-import-type-side-effects': 'error',
-      '@typescript-eslint/no-empty-object-type': 'off',
+      '@typescript-eslint/no-empty-object-type': [
+        'error',
+        {
+          allowInterfaces: 'always'
+        }
+      ],
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
