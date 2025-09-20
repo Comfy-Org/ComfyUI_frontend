@@ -40,13 +40,49 @@ import { computed } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 
+interface Props {
+  batchCount?: number
+  minQueueCount?: number
+  maxQueueCount?: number
+}
+
+interface Emits {
+  (e: 'update:batch-count', value: number): void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  batchCount: undefined,
+  minQueueCount: 1,
+  maxQueueCount: undefined
+})
+
+const emit = defineEmits<Emits>()
+
 const queueSettingsStore = useQueueSettingsStore()
-const { batchCount } = storeToRefs(queueSettingsStore)
-const minQueueCount = 1
+const { batchCount: storeBatchCount } = storeToRefs(queueSettingsStore)
 
 const settingStore = useSettingStore()
-const maxQueueCount = computed(() =>
+const defaultMaxQueueCount = computed(() =>
   settingStore.get('Comfy.QueueButton.BatchCountLimit')
+)
+
+// Use props if provided, otherwise fallback to store values
+const batchCount = computed({
+  get() {
+    return props.batchCount ?? storeBatchCount.value
+  },
+  set(value: number) {
+    if (props.batchCount !== undefined) {
+      emit('update:batch-count', value)
+    } else {
+      storeBatchCount.value = value
+    }
+  }
+})
+
+const minQueueCount = computed(() => props.minQueueCount)
+const maxQueueCount = computed(
+  () => props.maxQueueCount ?? defaultMaxQueueCount.value
 )
 
 const handleClick = (increment: boolean) => {
