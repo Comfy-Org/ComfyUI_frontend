@@ -1571,8 +1571,21 @@ export class LGraph
 
     // Inputs, outputs, and links
     const links = internalLinks.map((x) => x.asSerialisable())
-    const inputs = mapSubgraphInputsAndLinks(resolvedInputLinks, links)
-    const outputs = mapSubgraphOutputsAndLinks(resolvedOutputLinks, links)
+
+    const internalReroutes = new Map([...reroutes].map((r) => [r.id, r]))
+    const externalReroutes = new Map(
+      [...this.reroutes].filter(([id]) => !internalReroutes.has(id))
+    )
+    const inputs = mapSubgraphInputsAndLinks(
+      resolvedInputLinks,
+      links,
+      internalReroutes
+    )
+    const outputs = mapSubgraphOutputsAndLinks(
+      resolvedOutputLinks,
+      links,
+      externalReroutes
+    )
 
     // Prepare subgraph data
     const data = {
@@ -1714,10 +1727,10 @@ export class LGraph
     // Reconnect output links in parent graph
     i = 0
     for (const [, connections] of outputsGroupedByOutput.entries()) {
-      // Special handling: Subgraph output node
       i++
       for (const connection of connections) {
         const { input, inputNode, link, subgraphOutput } = connection
+        // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
           link.origin_id = subgraphNode.id
           link.origin_slot = i - 1
