@@ -122,6 +122,18 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': [
         'error',
         {
+          attributes: {
+            '/.+/': [
+              'aria-label',
+              'aria-placeholder',
+              'aria-roledescription',
+              'aria-valuetext',
+              'label',
+              'placeholder',
+              'title'
+            ],
+            img: ['alt']
+          },
           // Ignore strings that are:
           // 1. Less than 2 characters
           // 2. Only symbols/numbers/whitespace (no letters)
