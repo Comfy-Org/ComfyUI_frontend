@@ -1,3 +1,8 @@
+<script setup lang="ts">
+const { label } = defineProps<{
+  label: string
+}>()
+</script>
 <template>
   <div
     class="inline-flex justify-center items-center gap-1 shrink-0 py-1 px-2 text-xs bg-[#D9D9D966]/40 rounded font-bold text-white/90"
@@ -6,8 +11,3 @@
     <span>{{ label }}</span>
   </div>
 </template>
-<script setup lang="ts">
-const { label } = defineProps<{
-  label: string
-}>()
-</script>

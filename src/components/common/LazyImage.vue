@@ -1,34 +1,3 @@
-<template>
-  <div
-    ref="containerRef"
-    class="relative overflow-hidden w-full h-full flex items-center justify-center"
-  >
-    <Skeleton
-      v-if="!isImageLoaded"
-      width="100%"
-      height="100%"
-      class="absolute inset-0"
-    />
-    <img
-      v-if="cachedSrc"
-      ref="imageRef"
-      :src="cachedSrc"
-      :alt="alt"
-      draggable="false"
-      :class="imageClass"
-      :style="imageStyle"
-      @load="onImageLoad"
-      @error="onImageError"
-    />
-    <div
-      v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 dark-theme:bg-surface-800 text-muted"
-    >
-      <i class="pi pi-image text-2xl" />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
 import { computed, onUnmounted, ref, watch } from 'vue'
@@ -122,3 +91,34 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<template>
+  <div
+    ref="containerRef"
+    class="relative overflow-hidden w-full h-full flex items-center justify-center"
+  >
+    <Skeleton
+      v-if="!isImageLoaded"
+      width="100%"
+      height="100%"
+      class="absolute inset-0"
+    />
+    <img
+      v-if="cachedSrc"
+      ref="imageRef"
+      :src="cachedSrc"
+      :alt="alt"
+      draggable="false"
+      :class="imageClass"
+      :style="imageStyle"
+      @load="onImageLoad"
+      @error="onImageError"
+    />
+    <div
+      v-if="hasError"
+      class="absolute inset-0 flex items-center justify-center bg-surface-50 dark-theme:bg-surface-800 text-muted"
+    >
+      <i class="pi pi-image text-2xl" />
+    </div>
+  </div>
+</template>

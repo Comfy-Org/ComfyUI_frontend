@@ -1,37 +1,3 @@
-<template>
-  <div class="flex flex-col">
-    <div class="relative show-export-formats">
-      <Button
-        class="p-button-rounded p-button-text"
-        @click="toggleExportFormats"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.exportModel'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-white text-lg"
-        />
-      </Button>
-      <div
-        v-show="showExportFormats"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
-      >
-        <div class="flex flex-col">
-          <Button
-            v-for="format in exportFormats"
-            :key="format.value"
-            class="p-button-text text-white"
-            @click="exportModel(format.value)"
-          >
-            {{ format.label }}
-          </Button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
@@ -79,3 +45,37 @@ onUnmounted(() => {
   document.removeEventListener('click', closeExportFormatsList)
 })
 </script>
+
+<template>
+  <div class="flex flex-col">
+    <div class="relative show-export-formats">
+      <Button
+        class="p-button-rounded p-button-text"
+        @click="toggleExportFormats"
+      >
+        <i
+          v-tooltip.right="{
+            value: t('load3d.exportModel'),
+            showDelay: 300
+          }"
+          class="pi pi-download text-white text-lg"
+        />
+      </Button>
+      <div
+        v-show="showExportFormats"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+      >
+        <div class="flex flex-col">
+          <Button
+            v-for="format in exportFormats"
+            :key="format.value"
+            class="p-button-text text-white"
+            @click="exportModel(format.value)"
+          >
+            {{ format.label }}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

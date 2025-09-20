@@ -1,24 +1,3 @@
-<template>
-  <div ref="container" class="model-lib-node-container h-full w-full">
-    <TreeExplorerTreeNode :node="node">
-      <template #before-label>
-        <span v-if="modelPreviewUrl" class="model-lib-model-icon-container">
-          <span
-            class="model-lib-model-icon"
-            :style="{ backgroundImage: `url(${modelPreviewUrl})` }"
-          />
-        </span>
-      </template>
-    </TreeExplorerTreeNode>
-
-    <teleport v-if="showPreview" to="#model-library-model-preview-container">
-      <div class="model-lib-model-preview" :style="modelPreviewStyle">
-        <ModelPreview ref="previewRef" :model-def="modelDef" />
-      </div>
-    </teleport>
-  </div>
-</template>
-
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
@@ -122,6 +101,27 @@ onUnmounted(() => {
   modelContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
 })
 </script>
+
+<template>
+  <div ref="container" class="model-lib-node-container h-full w-full">
+    <TreeExplorerTreeNode :node="node">
+      <template #before-label>
+        <span v-if="modelPreviewUrl" class="model-lib-model-icon-container">
+          <span
+            class="model-lib-model-icon"
+            :style="{ backgroundImage: `url(${modelPreviewUrl})` }"
+          />
+        </span>
+      </template>
+    </TreeExplorerTreeNode>
+
+    <teleport v-if="showPreview" to="#model-library-model-preview-container">
+      <div class="model-lib-model-preview" :style="modelPreviewStyle">
+        <ModelPreview ref="previewRef" :model-def="modelDef" />
+      </div>
+    </teleport>
+  </div>
+</template>
 
 <style scoped>
 .model-lib-model-icon-container {

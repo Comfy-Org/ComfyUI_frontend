@@ -1,21 +1,3 @@
-<template>
-  <Form
-    class="flex flex-col gap-6 w-96"
-    :resolver="zodResolver(updatePasswordSchema)"
-    @submit="onSubmit"
-  >
-    <PasswordFields />
-
-    <!-- Submit Button -->
-    <Button
-      type="submit"
-      :label="$t('userSettings.updatePassword')"
-      class="h-10 font-medium mt-4"
-      :loading="loading"
-    />
-  </Form>
-</template>
-
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
@@ -46,3 +28,21 @@ const onSubmit = async (event: FormSubmitEvent) => {
   }
 }
 </script>
+
+<template>
+  <Form
+    class="flex flex-col gap-6 w-96"
+    :resolver="zodResolver(updatePasswordSchema)"
+    @submit="onSubmit"
+  >
+    <PasswordFields />
+
+    <!-- Submit Button -->
+    <Button
+      type="submit"
+      :label="$t('userSettings.updatePassword')"
+      class="h-10 font-medium mt-4"
+      :loading="loading"
+    />
+  </Form>
+</template>

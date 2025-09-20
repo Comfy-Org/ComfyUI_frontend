@@ -1,3 +1,37 @@
+<script setup lang="ts">
+import type { FormSubmitEvent } from '@primevue/forms'
+import { Form } from '@primevue/forms'
+import { zodResolver } from '@primevue/forms/resolvers/zod'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import { apiKeySchema } from '@/schemas/signInSchema'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+
+const authStore = useFirebaseAuthStore()
+const apiKeyStore = useApiKeyAuthStore()
+const loading = computed(() => authStore.loading)
+
+const { t } = useI18n()
+
+const emit = defineEmits<{
+  (e: 'back'): void
+  (e: 'success'): void
+}>()
+
+const onSubmit = async (event: FormSubmitEvent) => {
+  if (event.valid) {
+    await apiKeyStore.storeApiKey(event.values.apiKey)
+    emit('success')
+  }
+}
+</script>
+
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-4 mb-8">
@@ -77,37 +111,3 @@
     </Form>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
-import { apiKeySchema } from '@/schemas/signInSchema'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-
-const authStore = useFirebaseAuthStore()
-const apiKeyStore = useApiKeyAuthStore()
-const loading = computed(() => authStore.loading)
-
-const { t } = useI18n()
-
-const emit = defineEmits<{
-  (e: 'back'): void
-  (e: 'success'): void
-}>()
-
-const onSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
-    await apiKeyStore.storeApiKey(event.values.apiKey)
-    emit('success')
-  }
-}
-</script>

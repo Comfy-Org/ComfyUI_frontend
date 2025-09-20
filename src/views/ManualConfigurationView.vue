@@ -1,3 +1,28 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Panel from 'primevue/panel'
+import Tag from 'primevue/tag'
+import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { electronAPI } from '@/utils/envUtil'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+
+const { t } = useI18n()
+
+const electron = electronAPI()
+
+const basePath = ref<string | null>(null)
+const sep = ref<'\\' | '/'>('/')
+
+const restartApp = (message?: string) => electron.restartApp(message)
+
+onMounted(async () => {
+  basePath.value = await electron.getBasePath()
+  if (basePath.value.indexOf('/') === -1) sep.value = '\\'
+})
+</script>
+
 <template>
   <BaseViewTemplate dark>
     <!-- Installation Path Section -->
@@ -49,31 +74,6 @@
     </div>
   </BaseViewTemplate>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Panel from 'primevue/panel'
-import Tag from 'primevue/tag'
-import { onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { electronAPI } from '@/utils/envUtil'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
-
-const { t } = useI18n()
-
-const electron = electronAPI()
-
-const basePath = ref<string | null>(null)
-const sep = ref<'\\' | '/'>('/')
-
-const restartApp = (message?: string) => electron.restartApp(message)
-
-onMounted(async () => {
-  basePath.value = await electron.getBasePath()
-  if (basePath.value.indexOf('/') === -1) sep.value = '\\'
-})
-</script>
 
 <style scoped>
 .p-tag {

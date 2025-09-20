@@ -1,4 +1,49 @@
 <!-- A popover that shows current user information and actions -->
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Divider from 'primevue/divider'
+import { onMounted } from 'vue'
+
+import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserCredit from '@/components/common/UserCredit.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useDialogService } from '@/services/dialogService'
+
+const emit = defineEmits<{
+  close: []
+}>()
+
+const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
+  useCurrentUser()
+const authActions = useFirebaseAuthActions()
+const dialogService = useDialogService()
+
+const handleOpenUserSettings = () => {
+  dialogService.showSettingsDialog('user')
+  emit('close')
+}
+
+const handleTopUp = () => {
+  dialogService.showTopUpCreditsDialog()
+  emit('close')
+}
+
+const handleLogout = async () => {
+  await handleSignOut()
+  emit('close')
+}
+
+const handleOpenApiPricing = () => {
+  window.open('https://docs.comfy.org/tutorials/api-nodes/pricing', '_blank')
+  emit('close')
+}
+
+onMounted(() => {
+  void authActions.fetchBalance()
+})
+</script>
+
 <template>
   <div class="current-user-popover w-72">
     <!-- User Info Section -->
@@ -72,48 +117,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Divider from 'primevue/divider'
-import { onMounted } from 'vue'
-
-import UserAvatar from '@/components/common/UserAvatar.vue'
-import UserCredit from '@/components/common/UserCredit.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useDialogService } from '@/services/dialogService'
-
-const emit = defineEmits<{
-  close: []
-}>()
-
-const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
-  useCurrentUser()
-const authActions = useFirebaseAuthActions()
-const dialogService = useDialogService()
-
-const handleOpenUserSettings = () => {
-  dialogService.showSettingsDialog('user')
-  emit('close')
-}
-
-const handleTopUp = () => {
-  dialogService.showTopUpCreditsDialog()
-  emit('close')
-}
-
-const handleLogout = async () => {
-  await handleSignOut()
-  emit('close')
-}
-
-const handleOpenApiPricing = () => {
-  window.open('https://docs.comfy.org/tutorials/api-nodes/pricing', '_blank')
-  emit('close')
-}
-
-onMounted(() => {
-  void authActions.fetchBalance()
-})
-</script>

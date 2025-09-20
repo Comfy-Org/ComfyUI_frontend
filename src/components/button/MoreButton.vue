@@ -1,26 +1,3 @@
-<template>
-  <div class="relative inline-flex items-center">
-    <IconButton @click="toggle">
-      <i-lucide:more-vertical class="text-sm" />
-    </IconButton>
-
-    <Popover
-      ref="popover"
-      :append-to="'body'"
-      :auto-z-index="true"
-      :base-z-index="1000"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="pt"
-    >
-      <div class="flex flex-col gap-2 p-2 min-w-40">
-        <slot :close="hide" />
-      </div>
-    </Popover>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
@@ -54,3 +31,26 @@ const pt = computed(() => ({
   }
 }))
 </script>
+
+<template>
+  <div class="relative inline-flex items-center">
+    <IconButton @click="toggle">
+      <i-lucide:more-vertical class="text-sm" />
+    </IconButton>
+
+    <Popover
+      ref="popover"
+      :append-to="'body'"
+      :auto-z-index="true"
+      :base-z-index="1000"
+      :dismissable="true"
+      :close-on-escape="true"
+      unstyled
+      :pt="pt"
+    >
+      <div class="flex flex-col gap-2 p-2 min-w-40">
+        <slot :close="hide" />
+      </div>
+    </Popover>
+  </div>
+</template>

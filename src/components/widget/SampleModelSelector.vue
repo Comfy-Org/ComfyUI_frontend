@@ -1,3 +1,89 @@
+<script setup lang="ts">
+import { computed, provide, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import MoreButton from '@/components/button/MoreButton.vue'
+import CardBottom from '@/components/card/CardBottom.vue'
+import CardContainer from '@/components/card/CardContainer.vue'
+import CardTop from '@/components/card/CardTop.vue'
+import SquareChip from '@/components/chip/SquareChip.vue'
+import MultiSelect from '@/components/input/MultiSelect.vue'
+import SearchBox from '@/components/input/SearchBox.vue'
+import SingleSelect from '@/components/input/SingleSelect.vue'
+import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
+
+const frameworkOptions = ref([
+  { name: 'Vue', value: 'vue' },
+  { name: 'React', value: 'react' },
+  { name: 'Angular', value: 'angular' },
+  { name: 'Svelte', value: 'svelte' }
+])
+
+const projectOptions = ref([
+  { name: 'Project A', value: 'proj-a' },
+  { name: 'Project B', value: 'proj-b' },
+  { name: 'Project C', value: 'proj-c' }
+])
+
+const sortOptions = ref([
+  { name: 'Popular', value: 'popular' },
+  { name: 'Latest', value: 'latest' },
+  { name: 'A → Z', value: 'az' }
+])
+
+const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
+  { id: 'installed', label: 'Installed', icon: 'icon-[lucide--download]' },
+  {
+    title: 'TAGS',
+    items: [
+      { id: 'tag-sd15', label: 'SD 1.5', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-sdxl', label: 'SDXL', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-utility', label: 'Utility', icon: 'icon-[lucide--tag]' }
+    ]
+  },
+  {
+    title: 'CATEGORIES',
+    items: [
+      { id: 'cat-models', label: 'Models', icon: 'icon-[lucide--layers]' },
+      { id: 'cat-nodes', label: 'Nodes', icon: 'icon-[lucide--grid-3x3]' }
+    ]
+  }
+])
+
+const { t } = useI18n()
+
+const { onClose } = defineProps<{
+  onClose: () => void
+}>()
+
+provide(OnCloseKey, onClose)
+
+const searchQuery = ref<string>('')
+const searchText = ref<string>('')
+const selectedFrameworks = ref([])
+const selectedProjects = ref([])
+const selectedSort = ref<string>('popular')
+
+const selectedNavItem = ref<string | null>('installed')
+
+const gridStyle = computed(() => createGridStyle())
+
+watch(searchText, (newQuery) => {
+  console.log('searchText:', searchText.value, newQuery)
+})
+
+watch(searchQuery, (newQuery) => {
+  console.log('searchQuery:', searchQuery.value, newQuery)
+})
+</script>
+
 <template>
   <BaseModalLayout :content-title="$t('Checkpoints')">
     <template #leftPanel>
@@ -125,89 +211,3 @@
     </template>
   </BaseModalLayout>
 </template>
-
-<script setup lang="ts">
-import { computed, provide, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
-import MultiSelect from '@/components/input/MultiSelect.vue'
-import SearchBox from '@/components/input/SearchBox.vue'
-import SingleSelect from '@/components/input/SingleSelect.vue'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
-import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
-import { createGridStyle } from '@/utils/gridUtil'
-
-const frameworkOptions = ref([
-  { name: 'Vue', value: 'vue' },
-  { name: 'React', value: 'react' },
-  { name: 'Angular', value: 'angular' },
-  { name: 'Svelte', value: 'svelte' }
-])
-
-const projectOptions = ref([
-  { name: 'Project A', value: 'proj-a' },
-  { name: 'Project B', value: 'proj-b' },
-  { name: 'Project C', value: 'proj-c' }
-])
-
-const sortOptions = ref([
-  { name: 'Popular', value: 'popular' },
-  { name: 'Latest', value: 'latest' },
-  { name: 'A → Z', value: 'az' }
-])
-
-const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-  { id: 'installed', label: 'Installed', icon: 'icon-[lucide--download]' },
-  {
-    title: 'TAGS',
-    items: [
-      { id: 'tag-sd15', label: 'SD 1.5', icon: 'icon-[lucide--tag]' },
-      { id: 'tag-sdxl', label: 'SDXL', icon: 'icon-[lucide--tag]' },
-      { id: 'tag-utility', label: 'Utility', icon: 'icon-[lucide--tag]' }
-    ]
-  },
-  {
-    title: 'CATEGORIES',
-    items: [
-      { id: 'cat-models', label: 'Models', icon: 'icon-[lucide--layers]' },
-      { id: 'cat-nodes', label: 'Nodes', icon: 'icon-[lucide--grid-3x3]' }
-    ]
-  }
-])
-
-const { t } = useI18n()
-
-const { onClose } = defineProps<{
-  onClose: () => void
-}>()
-
-provide(OnCloseKey, onClose)
-
-const searchQuery = ref<string>('')
-const searchText = ref<string>('')
-const selectedFrameworks = ref([])
-const selectedProjects = ref([])
-const selectedSort = ref<string>('popular')
-
-const selectedNavItem = ref<string | null>('installed')
-
-const gridStyle = computed(() => createGridStyle())
-
-watch(searchText, (newQuery) => {
-  console.log('searchText:', searchText.value, newQuery)
-})
-
-watch(searchQuery, (newQuery) => {
-  console.log('searchQuery:', searchQuery.value, newQuery)
-})
-</script>

@@ -1,79 +1,3 @@
-<template>
-  <div class="relative bg-gray-700/30 rounded-lg">
-    <div class="flex flex-col gap-2">
-      <Button
-        class="p-button-rounded p-button-text"
-        @click="resizeNodeMatchOutput"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.resizeNodeMatchOutput'),
-            showDelay: 300
-          }"
-          class="pi pi-window-maximize text-white text-lg"
-        />
-      </Button>
-      <Button
-        class="p-button-rounded p-button-text"
-        :class="{
-          'p-button-danger': isRecording,
-          'recording-button-blink': isRecording
-        }"
-        @click="toggleRecording"
-      >
-        <i
-          v-tooltip.right="{
-            value: isRecording
-              ? t('load3d.stopRecording')
-              : t('load3d.startRecording'),
-            showDelay: 300
-          }"
-          :class="[
-            'pi',
-            isRecording ? 'pi-circle-fill' : 'pi-video',
-            'text-white text-lg'
-          ]"
-        />
-      </Button>
-
-      <Button
-        v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
-        @click="exportRecording"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.exportRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-white text-lg"
-        />
-      </Button>
-
-      <Button
-        v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
-        @click="clearRecording"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.clearRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-trash text-white text-lg"
-        />
-      </Button>
-
-      <div
-        v-if="recordingDuration > 0 && !isRecording"
-        class="text-xs text-white text-center mt-1"
-      >
-        {{ formatDuration(recordingDuration) }}
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
@@ -150,6 +74,82 @@ const formatDuration = (seconds: number): string => {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 </script>
+
+<template>
+  <div class="relative bg-gray-700/30 rounded-lg">
+    <div class="flex flex-col gap-2">
+      <Button
+        class="p-button-rounded p-button-text"
+        @click="resizeNodeMatchOutput"
+      >
+        <i
+          v-tooltip.right="{
+            value: t('load3d.resizeNodeMatchOutput'),
+            showDelay: 300
+          }"
+          class="pi pi-window-maximize text-white text-lg"
+        />
+      </Button>
+      <Button
+        class="p-button-rounded p-button-text"
+        :class="{
+          'p-button-danger': isRecording,
+          'recording-button-blink': isRecording
+        }"
+        @click="toggleRecording"
+      >
+        <i
+          v-tooltip.right="{
+            value: isRecording
+              ? t('load3d.stopRecording')
+              : t('load3d.startRecording'),
+            showDelay: 300
+          }"
+          :class="[
+            'pi',
+            isRecording ? 'pi-circle-fill' : 'pi-video',
+            'text-white text-lg'
+          ]"
+        />
+      </Button>
+
+      <Button
+        v-if="hasRecording && !isRecording"
+        class="p-button-rounded p-button-text"
+        @click="exportRecording"
+      >
+        <i
+          v-tooltip.right="{
+            value: t('load3d.exportRecording'),
+            showDelay: 300
+          }"
+          class="pi pi-download text-white text-lg"
+        />
+      </Button>
+
+      <Button
+        v-if="hasRecording && !isRecording"
+        class="p-button-rounded p-button-text"
+        @click="clearRecording"
+      >
+        <i
+          v-tooltip.right="{
+            value: t('load3d.clearRecording'),
+            showDelay: 300
+          }"
+          class="pi pi-trash text-white text-lg"
+        />
+      </Button>
+
+      <div
+        v-if="recordingDuration > 0 && !isRecording"
+        class="text-xs text-white text-center mt-1"
+      >
+        {{ formatDuration(recordingDuration) }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .recording-button-blink {

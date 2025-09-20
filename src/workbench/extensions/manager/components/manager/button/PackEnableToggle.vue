@@ -1,33 +1,3 @@
-<template>
-  <div class="flex items-center gap-2">
-    <div
-      v-if="hasConflict"
-      v-tooltip="{
-        value: $t('manager.conflicts.warningTooltip'),
-        showDelay: 300
-      }"
-      class="flex items-center justify-center w-6 h-6 cursor-pointer"
-      @click="showConflictModal(true)"
-    >
-      <i class="pi pi-exclamation-triangle text-yellow-500 text-xl"></i>
-    </div>
-    <ToggleSwitch
-      v-if="!canToggleDirectly"
-      :model-value="isEnabled"
-      :disabled="isLoading"
-      :readonly="!canToggleDirectly"
-      aria-label="Enable or disable pack"
-      @focus="handleToggleInteraction"
-    />
-    <ToggleSwitch
-      v-else
-      :model-value="isEnabled"
-      :disabled="isLoading"
-      aria-label="Enable or disable pack"
-      @update:model-value="onToggle"
-    />
-  </div>
-</template>
 <script setup lang="ts">
 import { debounce } from 'es-toolkit/compat'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -159,3 +129,33 @@ const handleToggleInteraction = async (event: Event) => {
   }
 }
 </script>
+<template>
+  <div class="flex items-center gap-2">
+    <div
+      v-if="hasConflict"
+      v-tooltip="{
+        value: $t('manager.conflicts.warningTooltip'),
+        showDelay: 300
+      }"
+      class="flex items-center justify-center w-6 h-6 cursor-pointer"
+      @click="showConflictModal(true)"
+    >
+      <i class="pi pi-exclamation-triangle text-yellow-500 text-xl"></i>
+    </div>
+    <ToggleSwitch
+      v-if="!canToggleDirectly"
+      :model-value="isEnabled"
+      :disabled="isLoading"
+      :readonly="!canToggleDirectly"
+      aria-label="Enable or disable pack"
+      @focus="handleToggleInteraction"
+    />
+    <ToggleSwitch
+      v-else
+      :model-value="isEnabled"
+      :disabled="isLoading"
+      aria-label="Enable or disable pack"
+      @update:model-value="onToggle"
+    />
+  </div>
+</template>

@@ -1,12 +1,3 @@
-<template>
-  <Button
-    :label="$t('g.findIssues')"
-    severity="secondary"
-    icon="pi pi-github"
-    @click="openGitHubIssues"
-  />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
@@ -25,3 +16,12 @@ const openGitHubIssues = () => {
   window.open(url, '_blank')
 }
 </script>
+
+<template>
+  <Button
+    :label="$t('g.findIssues')"
+    severity="secondary"
+    icon="pi pi-github"
+    @click="openGitHubIssues"
+  />
+</template>

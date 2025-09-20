@@ -1,34 +1,3 @@
-<template>
-  <div
-    v-if="animations && animations.length > 0"
-    class="absolute top-0 left-0 w-full flex justify-center pt-2 gap-2 items-center pointer-events-auto z-10"
-  >
-    <Button class="p-button-rounded p-button-text" @click="togglePlay">
-      <i
-        :class="['pi', playing ? 'pi-pause' : 'pi-play', 'text-white text-lg']"
-      />
-    </Button>
-
-    <Select
-      v-model="selectedSpeed"
-      :options="speedOptions"
-      option-label="name"
-      option-value="value"
-      class="w-24"
-      @change="speedChange"
-    />
-
-    <Select
-      v-model="selectedAnimation"
-      :options="animations"
-      option-label="name"
-      option-value="index"
-      class="w-32"
-      @change="animationChange"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Select from 'primevue/select'
@@ -79,3 +48,34 @@ const animationChange = () => {
   emit('animationChange', selectedAnimation.value)
 }
 </script>
+
+<template>
+  <div
+    v-if="animations && animations.length > 0"
+    class="absolute top-0 left-0 w-full flex justify-center pt-2 gap-2 items-center pointer-events-auto z-10"
+  >
+    <Button class="p-button-rounded p-button-text" @click="togglePlay">
+      <i
+        :class="['pi', playing ? 'pi-pause' : 'pi-play', 'text-white text-lg']"
+      />
+    </Button>
+
+    <Select
+      v-model="selectedSpeed"
+      :options="speedOptions"
+      option-label="name"
+      option-value="value"
+      class="w-24"
+      @change="speedChange"
+    />
+
+    <Select
+      v-model="selectedAnimation"
+      :options="animations"
+      option-label="name"
+      option-value="index"
+      class="w-32"
+      @change="animationChange"
+    />
+  </div>
+</template>

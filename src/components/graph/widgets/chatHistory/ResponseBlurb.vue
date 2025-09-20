@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import CopyButton from '@/components/graph/widgets/chatHistory/CopyButton.vue'
+
+defineProps<{
+  text: string
+}>()
+</script>
+
 <template>
   <span>
     <div class="flex justify-start mb-1">
@@ -12,11 +20,3 @@
     </div>
   </span>
 </template>
-
-<script setup lang="ts">
-import CopyButton from '@/components/graph/widgets/chatHistory/CopyButton.vue'
-
-defineProps<{
-  text: string
-}>()
-</script>

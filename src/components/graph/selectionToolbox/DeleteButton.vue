@@ -1,19 +1,3 @@
-<template>
-  <Button
-    v-show="isDeletable"
-    v-tooltip.top="{
-      value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
-      showDelay: 1000
-    }"
-    severity="secondary"
-    text
-    icon-class="w-4 h-4"
-    icon="pi pi-trash"
-    data-testid="delete-button"
-    @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
-  />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
@@ -31,3 +15,19 @@ const isDeletable = computed(() =>
   selectedItems.value.some((x: Positionable) => x.removable !== false)
 )
 </script>
+
+<template>
+  <Button
+    v-show="isDeletable"
+    v-tooltip.top="{
+      value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
+      showDelay: 1000
+    }"
+    severity="secondary"
+    text
+    icon-class="w-4 h-4"
+    icon="pi pi-trash"
+    data-testid="delete-button"
+    @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
+  />
+</template>

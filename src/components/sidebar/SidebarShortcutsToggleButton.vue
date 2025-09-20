@@ -1,15 +1,3 @@
-<template>
-  <SidebarIcon
-    :tooltip="tooltipText"
-    :selected="isShortcutsPanelVisible"
-    @click="toggleShortcutsPanel"
-  >
-    <template #icon>
-      <i-lucide:keyboard />
-    </template>
-  </SidebarIcon>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -37,3 +25,15 @@ const toggleShortcutsPanel = () => {
   bottomPanelStore.togglePanel('shortcuts')
 }
 </script>
+
+<template>
+  <SidebarIcon
+    :tooltip="tooltipText"
+    :selected="isShortcutsPanelVisible"
+    @click="toggleShortcutsPanel"
+  >
+    <template #icon>
+      <i-lucide:keyboard />
+    </template>
+  </SidebarIcon>
+</template>

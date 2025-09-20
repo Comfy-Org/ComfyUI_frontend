@@ -1,84 +1,3 @@
-<template>
-  <div
-    class="overflow-hidden transition-all duration-300"
-    :class="{
-      'max-h-[500px]': isExpanded,
-      'max-h-0 p-0 m-0': !isExpanded
-    }"
-  >
-    <div
-      ref="sectionsContainerRef"
-      class="px-6 py-4 overflow-y-auto max-h-[450px] scroll-container"
-      :style="{
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
-      }"
-      :class="{
-        'max-h-[450px]': isExpanded,
-        'max-h-0': !isExpanded
-      }"
-    >
-      <div v-for="(log, index) in focusedLogs" :key="index">
-        <Panel
-          :expanded="collapsedPanels[index] === true"
-          toggleable
-          class="shadow-elevation-1 rounded-lg mt-2 dark-theme:bg-black dark-theme:border-black"
-        >
-          <template #header>
-            <div class="flex items-center justify-between w-full py-2">
-              <div class="flex flex-col text-sm font-medium leading-normal">
-                <span>{{ log.taskName }}</span>
-                <span class="text-muted">
-                  {{
-                    isInProgress(index)
-                      ? $t('g.inProgress')
-                      : $t('g.completed') + ' ✓'
-                  }}
-                </span>
-              </div>
-            </div>
-          </template>
-          <template #toggleicon>
-            <Button
-              :icon="
-                collapsedPanels[index]
-                  ? 'pi pi-chevron-right'
-                  : 'pi pi-chevron-down'
-              "
-              text
-              class="text-neutral-300"
-              @click="togglePanel(index)"
-            />
-          </template>
-          <div
-            :ref="
-              index === focusedLogs.length - 1
-                ? (el) => (lastPanelRef = el as HTMLElement)
-                : undefined
-            "
-            class="overflow-y-auto h-64 rounded-lg bg-black"
-            :class="{
-              'h-64': index !== focusedLogs.length - 1,
-              grow: index === focusedLogs.length - 1
-            }"
-            @scroll="handleScroll"
-          >
-            <div class="h-full">
-              <div
-                v-for="(logLine, logIndex) in log.logs"
-                :key="logIndex"
-                class="text-neutral-400 dark-theme:text-muted"
-              >
-                <pre class="whitespace-pre-wrap break-words">{{ logLine }}</pre>
-              </div>
-            </div>
-          </div>
-        </Panel>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useScroll, whenever } from '@vueuse/core'
 import Button from 'primevue/button'
@@ -177,3 +96,84 @@ onBeforeUnmount(() => {
   progressDialogContent.collapse()
 })
 </script>
+
+<template>
+  <div
+    class="overflow-hidden transition-all duration-300"
+    :class="{
+      'max-h-[500px]': isExpanded,
+      'max-h-0 p-0 m-0': !isExpanded
+    }"
+  >
+    <div
+      ref="sectionsContainerRef"
+      class="px-6 py-4 overflow-y-auto max-h-[450px] scroll-container"
+      :style="{
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+      }"
+      :class="{
+        'max-h-[450px]': isExpanded,
+        'max-h-0': !isExpanded
+      }"
+    >
+      <div v-for="(log, index) in focusedLogs" :key="index">
+        <Panel
+          :expanded="collapsedPanels[index] === true"
+          toggleable
+          class="shadow-elevation-1 rounded-lg mt-2 dark-theme:bg-black dark-theme:border-black"
+        >
+          <template #header>
+            <div class="flex items-center justify-between w-full py-2">
+              <div class="flex flex-col text-sm font-medium leading-normal">
+                <span>{{ log.taskName }}</span>
+                <span class="text-muted">
+                  {{
+                    isInProgress(index)
+                      ? $t('g.inProgress')
+                      : $t('g.completed') + ' ✓'
+                  }}
+                </span>
+              </div>
+            </div>
+          </template>
+          <template #toggleicon>
+            <Button
+              :icon="
+                collapsedPanels[index]
+                  ? 'pi pi-chevron-right'
+                  : 'pi pi-chevron-down'
+              "
+              text
+              class="text-neutral-300"
+              @click="togglePanel(index)"
+            />
+          </template>
+          <div
+            :ref="
+              index === focusedLogs.length - 1
+                ? (el) => (lastPanelRef = el as HTMLElement)
+                : undefined
+            "
+            class="overflow-y-auto h-64 rounded-lg bg-black"
+            :class="{
+              'h-64': index !== focusedLogs.length - 1,
+              grow: index === focusedLogs.length - 1
+            }"
+            @scroll="handleScroll"
+          >
+            <div class="h-full">
+              <div
+                v-for="(logLine, logIndex) in log.logs"
+                :key="logIndex"
+                class="text-neutral-400 dark-theme:text-muted"
+              >
+                <pre class="whitespace-pre-wrap break-words">{{ logLine }}</pre>
+              </div>
+            </div>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  </div>
+</template>

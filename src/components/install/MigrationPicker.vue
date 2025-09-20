@@ -1,72 +1,3 @@
-<template>
-  <div class="flex flex-col gap-6 w-[600px]">
-    <!-- Source Location Section -->
-    <div class="flex flex-col gap-4">
-      <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.migrateFromExistingInstallation') }}
-      </h2>
-
-      <p class="text-neutral-400 my-0">
-        {{ $t('install.migrationSourcePathDescription') }}
-      </p>
-
-      <div class="flex gap-2">
-        <InputText
-          v-model="sourcePath"
-          placeholder="Select existing ComfyUI installation (optional)"
-          class="flex-1"
-          :class="{ 'p-invalid': pathError }"
-          @update:model-value="validateSource"
-        />
-        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
-      </div>
-
-      <Message v-if="pathError" severity="error">
-        {{ pathError }}
-      </Message>
-    </div>
-
-    <!-- Migration Options -->
-    <div
-      v-if="isValidSource"
-      class="flex flex-col gap-4 bg-neutral-800 p-4 rounded-lg"
-    >
-      <h3 class="text-lg mt-0 font-medium text-neutral-100">
-        {{ $t('install.selectItemsToMigrate') }}
-      </h3>
-
-      <div class="flex flex-col gap-3">
-        <div
-          v-for="item in migrationItems"
-          :key="item.id"
-          class="flex items-center gap-3 p-2 hover:bg-neutral-700 rounded"
-          @click="item.selected = !item.selected"
-        >
-          <Checkbox
-            v-model="item.selected"
-            :input-id="item.id"
-            :binary="true"
-            @click.stop
-          />
-          <div>
-            <label :for="item.id" class="text-neutral-200 font-medium">
-              {{ item.label }}
-            </label>
-            <p class="text-sm text-neutral-400 my-1">
-              {{ item.description }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Skip Migration -->
-    <div v-else class="text-neutral-400 italic">
-      {{ $t('install.migrationOptional') }}
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { MigrationItems } from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
@@ -135,3 +66,72 @@ watchEffect(() => {
     .map((item) => item.id)
 })
 </script>
+
+<template>
+  <div class="flex flex-col gap-6 w-[600px]">
+    <!-- Source Location Section -->
+    <div class="flex flex-col gap-4">
+      <h2 class="text-2xl font-semibold text-neutral-100">
+        {{ $t('install.migrateFromExistingInstallation') }}
+      </h2>
+
+      <p class="text-neutral-400 my-0">
+        {{ $t('install.migrationSourcePathDescription') }}
+      </p>
+
+      <div class="flex gap-2">
+        <InputText
+          v-model="sourcePath"
+          placeholder="Select existing ComfyUI installation (optional)"
+          class="flex-1"
+          :class="{ 'p-invalid': pathError }"
+          @update:model-value="validateSource"
+        />
+        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
+      </div>
+
+      <Message v-if="pathError" severity="error">
+        {{ pathError }}
+      </Message>
+    </div>
+
+    <!-- Migration Options -->
+    <div
+      v-if="isValidSource"
+      class="flex flex-col gap-4 bg-neutral-800 p-4 rounded-lg"
+    >
+      <h3 class="text-lg mt-0 font-medium text-neutral-100">
+        {{ $t('install.selectItemsToMigrate') }}
+      </h3>
+
+      <div class="flex flex-col gap-3">
+        <div
+          v-for="item in migrationItems"
+          :key="item.id"
+          class="flex items-center gap-3 p-2 hover:bg-neutral-700 rounded"
+          @click="item.selected = !item.selected"
+        >
+          <Checkbox
+            v-model="item.selected"
+            :input-id="item.id"
+            :binary="true"
+            @click.stop
+          />
+          <div>
+            <label :for="item.id" class="text-neutral-200 font-medium">
+              {{ item.label }}
+            </label>
+            <p class="text-sm text-neutral-400 my-1">
+              {{ item.description }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skip Migration -->
+    <div v-else class="text-neutral-400 italic">
+      {{ $t('install.migrationOptional') }}
+    </div>
+  </div>
+</template>

@@ -1,53 +1,3 @@
-<template>
-  <div class="relative inline-flex items-center">
-    <Button
-      ref="buttonRef"
-      v-tooltip.top="{
-        value: $t('g.moreOptions'),
-        showDelay: 1000
-      }"
-      data-testid="more-options-button"
-      text
-      class="h-8 w-8 px-0"
-      severity="secondary"
-      @click="toggle"
-    >
-      <i-lucide:more-vertical class="w-4 h-4" />
-    </Button>
-
-    <Popover
-      ref="popover"
-      :append-to="'body'"
-      :auto-z-index="true"
-      :base-z-index="1000"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="pt"
-      @show="onPopoverShow"
-      @hide="onPopoverHide"
-    >
-      <div class="flex flex-col p-2 min-w-48">
-        <MenuOptionItem
-          v-for="(option, index) in menuOptions"
-          :key="option.label || `divider-${index}`"
-          :option="option"
-          @click="handleOptionClick"
-        />
-      </div>
-    </Popover>
-
-    <SubmenuPopover
-      v-for="option in menuOptionsWithSubmenu"
-      :key="`submenu-${option.label}`"
-      :ref="(el) => setSubmenuRef(`submenu-${option.label}`, el)"
-      :option="option"
-      :container-styles="containerStyles"
-      @submenu-click="handleSubmenuClick"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
@@ -314,3 +264,53 @@ onUnmounted(() => {
   stopSync()
 })
 </script>
+
+<template>
+  <div class="relative inline-flex items-center">
+    <Button
+      ref="buttonRef"
+      v-tooltip.top="{
+        value: $t('g.moreOptions'),
+        showDelay: 1000
+      }"
+      data-testid="more-options-button"
+      text
+      class="h-8 w-8 px-0"
+      severity="secondary"
+      @click="toggle"
+    >
+      <i-lucide:more-vertical class="w-4 h-4" />
+    </Button>
+
+    <Popover
+      ref="popover"
+      :append-to="'body'"
+      :auto-z-index="true"
+      :base-z-index="1000"
+      :dismissable="true"
+      :close-on-escape="true"
+      unstyled
+      :pt="pt"
+      @show="onPopoverShow"
+      @hide="onPopoverHide"
+    >
+      <div class="flex flex-col p-2 min-w-48">
+        <MenuOptionItem
+          v-for="(option, index) in menuOptions"
+          :key="option.label || `divider-${index}`"
+          :option="option"
+          @click="handleOptionClick"
+        />
+      </div>
+    </Popover>
+
+    <SubmenuPopover
+      v-for="option in menuOptionsWithSubmenu"
+      :key="`submenu-${option.label}`"
+      :ref="(el) => setSubmenuRef(`submenu-${option.label}`, el)"
+      :option="option"
+      :container-styles="containerStyles"
+      @submenu-click="handleSubmenuClick"
+    />
+  </div>
+</template>

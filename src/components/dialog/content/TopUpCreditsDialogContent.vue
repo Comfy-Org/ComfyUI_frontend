@@ -1,3 +1,28 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+
+import UserCredit from '@/components/common/UserCredit.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+
+import CreditTopUpOption from './credit/CreditTopUpOption.vue'
+
+const {
+  isInsufficientCredits = false,
+  amountOptions = [5, 10, 20, 50],
+  preselectedAmountOption = 10
+} = defineProps<{
+  isInsufficientCredits?: boolean
+  amountOptions?: number[]
+  preselectedAmountOption?: number
+}>()
+
+const authActions = useFirebaseAuthActions()
+
+const handleSeeDetails = async () => {
+  await authActions.accessBillingPortal()
+}
+</script>
+
 <template>
   <div class="flex flex-col w-96 p-2 gap-10">
     <div v-if="isInsufficientCredits" class="flex flex-col gap-4">
@@ -46,28 +71,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-
-import UserCredit from '@/components/common/UserCredit.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-
-import CreditTopUpOption from './credit/CreditTopUpOption.vue'
-
-const {
-  isInsufficientCredits = false,
-  amountOptions = [5, 10, 20, 50],
-  preselectedAmountOption = 10
-} = defineProps<{
-  isInsufficientCredits?: boolean
-  amountOptions?: number[]
-  preselectedAmountOption?: number
-}>()
-
-const authActions = useFirebaseAuthActions()
-
-const handleSeeDetails = async () => {
-  await authActions.accessBillingPortal()
-}
-</script>

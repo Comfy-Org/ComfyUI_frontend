@@ -1,72 +1,3 @@
-<template>
-  <div
-    class="w-full px-6 py-2 shadow-lg flex items-center justify-between"
-    :class="{
-      'rounded-t-none': progressDialogContent.isExpanded,
-      'rounded-lg': !progressDialogContent.isExpanded
-    }"
-  >
-    <div class="flex items-center text-base leading-none">
-      <div class="flex items-center">
-        <template v-if="isInProgress">
-          <DotSpinner duration="1s" class="mr-2" />
-          <span>{{ currentTaskName }}</span>
-        </template>
-        <template v-else-if="isRestartCompleted">
-          <span class="mr-2">🎉</span>
-          <span>{{ currentTaskName }}</span>
-        </template>
-        <template v-else>
-          <span class="mr-2">✅</span>
-          <span>{{ $t('manager.restartToApplyChanges') }}</span>
-        </template>
-      </div>
-    </div>
-    <div class="flex items-center gap-4">
-      <span v-if="isInProgress" class="text-sm text-neutral-700">
-        {{ completedTasksCount }} {{ $t('g.progressCountOf') }}
-        {{ totalTasksCount }}
-      </span>
-      <div class="flex items-center">
-        <Button
-          v-if="!isInProgress && !isRestartCompleted"
-          rounded
-          outlined
-          class="mr-4 rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 !dark-theme:bg-transparent dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-800"
-          @click="handleRestart"
-        >
-          {{ $t('manager.applyChanges') }}
-        </Button>
-        <Button
-          v-else-if="!isRestartCompleted"
-          :icon="
-            progressDialogContent.isExpanded
-              ? 'pi pi-chevron-up'
-              : 'pi pi-chevron-down'
-          "
-          text
-          rounded
-          size="small"
-          class="font-bold"
-          severity="secondary"
-          :aria-label="progressDialogContent.isExpanded ? 'Collapse' : 'Expand'"
-          @click.stop="progressDialogContent.toggle"
-        />
-        <Button
-          icon="pi pi-times"
-          text
-          rounded
-          size="small"
-          class="font-bold"
-          severity="secondary"
-          aria-label="Close"
-          @click.stop="closeDialog"
-        />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import Button from 'primevue/button'
@@ -188,3 +119,72 @@ const handleRestart = async () => {
   }
 }
 </script>
+
+<template>
+  <div
+    class="w-full px-6 py-2 shadow-lg flex items-center justify-between"
+    :class="{
+      'rounded-t-none': progressDialogContent.isExpanded,
+      'rounded-lg': !progressDialogContent.isExpanded
+    }"
+  >
+    <div class="flex items-center text-base leading-none">
+      <div class="flex items-center">
+        <template v-if="isInProgress">
+          <DotSpinner duration="1s" class="mr-2" />
+          <span>{{ currentTaskName }}</span>
+        </template>
+        <template v-else-if="isRestartCompleted">
+          <span class="mr-2">🎉</span>
+          <span>{{ currentTaskName }}</span>
+        </template>
+        <template v-else>
+          <span class="mr-2">✅</span>
+          <span>{{ $t('manager.restartToApplyChanges') }}</span>
+        </template>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <span v-if="isInProgress" class="text-sm text-neutral-700">
+        {{ completedTasksCount }} {{ $t('g.progressCountOf') }}
+        {{ totalTasksCount }}
+      </span>
+      <div class="flex items-center">
+        <Button
+          v-if="!isInProgress && !isRestartCompleted"
+          rounded
+          outlined
+          class="mr-4 rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 !dark-theme:bg-transparent dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-800"
+          @click="handleRestart"
+        >
+          {{ $t('manager.applyChanges') }}
+        </Button>
+        <Button
+          v-else-if="!isRestartCompleted"
+          :icon="
+            progressDialogContent.isExpanded
+              ? 'pi pi-chevron-up'
+              : 'pi pi-chevron-down'
+          "
+          text
+          rounded
+          size="small"
+          class="font-bold"
+          severity="secondary"
+          :aria-label="progressDialogContent.isExpanded ? 'Collapse' : 'Expand'"
+          @click.stop="progressDialogContent.toggle"
+        />
+        <Button
+          icon="pi pi-times"
+          text
+          rounded
+          size="small"
+          class="font-bold"
+          severity="secondary"
+          aria-label="Close"
+          @click.stop="closeDialog"
+        />
+      </div>
+    </div>
+  </div>
+</template>

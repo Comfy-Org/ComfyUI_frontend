@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import Skeleton from 'primevue/skeleton'
+</script>
+
 <template>
   <div
     class="rounded-lg shadow-sm h-full overflow-hidden flex flex-col"
@@ -48,7 +52,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Skeleton from 'primevue/skeleton'
-</script>

@@ -1,3 +1,39 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import OverlayBadge from 'primevue/overlaybadge'
+import { computed } from 'vue'
+import type { Component } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+const {
+  icon = '',
+  selected = false,
+  tooltip = '',
+  tooltipSuffix = '',
+  iconBadge = '',
+  label = '',
+  isSmall = false
+} = defineProps<{
+  icon?: string | Component
+  selected?: boolean
+  tooltip?: string
+  tooltipSuffix?: string
+  iconBadge?: string | (() => string | null)
+  label?: string
+  isSmall?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+}>()
+const overlayValue = computed(() =>
+  typeof iconBadge === 'function' ? iconBadge() ?? '' : iconBadge
+)
+const shouldShowBadge = computed(() => !!overlayValue.value)
+const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
+</script>
+
 <template>
   <Button
     v-tooltip="{
@@ -45,42 +81,6 @@
     </template>
   </Button>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import OverlayBadge from 'primevue/overlaybadge'
-import { computed } from 'vue'
-import type { Component } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
-const {
-  icon = '',
-  selected = false,
-  tooltip = '',
-  tooltipSuffix = '',
-  iconBadge = '',
-  label = '',
-  isSmall = false
-} = defineProps<{
-  icon?: string | Component
-  selected?: boolean
-  tooltip?: string
-  tooltipSuffix?: string
-  iconBadge?: string | (() => string | null)
-  label?: string
-  isSmall?: boolean
-}>()
-
-const emit = defineEmits<{
-  (e: 'click', event: MouseEvent): void
-}>()
-const overlayValue = computed(() =>
-  typeof iconBadge === 'function' ? iconBadge() ?? '' : iconBadge
-)
-const shouldShowBadge = computed(() => !!overlayValue.value)
-const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
-</script>
 
 <style>
 .side-bar-button-icon {

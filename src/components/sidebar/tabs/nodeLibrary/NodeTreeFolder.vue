@@ -1,9 +1,3 @@
-<template>
-  <div ref="container" class="node-lib-node-container">
-    <TreeExplorerTreeNode :node="node" @item-dropped="handleItemDrop" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -65,3 +59,9 @@ const handleItemDrop = (node: RenderedTreeExplorerNode) => {
   expandedKeys.value[node.key] = true
 }
 </script>
+
+<template>
+  <div ref="container" class="node-lib-node-container">
+    <TreeExplorerTreeNode :node="node" @item-dropped="handleItemDrop" />
+  </div>
+</template>

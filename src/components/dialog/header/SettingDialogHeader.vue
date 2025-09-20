@@ -1,3 +1,10 @@
+<script setup lang="ts">
+import Tag from 'primevue/tag'
+
+// Global variable from vite build defined in global.d.ts
+// eslint-disable-next-line no-undef
+const isStaging = !__USE_PROD_CONFIG__
+</script>
 <template>
   <div>
     <h2 class="px-4">
@@ -12,13 +19,6 @@
     </h2>
   </div>
 </template>
-<script setup lang="ts">
-import Tag from 'primevue/tag'
-
-// Global variable from vite build defined in global.d.ts
-// eslint-disable-next-line no-undef
-const isStaging = !__USE_PROD_CONFIG__
-</script>
 
 <style scoped>
 .pi-cog {

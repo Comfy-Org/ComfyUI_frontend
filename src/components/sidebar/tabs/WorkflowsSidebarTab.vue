@@ -1,132 +1,3 @@
-<template>
-  <SidebarTabTemplate
-    :title="$t('sideToolbar.workflows')"
-    class="workflows-sidebar-tab bg-(--p-tree-background)"
-  >
-    <template #tool-buttons>
-      <Button
-        v-tooltip.bottom="$t('g.refresh')"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
-        @click="workflowStore.syncWorkflows()"
-      />
-    </template>
-    <template #header>
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="workflows-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchWorkflows') + '...'"
-        @search="handleSearch"
-      />
-    </template>
-    <template #body>
-      <div v-if="!isSearching" class="comfyui-workflows-panel">
-        <div
-          v-if="workflowTabsPosition === 'Sidebar'"
-          class="comfyui-workflows-open"
-        >
-          <TextDivider
-            :text="t('sideToolbar.workflowTab.workflowTreeType.open')"
-            type="dashed"
-            class="ml-2"
-          />
-          <TreeExplorer
-            v-model:expanded-keys="dummyExpandedKeys"
-            :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
-            :selection-keys="selectionKeys"
-          >
-            <template #node="{ node }">
-              <TreeExplorerTreeNode :node="node">
-                <template #before-label="{ node: treeNode }">
-                  <span
-                    v-if="
-                      treeNode.data?.isModified || !treeNode.data?.isPersisted
-                    "
-                    >*</span
-                  >
-                </template>
-                <template #actions="{ node: treeNode }">
-                  <Button
-                    class="close-workflow-button"
-                    icon="pi pi-times"
-                    text
-                    :severity="
-                      workspaceStore.shiftDown ? 'danger' : 'secondary'
-                    "
-                    size="small"
-                    @click.stop="
-                      handleCloseWorkflow(treeNode.data as ComfyWorkflow)
-                    "
-                  />
-                </template>
-              </TreeExplorerTreeNode>
-            </template>
-          </TreeExplorer>
-        </div>
-        <div
-          v-show="workflowStore.bookmarkedWorkflows.length > 0"
-          class="comfyui-workflows-bookmarks"
-        >
-          <TextDivider
-            :text="t('sideToolbar.workflowTab.workflowTreeType.bookmarks')"
-            type="dashed"
-            class="ml-2"
-          />
-          <TreeExplorer
-            v-model:expanded-keys="dummyExpandedKeys"
-            :root="
-              renderTreeNode(
-                bookmarkedWorkflowsTree,
-                WorkflowTreeType.Bookmarks
-              )
-            "
-            :selection-keys="selectionKeys"
-          >
-            <template #node="{ node }">
-              <WorkflowTreeLeaf :node="node" />
-            </template>
-          </TreeExplorer>
-        </div>
-        <div class="comfyui-workflows-browse">
-          <TextDivider
-            :text="t('sideToolbar.workflowTab.workflowTreeType.browse')"
-            type="dashed"
-            class="ml-2"
-          />
-          <TreeExplorer
-            v-if="workflowStore.persistedWorkflows.length > 0"
-            v-model:expanded-keys="expandedKeys"
-            :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
-            :selection-keys="selectionKeys"
-          >
-            <template #node="{ node }">
-              <WorkflowTreeLeaf :node="node" />
-            </template>
-          </TreeExplorer>
-          <NoResultsPlaceholder
-            v-else
-            icon="pi pi-folder"
-            :title="$t('g.empty')"
-            :message="$t('g.noWorkflowsFound')"
-          />
-        </div>
-      </div>
-      <div v-else class="comfyui-workflows-search-panel">
-        <TreeExplorer
-          v-model:expanded-keys="expandedKeys"
-          :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
-        >
-          <template #node="{ node }">
-            <WorkflowTreeLeaf :node="node" />
-          </template>
-        </TreeExplorer>
-      </div>
-    </template>
-  </SidebarTabTemplate>
-  <ConfirmDialog />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
@@ -299,3 +170,132 @@ onMounted(async () => {
   await workflowBookmarkStore.loadBookmarks()
 })
 </script>
+
+<template>
+  <SidebarTabTemplate
+    :title="$t('sideToolbar.workflows')"
+    class="workflows-sidebar-tab bg-(--p-tree-background)"
+  >
+    <template #tool-buttons>
+      <Button
+        v-tooltip.bottom="$t('g.refresh')"
+        icon="pi pi-refresh"
+        severity="secondary"
+        text
+        @click="workflowStore.syncWorkflows()"
+      />
+    </template>
+    <template #header>
+      <SearchBox
+        v-model:model-value="searchQuery"
+        class="workflows-search-box p-2 2xl:p-4"
+        :placeholder="$t('g.searchWorkflows') + '...'"
+        @search="handleSearch"
+      />
+    </template>
+    <template #body>
+      <div v-if="!isSearching" class="comfyui-workflows-panel">
+        <div
+          v-if="workflowTabsPosition === 'Sidebar'"
+          class="comfyui-workflows-open"
+        >
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.open')"
+            type="dashed"
+            class="ml-2"
+          />
+          <TreeExplorer
+            v-model:expanded-keys="dummyExpandedKeys"
+            :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
+            :selection-keys="selectionKeys"
+          >
+            <template #node="{ node }">
+              <TreeExplorerTreeNode :node="node">
+                <template #before-label="{ node: treeNode }">
+                  <span
+                    v-if="
+                      treeNode.data?.isModified || !treeNode.data?.isPersisted
+                    "
+                    >*</span
+                  >
+                </template>
+                <template #actions="{ node: treeNode }">
+                  <Button
+                    class="close-workflow-button"
+                    icon="pi pi-times"
+                    text
+                    :severity="
+                      workspaceStore.shiftDown ? 'danger' : 'secondary'
+                    "
+                    size="small"
+                    @click.stop="
+                      handleCloseWorkflow(treeNode.data as ComfyWorkflow)
+                    "
+                  />
+                </template>
+              </TreeExplorerTreeNode>
+            </template>
+          </TreeExplorer>
+        </div>
+        <div
+          v-show="workflowStore.bookmarkedWorkflows.length > 0"
+          class="comfyui-workflows-bookmarks"
+        >
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.bookmarks')"
+            type="dashed"
+            class="ml-2"
+          />
+          <TreeExplorer
+            v-model:expanded-keys="dummyExpandedKeys"
+            :root="
+              renderTreeNode(
+                bookmarkedWorkflowsTree,
+                WorkflowTreeType.Bookmarks
+              )
+            "
+            :selection-keys="selectionKeys"
+          >
+            <template #node="{ node }">
+              <WorkflowTreeLeaf :node="node" />
+            </template>
+          </TreeExplorer>
+        </div>
+        <div class="comfyui-workflows-browse">
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.browse')"
+            type="dashed"
+            class="ml-2"
+          />
+          <TreeExplorer
+            v-if="workflowStore.persistedWorkflows.length > 0"
+            v-model:expanded-keys="expandedKeys"
+            :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
+            :selection-keys="selectionKeys"
+          >
+            <template #node="{ node }">
+              <WorkflowTreeLeaf :node="node" />
+            </template>
+          </TreeExplorer>
+          <NoResultsPlaceholder
+            v-else
+            icon="pi pi-folder"
+            :title="$t('g.empty')"
+            :message="$t('g.noWorkflowsFound')"
+          />
+        </div>
+      </div>
+      <div v-else class="comfyui-workflows-search-panel">
+        <TreeExplorer
+          v-model:expanded-keys="expandedKeys"
+          :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
+        >
+          <template #node="{ node }">
+            <WorkflowTreeLeaf :node="node" />
+          </template>
+        </TreeExplorer>
+      </div>
+    </template>
+  </SidebarTabTemplate>
+  <ConfirmDialog />
+</template>

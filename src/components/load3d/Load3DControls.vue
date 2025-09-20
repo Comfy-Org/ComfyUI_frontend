@@ -1,94 +1,3 @@
-<template>
-  <div
-    class="absolute top-12 left-2 flex flex-col pointer-events-auto z-20 bg-gray-700/30 rounded-lg"
-  >
-    <div class="relative show-menu">
-      <Button class="p-button-rounded p-button-text" @click="toggleMenu">
-        <i class="pi pi-bars text-white text-lg" />
-      </Button>
-
-      <div
-        v-show="isMenuOpen"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
-      >
-        <div class="flex flex-col">
-          <Button
-            v-for="category in availableCategories"
-            :key="category"
-            class="p-button-text w-full flex items-center justify-start"
-            :class="{ 'bg-gray-600': activeCategory === category }"
-            @click="selectCategory(category)"
-          >
-            <i :class="getCategoryIcon(category)" />
-            <span class="text-white">{{ t(categoryLabels[category]) }}</span>
-          </Button>
-        </div>
-      </div>
-    </div>
-
-    <div v-show="activeCategory" class="bg-gray-700/30 rounded-lg">
-      <SceneControls
-        v-if="activeCategory === 'scene'"
-        ref="sceneControlsRef"
-        :background-color="backgroundColor"
-        :show-grid="showGrid"
-        :has-background-image="hasBackgroundImage"
-        @toggle-grid="handleToggleGrid"
-        @update-background-color="handleBackgroundColorChange"
-        @update-background-image="handleBackgroundImageUpdate"
-      />
-
-      <ModelControls
-        v-if="activeCategory === 'model'"
-        ref="modelControlsRef"
-        :input-spec="inputSpec"
-        :up-direction="upDirection"
-        :material-mode="materialMode"
-        :edge-threshold="edgeThreshold"
-        @update-up-direction="handleUpdateUpDirection"
-        @update-material-mode="handleUpdateMaterialMode"
-        @update-edge-threshold="handleUpdateEdgeThreshold"
-      />
-
-      <CameraControls
-        v-if="activeCategory === 'camera'"
-        ref="cameraControlsRef"
-        :camera-type="cameraType"
-        :fov="fov"
-        :show-f-o-v-button="showFOVButton"
-        @switch-camera="switchCamera"
-        @update-f-o-v="handleUpdateFOV"
-      />
-
-      <LightControls
-        v-if="activeCategory === 'light'"
-        ref="lightControlsRef"
-        :light-intensity="lightIntensity"
-        :show-light-intensity-button="showLightIntensityButton"
-        @update-light-intensity="handleUpdateLightIntensity"
-      />
-
-      <ExportControls
-        v-if="activeCategory === 'export'"
-        ref="exportControlsRef"
-        @export-model="handleExportModel"
-      />
-    </div>
-    <div v-if="showPreviewButton">
-      <Button class="p-button-rounded p-button-text" @click="togglePreview">
-        <i
-          v-tooltip.right="{ value: t('load3d.previewOutput'), showDelay: 300 }"
-          :class="[
-            'pi',
-            showPreview ? 'pi-eye' : 'pi-eye-slash',
-            'text-white text-lg'
-          ]"
-        />
-      </Button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
@@ -350,3 +259,94 @@ onUnmounted(() => {
   document.removeEventListener('click', closeSlider)
 })
 </script>
+
+<template>
+  <div
+    class="absolute top-12 left-2 flex flex-col pointer-events-auto z-20 bg-gray-700/30 rounded-lg"
+  >
+    <div class="relative show-menu">
+      <Button class="p-button-rounded p-button-text" @click="toggleMenu">
+        <i class="pi pi-bars text-white text-lg" />
+      </Button>
+
+      <div
+        v-show="isMenuOpen"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+      >
+        <div class="flex flex-col">
+          <Button
+            v-for="category in availableCategories"
+            :key="category"
+            class="p-button-text w-full flex items-center justify-start"
+            :class="{ 'bg-gray-600': activeCategory === category }"
+            @click="selectCategory(category)"
+          >
+            <i :class="getCategoryIcon(category)" />
+            <span class="text-white">{{ t(categoryLabels[category]) }}</span>
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <div v-show="activeCategory" class="bg-gray-700/30 rounded-lg">
+      <SceneControls
+        v-if="activeCategory === 'scene'"
+        ref="sceneControlsRef"
+        :background-color="backgroundColor"
+        :show-grid="showGrid"
+        :has-background-image="hasBackgroundImage"
+        @toggle-grid="handleToggleGrid"
+        @update-background-color="handleBackgroundColorChange"
+        @update-background-image="handleBackgroundImageUpdate"
+      />
+
+      <ModelControls
+        v-if="activeCategory === 'model'"
+        ref="modelControlsRef"
+        :input-spec="inputSpec"
+        :up-direction="upDirection"
+        :material-mode="materialMode"
+        :edge-threshold="edgeThreshold"
+        @update-up-direction="handleUpdateUpDirection"
+        @update-material-mode="handleUpdateMaterialMode"
+        @update-edge-threshold="handleUpdateEdgeThreshold"
+      />
+
+      <CameraControls
+        v-if="activeCategory === 'camera'"
+        ref="cameraControlsRef"
+        :camera-type="cameraType"
+        :fov="fov"
+        :show-f-o-v-button="showFOVButton"
+        @switch-camera="switchCamera"
+        @update-f-o-v="handleUpdateFOV"
+      />
+
+      <LightControls
+        v-if="activeCategory === 'light'"
+        ref="lightControlsRef"
+        :light-intensity="lightIntensity"
+        :show-light-intensity-button="showLightIntensityButton"
+        @update-light-intensity="handleUpdateLightIntensity"
+      />
+
+      <ExportControls
+        v-if="activeCategory === 'export'"
+        ref="exportControlsRef"
+        @export-model="handleExportModel"
+      />
+    </div>
+    <div v-if="showPreviewButton">
+      <Button class="p-button-rounded p-button-text" @click="togglePreview">
+        <i
+          v-tooltip.right="{ value: t('load3d.previewOutput'), showDelay: 300 }"
+          :class="[
+            'pi',
+            showPreview ? 'pi-eye' : 'pi-eye-slash',
+            'text-white text-lg'
+          ]"
+        />
+      </Button>
+    </div>
+  </div>
+</template>

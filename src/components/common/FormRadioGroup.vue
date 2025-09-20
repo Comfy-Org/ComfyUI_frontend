@@ -1,25 +1,3 @@
-<template>
-  <div class="flex flex-row gap-4">
-    <div
-      v-for="option in normalizedOptions"
-      :key="option.value"
-      class="flex items-center"
-    >
-      <RadioButton
-        :input-id="`${id}-${option.value}`"
-        :name="id"
-        :value="option.value"
-        :model-value="modelValue"
-        :aria-describedby="`${option.text}-label`"
-        @update:model-value="$emit('update:modelValue', $event)"
-      />
-      <label :for="`${id}-${option.value}`" class="ml-2 cursor-pointer">
-        {{ option.text }}
-      </label>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import RadioButton from 'primevue/radiobutton'
 import { computed } from 'vue'
@@ -60,3 +38,25 @@ const normalizedOptions = computed<SettingOption[]>(() => {
   })
 })
 </script>
+
+<template>
+  <div class="flex flex-row gap-4">
+    <div
+      v-for="option in normalizedOptions"
+      :key="option.value"
+      class="flex items-center"
+    >
+      <RadioButton
+        :input-id="`${id}-${option.value}`"
+        :name="id"
+        :value="option.value"
+        :model-value="modelValue"
+        :aria-describedby="`${option.text}-label`"
+        @update:model-value="$emit('update:modelValue', $event)"
+      />
+      <label :for="`${id}-${option.value}`" class="ml-2 cursor-pointer">
+        {{ option.text }}
+      </label>
+    </div>
+  </div>
+</template>

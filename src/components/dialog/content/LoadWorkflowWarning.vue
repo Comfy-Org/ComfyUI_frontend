@@ -1,55 +1,3 @@
-<template>
-  <NoResultsPlaceholder
-    class="pb-0"
-    icon="pi pi-exclamation-circle"
-    :title="$t('loadWorkflowWarning.missingNodesTitle')"
-    :message="$t('loadWorkflowWarning.missingNodesDescription')"
-  />
-  <MissingCoreNodesMessage :missing-core-nodes="missingCoreNodes" />
-  <ListBox
-    :options="uniqueNodes"
-    option-label="label"
-    scroll-height="100%"
-    class="comfy-missing-nodes"
-    :pt="{
-      list: { class: 'border-none' }
-    }"
-  >
-    <template #option="slotProps">
-      <div class="flex align-items-center">
-        <span class="node-type">{{ slotProps.option.label }}</span>
-        <span v-if="slotProps.option.hint" class="node-hint">{{
-          slotProps.option.hint
-        }}</span>
-        <Button
-          v-if="slotProps.option.action"
-          :label="slotProps.option.action.text"
-          size="small"
-          outlined
-          @click="slotProps.option.action.callback"
-        />
-      </div>
-    </template>
-  </ListBox>
-  <div v-if="showManagerButtons" class="flex justify-end py-3">
-    <PackInstallButton
-      v-if="showInstallAllButton"
-      size="md"
-      :disabled="
-        isLoading || !!error || missingNodePacks.length === 0 || isInstalling
-      "
-      :is-loading="isLoading"
-      :node-packs="missingNodePacks"
-      :label="
-        isLoading
-          ? $t('manager.gettingInfo')
-          : $t('manager.installAllMissingNodes')
-      "
-    />
-    <Button label="Open Manager" size="small" outlined @click="openManager" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
@@ -153,6 +101,58 @@ watch(allMissingNodesInstalled, async (allInstalled) => {
   }
 })
 </script>
+
+<template>
+  <NoResultsPlaceholder
+    class="pb-0"
+    icon="pi pi-exclamation-circle"
+    :title="$t('loadWorkflowWarning.missingNodesTitle')"
+    :message="$t('loadWorkflowWarning.missingNodesDescription')"
+  />
+  <MissingCoreNodesMessage :missing-core-nodes="missingCoreNodes" />
+  <ListBox
+    :options="uniqueNodes"
+    option-label="label"
+    scroll-height="100%"
+    class="comfy-missing-nodes"
+    :pt="{
+      list: { class: 'border-none' }
+    }"
+  >
+    <template #option="slotProps">
+      <div class="flex align-items-center">
+        <span class="node-type">{{ slotProps.option.label }}</span>
+        <span v-if="slotProps.option.hint" class="node-hint">{{
+          slotProps.option.hint
+        }}</span>
+        <Button
+          v-if="slotProps.option.action"
+          :label="slotProps.option.action.text"
+          size="small"
+          outlined
+          @click="slotProps.option.action.callback"
+        />
+      </div>
+    </template>
+  </ListBox>
+  <div v-if="showManagerButtons" class="flex justify-end py-3">
+    <PackInstallButton
+      v-if="showInstallAllButton"
+      size="md"
+      :disabled="
+        isLoading || !!error || missingNodePacks.length === 0 || isInstalling
+      "
+      :is-loading="isLoading"
+      :node-packs="missingNodePacks"
+      :label="
+        isLoading
+          ? $t('manager.gettingInfo')
+          : $t('manager.installAllMissingNodes')
+      "
+    />
+    <Button label="Open Manager" size="small" outlined @click="openManager" />
+  </div>
+</template>
 
 <style scoped>
 .comfy-missing-nodes {

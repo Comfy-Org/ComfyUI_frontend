@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import { useRouter } from 'vue-router'
+
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+
+const router = useRouter()
+const navigateTo = async (path: string) => {
+  await router.push(path)
+}
+</script>
+
 <template>
   <BaseViewTemplate dark>
     <div class="flex flex-col items-center justify-center gap-8 p-8">
@@ -19,18 +31,6 @@
     </div>
   </BaseViewTemplate>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import { useRouter } from 'vue-router'
-
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
-
-const router = useRouter()
-const navigateTo = async (path: string) => {
-  await router.push(path)
-}
-</script>
 
 <style scoped>
 @reference '../assets/css/style.css';

@@ -1,3 +1,18 @@
+<script setup lang="ts">
+import Dialog from 'primevue/dialog'
+import Divider from 'primevue/divider'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { ref } from 'vue'
+
+const showDialog = ref(false)
+const autoUpdate = defineModel<boolean>('autoUpdate', { required: true })
+const allowMetrics = defineModel<boolean>('allowMetrics', { required: true })
+
+const showMetricsInfo = () => {
+  showDialog.value = true
+}
+</script>
+
 <template>
   <div class="flex flex-col gap-6 w-[600px]">
     <div class="flex flex-col gap-4">
@@ -122,18 +137,3 @@
     </Dialog>
   </div>
 </template>
-
-<script setup lang="ts">
-import Dialog from 'primevue/dialog'
-import Divider from 'primevue/divider'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { ref } from 'vue'
-
-const showDialog = ref(false)
-const autoUpdate = defineModel<boolean>('autoUpdate', { required: true })
-const allowMetrics = defineModel<boolean>('allowMetrics', { required: true })
-
-const showMetricsInfo = () => {
-  showDialog.value = true
-}
-</script>

@@ -1,72 +1,3 @@
-<template>
-  <div :class="layoutClasses">
-    <IconButton
-      v-show="!isRightPanelOpen && hasRightPanel"
-      :class="rightPanelButtonClasses"
-      @click="toggleRightPanel"
-    >
-      <i-lucide:panel-right class="text-sm" />
-    </IconButton>
-    <IconButton :class="closeButtonClasses" @click="closeDialog">
-      <i class="pi pi-times text-sm"></i>
-    </IconButton>
-    <div class="flex w-full h-full">
-      <Transition name="slide-panel">
-        <nav
-          v-if="$slots.leftPanel && showLeftPanel"
-          :class="[
-            PANEL_SIZES.width,
-            PANEL_SIZES.minWidth,
-            PANEL_SIZES.maxWidth
-          ]"
-        >
-          <slot name="leftPanel"></slot>
-        </nav>
-      </Transition>
-
-      <div :class="mainContainerClasses">
-        <div class="w-full h-full flex flex-col">
-          <header v-if="$slots.header" :class="headerClasses">
-            <div class="flex-1 flex gap-2 shrink-0">
-              <IconButton v-if="!notMobile" @click="toggleLeftPanel">
-                <i-lucide:panel-left v-if="!showLeftPanel" class="text-sm" />
-                <i-lucide:panel-left-close v-else class="text-sm" />
-              </IconButton>
-              <slot name="header"></slot>
-            </div>
-            <slot name="header-right-area"></slot>
-            <div :class="rightAreaClasses">
-              <IconButton
-                v-if="isRightPanelOpen && hasRightPanel"
-                @click="toggleRightPanel"
-              >
-                <i-lucide:panel-right-close class="text-sm" />
-              </IconButton>
-            </div>
-          </header>
-
-          <main class="flex flex-col flex-1 min-h-0">
-            <!-- Fallback title bar when no leftPanel is provided -->
-            <slot name="contentFilter"></slot>
-            <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
-              {{ contentTitle }}
-            </h2>
-            <div :class="contentContainerClasses">
-              <slot name="content"></slot>
-            </div>
-          </main>
-        </div>
-        <aside
-          v-if="hasRightPanel && isRightPanelOpen"
-          :class="rightPanelClasses"
-        >
-          <slot name="rightPanel"></slot>
-        </aside>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useBreakpoints } from '@vueuse/core'
 import { computed, inject, ref, useSlots, watch } from 'vue'
@@ -167,6 +98,75 @@ const rightPanelClasses = computed(() => {
   return cn('w-1/4 min-w-40 max-w-80')
 })
 </script>
+
+<template>
+  <div :class="layoutClasses">
+    <IconButton
+      v-show="!isRightPanelOpen && hasRightPanel"
+      :class="rightPanelButtonClasses"
+      @click="toggleRightPanel"
+    >
+      <i-lucide:panel-right class="text-sm" />
+    </IconButton>
+    <IconButton :class="closeButtonClasses" @click="closeDialog">
+      <i class="pi pi-times text-sm"></i>
+    </IconButton>
+    <div class="flex w-full h-full">
+      <Transition name="slide-panel">
+        <nav
+          v-if="$slots.leftPanel && showLeftPanel"
+          :class="[
+            PANEL_SIZES.width,
+            PANEL_SIZES.minWidth,
+            PANEL_SIZES.maxWidth
+          ]"
+        >
+          <slot name="leftPanel"></slot>
+        </nav>
+      </Transition>
+
+      <div :class="mainContainerClasses">
+        <div class="w-full h-full flex flex-col">
+          <header v-if="$slots.header" :class="headerClasses">
+            <div class="flex-1 flex gap-2 shrink-0">
+              <IconButton v-if="!notMobile" @click="toggleLeftPanel">
+                <i-lucide:panel-left v-if="!showLeftPanel" class="text-sm" />
+                <i-lucide:panel-left-close v-else class="text-sm" />
+              </IconButton>
+              <slot name="header"></slot>
+            </div>
+            <slot name="header-right-area"></slot>
+            <div :class="rightAreaClasses">
+              <IconButton
+                v-if="isRightPanelOpen && hasRightPanel"
+                @click="toggleRightPanel"
+              >
+                <i-lucide:panel-right-close class="text-sm" />
+              </IconButton>
+            </div>
+          </header>
+
+          <main class="flex flex-col flex-1 min-h-0">
+            <!-- Fallback title bar when no leftPanel is provided -->
+            <slot name="contentFilter"></slot>
+            <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
+              {{ contentTitle }}
+            </h2>
+            <div :class="contentContainerClasses">
+              <slot name="content"></slot>
+            </div>
+          </main>
+        </div>
+        <aside
+          v-if="hasRightPanel && isRightPanelOpen"
+          :class="rightPanelClasses"
+        >
+          <slot name="rightPanel"></slot>
+        </aside>
+      </div>
+    </div>
+  </div>
+</template>
 <style scoped>
 .base-widget-layout {
   height: 80vh;

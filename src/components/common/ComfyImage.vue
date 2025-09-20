@@ -1,4 +1,25 @@
 <!-- A image with placeholder fallback on error -->
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const {
+  src,
+  class: classProp,
+  contain = false,
+  alt = 'Image content'
+} = defineProps<{
+  src: string
+  class?: any
+  contain?: boolean
+  alt?: string
+}>()
+
+const imageBroken = ref(false)
+const handleImageError = () => {
+  imageBroken.value = true
+}
+</script>
+
 <template>
   <span
     v-if="!imageBroken"
@@ -27,27 +48,6 @@
     <span>{{ $t('g.imageFailedToLoad') }}</span>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-
-const {
-  src,
-  class: classProp,
-  contain = false,
-  alt = 'Image content'
-} = defineProps<{
-  src: string
-  class?: any
-  contain?: boolean
-  alt?: string
-}>()
-
-const imageBroken = ref(false)
-const handleImageError = () => {
-  imageBroken.value = true
-}
-</script>
 
 <style scoped>
 .comfy-image-wrap {

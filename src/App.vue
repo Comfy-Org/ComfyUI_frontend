@@ -1,13 +1,3 @@
-<template>
-  <router-view />
-  <ProgressSpinner
-    v-if="isLoading"
-    class="absolute inset-0 flex justify-center items-center h-[unset]"
-  />
-  <GlobalDialog />
-  <BlockUI full-screen :blocked="isLoading" />
-</template>
-
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import BlockUI from 'primevue/blockui'
@@ -55,3 +45,13 @@ onMounted(() => {
   void conflictDetection.initializeConflictDetection()
 })
 </script>
+
+<template>
+  <router-view />
+  <ProgressSpinner
+    v-if="isLoading"
+    class="absolute inset-0 flex justify-center items-center h-[unset]"
+  />
+  <GlobalDialog />
+  <BlockUI full-screen :blocked="isLoading" />
+</template>

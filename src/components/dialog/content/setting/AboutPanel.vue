@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import Divider from 'primevue/divider'
+import Tag from 'primevue/tag'
+
+import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
+import { useAboutPanelStore } from '@/stores/aboutPanelStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+
+import PanelTemplate from './PanelTemplate.vue'
+
+const systemStatsStore = useSystemStatsStore()
+const aboutPanelStore = useAboutPanelStore()
+</script>
+
 <template>
   <PanelTemplate value="About" class="about-container">
     <h2 class="text-2xl font-bold mb-2">
@@ -30,17 +44,3 @@
     />
   </PanelTemplate>
 </template>
-
-<script setup lang="ts">
-import Divider from 'primevue/divider'
-import Tag from 'primevue/tag'
-
-import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
-import { useAboutPanelStore } from '@/stores/aboutPanelStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-
-import PanelTemplate from './PanelTemplate.vue'
-
-const systemStatsStore = useSystemStatsStore()
-const aboutPanelStore = useAboutPanelStore()
-</script>

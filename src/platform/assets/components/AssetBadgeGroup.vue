@@ -1,20 +1,3 @@
-<template>
-  <div class="absolute bottom-2 right-2 flex flex-wrap justify-end gap-1">
-    <span
-      v-for="badge in badges"
-      :key="badge.label"
-      :class="
-        cn(
-          'px-2 py-1 rounded text-xs font-medium uppercase tracking-wider text-white',
-          getBadgeColor(badge.type)
-        )
-      "
-    >
-      {{ badge.label }}
-    </span>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { cn } from '@/utils/tailwindUtil'
 
@@ -40,3 +23,20 @@ function getBadgeColor(type: AssetBadge['type']): string {
   }
 }
 </script>
+
+<template>
+  <div class="absolute bottom-2 right-2 flex flex-wrap justify-end gap-1">
+    <span
+      v-for="badge in badges"
+      :key="badge.label"
+      :class="
+        cn(
+          'px-2 py-1 rounded text-xs font-medium uppercase tracking-wider text-white',
+          getBadgeColor(badge.type)
+        )
+      "
+    >
+      {{ badge.label }}
+    </span>
+  </div>
+</template>

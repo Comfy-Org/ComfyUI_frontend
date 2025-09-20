@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+
+import { useFrameNodes } from '@/composables/graph/useFrameNodes'
+
+const { frameNodes } = useFrameNodes()
+</script>
+
 <template>
   <Button
     v-tooltip.top="{
@@ -12,11 +20,3 @@
     <i-lucide:frame class="w-4 h-4" />
   </Button>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-
-import { useFrameNodes } from '@/composables/graph/useFrameNodes'
-
-const { frameNodes } = useFrameNodes()
-</script>

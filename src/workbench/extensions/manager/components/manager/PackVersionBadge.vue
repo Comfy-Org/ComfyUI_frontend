@@ -1,46 +1,3 @@
-<template>
-  <div>
-    <div
-      v-tooltip.top="
-        isDisabled ? $t('manager.enablePackToChangeVersion') : null
-      "
-      class="inline-flex items-center gap-1 rounded-2xl text-xs py-1"
-      :class="{
-        'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill,
-        'cursor-pointer': !isDisabled,
-        'cursor-not-allowed opacity-60': isDisabled
-      }"
-      :aria-haspopup="!isDisabled"
-      :role="isDisabled ? 'text' : 'button'"
-      :tabindex="isDisabled ? -1 : 0"
-      @click="!isDisabled && toggleVersionSelector($event)"
-      @keydown.enter="!isDisabled && toggleVersionSelector($event)"
-      @keydown.space="!isDisabled && toggleVersionSelector($event)"
-    >
-      <i
-        v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-blue-600 text-xs"
-      />
-      <span>{{ installedVersion }}</span>
-      <i v-if="!isDisabled" class="pi pi-chevron-right text-xxs" />
-    </div>
-
-    <Popover
-      ref="popoverRef"
-      :pt="{
-        content: { class: 'p-0 shadow-lg' }
-      }"
-    >
-      <PackVersionSelectorPopover
-        :installed-version="installedVersion"
-        :node-pack="nodePack"
-        @cancel="closeVersionSelector"
-        @submit="closeVersionSelector"
-      />
-    </Popover>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { valid as validSemver } from 'semver'
@@ -104,3 +61,46 @@ watch(
   }
 )
 </script>
+
+<template>
+  <div>
+    <div
+      v-tooltip.top="
+        isDisabled ? $t('manager.enablePackToChangeVersion') : null
+      "
+      class="inline-flex items-center gap-1 rounded-2xl text-xs py-1"
+      :class="{
+        'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill,
+        'cursor-pointer': !isDisabled,
+        'cursor-not-allowed opacity-60': isDisabled
+      }"
+      :aria-haspopup="!isDisabled"
+      :role="isDisabled ? 'text' : 'button'"
+      :tabindex="isDisabled ? -1 : 0"
+      @click="!isDisabled && toggleVersionSelector($event)"
+      @keydown.enter="!isDisabled && toggleVersionSelector($event)"
+      @keydown.space="!isDisabled && toggleVersionSelector($event)"
+    >
+      <i
+        v-if="isUpdateAvailable"
+        class="pi pi-arrow-circle-up text-blue-600 text-xs"
+      />
+      <span>{{ installedVersion }}</span>
+      <i v-if="!isDisabled" class="pi pi-chevron-right text-xxs" />
+    </div>
+
+    <Popover
+      ref="popoverRef"
+      :pt="{
+        content: { class: 'p-0 shadow-lg' }
+      }"
+    >
+      <PackVersionSelectorPopover
+        :installed-version="installedVersion"
+        :node-pack="nodePack"
+        @cancel="closeVersionSelector"
+        @submit="closeVersionSelector"
+      />
+    </Popover>
+  </div>
+</template>

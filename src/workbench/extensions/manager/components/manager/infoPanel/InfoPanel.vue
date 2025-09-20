@@ -1,64 +1,3 @@
-<template>
-  <template v-if="nodePack">
-    <div class="flex flex-col h-full z-40 overflow-hidden relative">
-      <div class="top-0 z-10 px-6 pt-6 w-full">
-        <InfoPanelHeader
-          :node-packs="[nodePack]"
-          :has-conflict="hasCompatibilityIssues"
-        />
-      </div>
-      <div
-        ref="scrollContainer"
-        class="p-6 pt-2 overflow-y-auto flex-1 text-sm scrollbar-hide"
-      >
-        <div class="mb-6">
-          <MetadataRow
-            v-if="!importFailed && isPackInstalled(nodePack.id)"
-            :label="t('manager.filter.enabled')"
-            class="flex"
-            style="align-items: center"
-          >
-            <PackEnableToggle
-              :node-pack="nodePack"
-              :has-conflict="hasCompatibilityIssues"
-            />
-          </MetadataRow>
-          <MetadataRow
-            v-for="item in infoItems"
-            v-show="item.value !== undefined && item.value !== null"
-            :key="item.key"
-            :label="item.label"
-            :value="item.value"
-          />
-          <MetadataRow :label="t('g.status')">
-            <PackStatusMessage
-              :status-type="
-                nodePack.status as components['schemas']['NodeVersionStatus']
-              "
-              :has-compatibility-issues="hasCompatibilityIssues"
-            />
-          </MetadataRow>
-          <MetadataRow :label="t('manager.version')">
-            <PackVersionBadge :node-pack="nodePack" :is-selected="true" />
-          </MetadataRow>
-        </div>
-        <div class="mb-6 overflow-hidden">
-          <InfoTabs
-            :node-pack="nodePack"
-            :has-compatibility-issues="hasCompatibilityIssues"
-            :conflict-result="conflictResult"
-          />
-        </div>
-      </div>
-    </div>
-  </template>
-  <template v-else>
-    <div class="pt-4 px-8 flex-1 overflow-hidden text-sm">
-      {{ $t('manager.infoPanelEmpty') }}
-    </div>
-  </template>
-</template>
-
 <script setup lang="ts">
 import { useScroll, whenever } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
@@ -181,3 +120,64 @@ whenever(
   { immediate: true }
 )
 </script>
+
+<template>
+  <template v-if="nodePack">
+    <div class="flex flex-col h-full z-40 overflow-hidden relative">
+      <div class="top-0 z-10 px-6 pt-6 w-full">
+        <InfoPanelHeader
+          :node-packs="[nodePack]"
+          :has-conflict="hasCompatibilityIssues"
+        />
+      </div>
+      <div
+        ref="scrollContainer"
+        class="p-6 pt-2 overflow-y-auto flex-1 text-sm scrollbar-hide"
+      >
+        <div class="mb-6">
+          <MetadataRow
+            v-if="!importFailed && isPackInstalled(nodePack.id)"
+            :label="t('manager.filter.enabled')"
+            class="flex"
+            style="align-items: center"
+          >
+            <PackEnableToggle
+              :node-pack="nodePack"
+              :has-conflict="hasCompatibilityIssues"
+            />
+          </MetadataRow>
+          <MetadataRow
+            v-for="item in infoItems"
+            v-show="item.value !== undefined && item.value !== null"
+            :key="item.key"
+            :label="item.label"
+            :value="item.value"
+          />
+          <MetadataRow :label="t('g.status')">
+            <PackStatusMessage
+              :status-type="
+                nodePack.status as components['schemas']['NodeVersionStatus']
+              "
+              :has-compatibility-issues="hasCompatibilityIssues"
+            />
+          </MetadataRow>
+          <MetadataRow :label="t('manager.version')">
+            <PackVersionBadge :node-pack="nodePack" :is-selected="true" />
+          </MetadataRow>
+        </div>
+        <div class="mb-6 overflow-hidden">
+          <InfoTabs
+            :node-pack="nodePack"
+            :has-compatibility-issues="hasCompatibilityIssues"
+            :conflict-result="conflictResult"
+          />
+        </div>
+      </div>
+    </div>
+  </template>
+  <template v-else>
+    <div class="pt-4 px-8 flex-1 overflow-hidden text-sm">
+      {{ $t('manager.infoPanelEmpty') }}
+    </div>
+  </template>
+</template>

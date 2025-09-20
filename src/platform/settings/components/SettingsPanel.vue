@@ -1,3 +1,13 @@
+<script setup lang="ts">
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import SettingGroup from '@/platform/settings/components/SettingGroup.vue'
+import type { ISettingGroup } from '@/platform/settings/types'
+
+const props = defineProps<{
+  settingGroups: ISettingGroup[]
+}>()
+</script>
+
 <template>
   <div v-if="props.settingGroups.length > 0">
     <SettingGroup
@@ -14,13 +24,3 @@
     :message="$t('g.searchFailedMessage')"
   />
 </template>
-
-<script setup lang="ts">
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import SettingGroup from '@/platform/settings/components/SettingGroup.vue'
-import type { ISettingGroup } from '@/platform/settings/types'
-
-const props = defineProps<{
-  settingGroups: ISettingGroup[]
-}>()
-</script>

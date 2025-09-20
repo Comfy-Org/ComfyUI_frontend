@@ -1,20 +1,3 @@
-<template>
-  <Button
-    v-show="isVisible"
-    v-tooltip.top="{
-      value: t('commands.Comfy_PublishSubgraph.label'),
-      showDelay: 1000
-    }"
-    severity="secondary"
-    text
-    @click="() => commandStore.execute('Comfy.PublishSubgraph')"
-  >
-    <template #icon>
-      <i-lucide:book-open />
-    </template>
-  </Button>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
@@ -35,3 +18,20 @@ const isVisible = computed(() => {
   )
 })
 </script>
+
+<template>
+  <Button
+    v-show="isVisible"
+    v-tooltip.top="{
+      value: t('commands.Comfy_PublishSubgraph.label'),
+      showDelay: 1000
+    }"
+    severity="secondary"
+    text
+    @click="() => commandStore.execute('Comfy.PublishSubgraph')"
+  >
+    <template #icon>
+      <i-lucide:book-open />
+    </template>
+  </Button>
+</template>

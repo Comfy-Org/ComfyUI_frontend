@@ -1,36 +1,3 @@
-<template>
-  <div
-    class="subgraph-breadcrumb w-auto"
-    :class="{
-      'subgraph-breadcrumb-collapse': collapseTabs,
-      'subgraph-breadcrumb-overflow': overflowingTabs
-    }"
-    :style="{
-      '--p-breadcrumb-gap': `${ITEM_GAP}px`,
-      '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
-      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
-      '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
-    }"
-  >
-    <Breadcrumb
-      ref="breadcrumbRef"
-      class="bg-transparent p-0"
-      :model="items"
-      aria-label="Graph navigation"
-    >
-      <template #item="{ item }">
-        <SubgraphBreadcrumbItem
-          :item="item"
-          :is-active="item === items.at(-1)"
-        />
-      </template>
-      <template #separator
-        ><span style="transform: scale(1.5)"> / </span></template
-      >
-    </Breadcrumb>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem } from 'primevue/menuitem'
@@ -159,6 +126,39 @@ onUpdated(() => {
   }
 })
 </script>
+
+<template>
+  <div
+    class="subgraph-breadcrumb w-auto"
+    :class="{
+      'subgraph-breadcrumb-collapse': collapseTabs,
+      'subgraph-breadcrumb-overflow': overflowingTabs
+    }"
+    :style="{
+      '--p-breadcrumb-gap': `${ITEM_GAP}px`,
+      '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
+      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
+      '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
+    }"
+  >
+    <Breadcrumb
+      ref="breadcrumbRef"
+      class="bg-transparent p-0"
+      :model="items"
+      aria-label="Graph navigation"
+    >
+      <template #item="{ item }">
+        <SubgraphBreadcrumbItem
+          :item="item"
+          :is-active="item === items.at(-1)"
+        />
+      </template>
+      <template #separator
+        ><span style="transform: scale(1.5)"> / </span></template
+      >
+    </Breadcrumb>
+  </div>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

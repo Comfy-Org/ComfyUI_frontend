@@ -1,53 +1,3 @@
-<template>
-  <div class="flex flex-col gap-1">
-    <Galleria
-      v-model:active-index="activeIndex"
-      :value="galleryImages"
-      v-bind="filteredProps"
-      :show-thumbnails="showThumbnails"
-      :show-item-navigators="showNavButtons"
-      class="max-w-full"
-      :pt="{
-        thumbnails: {
-          class: 'overflow-hidden'
-        },
-        thumbnailContent: {
-          class: 'py-4 px-2'
-        },
-        thumbnailPrevButton: {
-          class: 'm-0'
-        },
-        thumbnailNextButton: {
-          class: 'm-0'
-        }
-      }"
-    >
-      <template #item="{ item }">
-        <img
-          :src="item?.itemImageSrc || item?.src || ''"
-          :alt="
-            item?.alt ||
-            `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
-          "
-          class="w-full h-auto max-h-64 object-contain"
-        />
-      </template>
-      <template #thumbnail="{ item }">
-        <div class="p-1 w-full h-full">
-          <img
-            :src="item?.thumbnailImageSrc || item?.src || ''"
-            :alt="
-              item?.alt ||
-              `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
-            "
-            class="w-full h-full object-cover rounded-lg"
-          />
-        </div>
-      </template>
-    </Galleria>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Galleria from 'primevue/galleria'
 import { computed, ref } from 'vue'
@@ -114,6 +64,56 @@ const showNavButtons = computed(() => {
   )
 })
 </script>
+
+<template>
+  <div class="flex flex-col gap-1">
+    <Galleria
+      v-model:active-index="activeIndex"
+      :value="galleryImages"
+      v-bind="filteredProps"
+      :show-thumbnails="showThumbnails"
+      :show-item-navigators="showNavButtons"
+      class="max-w-full"
+      :pt="{
+        thumbnails: {
+          class: 'overflow-hidden'
+        },
+        thumbnailContent: {
+          class: 'py-4 px-2'
+        },
+        thumbnailPrevButton: {
+          class: 'm-0'
+        },
+        thumbnailNextButton: {
+          class: 'm-0'
+        }
+      }"
+    >
+      <template #item="{ item }">
+        <img
+          :src="item?.itemImageSrc || item?.src || ''"
+          :alt="
+            item?.alt ||
+            `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
+          "
+          class="w-full h-auto max-h-64 object-contain"
+        />
+      </template>
+      <template #thumbnail="{ item }">
+        <div class="p-1 w-full h-full">
+          <img
+            :src="item?.thumbnailImageSrc || item?.src || ''"
+            :alt="
+              item?.alt ||
+              `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
+            "
+            class="w-full h-full object-cover rounded-lg"
+          />
+        </div>
+      </template>
+    </Galleria>
+  </div>
+</template>
 
 <style scoped>
 /* Ensure thumbnail container doesn't overflow */

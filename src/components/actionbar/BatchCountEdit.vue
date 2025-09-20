@@ -1,3 +1,34 @@
+<script lang="ts" setup>
+import { storeToRefs } from 'pinia'
+import InputNumber from 'primevue/inputnumber'
+import { computed } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
+
+const queueSettingsStore = useQueueSettingsStore()
+const { batchCount } = storeToRefs(queueSettingsStore)
+const minQueueCount = 1
+
+const settingStore = useSettingStore()
+const maxQueueCount = computed(() =>
+  settingStore.get('Comfy.QueueButton.BatchCountLimit')
+)
+
+const handleClick = (increment: boolean) => {
+  let newCount: number
+  if (increment) {
+    const originalCount = batchCount.value - 1
+    newCount = Math.min(originalCount * 2, maxQueueCount.value)
+  } else {
+    const originalCount = batchCount.value + 1
+    newCount = Math.floor(originalCount / 2)
+  }
+
+  batchCount.value = newCount
+}
+</script>
+
 <template>
   <div
     v-tooltip.bottom="{
@@ -31,37 +62,6 @@
     />
   </div>
 </template>
-
-<script lang="ts" setup>
-import { storeToRefs } from 'pinia'
-import InputNumber from 'primevue/inputnumber'
-import { computed } from 'vue'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
-
-const queueSettingsStore = useQueueSettingsStore()
-const { batchCount } = storeToRefs(queueSettingsStore)
-const minQueueCount = 1
-
-const settingStore = useSettingStore()
-const maxQueueCount = computed(() =>
-  settingStore.get('Comfy.QueueButton.BatchCountLimit')
-)
-
-const handleClick = (increment: boolean) => {
-  let newCount: number
-  if (increment) {
-    const originalCount = batchCount.value - 1
-    newCount = Math.min(originalCount * 2, maxQueueCount.value)
-  } else {
-    const originalCount = batchCount.value + 1
-    newCount = Math.floor(originalCount / 2)
-  }
-
-  batchCount.value = newCount
-}
-</script>
 
 <style scoped>
 :deep(.p-inputtext) {

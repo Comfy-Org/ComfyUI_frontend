@@ -1,37 +1,3 @@
-<template>
-  <DataTable
-    v-model:selection="selectedTemplate"
-    :value="enrichedTemplates"
-    striped-rows
-    selection-mode="single"
-  >
-    <Column field="title" :header="$t('g.title')">
-      <template #body="slotProps">
-        <span :title="slotProps.data.title">{{ slotProps.data.title }}</span>
-      </template>
-    </Column>
-    <Column field="description" :header="$t('g.description')">
-      <template #body="slotProps">
-        <span :title="slotProps.data.description">
-          {{ slotProps.data.description }}
-        </span>
-      </template>
-    </Column>
-    <Column field="actions" header="" class="w-12">
-      <template #body="slotProps">
-        <Button
-          icon="pi pi-arrow-right"
-          text
-          rounded
-          size="small"
-          :loading="loading === slotProps.data.name"
-          @click="emit('loadWorkflow', slotProps.data.name)"
-        />
-      </template>
-    </Column>
-  </DataTable>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Column from 'primevue/column'
@@ -66,3 +32,37 @@ const emit = defineEmits<{
   loadWorkflow: [name: string]
 }>()
 </script>
+
+<template>
+  <DataTable
+    v-model:selection="selectedTemplate"
+    :value="enrichedTemplates"
+    striped-rows
+    selection-mode="single"
+  >
+    <Column field="title" :header="$t('g.title')">
+      <template #body="slotProps">
+        <span :title="slotProps.data.title">{{ slotProps.data.title }}</span>
+      </template>
+    </Column>
+    <Column field="description" :header="$t('g.description')">
+      <template #body="slotProps">
+        <span :title="slotProps.data.description">
+          {{ slotProps.data.description }}
+        </span>
+      </template>
+    </Column>
+    <Column field="actions" header="" class="w-12">
+      <template #body="slotProps">
+        <Button
+          icon="pi pi-arrow-right"
+          text
+          rounded
+          size="small"
+          :loading="loading === slotProps.data.name"
+          @click="emit('loadWorkflow', slotProps.data.name)"
+        />
+      </template>
+    </Column>
+  </DataTable>
+</template>

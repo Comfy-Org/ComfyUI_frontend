@@ -1,49 +1,3 @@
-<template>
-  <div v-if="shouldShow" class="release-toast-popup">
-    <div class="release-notification-toast">
-      <!-- Header section with icon and text -->
-      <div class="toast-header">
-        <div class="toast-icon">
-          <i class="pi pi-download" />
-        </div>
-        <div class="toast-text">
-          <div class="toast-title">
-            {{ $t('releaseToast.newVersionAvailable') }}
-          </div>
-          <div class="toast-version-badge">
-            {{ latestRelease?.version }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions section -->
-      <div class="toast-actions-section">
-        <div class="actions-row">
-          <div class="left-actions">
-            <a
-              class="learn-more-link"
-              :href="changelogUrl"
-              target="_blank"
-              rel="noopener,noreferrer"
-              @click="handleLearnMore"
-            >
-              {{ $t('releaseToast.whatsNew') }}
-            </a>
-          </div>
-          <div class="right-actions">
-            <button class="skip-button" @click="handleSkip">
-              {{ $t('releaseToast.skip') }}
-            </button>
-            <button class="cta-button" @click="handleUpdate">
-              {{ $t('releaseToast.update') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -144,6 +98,52 @@ onMounted(async () => {
   }
 })
 </script>
+
+<template>
+  <div v-if="shouldShow" class="release-toast-popup">
+    <div class="release-notification-toast">
+      <!-- Header section with icon and text -->
+      <div class="toast-header">
+        <div class="toast-icon">
+          <i class="pi pi-download" />
+        </div>
+        <div class="toast-text">
+          <div class="toast-title">
+            {{ $t('releaseToast.newVersionAvailable') }}
+          </div>
+          <div class="toast-version-badge">
+            {{ latestRelease?.version }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions section -->
+      <div class="toast-actions-section">
+        <div class="actions-row">
+          <div class="left-actions">
+            <a
+              class="learn-more-link"
+              :href="changelogUrl"
+              target="_blank"
+              rel="noopener,noreferrer"
+              @click="handleLearnMore"
+            >
+              {{ $t('releaseToast.whatsNew') }}
+            </a>
+          </div>
+          <div class="right-actions">
+            <button class="skip-button" @click="handleSkip">
+              {{ $t('releaseToast.skip') }}
+            </button>
+            <button class="cta-button" @click="handleUpdate">
+              {{ $t('releaseToast.update') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 /* Toast popup - positioning handled by parent */

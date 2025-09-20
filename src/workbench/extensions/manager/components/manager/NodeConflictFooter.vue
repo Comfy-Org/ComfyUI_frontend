@@ -1,28 +1,3 @@
-<template>
-  <div class="flex items-center justify-between w-full px-3 py-4">
-    <div class="w-full flex items-center justify-between gap-2 pr-1">
-      <Button
-        :label="$t('manager.conflicts.conflictInfoTitle')"
-        text
-        severity="secondary"
-        size="small"
-        icon="pi pi-info-circle"
-        :pt="{
-          label: { class: 'text-sm' }
-        }"
-        @click="handleConflictInfoClick"
-      />
-      <Button
-        v-if="props.buttonText"
-        :label="props.buttonText"
-        severity="secondary"
-        size="small"
-        @click="handleButtonClick"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 
@@ -52,3 +27,28 @@ const handleButtonClick = () => {
   }
 }
 </script>
+
+<template>
+  <div class="flex items-center justify-between w-full px-3 py-4">
+    <div class="w-full flex items-center justify-between gap-2 pr-1">
+      <Button
+        :label="$t('manager.conflicts.conflictInfoTitle')"
+        text
+        severity="secondary"
+        size="small"
+        icon="pi pi-info-circle"
+        :pt="{
+          label: { class: 'text-sm' }
+        }"
+        @click="handleConflictInfoClick"
+      />
+      <Button
+        v-if="props.buttonText"
+        :label="props.buttonText"
+        severity="secondary"
+        size="small"
+        @click="handleButtonClick"
+      />
+    </div>
+  </div>
+</template>

@@ -1,48 +1,3 @@
-<template>
-  <BaseViewTemplate dark class="flex-col">
-    <div class="flex flex-col w-full h-full items-center">
-      <h2 class="text-2xl font-bold">
-        {{ t(`serverStart.process.${status}`) }}
-        <span v-if="status === ProgressStatus.ERROR">
-          v{{ electronVersion }}
-        </span>
-      </h2>
-      <div
-        v-if="status === ProgressStatus.ERROR"
-        class="flex flex-col items-center gap-4"
-      >
-        <div class="flex items-center my-4 gap-2">
-          <Button
-            icon="pi pi-flag"
-            severity="secondary"
-            :label="t('serverStart.reportIssue')"
-            @click="reportIssue"
-          />
-          <Button
-            icon="pi pi-file"
-            severity="secondary"
-            :label="t('serverStart.openLogs')"
-            @click="openLogs"
-          />
-          <Button
-            icon="pi pi-wrench"
-            :label="t('serverStart.troubleshoot')"
-            @click="troubleshoot"
-          />
-        </div>
-        <Button
-          v-if="!terminalVisible"
-          icon="pi pi-search"
-          severity="secondary"
-          :label="t('serverStart.showTerminal')"
-          @click="terminalVisible = true"
-        />
-      </div>
-      <BaseTerminal v-show="terminalVisible" @created="terminalCreated" />
-    </div>
-  </BaseViewTemplate>
-</template>
-
 <script setup lang="ts">
 import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
@@ -101,3 +56,48 @@ onMounted(async () => {
   electronVersion.value = await electron.getElectronVersion()
 })
 </script>
+
+<template>
+  <BaseViewTemplate dark class="flex-col">
+    <div class="flex flex-col w-full h-full items-center">
+      <h2 class="text-2xl font-bold">
+        {{ t(`serverStart.process.${status}`) }}
+        <span v-if="status === ProgressStatus.ERROR">
+          v{{ electronVersion }}
+        </span>
+      </h2>
+      <div
+        v-if="status === ProgressStatus.ERROR"
+        class="flex flex-col items-center gap-4"
+      >
+        <div class="flex items-center my-4 gap-2">
+          <Button
+            icon="pi pi-flag"
+            severity="secondary"
+            :label="t('serverStart.reportIssue')"
+            @click="reportIssue"
+          />
+          <Button
+            icon="pi pi-file"
+            severity="secondary"
+            :label="t('serverStart.openLogs')"
+            @click="openLogs"
+          />
+          <Button
+            icon="pi pi-wrench"
+            :label="t('serverStart.troubleshoot')"
+            @click="troubleshoot"
+          />
+        </div>
+        <Button
+          v-if="!terminalVisible"
+          icon="pi pi-search"
+          severity="secondary"
+          :label="t('serverStart.showTerminal')"
+          @click="terminalVisible = true"
+        />
+      </div>
+      <BaseTerminal v-show="terminalVisible" @created="terminalCreated" />
+    </div>
+  </BaseViewTemplate>
+</template>

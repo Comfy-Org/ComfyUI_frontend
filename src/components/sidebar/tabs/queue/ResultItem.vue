@@ -1,25 +1,3 @@
-<template>
-  <div
-    ref="resultContainer"
-    class="result-container"
-    @click="handlePreviewClick"
-  >
-    <ComfyImage
-      v-if="result.isImage"
-      :src="result.url"
-      class="task-output-image"
-      :contain="imageFit === 'contain'"
-      :alt="result.filename"
-    />
-    <ResultVideo v-else-if="result.isVideo" :result="result" />
-    <ResultAudio v-else-if="result.isAudio" :result="result" />
-    <div v-else class="task-result-preview">
-      <i class="pi pi-file" />
-      <span>{{ result.mediaType }}</span>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
@@ -58,6 +36,28 @@ onMounted(() => {
   }
 })
 </script>
+
+<template>
+  <div
+    ref="resultContainer"
+    class="result-container"
+    @click="handlePreviewClick"
+  >
+    <ComfyImage
+      v-if="result.isImage"
+      :src="result.url"
+      class="task-output-image"
+      :contain="imageFit === 'contain'"
+      :alt="result.filename"
+    />
+    <ResultVideo v-else-if="result.isVideo" :result="result" />
+    <ResultAudio v-else-if="result.isAudio" :result="result" />
+    <div v-else class="task-result-preview">
+      <i class="pi pi-file" />
+      <span>{{ result.mediaType }}</span>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .result-container {

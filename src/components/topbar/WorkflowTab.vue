@@ -1,36 +1,3 @@
-<template>
-  <div
-    ref="workflowTabRef"
-    class="flex p-2 gap-2 workflow-tab"
-    v-bind="$attrs"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-    @click="handleClick"
-  >
-    <span class="workflow-label text-sm max-w-[150px] truncate inline-block">
-      {{ workflowOption.workflow.filename }}
-    </span>
-    <div class="relative">
-      <span v-if="shouldShowStatusIndicator" class="status-indicator">•</span>
-      <Button
-        class="close-button p-0 w-auto"
-        icon="pi pi-times"
-        text
-        severity="secondary"
-        size="small"
-        @click.stop="onCloseWorkflow(workflowOption)"
-      />
-    </div>
-  </div>
-
-  <WorkflowTabPopover
-    ref="popoverRef"
-    :workflow-filename="workflowOption.workflow.filename"
-    :thumbnail-url="thumbnailUrl"
-    :is-active-tab="isActiveTab"
-  />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed, onUnmounted, ref } from 'vue'
@@ -173,6 +140,39 @@ onUnmounted(() => {
   popoverRef.value?.hidePopover()
 })
 </script>
+
+<template>
+  <div
+    ref="workflowTabRef"
+    class="flex p-2 gap-2 workflow-tab"
+    v-bind="$attrs"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+    @click="handleClick"
+  >
+    <span class="workflow-label text-sm max-w-[150px] truncate inline-block">
+      {{ workflowOption.workflow.filename }}
+    </span>
+    <div class="relative">
+      <span v-if="shouldShowStatusIndicator" class="status-indicator">•</span>
+      <Button
+        class="close-button p-0 w-auto"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        size="small"
+        @click.stop="onCloseWorkflow(workflowOption)"
+      />
+    </div>
+  </div>
+
+  <WorkflowTabPopover
+    ref="popoverRef"
+    :workflow-filename="workflowOption.workflow.filename"
+    :thumbnail-url="thumbnailUrl"
+    :is-active-tab="isActiveTab"
+  />
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

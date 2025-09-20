@@ -1,22 +1,3 @@
-<template>
-  <Toast group="reroute-migration">
-    <template #message>
-      <div class="flex flex-col items-start flex-auto">
-        <div class="font-medium text-lg my-4">
-          {{ t('toastMessages.migrateToLitegraphReroute') }}
-        </div>
-        <Button
-          class="self-end"
-          size="small"
-          :label="t('g.migrate')"
-          severity="warn"
-          @click="migrateToLitegraphReroute"
-        />
-      </div>
-    </template>
-  </Toast>
-</template>
-
 <script setup lang="ts">
 import { useToast } from 'primevue'
 import Button from 'primevue/button'
@@ -44,3 +25,22 @@ const migrateToLitegraphReroute = async () => {
   toast.removeGroup('reroute-migration')
 }
 </script>
+
+<template>
+  <Toast group="reroute-migration">
+    <template #message>
+      <div class="flex flex-col items-start flex-auto">
+        <div class="font-medium text-lg my-4">
+          {{ t('toastMessages.migrateToLitegraphReroute') }}
+        </div>
+        <Button
+          class="self-end"
+          size="small"
+          :label="t('g.migrate')"
+          severity="warn"
+          @click="migrateToLitegraphReroute"
+        />
+      </div>
+    </template>
+  </Toast>
+</template>

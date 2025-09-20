@@ -1,9 +1,3 @@
-<template>
-  <div ref="container" class="w-full h-full relative comfy-load-3d">
-    <LoadingOverlay ref="loadingOverlayRef" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
@@ -236,3 +230,9 @@ defineExpose({
   load3d
 })
 </script>
+
+<template>
+  <div ref="container" class="w-full h-full relative comfy-load-3d">
+    <LoadingOverlay ref="loadingOverlayRef" />
+  </div>
+</template>

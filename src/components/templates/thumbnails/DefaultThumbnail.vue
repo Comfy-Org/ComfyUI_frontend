@@ -1,3 +1,18 @@
+<script setup lang="ts">
+import LazyImage from '@/components/common/LazyImage.vue'
+import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+
+const { src, isVideo } = defineProps<{
+  src: string
+  alt: string
+  hoverZoom: number
+  isHovered?: boolean
+  isVideo?: boolean
+}>()
+
+const isVideoType = isVideo ?? (src?.toLowerCase().endsWith('.webp') || false)
+</script>
+
 <template>
   <BaseThumbnail :hover-zoom="hoverZoom" :is-hovered="isHovered">
     <LazyImage
@@ -15,18 +30,3 @@
     />
   </BaseThumbnail>
 </template>
-
-<script setup lang="ts">
-import LazyImage from '@/components/common/LazyImage.vue'
-import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
-
-const { src, isVideo } = defineProps<{
-  src: string
-  alt: string
-  hoverZoom: number
-  isHovered?: boolean
-  isVideo?: boolean
-}>()
-
-const isVideoType = isVideo ?? (src?.toLowerCase().endsWith('.webp') || false)
-</script>

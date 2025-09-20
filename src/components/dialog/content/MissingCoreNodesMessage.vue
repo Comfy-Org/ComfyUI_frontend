@@ -1,46 +1,3 @@
-<template>
-  <Message
-    v-if="hasMissingCoreNodes"
-    severity="info"
-    icon="pi pi-info-circle"
-    class="my-2 mx-2"
-    :pt="{
-      root: { class: 'flex-col' },
-      text: { class: 'flex-1' }
-    }"
-  >
-    <div class="flex flex-col gap-2">
-      <div>
-        {{
-          currentComfyUIVersion
-            ? $t('loadWorkflowWarning.outdatedVersion', {
-                version: currentComfyUIVersion
-              })
-            : $t('loadWorkflowWarning.outdatedVersionGeneric')
-        }}
-      </div>
-      <div
-        v-for="[version, nodes] in sortedMissingCoreNodes"
-        :key="version"
-        class="ml-4"
-      >
-        <div
-          class="text-sm font-medium text-surface-600 dark-theme:text-surface-400"
-        >
-          {{
-            $t('loadWorkflowWarning.coreNodesFromVersion', {
-              version: version || 'unknown'
-            })
-          }}
-        </div>
-        <div class="ml-4 text-sm text-surface-500 dark-theme:text-surface-500">
-          {{ getUniqueNodeNames(nodes).join(', ') }}
-        </div>
-      </div>
-    </div>
-  </Message>
-</template>
-
 <script setup lang="ts">
 import Message from 'primevue/message'
 import { compare } from 'semver'
@@ -83,3 +40,46 @@ const getUniqueNodeNames = (nodes: LGraphNode[]): string[] => {
     .sort()
 }
 </script>
+
+<template>
+  <Message
+    v-if="hasMissingCoreNodes"
+    severity="info"
+    icon="pi pi-info-circle"
+    class="my-2 mx-2"
+    :pt="{
+      root: { class: 'flex-col' },
+      text: { class: 'flex-1' }
+    }"
+  >
+    <div class="flex flex-col gap-2">
+      <div>
+        {{
+          currentComfyUIVersion
+            ? $t('loadWorkflowWarning.outdatedVersion', {
+                version: currentComfyUIVersion
+              })
+            : $t('loadWorkflowWarning.outdatedVersionGeneric')
+        }}
+      </div>
+      <div
+        v-for="[version, nodes] in sortedMissingCoreNodes"
+        :key="version"
+        class="ml-4"
+      >
+        <div
+          class="text-sm font-medium text-surface-600 dark-theme:text-surface-400"
+        >
+          {{
+            $t('loadWorkflowWarning.coreNodesFromVersion', {
+              version: version || 'unknown'
+            })
+          }}
+        </div>
+        <div class="ml-4 text-sm text-surface-500 dark-theme:text-surface-500">
+          {{ getUniqueNodeNames(nodes).join(', ') }}
+        </div>
+      </div>
+    </div>
+  </Message>
+</template>

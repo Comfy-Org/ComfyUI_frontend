@@ -1,48 +1,3 @@
-<template>
-  <Dialog v-model:visible="visible" :header="$t('g.customizeFolder')">
-    <div class="p-fluid">
-      <div class="field icon-field">
-        <label for="icon">{{ $t('g.icon') }}</label>
-        <SelectButton
-          v-model="selectedIcon"
-          :options="iconOptions"
-          option-label="name"
-          data-key="value"
-        >
-          <template #option="slotProps">
-            <i
-              :class="['pi', slotProps.option.value, 'mr-2']"
-              :style="{ color: finalColor }"
-            />
-          </template>
-        </SelectButton>
-      </div>
-      <Divider />
-      <div class="field color-field">
-        <label for="color">{{ $t('g.color') }}</label>
-        <ColorCustomizationSelector
-          v-model="finalColor"
-          :color-options="colorOptions"
-        />
-      </div>
-    </div>
-    <template #footer>
-      <Button
-        :label="$t('g.reset')"
-        icon="pi pi-refresh"
-        class="p-button-text"
-        @click="resetCustomization"
-      />
-      <Button
-        :label="$t('g.confirm')"
-        icon="pi pi-check"
-        autofocus
-        @click="confirmCustomization"
-      />
-    </template>
-  </Dialog>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -132,6 +87,51 @@ watch(
   { immediate: true }
 )
 </script>
+
+<template>
+  <Dialog v-model:visible="visible" :header="$t('g.customizeFolder')">
+    <div class="p-fluid">
+      <div class="field icon-field">
+        <label for="icon">{{ $t('g.icon') }}</label>
+        <SelectButton
+          v-model="selectedIcon"
+          :options="iconOptions"
+          option-label="name"
+          data-key="value"
+        >
+          <template #option="slotProps">
+            <i
+              :class="['pi', slotProps.option.value, 'mr-2']"
+              :style="{ color: finalColor }"
+            />
+          </template>
+        </SelectButton>
+      </div>
+      <Divider />
+      <div class="field color-field">
+        <label for="color">{{ $t('g.color') }}</label>
+        <ColorCustomizationSelector
+          v-model="finalColor"
+          :color-options="colorOptions"
+        />
+      </div>
+    </div>
+    <template #footer>
+      <Button
+        :label="$t('g.reset')"
+        icon="pi pi-refresh"
+        class="p-button-text"
+        @click="resetCustomization"
+      />
+      <Button
+        :label="$t('g.confirm')"
+        icon="pi pi-check"
+        autofocus
+        @click="confirmCustomization"
+      />
+    </template>
+  </Dialog>
+</template>
 
 <style scoped>
 .p-selectbutton .p-button {

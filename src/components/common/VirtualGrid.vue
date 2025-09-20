@@ -1,19 +1,3 @@
-<template>
-  <div ref="container" class="scroll-container">
-    <div :style="{ height: `${(state.start / cols) * itemHeight}px` }" />
-    <div :style="gridStyle">
-      <div v-for="item in renderedItems" :key="item.key" data-virtual-grid-item>
-        <slot name="item" :item="item" />
-      </div>
-    </div>
-    <div
-      :style="{
-        height: `${((items.length - state.end) / cols) * itemHeight}px`
-      }"
-    />
-  </div>
-</template>
-
 <script setup lang="ts" generic="T">
 import { useElementSize, useScroll, whenever } from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
@@ -111,6 +95,22 @@ onBeforeUnmount(() => {
   onResize.cancel() // Clear pending debounced calls
 })
 </script>
+
+<template>
+  <div ref="container" class="scroll-container">
+    <div :style="{ height: `${(state.start / cols) * itemHeight}px` }" />
+    <div :style="gridStyle">
+      <div v-for="item in renderedItems" :key="item.key" data-virtual-grid-item>
+        <slot name="item" :item="item" />
+      </div>
+    </div>
+    <div
+      :style="{
+        height: `${((items.length - state.end) / cols) * itemHeight}px`
+      }"
+    />
+  </div>
+</template>
 
 <style scoped>
 .scroll-container {

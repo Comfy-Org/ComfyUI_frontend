@@ -1,16 +1,3 @@
-<template>
-  <div :class="wrapperStyle">
-    <i-lucide:search :class="iconColorStyle" />
-    <InputText
-      v-model="searchQuery"
-      :placeholder="placeHolder || 'Search...'"
-      type="text"
-      unstyled
-      :class="inputStyle"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
@@ -68,3 +55,16 @@ const iconColorStyle = computed(() => {
   )
 })
 </script>
+
+<template>
+  <div :class="wrapperStyle">
+    <i-lucide:search :class="iconColorStyle" />
+    <InputText
+      v-model="searchQuery"
+      :placeholder="placeHolder || 'Search...'"
+      type="text"
+      unstyled
+      :class="inputStyle"
+    />
+  </div>
+</template>

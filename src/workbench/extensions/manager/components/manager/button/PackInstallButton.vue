@@ -1,27 +1,3 @@
-<template>
-  <IconTextButton
-    v-bind="$attrs"
-    type="transparent"
-    :label="computedLabel"
-    :border="true"
-    :size="size"
-    :disabled="isLoading || isInstalling"
-    @click="installAllPacks"
-  >
-    <template #icon>
-      <i
-        v-if="hasConflict && !isInstalling && !isLoading"
-        class="pi pi-exclamation-triangle text-yellow-500"
-      />
-      <DotSpinner
-        v-else-if="isLoading || isInstalling"
-        duration="1s"
-        :size="size === 'sm' ? 12 : 16"
-      />
-    </template>
-  </IconTextButton>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -142,3 +118,27 @@ const computedLabel = computed(() =>
       (nodePacks.length > 1 ? t('manager.installSelected') : t('g.install'))
 )
 </script>
+
+<template>
+  <IconTextButton
+    v-bind="$attrs"
+    type="transparent"
+    :label="computedLabel"
+    :border="true"
+    :size="size"
+    :disabled="isLoading || isInstalling"
+    @click="installAllPacks"
+  >
+    <template #icon>
+      <i
+        v-if="hasConflict && !isInstalling && !isLoading"
+        class="pi pi-exclamation-triangle text-yellow-500"
+      />
+      <DotSpinner
+        v-else-if="isLoading || isInstalling"
+        duration="1s"
+        :size="size === 'sm' ? 12 : 16"
+      />
+    </template>
+  </IconTextButton>
+</template>

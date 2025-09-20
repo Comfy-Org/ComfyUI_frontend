@@ -1,3 +1,29 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
+import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { cn } from '@/utils/tailwindUtil'
+
+const props = defineProps<{
+  asset: AssetDisplayItem
+  interactive?: boolean
+}>()
+
+const elementProps = computed(() =>
+  props.interactive
+    ? {
+        type: 'button',
+        'aria-label': `Select asset ${props.asset.name}`
+      }
+    : {}
+)
+
+defineEmits<{
+  select: [asset: AssetDisplayItem]
+}>()
+</script>
+
 <template>
   <component
     :is="interactive ? 'button' : 'div'"
@@ -83,29 +109,3 @@
     </div>
   </component>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-
-import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
-import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-import { cn } from '@/utils/tailwindUtil'
-
-const props = defineProps<{
-  asset: AssetDisplayItem
-  interactive?: boolean
-}>()
-
-const elementProps = computed(() =>
-  props.interactive
-    ? {
-        type: 'button',
-        'aria-label': `Select asset ${props.asset.name}`
-      }
-    : {}
-)
-
-defineEmits<{
-  select: [asset: AssetDisplayItem]
-}>()
-</script>

@@ -1,62 +1,3 @@
-<template>
-  <div class="settings-container">
-    <ScrollPanel class="settings-sidebar shrink-0 p-2 w-48 2xl:w-64">
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="settings-search-box w-full mb-2"
-        :placeholder="$t('g.searchSettings') + '...'"
-        :debounce-time="128"
-        @search="handleSearch"
-      />
-      <Listbox
-        v-model="activeCategory"
-        :options="groupedMenuTreeNodes"
-        option-label="translatedLabel"
-        option-group-label="label"
-        option-group-children="children"
-        scroll-height="100%"
-        :option-disabled="
-          (option: SettingTreeNode) =>
-            !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
-        "
-        class="border-none w-full"
-      >
-        <template #optiongroup>
-          <Divider class="my-0" />
-        </template>
-      </Listbox>
-    </ScrollPanel>
-    <Divider layout="vertical" class="mx-1 2xl:mx-4 hidden md:flex" />
-    <Divider layout="horizontal" class="flex md:hidden" />
-    <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
-      <TabPanels class="settings-tab-panels h-full w-full pr-0">
-        <PanelTemplate value="Search Results">
-          <SettingsPanel :setting-groups="searchResults" />
-        </PanelTemplate>
-
-        <PanelTemplate
-          v-for="category in settingCategories"
-          :key="category.key"
-          :value="category.label ?? ''"
-        >
-          <template #header>
-            <CurrentUserMessage v-if="tabValue === 'Comfy'" />
-            <ColorPaletteMessage v-if="tabValue === 'Appearance'" />
-          </template>
-          <SettingsPanel :setting-groups="sortedGroups(category)" />
-        </PanelTemplate>
-
-        <Suspense v-for="panel in panels" :key="panel.node.key">
-          <component :is="panel.component" />
-          <template #fallback>
-            <div>{{ $t('g.loadingPanel', { panel: panel.node.label }) }}</div>
-          </template>
-        </Suspense>
-      </TabPanels>
-    </Tabs>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 import Listbox from 'primevue/listbox'
@@ -146,6 +87,65 @@ watch(activeCategory, (_, oldValue) => {
   }
 })
 </script>
+
+<template>
+  <div class="settings-container">
+    <ScrollPanel class="settings-sidebar shrink-0 p-2 w-48 2xl:w-64">
+      <SearchBox
+        v-model:model-value="searchQuery"
+        class="settings-search-box w-full mb-2"
+        :placeholder="$t('g.searchSettings') + '...'"
+        :debounce-time="128"
+        @search="handleSearch"
+      />
+      <Listbox
+        v-model="activeCategory"
+        :options="groupedMenuTreeNodes"
+        option-label="translatedLabel"
+        option-group-label="label"
+        option-group-children="children"
+        scroll-height="100%"
+        :option-disabled="
+          (option: SettingTreeNode) =>
+            !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
+        "
+        class="border-none w-full"
+      >
+        <template #optiongroup>
+          <Divider class="my-0" />
+        </template>
+      </Listbox>
+    </ScrollPanel>
+    <Divider layout="vertical" class="mx-1 2xl:mx-4 hidden md:flex" />
+    <Divider layout="horizontal" class="flex md:hidden" />
+    <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
+      <TabPanels class="settings-tab-panels h-full w-full pr-0">
+        <PanelTemplate value="Search Results">
+          <SettingsPanel :setting-groups="searchResults" />
+        </PanelTemplate>
+
+        <PanelTemplate
+          v-for="category in settingCategories"
+          :key="category.key"
+          :value="category.label ?? ''"
+        >
+          <template #header>
+            <CurrentUserMessage v-if="tabValue === 'Comfy'" />
+            <ColorPaletteMessage v-if="tabValue === 'Appearance'" />
+          </template>
+          <SettingsPanel :setting-groups="sortedGroups(category)" />
+        </PanelTemplate>
+
+        <Suspense v-for="panel in panels" :key="panel.node.key">
+          <component :is="panel.component" />
+          <template #fallback>
+            <div>{{ $t('g.loadingPanel', { panel: panel.node.label }) }}</div>
+          </template>
+        </Suspense>
+      </TabPanels>
+    </Tabs>
+  </div>
+</template>
 
 <style>
 .settings-tab-panels {

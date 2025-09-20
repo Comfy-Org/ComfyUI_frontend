@@ -1,3 +1,65 @@
+<script setup lang="ts">
+import { useElementHover } from '@vueuse/core'
+import Card from 'primevue/card'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed, ref } from 'vue'
+
+import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
+import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
+import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
+import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+
+const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
+const DEFAULT_ZOOM_SCALE = 5
+
+const { sourceModule, loading, template } = defineProps<{
+  sourceModule: string
+  categoryTitle: string
+  loading: boolean
+  template: TemplateInfo
+}>()
+
+const cardRef = ref<HTMLElement | null>(null)
+const isHovered = useElementHover(cardRef)
+
+const { getTemplateThumbnailUrl, getTemplateTitle, getTemplateDescription } =
+  useTemplateWorkflows()
+
+// Determine the effective source module to use (from template or prop)
+const effectiveSourceModule = computed(
+  () => template.sourceModule || sourceModule
+)
+
+const baseThumbnailSrc = computed(() =>
+  getTemplateThumbnailUrl(
+    template,
+    effectiveSourceModule.value,
+    effectiveSourceModule.value === 'default' ? '1' : ''
+  )
+)
+
+const overlayThumbnailSrc = computed(() =>
+  getTemplateThumbnailUrl(
+    template,
+    effectiveSourceModule.value,
+    effectiveSourceModule.value === 'default' ? '2' : ''
+  )
+)
+
+const description = computed(() =>
+  getTemplateDescription(template, effectiveSourceModule.value)
+)
+const title = computed(() =>
+  getTemplateTitle(template, effectiveSourceModule.value)
+)
+
+defineEmits<{
+  loadWorkflow: [name: string]
+}>()
+</script>
+
 <template>
   <Card
     ref="cardRef"
@@ -75,65 +137,3 @@
     </template>
   </Card>
 </template>
-
-<script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
-import Card from 'primevue/card'
-import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref } from 'vue'
-
-import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
-import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
-import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
-import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
-
-const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
-const DEFAULT_ZOOM_SCALE = 5
-
-const { sourceModule, loading, template } = defineProps<{
-  sourceModule: string
-  categoryTitle: string
-  loading: boolean
-  template: TemplateInfo
-}>()
-
-const cardRef = ref<HTMLElement | null>(null)
-const isHovered = useElementHover(cardRef)
-
-const { getTemplateThumbnailUrl, getTemplateTitle, getTemplateDescription } =
-  useTemplateWorkflows()
-
-// Determine the effective source module to use (from template or prop)
-const effectiveSourceModule = computed(
-  () => template.sourceModule || sourceModule
-)
-
-const baseThumbnailSrc = computed(() =>
-  getTemplateThumbnailUrl(
-    template,
-    effectiveSourceModule.value,
-    effectiveSourceModule.value === 'default' ? '1' : ''
-  )
-)
-
-const overlayThumbnailSrc = computed(() =>
-  getTemplateThumbnailUrl(
-    template,
-    effectiveSourceModule.value,
-    effectiveSourceModule.value === 'default' ? '2' : ''
-  )
-)
-
-const description = computed(() =>
-  getTemplateDescription(template, effectiveSourceModule.value)
-)
-const title = computed(() =>
-  getTemplateTitle(template, effectiveSourceModule.value)
-)
-
-defineEmits<{
-  loadWorkflow: [name: string]
-}>()
-</script>

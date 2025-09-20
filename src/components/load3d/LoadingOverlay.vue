@@ -1,19 +1,3 @@
-<template>
-  <Transition name="fade">
-    <div
-      v-if="modelLoading"
-      class="absolute inset-0 bg-black/50 flex items-center justify-center z-50"
-    >
-      <div class="flex flex-col items-center">
-        <div class="spinner" />
-        <div class="text-white mt-4 text-lg">
-          {{ loadingMessage }}
-        </div>
-      </div>
-    </div>
-  </Transition>
-</template>
-
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 
@@ -39,6 +23,22 @@ defineExpose({
   endLoading
 })
 </script>
+
+<template>
+  <Transition name="fade">
+    <div
+      v-if="modelLoading"
+      class="absolute inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div class="flex flex-col items-center">
+        <div class="spinner" />
+        <div class="text-white mt-4 text-lg">
+          {{ loadingMessage }}
+        </div>
+      </div>
+    </div>
+  </Transition>
+</template>
 
 <style scoped>
 .spinner {
