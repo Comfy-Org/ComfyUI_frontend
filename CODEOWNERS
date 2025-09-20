@@ -24,9 +24,6 @@
 # Legacy UI
 /scripts/ui/                                      @pythongosssss
 
-# 3D Components
-/src/components/load3d/                           @jtydhr88
-
 # Link rendering
 /src/renderer/core/canvas/links/                  @benceruleanlu
 
@@ -48,15 +45,16 @@
 /src/platform/workflow/templates/                 @Myestery @christian-byrne @comfyui-wiki
 /src/components/templates/                        @Myestery @christian-byrne @comfyui-wiki
 
-# Mask Editor extension
+# Mask Editor
 /src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp
 /src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp
 /src/extensions/core/maskEditorOld.ts             @trsommer @brucew4yn3rp
 
-# 3D extension
+# 3D
 /src/extensions/core/load3d.ts                    @jtydhr88
+/src/components/load3d/                           @jtydhr88
 
-# Manager extension
+# Manager
 /src/workbench/extensions/manager/                @viva-jinyi @christian-byrne @ltdrdata
 
 # Translations
