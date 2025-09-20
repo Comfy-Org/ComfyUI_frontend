@@ -12,6 +12,7 @@ import { type Ref, computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type {
+  GraphNodeManager,
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
@@ -28,9 +29,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
 
-  const nodeManager = shallowRef<ReturnType<typeof useGraphNodeManager> | null>(
-    null
-  )
+  const nodeManager = shallowRef<GraphNodeManager | null>(null)
   const cleanupNodeManager = shallowRef<(() => void) | null>(null)
 
   // Sync management

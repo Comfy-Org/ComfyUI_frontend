@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, readonly, shallowRef } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import type { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import type {
+  GraphNodeManager,
+  VueNodeData
+} from '@/composables/graph/useGraphNodeManager'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -46,12 +48,10 @@ function createMockNode(): Pick<LGraphNode, 'id' | 'selected' | 'flags'> {
 
 function createMockNodeManager(
   node: Pick<LGraphNode, 'id' | 'selected' | 'flags'>
-) {
+): GraphNodeManager {
   return {
-    getNode: vi.fn().mockReturnValue(node) as ReturnType<
-      typeof useGraphNodeManager
-    >['getNode']
-  }
+    getNode: vi.fn().mockReturnValue(node)
+  } as Partial<GraphNodeManager> as GraphNodeManager
 }
 
 function createMockCanvasStore(
@@ -124,7 +124,7 @@ describe('useNodeEventHandlers', () => {
 
   describe('handleNodeSelect', () => {
     it('should select single node on regular click', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       const event = new PointerEvent('pointerdown', {
@@ -141,7 +141,7 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should toggle selection on ctrl+click', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       // Test selecting unselected node with ctrl
@@ -160,7 +160,7 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should deselect on ctrl+click of selected node', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       // Test deselecting selected node with ctrl
@@ -179,7 +179,7 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should handle meta key (Cmd) on Mac', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       mockNode.selected = false
@@ -197,7 +197,7 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should bring node to front when not pinned', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       mockNode.flags.pinned = false
@@ -211,7 +211,7 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should not bring pinned node to front', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       mockNode.flags.pinned = true
@@ -223,7 +223,7 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should handle missing canvas gracefully', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       mockCanvasStore.canvas = null
@@ -237,7 +237,7 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should handle missing node gracefully', () => {
-      const nodeManager = ref(mockNodeManager)
+      const nodeManager = readonly(shallowRef(mockNodeManager))
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
       vi.mocked(mockNodeManager.getNode).mockReturnValue(undefined)
