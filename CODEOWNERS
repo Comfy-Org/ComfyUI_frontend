@@ -1,6 +1,3 @@
-# Manager extension
-/src/workbench/extensions/manager/          @viva-jinyi @christian-byrne @ltdrdata
-
 # Desktop/Electron
 /src/types/desktop/                         @webfiltered
 /src/constants/desktopDialogs.ts            @webfiltered
@@ -8,7 +5,26 @@
 /src/stores/electronDownloadStore.ts        @webfiltered
 /src/extensions/core/electronAdapter.ts     @webfiltered
 /src/views/DesktopDialogView.vue            @webfiltered
+/src/components/install/                    @webfiltered
+/src/components/maintenance/                @webfiltered
 /vite.electron.config.mts                   @webfiltered
+
+# UI Components
+/src/components/chip/                       @viva-jinyi
+/src/components/card/                       @viva-jinyi
+/src/components/button/                     @viva-jinyi
+/src/components/input/                      @viva-jinyi
+
+# Topbar and Scripts
+/src/components/topbar/                     @pythongosssss
+/src/renderer/core/thumbnail/               @pythongosssss
+/scripts/ui/                                @pythongosssss
+
+# 3D Components
+/src/components/load3d/                     @terryjia88
+
+# Auth
+/src/composables/auth/                      @christian-byrne
 
 # Link rendering
 /src/renderer/core/canvas/links/            @benceruleanlu
@@ -20,6 +36,9 @@
 
 # Selection toolbox
 /src/components/graph/selectionToolbox/     @Myestery
+
+# Minimap
+/src/renderer/extensions/minimap/           @Myestery @terryjia88
 
 # Assets
 /src/platform/assets/                       @arjansingh
@@ -33,10 +52,15 @@
 /src/components/templates/                 @Myestery @christian-byrne @comfyui-wiki
 
 # Mask Editor extension
-/src/extensions/core/maskeditor.ts          @brucew4yn3rp @trsommer
+/src/extensions/core/maskeditor.ts          @trsommer @brucew4yn3rp
+/src/extensions/core/maskEditorLayerFilenames.ts @trsommer @brucew4yn3rp
+/src/extensions/core/maskEditorOld.ts       @trsommer @brucew4yn3rp
 
-# Load 3D extension
+# 3D extension
 /src/extensions/core/load3d.ts              @jtydhr88
 
+# Manager extension
+/src/workbench/extensions/manager/          @viva-jinyi @christian-byrne @ltdrdata
+
 # Translations
-/src/locales/                               @Yorha4D @KarryCharon @DorotaLuna @shinshin86
+/src/locales/                               @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer
