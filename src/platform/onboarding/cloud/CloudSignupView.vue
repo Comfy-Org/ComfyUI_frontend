@@ -117,9 +117,7 @@ const navigateToLogin = () => {
 }
 
 const onSuccess = async () => {
-  // After successful signup, always go to user check
-  // The user check will handle routing based on their status
-  await router.push({ name: 'cloud-user-check' })
+  await router.push({ name: 'cloud-login', query: route.query })
 }
 
 // Custom error handler for inline display

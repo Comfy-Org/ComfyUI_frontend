@@ -9,6 +9,7 @@ import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
@@ -75,6 +76,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const isAuthenticated = computed(() => !!currentUser.value)
   const userEmail = computed(() => currentUser.value?.email)
   const userId = computed(() => currentUser.value?.uid)
+  const isEmailVerified = computed(
+    () => currentUser.value?.emailVerified ?? false
+  )
 
   // Get auth from VueFire and listen for auth state changes
   // From useFirebaseAuth docs:
@@ -289,6 +293,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     await updatePassword(currentUser.value, newPassword)
   }
 
+  /** Send email verification to current user */
+  const verifyEmail = async (): Promise<void> => {
+    if (!currentUser.value) {
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    await sendEmailVerification(currentUser.value)
+  }
+
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
@@ -364,6 +376,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     // State
     loading,
     currentUser,
+    isEmailVerified,
     isInitialized,
     balance,
     lastBalanceUpdateTime,
@@ -387,6 +400,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     accessBillingPortal,
     sendPasswordReset,
     updatePassword: _updatePassword,
-    getAuthHeader
+    getAuthHeader,
+    verifyEmail
   }
 })
