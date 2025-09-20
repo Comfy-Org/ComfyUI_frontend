@@ -54,7 +54,7 @@
         :lod-level="lodLevel"
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
-        @update:title="handleTitleUpdate"
+        @update:title="handleHeaderTitleUpdate"
         @enter-subgraph="handleEnterSubgraph"
       />
     </div>
@@ -210,10 +210,9 @@ const emit = defineEmits<{
     slotIndex: number,
     isInput: boolean
   ]
-  'update:title': [nodeId: string, newTitle: string]
 }>()
 
-const { handleNodeCollapse } = useNodeEventHandlers()
+const { handleNodeCollapse, handleNodeTitleUpdate } = useNodeEventHandlers()
 
 useVueElementTracking(nodeData.id, 'node')
 
@@ -380,8 +379,8 @@ const handleSlotClick = (
   emit('slot-click', event, nodeData, slotIndex, isInput)
 }
 
-const handleTitleUpdate = (newTitle: string) => {
-  emit('update:title', nodeData.id, newTitle)
+const handleHeaderTitleUpdate = (newTitle: string) => {
+  handleNodeTitleUpdate(nodeData.id, newTitle)
 }
 
 const handleEnterSubgraph = () => {

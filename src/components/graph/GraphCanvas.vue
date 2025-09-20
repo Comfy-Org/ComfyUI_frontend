@@ -54,7 +54,6 @@
       :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
       @node-click="handleNodeSelect"
-      @update:title="handleNodeTitleUpdate"
     />
   </TransformPane>
 
@@ -203,7 +202,6 @@ const handleTransformUpdate = () => {
   vueNodeLifecycle.detectChangesInRAF.value()
 }
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
-const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
