@@ -295,7 +295,7 @@ export async function submitSurvey(
 
 export async function claimInvite(
   code: string
-): Promise<Promise<{ success: boolean; message: string }>> {
+): Promise<{ success: boolean; message: string }> {
   try {
     Sentry.addBreadcrumb({
       category: 'auth',
