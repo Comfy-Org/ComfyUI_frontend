@@ -21,7 +21,7 @@ import type { useTransformState } from '@/renderer/core/layout/transform/useTran
  * const state = inject(TransformStateKey)!
  * const screen = state.canvasToScreen({ x: 100, y: 50 })
  */
-export interface TransformState
+interface TransformState
   extends Pick<
     ReturnType<typeof useTransformState>,
     'screenToCanvas' | 'canvasToScreen' | 'camera' | 'isNodeInViewport'
