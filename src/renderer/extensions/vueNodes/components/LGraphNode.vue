@@ -139,15 +139,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  inject,
-  onErrorCaptured,
-  onMounted,
-  ref,
-  toRef,
-  watch
-} from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -162,7 +154,6 @@ import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -232,14 +223,13 @@ const bypassed = computed((): boolean => nodeData.mode === 4)
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
 
 // LOD (Level of Detail) system based on zoom level
-const zoomRef = toRef(() => zoomLevel)
 const {
   lodLevel,
   shouldRenderWidgets,
   shouldRenderSlots,
   shouldRenderContent,
   lodCssClass
-} = useLOD(zoomRef)
+} = useLOD(zoomLevel)
 
 // Computed properties for template usage
 const isMinimalLOD = computed(() => lodLevel.value === LODLevel.MINIMAL)
@@ -276,17 +266,7 @@ onMounted(() => {
 })
 
 // Track collapsed state
-const isCollapsed = ref(nodeData.flags?.collapsed ?? false)
-
-// Watch for external changes to the collapsed state
-watch(
-  () => nodeData.flags?.collapsed,
-  (newCollapsed: boolean | undefined) => {
-    if (newCollapsed !== undefined && newCollapsed !== isCollapsed.value) {
-      isCollapsed.value = newCollapsed
-    }
-  }
-)
+const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 
 // Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
@@ -295,9 +275,10 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses =
+const separatorClasses = cn(
   'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full'
-const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
+)
+const progressClasses = cn('h-2 bg-primary-500 transition-all duration-300')
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   nodeData.id,
@@ -341,8 +322,7 @@ const outlineClass = computed(() => {
 
 // Event handlers
 const handleCollapse = () => {
-  isCollapsed.value = !isCollapsed.value
-  handleNodeCollapse(nodeData.id, isCollapsed.value)
+  handleNodeCollapse(nodeData.id, !isCollapsed.value)
 }
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
@@ -376,15 +356,17 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeImageUrls = ref<string[]>([])
-const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
+const nodeOutputLocatorId = computed(() =>
+  nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
+)
+const nodeImageUrls = computed(() => {
+  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const locatorId = getLocatorIdFromNodeData(nodeData)
 
   // Use root graph for getNodeByLocatorId since it needs to traverse from root
   const rootGraph = app.graph?.rootGraph || app.graph
   if (!rootGraph) {
-    nodeImageUrls.value = []
-    return
+    return []
   }
 
   const node = getNodeByLocatorId(rootGraph, locatorId)
@@ -392,23 +374,10 @@ const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
   if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
     if (urls) {
-      nodeImageUrls.value = urls
+      return urls
     }
-  } else {
-    // Clear URLs if no outputs or no images
-    nodeImageUrls.value = []
   }
-}
-
-const nodeOutputLocatorId = computed(() =>
-  nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
-)
-
-watch(
-  () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
-  (newOutputs) => {
-    onNodeOutputsUpdate(newOutputs)
-  },
-  { deep: true }
-)
+  // Clear URLs if no outputs or no images
+  return []
+})
 </script>
