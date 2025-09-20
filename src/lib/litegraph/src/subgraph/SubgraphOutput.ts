@@ -7,7 +7,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   Point,
-  ReadOnlyRect
+  Rect
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -119,7 +119,7 @@ export class SubgraphOutput extends SubgraphSlot {
     return [x + height, y + height * 0.5]
   }
 
-  override arrange(rect: ReadOnlyRect): void {
+  override arrange(rect: Rect): void {
     const [left, top, width, height] = rect
     const { boundingRect: b, pos } = this
 

@@ -4,6 +4,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -1707,7 +1708,12 @@ export class LGraph
       ...subgraphNode.subgraph.groups
     ].map((p: { pos: Point; size?: Size }): HasBoundingRect => {
       return {
-        boundingRect: [p.pos[0], p.pos[1], p.size?.[0] ?? 0, p.size?.[1] ?? 0]
+        boundingRect: new Rectangle(
+          p.pos[0],
+          p.pos[1],
+          p.size?.[0] ?? 0,
+          p.size?.[1] ?? 0
+        )
       }
     })
     const bounds = createBounds(positionables) ?? [0, 0, 0, 0]
