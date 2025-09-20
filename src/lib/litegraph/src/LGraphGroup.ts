@@ -24,6 +24,8 @@ import {
 } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
 
+export type GroupId = number
+
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
 }

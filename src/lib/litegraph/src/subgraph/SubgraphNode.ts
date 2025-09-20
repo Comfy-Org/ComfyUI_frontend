@@ -34,6 +34,8 @@ import {
 } from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
 
+export type SubgraphId = string
+
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
  */
