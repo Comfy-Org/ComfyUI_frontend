@@ -1,103 +1,215 @@
 <template>
-  <div class="flex flex-col gap-6 w-[600px]">
+  <div class="flex flex-col gap-8 w-full max-w-3xl mx-auto select-none">
     <!-- Installation Path Section -->
-    <div class="flex flex-col gap-4">
-      <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.chooseInstallationLocation') }}
+    <div class="grow flex flex-col gap-6 text-neutral-300">
+      <h2 class="font-inter font-bold text-3xl text-neutral-100 text-center">
+        {{ $t('install.locationPicker.title') }}
       </h2>
 
-      <p class="text-neutral-400 my-0">
-        {{ $t('install.installLocationDescription') }}
+      <p class="text-center text-neutral-400 px-12">
+        {{ $t('install.locationPicker.subtitle') }}
       </p>
 
-      <div class="flex gap-2">
-        <IconField class="flex-1">
-          <InputText
-            v-model="installPath"
-            class="w-full"
-            :class="{ 'p-invalid': pathError }"
-            @update:model-value="validatePath"
-            @focus="onFocus"
-          />
-          <InputIcon
-            v-tooltip.top="$t('install.installLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </IconField>
-        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
+      <!-- Path Input -->
+      <div class="flex gap-2 px-12">
+        <InputText
+          v-model="installPath"
+          :placeholder="$t('install.locationPicker.pathPlaceholder')"
+          class="flex-1 bg-neutral-800/50 border-neutral-700 text-neutral-200 placeholder:text-neutral-500"
+          :class="{ 'p-invalid': pathError }"
+          @update:model-value="validatePath"
+          @focus="onFocus"
+        />
+        <Button
+          icon="pi pi-folder-open"
+          severity="secondary"
+          class="bg-neutral-700 hover:bg-neutral-600 border-0"
+          @click="browsePath"
+        />
       </div>
 
-      <Message v-if="pathError" severity="error" class="whitespace-pre-line">
-        {{ pathError }}
-      </Message>
-      <Message v-if="pathExists" severity="warn">
-        {{ $t('install.pathExists') }}
-      </Message>
-      <Message v-if="nonDefaultDrive" severity="warn">
-        {{ $t('install.nonDefaultDrive') }}
-      </Message>
-    </div>
-
-    <!-- System Paths Info -->
-    <div class="bg-neutral-800 p-4 rounded-lg">
-      <h3 class="text-lg font-medium mt-0 mb-3 text-neutral-100">
-        {{ $t('install.systemLocations') }}
-      </h3>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-folder text-neutral-400" />
-          <span class="text-neutral-400">App Data:</span>
-          <span class="text-neutral-200">{{ appData }}</span>
-          <span
-            v-tooltip="$t('install.appDataLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <i class="pi pi-desktop text-neutral-400" />
-          <span class="text-neutral-400">App Path:</span>
-          <span class="text-neutral-200">{{ appPath }}</span>
-          <span
-            v-tooltip="$t('install.appPathLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </div>
+      <!-- Error Messages -->
+      <div v-if="pathError || pathExists || nonDefaultDrive" class="px-12">
+        <Message
+          v-if="pathError"
+          severity="error"
+          class="whitespace-pre-line w-full"
+        >
+          {{ pathError }}
+        </Message>
+        <Message v-if="pathExists" severity="warn" class="w-full">
+          {{ $t('install.pathExists') }}
+        </Message>
+        <Message v-if="nonDefaultDrive" severity="warn" class="w-full">
+          {{ $t('install.nonDefaultDrive') }}
+        </Message>
       </div>
+
+      <!-- Collapsible Sections using PrimeVue Accordion -->
+      <Accordion
+        v-model:value="activeAccordionIndex"
+        :multiple="true"
+        class="location-picker-accordion"
+        :pt="{
+          root: 'bg-transparent border-0',
+          panel: {
+            root: 'border-0 mb-0'
+          },
+          header: {
+            root: 'border-0',
+            content:
+              'text-neutral-400 hover:text-neutral-300 px-4 py-2 flex items-center gap-3',
+            toggleicon: 'text-xs order-first mr-0'
+          },
+          content: {
+            root: 'bg-transparent border-0',
+            content: 'text-neutral-500 text-sm pl-11 pb-3 pt-0'
+          }
+        }"
+      >
+        <AccordionPanel value="0">
+          <AccordionHeader>
+            {{ $t('install.locationPicker.migrateFromExisting') }}
+          </AccordionHeader>
+          <AccordionContent>
+            <MigrationPicker
+              v-model:source-path="migrationSourcePath"
+              v-model:migration-item-ids="migrationItemIds"
+            />
+          </AccordionContent>
+        </AccordionPanel>
+
+        <AccordionPanel value="1">
+          <AccordionHeader>
+            {{ $t('install.locationPicker.chooseDownloadServers') }}
+          </AccordionHeader>
+          <AccordionContent>
+            <template
+              v-for="([item, modelValue], index) in mirrors"
+              :key="item.settingId + item.mirror"
+            >
+              <Divider v-if="index > 0" class="my-8" />
+
+              <MirrorItem
+                v-model="modelValue.value"
+                :item="item"
+                @state-change="validationStates[index] = $event"
+              />
+            </template>
+          </AccordionContent>
+        </AccordionPanel>
+      </Accordion>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
+import { TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
+import Accordion from 'primevue/accordion'
+import AccordionContent from 'primevue/accordioncontent'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionPanel from 'primevue/accordionpanel'
 import Button from 'primevue/button'
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
+import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import { onMounted, ref } from 'vue'
+import { type ModelRef, computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MigrationPicker from '@/components/install/MigrationPicker.vue'
+import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
+import {
+  PYPI_MIRROR,
+  PYTHON_MIRROR,
+  type UVMirror
+} from '@/constants/uvMirrors'
 import { electronAPI } from '@/utils/envUtil'
+import { isInChina } from '@/utils/networkUtil'
+import { ValidationState } from '@/utils/validationUtil'
 
 const { t } = useI18n()
 
 const installPath = defineModel<string>('installPath', { required: true })
 const pathError = defineModel<string>('pathError', { required: true })
+const migrationSourcePath = defineModel<string>('migrationSourcePath')
+const migrationItemIds = defineModel<string[]>('migrationItemIds')
+const pythonMirror = defineModel<string>('pythonMirror', {
+  default: ''
+})
+const pypiMirror = defineModel<string>('pypiMirror', {
+  default: ''
+})
+const torchMirror = defineModel<string>('torchMirror', {
+  default: ''
+})
+
+const { device } = defineProps<{ device: TorchDeviceType | null }>()
+
 const pathExists = ref(false)
 const nonDefaultDrive = ref(false)
-const appData = ref('')
-const appPath = ref('')
 const inputTouched = ref(false)
+
+// Accordion state - array of active panel values
+const activeAccordionIndex = ref<string[] | undefined>(undefined)
 
 const electron = electronAPI()
 
-// Get system paths on component mount
+// Mirror configuration logic
+const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
+  const settingId = 'Comfy-Desktop.UV.TorchInstallMirror'
+  switch (device) {
+    case 'mps':
+      return {
+        settingId,
+        mirror: TorchMirrorUrl.NightlyCpu,
+        fallbackMirror: TorchMirrorUrl.NightlyCpu
+      }
+    case 'nvidia':
+      return {
+        settingId,
+        mirror: TorchMirrorUrl.Cuda,
+        fallbackMirror: TorchMirrorUrl.Cuda
+      }
+    case 'cpu':
+    default:
+      return {
+        settingId,
+        mirror: PYPI_MIRROR.mirror,
+        fallbackMirror: PYPI_MIRROR.fallbackMirror
+      }
+  }
+}
+
+const userIsInChina = ref(false)
+const useFallbackMirror = (mirror: UVMirror) => ({
+  ...mirror,
+  mirror: mirror.fallbackMirror
+})
+
+const mirrors = computed<[UVMirror, ModelRef<string>][]>(() =>
+  (
+    [
+      [PYTHON_MIRROR, pythonMirror],
+      [PYPI_MIRROR, pypiMirror],
+      [getTorchMirrorItem(device ?? 'cpu'), torchMirror]
+    ] as [UVMirror, ModelRef<string>][]
+  ).map(([item, modelValue]) => [
+    userIsInChina.value ? useFallbackMirror(item) : item,
+    modelValue
+  ])
+)
+
+const validationStates = ref<ValidationState[]>(
+  mirrors.value.map(() => ValidationState.IDLE)
+)
+
+// Get default install path on component mount
 onMounted(async () => {
   const paths = await electron.getSystemPaths()
-  appData.value = paths.appData
-  appPath.value = paths.appPath
   installPath.value = paths.defaultInstallPath
-
   await validatePath(paths.defaultInstallPath)
+  userIsInChina.value = await isInChina()
 })
 
 const validatePath = async (path: string | undefined) => {
@@ -151,3 +263,52 @@ const onFocus = async () => {
   await validatePath(installPath.value)
 }
 </script>
+
+<style scoped>
+@reference '../../assets/css/style.css';
+
+:deep(.location-picker-accordion) {
+  @apply px-12;
+
+  .p-accordionpanel {
+    @apply border-0 bg-transparent;
+  }
+
+  .p-accordionheader {
+    @apply bg-neutral-800/50 border-0 rounded-xl mt-2 hover:bg-neutral-700/50;
+    transition:
+      background-color 0.2s ease,
+      border-radius 0.5s ease;
+  }
+
+  /* When panel is expanded, adjust header border radius */
+  .p-accordionpanel-active {
+    .p-accordionheader {
+      @apply rounded-t-xl rounded-b-none;
+    }
+  }
+
+  .p-accordioncontent {
+    @apply bg-neutral-800/50 border-0 rounded-b-xl rounded-t-none;
+  }
+
+  .p-accordioncontent-content {
+    @apply bg-transparent pt-3 pr-5 pb-5 pl-5;
+  }
+
+  /* Override default chevron icons to use up/down */
+  .p-accordionheader-toggle-icon {
+    &::before {
+      content: '\e933';
+    }
+  }
+
+  .p-accordionpanel-active {
+    .p-accordionheader-toggle-icon {
+      &::before {
+        content: '\e902';
+      }
+    }
+  }
+}
+</style>

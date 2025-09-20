@@ -2,10 +2,6 @@
   <div class="flex flex-col gap-6 w-[600px]">
     <!-- Source Location Section -->
     <div class="flex flex-col gap-4">
-      <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.migrateFromExistingInstallation') }}
-      </h2>
-
       <p class="text-neutral-400 my-0">
         {{ $t('install.migrationSourcePathDescription') }}
       </p>
@@ -13,7 +9,7 @@
       <div class="flex gap-2">
         <InputText
           v-model="sourcePath"
-          placeholder="Select existing ComfyUI installation (optional)"
+          :placeholder="$t('install.locationPicker.migrationPathPlaceholder')"
           class="flex-1"
           :class="{ 'p-invalid': pathError }"
           @update:model-value="validateSource"
@@ -27,10 +23,7 @@
     </div>
 
     <!-- Migration Options -->
-    <div
-      v-if="isValidSource"
-      class="flex flex-col gap-4 bg-neutral-800 p-4 rounded-lg"
-    >
+    <div v-if="isValidSource" class="flex flex-col gap-4 p-4 rounded-lg">
       <h3 class="text-lg mt-0 font-medium text-neutral-100">
         {{ $t('install.selectItemsToMigrate') }}
       </h3>
