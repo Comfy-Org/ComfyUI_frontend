@@ -33,9 +33,11 @@ const tooltipText = ref('')
 const left = ref<string>()
 const top = ref<string>()
 
-const hideTooltip = () => (tooltipText.value = '')
+function hideTooltip() {
+  return (tooltipText.value = '')
+}
 
-const showTooltip = async (tooltip: string | null | undefined) => {
+async function showTooltip(tooltip: string | null | undefined) {
   if (!tooltip) return
 
   left.value = comfyApp.canvas.mouse[0] + 'px'
@@ -56,9 +58,9 @@ const showTooltip = async (tooltip: string | null | undefined) => {
   }
 }
 
-const onIdle = () => {
+function onIdle() {
   const { canvas } = comfyApp
-  const node = canvas.node_over
+  const node = canvas?.node_over
   if (!node) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
