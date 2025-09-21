@@ -107,7 +107,7 @@ function resolveLinkedWidget(
 }
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
   let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
-  const bw = linkedWidget ?? disconnectedWidget
+  const backingWidget = linkedWidget ?? disconnectedWidget
   if (overlay.widgetName == '$$canvas-image-preview')
     overlay.node = new Proxy(subgraphNode, {
       get(_t, p) {
@@ -126,21 +126,42 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
         return Reflect.get(subgraphNode, p)
       }
     })
-  const handler = Object.fromEntries(
-    ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
-      const func = function (t: object, p: string, ...rest: object[]) {
-        if (s == 'get' && p == '_overlay') return overlay
-        let r = rest.at(-1)
-        if (overlay.hasOwnProperty(p)) r = t = overlay
-        else {
-          t = bw
-          if (p == 'value') r = t
-        }
-        return (Reflect as any)[s](t, p, ...rest.slice(0, -1), r)
+  const handler = {
+    get(_t: IBaseWidget, property: string, receiver: object) {
+      if (property == '_overlay') return overlay
+      let redirectedTarget: object = backingWidget
+      let redirectedReceiver = receiver
+      if (property == 'value') redirectedReceiver = backingWidget
+      if (overlay.hasOwnProperty(property)) {
+        redirectedTarget = overlay
+        redirectedReceiver = overlay
       }
-      return [s, func]
-    })
-  )
+      return Reflect.get(redirectedTarget, property, redirectedReceiver)
+    },
+    set(_t: IBaseWidget, property: string, value: unknown, receiver: object) {
+      let redirectedTarget: object = backingWidget
+      let redirectedReceiver = receiver
+      if (property == 'value') redirectedReceiver = backingWidget
+      if (overlay.hasOwnProperty(property)) {
+        redirectedTarget = overlay
+        redirectedReceiver = overlay
+      }
+      return Reflect.set(redirectedTarget, property, value, redirectedReceiver)
+    },
+    getPrototypeOf() {
+      return Reflect.getPrototypeOf(backingWidget)
+    },
+    ownKeys() {
+      return Reflect.ownKeys(backingWidget)
+    },
+    has(_t: IBaseWidget, property: string) {
+      let redirectedTarget: object = backingWidget
+      if (overlay.hasOwnProperty(property)) {
+        redirectedTarget = overlay
+      }
+      return Reflect.has(redirectedTarget, property)
+    }
+  }
   const w = new Proxy(disconnectedWidget, handler)
   subgraphNode.widgets.push(w)
   return w
