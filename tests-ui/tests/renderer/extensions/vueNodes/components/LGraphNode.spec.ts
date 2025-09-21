@@ -1,14 +1,29 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
-import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
+
+const mockData = vi.hoisted(() => ({
+  mockNodeIds: new Set<string>(),
+  mockExecuting: false
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => {
+  const getCanvas = vi.fn()
+  const useCanvasStore = () => ({
+    getCanvas,
+    selectedNodeIds: computed(() => mockData.mockNodeIds)
+  })
+  return {
+    useCanvasStore
+  }
+})
 
 vi.mock(
   '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
@@ -47,7 +62,7 @@ vi.mock(
   '@/renderer/extensions/vueNodes/execution/useNodeExecutionState',
   () => ({
     useNodeExecutionState: vi.fn(() => ({
-      executing: computed(() => false),
+      executing: computed(() => mockData.mockExecuting),
       progress: computed(() => undefined),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined as any),
@@ -72,55 +87,44 @@ const i18n = createI18n({
     }
   }
 })
+function mountLGraphNode(props: ComponentProps<typeof LGraphNode>) {
+  return mount(LGraphNode, {
+    props,
+    global: {
+      plugins: [
+        createTestingPinia({
+          createSpy: vi.fn
+        }),
+        i18n
+      ],
+      stubs: {
+        NodeHeader: true,
+        NodeSlots: true,
+        NodeWidgets: true,
+        NodeContent: true,
+        SlotConnectionDot: true
+      }
+    }
+  })
+}
+const mockNodeData: VueNodeData = {
+  id: 'test-node-123',
+  title: 'Test Node',
+  type: 'TestNode',
+  mode: 0,
+  flags: {},
+  inputs: [],
+  outputs: [],
+  widgets: [],
+  selected: false,
+  executing: false
+}
 
 describe('LGraphNode', () => {
-  const mockNodeData: VueNodeData = {
-    id: 'test-node-123',
-    title: 'Test Node',
-    type: 'TestNode',
-    mode: 0,
-    flags: {},
-    inputs: [],
-    outputs: [],
-    widgets: [],
-    selected: false,
-    executing: false
-  }
-
-  const mountLGraphNode = (props: any, selectedNodeIds = new Set()) => {
-    return mount(LGraphNode, {
-      props,
-      global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
-        provide: {
-          [SelectedNodeIdsKey as symbol]: ref(selectedNodeIds)
-        },
-        stubs: {
-          NodeHeader: true,
-          NodeSlots: true,
-          NodeWidgets: true,
-          NodeContent: true,
-          SlotConnectionDot: true
-        }
-      }
-    })
-  }
-
   beforeEach(() => {
-    vi.clearAllMocks()
-    // Reset to default mock
-    vi.mocked(useNodeExecutionState).mockReturnValue({
-      executing: computed(() => false),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined as any),
-      executionState: computed(() => 'idle' as const)
-    })
+    vi.resetAllMocks()
+    mockData.mockNodeIds = new Set()
+    mockData.mockExecuting = false
   })
 
   it('should call resize tracking composable with node ID', () => {
@@ -146,9 +150,6 @@ describe('LGraphNode', () => {
           }),
           i18n
         ],
-        provide: {
-          [SelectedNodeIdsKey as symbol]: ref(new Set())
-        },
         stubs: {
           NodeSlots: true,
           NodeWidgets: true,
@@ -162,24 +163,15 @@ describe('LGraphNode', () => {
   })
 
   it('should apply selected styling when selected prop is true', () => {
-    const wrapper = mountLGraphNode(
-      { nodeData: mockNodeData, selected: true },
-      new Set(['test-node-123'])
-    )
+    mockData.mockNodeIds = new Set(['test-node-123'])
+    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
     expect(wrapper.classes()).toContain('outline-2')
     expect(wrapper.classes()).toContain('outline-black')
     expect(wrapper.classes()).toContain('dark-theme:outline-white')
   })
 
   it('should apply executing animation when executing prop is true', () => {
-    // Mock the execution state to return executing: true
-    vi.mocked(useNodeExecutionState).mockReturnValue({
-      executing: computed(() => true),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined as any),
-      executionState: computed(() => 'running' as const)
-    })
+    mockData.mockExecuting = true
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
