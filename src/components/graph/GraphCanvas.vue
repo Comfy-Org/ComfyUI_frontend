@@ -53,9 +53,6 @@
       "
       :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
-      @node-click="handleNodeSelect"
-      @update:collapsed="handleNodeCollapse"
-      @update:title="handleNodeTitleUpdate"
     />
   </TransformPane>
 
@@ -121,8 +118,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useExecutionStateProvider } from '@/renderer/extensions/vueNodes/execution/useExecutionStateProvider'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -173,7 +168,6 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
 const viewportCulling = useViewportCulling()
-const nodeEventHandlers = useNodeEventHandlers()
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
@@ -204,12 +198,6 @@ const handleTransformUpdate = () => {
   // TODO: Fix paste position sync in separate PR
   vueNodeLifecycle.detectChangesInRAF.value()
 }
-const handleNodeSelect = nodeEventHandlers.handleNodeSelect
-const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
-const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
-
-// Provide execution state to all Vue nodes
-useExecutionStateProvider()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')

@@ -1,16 +1,17 @@
 import { storeToRefs } from 'pinia'
-import { type Ref, computed } from 'vue'
+import { type MaybeRefOrGetter, type Ref, computed, toValue } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 export const useNodePreviewState = (
-  nodeId: string,
+  nodeIdMaybe: MaybeRefOrGetter<string>,
   options?: {
     isMinimalLOD?: Ref<boolean>
     isCollapsed?: Ref<boolean>
   }
 ) => {
+  const nodeId = toValue(nodeIdMaybe)
   const workflowStore = useWorkflowStore()
   const { nodePreviewImages } = storeToRefs(useNodeOutputStore())
 
