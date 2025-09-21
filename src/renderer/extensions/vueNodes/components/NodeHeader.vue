@@ -63,7 +63,6 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { app } from '@/scripts/app'
 import {
   getLocatorIdFromNodeData,
@@ -73,7 +72,6 @@ import {
 interface NodeHeaderProps {
   nodeData?: VueNodeData
   readonly?: boolean
-  lodLevel?: LODLevel
   collapsed?: boolean
 }
 
