@@ -1,10 +1,4 @@
 import { storeToRefs } from 'pinia'
-/**
- * Composable for individual Vue node components
- *
- * Uses customRef for shared write access with Canvas renderer.
- * Provides dragging functionality and reactive layout state.
- */
 import { type MaybeRefOrGetter, computed, inject, toValue } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
