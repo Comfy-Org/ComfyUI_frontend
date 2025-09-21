@@ -43,9 +43,6 @@ function useVueNodeLifecycleIndividual() {
   // Vue node data state
   const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
   const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
-  const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
-    new Map()
-  )
   const nodeSizes = ref<ReadonlyMap<string, { width: number; height: number }>>(
     new Map()
   )
@@ -71,7 +68,6 @@ function useVueNodeLifecycleIndividual() {
     // Use the manager's data maps
     vueNodeData.value = manager.vueNodeData
     nodeState.value = manager.nodeState
-    nodePositions.value = manager.nodePositions
     nodeSizes.value = manager.nodeSizes
     detectChangesInRAF.value = manager.detectChangesInRAF
 
@@ -137,7 +133,6 @@ function useVueNodeLifecycleIndividual() {
     // Reset reactive maps to clean state
     vueNodeData.value = new Map()
     nodeState.value = new Map()
-    nodePositions.value = new Map()
     nodeSizes.value = new Map()
 
     // Reset change detection function
@@ -236,7 +231,6 @@ function useVueNodeLifecycleIndividual() {
   return {
     vueNodeData,
     nodeState,
-    nodePositions,
     nodeSizes,
     nodeDataTrigger: readonly(nodeDataTrigger),
     nodeManager: readonly(nodeManager),

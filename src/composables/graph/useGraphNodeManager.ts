@@ -72,7 +72,6 @@ export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
   nodeState: ReadonlyMap<string, NodeState>
-  nodePositions: ReadonlyMap<string, { x: number; y: number }>
   nodeSizes: ReadonlyMap<string, { width: number; height: number }>
 
   // Access to original LiteGraph nodes (non-reactive)
@@ -101,14 +100,12 @@ export interface GraphNodeManager {
   getSpatialIndexDebugInfo(): SpatialIndexDebugInfo | null
 }
 
-export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
+export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
-  const { moveNode, resizeNode, createNode, deleteNode, setSource } =
-    useLayoutMutations()
+  const { resizeNode, createNode, deleteNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
   const nodeState = reactive(new Map<string, NodeState>())
-  const nodePositions = reactive(new Map<string, { x: number; y: number }>())
   const nodeSizes = reactive(
     new Map<string, { width: number; height: number }>()
   )
@@ -365,7 +362,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   //   }
   //   return metadata
   // }
-
   const scheduleUpdate = (
     nodeId?: string,
     priority: 'critical' | 'normal' | 'low' = 'normal'
@@ -432,7 +428,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         nodeRefs.delete(id)
         vueNodeData.delete(id)
         nodeState.delete(id)
-        nodePositions.delete(id)
         nodeSizes.delete(id)
         lastNodesSnapshot.delete(id)
         spatialIndex.remove(id)
@@ -459,7 +454,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
           lastUpdate: performance.now(),
           culled: false
         })
-        nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
         nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
         attachMetadata(node)
 
@@ -494,28 +488,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     spatialMetrics.queryTime = lastSpatialQueryTime
 
     return visibleIds
-  }
-
-  /**
-   * Detects position changes for a single node and updates reactive state
-   */
-  const detectPositionChanges = (node: LGraphNode, id: string): boolean => {
-    const currentPos = nodePositions.get(id)
-
-    if (
-      !currentPos ||
-      currentPos.x !== node.pos[0] ||
-      currentPos.y !== node.pos[1]
-    ) {
-      nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-
-      // Push position change to layout store
-      // Source is already set to 'canvas' in detectChangesInRAF
-      void moveNode(id, { x: node.pos[0], y: node.pos[1] })
-
-      return true
-    }
-    return false
   }
 
   /**
@@ -585,7 +557,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
     if (!graph?._nodes) return
 
-    let positionUpdates = 0
     let sizeUpdates = 0
 
     // Set source for all canvas-driven updates
@@ -595,19 +566,19 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     for (const node of graph._nodes) {
       const id = String(node.id)
 
-      const posChanged = detectPositionChanges(node, id)
+      // const posChanged = detectPositionChanges(node, id)
       const sizeChanged = detectSizeChanges(node, id)
 
-      if (posChanged) positionUpdates++
+      // if (posChanged) positionUpdates++
       if (sizeChanged) sizeUpdates++
 
       // Update spatial index if geometry changed
-      if (posChanged || sizeChanged) {
+      if (sizeChanged) {
         updateSpatialIndex(node, id)
       }
     }
 
-    updatePerformanceMetrics(startTime, positionUpdates, sizeUpdates)
+    updatePerformanceMetrics(startTime, 0, sizeUpdates)
   }
 
   /**
@@ -642,7 +613,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
 
-      nodePositions.set(id, nodePosition)
       nodeSizes.set(id, nodeSize)
       attachMetadata(node)
 
@@ -709,7 +679,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     nodeRefs.delete(id)
     vueNodeData.delete(id)
     nodeState.delete(id)
-    nodePositions.delete(id)
     nodeSizes.delete(id)
     lastNodesSnapshot.delete(id)
 
@@ -743,7 +712,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       nodeRefs.clear()
       vueNodeData.clear()
       nodeState.clear()
-      nodePositions.clear()
       nodeSizes.clear()
       lastNodesSnapshot.clear()
       pendingUpdates.clear()
@@ -846,7 +814,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   return {
     vueNodeData,
     nodeState,
-    nodePositions,
     nodeSizes,
     getNode,
     setupEventListeners,
