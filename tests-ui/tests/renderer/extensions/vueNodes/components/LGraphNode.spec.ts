@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -139,7 +139,13 @@ describe('LGraphNode', () => {
   it('should call resize tracking composable with node ID', () => {
     mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
+    expect(useVueElementTracking).toHaveBeenCalledWith(
+      expect.any(Function),
+      'node'
+    )
+    const idArg = vi.mocked(useVueElementTracking).mock.calls[0]?.[0]
+    const id = toValue(idArg)
+    expect(id).toEqual('test-node-123')
   })
 
   it('should render with data-node-id attribute', () => {
