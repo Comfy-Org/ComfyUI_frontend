@@ -134,7 +134,11 @@ export function useSlotLayoutSync() {
     restoreHandlers = () => {
       graph.onNodeAdded = origNodeAdded || undefined
       graph.onNodeRemoved = origNodeRemoved || undefined
-      graph.onTrigger = origTrigger || undefined
+      // Only restore onTrigger if Vue nodes are not active
+      // Vue node manager sets its own onTrigger handler
+      if (!LiteGraph.vueNodesMode) {
+        graph.onTrigger = origTrigger || undefined
+      }
       graph.onAfterChange = origAfterChange || undefined
     }
 
