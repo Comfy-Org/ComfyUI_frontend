@@ -462,4 +462,84 @@ test.describe('Vue Node Link Interaction', () => {
     expect(await samplerOutput.getLinkCount()).toBe(1)
     expect(await vaeInput.getLinkCount()).toBe(1)
   })
+
+  test('dragging input to input drags existing link', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+    const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+
+    expect(clipNodes.length).toBeGreaterThan(0)
+    expect(samplerNodes.length).toBeGreaterThan(0)
+
+    const clipNode = clipNodes[0]
+    const samplerNode = samplerNodes[0]
+
+    // Step 1: Connect CLIP's only output (index 0) to KSampler's second input (index 1)
+    const clipOutputKey = getSlotKey(String(clipNode.id), 0, false)
+    const samplerInput2ndKey = getSlotKey(String(samplerNode.id), 1, true)
+
+    const clipOutputLocator = comfyPage.page.locator(
+      `[data-slot-key="${clipOutputKey}"]`
+    )
+    const samplerInput2ndLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerInput2ndKey}"]`
+    )
+
+    await expect(clipOutputLocator).toBeVisible()
+    await expect(samplerInput2ndLocator).toBeVisible()
+
+    await clipOutputLocator.dragTo(samplerInput2ndLocator)
+    await comfyPage.nextFrame()
+
+    // Verify initial link exists between CLIP -> KSampler input[1]
+    const initialLink = await getInputLinkDetails(
+      comfyPage.page,
+      samplerNode.id,
+      1
+    )
+    expect(initialLink).not.toBeNull()
+    expect(initialLink).toMatchObject({
+      originId: clipNode.id,
+      targetId: samplerNode.id,
+      targetSlot: 1
+    })
+
+    // Step 2: Drag from KSampler's second input to its third input (index 2)
+    const samplerInput3rdKey = getSlotKey(String(samplerNode.id), 2, true)
+    const samplerInput3rdLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerInput3rdKey}"]`
+    )
+    await expect(samplerInput3rdLocator).toBeVisible()
+
+    const input2Center = await getCenter(samplerInput2ndLocator)
+    const input3Center = await getCenter(samplerInput3rdLocator)
+
+    await comfyMouse.move(input2Center)
+    await comfyMouse.drag(input3Center)
+    await comfyMouse.drop()
+    await comfyPage.nextFrame()
+
+    // Expect old link removed from input[1]
+    const afterSecondInput = await getInputLinkDetails(
+      comfyPage.page,
+      samplerNode.id,
+      1
+    )
+    expect(afterSecondInput).toBeNull()
+
+    // Expect new link exists at input[2] from CLIP
+    const afterThirdInput = await getInputLinkDetails(
+      comfyPage.page,
+      samplerNode.id,
+      2
+    )
+    expect(afterThirdInput).not.toBeNull()
+    expect(afterThirdInput).toMatchObject({
+      originId: clipNode.id,
+      targetId: samplerNode.id,
+      targetSlot: 2
+    })
+  })
 })
