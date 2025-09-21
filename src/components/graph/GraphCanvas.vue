@@ -191,8 +191,6 @@ const allNodes = viewportCulling.allNodes
 
 const handleTransformUpdate = () => {
   viewportCulling.handleTransformUpdate()
-  // TODO: Fix paste position sync in separate PR
-  vueNodeLifecycle.detectChangesInRAF.value()
 }
 
 watchEffect(() => {

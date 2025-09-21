@@ -43,12 +43,6 @@ function useVueNodeLifecycleIndividual() {
   // Vue node data state
   const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
   const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
-  const nodeSizes = ref<ReadonlyMap<string, { width: number; height: number }>>(
-    new Map()
-  )
-
-  // Change detection function
-  const detectChangesInRAF = ref<() => void>(() => {})
 
   // Trigger for forcing computed re-evaluation
   const nodeDataTrigger = ref(0)
@@ -68,8 +62,6 @@ function useVueNodeLifecycleIndividual() {
     // Use the manager's data maps
     vueNodeData.value = manager.vueNodeData
     nodeState.value = manager.nodeState
-    nodeSizes.value = manager.nodeSizes
-    detectChangesInRAF.value = manager.detectChangesInRAF
 
     // Initialize layout system with existing nodes from active graph
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
@@ -133,10 +125,6 @@ function useVueNodeLifecycleIndividual() {
     // Reset reactive maps to clean state
     vueNodeData.value = new Map()
     nodeState.value = new Map()
-    nodeSizes.value = new Map()
-
-    // Reset change detection function
-    detectChangesInRAF.value = () => {}
   }
 
   // Watch for Vue nodes enabled state changes
@@ -231,10 +219,8 @@ function useVueNodeLifecycleIndividual() {
   return {
     vueNodeData,
     nodeState,
-    nodeSizes,
     nodeDataTrigger: readonly(nodeDataTrigger),
     nodeManager: readonly(nodeManager),
-    detectChangesInRAF: readonly(detectChangesInRAF),
     isNodeManagerReady,
 
     // Lifecycle methods
