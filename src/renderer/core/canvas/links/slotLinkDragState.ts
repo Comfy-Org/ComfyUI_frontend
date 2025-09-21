@@ -13,6 +13,7 @@ export interface SlotDragSource {
   type: SlotDragType
   direction: LinkDirection
   position: Readonly<Point>
+  linkId?: number
 }
 
 export interface SlotDropCandidate {
