@@ -5,20 +5,9 @@
         {{ t('cloudWaitlist_titleLine1') }}<br />
         {{ t('cloudWaitlist_titleLine2') }}
       </h1>
-      <div class="max-w-[320px] text-lg font-light">
+      <div class="max-w-[320px] text-lg font-light m-auto">
         <p class="text-white">
           {{ t('cloudWaitlist_message') }}
-        </p>
-        <p class="text-white">
-          {{ t('cloudWaitlist_questionsText') }}
-          <a
-            href="https://support.comfy.org"
-            class="text-blue-400 no-underline cursor-pointer"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ t('cloudWaitlist_contactLink') }}</a
-          >.
         </p>
       </div>
     </div>

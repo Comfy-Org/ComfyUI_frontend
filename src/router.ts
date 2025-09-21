@@ -18,7 +18,6 @@ const PUBLIC_ROUTE_NAMES = new Set([
   'cloud-login',
   'cloud-signup',
   'cloud-forgot-password',
-  'cloud-verify-email',
   'cloud-sorry-contact-support'
 ])
 
@@ -30,7 +29,6 @@ const isPublicRoute = (to: RouteLocationNormalized) => {
     path === '/cloud/login' ||
     path === '/cloud/signup' ||
     path === '/cloud/forgot-password' ||
-    path === '/cloud/verify-email' ||
     path === '/cloud/sorry-contact-support'
   )
     return true
@@ -250,6 +248,12 @@ router.beforeEach(async (to, _from, next) => {
   // For root path, check actual user status to handle waitlisted users
   if (!isElectron() && isLoggedIn && to.path === '/') {
     try {
+      // Check email verification first
+      const authStore = useFirebaseAuthStore()
+      if (!authStore.isEmailVerified) {
+        return next({ name: 'cloud-verify-email' })
+      }
+
       // Import auth functions dynamically to avoid circular dependency
       const { getUserCloudStatus, getSurveyCompletedStatus } = await import(
         '@/api/auth'

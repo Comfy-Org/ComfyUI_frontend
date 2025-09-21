@@ -1,29 +1,44 @@
 <template>
   <div class="h-full flex items-center justify-center p-8">
     <div class="lg:w-96 max-w-[100vw] p-2">
-      <div class="bg-[#2d2e32] p-4 rounded-lg">
-        <h4 class="m-0 pb-2 text-lg">
-          {{ t('cloudPrivateBeta_title') }}
-        </h4>
-        <p class="m-0 text-base leading-6">
-          {{ t('cloudPrivateBeta_desc') }}
-        </p>
-      </div>
+      <template v-if="!hasInviteCode">
+        <div class="bg-[#2d2e32] p-4 rounded-lg">
+          <h4 class="m-0 pb-2 text-lg">
+            {{ t('cloudPrivateBeta_title') }}
+          </h4>
+          <p class="m-0 text-base leading-6">
+            {{ t('cloudPrivateBeta_desc') }}
+          </p>
+        </div>
 
-      <!-- Header -->
-      <div class="flex flex-col gap-4 mt-6 mb-8">
-        <h1 class="text-xl font-medium leading-normal my-0">
-          {{ t('auth.login.title') }}
-        </h1>
-        <p class="text-base my-0">
-          <span class="text-muted">{{ t('auth.login.newUser') }}</span>
-          <span
-            class="ml-1 cursor-pointer text-blue-500"
-            @click="navigateToSignup"
-            >{{ t('auth.login.signUp') }}</span
+        <!-- Header -->
+        <div class="flex flex-col gap-4 mt-6 mb-8">
+          <h1 class="text-xl font-medium leading-normal my-0">
+            {{ t('auth.login.title') }}
+          </h1>
+          <p class="text-base my-0">
+            <span class="text-muted">{{ t('auth.login.newUser') }}</span>
+            <span
+              class="ml-1 cursor-pointer text-blue-500"
+              @click="navigateToSignup"
+              >{{ t('auth.login.signUp') }}</span
+            >
+          </p>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="flex flex-col gap-1 mt-6 mb-8">
+          <h1
+            class="text-white font-abcrom font-black italic uppercase my-0 text-2xl"
           >
-        </p>
-      </div>
+            {{ t('cloudStart_invited') }}
+          </h1>
+          <p class="text-base my-0">
+            <span class="text-muted">{{ t('cloudStart_invited_signin') }}</span>
+          </p>
+        </div>
+      </template>
 
       <Message v-if="!isSecureContext" severity="warn" class="mb-4">
         {{ t('auth.login.insecureContextWarning') }}
@@ -61,7 +76,7 @@
       </div>
 
       <!-- Terms & Contact -->
-      <p class="mt-5 text-sm text-gray-600">
+      <p v-if="!hasInviteCode" class="mt-5 text-sm text-gray-600">
         {{ t('cloudWaitlist_questionsText') }}
         <a
           href="https://support.comfy.org"
@@ -72,6 +87,15 @@
           {{ t('cloudWaitlist_contactLink') }}</a
         >.
       </p>
+      <p v-else class="mt-5 text-sm text-gray-600">
+        {{ t('cloudStart_invited_signup_title') }}
+        <span
+          class="text-blue-400 no-underline cursor-pointer"
+          @click="navigateToSignup"
+        >
+          {{ t('cloudStart_invited_signup_description') }}</span
+        >
+      </p>
     </div>
   </div>
 </template>
@@ -80,13 +104,14 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
 import { type SignInData } from '@/schemas/signInSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 
 const { t } = useI18n()
@@ -96,23 +121,29 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const authError = ref('')
 
+const hasInviteCode = computed(() => !!route.query.inviteCode)
+
 const navigateToSignup = () => {
   void router.push({ name: 'cloud-signup', query: route.query })
 }
 
 const onSuccess = async () => {
   // Check if there's an invite code
-  const inviteCode = route.query.inviteCode as string
-
-  if (inviteCode) {
-    // Handle invite code flow - go to invite check
-    await router.push({
-      name: 'cloud-invite-check',
-      query: { inviteCode }
-    })
+  const inviteCode = route.query.inviteCode as string | undefined
+  const { isEmailVerified } = useFirebaseAuthStore()
+  if (!isEmailVerified) {
+    await router.push({ name: 'cloud-verify-email', query: { inviteCode } })
   } else {
-    // Normal login flow - go to user check
-    await router.push({ name: 'cloud-user-check' })
+    if (inviteCode) {
+      // Handle invite code flow - go to invite check
+      await router.push({
+        name: 'cloud-invite-check',
+        query: { inviteCode }
+      })
+    } else {
+      // Normal login flow - go to user check
+      await router.push({ name: 'cloud-user-check' })
+    }
   }
 }
 
@@ -148,4 +179,8 @@ const signInWithEmail = async (values: SignInData) => {
     await onSuccess()
   }
 }
+
+onMounted(async () => {
+  await authActions.logout()
+})
 </script>
