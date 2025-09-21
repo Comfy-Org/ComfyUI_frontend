@@ -43,7 +43,6 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
-      :size="nodeSizes.get(nodeData.id)"
       :readonly="false"
       :error="
         executionStore.lastExecutionError?.node_id === nodeData.id
@@ -188,7 +187,6 @@ watch(
   }
 )
 
-const nodeSizes = vueNodeLifecycle.nodeSizes
 const allNodes = viewportCulling.allNodes
 
 const handleTransformUpdate = () => {
