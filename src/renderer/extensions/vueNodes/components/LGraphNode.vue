@@ -31,7 +31,7 @@
     "
     :style="[
       {
-        transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex
       },
       dragStyle
@@ -172,7 +172,6 @@ import SlotConnectionDot from './SlotConnectionDot.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   nodeData: VueNodeData
-  position?: { x: number; y: number }
   size?: { width: number; height: number }
   readonly?: boolean
   error?: string | null
@@ -181,7 +180,6 @@ interface LGraphNodeProps {
 
 const {
   nodeData,
-  position = { x: 0, y: 0 },
   size = { width: 100, height: 50 },
   error = null,
   readonly = false,
@@ -245,11 +243,7 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const {
-  position: layoutPosition,
-  zIndex,
-  resize
-} = useNodeLayout(() => nodeData.id)
+const { position, zIndex, resize } = useNodeLayout(() => nodeData.id)
 const {
   handlePointerDown,
   handlePointerUp,

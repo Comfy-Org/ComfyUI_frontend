@@ -43,7 +43,6 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
-      :position="nodePositions.get(nodeData.id)"
       :size="nodeSizes.get(nodeData.id)"
       :readonly="false"
       :error="
@@ -189,7 +188,6 @@ watch(
   }
 )
 
-const nodePositions = vueNodeLifecycle.nodePositions
 const nodeSizes = vueNodeLifecycle.nodeSizes
 const allNodes = viewportCulling.allNodes
 
