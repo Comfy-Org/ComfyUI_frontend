@@ -87,9 +87,9 @@ describe('Subgraph proxyWidgets', () => {
       ['1', 'stringWidget']
     ])
     expect(subgraphNode.widgets.length).toBe(1)
-    expect(subgraphNode.widgets![0].value).toBe('value')
+    expect(subgraphNode.widgets[0].value).toBe('value')
     innerNodes[0].widgets![0].value = 'test'
-    expect(subgraphNode.widgets![0].value).toBe('test')
+    expect(subgraphNode.widgets[0].value).toBe('test')
     subgraphNode.widgets[0].value = 'test2'
     expect(innerNodes[0].widgets![0].value).toBe('test2')
   })
@@ -109,5 +109,21 @@ describe('Subgraph proxyWidgets', () => {
     expect(innerNodes[0].widgets[0].y).toBe(10)
     expect(innerNodes[0].widgets[0].last_y).toBe(11)
     expect(innerNodes[0].widgets[0].computedHeight).toBe(12)
+  })
+  test('Can detatch and re-attach widgets', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = JSON.stringify([
+      ['1', 'stringWidget']
+    ])
+    if (!innerNodes[0].widgets) throw new Error('node has no widgets')
+    expect(subgraphNode.widgets[0].value).toBe('value')
+    const poppedWidget = innerNodes[0].widgets.pop()
+    //simulate new draw frame
+    subgraphNode.widgets[0].computedHeight = 10
+    expect(subgraphNode.widgets[0].value).toBe(undefined)
+    innerNodes[0].widgets.push(poppedWidget!)
+    subgraphNode.widgets[0].computedHeight = 10
+    expect(subgraphNode.widgets[0].value).toBe('value')
   })
 })

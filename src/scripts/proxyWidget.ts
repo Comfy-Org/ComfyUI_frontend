@@ -103,7 +103,7 @@ function resolveLinkedWidget(
 }
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
   let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
-  const backingWidget = linkedWidget ?? disconnectedWidget
+  let backingWidget = linkedWidget ?? disconnectedWidget
   if (overlay.widgetName == '$$canvas-image-preview')
     overlay.node = new Proxy(subgraphNode, {
       get(_t, p) {
@@ -135,10 +135,10 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
    */
   const handler = {
     get(_t: IBaseWidget, property: string, receiver: object) {
-      if (property == '_overlay') return overlay
       let redirectedTarget: object = backingWidget
       let redirectedReceiver = receiver
-      if (property == 'value') redirectedReceiver = backingWidget
+      if (property == '_overlay') return overlay
+      else if (property == 'value') redirectedReceiver = backingWidget
       if (overlay.hasOwnProperty(property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay
@@ -149,6 +149,11 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedTarget: object = backingWidget
       let redirectedReceiver = receiver
       if (property == 'value') redirectedReceiver = backingWidget
+      else if (property == 'computedHeight') {
+        //update linkage regularly, but no more than once per frame
+        ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
+        backingWidget = linkedWidget ?? disconnectedWidget
+      }
       if (overlay.hasOwnProperty(property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay
