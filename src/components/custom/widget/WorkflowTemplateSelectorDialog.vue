@@ -377,6 +377,7 @@ import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 
@@ -398,21 +399,21 @@ const {
   getTemplateDescription
 } = useTemplateWorkflows()
 
-const getEffectiveSourceModule = (template: any) =>
+const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
 
-const getBaseThumbnailSrc = (template: any) => {
+const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
 }
 
-const getOverlayThumbnailSrc = (template: any) => {
+const getOverlayThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
 }
 
 // Open tutorial in new tab
-const openTutorial = (template: any) => {
+const openTutorial = (template: TemplateInfo) => {
   if (template.tutorialUrl) {
     window.open(template.tutorialUrl, '_blank')
   }
