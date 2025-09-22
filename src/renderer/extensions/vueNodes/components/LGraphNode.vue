@@ -96,7 +96,6 @@
           v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
           :node-data="nodeData"
           :readonly="readonly"
-          @slot-click="handleSlotClick"
         />
 
         <!-- Widgets rendered at reduced+ detail -->
