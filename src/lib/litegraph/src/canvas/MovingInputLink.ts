@@ -47,8 +47,11 @@ export class MovingInputLink extends MovingLinkBase {
     return this.node.canConnectTo(inputNode, input, this.outputSlot)
   }
 
-  canConnectToOutput(): false {
-    return false
+  canConnectToOutput(
+    outputNode: NodeLike,
+    output: INodeOutputSlot | SubgraphIO
+  ): boolean {
+    return outputNode.canConnectTo(this.inputNode, this.inputSlot, output)
   }
 
   canConnectToReroute(reroute: Reroute): boolean {
@@ -73,8 +76,30 @@ export class MovingInputLink extends MovingLinkBase {
     return link
   }
 
-  connectToOutput(): never {
-    throw new Error('MovingInputLink cannot connect to an output.')
+  connectToOutput(
+    outputNode: LGraphNode,
+    output: INodeOutputSlot,
+    events: CustomEventTarget<LinkConnectorEventMap>
+  ): LLink | null | undefined {
+    if (
+      outputNode === this.outputNode &&
+      output === this.outputSlot &&
+      this.inputSlot === this.inputNode.inputs[this.inputIndex]
+    ) {
+      return
+    }
+
+    const afterRerouteId = this.fromReroute?.id ?? this.link.parentId
+
+    this.inputNode.disconnectInput(this.inputIndex, true)
+    const newLink = outputNode.connectSlots(
+      output,
+      this.inputNode,
+      this.inputSlot,
+      afterRerouteId
+    )
+    if (newLink) events.dispatch('input-moved', this)
+    return newLink
   }
 
   connectToSubgraphInput(): void {
@@ -123,8 +148,34 @@ export class MovingInputLink extends MovingLinkBase {
     if (newLink) events.dispatch('input-moved', this)
   }
 
-  connectToRerouteOutput(): never {
-    throw new Error('MovingInputLink cannot connect to an output.')
+  connectToRerouteOutput(
+    reroute: Reroute,
+    outputNode: LGraphNode,
+    output: INodeOutputSlot,
+    events: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
+    const { inputNode, inputSlot, fromReroute } = this
+
+    this.inputNode.disconnectInput(this.inputIndex, true)
+
+    const floatingTerminus = reroute?.floating?.slotType === 'output'
+
+    if (fromReroute) {
+      fromReroute.parentId = reroute.id
+    } else {
+      this.link.parentId = reroute.id
+    }
+
+    const newLink = outputNode.connectSlots(
+      output,
+      inputNode,
+      inputSlot,
+      this.link.parentId
+    )
+
+    if (floatingTerminus) reroute.removeAllFloatingLinks()
+
+    if (newLink) events.dispatch('input-moved', this)
   }
 
   disconnect(): boolean {

@@ -1,8 +1,5 @@
 import { reactive, readonly } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -17,20 +14,12 @@ export interface SlotDragSource {
   direction: LinkDirection
   position: Readonly<Point>
   linkId?: number
-  multiOutputDrag?: boolean
+  movingExistingOutput?: boolean
 }
 
 export interface SlotDropCandidate {
   layout: SlotLayout
   compatible: boolean
-}
-
-// Types shared by multi-output drag logic
-export interface MovedOutputNormalLink {
-  linkId: LinkId
-  inputNodeId: NodeId
-  inputSlotIndex: number
-  parentRerouteId?: RerouteId
 }
 
 interface PointerPosition {

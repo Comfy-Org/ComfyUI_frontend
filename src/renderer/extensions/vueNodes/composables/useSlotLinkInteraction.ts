@@ -5,19 +5,23 @@ import { onBeforeUnmount } from 'vue'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, type LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import { evaluateCompatibility } from '@/renderer/core/canvas/links/slotLinkCompatibility'
-import type { MovedOutputNormalLink } from '@/renderer/core/canvas/links/slotLinkDragState'
+import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
+import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import {
   type SlotDropCandidate,
   useSlotLinkDragState
 } from '@/renderer/core/canvas/links/slotLinkDragState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point, SlotLayout } from '@/renderer/core/layout/types'
+import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { app } from '@/scripts/app'
 
@@ -102,10 +106,22 @@ export function useSlotLinkInteraction({
     const candidate: SlotDropCandidate = { layout, compatible: false }
 
     if (state.source) {
-      candidate.compatible = evaluateCompatibility(
-        state.source,
-        candidate
-      ).allowable
+      const canvas = app.canvas
+      const graph = canvas?.graph
+      adapter ??= createLinkConnectorAdapter()
+      if (graph && adapter) {
+        if (layout.type === 'input') {
+          candidate.compatible = adapter.isInputValidDrop(
+            layout.nodeId,
+            layout.index
+          )
+        } else if (layout.type === 'output') {
+          candidate.compatible = adapter.isOutputValidDrop(
+            layout.nodeId,
+            layout.index
+          )
+        }
+      }
     }
 
     return candidate
@@ -114,12 +130,73 @@ export function useSlotLinkInteraction({
   const conversion = useSharedCanvasPositionConversion()
 
   const pointerSession = createPointerSession()
+  let adapter: LinkConnectorAdapter | null = null
 
-  const draggingLinkIds = new Set<LinkId>()
-  const draggingRerouteIds = new Set<RerouteId>()
+  function hasCanConnectToReroute(
+    link: RenderLink
+  ): link is RenderLink & { canConnectToReroute: (r: Reroute) => boolean } {
+    return 'canConnectToReroute' in link
+  }
 
-  const movedOutputNormalLinks: MovedOutputNormalLink[] = []
-  const movedOutputFloatingLinks: LLink[] = []
+  type InputConnectableLink = RenderLink & {
+    toType: 'input'
+    canConnectToInput: (node: LGraphNode, input: INodeInputSlot) => boolean
+  }
+
+  type OutputConnectableLink = RenderLink & {
+    toType: 'output'
+    canConnectToOutput: (node: LGraphNode, output: INodeOutputSlot) => boolean
+  }
+
+  function isInputConnectableLink(
+    link: RenderLink
+  ): link is InputConnectableLink {
+    return (
+      link.toType === 'input' &&
+      typeof (link as { canConnectToInput?: unknown }).canConnectToInput ===
+        'function'
+    )
+  }
+
+  function isOutputConnectableLink(
+    link: RenderLink
+  ): link is OutputConnectableLink {
+    return (
+      link.toType === 'output' &&
+      typeof (link as { canConnectToOutput?: unknown }).canConnectToOutput ===
+        'function'
+    )
+  }
+
+  function connectLinksToInput(
+    links: ReadonlyArray<RenderLink>,
+    node: LGraphNode,
+    inputSlot: INodeInputSlot
+  ): boolean {
+    let didConnect = false
+    for (const link of links) {
+      if (!isInputConnectableLink(link)) continue
+      if (!link.canConnectToInput(node, inputSlot)) continue
+      link.connectToInput(node, inputSlot, adapter?.linkConnector.events)
+      didConnect = true
+    }
+    return didConnect
+  }
+
+  function connectLinksToOutput(
+    links: ReadonlyArray<RenderLink>,
+    node: LGraphNode,
+    outputSlot: INodeOutputSlot
+  ): boolean {
+    let didConnect = false
+    for (const link of links) {
+      if (!isOutputConnectableLink(link)) continue
+      if (!link.canConnectToOutput(node, outputSlot)) continue
+      link.connectToOutput(node, outputSlot, adapter?.linkConnector.events)
+      didConnect = true
+    }
+    return didConnect
+  }
 
   const resolveLinkOrigin = (
     graph: LGraph,
@@ -212,103 +289,10 @@ export function useSlotLinkInteraction({
     return null
   }
 
-  const resolveInputDragOrigin = (
-    graph: LGraph,
-    sourceNode: LGraphNode,
-    slotIndex: number,
-    linkId: number | undefined
-  ) => {
-    const inputSlot = sourceNode.inputs?.[slotIndex]
-    if (!inputSlot) return null
-
-    const mapLinkToOrigin = (link: LLink | undefined | null) => {
-      if (!link) return null
-
-      const originNode = graph.getNodeById(link.origin_id)
-      const originSlot = originNode?.outputs?.[link.origin_slot]
-      if (!originNode || !originSlot) return null
-
-      return {
-        node: originNode,
-        slot: originSlot,
-        slotIndex: link.origin_slot,
-        afterRerouteId: link.parentId ?? null
-      }
-    }
-
-    if (linkId != null) {
-      const fromStoredLink = mapLinkToOrigin(graph.getLink(linkId))
-      if (fromStoredLink) return fromStoredLink
-    }
-
-    const fromDirectLink = mapLinkToOrigin(graph.getLink(inputSlot.link))
-    if (fromDirectLink) return fromDirectLink
-
-    const floatingLinkIterator = inputSlot._floatingLinks?.values()
-    const floatingLink = floatingLinkIterator
-      ? floatingLinkIterator.next().value
-      : undefined
-    if (!floatingLink || floatingLink.isFloating) return null
-
-    const originNode = graph.getNodeById(floatingLink.origin_id)
-    const originSlot = originNode?.outputs?.[floatingLink.origin_slot]
-    if (!originNode || !originSlot) return null
-
-    return {
-      node: originNode,
-      slot: originSlot,
-      slotIndex: floatingLink.origin_slot,
-      afterRerouteId: floatingLink.parentId ?? null
-    }
-  }
-
-  const clearDraggingFlags = () => {
-    const canvas = app.canvas
-    const graph = canvas?.graph
-    const source = state.source
-    if (!canvas || !graph) return
-
-    if (source?.linkId != null) {
-      const activeLink = graph.getLink(source.linkId)
-      if (activeLink) delete activeLink._dragging
-    }
-
-    for (const id of draggingLinkIds) {
-      const link = graph.getLink(id)
-      if (link) delete link._dragging
-    }
-    for (const id of draggingRerouteIds) {
-      const reroute = graph.getReroute(id)
-      if (reroute) reroute._dragging = undefined
-    }
-
-    draggingLinkIds.clear()
-    draggingRerouteIds.clear()
-  }
-
   const cleanupInteraction = () => {
-    clearDraggingFlags()
+    adapter?.reset()
     pointerSession.clear()
     endDrag()
-    movedOutputNormalLinks.length = 0
-    movedOutputFloatingLinks.length = 0
-  }
-
-  const disconnectSourceLink = (): boolean => {
-    const canvas = app.canvas
-    const graph = canvas?.graph
-    const source = state.source
-    if (!canvas || !graph || !source) return false
-
-    const sourceNode = graph.getNodeById(Number(source.nodeId))
-    if (!sourceNode) return false
-
-    graph.beforeChange()
-    if (source.type === 'input') {
-      return sourceNode.disconnectInput(source.slotIndex, true)
-    }
-
-    return sourceNode.disconnectOutput(source.slotIndex)
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -328,121 +312,6 @@ export function useSlotLinkInteraction({
     app.canvas?.setDirty(true)
   }
 
-  const connectSlots = (slotLayout: SlotLayout): boolean => {
-    const canvas = app.canvas
-    const graph = canvas?.graph
-    const source = state.source
-    if (!canvas || !graph || !source) return false
-
-    const sourceNode = graph.getNodeById(Number(source.nodeId))
-    const targetNode = graph.getNodeById(Number(slotLayout.nodeId))
-    if (!sourceNode || !targetNode) return false
-
-    // Output ➝ Output (shift‑drag move all links)
-    if (source.type === 'output' && slotLayout.type === 'output') {
-      if (!source.multiOutputDrag) return false
-
-      const targetOutput = targetNode.outputs?.[slotLayout.index]
-      if (!targetOutput) return false
-
-      // Reconnect all normal links captured at drag start
-      for (const {
-        inputNodeId,
-        inputSlotIndex,
-        parentRerouteId
-      } of movedOutputNormalLinks) {
-        const inputNode = graph.getNodeById(inputNodeId)
-        const inputSlot = inputNode?.inputs?.[inputSlotIndex]
-        if (!inputNode || !inputSlot) continue
-
-        targetNode.connectSlots(
-          targetOutput,
-          inputNode,
-          inputSlot,
-          parentRerouteId
-        )
-      }
-
-      // Move any floating links across to the new output
-      const sourceNodeAtStart = graph.getNodeById(Number(source.nodeId))
-      const sourceOutputAtStart = sourceNodeAtStart?.outputs?.[source.slotIndex]
-      if (sourceOutputAtStart?._floatingLinks?.size) {
-        for (const floatingLink of movedOutputFloatingLinks) {
-          sourceOutputAtStart._floatingLinks?.delete(floatingLink)
-
-          floatingLink.origin_id = targetNode.id
-          floatingLink.origin_slot = slotLayout.index
-
-          targetOutput._floatingLinks ??= new Set()
-          targetOutput._floatingLinks.add(floatingLink)
-        }
-      }
-
-      return true
-    }
-
-    if (source.type === 'output' && slotLayout.type === 'input') {
-      const outputSlot = sourceNode.outputs?.[source.slotIndex]
-      const inputSlot = targetNode.inputs?.[slotLayout.index]
-      if (!outputSlot || !inputSlot) return false
-      const existingLink = graph.getLink(inputSlot.link)
-      const afterRerouteId = existingLink?.parentId ?? undefined
-      sourceNode.connectSlots(outputSlot, targetNode, inputSlot, afterRerouteId)
-      return true
-    }
-
-    if (source.type === 'input') {
-      const inputSlot = sourceNode.inputs?.[source.slotIndex]
-      if (!inputSlot) return false
-
-      const origin = resolveInputDragOrigin(
-        graph,
-        sourceNode,
-        source.slotIndex,
-        source.linkId
-      )
-
-      if (slotLayout.type === 'output') {
-        const outputSlot = targetNode.outputs?.[slotLayout.index]
-        if (!outputSlot) return false
-
-        const afterRerouteId =
-          origin &&
-          String(origin.node.id) === slotLayout.nodeId &&
-          origin.slotIndex === slotLayout.index
-            ? origin.afterRerouteId ?? undefined
-            : undefined
-
-        targetNode.connectSlots(
-          outputSlot,
-          sourceNode,
-          inputSlot,
-          afterRerouteId
-        )
-        return true
-      }
-
-      if (slotLayout.type === 'input') {
-        if (!origin) return false
-
-        const outputNode = origin.node
-        const outputSlot = origin.slot
-        const newInputSlot = targetNode.inputs?.[slotLayout.index]
-        if (!outputSlot || !newInputSlot) return false
-        sourceNode.disconnectInput(source.slotIndex, true)
-        outputNode.connectSlots(
-          outputSlot,
-          targetNode,
-          newInputSlot,
-          origin.afterRerouteId ?? undefined
-        )
-        return true
-      }
-    }
-
-    return false
-  }
-
   const finishInteraction = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     event.preventDefault()
@@ -451,11 +320,91 @@ export function useSlotLinkInteraction({
       const candidate = candidateFromTarget(event.target)
       let connected = false
       if (candidate?.compatible) {
-        connected = connectSlots(candidate.layout)
+        const canvas = app.canvas
+        const graph = canvas?.graph
+        if (graph) {
+          adapter ??= createLinkConnectorAdapter()
+          const targetNode = graph.getNodeById(Number(candidate.layout.nodeId))
+          if (adapter && targetNode) {
+            if (candidate.layout.type === 'input') {
+              const inputSlot = targetNode.inputs?.[candidate.layout.index]
+              if (
+                inputSlot &&
+                connectLinksToInput(adapter.renderLinks, targetNode, inputSlot)
+              )
+                connected = true
+            } else if (candidate.layout.type === 'output') {
+              const outputSlot = targetNode.outputs?.[candidate.layout.index]
+              if (
+                outputSlot &&
+                connectLinksToOutput(
+                  adapter.renderLinks,
+                  targetNode,
+                  outputSlot
+                )
+              )
+                connected = true
+            }
+          }
+        }
       }
 
+      // Try reroute drop when no DOM slot was detected
+      if (!connected) {
+        const rerouteLayout = layoutStore.queryRerouteAtPoint({
+          x: state.pointer.canvas.x,
+          y: state.pointer.canvas.y
+        })
+        const graph = app.canvas?.graph
+        adapter ??= createLinkConnectorAdapter()
+        if (rerouteLayout && graph && adapter) {
+          const reroute = graph.getReroute(rerouteLayout.id)
+          if (reroute && adapter.isRerouteValidDrop(reroute.id)) {
+            const results = reroute.findTargetInputs() ?? []
+            const maybeReroutes = reroute.getReroutes()
+            if (results.length && maybeReroutes !== null) {
+              const originalReroutes = maybeReroutes.slice(0, -1).reverse()
+              for (const link of adapter.renderLinks) {
+                if (!isInputConnectableLink(link)) continue
+                for (const result of results) {
+                  link.connectToRerouteInput(
+                    reroute,
+                    result,
+                    adapter.linkConnector.events,
+                    originalReroutes
+                  )
+                  connected = true
+                }
+              }
+            }
+
+            const sourceOutput = reroute.findSourceOutput()
+            if (sourceOutput) {
+              const { node, output } = sourceOutput
+              for (const link of adapter.renderLinks) {
+                if (!isOutputConnectableLink(link)) continue
+                if (
+                  hasCanConnectToReroute(link) &&
+                  !link.canConnectToReroute(reroute)
+                )
+                  continue
+                link.connectToRerouteOutput(
+                  reroute,
+                  node,
+                  output,
+                  adapter.linkConnector.events
+                )
+                connected = true
+              }
+            }
+          }
+        }
+      }
+
+      // Drop on canvas: disconnect moving input link(s)
       if (!connected && !candidate && state.source.type === 'input') {
-        disconnectSourceLink()
+        adapter ??= createLinkConnectorAdapter()
+        adapter?.disconnectMovingLinks()
       }
     }
 
@@ -518,51 +467,29 @@ export function useSlotLinkInteraction({
         ? resolveExistingInputLinkAnchor(graph, inputSlot)
         : null
 
-    if (!shouldBreakExistingLink && existingLink) {
-      existingLink._dragging = true
-    }
-
     const outputSlot =
       type === 'output' ? resolvedNode?.outputs?.[index] : undefined
-    const isMultiOutputDrag =
-      type === 'output' &&
-      Boolean(
-        outputSlot &&
-          (outputSlot.links?.length || outputSlot._floatingLinks?.size)
-      ) &&
-      event.shiftKey
+    const hasExistingOutputLink = Boolean(
+      outputSlot &&
+        ((outputSlot.links?.length ?? 0) > 0 ||
+          (outputSlot._floatingLinks?.size ?? 0) > 0)
+    )
+    const shouldMoveExistingOutput =
+      type === 'output' && event.shiftKey && hasExistingOutputLink
 
-    if (isMultiOutputDrag && outputSlot) {
-      movedOutputNormalLinks.length = 0
-      movedOutputFloatingLinks.length = 0
-
-      if (outputSlot.links?.length) {
-        for (const linkId of outputSlot.links) {
-          const link = graph.getLink(linkId)
-          if (!link) continue
-
-          const firstReroute = LLink.getFirstReroute(graph, link)
-          if (firstReroute) {
-            firstReroute._dragging = true
-            draggingRerouteIds.add(firstReroute.id)
-          } else {
-            link._dragging = true
-            draggingLinkIds.add(link.id)
-          }
-
-          movedOutputNormalLinks.push({
-            linkId: link.id,
-            inputNodeId: link.target_id,
-            inputSlotIndex: link.target_slot,
-            parentRerouteId: link.parentId
-          })
-        }
-      }
-
-      if (outputSlot._floatingLinks?.size) {
-        for (const floatingLink of outputSlot._floatingLinks) {
-          movedOutputFloatingLinks.push(floatingLink)
-        }
+    adapter ??= createLinkConnectorAdapter()
+    if (adapter) {
+      if (type === 'output') {
+        adapter.beginFromOutput(Number(nodeId), index, {
+          moveExisting: shouldMoveExistingOutput
+        })
+      } else {
+        const moveExisting = !!(
+          inputSlot &&
+          !shouldBreakExistingLink &&
+          (inputSlot.link != null || inputSlot._floatingLinks?.size)
+        )
+        adapter.beginFromInput(Number(nodeId), index, { moveExisting })
       }
     }
 
@@ -580,7 +507,7 @@ export function useSlotLinkInteraction({
         direction,
         position: startPosition,
         linkId: !shouldBreakExistingLink ? existingLink?.id : undefined,
-        multiOutputDrag: isMultiOutputDrag
+        movingExistingOutput: shouldMoveExistingOutput
       },
       event.pointerId
     )
