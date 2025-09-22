@@ -1,12 +1,7 @@
-/**
- * Composable for individual Vue node components
- *
- * Uses customRef for shared write access with Canvas renderer.
- * Provides dragging functionality and reactive layout state.
- */
-import { computed, inject } from 'vue'
+import { storeToRefs } from 'pinia'
+import { type MaybeRefOrGetter, computed, inject, toValue } from 'vue'
 
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -16,15 +11,16 @@ import { LayoutSource, type Point } from '@/renderer/core/layout/types'
  * Composable for individual Vue node components
  * Uses customRef for shared write access with Canvas renderer
  */
-export function useNodeLayout(nodeId: string) {
-  const store = layoutStore
+export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
+  const nodeId = toValue(nodeIdMaybe)
   const mutations = useLayoutMutations()
+  const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
   // Get transform utilities from TransformPane if available
   const transformState = inject(TransformStateKey)
 
   // Get the customRef for this node (shared write access)
-  const layoutRef = store.getNodeLayoutRef(nodeId)
+  const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
 
   // Computed properties for easy access
   const position = computed(() => {
@@ -52,8 +48,6 @@ export function useNodeLayout(nodeId: string) {
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
-
-  const selectedNodeIds = inject(SelectedNodeIdsKey, null)
 
   /**
    * Start dragging the node

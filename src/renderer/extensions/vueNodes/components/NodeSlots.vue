@@ -35,7 +35,6 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
 import InputSlot from './InputSlot.vue'
@@ -44,7 +43,6 @@ import OutputSlot from './OutputSlot.vue'
 interface NodeSlotsProps {
   nodeData?: VueNodeData
   readonly?: boolean
-  lodLevel?: LODLevel
 }
 
 const { nodeData = null, readonly } = defineProps<NodeSlotsProps>()

@@ -8,19 +8,17 @@
  * - Layout mutations for visual feedback
  * - Integration with LiteGraph canvas selection system
  */
-import type { Ref } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 
-interface NodeManager {
-  getNode: (id: string) => any
-}
-
-export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
+function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
+  const { nodeManager } = useVueNodeLifecycle()
   const { bringNodeToFront } = useNodeZIndex()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
@@ -40,7 +38,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     const node = nodeManager.value.getNode(nodeData.id)
     if (!node) return
 
-    const isMultiSelect = event.ctrlKey || event.metaKey
+    const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
 
     if (isMultiSelect) {
       // Ctrl/Cmd+click -> toggle selection
@@ -84,6 +82,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     const currentCollapsed = node.flags?.collapsed ?? false
     if (currentCollapsed !== collapsed) {
       node.collapse()
+      nodeManager.value.scheduleUpdate(nodeId, 'critical')
     }
   }
 
@@ -237,3 +236,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     deselectNodes
   }
 }
+
+export const useNodeEventHandlers = createSharedComposable(
+  useNodeEventHandlersIndividual
+)

@@ -1,4 +1,5 @@
-import { computed, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { t } from '@/i18n'
@@ -33,19 +34,8 @@ export const useCurrentUser = () => {
     return null
   })
 
-  const onUserResolved = (callback: (user: AuthUserInfo) => void) => {
-    if (resolvedUserInfo.value) {
-      callback(resolvedUserInfo.value)
-    }
-
-    const stop = watch(resolvedUserInfo, (value) => {
-      if (value) {
-        callback(value)
-      }
-    })
-
-    return () => stop()
-  }
+  const onUserResolved = (callback: (user: AuthUserInfo) => void) =>
+    whenever(resolvedUserInfo, callback, { immediate: true })
 
   const userDisplayName = computed(() => {
     if (isApiKeyLogin.value) {

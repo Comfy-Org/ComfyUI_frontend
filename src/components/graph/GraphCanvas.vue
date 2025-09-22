@@ -29,7 +29,7 @@
   />
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
-    v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
@@ -49,9 +49,6 @@
       "
       :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
-      @node-click="handleNodeSelect"
-      @update:collapsed="handleNodeCollapse"
-      @update:title="handleNodeTitleUpdate"
     />
   </TransformPane>
 
@@ -75,7 +72,6 @@ import {
   nextTick,
   onMounted,
   onUnmounted,
-  provide,
   ref,
   shallowRef,
   watch,
@@ -113,14 +109,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { attachSlotLinkPreviewRenderer } from '@/renderer/core/canvas/links/slotLinkPreviewRenderer'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useExecutionStateProvider } from '@/renderer/extensions/vueNodes/execution/useExecutionStateProvider'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -167,20 +160,13 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
-const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
 
 // Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle(isVueNodesEnabled)
-const viewportCulling = useViewportCulling(
-  isVueNodesEnabled,
-  vueNodeLifecycle.vueNodeData,
-  vueNodeLifecycle.nodeDataTrigger,
-  vueNodeLifecycle.nodeManager
-)
-const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
+const vueNodeLifecycle = useVueNodeLifecycle()
+const viewportCulling = useViewportCulling()
 
 const handleVueNodeLifecycleReset = async () => {
-  if (isVueNodesEnabled.value) {
+  if (shouldRenderVueNodes.value) {
     vueNodeLifecycle.disposeNodeManagerAndSyncs()
     await nextTick()
     vueNodeLifecycle.initializeNodeManager()
@@ -208,23 +194,6 @@ const handleTransformUpdate = () => {
   // TODO: Fix paste position sync in separate PR
   vueNodeLifecycle.detectChangesInRAF.value()
 }
-const handleNodeSelect = nodeEventHandlers.handleNodeSelect
-const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
-const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
-
-// Provide selection state to all Vue nodes
-const selectedNodeIds = computed(
-  () =>
-    new Set(
-      canvasStore.selectedItems
-        .filter((item) => item.id !== undefined)
-        .map((item) => String(item.id))
-    )
-)
-provide(SelectedNodeIdsKey, selectedNodeIds)
-
-// Provide execution state to all Vue nodes
-useExecutionStateProvider()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
