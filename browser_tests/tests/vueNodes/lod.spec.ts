@@ -12,20 +12,25 @@ test.describe('Vue Nodes - LOD', () => {
   test('should toggle LOD based on zoom threshold', async ({ comfyPage }) => {
     await comfyPage.vueNodes.waitForNodes()
 
-    //This assumes that the intial comfyPage fixture gets created at a zoom level less than
-    //the default LOD threshold and therefore checking that nodes exist within the fixture is sufficient.
     const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(initialNodeCount).toBeGreaterThan(0)
+
+    await expect(comfyPage.canvas).toHaveScreenshot('vue-nodes-default.png')
+
+    const vueNodesContainer = comfyPage.vueNodes.nodes
+    const textboxesInNodes = vueNodesContainer.getByRole('textbox')
+    const buttonsInNodes = vueNodesContainer.getByRole('button')
+
+    await expect(textboxesInNodes.first()).toBeVisible()
+    await expect(buttonsInNodes.first()).toBeVisible()
 
     await comfyPage.zoom(120, 10)
     await comfyPage.nextFrame()
 
     await expect(comfyPage.canvas).toHaveScreenshot('vue-nodes-lod-active.png')
 
-    const lodActiveState = await comfyPage.page.evaluate(() => {
-      return document.querySelector('.isLOD') !== null
-    })
-    expect(lodActiveState).toBe(true)
+    await expect(textboxesInNodes.first()).toBeHidden()
+    await expect(buttonsInNodes.first()).toBeHidden()
 
     await comfyPage.zoom(-120, 10)
     await comfyPage.nextFrame()
@@ -33,10 +38,7 @@ test.describe('Vue Nodes - LOD', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-nodes-lod-inactive.png'
     )
-
-    const lodInactiveState = await comfyPage.page.evaluate(() => {
-      return document.querySelector('.isLOD') !== null
-    })
-    expect(lodInactiveState).toBe(false)
+    await expect(textboxesInNodes.first()).toBeVisible()
+    await expect(buttonsInNodes.first()).toBeVisible()
   })
 })

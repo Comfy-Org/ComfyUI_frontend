@@ -19,7 +19,7 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container relative flex items-center group"
+      class="lg-widget-container flex items-center group"
     >
       <!-- Widget Input Slot Dot -->
 

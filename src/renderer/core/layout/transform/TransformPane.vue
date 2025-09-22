@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, provide } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -41,9 +41,7 @@ const {
   isNodeInViewport
 } = useTransformState()
 
-const isLOD = ref(false)
-
-useLOD(camera, isLOD)
+const { isLOD } = useLOD(camera)
 
 const canvasElement = computed(() => props.canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {

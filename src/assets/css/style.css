@@ -958,7 +958,6 @@ audio.comfy-audio.empty-audio-widget {
 /* LOD styles - Custom CSS avoids 100+ Tailwind selectors that would slow style recalculation when .isLOD toggles */
 
 .isLOD .lg-node {
-  /* Remove ALL expensive paint effects */
   box-shadow: none;
   filter: none;
   backdrop-filter: none;
