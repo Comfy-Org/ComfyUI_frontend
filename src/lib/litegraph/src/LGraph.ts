@@ -2026,33 +2026,50 @@ export class LGraph
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)
-          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (!instance) {
+            console.error('Broken Id link when unpacking')
+            break
+          }
           if (instance.linkIds.has(linkInstance.id))
             throw new Error('Infinite parentId loop')
           instance.linkIds.add(linkInstance.id)
           parentId = instance.parentId
         }
       }
+      if (!instance) break
       parentId = newLink.iparent
       while (parentId) {
         const migratedId = rerouteIdMap.get(parentId)
-        if (!migratedId) throw new Error('Broken Id link when unpacking')
+        if (!migratedId) {
+          console.error('Broken Id link when unpacking')
+          break
+        }
         instance.parentId = migratedId
         instance = this.reroutes.get(migratedId)
-        if (!instance) throw new Error('Broken Id link when unpacking')
+        if (!instance) {
+          console.error('Broken Id link when unpacking')
+          break
+        }
         if (instance.linkIds.has(linkInstance.id))
           throw new Error('Infinite parentId loop')
         instance.linkIds.add(linkInstance.id)
         const oldReroute = subgraphNode.subgraph.reroutes.get(parentId)
-        if (!oldReroute) throw new Error('Broken Id link when unpacking')
+        if (!oldReroute) {
+          console.error('Broken Id link when unpacking')
+          break
+        }
         parentId = oldReroute.parentId
       }
+      if (!instance) break
       if (!newLink.externalFirst) {
         parentId = newLink.eparent
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)
-          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (!instance) {
+            console.error('Broken Id link when unpacking')
+            break
+          }
           if (instance.linkIds.has(linkInstance.id))
             throw new Error('Infinite parentId loop')
           instance.linkIds.add(linkInstance.id)
