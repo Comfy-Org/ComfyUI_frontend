@@ -3,6 +3,7 @@
   "compilerOptions": {
     /* Test files should not be compiled */
     "noEmit": true,
+    // "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true
