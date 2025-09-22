@@ -1,4 +1,4 @@
-import type { FullConfig } from '@playwright/test'
+import { FullConfig } from '@playwright/test'
 import dotenv from 'dotenv'
 
 import { backupPath } from './utils/backupUtils'

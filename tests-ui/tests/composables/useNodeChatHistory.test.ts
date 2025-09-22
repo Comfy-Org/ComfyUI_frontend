@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/composables/useChatHistoryWidget',

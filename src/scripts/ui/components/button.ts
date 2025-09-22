@@ -1,10 +1,10 @@
-import { type Settings } from '@/schemas/apiSchema'
+import { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 
 import type { ComfyComponent } from '.'
 import { $el } from '../../ui'
 import { prop } from '../../utils'
-import { type ClassList, applyClasses, toggleElement } from '../utils'
+import { ClassList, applyClasses, toggleElement } from '../utils'
 import type { ComfyPopup } from './popup'
 
 type ComfyButtonProps = {

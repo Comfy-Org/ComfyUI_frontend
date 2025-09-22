@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <Galleria
-      v-model:active-index="activeIndex"
+      v-model:activeIndex="activeIndex"
       :value="galleryImages"
       v-bind="filteredProps"
       :show-thumbnails="showThumbnails"

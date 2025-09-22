@@ -13,22 +13,6 @@ export class AssetWidget
     this.value = widget.value?.toString() ?? ''
   }
 
-  override set value(value: IAssetWidget['value']) {
-    const oldValue = this.value
-    super.value = value
-
-    // Force canvas redraw when value changes to show update immediately
-    if (oldValue !== value && this.node.graph?.list_of_graphcanvas) {
-      for (const canvas of this.node.graph.list_of_graphcanvas) {
-        canvas.setDirty(true)
-      }
-    }
-  }
-
-  override get value(): IAssetWidget['value'] {
-    return super.value
-  }
-
   override get _displayValue(): string {
     return String(this.value) //FIXME: Resolve asset name
   }

@@ -1,12 +1,12 @@
 import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   ASCII,
-  type ComfyMetadata,
+  ComfyMetadata,
   ComfyMetadataTags,
-  type IsobmffBoxContentRange
+  IsobmffBoxContentRange
 } from '@/types/metadataTypes'
 
 // Set max read high, as atoms are stored near end of file

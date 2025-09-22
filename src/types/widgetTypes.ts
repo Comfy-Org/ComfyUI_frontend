@@ -1,3 +1,3 @@
-import type { InjectionKey } from 'vue'
+import { InjectionKey } from 'vue'
 
 export const OnCloseKey: InjectionKey<() => void> = Symbol()

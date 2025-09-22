@@ -19,7 +19,7 @@ const EXPECTED_DEFAULT_TYPES = [
   'gligen'
 ] as const
 
-type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
+type NodeDefStoreType = typeof import('@/stores/nodeDefStore')
 
 // Create minimal but valid ComfyNodeDefImpl for testing
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
@@ -340,107 +340,6 @@ describe('useModelToNodeStore', () => {
       expect(result.has('CheckpointLoaderSimple')).toBe(true)
       expect(result.has('LoraLoader')).toBe(true)
       expect(result.has('NonExistentNode')).toBe(false)
-    })
-  })
-
-  describe('getCategoryForNodeType', () => {
-    it('should return category for known node type', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      expect(
-        modelToNodeStore.getCategoryForNodeType('CheckpointLoaderSimple')
-      ).toBe('checkpoints')
-      expect(modelToNodeStore.getCategoryForNodeType('LoraLoader')).toBe(
-        'loras'
-      )
-      expect(modelToNodeStore.getCategoryForNodeType('VAELoader')).toBe('vae')
-    })
-
-    it('should return undefined for unknown node type', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      expect(
-        modelToNodeStore.getCategoryForNodeType('NonExistentNode')
-      ).toBeUndefined()
-      expect(modelToNodeStore.getCategoryForNodeType('')).toBeUndefined()
-    })
-
-    it('should return first category when node type exists in multiple categories', () => {
-      const modelToNodeStore = useModelToNodeStore()
-
-      // Test with a node that exists in the defaults but add our own first
-      // Since defaults register 'StyleModelLoader' in 'style_models',
-      // we verify our custom registrations come after defaults in Object.entries iteration
-      const result = modelToNodeStore.getCategoryForNodeType('StyleModelLoader')
-      expect(result).toBe('style_models') // This proves the method works correctly
-
-      // Now test that custom registrations after defaults also work
-      modelToNodeStore.quickRegister(
-        'unicorn_styles',
-        'StyleModelLoader',
-        'param1'
-      )
-      const result2 =
-        modelToNodeStore.getCategoryForNodeType('StyleModelLoader')
-      // Should still be style_models since it was registered first by defaults
-      expect(result2).toBe('style_models')
-    })
-
-    it('should trigger lazy registration when called before registerDefaults', () => {
-      const modelToNodeStore = useModelToNodeStore()
-
-      const result = modelToNodeStore.getCategoryForNodeType(
-        'CheckpointLoaderSimple'
-      )
-      expect(result).toBe('checkpoints')
-    })
-
-    it('should be performant for repeated lookups', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      // Measure performance without assuming implementation
-      const start = performance.now()
-      for (let i = 0; i < 1000; i++) {
-        modelToNodeStore.getCategoryForNodeType('CheckpointLoaderSimple')
-      }
-      const end = performance.now()
-
-      // Should be fast enough for UI responsiveness
-      expect(end - start).toBeLessThan(10)
-    })
-
-    it('should handle invalid input types gracefully', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      // These should not throw but return undefined
-      expect(
-        modelToNodeStore.getCategoryForNodeType(null as any)
-      ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(undefined as any)
-      ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(123 as any)
-      ).toBeUndefined()
-    })
-
-    it('should be case-sensitive for node type matching', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      expect(
-        modelToNodeStore.getCategoryForNodeType('checkpointloadersimple')
-      ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType('CHECKPOINTLOADERSIMPLE')
-      ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType('CheckpointLoaderSimple')
-      ).toBe('checkpoints')
     })
   })
 

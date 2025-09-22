@@ -1,10 +1,9 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import type { Ref } from 'vue'
-import { computed, ref, toRaw } from 'vue'
+import { Ref, computed, ref, toRaw } from 'vue'
 
 import { RESERVED_BY_TEXT_INPUT } from '@/constants/reservedKeyCombos'
-import type { KeyCombo, Keybinding } from '@/schemas/keyBindingSchema'
+import { KeyCombo, Keybinding } from '@/schemas/keyBindingSchema'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string

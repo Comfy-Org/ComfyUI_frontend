@@ -1,4 +1,4 @@
-import { type ComfyMetadata } from '@/types/metadataTypes'
+import { ComfyMetadata } from '@/types/metadataTypes'
 
 export async function getSvgMetadata(file: File): Promise<ComfyMetadata> {
   const text = await file.text()

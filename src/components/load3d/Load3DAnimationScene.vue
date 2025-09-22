@@ -27,13 +27,13 @@
 import { ref, watch } from 'vue'
 
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
-import type Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
-import type {
+import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
+import {
   CameraType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const props = defineProps<{
   node: any

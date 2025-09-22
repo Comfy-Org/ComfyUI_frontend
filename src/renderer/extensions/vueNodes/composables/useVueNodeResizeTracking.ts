@@ -8,20 +8,10 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import {
-  type MaybeRefOrGetter,
-  getCurrentInstance,
-  onMounted,
-  onUnmounted,
-  toValue
-} from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted } from 'vue'
 
-import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
-
-import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
 /**
  * Generic update item for element bounds tracking
@@ -64,12 +54,8 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
-  // Canvas is ready when this code runs; no defensive guards needed.
-  const conv = useSharedCanvasPositionConversion()
-  // Group updates by type, then flush via each config's handler
+  // Group updates by element type
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
-  // Track nodes whose slots should be resynced after node size changes
-  const nodesNeedingSlotResync = new Set<string>()
 
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
@@ -90,50 +76,30 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
 
-    // Use contentBoxSize when available; fall back to contentRect for older engines/tests
-    const contentBox = Array.isArray(entry.contentBoxSize)
-      ? entry.contentBoxSize[0]
-      : {
-          inlineSize: entry.contentRect.width,
-          blockSize: entry.contentRect.height
-        }
-    const width = contentBox.inlineSize
-    const height = contentBox.blockSize
-
-    // Screen-space rect
+    const { inlineSize: width, blockSize: height } = entry.contentBoxSize[0]
     const rect = element.getBoundingClientRect()
-    const [cx, cy] = conv.clientPosToCanvasPos([rect.left, rect.top])
-    const topLeftCanvas = { x: cx, y: cy }
+
     const bounds: Bounds = {
-      x: topLeftCanvas.x,
-      y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
-      width: Math.max(0, width),
-      height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
+      x: rect.left,
+      y: rect.top,
+      width,
+      height: height
     }
 
-    let updates = updatesByType.get(elementType)
-    if (!updates) {
-      updates = []
-      updatesByType.set(elementType, updates)
+    if (!updatesByType.has(elementType)) {
+      updatesByType.set(elementType, [])
     }
-    updates.push({ id: elementId, bounds })
-
-    // If this entry is a node, mark it for slot layout resync
-    if (elementType === 'node' && elementId) {
-      nodesNeedingSlotResync.add(elementId)
+    const updates = updatesByType.get(elementType)
+    if (updates) {
+      updates.push({ id: elementId, bounds })
     }
   }
 
-  // Flush per-type
+  // Process updates by type
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
-    if (config && updates.length) config.updateHandler(updates)
-  }
-
-  // After node bounds are updated, refresh slot cached offsets and layouts
-  if (nodesNeedingSlotResync.size > 0) {
-    for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsFromDOM(nodeId)
+    if (config && updates.length > 0) {
+      config.updateHandler(updates)
     }
   }
 })
@@ -160,20 +126,19 @@ const resizeObserver = new ResizeObserver((entries) => {
  * ```
  */
 export function useVueElementTracking(
-  appIdentifierMaybe: MaybeRefOrGetter<string>,
+  appIdentifier: string,
   trackingType: string
 ) {
-  const appIdentifier = toValue(appIdentifierMaybe)
   onMounted(() => {
     const element = getCurrentInstance()?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
 
     const config = trackingConfigs.get(trackingType)
-    if (!config) return
-
-    // Set the data attribute expected by the RO pipeline for this type
-    element.dataset[config.dataAttribute] = appIdentifier
-    resizeObserver.observe(element)
+    if (config) {
+      // Set the appropriate data attribute
+      element.dataset[config.dataAttribute] = appIdentifier
+      resizeObserver.observe(element)
+    }
   })
 
   onUnmounted(() => {
@@ -181,10 +146,10 @@ export function useVueElementTracking(
     if (!(element instanceof HTMLElement)) return
 
     const config = trackingConfigs.get(trackingType)
-    if (!config) return
-
-    // Remove the data attribute and observer
-    delete element.dataset[config.dataAttribute]
-    resizeObserver.unobserve(element)
+    if (config) {
+      // Remove the data attribute
+      delete element.dataset[config.dataAttribute]
+      resizeObserver.unobserve(element)
+    }
   })
 }

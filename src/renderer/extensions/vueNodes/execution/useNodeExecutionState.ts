@@ -1,7 +1,10 @@
-import { storeToRefs } from 'pinia'
-import { type MaybeRefOrGetter, computed, toValue } from 'vue'
+import { computed, inject, ref } from 'vue'
 
-import { useExecutionStore } from '@/stores/executionStore'
+import {
+  ExecutingNodeIdsKey,
+  NodeProgressStatesKey
+} from '@/renderer/core/canvas/injectionKeys'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 
 /**
  * Composable for managing execution state of Vue-based nodes
@@ -9,18 +12,18 @@ import { useExecutionStore } from '@/stores/executionStore'
  * Provides reactive access to execution state and progress for a specific node
  * by injecting execution data from the parent GraphCanvas provider.
  *
- * @param nodeIdMaybe - The ID of the node to track execution state for
+ * @param nodeId - The ID of the node to track execution state for
  * @returns Object containing reactive execution state and progress
  */
-export const useNodeExecutionState = (
-  nodeIdMaybe: MaybeRefOrGetter<string>
-) => {
-  const nodeId = toValue(nodeIdMaybe)
-  const { uniqueExecutingNodeIdStrings, nodeProgressStates } =
-    storeToRefs(useExecutionStore())
+export const useNodeExecutionState = (nodeId: string) => {
+  const executingNodeIds = inject(ExecutingNodeIdsKey, ref(new Set<string>()))
+  const nodeProgressStates = inject(
+    NodeProgressStatesKey,
+    ref<Record<string, NodeProgressState>>({})
+  )
 
   const executing = computed(() => {
-    return uniqueExecutingNodeIdStrings.value.has(nodeId)
+    return executingNodeIds.value.has(nodeId)
   })
 
   const progress = computed(() => {

@@ -5,7 +5,9 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import config from '@/config'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
@@ -26,8 +28,6 @@ import {
   satisfiesVersion,
   utilCheckVersionCompatibility
 } from '@/utils/versionUtil'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 /**
  * Composable for conflict detection system.
@@ -641,9 +641,7 @@ export function useConflictDetection() {
   async function initializeConflictDetection(): Promise<void> {
     try {
       // Check if manager is new Manager before proceeding
-      const { useManagerState } = await import(
-        '@/workbench/extensions/manager/composables/useManagerState'
-      )
+      const { useManagerState } = await import('@/composables/useManagerState')
       const managerState = useManagerState()
 
       if (!managerState.isNewManagerUI.value) {

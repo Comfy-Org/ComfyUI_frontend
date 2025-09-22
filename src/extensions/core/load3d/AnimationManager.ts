@@ -1,9 +1,9 @@
 import * as THREE from 'three'
 
 import {
-  type AnimationItem,
-  type AnimationManagerInterface,
-  type EventManagerInterface
+  AnimationItem,
+  AnimationManagerInterface,
+  EventManagerInterface
 } from '@/extensions/core/load3d/interfaces'
 
 export class AnimationManager implements AnimationManagerInterface {

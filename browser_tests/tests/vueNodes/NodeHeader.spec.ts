@@ -6,7 +6,7 @@ import { VueNodeFixture } from '../../fixtures/utils/vueNodeFixtures'
 
 test.describe('NodeHeader', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Enabled')
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', false)
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)

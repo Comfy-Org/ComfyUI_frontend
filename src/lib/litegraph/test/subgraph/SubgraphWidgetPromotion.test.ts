@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { TWidgetType } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 

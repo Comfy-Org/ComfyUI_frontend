@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { noop } from 'es-toolkit'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 defineProps<{
   widget: Pick<SimplifiedWidget<string | number | undefined>, 'name'>

@@ -1,10 +1,6 @@
 import { useElementBounding } from '@vueuse/core'
 
-import type { LGraphCanvas, Point } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-let sharedConverter: ReturnType<typeof useCanvasPositionConversion> | null =
-  null
+import type { LGraphCanvas, Vector2 } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Convert between canvas and client positions
@@ -18,7 +14,7 @@ export const useCanvasPositionConversion = (
 ) => {
   const { left, top, update } = useElementBounding(canvasElement)
 
-  const clientPosToCanvasPos = (pos: Point): Point => {
+  const clientPosToCanvasPos = (pos: Vector2): Vector2 => {
     const { offset, scale } = lgCanvas.ds
     return [
       (pos[0] - left.value) / scale - offset[0],
@@ -26,7 +22,7 @@ export const useCanvasPositionConversion = (
     ]
   }
 
-  const canvasPosToClientPos = (pos: Point): Point => {
+  const canvasPosToClientPos = (pos: Vector2): Vector2 => {
     const { offset, scale } = lgCanvas.ds
     return [
       (pos[0] + offset[0]) * scale + left.value,
@@ -39,11 +35,4 @@ export const useCanvasPositionConversion = (
     canvasPosToClientPos,
     update
   }
-}
-
-export function useSharedCanvasPositionConversion() {
-  if (sharedConverter) return sharedConverter
-  const lgCanvas = useCanvasStore().getCanvas()
-  sharedConverter = useCanvasPositionConversion(lgCanvas.canvas, lgCanvas)
-  return sharedConverter
 }

@@ -1,5 +1,4 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { VueWrapper, mount } from '@vue/test-utils'
 import Button from 'primevue/button'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'

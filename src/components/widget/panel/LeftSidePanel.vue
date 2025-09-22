@@ -40,7 +40,7 @@ import { computed } from 'vue'
 
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import { NavGroupData, NavItemData } from '@/types/navTypes'
 
 import PanelHeader from './PanelHeader.vue'
 

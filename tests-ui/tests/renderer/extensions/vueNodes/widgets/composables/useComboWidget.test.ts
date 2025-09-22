@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -30,25 +29,13 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
-  const mockAssetBrowserDialogShow = vi.fn()
-  return {
-    useAssetBrowserDialog: vi.fn(() => ({
-      show: mockAssetBrowserDialogShow
-    }))
-  }
-})
-
 // Test factory functions
 function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
-  const mockCallback = vi.fn()
   return {
     type: 'combo',
     options: {},
     name: 'testWidget',
     value: undefined,
-    callback: mockCallback,
-    y: 0,
     ...overrides
   } as IBaseWidget
 }
@@ -58,16 +45,7 @@ function createMockNode(comfyClass = 'TestNode'): LGraphNode {
   node.comfyClass = comfyClass
 
   // Spy on the addWidget method
-  vi.spyOn(node, 'addWidget').mockImplementation(
-    (type, name, value, callback) => {
-      const widget = createMockWidget({ type, name, value })
-      // Store the callback function on the widget for testing
-      if (typeof callback === 'function') {
-        widget.callback = callback
-      }
-      return widget
-    }
-  )
+  vi.spyOn(node, 'addWidget').mockReturnValue(createMockWidget())
 
   return node
 }
@@ -83,9 +61,9 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
 describe('useComboWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset to defaults
     mockSettingStoreGet.mockReturnValue(false)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
-    vi.mocked(useAssetBrowserDialog).mockClear()
   })
 
   it('should handle undefined spec', () => {

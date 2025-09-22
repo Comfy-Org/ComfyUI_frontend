@@ -7,7 +7,7 @@ import {
   type InputSpec,
   isFloatInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 function onFloatValueChange(this: INumericWidget, v: number) {
   const round = this.options.round

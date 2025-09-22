@@ -64,10 +64,10 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import type { Subgraph } from './subgraph/Subgraph'
+import { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
-import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
@@ -87,7 +87,6 @@ import type { PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
-import { resolveConnectingLinkColor } from './utils/linkColors'
 import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -2349,7 +2348,7 @@ export class LGraphCanvas
     if (
       ctrlOrMeta &&
       !e.altKey &&
-      LiteGraph.leftMouseClickBehavior === 'panning'
+      LiteGraph.canvasNavigationMode === 'legacy'
     ) {
       this.#setupNodeSelectionDrag(e, pointer, node)
 
@@ -2617,8 +2616,8 @@ export class LGraphCanvas
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      // allow dragging canvas based on leftMouseClickBehavior or read-only mode
-      if (LiteGraph.leftMouseClickBehavior === 'panning' || this.read_only) {
+      // allow dragging canvas if canvas is not in standard, or read-only (pan mode in standard)
+      if (LiteGraph.canvasNavigationMode !== 'standard' || this.read_only) {
         pointer.onClick = () => this.processSelect(null, e)
         pointer.finally = () => (this.dragging_canvas = false)
         this.dragging_canvas = true
@@ -3630,8 +3629,8 @@ export class LGraphCanvas
       e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
     const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (isZoomModifier || LiteGraph.mouseWheelScroll === 'zoom') {
-      // Zoom mode or modifier key pressed - use wheel for zoom
+    if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
+      // Legacy mode or standard mode with ctrl - use wheel for zoom
       if (isTrackpad) {
         // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
@@ -3646,6 +3645,7 @@ export class LGraphCanvas
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
+      // Standard mode without ctrl - use wheel / gestures to pan
       // Trackpads and mice work on significantly different scales
       const factor = isTrackpad ? 0.18 : 0.008_333
 
@@ -4717,20 +4717,29 @@ export class LGraphCanvas
           const connShape = fromSlot.shape
           const connType = fromSlot.type
 
-          const colour = resolveConnectingLinkColor(connType)
+          const colour =
+            connType === LiteGraph.EVENT
+              ? LiteGraph.EVENT_LINK_COLOR
+              : LiteGraph.CONNECTING_LINK_COLOR
 
           // the connection being dragged by the mouse
           if (this.linkRenderer) {
-            this.linkRenderer.renderDraggingLink(
+            this.linkRenderer.renderLinkDirect(
               ctx,
               pos,
               highlightPos,
+              null,
+              false,
+              null,
               colour,
               fromDirection,
               dragDirection,
               {
                 ...this.buildLinkRenderContext(),
                 linkMarkerShape: LinkMarkerShape.None
+              },
+              {
+                disabled: false
               }
             )
           }

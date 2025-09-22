@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
-
-const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: vi.fn(() => ({
@@ -16,49 +13,30 @@ vi.mock('@/stores/modelToNodeStore', () => ({
           'VAELoader',
           'TestNode'
         ])
-    ),
-    getCategoryForNodeType: mockGetCategoryForNodeType,
-    modelToNodeMap: {
-      checkpoints: [{ nodeDef: { name: 'CheckpointLoaderSimple' } }],
-      loras: [{ nodeDef: { name: 'LoraLoader' } }],
-      vae: [{ nodeDef: { name: 'VAELoader' } }]
-    }
+    )
   }))
 }))
 
-// Helper to create API-compliant test assets
-function createTestAsset(overrides: Partial<AssetItem> = {}) {
-  return {
-    id: 'test-uuid',
-    name: 'test-model.safetensors',
-    asset_hash: 'blake3:test123',
-    size: 123456,
-    mime_type: 'application/octet-stream',
-    tags: ['models', 'checkpoints'],
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    last_access_time: '2024-01-01T00:00:00Z',
-    ...overrides
-  }
-}
-
 // Test data constants
 const MOCK_ASSETS = {
-  checkpoints: createTestAsset({
+  checkpoints: {
     id: 'uuid-1',
     name: 'model1.safetensors',
-    tags: ['models', 'checkpoints']
-  }),
-  loras: createTestAsset({
+    tags: ['models', 'checkpoints'],
+    size: 123456
+  },
+  loras: {
     id: 'uuid-2',
     name: 'model2.safetensors',
-    tags: ['models', 'loras']
-  }),
-  vae: createTestAsset({
+    tags: ['models', 'loras'],
+    size: 654321
+  },
+  vae: {
     id: 'uuid-3',
     name: 'vae1.safetensors',
-    tags: ['models', 'vae']
-  })
+    tags: ['models', 'vae'],
+    size: 789012
+  }
 } as const
 
 // Helper functions
@@ -88,21 +66,24 @@ describe('assetService', () => {
   describe('getAssetModelFolders', () => {
     it('should extract directory names from asset tags and filter blacklisted ones', async () => {
       const assets = [
-        createTestAsset({
+        {
           id: 'uuid-1',
           name: 'checkpoint1.safetensors',
-          tags: ['models', 'checkpoints']
-        }),
-        createTestAsset({
+          tags: ['models', 'checkpoints'],
+          size: 123456
+        },
+        {
           id: 'uuid-2',
           name: 'config.yaml',
-          tags: ['models', 'configs'] // Blacklisted
-        }),
-        createTestAsset({
+          tags: ['models', 'configs'], // Blacklisted
+          size: 654321
+        },
+        {
           id: 'uuid-3',
           name: 'vae1.safetensors',
-          tags: ['models', 'vae']
-        })
+          tags: ['models', 'vae'],
+          size: 789012
+        }
       ]
       mockApiResponse(assets)
 
@@ -142,11 +123,12 @@ describe('assetService', () => {
       const assets = [
         { ...MOCK_ASSETS.checkpoints, name: 'valid.safetensors' },
         { ...MOCK_ASSETS.loras, name: 'lora.safetensors' }, // Wrong tag
-        createTestAsset({
+        {
           id: 'uuid-4',
           name: 'missing-model.safetensors',
-          tags: ['models', 'checkpoints', 'missing'] // Has missing tag
-        })
+          tags: ['models', 'checkpoints', 'missing'], // Has missing tag
+          size: 654321
+        }
       ]
       mockApiResponse(assets)
 
@@ -216,89 +198,6 @@ describe('assetService', () => {
       expect(
         assetService.isAssetBrowserEligible('lora_name', 'UnknownNode')
       ).toBe(false)
-    })
-  })
-
-  describe('getAssetsForNodeType', () => {
-    beforeEach(() => {
-      mockGetCategoryForNodeType.mockClear()
-    })
-
-    it('should return empty array for unregistered node types', async () => {
-      mockGetCategoryForNodeType.mockReturnValue(undefined)
-
-      const result = await assetService.getAssetsForNodeType('UnknownNode')
-
-      expect(mockGetCategoryForNodeType).toHaveBeenCalledWith('UnknownNode')
-      expect(result).toEqual([])
-    })
-
-    it('should use getCategoryForNodeType for efficient category lookup', async () => {
-      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
-      const testAssets = [MOCK_ASSETS.checkpoints]
-      mockApiResponse(testAssets)
-
-      const result = await assetService.getAssetsForNodeType(
-        'CheckpointLoaderSimple'
-      )
-
-      expect(mockGetCategoryForNodeType).toHaveBeenCalledWith(
-        'CheckpointLoaderSimple'
-      )
-      expect(result).toEqual(testAssets)
-
-      // Verify API call includes correct category
-      expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints'
-      )
-    })
-
-    it('should return empty array when no category found', async () => {
-      mockGetCategoryForNodeType.mockReturnValue(undefined)
-
-      const result = await assetService.getAssetsForNodeType('TestNode')
-
-      expect(result).toEqual([])
-      expect(api.fetchApi).not.toHaveBeenCalled()
-    })
-
-    it('should handle API errors gracefully', async () => {
-      mockGetCategoryForNodeType.mockReturnValue('loras')
-      mockApiError(500, 'Internal Server Error')
-
-      await expect(
-        assetService.getAssetsForNodeType('LoraLoader')
-      ).rejects.toThrow(
-        'Unable to load assets for LoraLoader: Server returned 500. Please try again.'
-      )
-    })
-
-    it('should return all assets without filtering for different categories', async () => {
-      // Test checkpoints
-      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
-      const checkpointAssets = [MOCK_ASSETS.checkpoints]
-      mockApiResponse(checkpointAssets)
-
-      let result = await assetService.getAssetsForNodeType(
-        'CheckpointLoaderSimple'
-      )
-      expect(result).toEqual(checkpointAssets)
-
-      // Test loras
-      mockGetCategoryForNodeType.mockReturnValue('loras')
-      const loraAssets = [MOCK_ASSETS.loras]
-      mockApiResponse(loraAssets)
-
-      result = await assetService.getAssetsForNodeType('LoraLoader')
-      expect(result).toEqual(loraAssets)
-
-      // Test vae
-      mockGetCategoryForNodeType.mockReturnValue('vae')
-      const vaeAssets = [MOCK_ASSETS.vae]
-      mockApiResponse(vaeAssets)
-
-      result = await assetService.getAssetsForNodeType('VAELoader')
-      expect(result).toEqual(vaeAssets)
     })
   })
 })

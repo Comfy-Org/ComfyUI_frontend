@@ -1,4 +1,3 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -72,13 +71,6 @@ export const useExtensionService = () => {
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
-    }
-
-    if (extension.onAuthUserResolved) {
-      const { onUserResolved } = useCurrentUser()
-      onUserResolved((user) => {
-        void extension.onAuthUserResolved?.(user, app)
-      })
     }
   }
 

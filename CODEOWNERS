@@ -1,61 +1,17 @@
-# Desktop/Electron
-/src/types/desktop/                               @webfiltered
-/src/constants/desktopDialogs.ts                  @webfiltered
-/src/constants/desktopMaintenanceTasks.ts         @webfiltered
-/src/stores/electronDownloadStore.ts              @webfiltered
-/src/extensions/core/electronAdapter.ts           @webfiltered
-/src/views/DesktopDialogView.vue                  @webfiltered
-/src/components/install/                          @webfiltered
-/src/components/maintenance/                      @webfiltered
-/vite.electron.config.mts                         @webfiltered
+# Admins
+* @Comfy-Org/comfy_frontend_devs
 
-# Common UI Components
-/src/components/chip/                             @viva-jinyi
-/src/components/card/                             @viva-jinyi
-/src/components/button/                           @viva-jinyi
-/src/components/input/                            @viva-jinyi
+# Maintainers
+*.md @Comfy-Org/comfy_maintainer
+/tests-ui/ @Comfy-Org/comfy_maintainer
+/browser_tests/ @Comfy-Org/comfy_maintainer
+/.env_example @Comfy-Org/comfy_maintainer
 
-# Topbar
-/src/components/topbar/                           @pythongosssss
+# Translations (AIGODLIKE team + shinshin86)
+/src/locales/ @Yorha4D @KarryCharon @DorotaLuna @shinshin86 @Comfy-Org/comfy_maintainer
 
-# Thumbnail
-/src/renderer/core/thumbnail/                     @pythongosssss
+# Load 3D extension
+/src/extensions/core/load3d.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
-# Legacy UI
-/scripts/ui/                                      @pythongosssss
-
-# Link rendering
-/src/renderer/core/canvas/links/                  @benceruleanlu
-
-# Node help system
-/src/utils/nodeHelpUtil.ts                        @benceruleanlu
-/src/stores/workspace/nodeHelpStore.ts            @benceruleanlu
-/src/services/nodeHelpService.ts                  @benceruleanlu
-
-# Selection toolbox
-/src/components/graph/selectionToolbox/           @Myestery
-
-# Minimap
-/src/renderer/extensions/minimap/                 @jtydhr88
-
-# Assets
-/src/platform/assets/                             @arjansingh
-
-# Workflow Templates
-/src/platform/workflow/templates/                 @Myestery @christian-byrne @comfyui-wiki
-/src/components/templates/                        @Myestery @christian-byrne @comfyui-wiki
-
-# Mask Editor
-/src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp
-/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp
-/src/extensions/core/maskEditorOld.ts             @trsommer @brucew4yn3rp
-
-# 3D
-/src/extensions/core/load3d.ts                    @jtydhr88
-/src/components/load3d/                           @jtydhr88
-
-# Manager
-/src/workbench/extensions/manager/                @viva-jinyi @christian-byrne @ltdrdata
-
-# Translations
-/src/locales/                                     @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer
+# Mask Editor extension
+/src/extensions/core/maskeditor.ts @brucew4yn3rp @trsommer @Comfy-Org/comfy_frontend_devs

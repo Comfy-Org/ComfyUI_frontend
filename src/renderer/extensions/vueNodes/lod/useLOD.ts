@@ -27,7 +27,7 @@
  * <NodeSlots v-if="shouldRenderSlots" />
  * ```
  */
-import { type MaybeRefOrGetter, computed, readonly, toRef } from 'vue'
+import { type Ref, computed, readonly } from 'vue'
 
 export enum LODLevel {
   MINIMAL = 'minimal', // zoom <= 0.4
@@ -78,8 +78,7 @@ const LOD_CONFIGS: Record<LODLevel, LODConfig> = {
  * @param zoomRef - Reactive reference to current zoom level (camera.z)
  * @returns LOD state and configuration
  */
-export function useLOD(zoomRefMaybe: MaybeRefOrGetter<number>) {
-  const zoomRef = toRef(zoomRefMaybe)
+export function useLOD(zoomRef: Ref<number>) {
   // Continuous LOD score (0-1) for smooth transitions
   const lodScore = computed(() => {
     const zoom = zoomRef.value

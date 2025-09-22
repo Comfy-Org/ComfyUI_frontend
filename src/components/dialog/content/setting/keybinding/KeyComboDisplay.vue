@@ -13,7 +13,7 @@
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
-import type { KeyComboImpl } from '@/stores/keybindingStore'
+import { KeyComboImpl } from '@/stores/keybindingStore'
 
 const { keyCombo, isModified = false } = defineProps<{
   keyCombo: KeyComboImpl

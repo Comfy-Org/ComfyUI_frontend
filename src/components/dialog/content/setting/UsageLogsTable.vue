@@ -96,8 +96,8 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
-import type { AuditLog } from '@/services/customerEventsService'
 import {
+  AuditLog,
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'

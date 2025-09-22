@@ -10,7 +10,7 @@
       class="absolute inset-0"
     />
     <img
-      v-if="cachedSrc"
+      v-show="isImageLoaded"
       ref="imageRef"
       :src="cachedSrc"
       :alt="alt"
@@ -77,8 +77,8 @@ const shouldLoad = computed(() => isIntersecting.value)
 
 watch(
   shouldLoad,
-  async (shouldLoadVal) => {
-    if (shouldLoadVal && src && !cachedSrc.value && !hasError.value) {
+  async (shouldLoad) => {
+    if (shouldLoad && src && !cachedSrc.value && !hasError.value) {
       try {
         const cachedMedia = await getCachedMedia(src)
         if (cachedMedia.error) {
@@ -93,7 +93,7 @@ watch(
         console.warn('Failed to load cached media:', error)
         cachedSrc.value = src
       }
-    } else if (!shouldLoadVal) {
+    } else if (!shouldLoad) {
       if (cachedSrc.value?.startsWith('blob:')) {
         releaseUrl(src)
       }

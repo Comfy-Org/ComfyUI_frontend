@@ -4,11 +4,11 @@ import { computed, ref } from 'vue'
 
 import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import * as dialogService from '@/services/dialogService'
+import * as comfyManagerStore from '@/stores/comfyManagerStore'
 import * as conflictDetectionStore from '@/stores/conflictDetectionStore'
-import * as comfyManagerStore from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 // Mock the stores and services
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore')
+vi.mock('@/stores/comfyManagerStore')
 vi.mock('@/stores/conflictDetectionStore')
 vi.mock('@/services/dialogService')
 vi.mock('vue-i18n', async (importOriginal) => {

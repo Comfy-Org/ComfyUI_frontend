@@ -3,12 +3,12 @@ import {
   type ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
-  type ComfyMetadata,
+  ComfyMetadata,
   ComfyMetadataTags,
-  type EbmlElementRange,
-  type EbmlTagPosition,
-  type TextRange,
-  type VInt
+  EbmlElementRange,
+  EbmlTagPosition,
+  TextRange,
+  VInt
 } from '@/types/metadataTypes'
 
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]

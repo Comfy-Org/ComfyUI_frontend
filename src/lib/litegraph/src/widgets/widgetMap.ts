@@ -1,6 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
-  IAssetWidget,
   IBaseWidget,
   IComboWidget,
   IWidget,
@@ -131,11 +130,6 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
 /** Type guard: Narrow **from {@link IBaseWidget}** to {@link IComboWidget}. */
 export function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IAssetWidget}. */
-export function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
-  return widget.type === 'asset'
 }
 
 // #endregion Type Guards

@@ -48,6 +48,7 @@ export interface LinkReleaseContextExtended {
   links: ConnectingLink[]
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
@@ -139,7 +140,7 @@ export { BaseWidget } from './widgets/BaseWidget'
 
 export { LegacyWidget } from './widgets/LegacyWidget'
 
-export { isComboWidget, isAssetWidget } from './widgets/widgetMap'
+export { isComboWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'
 export { MovingOutputLink } from './canvas/MovingOutputLink'

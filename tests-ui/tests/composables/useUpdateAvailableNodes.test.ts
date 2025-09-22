@@ -1,10 +1,11 @@
-import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+// Import mocked utils
+import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 // Mock Vue's onMounted to execute immediately for testing
 vi.mock('vue', async () => {
@@ -20,20 +21,20 @@ vi.mock('@/composables/nodePack/useInstalledPacks', () => ({
   useInstalledPacks: vi.fn()
 }))
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
+vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn()
 }))
 
-vi.mock('semver', () => ({
-  compare: vi.fn(),
-  valid: vi.fn()
+vi.mock('@/utils/formatUtil', () => ({
+  compareVersions: vi.fn(),
+  isSemVer: vi.fn()
 }))
 
 const mockUseInstalledPacks = vi.mocked(useInstalledPacks)
 const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
 
-const mockSemverCompare = vi.mocked(compare)
-const mockSemverValid = vi.mocked(valid)
+const mockCompareVersions = vi.mocked(compareVersions)
+const mockIsSemVer = vi.mocked(isSemVer)
 
 describe('useUpdateAvailableNodes', () => {
   const mockInstalledPacks = [
@@ -85,19 +86,19 @@ describe('useUpdateAvailableNodes', () => {
       }
     })
 
-    mockSemverValid.mockImplementation((version) => {
-      return version &&
-        typeof version === 'string' &&
-        !version.includes('nightly')
-        ? version
-        : null
-    })
+    mockIsSemVer.mockImplementation(
+      (version: string): version is `${number}.${number}.${number}` => {
+        return !version.includes('nightly')
+      }
+    )
 
-    mockSemverCompare.mockImplementation((latest, installed) => {
-      if (latest === '2.0.0' && installed === '1.0.0') return 1 // outdated
-      if (latest === '1.0.0' && installed === '1.0.0') return 0 // up to date
-      return 0
-    })
+    mockCompareVersions.mockImplementation(
+      (latest: string | undefined, installed: string | undefined) => {
+        if (latest === '2.0.0' && installed === '1.0.0') return 1 // outdated
+        if (latest === '1.0.0' && installed === '1.0.0') return 0 // up to date
+        return 0
+      }
+    )
 
     mockUseComfyManagerStore.mockReturnValue({
       isPackInstalled: mockIsPackInstalled,
@@ -321,10 +322,10 @@ describe('useUpdateAvailableNodes', () => {
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
 
-      expect(mockSemverCompare).toHaveBeenCalledWith('2.0.0', '1.0.0')
+      expect(mockCompareVersions).toHaveBeenCalledWith('2.0.0', '1.0.0')
     })
 
-    it('calls semver.valid to check nightly versions', () => {
+    it('calls isSemVer to check nightly versions', () => {
       mockUseInstalledPacks.mockReturnValue({
         installedPacks: ref([mockInstalledPacks[2]]), // pack-3: nightly
         isLoading: ref(false),
@@ -337,7 +338,7 @@ describe('useUpdateAvailableNodes', () => {
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
 
-      expect(mockSemverValid).toHaveBeenCalledWith('nightly-abc123')
+      expect(mockIsSemVer).toHaveBeenCalledWith('nightly-abc123')
     })
 
     it('calls isPackInstalled for each pack', () => {

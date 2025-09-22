@@ -12,10 +12,9 @@ export const webSocketFixture = base.extend<{
           // so we can look it up to trigger messages
           const store: Record<string, WebSocket> = ((window as any).__ws__ = {})
           window.WebSocket = class extends window.WebSocket {
-            constructor(
-              ...rest: ConstructorParameters<typeof window.WebSocket>
-            ) {
-              super(...rest)
+            constructor() {
+              // @ts-expect-error
+              super(...arguments)
               store[this.url] = this
             }
           }

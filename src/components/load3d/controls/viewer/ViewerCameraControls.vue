@@ -23,7 +23,7 @@ import Select from 'primevue/select'
 import Slider from 'primevue/slider'
 import { computed } from 'vue'
 
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import { CameraType } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 
 const cameras = [

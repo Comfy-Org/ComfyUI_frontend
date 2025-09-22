@@ -8,9 +8,9 @@ import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { type InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 function addMarkdownWidget(
   node: LGraphNode,

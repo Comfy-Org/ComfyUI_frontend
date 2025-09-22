@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
@@ -27,7 +27,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
+vi.mock('@/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
 }))
 
@@ -57,7 +57,7 @@ vi.mock('@/composables/nodePack/useInstalledPacks', () => ({
   }))
 }))
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
+vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
     isPackInstalled: vi.fn(),
     installedPacks: { value: [] }
@@ -140,7 +140,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     // Mock useComfyManagerService
     const { useComfyManagerService } = await import(
-      '@/workbench/extensions/manager/services/comfyManagerService'
+      '@/services/comfyManagerService'
     )
     vi.mocked(useComfyManagerService).mockReturnValue(
       mockComfyManagerService as any

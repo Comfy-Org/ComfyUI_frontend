@@ -6,10 +6,12 @@ import {
   GoogleAuthProvider,
   type User,
   type UserCredential,
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -23,8 +25,8 @@ import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import type { AuthHeader } from '@/types/authTypes'
-import type { operations } from '@/types/comfyRegistryTypes'
+import { type AuthHeader } from '@/types/authTypes'
+import { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -60,12 +62,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
-  googleProvider.addScope('email')
   googleProvider.setCustomParameters({
     prompt: 'select_account'
   })
   const githubProvider = new GithubAuthProvider()
-  githubProvider.addScope('user:email')
   githubProvider.setCustomParameters({
     prompt: 'select_account'
   })
@@ -80,6 +80,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Retrieves the Firebase Auth instance. Returns `null` on the server.
   // When using this function on the client in TypeScript, you can force the type with `useFirebaseAuth()!`.
   const auth = useFirebaseAuth()!
+  // Set persistence to localStorage (works in both browser and Electron)
+  void setPersistence(auth, browserLocalPersistence)
 
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user

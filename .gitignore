@@ -44,7 +44,6 @@ components.d.ts
 tests-ui/data/*
 tests-ui/ComfyUI_examples
 tests-ui/workflows/examples
-coverage/
 
 # Browser tests
 /test-results/
@@ -79,8 +78,8 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
-# MCP Servers
-.playwright-mcp/*
+
+
 
 .nx/cache
 .nx/workspace-data

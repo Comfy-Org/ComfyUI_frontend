@@ -8,15 +8,15 @@
 import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import type Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
-import type {
+import Load3d from '@/extensions/core/load3d/Load3d'
+import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
+import {
   CameraType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useLoad3dService } from '@/services/load3dService'
 

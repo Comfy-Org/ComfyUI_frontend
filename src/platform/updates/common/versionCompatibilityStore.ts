@@ -1,6 +1,6 @@
 import { until, useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { gt, valid } from 'semver'
+import * as semver from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
@@ -26,13 +26,13 @@ export const useVersionCompatibilityStore = defineStore(
       if (
         !frontendVersion.value ||
         !requiredFrontendVersion.value ||
-        !valid(frontendVersion.value) ||
-        !valid(requiredFrontendVersion.value)
+        !semver.valid(frontendVersion.value) ||
+        !semver.valid(requiredFrontendVersion.value)
       ) {
         return false
       }
       // Returns true if required version is greater than frontend version
-      return gt(requiredFrontendVersion.value, frontendVersion.value)
+      return semver.gt(requiredFrontendVersion.value, frontendVersion.value)
     })
 
     const isFrontendNewer = computed(() => {

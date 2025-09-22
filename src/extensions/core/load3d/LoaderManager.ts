@@ -9,9 +9,9 @@ import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import {
-  type EventManagerInterface,
-  type LoaderManagerInterface,
-  type ModelManagerInterface
+  EventManagerInterface,
+  LoaderManagerInterface,
+  ModelManagerInterface
 } from './interfaces'
 
 export class LoaderManager implements LoaderManagerInterface {

@@ -7,7 +7,7 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,

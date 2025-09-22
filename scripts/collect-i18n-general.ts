@@ -2,7 +2,6 @@ import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
-import { DESKTOP_DIALOGS } from '../src/constants/desktopDialogs'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { FormItem, SettingParams } from '../src/platform/settings/types'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
@@ -132,23 +131,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     ])
   )
 
-  // Desktop Dialogs
-  const allDesktopDialogsLocale = Object.fromEntries(
-    Object.values(DESKTOP_DIALOGS).map((dialog) => [
-      normalizeI18nKey(dialog.id),
-      {
-        title: dialog.title,
-        message: dialog.message,
-        buttons: Object.fromEntries(
-          dialog.buttons.map((button) => [
-            normalizeI18nKey(button.label),
-            button.label
-          ])
-        )
-      }
-    ])
-  )
-
   fs.writeFileSync(
     localePath,
     JSON.stringify(
@@ -162,8 +144,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
           ...allSettingCategoriesLocale
         },
         serverConfigItems: allServerConfigsLocale,
-        serverConfigCategories: allServerConfigCategoriesLocale,
-        desktopDialogs: allDesktopDialogsLocale
+        serverConfigCategories: allServerConfigCategoriesLocale
       },
       null,
       2

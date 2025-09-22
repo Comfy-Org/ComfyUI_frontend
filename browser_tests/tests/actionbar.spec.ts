@@ -29,9 +29,9 @@ test.describe('Actionbar', () => {
 
     // Intercept the prompt queue endpoint
     let promptNumber = 0
-    await comfyPage.page.route('**/api/prompt', async (route, req) => {
+    comfyPage.page.route('**/api/prompt', async (route, req) => {
       await new Promise((r) => setTimeout(r, 100))
-      await route.fulfill({
+      route.fulfill({
         status: 200,
         body: JSON.stringify({
           prompt_id: promptNumber,

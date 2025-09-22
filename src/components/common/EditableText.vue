@@ -7,7 +7,7 @@
     <InputText
       v-else
       ref="inputRef"
-      v-model:model-value="inputValue"
+      v-model:modelValue="inputValue"
       v-focus
       type="text"
       size="small"

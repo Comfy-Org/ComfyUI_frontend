@@ -32,7 +32,7 @@
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 
-import type { PrimeVueSeverity } from '@/types/primeVueTypes'
+import { PrimeVueSeverity } from '@/types/primeVueTypes'
 
 const {
   disabled,

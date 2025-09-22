@@ -469,8 +469,6 @@ const zSettings = z.object({
   'Comfy.Minimap.RenderBypassState': z.boolean(),
   'Comfy.Minimap.RenderErrorState': z.boolean(),
   'Comfy.Canvas.NavigationMode': z.string(),
-  'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
-  'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),

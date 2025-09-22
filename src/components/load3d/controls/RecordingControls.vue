@@ -79,7 +79,7 @@ import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLoad3dService } from '@/services/load3dService'
 
 const vTooltip = Tooltip

@@ -13,4 +13,4 @@
 
 # Generated files
 src/types/comfyRegistryTypes.ts linguist-generated=true
-src/workbench/extensions/manager/types/generatedManagerTypes.ts linguist-generated=true
+src/types/generatedManagerTypes.ts linguist-generated=true

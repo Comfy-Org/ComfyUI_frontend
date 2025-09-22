@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTextPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget'
 
 const TEXT_PREVIEW_WIDGET_NAME = '$$node-text-preview'

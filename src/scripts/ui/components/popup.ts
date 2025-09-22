@@ -1,6 +1,6 @@
 import { $el } from '../../ui'
 import { prop } from '../../utils'
-import { type ClassList, applyClasses } from '../utils'
+import { ClassList, applyClasses } from '../utils'
 
 export class ComfyPopup extends EventTarget {
   element = $el('div.comfyui-popup')

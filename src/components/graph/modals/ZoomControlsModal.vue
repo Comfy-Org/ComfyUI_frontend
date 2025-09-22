@@ -135,8 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import type { InputNumberInputEvent } from 'primevue'
-import { Button, InputNumber } from 'primevue'
+import { Button, InputNumber, InputNumberInputEvent } from 'primevue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

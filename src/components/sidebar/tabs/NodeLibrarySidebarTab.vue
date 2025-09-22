@@ -78,7 +78,7 @@
       <template #header>
         <div>
           <SearchBox
-            v-model:model-value="searchQuery"
+            v-model:modelValue="searchQuery"
             class="node-lib-search-box p-2 2xl:p-4"
             :placeholder="$t('g.searchNodes') + '...'"
             filter-icon="pi pi-filter"
@@ -106,7 +106,7 @@
             class="m-2"
           />
           <TreeExplorer
-            v-model:expanded-keys="expandedKeys"
+            v-model:expandedKeys="expandedKeys"
             class="node-lib-tree-explorer"
             :root="renderedRoot"
           >
@@ -129,11 +129,10 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
-import type { Ref } from 'vue'
-import { computed, h, nextTick, ref, render } from 'vue'
+import { Ref, computed, h, nextTick, ref, render } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
+import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
@@ -149,8 +148,7 @@ import {
 } from '@/services/nodeOrganizationService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type {
   GroupingStrategyId,
@@ -158,7 +156,7 @@ import type {
 } from '@/types/nodeOrganizationTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
-import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 

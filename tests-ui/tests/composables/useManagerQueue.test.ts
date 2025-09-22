@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
-import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import { useManagerQueue } from '@/composables/useManagerQueue'
+import { components } from '@/types/generatedManagerTypes'
 
 // Mock dialog service
 vi.mock('@/services/dialogService', () => ({

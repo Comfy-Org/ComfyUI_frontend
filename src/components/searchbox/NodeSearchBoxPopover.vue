@@ -38,19 +38,21 @@ import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { Point } from '@/lib/litegraph/src/interfaces'
+import {
+  LGraphNode,
+  LiteGraph,
+  LiteGraphCanvasEvent
+} from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
-import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBox from './NodeSearchBox.vue'
 
@@ -64,29 +66,31 @@ const litegraphService = useLitegraphService()
 
 const { visible, newSearchBoxEnabled } = storeToRefs(searchBoxStore)
 const dismissable = ref(true)
-function getNewNodeLocation(): Point {
+const getNewNodeLocation = (): Point => {
   return triggerEvent
     ? [triggerEvent.canvasX, triggerEvent.canvasY]
     : litegraphService.getCanvasCenter()
 }
 const nodeFilters = ref<FuseFilterWithValue<ComfyNodeDefImpl, string>[]>([])
-function addFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
+const addFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) => {
   nodeFilters.value.push(filter)
 }
-function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
+const removeFilter = (
+  filter: FuseFilterWithValue<ComfyNodeDefImpl, string>
+) => {
   nodeFilters.value = nodeFilters.value.filter(
     (f) => toRaw(f) !== toRaw(filter)
   )
 }
-function clearFilters() {
+const clearFilters = () => {
   nodeFilters.value = []
 }
-function closeDialog() {
+const closeDialog = () => {
   visible.value = false
 }
 const canvasStore = useCanvasStore()
 
-function addNode(nodeDef: ComfyNodeDefImpl) {
+const addNode = (nodeDef: ComfyNodeDefImpl) => {
   const node = litegraphService.addNodeOnGraph(nodeDef, {
     pos: getNewNodeLocation()
   })
@@ -104,7 +108,7 @@ function addNode(nodeDef: ComfyNodeDefImpl) {
   window.requestAnimationFrame(closeDialog)
 }
 
-function showSearchBox(e: CanvasPointerEvent | null) {
+const showSearchBox = (e: CanvasPointerEvent | null) => {
   if (newSearchBoxEnabled.value) {
     if (e?.pointerType === 'touch') {
       setTimeout(() => {
@@ -118,12 +122,11 @@ function showSearchBox(e: CanvasPointerEvent | null) {
   }
 }
 
-function getFirstLink() {
-  return canvasStore.getCanvas().linkConnector.renderLinks.at(0)
-}
+const getFirstLink = () =>
+  canvasStore.getCanvas().linkConnector.renderLinks.at(0)
 
 const nodeDefStore = useNodeDefStore()
-function showNewSearchBox(e: CanvasPointerEvent | null) {
+const showNewSearchBox = (e: CanvasPointerEvent | null) => {
   const firstLink = getFirstLink()
   if (firstLink) {
     const filter =
@@ -148,7 +151,7 @@ function showNewSearchBox(e: CanvasPointerEvent | null) {
   }, 300)
 }
 
-function showContextMenu(e: CanvasPointerEvent) {
+const showContextMenu = (e: CanvasPointerEvent) => {
   const firstLink = getFirstLink()
   if (!firstLink) return
 
@@ -225,7 +228,7 @@ watchEffect(() => {
   )
 })
 
-function canvasEventHandler(e: LiteGraphCanvasEvent) {
+const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   if (e.detail.subType === 'empty-double-click') {
     showSearchBox(e.detail.originalEvent)
   } else if (e.detail.subType === 'group-double-click') {
@@ -248,10 +251,8 @@ const linkReleaseActionShift = computed(() =>
 )
 
 // Prevent normal LinkConnector reset (called by CanvasPointer.finally)
-function preventDefault(e: Event) {
-  return e.preventDefault()
-}
-function cancelNextReset(e: CustomEvent<CanvasPointerEvent>) {
+const preventDefault = (e: Event) => e.preventDefault()
+const cancelNextReset = (e: CustomEvent<CanvasPointerEvent>) => {
   e.preventDefault()
 
   const canvas = canvasStore.getCanvas()
@@ -261,7 +262,7 @@ function cancelNextReset(e: CustomEvent<CanvasPointerEvent>) {
   })
 }
 
-function handleDroppedOnCanvas(e: CustomEvent<CanvasPointerEvent>) {
+const handleDroppedOnCanvas = (e: CustomEvent<CanvasPointerEvent>) => {
   disconnectOnReset = true
   const action = e.detail.shiftKey
     ? linkReleaseActionShift.value
@@ -282,7 +283,7 @@ function handleDroppedOnCanvas(e: CustomEvent<CanvasPointerEvent>) {
 }
 
 // Resets litegraph state
-function reset() {
+const reset = () => {
   listenerController?.abort()
   listenerController = null
   triggerEvent = null
