@@ -37,7 +37,5 @@
     "src/**/*",
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
-    "*.config.mts",
-    "*.config.ts",
   ]
 }

@@ -33,7 +33,9 @@ export default defineConfig([
       },
       parserOptions: {
         parser: tseslint.parser,
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['*.config.mts']
+        },
         tsConfigRootDir: import.meta.dirname,
         ecmaVersion: 2020,
         sourceType: 'module',
