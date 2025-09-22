@@ -1892,6 +1892,13 @@
     "noModelsInFolder": "No {type} available in this folder",
     "searchAssetsPlaceholder": "Search assets...",
     "allModels": "All Models",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "fileFormats": "File formats",
+    "baseModels": "Base models",
+    "sortBy": "Sort by",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "Recent",
+    "sortPopular": "Popular"
   }
 }

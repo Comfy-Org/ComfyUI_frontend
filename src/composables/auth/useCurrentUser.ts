@@ -34,14 +34,8 @@ export const useCurrentUser = () => {
     return null
   })
 
-  const onUserResolved = (callback: (user: AuthUserInfo) => void) => {
-    if (resolvedUserInfo.value) {
-      callback(resolvedUserInfo.value)
-    }
-
-    const stop = whenever(resolvedUserInfo, callback)
-    return () => stop()
-  }
+  const onUserResolved = (callback: (user: AuthUserInfo) => void) =>
+    whenever(resolvedUserInfo, callback, { immediate: true })
 
   const userDisplayName = computed(() => {
     if (isApiKeyLogin.value) {

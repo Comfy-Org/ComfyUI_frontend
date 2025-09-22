@@ -7,9 +7,9 @@ import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import type { UseNodePacksOptions } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type WorkflowPack = {
   id:

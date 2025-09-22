@@ -5,10 +5,10 @@ import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 /**
  * Composable to find missing NodePacks from workflow

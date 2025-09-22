@@ -77,12 +77,25 @@ export default defineConfig([
       '@typescript-eslint/prefer-as-const': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-import-type-side-effects': 'error',
+      '@typescript-eslint/no-empty-object-type': [
+        'error',
+        {
+          allowInterfaces: 'always'
+        }
+      ],
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
+      /* Toggle on to do additional until we can clean up existing violations.
+      'vue/no-unused-emit-declarations': 'error',
+      'vue/no-unused-properties': 'error',
+      'vue/no-unused-refs': 'error',
+      'vue/no-use-v-else-with-v-for': 'error',
+      'vue/no-useless-v-bind': 'error',
+      // */
       'vue/one-component-per-file': 'off', // TODO: fix
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
       // Restrict deprecated PrimeVue components
