@@ -585,7 +585,7 @@ test.describe('Vue Node Link Interaction', () => {
 
     const outputCenter = await getCenter(clipOutputLocator)
     const dragTarget = {
-      x: outputCenter.x + 220,
+      x: outputCenter.x + 40,
       y: outputCenter.y - 140
     }
 
