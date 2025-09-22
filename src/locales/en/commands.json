@@ -122,9 +122,6 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Export Workflow (API Format)"
   },
-  "Comfy_Feedback": {
-    "label": "Give Feedback"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"
   },
@@ -260,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "Sign Out"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "Experimental: Enable Vue Nodes"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"
   },
@@ -277,9 +277,6 @@
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
     "label": "Show Keybindings Dialog"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Toggle Terminal Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Toggle Logs Bottom Panel"

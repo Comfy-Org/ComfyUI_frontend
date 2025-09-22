@@ -5,7 +5,7 @@ import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { DESKTOP_DIALOGS } from '../src/constants/desktopDialogs'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
-import type { FormItem, SettingParams } from '../src/types/settingTypes'
+import type { FormItem, SettingParams } from '../src/platform/settings/types'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 import './setup-browser-globals.js'
 
