@@ -125,17 +125,22 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const widgets = nodeData.widgets as SafeWidgetData[]
   const result: ProcessedWidget[] = []
 
-  if (lodLevel === LODLevel.MINIMAL) {
-    return []
-  }
-
   for (const widget of widgets) {
     if (widget.options?.hidden) continue
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    if (lodLevel === LODLevel.REDUCED && !isEssential(widget.type)) continue
+    const bypassLOD = widget.options?.bypassLOD === true
+
+    if (!bypassLOD) {
+      if (
+        lodLevel === LODLevel.MINIMAL ||
+        (lodLevel === LODLevel.REDUCED && !isEssential(widget.type))
+      ) {
+        continue
+      }
+    }
 
     const vueComponent = getComponent(widget.type) || WidgetInputText
 

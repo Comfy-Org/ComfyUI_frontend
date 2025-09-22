@@ -39,7 +39,7 @@
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
-    @wheel="handleWheel"
+    @wheel="handleNodeWheel"
   >
     <div class="flex items-center">
       <template v-if="isCollapsed">
@@ -292,9 +292,17 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   }
 )
 
+// Check if any widget bypasses LOD restrictions
+const hasLODBypassWidgets = computed(() => {
+  if (!nodeData.widgets?.length) return false
+  return nodeData.widgets.some((w: any) => w.options?.bypassLOD === true)
+})
+
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
-  () => shouldRenderWidgets.value && nodeData.widgets?.length
+  () =>
+    (shouldRenderWidgets.value || hasLODBypassWidgets.value) &&
+    nodeData.widgets?.length
 )
 
 const shouldShowContent = computed(
@@ -331,6 +339,18 @@ const handleCollapse = () => {
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
   handleNodeTitleUpdate(nodeData.id, newTitle)
+}
+
+const handleNodeWheel = (event: WheelEvent) => {
+  const target = event.target as HTMLElement
+  const isInLoad3D = target?.closest('.comfy-load-3d')
+
+  // Don't handle wheel events from Load3D components
+  if (isInLoad3D) {
+    return
+  }
+
+  handleWheel(event)
 }
 
 const handleEnterSubgraph = () => {
