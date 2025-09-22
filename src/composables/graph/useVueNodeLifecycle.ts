@@ -1,15 +1,5 @@
-/**
- * Vue Node Lifecycle Management Composable
- *
- * Handles the complete lifecycle of Vue node rendering system including:
- * - Node manager initialization and cleanup
- * - Layout store synchronization
- * - Slot and link sync management
- * - Reactive state management for node data, positions, and sizes
- * - Memory management and proper cleanup
- */
 import { createSharedComposable } from '@vueuse/core'
-import { computed, readonly, ref, shallowRef, watch } from 'vue'
+import { readonly, ref, shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type {
@@ -46,8 +36,6 @@ function useVueNodeLifecycleIndividual() {
 
   // Trigger for forcing computed re-evaluation
   const nodeDataTrigger = ref(0)
-
-  const isNodeManagerReady = computed(() => nodeManager.value !== null)
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -218,10 +206,7 @@ function useVueNodeLifecycleIndividual() {
 
   return {
     vueNodeData,
-    nodeState,
-    nodeDataTrigger: readonly(nodeDataTrigger),
     nodeManager: readonly(nodeManager),
-    isNodeManagerReady,
 
     // Lifecycle methods
     initializeNodeManager,
