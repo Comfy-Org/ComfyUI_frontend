@@ -542,4 +542,72 @@ test.describe('Vue Node Link Interaction', () => {
       targetSlot: 2
     })
   })
+
+  test('shift-dragging an output with multiple links should drag all links', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+    const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+
+    expect(clipNodes.length).toBeGreaterThan(0)
+    expect(samplerNodes.length).toBeGreaterThan(0)
+
+    const clipNode = clipNodes[0]
+    const samplerNode = samplerNodes[0]
+
+    const clipOutputKey = getSlotKey(String(clipNode.id), 0, false)
+    const samplerInputSecondKey = getSlotKey(String(samplerNode.id), 1, true)
+    const samplerInputThirdKey = getSlotKey(String(samplerNode.id), 2, true)
+
+    const clipOutputLocator = comfyPage.page.locator(
+      `[data-slot-key="${clipOutputKey}"]`
+    )
+    const samplerInputSecondLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerInputSecondKey}"]`
+    )
+    const samplerInputThirdLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerInputThirdKey}"]`
+    )
+
+    await expect(clipOutputLocator).toBeVisible()
+    await expect(samplerInputSecondLocator).toBeVisible()
+    await expect(samplerInputThirdLocator).toBeVisible()
+
+    await clipOutputLocator.dragTo(samplerInputSecondLocator)
+    await comfyPage.nextFrame()
+    await clipOutputLocator.dragTo(samplerInputThirdLocator)
+    await comfyPage.nextFrame()
+
+    const clipOutput = await clipNode.getOutput(0)
+
+    expect(await clipOutput.getLinkCount()).toBe(2)
+
+    const outputCenter = await getCenter(clipOutputLocator)
+    const dragTarget = {
+      x: outputCenter.x + 220,
+      y: outputCenter.y - 140
+    }
+
+    let dropPending = false
+    let shiftHeld = false
+    try {
+      await comfyMouse.move(outputCenter)
+      await comfyPage.page.keyboard.down('Shift')
+      shiftHeld = true
+      await comfyMouse.drag(dragTarget)
+      dropPending = true
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-node-shift-output-multi-link.png'
+      )
+    } finally {
+      if (dropPending) {
+        await comfyMouse.drop()
+      }
+      if (shiftHeld) {
+        await comfyPage.page.keyboard.up('Shift')
+      }
+    }
+  })
 })
