@@ -498,7 +498,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       target_slot: this.target_slot,
       type: this.type
     }
-    if (this.parentId) copy.parentId = this.parentId
+    if (this.parentId !== undefined) copy.parentId = this.parentId
     return copy
   }
 }
