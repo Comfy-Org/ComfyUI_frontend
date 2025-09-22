@@ -100,7 +100,7 @@
 
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
-          v-if="shouldShowWidgets"
+          v-if="nodeData.widgets?.length"
           v-memo="[nodeData.widgets?.length]"
           :node-data="nodeData"
           :readonly="readonly"
@@ -108,7 +108,7 @@
 
         <!-- Custom content at reduced+ detail -->
         <NodeContent
-          v-if="shouldShowContent"
+          v-if="hasCustomContent"
           :node-data="nodeData"
           :readonly="readonly"
           :image-urls="nodeImageUrls"
@@ -260,11 +260,6 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
     isCollapsed
   }
 )
-
-// Common condition computations to avoid repetition
-const shouldShowWidgets = computed(() => nodeData.widgets?.length)
-
-const shouldShowContent = computed(() => hasCustomContent.value)
 
 const borderClass = computed(() => {
   if (hasAnyError.value) {

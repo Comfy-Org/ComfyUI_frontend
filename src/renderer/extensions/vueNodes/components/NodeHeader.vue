@@ -4,7 +4,7 @@
   </div>
   <div
     v-else
-    class="lg-node-header p-4 rounded-t-2xl cursor-move w-full relative"
+    class="lg-node-header p-4 rounded-t-2xl cursor-move"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -37,23 +37,23 @@
           @cancel="handleTitleCancel"
         />
       </div>
-
-      <!-- Title Buttons -->
-      <div v-if="!readonly" class="flex items-center lod-toggle">
-        <IconButton
-          v-if="isSubgraphNode"
-          size="sm"
-          type="transparent"
-          class="text-stone-200 dark-theme:text-slate-300"
-          data-testid="subgraph-enter-button"
-          title="Enter Subgraph"
-          @click.stop="handleEnterSubgraph"
-          @dblclick.stop
-        >
-          <i class="pi pi-external-link"></i>
-        </IconButton>
-      </div>
       <LODFallback />
+    </div>
+
+    <!-- Title Buttons -->
+    <div v-if="!readonly" class="flex items-center lod-toggle">
+      <IconButton
+        v-if="isSubgraphNode"
+        size="sm"
+        type="transparent"
+        class="text-stone-200 dark-theme:text-slate-300"
+        data-testid="subgraph-enter-button"
+        title="Enter Subgraph"
+        @click.stop="handleEnterSubgraph"
+        @dblclick.stop
+      >
+        <i class="pi pi-external-link"></i>
+      </IconButton>
     </div>
   </div>
 </template>

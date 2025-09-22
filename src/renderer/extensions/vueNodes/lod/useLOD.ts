@@ -7,6 +7,7 @@
  * Default minFontSize = 8px
  * Default zoomThreshold = 0.57 (On a DPR = 1 monitor)
  **/
+import { useDevicePixelRatio } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -16,14 +17,17 @@ interface Camera {
 }
 
 export function useLOD(camera: Camera) {
-  const baseFontSize = 14
-  const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1)
+  const { pixelRatio } = useDevicePixelRatio()
 
   const isLOD = computed(() => {
+    const baseFontSize = 14
+    const dprAdjustment = Math.sqrt(pixelRatio.value)
+
     const settingStore = useSettingStore()
     const minFontSize = settingStore.get('LiteGraph.Canvas.MinFontSizeForLOD') //default 8
     const threshold =
       Math.round((minFontSize / (baseFontSize * dprAdjustment)) * 100) / 100 //round to 2 decimal places i.e 0.86
+
     return camera.z < threshold
   })
 
