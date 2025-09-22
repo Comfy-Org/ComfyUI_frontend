@@ -150,16 +150,23 @@ const recommendedNodes = [
   'PreviewImage'
 ]
 const recommendedWidgetNames = ['seed']
-function showRecommended() {
+const recommendedWidgets = computed(() => {
   const node = activeNode.value
-  if (!node) return //Not reachable
-  const recommendedWidgets = filteredCandidates.value.filter(
+  if (!node) return [] //Not reachable
+  return filteredCandidates.value.filter(
     ([node, widget]: WidgetItem) =>
       recommendedNodes.includes(node.type) ||
       recommendedWidgetNames.includes(widget.name)
   )
+})
+function showRecommended() {
+  const node = activeNode.value
+  if (!node) return //Not reachable
   node.properties.proxyWidgets = JSON.stringify(
-    recommendedWidgets.map(([node, widget]) => [`${node.id}`, widget.name])
+    recommendedWidgets.value.map(([node, widget]) => [
+      `${node.id}`,
+      widget.name
+    ])
   )
   triggerUpdate.value++
   //TODO: Add sort step here
@@ -249,9 +256,11 @@ const filteredActive = computed<WidgetItem[]>(() => {
           />
         </div>
       </div>
-      <a @click.stop="showRecommended">
-        {{ t('subgraphStore.showRecommended') }}</a
-      >
+      <div v-if="recommendedWidgets.length" class="justify-center flex py-4">
+        <Button size="small" @click.stop="showRecommended">
+          {{ t('subgraphStore.showRecommended') }}
+        </Button>
+      </div>
     </template>
   </SidebarTabTemplate>
 </template>
