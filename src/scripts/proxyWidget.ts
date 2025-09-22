@@ -15,13 +15,10 @@ const originalConfigureAfterSlots =
 SubgraphNode.prototype._internalConfigureAfterSlots = function () {
   const canvasStore = useCanvasStore()
   const subgraphNode = this
-  //Must give value to proxyWidgets prior to injecting or it won't serialize
+  //Must give value to proxyWidgets prior to defining or it won't serialize
   subgraphNode.properties.proxyWidgets ??= '[]'
   const proxyWidgets = subgraphNode.properties.proxyWidgets
 
-  //Takes no arguements, returns nothing
-  //Sometimes called multiple times on initialization, sometimes once
-  //Clobbers all widgets
   originalConfigureAfterSlots?.bind(this)?.()
 
   Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
@@ -100,7 +97,6 @@ function resolveLinkedWidget(
   overlay: Overlay
 ): [LGraphNode | undefined, IBaseWidget | undefined] {
   const { graph, nodeId, widgetName } = overlay
-  //Note: This uses partial execution ids and therefore does not pass the root graph
   const n = getNodeByExecutionId(graph, nodeId)
   if (!n) return [undefined, undefined]
   return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
@@ -126,6 +122,17 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
         return Reflect.get(subgraphNode, p)
       }
     })
+  /**
+   * A set of handlers which define widget interaction
+   * Many arguments are shared between function calls
+   * @param {{IBaseWidget} _t - The "target" the call is originally made on.
+   *   This argument is never used, but must be defined for typechecking
+   * @param {{string}} property - The name of the accessed value.
+   *   Checked for conditional logic, but never changed
+   * @param {{object}} receiver - The object the result is set to
+   *   and the vlaue used as 'this' if property is a get/set method
+   * @param {{unknown}} value - only used on set calls. The thing being assigned
+   */
   const handler = {
     get(_t: IBaseWidget, property: string, receiver: object) {
       if (property == '_overlay') return overlay
