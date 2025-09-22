@@ -50,6 +50,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   useNodeLayout: () => ({
     position: { x: 100, y: 50 },
+    size: { width: 200, height: 100 },
     startDrag: vi.fn(),
     handleDrag: vi.fn(),
     endDrag: vi.fn()
