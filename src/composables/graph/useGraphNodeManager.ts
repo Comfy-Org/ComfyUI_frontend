@@ -2,7 +2,7 @@
  * Vue node lifecycle management for LiteGraph integration
  * Provides event-driven reactivity with performance optimizations
  */
-import { nextTick, reactive } from 'vue'
+import { reactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -52,12 +52,6 @@ export interface GraphNodeManager {
 
   // Lifecycle methods
   cleanup(): void
-
-  // Update methods
-  scheduleUpdate(
-    nodeId?: string,
-    priority?: 'critical' | 'normal' | 'low'
-  ): void
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
@@ -77,13 +71,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     { x: -10000, y: -10000, width: 20000, height: 20000 },
     { maxDepth: 6, maxItemsPerNode: 4 }
   )
-
-  // Update batching
-  const pendingUpdates = new Set<string>()
-  const criticalUpdates = new Set<string>()
-  const lowPriorityUpdates = new Set<string>()
-  let updateScheduled = false
-  let batchTimeoutId: number | null = null
 
   // Change detection state
   const lastNodesSnapshot = new Map<
@@ -289,53 +276,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     })
   }
 
-  const scheduleUpdate = (
-    nodeId?: string,
-    priority: 'critical' | 'normal' | 'low' = 'normal'
-  ) => {
-    if (nodeId) {
-      // Priority queuing
-      if (priority === 'critical') {
-        criticalUpdates.add(nodeId)
-        flush() // Immediate flush for critical updates
-        return
-      } else if (priority === 'low') {
-        lowPriorityUpdates.add(nodeId)
-      } else {
-        pendingUpdates.add(nodeId)
-      }
-    }
-
-    if (!updateScheduled) {
-      updateScheduled = true
-
-      // Adaptive batching strategy
-      if (pendingUpdates.size > 10) {
-        // Many updates - batch in nextTick
-        void nextTick(() => flush())
-      } else {
-        // Few updates - small delay for more batching
-        batchTimeoutId = window.setTimeout(() => flush(), 4)
-      }
-    }
-  }
-
-  const flush = () => {
-    if (batchTimeoutId !== null) {
-      clearTimeout(batchTimeoutId)
-      batchTimeoutId = null
-    }
-
-    // Clear all pending updates
-    criticalUpdates.clear()
-    pendingUpdates.clear()
-    lowPriorityUpdates.clear()
-    updateScheduled = false
-
-    // Sync with graph state
-    syncWithGraph()
-  }
-
   const syncWithGraph = () => {
     if (!graph?._nodes) return
 
@@ -489,19 +429,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       graph.onNodeRemoved = originalOnNodeRemoved || undefined
       graph.onTrigger = originalOnTrigger || undefined
 
-      // Clear pending updates
-      if (batchTimeoutId !== null) {
-        clearTimeout(batchTimeoutId)
-        batchTimeoutId = null
-      }
-
       // Clear all state maps
       nodeRefs.clear()
       vueNodeData.clear()
       lastNodesSnapshot.clear()
-      pendingUpdates.clear()
-      criticalUpdates.clear()
-      lowPriorityUpdates.clear()
       spatialIndex.clear()
     }
   }
@@ -599,7 +530,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   return {
     vueNodeData,
     getNode,
-    cleanup,
-    scheduleUpdate
+    cleanup
   }
 }
