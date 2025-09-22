@@ -30,8 +30,6 @@ import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
  * Functionally, however, when editing a subgraph, that "subgraph input" is the "origin" or "output side" of a link.
  */
 export class SubgraphInput extends SubgraphSlot {
-  declare parent: SubgraphInputNode
-
   events = new CustomEventTarget<SubgraphInputEventMap>()
 
   /** The linked widget that this slot is connected to. */
@@ -50,13 +48,13 @@ export class SubgraphInput extends SubgraphSlot {
     node: LGraphNode,
     afterRerouteId?: RerouteId
   ): LLink | undefined {
-    const { subgraph } = this.parent
+    const parent = this.parent as SubgraphInputNode
+    const { subgraph } = parent
 
     // Allow nodes to block connection
     const inputIndex = node.inputs.indexOf(slot)
     if (
-      node.onConnectInput?.(inputIndex, this.type, this, this.parent, -1) ===
-      false
+      node.onConnectInput?.(inputIndex, this.type, this, parent, -1) === false
     )
       return
 
@@ -77,7 +75,7 @@ export class SubgraphInput extends SubgraphSlot {
     if (slot.link != null) {
       subgraph.beforeChange()
       const link = subgraph.getLink(slot.link)
-      this.parent._disconnectNodeInput(node, slot, link)
+      parent._disconnectNodeInput(node, slot, link)
     }
 
     const inputWidget = node.getWidgetFromSlot(slot)
@@ -97,8 +95,8 @@ export class SubgraphInput extends SubgraphSlot {
     const link = new LLink(
       ++subgraph.state.lastLinkId,
       slot.type,
-      this.parent.id,
-      this.parent.slots.indexOf(this),
+      parent.id,
+      parent.slots.indexOf(this),
       node.id,
       inputIndex,
       afterRerouteId

@@ -11,7 +11,7 @@ const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
   // Mock view route
-  comfyPage.page.route('**/view**', async (route) => {
+  await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
