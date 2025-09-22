@@ -1,7 +1,3 @@
-<template>
-  <SidebarIcon icon="pi pi-sign-out" :tooltip="tooltip" @click="logout" />
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -21,3 +17,7 @@ const logout = async () => {
   window.location.reload()
 }
 </script>
+
+<template>
+  <SidebarIcon icon="pi pi-sign-out" :tooltip="tooltip" @click="logout" />
+</template>

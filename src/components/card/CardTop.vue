@@ -1,3 +1,22 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+const { ratio = 'square' } = defineProps<{
+  ratio?: 'square' | 'landscape'
+}>()
+
+const topStyle = computed(() => {
+  const baseClasses = 'relative p-0'
+
+  const ratioClasses = {
+    square: 'aspect-square',
+    landscape: 'aspect-48/27'
+  }
+
+  return `${baseClasses} ${ratioClasses[ratio]}`
+})
+</script>
+
 <template>
   <div :class="topStyle">
     <slot class="absolute top-0 left-0 w-full h-full"></slot>
@@ -19,22 +38,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-
-const { ratio = 'square' } = defineProps<{
-  ratio?: 'square' | 'landscape'
-}>()
-
-const topStyle = computed(() => {
-  const baseClasses = 'relative p-0'
-
-  const ratioClasses = {
-    square: 'aspect-square',
-    landscape: 'aspect-48/27'
-  }
-
-  return `${baseClasses} ${ratioClasses[ratio]}`
-})
-</script>

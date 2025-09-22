@@ -1,30 +1,3 @@
-<template>
-  <div class="input-knob flex flex-row items-center gap-2">
-    <Knob
-      :model-value="modelValue"
-      :value-template="displayValue"
-      class="knob-part"
-      :class="knobClass"
-      :min="min"
-      :max="max"
-      :step="step"
-      v-bind="$attrs"
-      @update:model-value="updateValue"
-    />
-    <InputNumber
-      :model-value="modelValue"
-      class="input-part"
-      :max-fraction-digits="3"
-      :class="inputClass"
-      :min="min"
-      :max="max"
-      :step="step"
-      :allow-empty="false"
-      @update:model-value="updateValue"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Knob from 'primevue/knob'
@@ -87,3 +60,30 @@ defineOptions({
   inheritAttrs: false
 })
 </script>
+
+<template>
+  <div class="input-knob flex flex-row items-center gap-2">
+    <Knob
+      :model-value="modelValue"
+      :value-template="displayValue"
+      class="knob-part"
+      :class="knobClass"
+      :min="min"
+      :max="max"
+      :step="step"
+      v-bind="$attrs"
+      @update:model-value="updateValue"
+    />
+    <InputNumber
+      :model-value="modelValue"
+      class="input-part"
+      :max-fraction-digits="3"
+      :class="inputClass"
+      :min="min"
+      :max="max"
+      :step="step"
+      :allow-empty="false"
+      @update:model-value="updateValue"
+    />
+  </div>
+</template>

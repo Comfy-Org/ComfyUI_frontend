@@ -1,3 +1,36 @@
+<script setup lang="ts">
+import Splitter from 'primevue/splitter'
+import SplitterPanel from 'primevue/splitterpanel'
+import { computed } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+
+const settingStore = useSettingStore()
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+
+const unifiedWidth = computed(() =>
+  settingStore.get('Comfy.Sidebar.UnifiedWidth')
+)
+
+const sidebarPanelVisible = computed(
+  () => useSidebarTabStore().activeSidebarTab !== null
+)
+const bottomPanelVisible = computed(
+  () => useBottomPanelStore().bottomPanelVisible
+)
+const activeSidebarTabId = computed(
+  () => useSidebarTabStore().activeSidebarTabId
+)
+
+const sidebarStateKey = computed(() => {
+  return unifiedWidth.value ? 'unified-sidebar' : activeSidebarTabId.value ?? ''
+})
+</script>
+
 <template>
   <Splitter
     :key="sidebarStateKey"
@@ -44,39 +77,6 @@
     </SplitterPanel>
   </Splitter>
 </template>
-
-<script setup lang="ts">
-import Splitter from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-
-const settingStore = useSettingStore()
-const sidebarLocation = computed<'left' | 'right'>(() =>
-  settingStore.get('Comfy.Sidebar.Location')
-)
-
-const unifiedWidth = computed(() =>
-  settingStore.get('Comfy.Sidebar.UnifiedWidth')
-)
-
-const sidebarPanelVisible = computed(
-  () => useSidebarTabStore().activeSidebarTab !== null
-)
-const bottomPanelVisible = computed(
-  () => useBottomPanelStore().bottomPanelVisible
-)
-const activeSidebarTabId = computed(
-  () => useSidebarTabStore().activeSidebarTabId
-)
-
-const sidebarStateKey = computed(() => {
-  return unifiedWidth.value ? 'unified-sidebar' : activeSidebarTabId.value ?? ''
-})
-</script>
 
 <style scoped>
 @reference '../assets/css/style.css';

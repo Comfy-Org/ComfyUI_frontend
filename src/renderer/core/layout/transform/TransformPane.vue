@@ -1,15 +1,3 @@
-<template>
-  <div
-    class="transform-pane"
-    :class="{ 'transform-pane--interacting': isInteracting }"
-    :style="transformStyle"
-    @pointerdown="handlePointerDown"
-  >
-    <!-- Vue nodes will be rendered here -->
-    <slot />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, provide } from 'vue'
 
@@ -68,6 +56,18 @@ useCanvasTransformSync(props.canvas, syncWithCanvas, {
   onStop: () => emit('rafStatusChange', false)
 })
 </script>
+
+<template>
+  <div
+    class="transform-pane"
+    :class="{ 'transform-pane--interacting': isInteracting }"
+    :style="transformStyle"
+    @pointerdown="handlePointerDown"
+  >
+    <!-- Vue nodes will be rendered here -->
+    <slot />
+  </div>
+</template>
 
 <style scoped>
 .transform-pane {

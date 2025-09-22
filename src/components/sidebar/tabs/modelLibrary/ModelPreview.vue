@@ -1,3 +1,16 @@
+<script setup lang="ts">
+import { ComfyModelDef } from '@/stores/modelStore'
+
+const props = defineProps({
+  modelDef: {
+    type: ComfyModelDef,
+    required: true
+  }
+})
+
+const modelDef = props.modelDef
+</script>
+
 <template>
   <div class="model_preview">
     <div class="model_preview_title">
@@ -33,19 +46,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ComfyModelDef } from '@/stores/modelStore'
-
-const props = defineProps({
-  modelDef: {
-    type: ComfyModelDef,
-    required: true
-  }
-})
-
-const modelDef = props.modelDef
-</script>
 <style scoped>
 .model_preview {
   background-color: var(--comfy-menu-bg);

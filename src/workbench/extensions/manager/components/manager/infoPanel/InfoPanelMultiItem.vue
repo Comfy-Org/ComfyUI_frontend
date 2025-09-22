@@ -1,58 +1,3 @@
-<template>
-  <div v-if="nodePacks?.length" class="flex flex-col h-full">
-    <div class="p-6 flex-1 overflow-auto">
-      <InfoPanelHeader :node-packs>
-        <template #thumbnail>
-          <PackIconStacked :node-packs="nodePacks" />
-        </template>
-        <template #title>
-          <div class="mt-5">
-            <span class="inline-block mr-2 text-blue-500 text-base">{{
-              nodePacks.length
-            }}</span>
-            <span class="text-base">{{ $t('manager.packsSelected') }}</span>
-          </div>
-        </template>
-        <template #install-button>
-          <!-- Mixed: Don't show any button -->
-          <div v-if="isMixed" class="text-sm text-neutral-500">
-            {{ $t('manager.mixedSelectionMessage') }}
-          </div>
-          <!-- All installed: Show uninstall button -->
-          <PackUninstallButton
-            v-else-if="isAllInstalled"
-            size="md"
-            :node-packs="installedPacks"
-          />
-          <!-- None installed: Show install button -->
-          <PackInstallButton
-            v-else-if="isNoneInstalled"
-            size="md"
-            :node-packs="notInstalledPacks"
-            :has-conflict="hasConflicts"
-            :conflict-info="conflictInfo"
-          />
-        </template>
-      </InfoPanelHeader>
-      <div class="mb-6">
-        <MetadataRow :label="$t('g.status')">
-          <PackStatusMessage
-            :status-type="overallStatus"
-            :has-compatibility-issues="hasConflicts"
-          />
-        </MetadataRow>
-        <MetadataRow
-          :label="$t('manager.totalNodes')"
-          :value="totalNodesCount"
-        />
-      </div>
-    </div>
-  </div>
-  <div v-else class="mt-4 mx-8 flex-1 overflow-hidden text-sm">
-    {{ $t('manager.infoPanelEmpty') }}
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import { computed, onUnmounted, provide, toRef } from 'vue'
@@ -161,3 +106,58 @@ onUnmounted(() => {
   getNodeDefs.cancel()
 })
 </script>
+
+<template>
+  <div v-if="nodePacks?.length" class="flex flex-col h-full">
+    <div class="p-6 flex-1 overflow-auto">
+      <InfoPanelHeader :node-packs>
+        <template #thumbnail>
+          <PackIconStacked :node-packs="nodePacks" />
+        </template>
+        <template #title>
+          <div class="mt-5">
+            <span class="inline-block mr-2 text-blue-500 text-base">{{
+              nodePacks.length
+            }}</span>
+            <span class="text-base">{{ $t('manager.packsSelected') }}</span>
+          </div>
+        </template>
+        <template #install-button>
+          <!-- Mixed: Don't show any button -->
+          <div v-if="isMixed" class="text-sm text-neutral-500">
+            {{ $t('manager.mixedSelectionMessage') }}
+          </div>
+          <!-- All installed: Show uninstall button -->
+          <PackUninstallButton
+            v-else-if="isAllInstalled"
+            size="md"
+            :node-packs="installedPacks"
+          />
+          <!-- None installed: Show install button -->
+          <PackInstallButton
+            v-else-if="isNoneInstalled"
+            size="md"
+            :node-packs="notInstalledPacks"
+            :has-conflict="hasConflicts"
+            :conflict-info="conflictInfo"
+          />
+        </template>
+      </InfoPanelHeader>
+      <div class="mb-6">
+        <MetadataRow :label="$t('g.status')">
+          <PackStatusMessage
+            :status-type="overallStatus"
+            :has-compatibility-issues="hasConflicts"
+          />
+        </MetadataRow>
+        <MetadataRow
+          :label="$t('manager.totalNodes')"
+          :value="totalNodesCount"
+        />
+      </div>
+    </div>
+  </div>
+  <div v-else class="mt-4 mx-8 flex-1 overflow-hidden text-sm">
+    {{ $t('manager.infoPanelEmpty') }}
+  </div>
+</template>

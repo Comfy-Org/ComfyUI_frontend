@@ -1,36 +1,3 @@
-<template>
-  <div>
-    <div
-      v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
-      class="w-full flex content-end z-1001 h-[38px]"
-      style="background: var(--border-color)"
-    >
-      <WorkflowTabs />
-    </div>
-    <div
-      v-show="showTopMenu"
-      ref="topMenuRef"
-      class="comfyui-menu flex items-center"
-      :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
-    >
-      <CommandMenubar />
-      <div class="grow min-w-0 app-drag h-full"></div>
-      <div
-        ref="menuRight"
-        class="comfyui-menu-right flex-shrink-1 overflow-auto"
-      />
-      <Actionbar />
-      <CurrentUserButton class="shrink-0" />
-    </div>
-
-    <!-- Virtual top menu for native window (drag handle) -->
-    <div
-      v-show="isNativeWindow() && !showTopMenu"
-      class="fixed top-0 left-0 app-drag w-full h-(--comfy-topbar-height)"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useEventBus } from '@vueuse/core'
 import { computed, onMounted, provide, ref } from 'vue'
@@ -85,6 +52,39 @@ onMounted(() => {
   }
 })
 </script>
+
+<template>
+  <div>
+    <div
+      v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
+      class="w-full flex content-end z-1001 h-[38px]"
+      style="background: var(--border-color)"
+    >
+      <WorkflowTabs />
+    </div>
+    <div
+      v-show="showTopMenu"
+      ref="topMenuRef"
+      class="comfyui-menu flex items-center"
+      :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
+    >
+      <CommandMenubar />
+      <div class="grow min-w-0 app-drag h-full"></div>
+      <div
+        ref="menuRight"
+        class="comfyui-menu-right flex-shrink-1 overflow-auto"
+      />
+      <Actionbar />
+      <CurrentUserButton class="shrink-0" />
+    </div>
+
+    <!-- Virtual top menu for native window (drag handle) -->
+    <div
+      v-show="isNativeWindow() && !showTopMenu"
+      class="fixed top-0 left-0 app-drag w-full h-(--comfy-topbar-height)"
+    />
+  </div>
+</template>
 
 <style scoped>
 .comfyui-menu {

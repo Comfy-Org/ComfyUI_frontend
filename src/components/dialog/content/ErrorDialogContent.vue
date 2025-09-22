@@ -1,55 +1,3 @@
-<template>
-  <div class="comfy-error-report flex flex-col gap-4">
-    <NoResultsPlaceholder
-      class="pb-0"
-      icon="pi pi-exclamation-circle"
-      :title="title"
-      :message="error.exceptionMessage"
-      :text-class="'break-words max-w-[60vw]'"
-    />
-    <template v-if="error.extensionFile">
-      <span>{{ t('errorDialog.extensionFileHint') }}:</span>
-      <br />
-      <span class="font-bold">{{ error.extensionFile }}</span>
-    </template>
-
-    <div class="flex gap-2 justify-center">
-      <Button
-        v-show="!reportOpen"
-        text
-        :label="$t('g.showReport')"
-        @click="showReport"
-      />
-      <Button
-        v-show="!reportOpen"
-        text
-        :label="$t('issueReport.helpFix')"
-        @click="showContactSupport"
-      />
-    </div>
-    <template v-if="reportOpen">
-      <Divider />
-      <ScrollPanel class="w-full h-[400px] max-w-[80vw]">
-        <pre class="whitespace-pre-wrap break-words">{{ reportContent }}</pre>
-      </ScrollPanel>
-      <Divider />
-    </template>
-    <div class="flex gap-4 justify-end">
-      <FindIssueButton
-        :error-message="error.exceptionMessage"
-        :repo-owner="repoOwner"
-        :repo-name="repoName"
-      />
-      <Button
-        v-if="reportOpen"
-        :label="$t('g.copyToClipboard')"
-        icon="pi pi-copy"
-        @click="copyReportToClipboard"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
@@ -137,3 +85,55 @@ const copyReportToClipboard = async () => {
   await copyToClipboard(reportContent.value)
 }
 </script>
+
+<template>
+  <div class="comfy-error-report flex flex-col gap-4">
+    <NoResultsPlaceholder
+      class="pb-0"
+      icon="pi pi-exclamation-circle"
+      :title="title"
+      :message="error.exceptionMessage"
+      :text-class="'break-words max-w-[60vw]'"
+    />
+    <template v-if="error.extensionFile">
+      <span>{{ t('errorDialog.extensionFileHint') }}:</span>
+      <br />
+      <span class="font-bold">{{ error.extensionFile }}</span>
+    </template>
+
+    <div class="flex gap-2 justify-center">
+      <Button
+        v-show="!reportOpen"
+        text
+        :label="$t('g.showReport')"
+        @click="showReport"
+      />
+      <Button
+        v-show="!reportOpen"
+        text
+        :label="$t('issueReport.helpFix')"
+        @click="showContactSupport"
+      />
+    </div>
+    <template v-if="reportOpen">
+      <Divider />
+      <ScrollPanel class="w-full h-[400px] max-w-[80vw]">
+        <pre class="whitespace-pre-wrap break-words">{{ reportContent }}</pre>
+      </ScrollPanel>
+      <Divider />
+    </template>
+    <div class="flex gap-4 justify-end">
+      <FindIssueButton
+        :error-message="error.exceptionMessage"
+        :repo-owner="repoOwner"
+        :repo-name="repoName"
+      />
+      <Button
+        v-if="reportOpen"
+        :label="$t('g.copyToClipboard')"
+        icon="pi pi-copy"
+        @click="copyReportToClipboard"
+      />
+    </div>
+  </div>
+</template>

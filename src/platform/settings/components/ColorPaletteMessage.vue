@@ -1,3 +1,26 @@
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
+import Select from 'primevue/select'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+
+const settingStore = useSettingStore()
+const colorPaletteStore = useColorPaletteStore()
+const colorPaletteService = useColorPaletteService()
+const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
+
+const importCustomPalette = async () => {
+  const palette = await colorPaletteService.importColorPalette()
+  if (palette) {
+    await settingStore.set('Comfy.ColorPalette', palette.id)
+  }
+}
+</script>
+
 <template>
   <Message severity="info" icon="pi pi-palette" pt:text="w-full">
     <div class="flex items-center justify-between">
@@ -36,26 +59,3 @@
     </div>
   </Message>
 </template>
-
-<script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-
-const settingStore = useSettingStore()
-const colorPaletteStore = useColorPaletteStore()
-const colorPaletteService = useColorPaletteService()
-const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
-
-const importCustomPalette = async () => {
-  const palette = await colorPaletteService.importColorPalette()
-  if (palette) {
-    await settingStore.set('Comfy.ColorPalette', palette.id)
-  }
-}
-</script>

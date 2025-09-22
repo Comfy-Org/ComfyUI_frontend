@@ -1,3 +1,41 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import { ref } from 'vue'
+
+defineProps<{
+  modelValue: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+}>()
+
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      emit('update:modelValue', e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const clearImage = () => {
+  emit('update:modelValue', '')
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+</script>
+
 <template>
   <div class="image-upload-wrapper">
     <div class="flex gap-2 items-center">
@@ -40,41 +78,3 @@
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import { ref } from 'vue'
-
-defineProps<{
-  modelValue: string
-}>()
-
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-}>()
-
-const fileInput = ref<HTMLInputElement | null>(null)
-
-const triggerFileInput = () => {
-  fileInput.value?.click()
-}
-
-const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files[0]) {
-    const file = target.files[0]
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      emit('update:modelValue', e.target?.result as string)
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const clearImage = () => {
-  emit('update:modelValue', '')
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
-}
-</script>

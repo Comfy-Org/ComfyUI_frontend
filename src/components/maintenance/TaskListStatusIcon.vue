@@ -1,10 +1,3 @@
-<template>
-  <ProgressSpinner v-if="!state || loading" class="h-8 w-8" />
-  <template v-else>
-    <i v-tooltip.top="{ value: tooltip, showDelay: 250 }" :class="cssClasses" />
-  </template>
-</template>
-
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -43,3 +36,10 @@ const props = defineProps<{
   loading?: MaybeRef<boolean>
 }>()
 </script>
+
+<template>
+  <ProgressSpinner v-if="!state || loading" class="h-8 w-8" />
+  <template v-else>
+    <i v-tooltip.top="{ value: tooltip, showDelay: 250 }" :class="cssClasses" />
+  </template>
+</template>

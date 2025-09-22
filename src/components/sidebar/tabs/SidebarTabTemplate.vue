@@ -1,3 +1,13 @@
+<script setup lang="ts">
+import ScrollPanel from 'primevue/scrollpanel'
+import Toolbar from 'primevue/toolbar'
+
+const props = defineProps<{
+  title: string
+  class?: string
+}>()
+</script>
+
 <template>
   <div
     class="comfy-vue-side-bar-container flex flex-col h-full group/sidebar-tab"
@@ -26,16 +36,6 @@
     </ScrollPanel>
   </div>
 </template>
-
-<script setup lang="ts">
-import ScrollPanel from 'primevue/scrollpanel'
-import Toolbar from 'primevue/toolbar'
-
-const props = defineProps<{
-  title: string
-  class?: string
-}>()
-</script>
 
 <style scoped>
 @reference '../../../assets/css/style.css';

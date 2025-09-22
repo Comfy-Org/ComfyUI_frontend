@@ -1,20 +1,3 @@
-<template>
-  <Message
-    :severity="statusSeverity"
-    class="p-0 flex items-center rounded-xl break-words w-fit"
-    :pt="{
-      text: { class: 'text-xs' },
-      content: { class: 'px-2 py-0.5' }
-    }"
-  >
-    <i
-      class="pi pi-circle-fill mr-1.5 text-[0.6rem] p-0"
-      :style="{ opacity: 0.8 }"
-    />
-    {{ $t(`manager.status.${statusLabel}`) }}
-  </Message>
-</template>
-
 <script setup lang="ts">
 import Message from 'primevue/message'
 import { computed, inject } from 'vue'
@@ -87,3 +70,20 @@ const statusSeverity = computed(() => {
   return statusPropsMap[statusType]?.severity || 'secondary'
 })
 </script>
+
+<template>
+  <Message
+    :severity="statusSeverity"
+    class="p-0 flex items-center rounded-xl break-words w-fit"
+    :pt="{
+      text: { class: 'text-xs' },
+      content: { class: 'px-2 py-0.5' }
+    }"
+  >
+    <i
+      class="pi pi-circle-fill mr-1.5 text-[0.6rem] p-0"
+      :style="{ opacity: 0.8 }"
+    />
+    {{ $t(`manager.status.${statusLabel}`) }}
+  </Message>
+</template>

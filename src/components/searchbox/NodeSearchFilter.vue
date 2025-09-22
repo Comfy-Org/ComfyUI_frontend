@@ -1,26 +1,3 @@
-<template>
-  <div class="_content">
-    <SelectButton
-      v-model="selectedFilter"
-      class="filter-type-select"
-      :options="filters"
-      :allow-empty="false"
-      option-label="name"
-      @change="updateSelectedFilterValue"
-    />
-    <Select
-      v-model="selectedFilterValue"
-      class="filter-value-select"
-      :options="filterValues"
-      filter
-      auto-filter-focus
-    />
-  </div>
-  <div class="_footer">
-    <Button type="button" :label="$t('g.add')" @click="submit" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Select from 'primevue/select'
@@ -67,6 +44,29 @@ const submit = () => {
   })
 }
 </script>
+
+<template>
+  <div class="_content">
+    <SelectButton
+      v-model="selectedFilter"
+      class="filter-type-select"
+      :options="filters"
+      :allow-empty="false"
+      option-label="name"
+      @change="updateSelectedFilterValue"
+    />
+    <Select
+      v-model="selectedFilterValue"
+      class="filter-value-select"
+      :options="filterValues"
+      filter
+      auto-filter-focus
+    />
+  </div>
+  <div class="_footer">
+    <Button type="button" :label="$t('g.add')" @click="submit" />
+  </div>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

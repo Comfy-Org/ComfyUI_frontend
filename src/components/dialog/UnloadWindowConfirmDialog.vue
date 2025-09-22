@@ -1,14 +1,3 @@
-<template>
-  <div>
-    <!--
-    UnloadWindowConfirmDialog: This component does not render
-    anything visible. It is used to confirm the user wants to
-    close the window, and if they do, it will call the
-    beforeunload event.
-    -->
-  </div>
-</template>
-
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 
@@ -37,3 +26,14 @@ onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 </script>
+
+<template>
+  <div>
+    <!--
+    UnloadWindowConfirmDialog: This component does not render
+    anything visible. It is used to confirm the user wants to
+    close the window, and if they do, it will call the
+    beforeunload event.
+    -->
+  </div>
+</template>

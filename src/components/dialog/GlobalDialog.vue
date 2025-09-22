@@ -1,4 +1,12 @@
 <!-- The main global dialog to show various things -->
+<script setup lang="ts">
+import Dialog from 'primevue/dialog'
+
+import { useDialogStore } from '@/stores/dialogStore'
+
+const dialogStore = useDialogStore()
+</script>
+
 <template>
   <Dialog
     v-for="item in dialogStore.dialogStack"
@@ -33,14 +41,6 @@
     </template>
   </Dialog>
 </template>
-
-<script setup lang="ts">
-import Dialog from 'primevue/dialog'
-
-import { useDialogStore } from '@/stores/dialogStore'
-
-const dialogStore = useDialogStore()
-</script>
 
 <style>
 @reference '../../assets/css/style.css';

@@ -1,54 +1,3 @@
-<template>
-  <ScrollPanel
-    ref="scrollPanelRef"
-    class="w-full min-h-[400px] rounded-lg px-2 py-2 text-xs"
-    :pt="{ content: { id: 'chat-scroll-content' } }"
-  >
-    <div v-for="(item, i) in parsedHistory" :key="i" class="mb-4">
-      <!-- Prompt (user, right) -->
-      <span
-        :class="{
-          'opacity-40 pointer-events-none': editIndex !== null && i > editIndex
-        }"
-      >
-        <div class="flex justify-end mb-1">
-          <div
-            class="bg-gray-300 dark-theme:bg-gray-800 rounded-xl px-4 py-1 max-w-[80%] text-right"
-          >
-            <div class="break-words text-[12px]">{{ item.prompt }}</div>
-          </div>
-        </div>
-        <div class="flex justify-end mb-2 mr-1">
-          <CopyButton :text="item.prompt" />
-          <Button
-            v-tooltip="
-              editIndex === i ? $t('chatHistory.cancelEditTooltip') : null
-            "
-            text
-            rounded
-            class="p-1! h-4! w-4! text-gray-400 hover:text-gray-600 hover:dark-theme:text-gray-200 transition"
-            pt:icon:class="text-xs!"
-            :icon="editIndex === i ? 'pi pi-times' : 'pi pi-pencil'"
-            :aria-label="
-              editIndex === i ? $t('chatHistory.cancelEdit') : $t('g.edit')
-            "
-            @click="editIndex === i ? handleCancelEdit() : handleEdit(i)"
-          />
-        </div>
-      </span>
-      <!-- Response (LLM, left) -->
-      <ResponseBlurb
-        :text="item.response"
-        :class="{
-          'opacity-25 pointer-events-none': editIndex !== null && i >= editIndex
-        }"
-      >
-        <div v-html="nl2br(linkifyHtml(item.response))" />
-      </ResponseBlurb>
-    </div>
-  </ScrollPanel>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ScrollPanel from 'primevue/scrollpanel'
@@ -132,3 +81,54 @@ watch(() => parsedHistory.value, onHistoryChanged, {
   deep: true
 })
 </script>
+
+<template>
+  <ScrollPanel
+    ref="scrollPanelRef"
+    class="w-full min-h-[400px] rounded-lg px-2 py-2 text-xs"
+    :pt="{ content: { id: 'chat-scroll-content' } }"
+  >
+    <div v-for="(item, i) in parsedHistory" :key="i" class="mb-4">
+      <!-- Prompt (user, right) -->
+      <span
+        :class="{
+          'opacity-40 pointer-events-none': editIndex !== null && i > editIndex
+        }"
+      >
+        <div class="flex justify-end mb-1">
+          <div
+            class="bg-gray-300 dark-theme:bg-gray-800 rounded-xl px-4 py-1 max-w-[80%] text-right"
+          >
+            <div class="break-words text-[12px]">{{ item.prompt }}</div>
+          </div>
+        </div>
+        <div class="flex justify-end mb-2 mr-1">
+          <CopyButton :text="item.prompt" />
+          <Button
+            v-tooltip="
+              editIndex === i ? $t('chatHistory.cancelEditTooltip') : null
+            "
+            text
+            rounded
+            class="p-1! h-4! w-4! text-gray-400 hover:text-gray-600 hover:dark-theme:text-gray-200 transition"
+            pt:icon:class="text-xs!"
+            :icon="editIndex === i ? 'pi pi-times' : 'pi pi-pencil'"
+            :aria-label="
+              editIndex === i ? $t('chatHistory.cancelEdit') : $t('g.edit')
+            "
+            @click="editIndex === i ? handleCancelEdit() : handleEdit(i)"
+          />
+        </div>
+      </span>
+      <!-- Response (LLM, left) -->
+      <ResponseBlurb
+        :text="item.response"
+        :class="{
+          'opacity-25 pointer-events-none': editIndex !== null && i >= editIndex
+        }"
+      >
+        <div v-html="nl2br(linkifyHtml(item.response))" />
+      </ResponseBlurb>
+    </div>
+  </ScrollPanel>
+</template>

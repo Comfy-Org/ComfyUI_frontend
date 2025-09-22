@@ -1,96 +1,3 @@
-<template>
-  <SidebarTabTemplate :title="$t('sideToolbar.queue')">
-    <template #tool-buttons>
-      <Button
-        v-tooltip.bottom="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
-        :icon="
-          imageFit === 'cover'
-            ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center'
-            : 'pi pi-arrow-up-right-and-arrow-down-left-from-center'
-        "
-        text
-        severity="secondary"
-        class="toggle-expanded-button"
-        @click="toggleImageFit"
-      />
-      <Button
-        v-if="isInFolderView"
-        v-tooltip.bottom="$t('sideToolbar.queueTab.backToAllTasks')"
-        icon="pi pi-arrow-left"
-        text
-        severity="secondary"
-        class="back-button"
-        @click="exitFolderView"
-      />
-      <template v-else>
-        <Button
-          v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
-          :icon="isExpanded ? 'pi pi-images' : 'pi pi-image'"
-          text
-          severity="secondary"
-          class="toggle-expanded-button"
-          @click="toggleExpanded"
-        />
-        <Button
-          v-if="queueStore.hasPendingTasks"
-          v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
-          icon="pi pi-stop"
-          severity="danger"
-          text
-          @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
-        />
-        <Button
-          icon="pi pi-trash"
-          text
-          severity="primary"
-          class="clear-all-button"
-          @click="confirmRemoveAll($event)"
-        />
-      </template>
-    </template>
-    <template #body>
-      <VirtualGrid
-        v-if="allTasks?.length"
-        :items="allTasks"
-        :grid-style="{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          padding: '0.5rem',
-          gap: '0.5rem'
-        }"
-      >
-        <template #item="{ item }">
-          <TaskItem
-            :task="item"
-            :is-flat-task="isExpanded || isInFolderView"
-            @contextmenu="handleContextMenu"
-            @preview="handlePreview"
-            @task-output-length-clicked="enterFolderView($event)"
-          />
-        </template>
-      </VirtualGrid>
-      <div v-else-if="queueStore.isLoading">
-        <ProgressSpinner
-          style="width: 50px; left: 50%; transform: translateX(-50%)"
-        />
-      </div>
-      <div v-else>
-        <NoResultsPlaceholder
-          icon="pi pi-info-circle"
-          :title="$t('g.noTasksFound')"
-          :message="$t('g.noTasksFoundMessage')"
-        />
-      </div>
-    </template>
-  </SidebarTabTemplate>
-  <ConfirmPopup />
-  <ContextMenu ref="menu" :model="menuItems" />
-  <ResultGallery
-    v-model:active-index="galleryActiveIndex"
-    :all-gallery-items="allGalleryItems"
-  />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
@@ -284,3 +191,96 @@ watch(allTasks, () => {
   galleryActiveIndex.value = Math.max(0, newIndex)
 })
 </script>
+
+<template>
+  <SidebarTabTemplate :title="$t('sideToolbar.queue')">
+    <template #tool-buttons>
+      <Button
+        v-tooltip.bottom="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
+        :icon="
+          imageFit === 'cover'
+            ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center'
+            : 'pi pi-arrow-up-right-and-arrow-down-left-from-center'
+        "
+        text
+        severity="secondary"
+        class="toggle-expanded-button"
+        @click="toggleImageFit"
+      />
+      <Button
+        v-if="isInFolderView"
+        v-tooltip.bottom="$t('sideToolbar.queueTab.backToAllTasks')"
+        icon="pi pi-arrow-left"
+        text
+        severity="secondary"
+        class="back-button"
+        @click="exitFolderView"
+      />
+      <template v-else>
+        <Button
+          v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
+          :icon="isExpanded ? 'pi pi-images' : 'pi pi-image'"
+          text
+          severity="secondary"
+          class="toggle-expanded-button"
+          @click="toggleExpanded"
+        />
+        <Button
+          v-if="queueStore.hasPendingTasks"
+          v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
+          icon="pi pi-stop"
+          severity="danger"
+          text
+          @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
+        />
+        <Button
+          icon="pi pi-trash"
+          text
+          severity="primary"
+          class="clear-all-button"
+          @click="confirmRemoveAll($event)"
+        />
+      </template>
+    </template>
+    <template #body>
+      <VirtualGrid
+        v-if="allTasks?.length"
+        :items="allTasks"
+        :grid-style="{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          padding: '0.5rem',
+          gap: '0.5rem'
+        }"
+      >
+        <template #item="{ item }">
+          <TaskItem
+            :task="item"
+            :is-flat-task="isExpanded || isInFolderView"
+            @contextmenu="handleContextMenu"
+            @preview="handlePreview"
+            @task-output-length-clicked="enterFolderView($event)"
+          />
+        </template>
+      </VirtualGrid>
+      <div v-else-if="queueStore.isLoading">
+        <ProgressSpinner
+          style="width: 50px; left: 50%; transform: translateX(-50%)"
+        />
+      </div>
+      <div v-else>
+        <NoResultsPlaceholder
+          icon="pi pi-info-circle"
+          :title="$t('g.noTasksFound')"
+          :message="$t('g.noTasksFoundMessage')"
+        />
+      </div>
+    </template>
+  </SidebarTabTemplate>
+  <ConfirmPopup />
+  <ContextMenu ref="menu" :model="menuItems" />
+  <ResultGallery
+    v-model:active-index="galleryActiveIndex"
+    :all-gallery-items="allGalleryItems"
+  />
+</template>

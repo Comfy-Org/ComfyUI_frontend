@@ -1,3 +1,20 @@
+<script setup lang="ts" generic="T">
+// eslint-disable-next-line no-restricted-imports -- TODO: Migrate to Select component
+import Dropdown from 'primevue/dropdown'
+
+import type { SearchOption } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+
+defineProps<{
+  options: SearchOption<T>[]
+  label: string
+  modelValue: T
+}>()
+
+defineEmits<{
+  'update:modelValue': [value: T]
+}>()
+</script>
+
 <template>
   <div class="flex items-center gap-1">
     <span class="text-muted">{{ label }}:</span>
@@ -17,20 +34,3 @@
     />
   </div>
 </template>
-
-<script setup lang="ts" generic="T">
-// eslint-disable-next-line no-restricted-imports -- TODO: Migrate to Select component
-import Dropdown from 'primevue/dropdown'
-
-import type { SearchOption } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-
-defineProps<{
-  options: SearchOption<T>[]
-  label: string
-  modelValue: T
-}>()
-
-defineEmits<{
-  'update:modelValue': [value: T]
-}>()
-</script>

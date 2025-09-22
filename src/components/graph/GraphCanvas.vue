@@ -1,74 +1,3 @@
-<template>
-  <!-- Load splitter overlay only after comfyApp is ready. -->
-  <!-- If load immediately, the top-level splitter stateKey won't be correctly
-  synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
-    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
-      <SideToolbar />
-    </template>
-    <template v-if="!workspaceStore.focusMode" #bottom-panel>
-      <BottomPanel />
-    </template>
-    <template #graph-canvas-panel>
-      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
-        <SecondRowWorkflowTabs
-          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
-        />
-      </div>
-      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
-
-      <MiniMap
-        v-if="comfyAppReady && minimapEnabled"
-        class="pointer-events-auto"
-      />
-    </template>
-  </LiteGraphCanvasSplitterOverlay>
-  <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
-  <canvas
-    id="graph-canvas"
-    ref="canvasRef"
-    tabindex="1"
-    class="align-top w-full h-full touch-none"
-  />
-
-  <!-- TransformPane for Vue node rendering -->
-  <TransformPane
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    :canvas="comfyApp.canvas"
-    @transform-update="handleTransformUpdate"
-    @wheel.capture="canvasInteractions.forwardEventToCanvas"
-  >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <VueGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data="nodeData"
-      :position="nodePositions.get(nodeData.id)"
-      :size="nodeSizes.get(nodeData.id)"
-      :readonly="false"
-      :error="
-        executionStore.lastExecutionError?.node_id === nodeData.id
-          ? 'Execution error'
-          : null
-      "
-      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
-      :data-node-id="nodeData.id"
-    />
-  </TransformPane>
-
-  <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
-
-  <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
-  canvasStore.canvas to be initialized. -->
-  <template v-if="comfyAppReady">
-    <TitleEditor />
-    <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
-    <DomWidgets v-if="!shouldRenderVueNodes" />
-  </template>
-</template>
-
 <script setup lang="ts">
 import { useEventListener, whenever } from '@vueuse/core'
 import {
@@ -455,3 +384,74 @@ onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
 </script>
+
+<template>
+  <!-- Load splitter overlay only after comfyApp is ready. -->
+  <!-- If load immediately, the top-level splitter stateKey won't be correctly
+  synced with the stateStorage (localStorage). -->
+  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
+    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
+      <SideToolbar />
+    </template>
+    <template v-if="!workspaceStore.focusMode" #bottom-panel>
+      <BottomPanel />
+    </template>
+    <template #graph-canvas-panel>
+      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
+        <SecondRowWorkflowTabs
+          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
+        />
+      </div>
+      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
+
+      <MiniMap
+        v-if="comfyAppReady && minimapEnabled"
+        class="pointer-events-auto"
+      />
+    </template>
+  </LiteGraphCanvasSplitterOverlay>
+  <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
+  <canvas
+    id="graph-canvas"
+    ref="canvasRef"
+    tabindex="1"
+    class="align-top w-full h-full touch-none"
+  />
+
+  <!-- TransformPane for Vue node rendering -->
+  <TransformPane
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    :canvas="comfyApp.canvas"
+    @transform-update="handleTransformUpdate"
+    @wheel.capture="canvasInteractions.forwardEventToCanvas"
+  >
+    <!-- Vue nodes rendered based on graph nodes -->
+    <VueGraphNode
+      v-for="nodeData in allNodes"
+      :key="nodeData.id"
+      :node-data="nodeData"
+      :position="nodePositions.get(nodeData.id)"
+      :size="nodeSizes.get(nodeData.id)"
+      :readonly="false"
+      :error="
+        executionStore.lastExecutionError?.node_id === nodeData.id
+          ? 'Execution error'
+          : null
+      "
+      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
+      :data-node-id="nodeData.id"
+    />
+  </TransformPane>
+
+  <NodeTooltip v-if="tooltipEnabled" />
+  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+
+  <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
+  canvasStore.canvas to be initialized. -->
+  <template v-if="comfyAppReady">
+    <TitleEditor />
+    <SelectionToolbox v-if="selectionToolboxEnabled" />
+    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
+    <DomWidgets v-if="!shouldRenderVueNodes" />
+  </template>
+</template>

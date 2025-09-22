@@ -1,3 +1,8 @@
+<script setup lang="ts">
+import Card from 'primevue/card'
+import Skeleton from 'primevue/skeleton'
+</script>
+
 <template>
   <Card
     class="w-64 template-card rounded-2xl overflow-hidden shadow-elevation-2 dark-theme:bg-dark-elevation-1.5 h-full"
@@ -23,8 +28,3 @@
     </template>
   </Card>
 </template>
-
-<script setup lang="ts">
-import Card from 'primevue/card'
-import Skeleton from 'primevue/skeleton'
-</script>

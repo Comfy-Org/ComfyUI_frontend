@@ -1,49 +1,3 @@
-<template>
-  <div
-    ref="toolboxRef"
-    style="transform: translate(var(--tb-x), var(--tb-y))"
-    class="fixed left-0 top-0 z-40 pointer-events-none"
-  >
-    <Transition name="slide-up">
-      <Panel
-        v-if="visible"
-        class="rounded-lg selection-toolbox pointer-events-auto"
-        :style="`backgroundColor: ${containerStyles.backgroundColor};`"
-        :pt="{
-          header: 'hidden',
-          content: 'p-1 h-10 flex flex-row gap-1'
-        }"
-        @wheel="canvasInteractions.handleWheel"
-      >
-        <DeleteButton v-if="showDelete" />
-        <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
-        <InfoButton v-if="showInfoButton" />
-
-        <ColorPickerButton v-if="showColorPicker" />
-        <FrameNodes v-if="showFrameNodes" />
-        <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-        <PublishSubgraphButton v-if="showPublishSubgraph" />
-        <MaskEditorButton v-if="showMaskEditor" />
-        <VerticalDivider
-          v-if="showAnyPrimaryActions && showAnyControlActions"
-        />
-
-        <BypassButton v-if="showBypass" />
-        <RefreshSelectionButton v-if="showRefresh" />
-        <Load3DViewerButton v-if="showLoad3DViewer" />
-
-        <ExtensionCommandButton
-          v-for="command in extensionToolboxCommands"
-          :key="command.id"
-          :command="command"
-        />
-        <ExecuteButton v-if="showExecute" />
-        <MoreOptions />
-      </Panel>
-    </Transition>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Panel from 'primevue/panel'
 import { computed, ref } from 'vue'
@@ -135,6 +89,52 @@ const showAnyPrimaryActions = computed(
 
 const showAnyControlActions = computed(() => showBypass.value)
 </script>
+
+<template>
+  <div
+    ref="toolboxRef"
+    style="transform: translate(var(--tb-x), var(--tb-y))"
+    class="fixed left-0 top-0 z-40 pointer-events-none"
+  >
+    <Transition name="slide-up">
+      <Panel
+        v-if="visible"
+        class="rounded-lg selection-toolbox pointer-events-auto"
+        :style="`backgroundColor: ${containerStyles.backgroundColor};`"
+        :pt="{
+          header: 'hidden',
+          content: 'p-1 h-10 flex flex-row gap-1'
+        }"
+        @wheel="canvasInteractions.handleWheel"
+      >
+        <DeleteButton v-if="showDelete" />
+        <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
+        <InfoButton v-if="showInfoButton" />
+
+        <ColorPickerButton v-if="showColorPicker" />
+        <FrameNodes v-if="showFrameNodes" />
+        <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
+        <PublishSubgraphButton v-if="showPublishSubgraph" />
+        <MaskEditorButton v-if="showMaskEditor" />
+        <VerticalDivider
+          v-if="showAnyPrimaryActions && showAnyControlActions"
+        />
+
+        <BypassButton v-if="showBypass" />
+        <RefreshSelectionButton v-if="showRefresh" />
+        <Load3DViewerButton v-if="showLoad3DViewer" />
+
+        <ExtensionCommandButton
+          v-for="command in extensionToolboxCommands"
+          :key="command.id"
+          :command="command"
+        />
+        <ExecuteButton v-if="showExecute" />
+        <MoreOptions />
+      </Panel>
+    </Transition>
+  </div>
+</template>
 
 <style scoped>
 .selection-toolbox {

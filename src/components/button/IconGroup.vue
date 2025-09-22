@@ -1,9 +1,3 @@
-<template>
-  <div :class="iconGroupClasses">
-    <slot></slot>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { cn } from '@/utils/tailwindUtil'
 
@@ -15,3 +9,9 @@ const iconGroupClasses = cn(
   'cursor-pointer'
 )
 </script>
+
+<template>
+  <div :class="iconGroupClasses">
+    <slot></slot>
+  </div>
+</template>

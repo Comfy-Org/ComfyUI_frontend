@@ -1,3 +1,80 @@
+<script setup lang="ts">
+import { filter, flatMap, map, some } from 'es-toolkit/compat'
+import Button from 'primevue/button'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import ContentDivider from '@/components/common/ContentDivider.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
+import type {
+  ConflictDetail,
+  ConflictDetectionResult
+} from '@/types/conflictDetectionTypes'
+import { getConflictMessage } from '@/utils/conflictMessageUtil'
+
+const { showAfterWhatsNew = false, conflictedPackages } = defineProps<{
+  showAfterWhatsNew?: boolean
+  conflictedPackages?: ConflictDetectionResult[]
+}>()
+
+const { t } = useI18n()
+const { conflictedPackages: globalConflictPackages } = useConflictDetection()
+
+const conflictsExpanded = ref<boolean>(false)
+const extensionsExpanded = ref<boolean>(false)
+const importFailedExpanded = ref<boolean>(false)
+
+const conflictData = computed(
+  () => conflictedPackages || globalConflictPackages.value
+)
+
+const allConflictDetails = computed(() => {
+  const allConflicts = flatMap(
+    conflictData.value,
+    (result: ConflictDetectionResult) => result.conflicts
+  )
+  return filter(
+    allConflicts,
+    (conflict: ConflictDetail) => conflict.type !== 'import_failed'
+  )
+})
+
+const packagesWithImportFailed = computed(() => {
+  return filter(conflictData.value, (result: ConflictDetectionResult) =>
+    some(
+      result.conflicts,
+      (conflict: ConflictDetail) => conflict.type === 'import_failed'
+    )
+  )
+})
+
+const importFailedConflicts = computed(() => {
+  return map(
+    packagesWithImportFailed.value,
+    (result: ConflictDetectionResult) =>
+      result.package_name || result.package_id
+  )
+})
+
+const toggleImportFailedPanel = () => {
+  importFailedExpanded.value = !importFailedExpanded.value
+  conflictsExpanded.value = false
+  extensionsExpanded.value = false
+}
+
+const toggleConflictsPanel = () => {
+  conflictsExpanded.value = !conflictsExpanded.value
+  extensionsExpanded.value = false
+  importFailedExpanded.value = false
+}
+
+const toggleExtensionsPanel = () => {
+  extensionsExpanded.value = !extensionsExpanded.value
+  conflictsExpanded.value = false
+  importFailedExpanded.value = false
+}
+</script>
+
 <template>
   <div class="w-[552px] flex flex-col">
     <ContentDivider :width="1" />
@@ -160,83 +237,6 @@
     <ContentDivider :width="1" />
   </div>
 </template>
-
-<script setup lang="ts">
-import { filter, flatMap, map, some } from 'es-toolkit/compat'
-import Button from 'primevue/button'
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import ContentDivider from '@/components/common/ContentDivider.vue'
-import { useConflictDetection } from '@/composables/useConflictDetection'
-import type {
-  ConflictDetail,
-  ConflictDetectionResult
-} from '@/types/conflictDetectionTypes'
-import { getConflictMessage } from '@/utils/conflictMessageUtil'
-
-const { showAfterWhatsNew = false, conflictedPackages } = defineProps<{
-  showAfterWhatsNew?: boolean
-  conflictedPackages?: ConflictDetectionResult[]
-}>()
-
-const { t } = useI18n()
-const { conflictedPackages: globalConflictPackages } = useConflictDetection()
-
-const conflictsExpanded = ref<boolean>(false)
-const extensionsExpanded = ref<boolean>(false)
-const importFailedExpanded = ref<boolean>(false)
-
-const conflictData = computed(
-  () => conflictedPackages || globalConflictPackages.value
-)
-
-const allConflictDetails = computed(() => {
-  const allConflicts = flatMap(
-    conflictData.value,
-    (result: ConflictDetectionResult) => result.conflicts
-  )
-  return filter(
-    allConflicts,
-    (conflict: ConflictDetail) => conflict.type !== 'import_failed'
-  )
-})
-
-const packagesWithImportFailed = computed(() => {
-  return filter(conflictData.value, (result: ConflictDetectionResult) =>
-    some(
-      result.conflicts,
-      (conflict: ConflictDetail) => conflict.type === 'import_failed'
-    )
-  )
-})
-
-const importFailedConflicts = computed(() => {
-  return map(
-    packagesWithImportFailed.value,
-    (result: ConflictDetectionResult) =>
-      result.package_name || result.package_id
-  )
-})
-
-const toggleImportFailedPanel = () => {
-  importFailedExpanded.value = !importFailedExpanded.value
-  conflictsExpanded.value = false
-  extensionsExpanded.value = false
-}
-
-const toggleConflictsPanel = () => {
-  conflictsExpanded.value = !conflictsExpanded.value
-  extensionsExpanded.value = false
-  importFailedExpanded.value = false
-}
-
-const toggleExtensionsPanel = () => {
-  extensionsExpanded.value = !extensionsExpanded.value
-  conflictsExpanded.value = false
-  importFailedExpanded.value = false
-}
-</script>
 <style scoped>
 .conflict-list-item:hover {
   background-color: rgba(0, 122, 255, 0.2);

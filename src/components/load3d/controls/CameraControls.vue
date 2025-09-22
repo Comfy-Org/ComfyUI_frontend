@@ -1,39 +1,3 @@
-<template>
-  <div class="flex flex-col">
-    <Button class="p-button-rounded p-button-text" @click="switchCamera">
-      <i
-        v-tooltip.right="{
-          value: t('load3d.switchCamera'),
-          showDelay: 300
-        }"
-        :class="['pi', getCameraIcon, 'text-white text-lg']"
-      />
-    </Button>
-    <div v-if="showFOVButton" class="relative show-fov">
-      <Button class="p-button-rounded p-button-text" @click="toggleFOV">
-        <i
-          v-tooltip.right="{ value: t('load3d.fov'), showDelay: 300 }"
-          class="pi pi-expand text-white text-lg"
-        />
-      </Button>
-      <div
-        v-show="showFOV"
-        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
-        style="width: 150px"
-      >
-        <Slider
-          v-model="fov"
-          class="w-full"
-          :min="10"
-          :max="150"
-          :step="1"
-          @change="updateFOV"
-        />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
@@ -114,3 +78,39 @@ onUnmounted(() => {
   document.removeEventListener('click', closeCameraSlider)
 })
 </script>
+
+<template>
+  <div class="flex flex-col">
+    <Button class="p-button-rounded p-button-text" @click="switchCamera">
+      <i
+        v-tooltip.right="{
+          value: t('load3d.switchCamera'),
+          showDelay: 300
+        }"
+        :class="['pi', getCameraIcon, 'text-white text-lg']"
+      />
+    </Button>
+    <div v-if="showFOVButton" class="relative show-fov">
+      <Button class="p-button-rounded p-button-text" @click="toggleFOV">
+        <i
+          v-tooltip.right="{ value: t('load3d.fov'), showDelay: 300 }"
+          class="pi pi-expand text-white text-lg"
+        />
+      </Button>
+      <div
+        v-show="showFOV"
+        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
+        style="width: 150px"
+      >
+        <Slider
+          v-model="fov"
+          class="w-full"
+          :min="10"
+          :max="150"
+          :step="1"
+          @change="updateFOV"
+        />
+      </div>
+    </div>
+  </div>
+</template>

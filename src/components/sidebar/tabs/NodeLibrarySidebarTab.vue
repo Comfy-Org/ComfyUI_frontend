@@ -1,128 +1,3 @@
-<template>
-  <div class="h-full">
-    <SidebarTabTemplate
-      v-if="!isHelpOpen"
-      :title="$t('sideToolbar.nodeLibrary')"
-      class="bg-(--p-tree-background)"
-    >
-      <template #tool-buttons>
-        <Button
-          v-tooltip.bottom="$t('g.newFolder')"
-          class="new-folder-button"
-          icon="pi pi-folder-plus"
-          text
-          severity="secondary"
-          @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
-        />
-        <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          :icon="selectedGroupingIcon"
-          text
-          severity="secondary"
-          @click="groupingPopover?.toggle($event)"
-        />
-        <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          :icon="selectedSortingIcon"
-          text
-          severity="secondary"
-          @click="sortingPopover?.toggle($event)"
-        />
-        <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
-          icon="pi pi-filter-slash"
-          text
-          severity="secondary"
-          @click="resetOrganization"
-        />
-        <Button
-          v-tooltip.bottom="$t('menu.refresh')"
-          icon="pi pi-refresh"
-          text
-          severity="secondary"
-          @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
-        />
-        <Popover ref="groupingPopover">
-          <div class="flex flex-col gap-1 p-2">
-            <Button
-              v-for="option in groupingOptions"
-              :key="option.id"
-              :icon="option.icon"
-              :label="$t(option.label)"
-              text
-              :severity="
-                selectedGroupingId === option.id ? 'primary' : 'secondary'
-              "
-              class="justify-start"
-              @click="selectGrouping(option.id)"
-            />
-          </div>
-        </Popover>
-        <Popover ref="sortingPopover">
-          <div class="flex flex-col gap-1 p-2">
-            <Button
-              v-for="option in sortingOptions"
-              :key="option.id"
-              :icon="option.icon"
-              :label="$t(option.label)"
-              text
-              :severity="
-                selectedSortingId === option.id ? 'primary' : 'secondary'
-              "
-              class="justify-start"
-              @click="selectSorting(option.id)"
-            />
-          </div>
-        </Popover>
-      </template>
-      <template #header>
-        <div>
-          <SearchBox
-            v-model:model-value="searchQuery"
-            class="node-lib-search-box p-2 2xl:p-4"
-            :placeholder="$t('g.searchNodes') + '...'"
-            filter-icon="pi pi-filter"
-            :filters
-            @search="handleSearch"
-            @show-filter="($event) => searchFilter?.toggle($event)"
-            @remove-filter="onRemoveFilter"
-          />
-
-          <Popover ref="searchFilter" class="ml-[-13px]">
-            <NodeSearchFilter @add-filter="onAddFilter" />
-          </Popover>
-        </div>
-      </template>
-      <template #body>
-        <div>
-          <NodeBookmarkTreeExplorer
-            ref="nodeBookmarkTreeExplorerRef"
-            :filtered-node-defs="filteredNodeDefs"
-            :open-node-help="openHelp"
-          />
-          <Divider
-            v-show="nodeBookmarkStore.bookmarks.length > 0"
-            type="dashed"
-            class="m-2"
-          />
-          <TreeExplorer
-            v-model:expanded-keys="expandedKeys"
-            class="node-lib-tree-explorer"
-            :root="renderedRoot"
-          >
-            <template #node="{ node }">
-              <NodeTreeLeaf :node="node" :open-node-help="openHelp" />
-            </template>
-          </TreeExplorer>
-        </div>
-      </template>
-    </SidebarTabTemplate>
-
-    <NodeHelpPage v-else :node="currentHelpNode!" @close="closeHelp" />
-  </div>
-  <div id="node-library-node-preview-container" />
-</template>
-
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -330,3 +205,128 @@ const onRemoveFilter = async (filterAndValue) => {
   await handleSearch(searchQuery.value)
 }
 </script>
+
+<template>
+  <div class="h-full">
+    <SidebarTabTemplate
+      v-if="!isHelpOpen"
+      :title="$t('sideToolbar.nodeLibrary')"
+      class="bg-(--p-tree-background)"
+    >
+      <template #tool-buttons>
+        <Button
+          v-tooltip.bottom="$t('g.newFolder')"
+          class="new-folder-button"
+          icon="pi pi-folder-plus"
+          text
+          severity="secondary"
+          @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
+        />
+        <Button
+          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
+          :icon="selectedGroupingIcon"
+          text
+          severity="secondary"
+          @click="groupingPopover?.toggle($event)"
+        />
+        <Button
+          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
+          :icon="selectedSortingIcon"
+          text
+          severity="secondary"
+          @click="sortingPopover?.toggle($event)"
+        />
+        <Button
+          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
+          icon="pi pi-filter-slash"
+          text
+          severity="secondary"
+          @click="resetOrganization"
+        />
+        <Button
+          v-tooltip.bottom="$t('menu.refresh')"
+          icon="pi pi-refresh"
+          text
+          severity="secondary"
+          @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
+        />
+        <Popover ref="groupingPopover">
+          <div class="flex flex-col gap-1 p-2">
+            <Button
+              v-for="option in groupingOptions"
+              :key="option.id"
+              :icon="option.icon"
+              :label="$t(option.label)"
+              text
+              :severity="
+                selectedGroupingId === option.id ? 'primary' : 'secondary'
+              "
+              class="justify-start"
+              @click="selectGrouping(option.id)"
+            />
+          </div>
+        </Popover>
+        <Popover ref="sortingPopover">
+          <div class="flex flex-col gap-1 p-2">
+            <Button
+              v-for="option in sortingOptions"
+              :key="option.id"
+              :icon="option.icon"
+              :label="$t(option.label)"
+              text
+              :severity="
+                selectedSortingId === option.id ? 'primary' : 'secondary'
+              "
+              class="justify-start"
+              @click="selectSorting(option.id)"
+            />
+          </div>
+        </Popover>
+      </template>
+      <template #header>
+        <div>
+          <SearchBox
+            v-model:model-value="searchQuery"
+            class="node-lib-search-box p-2 2xl:p-4"
+            :placeholder="$t('g.searchNodes') + '...'"
+            filter-icon="pi pi-filter"
+            :filters
+            @search="handleSearch"
+            @show-filter="($event) => searchFilter?.toggle($event)"
+            @remove-filter="onRemoveFilter"
+          />
+
+          <Popover ref="searchFilter" class="ml-[-13px]">
+            <NodeSearchFilter @add-filter="onAddFilter" />
+          </Popover>
+        </div>
+      </template>
+      <template #body>
+        <div>
+          <NodeBookmarkTreeExplorer
+            ref="nodeBookmarkTreeExplorerRef"
+            :filtered-node-defs="filteredNodeDefs"
+            :open-node-help="openHelp"
+          />
+          <Divider
+            v-show="nodeBookmarkStore.bookmarks.length > 0"
+            type="dashed"
+            class="m-2"
+          />
+          <TreeExplorer
+            v-model:expanded-keys="expandedKeys"
+            class="node-lib-tree-explorer"
+            :root="renderedRoot"
+          >
+            <template #node="{ node }">
+              <NodeTreeLeaf :node="node" :open-node-help="openHelp" />
+            </template>
+          </TreeExplorer>
+        </div>
+      </template>
+    </SidebarTabTemplate>
+
+    <NodeHelpPage v-else :node="currentHelpNode!" @close="closeHelp" />
+  </div>
+  <div id="node-library-node-preview-container" />
+</template>

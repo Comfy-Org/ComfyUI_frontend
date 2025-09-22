@@ -1,24 +1,3 @@
-<template>
-  <div class="flex flex-col items-center gap-4">
-    <div class="w-full">
-      <h3 class="text-lg font-medium text-neutral-100">
-        {{ $t(`settings.${normalizedSettingId}.name`) }}
-      </h3>
-      <p class="text-sm text-neutral-400 mt-1">
-        {{ $t(`settings.${normalizedSettingId}.tooltip`) }}
-      </p>
-    </div>
-    <UrlInput
-      v-model="modelValue"
-      :validate-url-fn="
-        (mirror: string) =>
-          checkMirrorReachable(mirror + (item.validationPathSuffix ?? ''))
-      "
-      @state-change="validationState = $event"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -59,3 +38,24 @@ watch(validationState, (newState) => {
   }
 })
 </script>
+
+<template>
+  <div class="flex flex-col items-center gap-4">
+    <div class="w-full">
+      <h3 class="text-lg font-medium text-neutral-100">
+        {{ $t(`settings.${normalizedSettingId}.name`) }}
+      </h3>
+      <p class="text-sm text-neutral-400 mt-1">
+        {{ $t(`settings.${normalizedSettingId}.tooltip`) }}
+      </p>
+    </div>
+    <UrlInput
+      v-model="modelValue"
+      :validate-url-fn="
+        (mirror: string) =>
+          checkMirrorReachable(mirror + (item.validationPathSuffix ?? ''))
+      "
+      @state-change="validationState = $event"
+    />
+  </div>
+</template>

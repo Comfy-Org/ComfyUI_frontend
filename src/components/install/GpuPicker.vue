@@ -1,3 +1,33 @@
+<script setup lang="ts">
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
+import Tag from 'primevue/tag'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { electronAPI } from '@/utils/envUtil'
+
+const { t } = useI18n()
+
+const cpuMode = computed({
+  get: () => selected.value === 'cpu',
+  set: (value) => {
+    selected.value = value ? 'cpu' : null
+  }
+})
+const selected = defineModel<TorchDeviceType | null>('device', {
+  required: true
+})
+
+const electron = electronAPI()
+const platform = electron.getPlatform()
+
+const pickGpu = (value: typeof selected.value) => {
+  const newValue = selected.value === value ? null : value
+  selected.value = newValue
+}
+</script>
+
 <template>
   <div class="flex flex-col gap-6 w-[600px] h-[30rem] select-none">
     <!-- Installation Path Section -->
@@ -128,36 +158,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
-import Tag from 'primevue/tag'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { electronAPI } from '@/utils/envUtil'
-
-const { t } = useI18n()
-
-const cpuMode = computed({
-  get: () => selected.value === 'cpu',
-  set: (value) => {
-    selected.value = value ? 'cpu' : null
-  }
-})
-const selected = defineModel<TorchDeviceType | null>('device', {
-  required: true
-})
-
-const electron = electronAPI()
-const platform = electron.getPlatform()
-
-const pickGpu = (value: typeof selected.value) => {
-  const newValue = selected.value === value ? null : value
-  selected.value = newValue
-}
-</script>
 
 <style scoped>
 @reference '../../assets/css/style.css';

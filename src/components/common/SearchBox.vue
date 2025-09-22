@@ -1,46 +1,3 @@
-<template>
-  <div>
-    <IconField>
-      <Button
-        v-if="filterIcon"
-        class="p-inputicon filter-button"
-        :icon="filterIcon"
-        text
-        severity="contrast"
-        @click="$emit('showFilter', $event)"
-      />
-      <InputText
-        class="search-box-input w-full"
-        :model-value="modelValue"
-        :placeholder="placeholder"
-        @input="handleInput"
-      />
-      <InputIcon v-if="!modelValue" :class="icon" />
-      <Button
-        v-if="modelValue"
-        class="p-inputicon clear-button"
-        icon="pi pi-times"
-        text
-        severity="contrast"
-        @click="clearSearch"
-      />
-    </IconField>
-    <div
-      v-if="filters?.length"
-      class="search-filters pt-2 flex flex-wrap gap-2"
-    >
-      <SearchFilterChip
-        v-for="filter in filters"
-        :key="filter.id"
-        :text="filter.text"
-        :badge="filter.badge"
-        :badge-class="filter.badgeClass"
-        @remove="$emit('removeFilter', filter)"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts" generic="TFilter extends SearchFilter">
 import { debounce } from 'es-toolkit/compat'
 import Button from 'primevue/button'
@@ -89,6 +46,49 @@ const clearSearch = () => {
   emitSearch('')
 }
 </script>
+
+<template>
+  <div>
+    <IconField>
+      <Button
+        v-if="filterIcon"
+        class="p-inputicon filter-button"
+        :icon="filterIcon"
+        text
+        severity="contrast"
+        @click="$emit('showFilter', $event)"
+      />
+      <InputText
+        class="search-box-input w-full"
+        :model-value="modelValue"
+        :placeholder="placeholder"
+        @input="handleInput"
+      />
+      <InputIcon v-if="!modelValue" :class="icon" />
+      <Button
+        v-if="modelValue"
+        class="p-inputicon clear-button"
+        icon="pi pi-times"
+        text
+        severity="contrast"
+        @click="clearSearch"
+      />
+    </IconField>
+    <div
+      v-if="filters?.length"
+      class="search-filters pt-2 flex flex-wrap gap-2"
+    >
+      <SearchFilterChip
+        v-for="filter in filters"
+        :key="filter.id"
+        :text="filter.text"
+        :badge="filter.badge"
+        :badge-class="filter.badgeClass"
+        @remove="$emit('removeFilter', filter)"
+      />
+    </div>
+  </div>
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

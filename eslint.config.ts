@@ -98,6 +98,12 @@ export default defineConfig([
       // */
       'vue/one-component-per-file': 'off', // TODO: fix
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
+      'vue/block-order': [
+        'error',
+        {
+          order: ['docs', 'script', 'template', 'i18n', 'style']
+        }
+      ],
       // Restrict deprecated PrimeVue components
       'no-restricted-imports': [
         'error',

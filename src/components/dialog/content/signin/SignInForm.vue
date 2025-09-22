@@ -1,3 +1,56 @@
+<script setup lang="ts">
+import type { FormSubmitEvent } from '@primevue/forms'
+import { Form } from '@primevue/forms'
+import { zodResolver } from '@primevue/forms/resolvers/zod'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+import ProgressSpinner from 'primevue/progressspinner'
+import { useToast } from 'primevue/usetoast'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { type SignInData, signInSchema } from '@/schemas/signInSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+
+const authStore = useFirebaseAuthStore()
+const firebaseAuthActions = useFirebaseAuthActions()
+const loading = computed(() => authStore.loading)
+const toast = useToast()
+
+const { t } = useI18n()
+
+const emit = defineEmits<{
+  submit: [values: SignInData]
+}>()
+
+const emailInputId = 'comfy-org-sign-in-email'
+
+const onSubmit = (event: FormSubmitEvent) => {
+  if (event.valid) {
+    emit('submit', event.values as SignInData)
+  }
+}
+
+const handleForgotPassword = async (
+  email: string,
+  isValid: boolean | undefined
+) => {
+  if (!email || !isValid) {
+    toast.add({
+      severity: 'warn',
+      summary: t('auth.login.emailPlaceholder'),
+      life: 5_000
+    })
+    // Focus the email input
+    document.getElementById(emailInputId)?.focus?.()
+    return
+  }
+  await firebaseAuthActions.sendPasswordReset(email)
+}
+</script>
+
 <template>
   <Form
     v-slot="$form"
@@ -69,59 +122,6 @@
     />
   </Form>
 </template>
-
-<script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
-import { useToast } from 'primevue/usetoast'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { type SignInData, signInSchema } from '@/schemas/signInSchema'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-
-const authStore = useFirebaseAuthStore()
-const firebaseAuthActions = useFirebaseAuthActions()
-const loading = computed(() => authStore.loading)
-const toast = useToast()
-
-const { t } = useI18n()
-
-const emit = defineEmits<{
-  submit: [values: SignInData]
-}>()
-
-const emailInputId = 'comfy-org-sign-in-email'
-
-const onSubmit = (event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
-  }
-}
-
-const handleForgotPassword = async (
-  email: string,
-  isValid: boolean | undefined
-) => {
-  if (!email || !isValid) {
-    toast.add({
-      severity: 'warn',
-      summary: t('auth.login.emailPlaceholder'),
-      life: 5_000
-    })
-    // Focus the email input
-    document.getElementById(emailInputId)?.focus?.()
-    return
-  }
-  await firebaseAuthActions.sendPasswordReset(email)
-}
-</script>
 
 <style scoped>
 @reference '../../../../assets/css/style.css';

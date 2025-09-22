@@ -1,3 +1,16 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+
+import { t } from '@/i18n'
+import { useCommandStore } from '@/stores/commandStore'
+
+const commandStore = useCommandStore()
+
+const open3DViewer = () => {
+  void commandStore.execute('Comfy.3DViewer.Open3DViewer')
+}
+</script>
+
 <template>
   <Button
     v-tooltip.top="{
@@ -11,16 +24,3 @@
     @click="open3DViewer"
   />
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-
-import { t } from '@/i18n'
-import { useCommandStore } from '@/stores/commandStore'
-
-const commandStore = useCommandStore()
-
-const open3DViewer = () => {
-  void commandStore.execute('Comfy.3DViewer.Open3DViewer')
-}
-</script>

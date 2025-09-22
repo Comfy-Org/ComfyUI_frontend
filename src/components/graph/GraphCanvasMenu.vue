@@ -1,123 +1,3 @@
-<template>
-  <div>
-    <ZoomControlsModal :visible="isModalVisible" />
-
-    <!-- Backdrop -->
-    <div
-      v-if="hasActivePopup"
-      class="fixed inset-0 z-1200"
-      @click="hideModal"
-    ></div>
-
-    <ButtonGroup
-      class="p-buttongroup-vertical p-1 absolute bottom-4 right-2 md:right-4"
-      :style="stringifiedMinimapStyles.buttonGroupStyles"
-      @wheel="canvasInteractions.handleWheel"
-    >
-      <Button
-        v-tooltip.top="selectTooltip"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        severity="secondary"
-        :aria-label="selectTooltip"
-        :pressed="isCanvasReadOnly"
-        icon="i-material-symbols:pan-tool-outline"
-        :class="selectButtonClass"
-        @click="() => commandStore.execute('Comfy.Canvas.Unlock')"
-      >
-        <template #icon>
-          <i-lucide:mouse-pointer-2 />
-        </template>
-      </Button>
-
-      <Button
-        v-tooltip.top="handTooltip"
-        severity="secondary"
-        :aria-label="handTooltip"
-        :pressed="isCanvasUnlocked"
-        :class="handButtonClass"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="() => commandStore.execute('Comfy.Canvas.Lock')"
-      >
-        <template #icon>
-          <i-lucide:hand />
-        </template>
-      </Button>
-
-      <!-- vertical line with bg E1DED5 -->
-      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
-
-      <Button
-        v-tooltip.top="fitViewTooltip"
-        severity="secondary"
-        icon="pi pi-expand"
-        :aria-label="fitViewTooltip"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        class="dark-theme:hover:bg-[#444444]! hover:bg-[#E7E6E6]!"
-        @click="() => commandStore.execute('Comfy.Canvas.FitView')"
-      >
-        <template #icon>
-          <i-lucide:focus />
-        </template>
-      </Button>
-
-      <Button
-        ref="zoomButton"
-        v-tooltip.top="t('zoomControls.label')"
-        severity="secondary"
-        :label="t('zoomControls.label')"
-        :class="zoomButtonClass"
-        :aria-label="t('zoomControls.label')"
-        data-testid="zoom-controls-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="toggleModal"
-      >
-        <span class="inline-flex text-xs">
-          <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i-lucide:chevron-down />
-        </span>
-      </Button>
-
-      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
-
-      <Button
-        ref="focusButton"
-        v-tooltip.top="focusModeTooltip"
-        severity="secondary"
-        :aria-label="focusModeTooltip"
-        data-testid="focus-mode-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        :class="focusButtonClass"
-        @click="() => commandStore.execute('Workspace.ToggleFocusMode')"
-      >
-        <template #icon>
-          <i-lucide:lightbulb />
-        </template>
-      </Button>
-
-      <Button
-        v-tooltip.top="{
-          value: linkVisibilityTooltip,
-          pt: {
-            root: {
-              style: 'z-index: 2; transform: translateY(-20px);'
-            }
-          }
-        }"
-        severity="secondary"
-        :class="linkVisibleClass"
-        :aria-label="linkVisibilityAriaLabel"
-        data-testid="toggle-link-visibility-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
-      >
-        <template #icon>
-          <i-lucide:route-off />
-        </template>
-      </Button>
-    </ButtonGroup>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
@@ -267,6 +147,126 @@ onBeforeUnmount(() => {
   canvasStore.cleanupScaleSync()
 })
 </script>
+
+<template>
+  <div>
+    <ZoomControlsModal :visible="isModalVisible" />
+
+    <!-- Backdrop -->
+    <div
+      v-if="hasActivePopup"
+      class="fixed inset-0 z-1200"
+      @click="hideModal"
+    ></div>
+
+    <ButtonGroup
+      class="p-buttongroup-vertical p-1 absolute bottom-4 right-2 md:right-4"
+      :style="stringifiedMinimapStyles.buttonGroupStyles"
+      @wheel="canvasInteractions.handleWheel"
+    >
+      <Button
+        v-tooltip.top="selectTooltip"
+        :style="stringifiedMinimapStyles.buttonStyles"
+        severity="secondary"
+        :aria-label="selectTooltip"
+        :pressed="isCanvasReadOnly"
+        icon="i-material-symbols:pan-tool-outline"
+        :class="selectButtonClass"
+        @click="() => commandStore.execute('Comfy.Canvas.Unlock')"
+      >
+        <template #icon>
+          <i-lucide:mouse-pointer-2 />
+        </template>
+      </Button>
+
+      <Button
+        v-tooltip.top="handTooltip"
+        severity="secondary"
+        :aria-label="handTooltip"
+        :pressed="isCanvasUnlocked"
+        :class="handButtonClass"
+        :style="stringifiedMinimapStyles.buttonStyles"
+        @click="() => commandStore.execute('Comfy.Canvas.Lock')"
+      >
+        <template #icon>
+          <i-lucide:hand />
+        </template>
+      </Button>
+
+      <!-- vertical line with bg E1DED5 -->
+      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
+
+      <Button
+        v-tooltip.top="fitViewTooltip"
+        severity="secondary"
+        icon="pi pi-expand"
+        :aria-label="fitViewTooltip"
+        :style="stringifiedMinimapStyles.buttonStyles"
+        class="dark-theme:hover:bg-[#444444]! hover:bg-[#E7E6E6]!"
+        @click="() => commandStore.execute('Comfy.Canvas.FitView')"
+      >
+        <template #icon>
+          <i-lucide:focus />
+        </template>
+      </Button>
+
+      <Button
+        ref="zoomButton"
+        v-tooltip.top="t('zoomControls.label')"
+        severity="secondary"
+        :label="t('zoomControls.label')"
+        :class="zoomButtonClass"
+        :aria-label="t('zoomControls.label')"
+        data-testid="zoom-controls-button"
+        :style="stringifiedMinimapStyles.buttonStyles"
+        @click="toggleModal"
+      >
+        <span class="inline-flex text-xs">
+          <span>{{ canvasStore.appScalePercentage }}%</span>
+          <i-lucide:chevron-down />
+        </span>
+      </Button>
+
+      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
+
+      <Button
+        ref="focusButton"
+        v-tooltip.top="focusModeTooltip"
+        severity="secondary"
+        :aria-label="focusModeTooltip"
+        data-testid="focus-mode-button"
+        :style="stringifiedMinimapStyles.buttonStyles"
+        :class="focusButtonClass"
+        @click="() => commandStore.execute('Workspace.ToggleFocusMode')"
+      >
+        <template #icon>
+          <i-lucide:lightbulb />
+        </template>
+      </Button>
+
+      <Button
+        v-tooltip.top="{
+          value: linkVisibilityTooltip,
+          pt: {
+            root: {
+              style: 'z-index: 2; transform: translateY(-20px);'
+            }
+          }
+        }"
+        severity="secondary"
+        :class="linkVisibleClass"
+        :aria-label="linkVisibilityAriaLabel"
+        data-testid="toggle-link-visibility-button"
+        :style="stringifiedMinimapStyles.buttonStyles"
+        @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
+      >
+        <template #icon>
+          <i-lucide:route-off />
+        </template>
+      </Button>
+    </ButtonGroup>
+  </div>
+</template>
 
 <style scoped>
 .p-buttongroup-vertical {

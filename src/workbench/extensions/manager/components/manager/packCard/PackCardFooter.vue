@@ -1,26 +1,3 @@
-<template>
-  <div
-    class="min-h-12 flex justify-between items-center px-4 py-2 text-xs text-muted font-medium leading-3"
-  >
-    <div v-if="nodePack.downloads" class="flex items-center gap-1.5">
-      <i class="pi pi-download text-muted"></i>
-      <span>{{ formattedDownloads }}</span>
-    </div>
-    <PackInstallButton
-      v-if="!isInstalled"
-      :node-packs="[nodePack]"
-      :is-installing="isInstalling"
-      :has-conflict="hasConflicts"
-      :conflict-info="conflictInfo"
-    />
-    <PackEnableToggle
-      v-else
-      :has-conflict="hasConflicts"
-      :node-pack="nodePack"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -59,3 +36,26 @@ const conflictInfo = computed<ConflictDetail[]>(() => {
 
 const hasConflicts = computed(() => conflictInfo.value.length > 0)
 </script>
+
+<template>
+  <div
+    class="min-h-12 flex justify-between items-center px-4 py-2 text-xs text-muted font-medium leading-3"
+  >
+    <div v-if="nodePack.downloads" class="flex items-center gap-1.5">
+      <i class="pi pi-download text-muted"></i>
+      <span>{{ formattedDownloads }}</span>
+    </div>
+    <PackInstallButton
+      v-if="!isInstalled"
+      :node-packs="[nodePack]"
+      :is-installing="isInstalling"
+      :has-conflict="hasConflicts"
+      :conflict-info="conflictInfo"
+    />
+    <PackEnableToggle
+      v-else
+      :has-conflict="hasConflicts"
+      :node-pack="nodePack"
+    />
+  </div>
+</template>

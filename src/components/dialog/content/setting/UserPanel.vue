@@ -1,3 +1,30 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Divider from 'primevue/divider'
+import ProgressSpinner from 'primevue/progressspinner'
+import TabPanel from 'primevue/tabpanel'
+
+import UserAvatar from '@/components/common/UserAvatar.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useDialogService } from '@/services/dialogService'
+
+const dialogService = useDialogService()
+const {
+  loading,
+  isLoggedIn,
+  isApiKeyLogin,
+  isEmailProvider,
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  providerName,
+  providerIcon,
+  handleSignOut,
+  handleSignIn,
+  handleDeleteAccount
+} = useCurrentUser()
+</script>
+
 <template>
   <TabPanel value="User" class="user-settings-container h-full">
     <div class="flex flex-col h-full">
@@ -94,30 +121,3 @@
     </div>
   </TabPanel>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
-import TabPanel from 'primevue/tabpanel'
-
-import UserAvatar from '@/components/common/UserAvatar.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useDialogService } from '@/services/dialogService'
-
-const dialogService = useDialogService()
-const {
-  loading,
-  isLoggedIn,
-  isApiKeyLogin,
-  isEmailProvider,
-  userDisplayName,
-  userEmail,
-  userPhotoUrl,
-  providerName,
-  providerIcon,
-  handleSignOut,
-  handleSignIn,
-  handleDeleteAccount
-} = useCurrentUser()
-</script>

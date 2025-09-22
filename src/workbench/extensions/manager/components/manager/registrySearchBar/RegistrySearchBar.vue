@@ -1,65 +1,3 @@
-<template>
-  <div class="relative w-full p-6">
-    <div class="h-12 flex items-center gap-1 justify-between">
-      <div class="flex items-center w-5/12">
-        <AutoComplete
-          v-model.lazy="searchQuery"
-          :suggestions="suggestions || []"
-          :placeholder="$t('manager.searchPlaceholder')"
-          :complete-on-focus="false"
-          :delay="8"
-          option-label="query"
-          class="w-full"
-          :pt="{
-            pcInputText: {
-              root: {
-                autofocus: true,
-                class: 'w-full rounded-2xl'
-              }
-            },
-            loader: {
-              style: 'display: none'
-            }
-          }"
-          :show-empty-message="false"
-          @complete="stubTrue"
-          @option-select="onOptionSelect"
-        />
-      </div>
-      <PackInstallButton
-        v-if="isMissingTab && missingNodePacks.length > 0"
-        :disabled="isLoading || !!error"
-        :node-packs="missingNodePacks"
-        :label="$t('manager.installAllMissingNodes')"
-      />
-      <PackUpdateButton
-        v-if="isUpdateAvailableTab && hasUpdateAvailable"
-        :node-packs="enabledUpdateAvailableNodePacks"
-        :has-disabled-update-packs="hasDisabledUpdatePacks"
-      />
-    </div>
-    <div class="flex mt-3 text-sm">
-      <div class="flex gap-6 ml-1">
-        <SearchFilterDropdown
-          v-model:model-value="searchMode"
-          :options="filterOptions"
-          :label="$t('g.filter')"
-        />
-        <SearchFilterDropdown
-          v-model:model-value="sortField"
-          :options="availableSortOptions"
-          :label="$t('g.sort')"
-        />
-      </div>
-      <div class="flex items-center gap-4 ml-6">
-        <small v-if="hasResults" class="text-color-secondary">
-          {{ $t('g.resultsCount', { count: searchResults?.length || 0 }) }}
-        </small>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { stubTrue } from 'es-toolkit/compat'
 import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
@@ -130,3 +68,65 @@ const onOptionSelect = (event: AutoCompleteOptionSelectEvent) => {
   searchQuery.value = event.value.query
 }
 </script>
+
+<template>
+  <div class="relative w-full p-6">
+    <div class="h-12 flex items-center gap-1 justify-between">
+      <div class="flex items-center w-5/12">
+        <AutoComplete
+          v-model.lazy="searchQuery"
+          :suggestions="suggestions || []"
+          :placeholder="$t('manager.searchPlaceholder')"
+          :complete-on-focus="false"
+          :delay="8"
+          option-label="query"
+          class="w-full"
+          :pt="{
+            pcInputText: {
+              root: {
+                autofocus: true,
+                class: 'w-full rounded-2xl'
+              }
+            },
+            loader: {
+              style: 'display: none'
+            }
+          }"
+          :show-empty-message="false"
+          @complete="stubTrue"
+          @option-select="onOptionSelect"
+        />
+      </div>
+      <PackInstallButton
+        v-if="isMissingTab && missingNodePacks.length > 0"
+        :disabled="isLoading || !!error"
+        :node-packs="missingNodePacks"
+        :label="$t('manager.installAllMissingNodes')"
+      />
+      <PackUpdateButton
+        v-if="isUpdateAvailableTab && hasUpdateAvailable"
+        :node-packs="enabledUpdateAvailableNodePacks"
+        :has-disabled-update-packs="hasDisabledUpdatePacks"
+      />
+    </div>
+    <div class="flex mt-3 text-sm">
+      <div class="flex gap-6 ml-1">
+        <SearchFilterDropdown
+          v-model:model-value="searchMode"
+          :options="filterOptions"
+          :label="$t('g.filter')"
+        />
+        <SearchFilterDropdown
+          v-model:model-value="sortField"
+          :options="availableSortOptions"
+          :label="$t('g.sort')"
+        />
+      </div>
+      <div class="flex items-center gap-4 ml-6">
+        <small v-if="hasResults" class="text-color-secondary">
+          {{ $t('g.resultsCount', { count: searchResults?.length || 0 }) }}
+        </small>
+      </div>
+    </div>
+  </div>
+</template>

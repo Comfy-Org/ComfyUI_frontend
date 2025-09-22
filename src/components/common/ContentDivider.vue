@@ -1,16 +1,3 @@
-<template>
-  <div
-    :class="{
-      'content-divider': true,
-      'content-divider--horizontal': orientation === 'horizontal',
-      'content-divider--vertical': orientation === 'vertical'
-    }"
-    :style="{
-      backgroundColor: isLightTheme ? '#DCDAE1' : '#2C2C2C'
-    }"
-  />
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -26,6 +13,19 @@ const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
 </script>
+
+<template>
+  <div
+    :class="{
+      'content-divider': true,
+      'content-divider--horizontal': orientation === 'horizontal',
+      'content-divider--vertical': orientation === 'vertical'
+    }"
+    :style="{
+      backgroundColor: isLightTheme ? '#DCDAE1' : '#2C2C2C'
+    }"
+  />
+</template>
 
 <style scoped>
 .content-divider {

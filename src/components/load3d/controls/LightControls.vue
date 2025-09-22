@@ -1,36 +1,3 @@
-<template>
-  <div class="flex flex-col">
-    <div v-if="showLightIntensityButton" class="relative show-light-intensity">
-      <Button
-        class="p-button-rounded p-button-text"
-        @click="toggleLightIntensity"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.lightIntensity'),
-            showDelay: 300
-          }"
-          class="pi pi-sun text-white text-lg"
-        />
-      </Button>
-      <div
-        v-show="showLightIntensity"
-        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
-        style="width: 150px"
-      >
-        <Slider
-          v-model="lightIntensity"
-          class="w-full"
-          :min="lightIntensityMinimum"
-          :max="lightIntensityMaximum"
-          :step="lightAdjustmentIncrement"
-          @change="updateLightIntensity"
-        />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
@@ -103,3 +70,36 @@ onUnmounted(() => {
   document.removeEventListener('click', closeLightSlider)
 })
 </script>
+
+<template>
+  <div class="flex flex-col">
+    <div v-if="showLightIntensityButton" class="relative show-light-intensity">
+      <Button
+        class="p-button-rounded p-button-text"
+        @click="toggleLightIntensity"
+      >
+        <i
+          v-tooltip.right="{
+            value: t('load3d.lightIntensity'),
+            showDelay: 300
+          }"
+          class="pi pi-sun text-white text-lg"
+        />
+      </Button>
+      <div
+        v-show="showLightIntensity"
+        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
+        style="width: 150px"
+      >
+        <Slider
+          v-model="lightIntensity"
+          class="w-full"
+          :min="lightIntensityMinimum"
+          :max="lightIntensityMaximum"
+          :step="lightAdjustmentIncrement"
+          @change="updateLightIntensity"
+        />
+      </div>
+    </div>
+  </div>
+</template>

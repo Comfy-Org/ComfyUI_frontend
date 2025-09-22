@@ -1,3 +1,10 @@
+<script setup lang="ts">
+const { value = 'N/A', label } = defineProps<{
+  label: string
+  value?: string | number
+}>()
+</script>
+
 <template>
   <div class="flex py-1.5 text-xs">
     <div class="w-1/3 truncate pr-2 text-muted">{{ label }}</div>
@@ -6,10 +13,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-const { value = 'N/A', label } = defineProps<{
-  label: string
-  value?: string | number
-}>()
-</script>

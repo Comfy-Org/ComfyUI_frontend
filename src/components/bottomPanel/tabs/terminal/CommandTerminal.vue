@@ -1,7 +1,3 @@
-<template>
-  <BaseTerminal @created="terminalCreated" />
-</template>
-
 <script setup lang="ts">
 import type { IDisposable } from '@xterm/xterm'
 import type { Ref } from 'vue'
@@ -57,6 +53,10 @@ const terminalCreated = (
   })
 }
 </script>
+
+<template>
+  <BaseTerminal @created="terminalCreated" />
+</template>
 
 <style scoped>
 :deep(.p-terminal) .xterm {

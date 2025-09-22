@@ -1,30 +1,3 @@
-<template>
-  <div>
-    <div v-if="!hasMarkdown" class="break-words" v-text="text" />
-    <div v-else class="break-words">
-      <template v-for="(segment, index) in parsedSegments" :key="index">
-        <a
-          v-if="segment.type === 'link' && 'url' in segment"
-          :href="segment.url"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="hover:underline"
-        >
-          <span class="text-blue-600">{{ segment.text }}</span>
-        </a>
-        <strong v-else-if="segment.type === 'bold'">{{ segment.text }}</strong>
-        <em v-else-if="segment.type === 'italic'">{{ segment.text }}</em>
-        <code
-          v-else-if="segment.type === 'code'"
-          class="px-1 py-0.5 rounded text-xs"
-          >{{ segment.text }}</code
-        >
-        <span v-else>{{ segment.text }}</span>
-      </template>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -106,3 +79,30 @@ const parsedSegments = computed(() => {
   return segments
 })
 </script>
+
+<template>
+  <div>
+    <div v-if="!hasMarkdown" class="break-words" v-text="text" />
+    <div v-else class="break-words">
+      <template v-for="(segment, index) in parsedSegments" :key="index">
+        <a
+          v-if="segment.type === 'link' && 'url' in segment"
+          :href="segment.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:underline"
+        >
+          <span class="text-blue-600">{{ segment.text }}</span>
+        </a>
+        <strong v-else-if="segment.type === 'bold'">{{ segment.text }}</strong>
+        <em v-else-if="segment.type === 'italic'">{{ segment.text }}</em>
+        <code
+          v-else-if="segment.type === 'code'"
+          class="px-1 py-0.5 rounded text-xs"
+          >{{ segment.text }}</code
+        >
+        <span v-else>{{ segment.text }}</span>
+      </template>
+    </div>
+  </div>
+</template>

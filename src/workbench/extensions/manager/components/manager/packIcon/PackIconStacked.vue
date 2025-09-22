@@ -1,3 +1,18 @@
+<script setup lang="ts">
+import type { components } from '@/types/comfyRegistryTypes'
+import PackIcon from '@/workbench/extensions/manager/components/manager/packIcon/PackIcon.vue'
+
+const {
+  nodePacks,
+  maxVisible = 3,
+  offset = 8
+} = defineProps<{
+  nodePacks: components['schemas']['Node'][]
+  maxVisible?: number
+  offset?: number
+}>()
+</script>
+
 <template>
   <div class="relative w-[224px] h-[104px] shadow-xl">
     <div
@@ -16,18 +31,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { components } from '@/types/comfyRegistryTypes'
-import PackIcon from '@/workbench/extensions/manager/components/manager/packIcon/PackIcon.vue'
-
-const {
-  nodePacks,
-  maxVisible = 3,
-  offset = 8
-} = defineProps<{
-  nodePacks: components['schemas']['Node'][]
-  maxVisible?: number
-  offset?: number
-}>()
-</script>

@@ -1,3 +1,24 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import AssetCard from '@/platform/assets/components/AssetCard.vue'
+import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { createGridStyle } from '@/utils/gridUtil'
+import { cn } from '@/utils/tailwindUtil'
+
+defineProps<{
+  assets: AssetDisplayItem[]
+  loading?: boolean
+}>()
+
+defineEmits<{
+  assetSelect: [asset: AssetDisplayItem]
+}>()
+
+// Use same grid style as BaseModalLayout
+const gridStyle = computed(() => createGridStyle())
+</script>
+
 <template>
   <div
     data-component-id="AssetGrid"
@@ -47,24 +68,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-
-import AssetCard from '@/platform/assets/components/AssetCard.vue'
-import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-import { createGridStyle } from '@/utils/gridUtil'
-import { cn } from '@/utils/tailwindUtil'
-
-defineProps<{
-  assets: AssetDisplayItem[]
-  loading?: boolean
-}>()
-
-defineEmits<{
-  assetSelect: [asset: AssetDisplayItem]
-}>()
-
-// Use same grid style as BaseModalLayout
-const gridStyle = computed(() => createGridStyle())
-</script>

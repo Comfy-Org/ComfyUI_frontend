@@ -1,35 +1,3 @@
-<template>
-  <NoResultsPlaceholder
-    class="pb-0"
-    icon="pi pi-exclamation-circle"
-    :title="t('missingModelsDialog.missingModels')"
-    :message="t('missingModelsDialog.missingModelsMessage')"
-  />
-  <div class="flex gap-1 mb-4">
-    <Checkbox v-model="doNotAskAgain" binary input-id="doNotAskAgain" />
-    <label for="doNotAskAgain">{{
-      t('missingModelsDialog.doNotAskAgain')
-    }}</label>
-  </div>
-  <ListBox :options="missingModels" class="comfy-missing-models">
-    <template #option="{ option }">
-      <Suspense v-if="isElectron()">
-        <ElectronFileDownload
-          :url="option.url"
-          :label="option.label"
-          :error="option.error"
-        />
-      </Suspense>
-      <FileDownload
-        v-else
-        :url="option.url"
-        :label="option.label"
-        :error="option.error"
-      />
-    </template>
-  </ListBox>
-</template>
-
 <script setup lang="ts">
 import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
@@ -139,6 +107,38 @@ onBeforeUnmount(async () => {
   }
 })
 </script>
+
+<template>
+  <NoResultsPlaceholder
+    class="pb-0"
+    icon="pi pi-exclamation-circle"
+    :title="t('missingModelsDialog.missingModels')"
+    :message="t('missingModelsDialog.missingModelsMessage')"
+  />
+  <div class="flex gap-1 mb-4">
+    <Checkbox v-model="doNotAskAgain" binary input-id="doNotAskAgain" />
+    <label for="doNotAskAgain">{{
+      t('missingModelsDialog.doNotAskAgain')
+    }}</label>
+  </div>
+  <ListBox :options="missingModels" class="comfy-missing-models">
+    <template #option="{ option }">
+      <Suspense v-if="isElectron()">
+        <ElectronFileDownload
+          :url="option.url"
+          :label="option.label"
+          :error="option.error"
+        />
+      </Suspense>
+      <FileDownload
+        v-else
+        :url="option.url"
+        :label="option.label"
+        :error="option.error"
+      />
+    </template>
+  </ListBox>
+</template>
 
 <style scoped>
 .comfy-missing-models {

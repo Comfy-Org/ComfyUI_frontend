@@ -1,34 +1,3 @@
-<template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
-    {{ $t('Node Slots Error') }}
-  </div>
-  <div v-else class="lg-node-slots flex justify-between">
-    <div v-if="filteredInputs.length" class="flex flex-col gap-1">
-      <InputSlot
-        v-for="(input, index) in filteredInputs"
-        :key="`input-${index}`"
-        :slot-data="input"
-        :node-type="nodeData?.type || ''"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-        :index="getActualInputIndex(input, index)"
-        :readonly="readonly"
-      />
-    </div>
-
-    <div v-if="filteredOutputs.length" class="flex flex-col gap-1 ml-auto">
-      <OutputSlot
-        v-for="(output, index) in filteredOutputs"
-        :key="`output-${index}`"
-        :slot-data="output"
-        :node-type="nodeData?.type || ''"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-        :index="index"
-        :readonly="readonly"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
@@ -108,3 +77,34 @@ onErrorCaptured((error) => {
   return false
 })
 </script>
+
+<template>
+  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+    {{ $t('Node Slots Error') }}
+  </div>
+  <div v-else class="lg-node-slots flex justify-between">
+    <div v-if="filteredInputs.length" class="flex flex-col gap-1">
+      <InputSlot
+        v-for="(input, index) in filteredInputs"
+        :key="`input-${index}`"
+        :slot-data="input"
+        :node-type="nodeData?.type || ''"
+        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :index="getActualInputIndex(input, index)"
+        :readonly="readonly"
+      />
+    </div>
+
+    <div v-if="filteredOutputs.length" class="flex flex-col gap-1 ml-auto">
+      <OutputSlot
+        v-for="(output, index) in filteredOutputs"
+        :key="`output-${index}`"
+        :slot-data="output"
+        :node-type="nodeData?.type || ''"
+        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :index="index"
+        :readonly="readonly"
+      />
+    </div>
+  </div>
+</template>

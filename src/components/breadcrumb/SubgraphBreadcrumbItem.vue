@@ -1,50 +1,3 @@
-<template>
-  <a
-    ref="wrapperRef"
-    v-tooltip.bottom="{
-      value: item.label,
-      showDelay: 512
-    }"
-    href="#"
-    class="cursor-pointer p-breadcrumb-item-link"
-    :class="{
-      'flex items-center gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': isActive,
-      'active-breadcrumb-item': isActive
-    }"
-    @click="handleClick"
-  >
-    <span class="p-breadcrumb-item-label">{{ item.label }}</span>
-    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
-    <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
-  </a>
-  <Menu
-    v-if="isActive"
-    ref="menu"
-    :model="menuItems"
-    :popup="true"
-    :pt="{
-      root: {
-        style: 'background-color: var(--comfy-menu-secondary-bg)'
-      },
-      itemLink: {
-        class: 'py-2'
-      }
-    }"
-  />
-  <InputText
-    v-if="isEditing"
-    ref="itemInputRef"
-    v-model="itemLabel"
-    class="fixed z-10000 text-[.8rem] px-2 py-2"
-    @blur="inputBlur(true)"
-    @click.stop
-    @keydown.enter="inputBlur(true)"
-    @keydown.esc="inputBlur(false)"
-  />
-</template>
-
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import type { MenuState } from 'primevue/menu'
@@ -229,6 +182,53 @@ const inputBlur = async (doRename: boolean) => {
   isEditing.value = false
 }
 </script>
+
+<template>
+  <a
+    ref="wrapperRef"
+    v-tooltip.bottom="{
+      value: item.label,
+      showDelay: 512
+    }"
+    href="#"
+    class="cursor-pointer p-breadcrumb-item-link"
+    :class="{
+      'flex items-center gap-1': isActive,
+      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
+      'p-breadcrumb-item-link-icon-visible': isActive,
+      'active-breadcrumb-item': isActive
+    }"
+    @click="handleClick"
+  >
+    <span class="p-breadcrumb-item-label">{{ item.label }}</span>
+    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
+    <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
+  </a>
+  <Menu
+    v-if="isActive"
+    ref="menu"
+    :model="menuItems"
+    :popup="true"
+    :pt="{
+      root: {
+        style: 'background-color: var(--comfy-menu-secondary-bg)'
+      },
+      itemLink: {
+        class: 'py-2'
+      }
+    }"
+  />
+  <InputText
+    v-if="isEditing"
+    ref="itemInputRef"
+    v-model="itemLabel"
+    class="fixed z-10000 text-[.8rem] px-2 py-2"
+    @blur="inputBlur(true)"
+    @click.stop
+    @keydown.enter="inputBlur(true)"
+    @keydown.esc="inputBlur(false)"
+  />
+</template>
 
 <style scoped>
 @reference '../../assets/css/style.css';

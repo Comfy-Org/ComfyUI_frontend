@@ -1,114 +1,3 @@
-<template>
-  <div
-    v-if="imageUrls.length > 0"
-    class="image-preview relative group flex flex-col items-center"
-    tabindex="0"
-    role="region"
-    :aria-label="$t('g.imagePreview')"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-    @keydown="handleKeyDown"
-  >
-    <!-- Image Wrapper -->
-    <div
-      class="relative rounded-[5px] overflow-hidden w-full max-w-[352px] bg-[#262729]"
-    >
-      <!-- Error State -->
-      <div
-        v-if="imageError"
-        class="w-full h-[352px] flex flex-col items-center justify-center text-white text-center bg-gray-800/50"
-      >
-        <i-lucide:image-off class="w-12 h-12 mb-2 text-gray-400" />
-        <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="text-xs text-gray-400 mt-1">{{ currentImageUrl }}</p>
-      </div>
-
-      <!-- Loading State -->
-      <Skeleton
-        v-else-if="isLoading"
-        class="w-full h-[352px]"
-        border-radius="5px"
-      />
-
-      <!-- Main Image -->
-      <img
-        v-else
-        :src="currentImageUrl"
-        :alt="imageAltText"
-        class="w-full h-[352px] object-cover block"
-        @load="handleImageLoad"
-        @error="handleImageError"
-      />
-
-      <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
-        <!-- Mask/Edit Button -->
-        <button
-          v-if="!hasMultipleImages"
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
-          :title="$t('g.editOrMaskImage')"
-          :aria-label="$t('g.editOrMaskImage')"
-          @click="handleEditMask"
-        >
-          <i-lucide:venetian-mask class="w-4 h-4" />
-        </button>
-
-        <!-- Download Button -->
-        <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
-          :title="$t('g.downloadImage')"
-          :aria-label="$t('g.downloadImage')"
-          @click="handleDownload"
-        >
-          <i-lucide:download class="w-4 h-4" />
-        </button>
-
-        <!-- Close Button -->
-        <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
-          :title="$t('g.removeImage')"
-          :aria-label="$t('g.removeImage')"
-          @click="handleRemove"
-        >
-          <i-lucide:x class="w-4 h-4" />
-        </button>
-      </div>
-
-      <!-- Multiple Images Navigation -->
-      <div
-        v-if="hasMultipleImages"
-        class="absolute bottom-2 left-2 right-2 flex justify-center gap-1"
-      >
-        <button
-          v-for="(_, index) in imageUrls"
-          :key="index"
-          :class="getNavigationDotClass(index)"
-          :aria-label="
-            $t('g.viewImageOfTotal', {
-              index: index + 1,
-              total: imageUrls.length
-            })
-          "
-          @click="setCurrentIndex(index)"
-        />
-      </div>
-    </div>
-
-    <!-- Image Dimensions -->
-    <div class="text-white text-xs text-center mt-2">
-      <span v-if="imageError" class="text-red-400">
-        {{ $t('g.errorLoadingImage') }}
-      </span>
-      <span v-else-if="isLoading" class="text-gray-400">
-        {{ $t('g.loading') }}...
-      </span>
-      <span v-else>
-        {{ actualDimensions || $t('g.calculatingDimensions') }}
-      </span>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
@@ -256,3 +145,114 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 }
 </script>
+
+<template>
+  <div
+    v-if="imageUrls.length > 0"
+    class="image-preview relative group flex flex-col items-center"
+    tabindex="0"
+    role="region"
+    :aria-label="$t('g.imagePreview')"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+    @keydown="handleKeyDown"
+  >
+    <!-- Image Wrapper -->
+    <div
+      class="relative rounded-[5px] overflow-hidden w-full max-w-[352px] bg-[#262729]"
+    >
+      <!-- Error State -->
+      <div
+        v-if="imageError"
+        class="w-full h-[352px] flex flex-col items-center justify-center text-white text-center bg-gray-800/50"
+      >
+        <i-lucide:image-off class="w-12 h-12 mb-2 text-gray-400" />
+        <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
+        <p class="text-xs text-gray-400 mt-1">{{ currentImageUrl }}</p>
+      </div>
+
+      <!-- Loading State -->
+      <Skeleton
+        v-else-if="isLoading"
+        class="w-full h-[352px]"
+        border-radius="5px"
+      />
+
+      <!-- Main Image -->
+      <img
+        v-else
+        :src="currentImageUrl"
+        :alt="imageAltText"
+        class="w-full h-[352px] object-cover block"
+        @load="handleImageLoad"
+        @error="handleImageError"
+      />
+
+      <!-- Floating Action Buttons (appear on hover) -->
+      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
+        <!-- Mask/Edit Button -->
+        <button
+          v-if="!hasMultipleImages"
+          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          :title="$t('g.editOrMaskImage')"
+          :aria-label="$t('g.editOrMaskImage')"
+          @click="handleEditMask"
+        >
+          <i-lucide:venetian-mask class="w-4 h-4" />
+        </button>
+
+        <!-- Download Button -->
+        <button
+          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          :title="$t('g.downloadImage')"
+          :aria-label="$t('g.downloadImage')"
+          @click="handleDownload"
+        >
+          <i-lucide:download class="w-4 h-4" />
+        </button>
+
+        <!-- Close Button -->
+        <button
+          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          :title="$t('g.removeImage')"
+          :aria-label="$t('g.removeImage')"
+          @click="handleRemove"
+        >
+          <i-lucide:x class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Multiple Images Navigation -->
+      <div
+        v-if="hasMultipleImages"
+        class="absolute bottom-2 left-2 right-2 flex justify-center gap-1"
+      >
+        <button
+          v-for="(_, index) in imageUrls"
+          :key="index"
+          :class="getNavigationDotClass(index)"
+          :aria-label="
+            $t('g.viewImageOfTotal', {
+              index: index + 1,
+              total: imageUrls.length
+            })
+          "
+          @click="setCurrentIndex(index)"
+        />
+      </div>
+    </div>
+
+    <!-- Image Dimensions -->
+    <div class="text-white text-xs text-center mt-2">
+      <span v-if="imageError" class="text-red-400">
+        {{ $t('g.errorLoadingImage') }}
+      </span>
+      <span v-else-if="isLoading" class="text-gray-400">
+        {{ $t('g.loading') }}...
+      </span>
+      <span v-else>
+        {{ actualDimensions || $t('g.calculatingDimensions') }}
+      </span>
+    </div>
+  </div>
+</template>

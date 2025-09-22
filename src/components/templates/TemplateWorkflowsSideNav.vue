@@ -1,3 +1,26 @@
+<script setup lang="ts">
+import Listbox from 'primevue/listbox'
+import ScrollPanel from 'primevue/scrollpanel'
+
+import type {
+  TemplateGroup,
+  WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
+
+defineProps<{
+  tabs: TemplateGroup[]
+  selectedTab: WorkflowTemplates | null
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:selectedTab', tab: WorkflowTemplates): void
+}>()
+
+const handleTabSelection = (tab: WorkflowTemplates) => {
+  emit('update:selectedTab', tab)
+}
+</script>
+
 <template>
   <ScrollPanel class="w-80" style="height: calc(83vh - 48px)">
     <Listbox
@@ -25,26 +48,3 @@
     </Listbox>
   </ScrollPanel>
 </template>
-
-<script setup lang="ts">
-import Listbox from 'primevue/listbox'
-import ScrollPanel from 'primevue/scrollpanel'
-
-import type {
-  TemplateGroup,
-  WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
-
-defineProps<{
-  tabs: TemplateGroup[]
-  selectedTab: WorkflowTemplates | null
-}>()
-
-const emit = defineEmits<{
-  (e: 'update:selectedTab', tab: WorkflowTemplates): void
-}>()
-
-const handleTabSelection = (tab: WorkflowTemplates) => {
-  emit('update:selectedTab', tab)
-}
-</script>

@@ -1,84 +1,3 @@
-<template>
-  <PanelTemplate value="Extension" class="extension-panel">
-    <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="$t('g.searchExtensions') + '...'"
-      />
-      <Message
-        v-if="hasChanges"
-        severity="info"
-        pt:text="w-full"
-        class="max-h-96 overflow-y-auto"
-      >
-        <ul>
-          <li v-for="ext in changedExtensions" :key="ext.name">
-            <span>
-              {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
-            </span>
-            {{ ext.name }}
-          </li>
-        </ul>
-        <div class="flex justify-end">
-          <Button
-            :label="$t('g.reloadToApplyChanges')"
-            outlined
-            severity="danger"
-            @click="applyChanges"
-          />
-        </div>
-      </Message>
-    </template>
-    <div class="mb-3 flex gap-2">
-      <SelectButton v-model="filterType" :options="filterTypes" />
-    </div>
-    <DataTable
-      v-model:selection="selectedExtensions"
-      :value="filteredExtensions"
-      striped-rows
-      size="small"
-      :filters="filters"
-      selection-mode="multiple"
-      data-key="name"
-    >
-      <Column selection-mode="multiple" :frozen="true" style="width: 3rem" />
-      <Column :header="$t('g.extensionName')" sortable field="name">
-        <template #body="slotProps">
-          {{ slotProps.data.name }}
-          <Tag
-            v-if="extensionStore.isCoreExtension(slotProps.data.name)"
-            value="Core"
-          />
-          <Tag v-else value="Custom" severity="info" />
-        </template>
-      </Column>
-      <Column
-        :pt="{
-          headerCell: 'flex items-center justify-end',
-          bodyCell: 'flex items-center justify-end'
-        }"
-      >
-        <template #header>
-          <Button
-            icon="pi pi-ellipsis-h"
-            text
-            severity="secondary"
-            @click="menu?.show($event)"
-          />
-          <ContextMenu ref="menu" :model="contextMenuItems" />
-        </template>
-        <template #body="slotProps">
-          <ToggleSwitch
-            v-model="editingEnabledExtensions[slotProps.data.name]"
-            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
-            @change="updateExtensionStatus"
-          />
-        </template>
-      </Column>
-    </DataTable>
-  </PanelTemplate>
-</template>
-
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
 import Button from 'primevue/button'
@@ -236,3 +155,84 @@ const contextMenuItems = [
   }
 ]
 </script>
+
+<template>
+  <PanelTemplate value="Extension" class="extension-panel">
+    <template #header>
+      <SearchBox
+        v-model="filters['global'].value"
+        :placeholder="$t('g.searchExtensions') + '...'"
+      />
+      <Message
+        v-if="hasChanges"
+        severity="info"
+        pt:text="w-full"
+        class="max-h-96 overflow-y-auto"
+      >
+        <ul>
+          <li v-for="ext in changedExtensions" :key="ext.name">
+            <span>
+              {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
+            </span>
+            {{ ext.name }}
+          </li>
+        </ul>
+        <div class="flex justify-end">
+          <Button
+            :label="$t('g.reloadToApplyChanges')"
+            outlined
+            severity="danger"
+            @click="applyChanges"
+          />
+        </div>
+      </Message>
+    </template>
+    <div class="mb-3 flex gap-2">
+      <SelectButton v-model="filterType" :options="filterTypes" />
+    </div>
+    <DataTable
+      v-model:selection="selectedExtensions"
+      :value="filteredExtensions"
+      striped-rows
+      size="small"
+      :filters="filters"
+      selection-mode="multiple"
+      data-key="name"
+    >
+      <Column selection-mode="multiple" :frozen="true" style="width: 3rem" />
+      <Column :header="$t('g.extensionName')" sortable field="name">
+        <template #body="slotProps">
+          {{ slotProps.data.name }}
+          <Tag
+            v-if="extensionStore.isCoreExtension(slotProps.data.name)"
+            value="Core"
+          />
+          <Tag v-else value="Custom" severity="info" />
+        </template>
+      </Column>
+      <Column
+        :pt="{
+          headerCell: 'flex items-center justify-end',
+          bodyCell: 'flex items-center justify-end'
+        }"
+      >
+        <template #header>
+          <Button
+            icon="pi pi-ellipsis-h"
+            text
+            severity="secondary"
+            @click="menu?.show($event)"
+          />
+          <ContextMenu ref="menu" :model="contextMenuItems" />
+        </template>
+        <template #body="slotProps">
+          <ToggleSwitch
+            v-model="editingEnabledExtensions[slotProps.data.name]"
+            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
+            @change="updateExtensionStatus"
+          />
+        </template>
+      </Column>
+    </DataTable>
+  </PanelTemplate>
+</template>

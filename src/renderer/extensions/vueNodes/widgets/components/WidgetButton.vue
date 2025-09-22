@@ -1,17 +1,3 @@
-<template>
-  <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
-      widget.name
-    }}</label>
-    <Button
-      v-bind="filteredProps"
-      :disabled="readonly"
-      size="small"
-      @click="handleClick"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
@@ -41,3 +27,17 @@ const handleClick = () => {
   }
 }
 </script>
+
+<template>
+  <div class="flex flex-col gap-1">
+    <label v-if="widget.name" class="text-sm opacity-80">{{
+      widget.name
+    }}</label>
+    <Button
+      v-bind="filteredProps"
+      :disabled="readonly"
+      size="small"
+      @click="handleClick"
+    />
+  </div>
+</template>

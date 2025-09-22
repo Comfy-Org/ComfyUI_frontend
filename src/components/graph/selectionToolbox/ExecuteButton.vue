@@ -1,19 +1,3 @@
-<template>
-  <Button
-    v-tooltip.top="{
-      value: t('selectionToolbox.executeButton.tooltip'),
-      showDelay: 1000
-    }"
-    class="dark-theme:bg-[#0B8CE9] bg-[#31B9F4] size-8 !p-0"
-    text
-    @mouseenter="() => handleMouseEnter()"
-    @mouseleave="() => handleMouseLeave()"
-    @click="handleClick"
-  >
-    <i-lucide:play class="fill-path-white w-4 h-4" />
-  </Button>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
@@ -64,6 +48,22 @@ const handleClick = async () => {
   await commandStore.execute('Comfy.QueueSelectedOutputNodes')
 }
 </script>
+
+<template>
+  <Button
+    v-tooltip.top="{
+      value: t('selectionToolbox.executeButton.tooltip'),
+      showDelay: 1000
+    }"
+    class="dark-theme:bg-[#0B8CE9] bg-[#31B9F4] size-8 !p-0"
+    text
+    @mouseenter="() => handleMouseEnter()"
+    @mouseleave="() => handleMouseLeave()"
+    @click="handleClick"
+  >
+    <i-lucide:play class="fill-path-white w-4 h-4" />
+  </Button>
+</template>
 <style scoped>
 :deep.fill-path-white > path {
   fill: white;

@@ -1,15 +1,3 @@
-<template>
-  <Button
-    v-bind="$attrs"
-    unstyled
-    :class="buttonStyle"
-    :disabled="disabled"
-    @click="onClick"
-  >
-    <slot></slot>
-  </Button>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
@@ -50,3 +38,15 @@ const buttonStyle = computed(() => {
   return cn(baseClasses, sizeClasses, typeClasses, className)
 })
 </script>
+
+<template>
+  <Button
+    v-bind="$attrs"
+    unstyled
+    :class="buttonStyle"
+    :disabled="disabled"
+    @click="onClick"
+  >
+    <slot></slot>
+  </Button>
+</template>

@@ -1,15 +1,3 @@
-<template>
-  <!-- Create a new stacking context for widgets to avoid z-index issues -->
-  <div class="isolate">
-    <DomWidget
-      v-for="widgetState in widgetStates"
-      :key="widgetState.widget.id"
-      :widget-state="widgetState"
-      @update:widget-value="widgetState.widget.value = $event"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import { computed } from 'vue'
@@ -73,3 +61,15 @@ whenever(
   { immediate: true }
 )
 </script>
+
+<template>
+  <!-- Create a new stacking context for widgets to avoid z-index issues -->
+  <div class="isolate">
+    <DomWidget
+      v-for="widgetState in widgetStates"
+      :key="widgetState.widget.id"
+      :widget-state="widgetState"
+      @update:widget-value="widgetState.widget.value = $event"
+    />
+  </div>
+</template>

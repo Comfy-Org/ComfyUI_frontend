@@ -1,22 +1,3 @@
-<template>
-  <IconTextButton
-    v-tooltip.top="
-      hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
-    "
-    v-bind="$attrs"
-    type="transparent"
-    :label="$t('manager.updateAll')"
-    :border="true"
-    size="sm"
-    :disabled="isUpdating"
-    @click="updateAllPacks"
-  >
-    <template v-if="isUpdating" #icon>
-      <DotSpinner duration="1s" :size="12" />
-    </template>
-  </IconTextButton>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 
@@ -81,3 +62,22 @@ const updateAllPacks = async () => {
   }
 }
 </script>
+
+<template>
+  <IconTextButton
+    v-tooltip.top="
+      hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
+    "
+    v-bind="$attrs"
+    type="transparent"
+    :label="$t('manager.updateAll')"
+    :border="true"
+    size="sm"
+    :disabled="isUpdating"
+    @click="updateAllPacks"
+  >
+    <template v-if="isUpdating" #icon>
+      <DotSpinner duration="1s" :size="12" />
+    </template>
+  </IconTextButton>
+</template>

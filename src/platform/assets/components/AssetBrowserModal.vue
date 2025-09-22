@@ -1,41 +1,3 @@
-<template>
-  <BaseModalLayout
-    data-component-id="AssetBrowserModal"
-    class="size-full max-h-full max-w-full min-w-0"
-    :content-title="contentTitle"
-    @close="handleClose"
-  >
-    <template v-if="shouldShowLeftPanel" #leftPanel>
-      <LeftSidePanel
-        v-model="selectedCategory"
-        data-component-id="AssetBrowserModal-LeftSidePanel"
-        :nav-items="availableCategories"
-      >
-        <template #header-icon>
-          <div class="icon-[lucide--folder] size-4" />
-        </template>
-        <template #header-title>{{ $t('assetBrowser.browseAssets') }}</template>
-      </LeftSidePanel>
-    </template>
-
-    <template #header>
-      <SearchBox
-        v-model="searchQuery"
-        size="lg"
-        :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
-        class="max-w-96"
-      />
-    </template>
-
-    <template #content>
-      <AssetGrid
-        :assets="filteredAssets"
-        @asset-select="handleAssetSelectAndEmit"
-      />
-    </template>
-  </BaseModalLayout>
-</template>
-
 <script setup lang="ts">
 import { computed, provide } from 'vue'
 
@@ -87,3 +49,41 @@ const handleAssetSelectAndEmit = async (asset: AssetDisplayItem) => {
   await selectAssetWithCallback(asset.id, props.onSelect)
 }
 </script>
+
+<template>
+  <BaseModalLayout
+    data-component-id="AssetBrowserModal"
+    class="size-full max-h-full max-w-full min-w-0"
+    :content-title="contentTitle"
+    @close="handleClose"
+  >
+    <template v-if="shouldShowLeftPanel" #leftPanel>
+      <LeftSidePanel
+        v-model="selectedCategory"
+        data-component-id="AssetBrowserModal-LeftSidePanel"
+        :nav-items="availableCategories"
+      >
+        <template #header-icon>
+          <div class="icon-[lucide--folder] size-4" />
+        </template>
+        <template #header-title>{{ $t('assetBrowser.browseAssets') }}</template>
+      </LeftSidePanel>
+    </template>
+
+    <template #header>
+      <SearchBox
+        v-model="searchQuery"
+        size="lg"
+        :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
+        class="max-w-96"
+      />
+    </template>
+
+    <template #content>
+      <AssetGrid
+        :assets="filteredAssets"
+        @asset-select="handleAssetSelectAndEmit"
+      />
+    </template>
+  </BaseModalLayout>
+</template>

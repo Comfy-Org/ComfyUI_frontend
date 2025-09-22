@@ -1,3 +1,26 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
+import Toast from 'primevue/toast'
+import { onUnmounted, ref } from 'vue'
+
+import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
+import { t } from '@/i18n'
+import { electronAPI } from '@/utils/envUtil'
+
+import BaseViewTemplate from './templates/BaseViewTemplate.vue'
+
+const electron = electronAPI()
+
+const terminalVisible = ref(false)
+
+const toggleConsoleDrawer = () => {
+  terminalVisible.value = !terminalVisible.value
+}
+
+onUnmounted(() => electron.Validation.dispose())
+</script>
+
 <template>
   <BaseViewTemplate dark>
     <div
@@ -36,29 +59,6 @@
     <Toast />
   </BaseViewTemplate>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
-import Toast from 'primevue/toast'
-import { onUnmounted, ref } from 'vue'
-
-import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
-import { t } from '@/i18n'
-import { electronAPI } from '@/utils/envUtil'
-
-import BaseViewTemplate from './templates/BaseViewTemplate.vue'
-
-const electron = electronAPI()
-
-const terminalVisible = ref(false)
-
-const toggleConsoleDrawer = () => {
-  terminalVisible.value = !terminalVisible.value
-}
-
-onUnmounted(() => electron.Validation.dispose())
-</script>
 
 <style scoped>
 @reference '../assets/css/style.css';

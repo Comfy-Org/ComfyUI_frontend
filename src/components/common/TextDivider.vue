@@ -1,11 +1,3 @@
-<template>
-  <div class="flex items-center">
-    <span v-if="position === 'left'" class="mr-2 shrink-0">{{ text }}</span>
-    <Divider :align="align" :type="type" :layout="layout" class="grow" />
-    <span v-if="position === 'right'" class="ml-2 shrink-0">{{ text }}</span>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 
@@ -23,3 +15,11 @@ const {
   layout?: 'horizontal' | 'vertical'
 }>()
 </script>
+
+<template>
+  <div class="flex items-center">
+    <span v-if="position === 'left'" class="mr-2 shrink-0">{{ text }}</span>
+    <Divider :align="align" :type="type" :layout="layout" class="grow" />
+    <span v-if="position === 'right'" class="ml-2 shrink-0">{{ text }}</span>
+  </div>
+</template>

@@ -1,37 +1,3 @@
-<template>
-  <BaseThumbnail :is-hovered="isHovered">
-    <LazyImage
-      :src="baseImageSrc"
-      :alt="alt"
-      :image-class="
-        isVideoType
-          ? 'w-full h-full object-cover'
-          : 'max-w-full max-h-64 object-contain'
-      "
-    />
-    <div ref="containerRef" class="absolute inset-0">
-      <LazyImage
-        :src="overlayImageSrc"
-        :alt="alt"
-        :image-class="
-          isVideoType
-            ? 'w-full h-full object-cover'
-            : 'max-w-full max-h-64 object-contain'
-        "
-        :image-style="{
-          clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`
-        }"
-      />
-      <div
-        class="absolute inset-y-0 w-0.5 bg-white/30 backdrop-blur-sm z-10 pointer-events-none"
-        :style="{
-          left: `${sliderPosition}%`
-        }"
-      />
-    </div>
-  </BaseThumbnail>
-</template>
-
 <script setup lang="ts">
 import { useMouseInElement } from '@vueuse/core'
 import { ref, watch } from 'vue'
@@ -71,3 +37,37 @@ watch(
   }
 )
 </script>
+
+<template>
+  <BaseThumbnail :is-hovered="isHovered">
+    <LazyImage
+      :src="baseImageSrc"
+      :alt="alt"
+      :image-class="
+        isVideoType
+          ? 'w-full h-full object-cover'
+          : 'max-w-full max-h-64 object-contain'
+      "
+    />
+    <div ref="containerRef" class="absolute inset-0">
+      <LazyImage
+        :src="overlayImageSrc"
+        :alt="alt"
+        :image-class="
+          isVideoType
+            ? 'w-full h-full object-cover'
+            : 'max-w-full max-h-64 object-contain'
+        "
+        :image-style="{
+          clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`
+        }"
+      />
+      <div
+        class="absolute inset-y-0 w-0.5 bg-white/30 backdrop-blur-sm z-10 pointer-events-none"
+        :style="{
+          left: `${sliderPosition}%`
+        }"
+      />
+    </div>
+  </BaseThumbnail>
+</template>

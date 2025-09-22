@@ -1,129 +1,3 @@
-<template>
-  <div
-    class="h-full flex flex-col mx-auto overflow-hidden"
-    :aria-label="$t('manager.title')"
-  >
-    <ContentDivider :width="0.3" />
-    <Button
-      v-if="isSmallScreen"
-      :icon="isSideNavOpen ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"
-      severity="secondary"
-      filled
-      class="absolute top-1/2 -translate-y-1/2 z-10"
-      :class="isSideNavOpen ? 'left-[12rem]' : 'left-2'"
-      @click="toggleSideNav"
-    />
-    <div class="flex flex-1 relative overflow-hidden">
-      <ManagerNavSidebar
-        v-if="isSideNavOpen"
-        v-model:selected-tab="selectedTab"
-        :tabs="tabs"
-      />
-      <div
-        class="flex-1 overflow-auto bg-gray-50 dark-theme:bg-neutral-900"
-        :class="{
-          'transition-all duration-300': isSmallScreen
-        }"
-      >
-        <div class="px-6 flex flex-col h-full">
-          <!-- Conflict Warning Banner -->
-          <div
-            v-if="shouldShowManagerBanner"
-            class="bg-yellow-500/20 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6 relative"
-          >
-            <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
-            <div class="flex flex-col gap-2 flex-1">
-              <p class="text-sm font-bold m-0">
-                {{ $t('manager.conflicts.warningBanner.title') }}
-              </p>
-              <p class="text-xs m-0">
-                {{ $t('manager.conflicts.warningBanner.message') }}
-              </p>
-              <p
-                class="text-sm font-bold m-0 cursor-pointer"
-                @click="onClickWarningLink"
-              >
-                {{ $t('manager.conflicts.warningBanner.button') }}
-              </p>
-            </div>
-            <IconButton
-              class="absolute top-0 right-0"
-              type="transparent"
-              @click="dismissWarningBanner"
-            >
-              <i
-                class="pi pi-times text-neutral-900 dark-theme:text-white text-xs"
-              ></i>
-            </IconButton>
-          </div>
-          <RegistrySearchBar
-            v-model:search-query="searchQuery"
-            v-model:search-mode="searchMode"
-            v-model:sort-field="sortField"
-            :search-results="searchResults"
-            :suggestions="suggestions"
-            :is-missing-tab="isMissingTab"
-            :sort-options="sortOptions"
-            :is-update-available-tab="isUpdateAvailableTab"
-          />
-          <div class="flex-1 overflow-auto">
-            <div
-              v-if="isLoading"
-              class="w-full h-full overflow-auto scrollbar-hide"
-            >
-              <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
-            </div>
-            <NoResultsPlaceholder
-              v-else-if="searchResults.length === 0"
-              :title="
-                comfyManagerStore.error
-                  ? $t('manager.errorConnecting')
-                  : $t('manager.noResultsFound')
-              "
-              :message="
-                comfyManagerStore.error
-                  ? $t('manager.tryAgainLater')
-                  : $t('manager.tryDifferentSearch')
-              "
-            />
-            <div v-else class="h-full" @click="handleGridContainerClick">
-              <VirtualGrid
-                id="results-grid"
-                :items="resultsWithKeys"
-                :buffer-rows="4"
-                :grid-style="GRID_STYLE"
-                @approach-end="onApproachEnd"
-              >
-                <template #item="{ item }">
-                  <PackCard
-                    :node-pack="item"
-                    :is-selected="
-                      selectedNodePacks.some((pack) => pack.id === item.id)
-                    "
-                    @click.stop="
-                      (event: MouseEvent) => selectNodePack(item, event)
-                    "
-                  />
-                </template>
-              </VirtualGrid>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="w-[clamp(250px,33%,306px)] border-l-0 flex z-20">
-        <ContentDivider orientation="vertical" :width="0.2" />
-        <div class="w-full flex flex-col isolate">
-          <InfoPanel
-            v-if="!hasMultipleSelections && selectedNodePack"
-            :node-pack="selectedNodePack"
-          />
-          <InfoPanelMultiItem v-else :node-packs="selectedNodePacks" />
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
@@ -540,3 +414,129 @@ onUnmounted(() => {
   getPackById.cancel()
 })
 </script>
+
+<template>
+  <div
+    class="h-full flex flex-col mx-auto overflow-hidden"
+    :aria-label="$t('manager.title')"
+  >
+    <ContentDivider :width="0.3" />
+    <Button
+      v-if="isSmallScreen"
+      :icon="isSideNavOpen ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"
+      severity="secondary"
+      filled
+      class="absolute top-1/2 -translate-y-1/2 z-10"
+      :class="isSideNavOpen ? 'left-[12rem]' : 'left-2'"
+      @click="toggleSideNav"
+    />
+    <div class="flex flex-1 relative overflow-hidden">
+      <ManagerNavSidebar
+        v-if="isSideNavOpen"
+        v-model:selected-tab="selectedTab"
+        :tabs="tabs"
+      />
+      <div
+        class="flex-1 overflow-auto bg-gray-50 dark-theme:bg-neutral-900"
+        :class="{
+          'transition-all duration-300': isSmallScreen
+        }"
+      >
+        <div class="px-6 flex flex-col h-full">
+          <!-- Conflict Warning Banner -->
+          <div
+            v-if="shouldShowManagerBanner"
+            class="bg-yellow-500/20 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6 relative"
+          >
+            <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
+            <div class="flex flex-col gap-2 flex-1">
+              <p class="text-sm font-bold m-0">
+                {{ $t('manager.conflicts.warningBanner.title') }}
+              </p>
+              <p class="text-xs m-0">
+                {{ $t('manager.conflicts.warningBanner.message') }}
+              </p>
+              <p
+                class="text-sm font-bold m-0 cursor-pointer"
+                @click="onClickWarningLink"
+              >
+                {{ $t('manager.conflicts.warningBanner.button') }}
+              </p>
+            </div>
+            <IconButton
+              class="absolute top-0 right-0"
+              type="transparent"
+              @click="dismissWarningBanner"
+            >
+              <i
+                class="pi pi-times text-neutral-900 dark-theme:text-white text-xs"
+              ></i>
+            </IconButton>
+          </div>
+          <RegistrySearchBar
+            v-model:search-query="searchQuery"
+            v-model:search-mode="searchMode"
+            v-model:sort-field="sortField"
+            :search-results="searchResults"
+            :suggestions="suggestions"
+            :is-missing-tab="isMissingTab"
+            :sort-options="sortOptions"
+            :is-update-available-tab="isUpdateAvailableTab"
+          />
+          <div class="flex-1 overflow-auto">
+            <div
+              v-if="isLoading"
+              class="w-full h-full overflow-auto scrollbar-hide"
+            >
+              <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
+            </div>
+            <NoResultsPlaceholder
+              v-else-if="searchResults.length === 0"
+              :title="
+                comfyManagerStore.error
+                  ? $t('manager.errorConnecting')
+                  : $t('manager.noResultsFound')
+              "
+              :message="
+                comfyManagerStore.error
+                  ? $t('manager.tryAgainLater')
+                  : $t('manager.tryDifferentSearch')
+              "
+            />
+            <div v-else class="h-full" @click="handleGridContainerClick">
+              <VirtualGrid
+                id="results-grid"
+                :items="resultsWithKeys"
+                :buffer-rows="4"
+                :grid-style="GRID_STYLE"
+                @approach-end="onApproachEnd"
+              >
+                <template #item="{ item }">
+                  <PackCard
+                    :node-pack="item"
+                    :is-selected="
+                      selectedNodePacks.some((pack) => pack.id === item.id)
+                    "
+                    @click.stop="
+                      (event: MouseEvent) => selectNodePack(item, event)
+                    "
+                  />
+                </template>
+              </VirtualGrid>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="w-[clamp(250px,33%,306px)] border-l-0 flex z-20">
+        <ContentDivider orientation="vertical" :width="0.2" />
+        <div class="w-full flex flex-col isolate">
+          <InfoPanel
+            v-if="!hasMultipleSelections && selectedNodePack"
+            :node-pack="selectedNodePack"
+          />
+          <InfoPanelMultiItem v-else :node-packs="selectedNodePacks" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

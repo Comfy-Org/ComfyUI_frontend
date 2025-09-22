@@ -1,16 +1,3 @@
-<template>
-  <div class="grid grid-cols-2 gap-2">
-    <template v-for="col in deviceColumns" :key="col.field">
-      <div class="font-medium">
-        {{ col.header }}
-      </div>
-      <div>
-        {{ formatValue(props.device[col.field], col.field) }}
-      </div>
-    </template>
-  </div>
-</template>
-
 <script setup lang="ts">
 import type { DeviceStats } from '@/schemas/apiSchema'
 import { formatSize } from '@/utils/formatUtil'
@@ -39,3 +26,16 @@ const formatValue = (value: any, field: string) => {
   return value
 }
 </script>
+
+<template>
+  <div class="grid grid-cols-2 gap-2">
+    <template v-for="col in deviceColumns" :key="col.field">
+      <div class="font-medium">
+        {{ col.header }}
+      </div>
+      <div>
+        {{ formatValue(props.device[col.field], col.field) }}
+      </div>
+    </template>
+  </div>
+</template>

@@ -1,16 +1,3 @@
-<template>
-  <WidgetLayoutField :widget="widget">
-    <TreeSelect
-      v-model="localValue"
-      v-bind="combinedProps"
-      :disabled="readonly"
-      class="w-full text-xs"
-      size="small"
-      @update:model-value="onChange"
-    />
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts">
 import TreeSelect from 'primevue/treeselect'
 import { computed } from 'vue'
@@ -67,3 +54,16 @@ const combinedProps = computed(() => ({
   ...transformCompatProps.value
 }))
 </script>
+
+<template>
+  <WidgetLayoutField :widget="widget">
+    <TreeSelect
+      v-model="localValue"
+      v-bind="combinedProps"
+      :disabled="readonly"
+      class="w-full text-xs"
+      size="small"
+      @update:model-value="onChange"
+    />
+  </WidgetLayoutField>
+</template>

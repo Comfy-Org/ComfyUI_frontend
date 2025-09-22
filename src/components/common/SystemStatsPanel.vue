@@ -1,40 +1,3 @@
-<template>
-  <div class="system-stats">
-    <div class="mb-6">
-      <h2 class="text-2xl font-semibold mb-4">
-        {{ $t('g.systemInfo') }}
-      </h2>
-      <div class="grid grid-cols-2 gap-2">
-        <template v-for="col in systemColumns" :key="col.field">
-          <div class="font-medium">
-            {{ col.header }}
-          </div>
-          <div>{{ formatValue(systemInfo[col.field], col.field) }}</div>
-        </template>
-      </div>
-    </div>
-
-    <Divider />
-
-    <div>
-      <h2 class="text-2xl font-semibold mb-4">
-        {{ $t('g.devices') }}
-      </h2>
-      <TabView v-if="props.stats.devices.length > 1">
-        <TabPanel
-          v-for="device in props.stats.devices"
-          :key="device.index"
-          :header="device.name"
-          :value="device.index"
-        >
-          <DeviceInfo :device="device" />
-        </TabPanel>
-      </TabView>
-      <DeviceInfo v-else :device="props.stats.devices[0]" />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 import TabPanel from 'primevue/tabpanel'
@@ -72,3 +35,40 @@ const formatValue = (value: any, field: string) => {
   return value
 }
 </script>
+
+<template>
+  <div class="system-stats">
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold mb-4">
+        {{ $t('g.systemInfo') }}
+      </h2>
+      <div class="grid grid-cols-2 gap-2">
+        <template v-for="col in systemColumns" :key="col.field">
+          <div class="font-medium">
+            {{ col.header }}
+          </div>
+          <div>{{ formatValue(systemInfo[col.field], col.field) }}</div>
+        </template>
+      </div>
+    </div>
+
+    <Divider />
+
+    <div>
+      <h2 class="text-2xl font-semibold mb-4">
+        {{ $t('g.devices') }}
+      </h2>
+      <TabView v-if="props.stats.devices.length > 1">
+        <TabPanel
+          v-for="device in props.stats.devices"
+          :key="device.index"
+          :header="device.name"
+          :value="device.index"
+        >
+          <DeviceInfo :device="device" />
+        </TabPanel>
+      </TabView>
+      <DeviceInfo v-else :device="props.stats.devices[0]" />
+    </div>
+  </div>
+</template>

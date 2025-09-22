@@ -1,3 +1,68 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Divider from 'primevue/divider'
+import Message from 'primevue/message'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { isInChina } from '@/utils/networkUtil'
+
+import ApiKeyForm from './signin/ApiKeyForm.vue'
+import SignInForm from './signin/SignInForm.vue'
+import SignUpForm from './signin/SignUpForm.vue'
+
+const { onSuccess } = defineProps<{
+  onSuccess: () => void
+}>()
+
+const { t } = useI18n()
+const authActions = useFirebaseAuthActions()
+const isSecureContext = window.isSecureContext
+const isSignIn = ref(true)
+const showApiKeyForm = ref(false)
+
+const toggleState = () => {
+  isSignIn.value = !isSignIn.value
+  showApiKeyForm.value = false
+}
+
+const signInWithGoogle = async () => {
+  if (await authActions.signInWithGoogle()) {
+    onSuccess()
+  }
+}
+
+const signInWithGithub = async () => {
+  if (await authActions.signInWithGithub()) {
+    onSuccess()
+  }
+}
+
+const signInWithEmail = async (values: SignInData) => {
+  if (await authActions.signInWithEmail(values.email, values.password)) {
+    onSuccess()
+  }
+}
+
+const signUpWithEmail = async (values: SignUpData) => {
+  if (await authActions.signUpWithEmail(values.email, values.password)) {
+    onSuccess()
+  }
+}
+
+const userIsInChina = ref(false)
+onMounted(async () => {
+  userIsInChina.value = await isInChina()
+})
+
+onUnmounted(() => {
+  authActions.accessError.value = false
+})
+</script>
+
 <template>
   <div class="w-96 p-2 overflow-x-hidden">
     <ApiKeyForm
@@ -138,68 +203,3 @@
     </template>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Divider from 'primevue/divider'
-import Message from 'primevue/message'
-import { onMounted, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
-import type { SignInData, SignUpData } from '@/schemas/signInSchema'
-import { isInChina } from '@/utils/networkUtil'
-
-import ApiKeyForm from './signin/ApiKeyForm.vue'
-import SignInForm from './signin/SignInForm.vue'
-import SignUpForm from './signin/SignUpForm.vue'
-
-const { onSuccess } = defineProps<{
-  onSuccess: () => void
-}>()
-
-const { t } = useI18n()
-const authActions = useFirebaseAuthActions()
-const isSecureContext = window.isSecureContext
-const isSignIn = ref(true)
-const showApiKeyForm = ref(false)
-
-const toggleState = () => {
-  isSignIn.value = !isSignIn.value
-  showApiKeyForm.value = false
-}
-
-const signInWithGoogle = async () => {
-  if (await authActions.signInWithGoogle()) {
-    onSuccess()
-  }
-}
-
-const signInWithGithub = async () => {
-  if (await authActions.signInWithGithub()) {
-    onSuccess()
-  }
-}
-
-const signInWithEmail = async (values: SignInData) => {
-  if (await authActions.signInWithEmail(values.email, values.password)) {
-    onSuccess()
-  }
-}
-
-const signUpWithEmail = async (values: SignUpData) => {
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
-    onSuccess()
-  }
-}
-
-const userIsInChina = ref(false)
-onMounted(async () => {
-  userIsInChina.value = await isInChina()
-})
-
-onUnmounted(() => {
-  authActions.accessError.value = false
-})
-</script>

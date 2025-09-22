@@ -1,17 +1,3 @@
-<template>
-  <div
-    v-if="showInput"
-    class="group-title-editor node-title-editor"
-    :style="inputStyle"
-  >
-    <EditableText
-      :is-editing="showInput"
-      :model-value="editedTitle"
-      @edit="onEdit"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { type CSSProperties, computed, ref, watch } from 'vue'
@@ -130,6 +116,20 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 </script>
+
+<template>
+  <div
+    v-if="showInput"
+    class="group-title-editor node-title-editor"
+    :style="inputStyle"
+  >
+    <EditableText
+      :is-editing="showInput"
+      :model-value="editedTitle"
+      @edit="onEdit"
+    />
+  </div>
+</template>
 
 <style scoped>
 .group-title-editor.node-title-editor {
