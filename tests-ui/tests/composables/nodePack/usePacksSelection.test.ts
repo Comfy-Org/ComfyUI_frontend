@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
 import type { components } from '@/types/comfyRegistryTypes'
+import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 vi.mock('vue-i18n', async () => {

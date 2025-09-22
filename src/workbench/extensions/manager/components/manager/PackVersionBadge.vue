@@ -46,9 +46,9 @@ import Popover from 'primevue/popover'
 import { valid as validSemver } from 'semver'
 import { computed, ref, watch } from 'vue'
 
-import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackVersionSelectorPopover from '@/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue'
+import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 const TRUNCATED_HASH_LENGTH = 7

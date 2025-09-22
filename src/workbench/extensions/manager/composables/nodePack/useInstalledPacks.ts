@@ -1,8 +1,8 @@
 import { whenever } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
-import { useNodePacks } from '@/composables/nodePack/useNodePacks'
 import type { components } from '@/types/comfyRegistryTypes'
+import { useNodePacks } from '@/workbench/extensions/manager/composables/nodePack/useNodePacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { UseNodePacksOptions } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 

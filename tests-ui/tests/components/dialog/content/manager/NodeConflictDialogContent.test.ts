@@ -34,11 +34,14 @@ vi.mock('vue-i18n', () => ({
 const mockConflictData = ref<ConflictDetectionResult[]>([])
 
 // Mock useConflictDetection composable
-vi.mock('@/composables/useConflictDetection', () => ({
-  useConflictDetection: () => ({
-    conflictedPackages: computed(() => mockConflictData.value)
+vi.mock(
+  '@/workbench/extensions/manager/composables/useConflictDetection',
+  () => ({
+    useConflictDetection: () => ({
+      conflictedPackages: computed(() => mockConflictData.value)
+    })
   })
-}))
+)
 
 describe('NodeConflictDialogContent', () => {
   let pinia: ReturnType<typeof createPinia>
