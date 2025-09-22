@@ -146,8 +146,8 @@
             :min-width="200"
             class="cursor-pointer transition-all duration-300 hover:scale-[1.02]"
             :data-testid="`template-workflow-${template.name}`"
-            @mouseenter="hoveredTemplates[template.name] = true"
-            @mouseleave="hoveredTemplates[template.name] = false"
+            @mouseenter="hoveredTemplate = template.name"
+            @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
           >
             <template #top>
@@ -170,7 +170,7 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplates[template.name] || false"
+                        :is-hovered="hoveredTemplate === template.name"
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -189,7 +189,7 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplates[template.name] || false"
+                        :is-hovered="hoveredTemplate === template.name"
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -205,7 +205,7 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplates[template.name] || false"
+                        :is-hovered="hoveredTemplate === template.name"
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -277,7 +277,7 @@
                           v-tooltip.bottom="$t('g.seeTutorial')"
                           :class="[
                             'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
-                            hoveredTemplates[template.name]
+                            hoveredTemplate === template.name
                               ? 'opacity-100'
                               : 'opacity-0 pointer-events-none'
                           ]"
@@ -491,7 +491,7 @@ const selectedLicenseObjects = computed({
 // Loading states
 const isLoading = ref(true)
 const loadingTemplate = ref<string | null>(null)
-const hoveredTemplates = ref<Record<string, boolean>>({})
+const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 
 // Navigation
