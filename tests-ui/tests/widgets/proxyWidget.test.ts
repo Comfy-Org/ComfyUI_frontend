@@ -93,4 +93,21 @@ describe('Subgraph proxyWidgets', () => {
     subgraphNode.widgets[0].value = 'test2'
     expect(innerNodes[0].widgets![0].value).toBe('test2')
   })
+  test('Will not modify position or sizing of existing widgets', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = JSON.stringify([
+      ['1', 'stringWidget']
+    ])
+    if (!innerNodes[0].widgets) throw new Error('node has no widgets')
+    innerNodes[0].widgets[0].y = 10
+    innerNodes[0].widgets[0].last_y = 11
+    innerNodes[0].widgets[0].computedHeight = 12
+    subgraphNode.widgets[0].y = 20
+    subgraphNode.widgets[0].last_y = 21
+    subgraphNode.widgets[0].computedHeight = 22
+    expect(innerNodes[0].widgets[0].y).toBe(10)
+    expect(innerNodes[0].widgets[0].last_y).toBe(11)
+    expect(innerNodes[0].widgets[0].computedHeight).toBe(12)
+  })
 })
