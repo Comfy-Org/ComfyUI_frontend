@@ -8,31 +8,37 @@
  * - Layout mutations for visual feedback
  * - Integration with LiteGraph canvas selection system
  */
-import type { Ref } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { useCanvasStore } from '@/stores/graphStore'
 
-interface NodeManager {
-  getNode: (id: string) => any
-}
-
-export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
+function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
+  const { nodeManager } = useVueNodeLifecycle()
   const { bringNodeToFront } = useNodeZIndex()
+  const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
   /**
    * Handle node selection events
    * Supports single selection and multi-select with Ctrl/Cmd
    */
-  const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
+  const handleNodeSelect = (
+    event: PointerEvent,
+    nodeData: VueNodeData,
+    wasDragging: boolean
+  ) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!canvasStore.canvas || !nodeManager.value) return
 
     const node = nodeManager.value.getNode(nodeData.id)
     if (!node) return
 
-    const isMultiSelect = event.ctrlKey || event.metaKey
+    const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
 
     if (isMultiSelect) {
       // Ctrl/Cmd+click -> toggle selection
@@ -42,9 +48,12 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
         canvasStore.canvas.select(node)
       }
     } else {
+      // If it wasn't a drag: single-select the node
+      if (!wasDragging) {
+        canvasStore.canvas.deselectAll()
+        canvasStore.canvas.select(node)
+      }
       // Regular click -> single select
-      canvasStore.canvas.deselectAll()
-      canvasStore.canvas.select(node)
     }
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
@@ -62,6 +71,8 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
    * Uses LiteGraph's native collapse method for proper state management
    */
   const handleNodeCollapse = (nodeId: string, collapsed: boolean) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!nodeManager.value) return
 
     const node = nodeManager.value.getNode(nodeId)
@@ -71,6 +82,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     const currentCollapsed = node.flags?.collapsed ?? false
     if (currentCollapsed !== collapsed) {
       node.collapse()
+      nodeManager.value.scheduleUpdate(nodeId, 'critical')
     }
   }
 
@@ -79,6 +91,8 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
    * Updates the title in LiteGraph for persistence across sessions
    */
   const handleNodeTitleUpdate = (nodeId: string, newTitle: string) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!nodeManager.value) return
 
     const node = nodeManager.value.getNode(nodeId)
@@ -96,6 +110,8 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     event: PointerEvent,
     nodeData: VueNodeData
   ) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!canvasStore.canvas || !nodeManager.value) return
 
     const node = nodeManager.value.getNode(nodeData.id)
@@ -107,7 +123,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     // TODO: add custom double-click behavior here
     // For now, ensure node is selected
     if (!node.selected) {
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, nodeData, false)
     }
   }
 
@@ -116,6 +132,8 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
    * Integrates with LiteGraph's context menu system
    */
   const handleNodeRightClick = (event: PointerEvent, nodeData: VueNodeData) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!canvasStore.canvas || !nodeManager.value) return
 
     const node = nodeManager.value.getNode(nodeData.id)
@@ -126,7 +144,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
 
     // Select the node if not already selected
     if (!node.selected) {
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, nodeData, false)
     }
 
     // Let LiteGraph handle the context menu
@@ -138,6 +156,8 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
    * Prepares node for dragging and sets appropriate visual state
    */
   const handleNodeDragStart = (event: DragEvent, nodeData: VueNodeData) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!canvasStore.canvas || !nodeManager.value) return
 
     const node = nodeManager.value.getNode(nodeData.id)
@@ -151,7 +171,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
         metaKey: event.metaKey,
         bubbles: true
       })
-      handleNodeSelect(syntheticEvent, nodeData)
+      handleNodeSelect(syntheticEvent, nodeData, false)
     }
 
     // Set drag data for potential drop operations
@@ -166,6 +186,8 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
    * Useful for selection toolbox or area selection
    */
   const selectNodes = (nodeIds: string[], addToSelection = false) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!canvasStore.canvas || !nodeManager.value) return
 
     if (!addToSelection) {
@@ -186,6 +208,8 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
    * Deselect specific nodes
    */
   const deselectNodes = (nodeIds: string[]) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
     if (!canvasStore.canvas || !nodeManager.value) return
 
     nodeIds.forEach((nodeId) => {
@@ -212,3 +236,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     deselectNodes
   }
 }
+
+export const useNodeEventHandlers = createSharedComposable(
+  useNodeEventHandlersIndividual
+)

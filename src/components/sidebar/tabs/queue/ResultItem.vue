@@ -24,8 +24,8 @@
 import { computed, onMounted, ref } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
-import { ResultItemImpl } from '@/stores/queueStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultAudio from './ResultAudio.vue'
 import ResultVideo from './ResultVideo.vue'

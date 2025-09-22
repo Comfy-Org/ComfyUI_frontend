@@ -43,11 +43,11 @@
 
 <script setup lang="ts">
 import Message from 'primevue/message'
+import { compare } from 'semver'
 import { computed } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { compareVersions } from '@/utils/formatUtil'
 
 const props = defineProps<{
   missingCoreNodes: Record<string, LGraphNode[]>
@@ -68,7 +68,7 @@ const currentComfyUIVersion = computed<string | null>(() => {
 const sortedMissingCoreNodes = computed(() => {
   return Object.entries(props.missingCoreNodes).sort(([a], [b]) => {
     // Sort by version in descending order (newest first)
-    return compareVersions(b, a) // Reversed for descending order
+    return compare(b, a) // Reversed for descending order
   })
 })
 

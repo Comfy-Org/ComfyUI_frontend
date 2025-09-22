@@ -5,6 +5,14 @@ import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyNode,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   DisplayComponentWsMessage,
   ExecutedWsMessage,
@@ -17,19 +25,11 @@ import type {
   ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
-import type {
-  ComfyNode,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-
-import { useCanvasStore } from './graphStore'
-import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 
 interface QueuedPrompt {
   /**
@@ -43,6 +43,57 @@ interface QueuedPrompt {
   workflow?: ComfyWorkflow
 }
 
+const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
+  const node = graph.getNodeById(id)
+  if (node?.isSubgraphNode()) return node.subgraph
+}
+
+/**
+ * Recursively get the subgraph objects for the given subgraph instance IDs
+ * @param currentGraph The current graph
+ * @param subgraphNodeIds The instance IDs
+ * @param subgraphs The subgraphs
+ * @returns The subgraphs that correspond to each of the instance IDs.
+ */
+function getSubgraphsFromInstanceIds(
+  currentGraph: LGraph | Subgraph,
+  subgraphNodeIds: string[],
+  subgraphs: Subgraph[] = []
+): Subgraph[] {
+  // Last segment is the node portion; nothing to do.
+  if (subgraphNodeIds.length === 1) return subgraphs
+
+  const currentPart = subgraphNodeIds.shift()
+  if (currentPart === undefined) return subgraphs
+
+  const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
+  if (!subgraph) throw new Error(`Subgraph not found: ${currentPart}`)
+
+  subgraphs.push(subgraph)
+  return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
+}
+
+/**
+ * Convert execution context node IDs to NodeLocatorIds
+ * @param nodeId The node ID from execution context (could be execution ID)
+ * @returns The NodeLocatorId
+ */
+function executionIdToNodeLocatorId(nodeId: string | number): NodeLocatorId {
+  const nodeIdStr = String(nodeId)
+
+  if (!nodeIdStr.includes(':')) {
+    // It's a top-level node ID
+    return nodeIdStr
+  }
+
+  // It's an execution node ID
+  const parts = nodeIdStr.split(':')
+  const localNodeId = parts[parts.length - 1]
+  const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
+  const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
+  return nodeLocatorId
+}
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
@@ -54,29 +105,6 @@ export const useExecutionStore = defineStore('execution', () => {
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
-
-  /**
-   * Convert execution context node IDs to NodeLocatorIds
-   * @param nodeId The node ID from execution context (could be execution ID)
-   * @returns The NodeLocatorId
-   */
-  const executionIdToNodeLocatorId = (
-    nodeId: string | number
-  ): NodeLocatorId => {
-    const nodeIdStr = String(nodeId)
-
-    if (!nodeIdStr.includes(':')) {
-      // It's a top-level node ID
-      return nodeIdStr
-    }
-
-    // It's an execution node ID
-    const parts = nodeIdStr.split(':')
-    const localNodeId = parts[parts.length - 1]
-    const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
-    const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
-    return nodeLocatorId
-  }
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -132,15 +160,19 @@ export const useExecutionStore = defineStore('execution', () => {
 
   // Easily access all currently executing node IDs
   const executingNodeIds = computed<NodeId[]>(() => {
-    return Object.entries(nodeProgressStates)
+    return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
       .map(([nodeId, _]) => nodeId)
   })
 
   // @deprecated For backward compatibility - stores the primary executing node ID
   const executingNodeId = computed<NodeId | null>(() => {
-    return executingNodeIds.value.length > 0 ? executingNodeIds.value[0] : null
+    return executingNodeIds.value[0] ?? null
   })
+
+  const uniqueExecutingNodeIdStrings = computed(
+    () => new Set(executingNodeIds.value.map(String))
+  )
 
   // For backward compatibility - returns the primary executing node
   const executingNode = computed<ComfyNode | null>(() => {
@@ -158,36 +190,6 @@ export const useExecutionStore = defineStore('execution', () => {
       null
     )
   })
-
-  const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
-    const node = graph.getNodeById(id)
-    if (node?.isSubgraphNode()) return node.subgraph
-  }
-
-  /**
-   * Recursively get the subgraph objects for the given subgraph instance IDs
-   * @param currentGraph The current graph
-   * @param subgraphNodeIds The instance IDs
-   * @param subgraphs The subgraphs
-   * @returns The subgraphs that correspond to each of the instance IDs.
-   */
-  const getSubgraphsFromInstanceIds = (
-    currentGraph: LGraph | Subgraph,
-    subgraphNodeIds: string[],
-    subgraphs: Subgraph[] = []
-  ): Subgraph[] => {
-    // Last segment is the node portion; nothing to do.
-    if (subgraphNodeIds.length === 1) return subgraphs
-
-    const currentPart = subgraphNodeIds.shift()
-    if (currentPart === undefined) return subgraphs
-
-    const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
-    if (!subgraph) throw new Error(`Subgraph not found: ${currentPart}`)
-
-    subgraphs.push(subgraph)
-    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
-  }
 
   // This is the progress of the currently executing node (for backward compatibility)
   const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
@@ -218,6 +220,19 @@ export const useExecutionStore = defineStore('execution', () => {
     const total = totalNodesToExecute.value
     const done = nodesExecuted.value
     return total > 0 ? done / total : 0
+  })
+
+  const lastExecutionErrorNodeLocatorId = computed(() => {
+    const err = lastExecutionError.value
+    if (!err) return null
+    return executionIdToNodeLocatorId(String(err.node_id))
+  })
+
+  const lastExecutionErrorNodeId = computed(() => {
+    const locator = lastExecutionErrorNodeLocatorId.value
+    if (!locator) return null
+    const localId = workflowStore.nodeLocatorIdToNodeId(locator)
+    return localId != null ? String(localId) : null
   })
 
   function bindExecutionEvents() {
@@ -410,62 +425,25 @@ export const useExecutionStore = defineStore('execution', () => {
   return {
     isIdle,
     clientId,
-    /**
-     * The id of the prompt that is currently being executed
-     */
     activePromptId,
-    /**
-     * The queued prompts
-     */
     queuedPrompts,
-    /**
-     * The node errors from the previous execution.
-     */
     lastNodeErrors,
-    /**
-     * The error from the previous execution.
-     */
     lastExecutionError,
-    /**
-     * The id of the node that is currently being executed (backward compatibility)
-     */
+    lastExecutionErrorNodeId,
     executingNodeId,
-    /**
-     * The list of all nodes that are currently executing
-     */
     executingNodeIds,
-    /**
-     * The prompt that is currently being executed
-     */
     activePrompt,
-    /**
-     * The total number of nodes to execute
-     */
     totalNodesToExecute,
-    /**
-     * The number of nodes that have been executed
-     */
     nodesExecuted,
-    /**
-     * The progress of the execution
-     */
     executionProgress,
-    /**
-     * The node that is currently being executed (backward compatibility)
-     */
     executingNode,
-    /**
-     * The progress of the executing node (backward compatibility)
-     */
     executingNodeProgress,
-    /**
-     * All node progress states from progress_state events
-     */
     nodeProgressStates,
     nodeLocationProgressStates,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
+    uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.
     _executingNodeProgress,
     // NodeLocatorId conversion helpers

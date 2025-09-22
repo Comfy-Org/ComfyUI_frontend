@@ -53,9 +53,11 @@ export interface VueNodeData {
   mode: number
   selected: boolean
   executing: boolean
+  subgraphId?: string | null
   widgets?: SafeWidgetData[]
   inputs?: unknown[]
   outputs?: unknown[]
+  hasErrors?: boolean
   flags?: {
     collapsed?: boolean
   }
@@ -66,12 +68,10 @@ interface SpatialMetrics {
   nodesInIndex: number
 }
 
-interface GraphNodeManager {
+export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
   nodeState: ReadonlyMap<string, NodeState>
-  nodePositions: ReadonlyMap<string, { x: number; y: number }>
-  nodeSizes: ReadonlyMap<string, { width: number; height: number }>
 
   // Access to original LiteGraph nodes (non-reactive)
   getNode(id: string): LGraphNode | undefined
@@ -86,7 +86,6 @@ interface GraphNodeManager {
     priority?: 'critical' | 'normal' | 'low'
   ): void
   forceSync(): void
-  detectChangesInRAF(): void
 
   // Spatial queries
   getVisibleNodeIds(viewportBounds: Bounds): Set<string>
@@ -99,17 +98,12 @@ interface GraphNodeManager {
   getSpatialIndexDebugInfo(): SpatialIndexDebugInfo | null
 }
 
-export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
+export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
-  const { moveNode, resizeNode, createNode, deleteNode, setSource } =
-    useLayoutMutations()
+  const { createNode, deleteNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
   const nodeState = reactive(new Map<string, NodeState>())
-  const nodePositions = reactive(new Map<string, { x: number; y: number }>())
-  const nodeSizes = reactive(
-    new Map<string, { width: number; height: number }>()
-  )
 
   // Non-reactive storage for original LiteGraph nodes
   const nodeRefs = new Map<string, LGraphNode>()
@@ -166,6 +160,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
   // Extract safe data from LiteGraph node for Vue consumption
   const extractVueNodeData = (node: LGraphNode): VueNodeData => {
+    // Determine subgraph ID - null for root graph, string for subgraphs
+    const subgraphId =
+      node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
+        ? String(node.graph.id)
+        : null
     // Extract safe widget data
     const safeWidgets = node.widgets?.map((widget) => {
       try {
@@ -201,13 +200,22 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       }
     })
 
+    const nodeType =
+      node.type ||
+      node.constructor?.comfyClass ||
+      node.constructor?.title ||
+      node.constructor?.name ||
+      'Unknown'
+
     return {
       id: String(node.id),
-      title: node.title || 'Untitled',
-      type: node.type || 'Unknown',
+      title: typeof node.title === 'string' ? node.title : '',
+      type: nodeType,
       mode: node.mode || 0,
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
+      subgraphId,
+      hasErrors: !!node.has_errors,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
       outputs: node.outputs ? [...node.outputs] : undefined,
@@ -349,7 +357,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   //   }
   //   return metadata
   // }
-
   const scheduleUpdate = (
     nodeId?: string,
     priority: 'critical' | 'normal' | 'low' = 'normal'
@@ -416,8 +423,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         nodeRefs.delete(id)
         vueNodeData.delete(id)
         nodeState.delete(id)
-        nodePositions.delete(id)
-        nodeSizes.delete(id)
         lastNodesSnapshot.delete(id)
         spatialIndex.remove(id)
       }
@@ -443,8 +448,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
           lastUpdate: performance.now(),
           culled: false
         })
-        nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-        nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
         attachMetadata(node)
 
         // Add to spatial index
@@ -481,120 +484,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   }
 
   /**
-   * Detects position changes for a single node and updates reactive state
-   */
-  const detectPositionChanges = (node: LGraphNode, id: string): boolean => {
-    const currentPos = nodePositions.get(id)
-
-    if (
-      !currentPos ||
-      currentPos.x !== node.pos[0] ||
-      currentPos.y !== node.pos[1]
-    ) {
-      nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-
-      // Push position change to layout store
-      // Source is already set to 'canvas' in detectChangesInRAF
-      void moveNode(id, { x: node.pos[0], y: node.pos[1] })
-
-      return true
-    }
-    return false
-  }
-
-  /**
-   * Detects size changes for a single node and updates reactive state
-   */
-  const detectSizeChanges = (node: LGraphNode, id: string): boolean => {
-    const currentSize = nodeSizes.get(id)
-
-    if (
-      !currentSize ||
-      currentSize.width !== node.size[0] ||
-      currentSize.height !== node.size[1]
-    ) {
-      nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
-
-      // Push size change to layout store
-      // Source is already set to 'canvas' in detectChangesInRAF
-      void resizeNode(id, {
-        width: node.size[0],
-        height: node.size[1]
-      })
-
-      return true
-    }
-    return false
-  }
-
-  /**
-   * Updates spatial index for a node if bounds changed
-   */
-  const updateSpatialIndex = (node: LGraphNode, id: string): void => {
-    const bounds: Bounds = {
-      x: node.pos[0],
-      y: node.pos[1],
-      width: node.size[0],
-      height: node.size[1]
-    }
-    spatialIndex.update(id, bounds)
-  }
-
-  /**
-   * Updates performance metrics after change detection
-   */
-  const updatePerformanceMetrics = (
-    startTime: number,
-    positionUpdates: number,
-    sizeUpdates: number
-  ): void => {
-    const endTime = performance.now()
-    performanceMetrics.updateTime = endTime - startTime
-    performanceMetrics.nodeCount = vueNodeData.size
-    performanceMetrics.culledCount = Array.from(nodeState.values()).filter(
-      (state) => state.culled
-    ).length
-    spatialMetrics.nodesInIndex = spatialIndex.size
-
-    if (positionUpdates > 0 || sizeUpdates > 0) {
-      performanceMetrics.rafUpdateCount++
-    }
-  }
-
-  /**
-   * Main RAF change detection function
-   */
-  const detectChangesInRAF = () => {
-    const startTime = performance.now()
-
-    if (!graph?._nodes) return
-
-    let positionUpdates = 0
-    let sizeUpdates = 0
-
-    // Set source for all canvas-driven updates
-    setSource(LayoutSource.Canvas)
-
-    // Process each node for changes
-    for (const node of graph._nodes) {
-      const id = String(node.id)
-
-      const posChanged = detectPositionChanges(node, id)
-      const sizeChanged = detectSizeChanges(node, id)
-
-      if (posChanged) positionUpdates++
-      if (sizeChanged) sizeUpdates++
-
-      // Update spatial index if geometry changed
-      if (posChanged || sizeChanged) {
-        updateSpatialIndex(node, id)
-      }
-    }
-
-    updatePerformanceMetrics(startTime, positionUpdates, sizeUpdates)
-  }
-
-  /**
    * Handles node addition to the graph - sets up Vue state and spatial indexing
    * Defers position extraction until after potential configure() calls
    */
@@ -610,7 +499,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     // Set up widget callbacks BEFORE extracting data (critical order)
     setupNodeWidgetCallbacks(node)
 
-    // Extract safe data for Vue
+    // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
 
     // Set up reactive tracking state
@@ -626,8 +515,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
 
-      nodePositions.set(id, nodePosition)
-      nodeSizes.set(id, nodeSize)
       attachMetadata(node)
 
       // Add to spatial index for viewport culling with final positions
@@ -655,7 +542,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       // Chain our callback with any existing onAfterGraphConfigured callback
       node.onAfterGraphConfigured = useChainCallback(
         node.onAfterGraphConfigured,
-        initializeVueNodeLayout
+        () => {
+          // Re-extract data now that configure() has populated title/slots/widgets/etc.
+          vueNodeData.set(id, extractVueNodeData(node))
+          initializeVueNodeLayout()
+        }
       )
     } else {
       // Not during workflow loading - initialize layout immediately
@@ -689,8 +580,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     nodeRefs.delete(id)
     vueNodeData.delete(id)
     nodeState.delete(id)
-    nodePositions.delete(id)
-    nodeSizes.delete(id)
     lastNodesSnapshot.delete(id)
 
     // Call original callback if provided
@@ -723,8 +612,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       nodeRefs.clear()
       vueNodeData.clear()
       nodeState.clear()
-      nodePositions.clear()
-      nodeSizes.clear()
       lastNodesSnapshot.clear()
       pendingUpdates.clear()
       criticalUpdates.clear()
@@ -769,19 +656,27 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         const currentData = vueNodeData.get(nodeId)
 
         if (currentData) {
-          if (event.property === 'title') {
-            vueNodeData.set(nodeId, {
-              ...currentData,
-              title: String(event.newValue)
-            })
-          } else if (event.property === 'flags.collapsed') {
-            vueNodeData.set(nodeId, {
-              ...currentData,
-              flags: {
-                ...currentData.flags,
-                collapsed: Boolean(event.newValue)
-              }
-            })
+          switch (event.property) {
+            case 'title':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                title: String(event.newValue)
+              })
+              break
+            case 'flags.collapsed':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                flags: {
+                  ...currentData.flags,
+                  collapsed: Boolean(event.newValue)
+                }
+              })
+              break
+            case 'mode':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                mode: typeof event.newValue === 'number' ? event.newValue : 0
+              })
           }
         }
       }
@@ -818,14 +713,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   return {
     vueNodeData,
     nodeState,
-    nodePositions,
-    nodeSizes,
     getNode,
     setupEventListeners,
     cleanup,
     scheduleUpdate,
     forceSync: syncWithGraph,
-    detectChangesInRAF,
     getVisibleNodeIds,
     performanceMetrics,
     spatialMetrics,

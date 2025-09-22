@@ -47,17 +47,21 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import Menu, { MenuState } from 'primevue/menu'
+import type { MenuState } from 'primevue/menu'
+import Menu from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
 interface Props {

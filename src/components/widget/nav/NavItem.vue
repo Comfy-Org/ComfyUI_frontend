@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-center gap-2 px-4 py-2 text-xs rounded-md transition-colors cursor-pointer"
+    class="flex items-center gap-2 px-4 py-3 text-sm rounded-md transition-colors cursor-pointer"
     :class="
       active
         ? 'bg-neutral-100 dark-theme:bg-zinc-700 text-neutral'
@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { NavItemData } from '@/types/navTypes'
+import type { NavItemData } from '@/types/navTypes'
 
 import NavIcon from './NavIcon.vue'
 

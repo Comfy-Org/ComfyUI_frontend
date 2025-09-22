@@ -1,9 +1,9 @@
+import { compare, valid } from 'semver'
 import { computed, onMounted } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { compareVersions, isSemVer } from '@/utils/formatUtil'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 /**
  * Composable to find NodePacks that have updates available
@@ -25,13 +25,13 @@ export const useUpdateAvailableNodes = () => {
     )
     const latestVersion = pack.latest_version?.version
 
-    const isNightlyPack = !!installedVersion && !isSemVer(installedVersion)
+    const isNightlyPack = !!installedVersion && !valid(installedVersion)
 
     if (isNightlyPack || !latestVersion) {
       return false
     }
 
-    return compareVersions(latestVersion, installedVersion) > 0
+    return compare(latestVersion, installedVersion) > 0
   }
 
   // Same filtering logic as ManagerDialogContent.vue

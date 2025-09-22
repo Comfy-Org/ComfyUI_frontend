@@ -2,14 +2,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
-  LGraphNode,
-  Positionable,
+  type Positionable,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 
 // Mock the app module
 vi.mock('@/scripts/app', () => ({

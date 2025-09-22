@@ -47,7 +47,7 @@ import { computed, ref } from 'vue'
 
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
-import { PrimeVueSeverity } from '@/types/primeVueTypes'
+import type { PrimeVueSeverity } from '@/types/primeVueTypes'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
