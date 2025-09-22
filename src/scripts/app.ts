@@ -596,7 +596,10 @@ export class ComfyApp {
         const keybindingStore = useKeybindingStore()
         const keybinding = keybindingStore.getKeybinding(keyCombo)
 
-        if (keybinding && keybinding.targetElementId === 'graph-canvas') {
+        if (
+          keybinding &&
+          keybinding.targetElementId === 'graph-canvas-container'
+        ) {
           useCommandStore().execute(keybinding.commandId)
 
           this.graph.change()

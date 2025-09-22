@@ -122,14 +122,14 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: '.'
     },
     commandId: 'Comfy.Canvas.FitView',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
       key: 'p'
     },
     commandId: 'Comfy.Canvas.ToggleSelected.Pin',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -137,7 +137,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -145,7 +145,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -153,7 +153,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {

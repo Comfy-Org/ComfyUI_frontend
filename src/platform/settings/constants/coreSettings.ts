@@ -595,7 +595,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     migrateDeprecatedValue: (value: any[]) => {
       return value.map((keybinding) => {
         if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas'
+          keybinding['targetElementId'] = 'graph-canvas-container'
         }
         return keybinding
       })
