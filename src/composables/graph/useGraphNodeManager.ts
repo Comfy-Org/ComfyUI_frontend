@@ -11,11 +11,6 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
 
-interface NodeMetadata {
-  lastRenderTime: number
-  cachedBounds: DOMRect | null
-  lodLevel: 'high' | 'medium' | 'low'
-}
 export interface SafeWidgetData {
   name: string
   type: string
@@ -60,17 +55,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
   // Non-reactive storage for original LiteGraph nodes
   const nodeRefs = new Map<string, LGraphNode>()
-
-  // WeakMap for heavy data that auto-GCs when nodes are removed
-  const nodeMetadata = new WeakMap<LGraphNode, NodeMetadata>()
-
-  const attachMetadata = (node: LGraphNode) => {
-    nodeMetadata.set(node, {
-      lastRenderTime: performance.now(),
-      cachedBounds: null,
-      lodLevel: 'high'
-    })
-  }
 
   // Extract safe data from LiteGraph node for Vue consumption
   const extractVueNodeData = (node: LGraphNode): VueNodeData => {
@@ -286,10 +270,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
       // Extract and store safe data for Vue
       vueNodeData.set(id, extractVueNodeData(node))
-
-      if (!nodeMetadata.has(node)) {
-        attachMetadata(node)
-      }
     })
   }
 
@@ -316,8 +296,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
-
-      attachMetadata(node)
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)
