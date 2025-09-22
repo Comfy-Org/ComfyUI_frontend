@@ -12,9 +12,9 @@
           : 'pointer-events-none'
       )
     "
-    @pointerdown="handleWidgetPointerEvent"
-    @pointermove="handleWidgetPointerEvent"
-    @pointerup="handleWidgetPointerEvent"
+    @pointerdown.stop="handleWidgetPointerEvent"
+    @pointermove.stop="handleWidgetPointerEvent"
+    @pointerup.stop="handleWidgetPointerEvent"
   >
     <div
       v-for="(widget, index) in processedWidgets"
