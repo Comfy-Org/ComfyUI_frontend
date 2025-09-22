@@ -188,10 +188,7 @@ watch(
 )
 
 const allNodes = viewportCulling.allNodes
-
-const handleTransformUpdate = () => {
-  viewportCulling.handleTransformUpdate()
-}
+const handleTransformUpdate = viewportCulling.handleTransformUpdate
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')

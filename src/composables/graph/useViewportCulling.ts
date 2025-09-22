@@ -6,7 +6,7 @@
  * 2. Set display none on element to avoid cascade resolution overhead
  * 3. Only run when transform changes (event driven)
  */
-import { useRafFn } from '@vueuse/core'
+import { useThrottleFn } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
@@ -67,14 +67,17 @@ export function useViewportCulling() {
     }
   }
 
+  const updateVisibilityDebounced = useThrottleFn(updateVisibility, 20)
+
   // RAF throttling for smooth updates during continuous panning
-  const { resume: handleTransformUpdate } = useRafFn(updateVisibility, {
-    fpsLimit: 60
-  })
+  function handleTransformUpdate() {
+    requestAnimationFrame(async () => {
+      await updateVisibilityDebounced()
+    })
+  }
 
   return {
     allNodes,
-    handleTransformUpdate,
-    updateVisibility
+    handleTransformUpdate
   }
 }
