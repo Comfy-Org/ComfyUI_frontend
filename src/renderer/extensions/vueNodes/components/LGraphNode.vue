@@ -31,7 +31,7 @@
     "
     :style="[
       {
-        transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex
       },
       dragStyle
@@ -172,8 +172,6 @@ import SlotConnectionDot from './SlotConnectionDot.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   nodeData: VueNodeData
-  position?: { x: number; y: number }
-  size?: { width: number; height: number }
   readonly?: boolean
   error?: string | null
   zoomLevel?: number
@@ -181,8 +179,6 @@ interface LGraphNodeProps {
 
 const {
   nodeData,
-  position = { x: 0, y: 0 },
-  size = { width: 100, height: 50 },
   error = null,
   readonly = false,
   zoomLevel = 1
@@ -245,11 +241,7 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const {
-  position: layoutPosition,
-  zIndex,
-  resize
-} = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
 const {
   handlePointerDown,
   handlePointerUp,
@@ -259,11 +251,11 @@ const {
 } = useNodePointerInteractions(() => nodeData, handleNodeSelect)
 
 onMounted(() => {
-  if (size && transformState?.camera) {
+  if (size.value && transformState?.camera) {
     const scale = transformState.camera.z
     const screenSize = {
-      width: size.width * scale,
-      height: size.height * scale
+      width: size.value.width * scale,
+      height: size.value.height * scale
     }
     resize(screenSize)
   }

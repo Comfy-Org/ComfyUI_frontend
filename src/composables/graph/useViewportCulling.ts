@@ -6,21 +6,18 @@
  * 2. Set display none on element to avoid cascade resolution overhead
  * 3. Only run when transform changes (event driven)
  */
+import { useThrottleFn } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
-import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app as comfyApp } from '@/scripts/app'
 
 export function useViewportCulling() {
   const canvasStore = useCanvasStore()
-  const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { vueNodeData, nodeDataTrigger, nodeManager } = useVueNodeLifecycle()
+  const { vueNodeData, nodeManager } = useVueNodeLifecycle()
 
   const allNodes = computed(() => {
-    if (!shouldRenderVueNodes.value) return []
-    void nodeDataTrigger.value // Force re-evaluation when nodeManager initializes
     return Array.from(vueNodeData.value.values())
   })
 
@@ -28,7 +25,7 @@ export function useViewportCulling() {
    * Update visibility of all nodes based on viewport
    * Queries DOM directly - no cache maintenance needed
    */
-  const updateVisibility = () => {
+  function updateVisibility() {
     if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
 
     const canvas = canvasStore.canvas
@@ -70,31 +67,17 @@ export function useViewportCulling() {
     }
   }
 
+  const updateVisibilityDebounced = useThrottleFn(updateVisibility, 20)
+
   // RAF throttling for smooth updates during continuous panning
-  let rafId: number | null = null
-
-  /**
-   * Handle transform update - called by TransformPane event
-   * Uses RAF to batch updates for smooth performance
-   */
-  const handleTransformUpdate = () => {
-    if (!shouldRenderVueNodes.value) return
-
-    // Cancel previous RAF if still pending
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-    }
-
-    // Schedule update in next animation frame
-    rafId = requestAnimationFrame(() => {
-      updateVisibility()
-      rafId = null
+  function handleTransformUpdate() {
+    requestAnimationFrame(async () => {
+      await updateVisibilityDebounced()
     })
   }
 
   return {
     allNodes,
-    handleTransformUpdate,
-    updateVisibility
+    handleTransformUpdate
   }
 }
