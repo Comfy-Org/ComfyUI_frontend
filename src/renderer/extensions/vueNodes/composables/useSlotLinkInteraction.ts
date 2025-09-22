@@ -5,10 +5,12 @@ import { onBeforeUnmount } from 'vue'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, type LinkId } from '@/lib/litegraph/src/LLink'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { evaluateCompatibility } from '@/renderer/core/canvas/links/slotLinkCompatibility'
+import type { MovedOutputNormalLink } from '@/renderer/core/canvas/links/slotLinkDragState'
 import {
   type SlotDropCandidate,
   useSlotLinkDragState
@@ -112,6 +114,12 @@ export function useSlotLinkInteraction({
   const conversion = useSharedCanvasPositionConversion()
 
   const pointerSession = createPointerSession()
+
+  const draggingLinkIds = new Set<LinkId>()
+  const draggingRerouteIds = new Set<RerouteId>()
+
+  const movedOutputNormalLinks: MovedOutputNormalLink[] = []
+  const movedOutputFloatingLinks: LLink[] = []
 
   const resolveLinkOrigin = (
     graph: LGraph,
@@ -258,20 +266,32 @@ export function useSlotLinkInteraction({
     const canvas = app.canvas
     const graph = canvas?.graph
     const source = state.source
-    if (!canvas || !graph || !source) return
+    if (!canvas || !graph) return
 
-    if (source.linkId != null) {
+    if (source?.linkId != null) {
       const activeLink = graph.getLink(source.linkId)
-      if (activeLink) {
-        delete activeLink._dragging
-      }
+      if (activeLink) delete activeLink._dragging
     }
+
+    for (const id of draggingLinkIds) {
+      const link = graph.getLink(id)
+      if (link) delete link._dragging
+    }
+    for (const id of draggingRerouteIds) {
+      const reroute = graph.getReroute(id)
+      if (reroute) reroute._dragging = undefined
+    }
+
+    draggingLinkIds.clear()
+    draggingRerouteIds.clear()
   }
 
   const cleanupInteraction = () => {
     clearDraggingFlags()
     pointerSession.clear()
     endDrag()
+    movedOutputNormalLinks.length = 0
+    movedOutputFloatingLinks.length = 0
   }
 
   const disconnectSourceLink = (): boolean => {
@@ -317,6 +337,49 @@ export function useSlotLinkInteraction({
     const sourceNode = graph.getNodeById(Number(source.nodeId))
     const targetNode = graph.getNodeById(Number(slotLayout.nodeId))
     if (!sourceNode || !targetNode) return false
+
+    // Output ➝ Output (shift‑drag move all links)
+    if (source.type === 'output' && slotLayout.type === 'output') {
+      if (!source.multiOutputDrag) return false
+
+      const targetOutput = targetNode.outputs?.[slotLayout.index]
+      if (!targetOutput) return false
+
+      // Reconnect all normal links captured at drag start
+      for (const {
+        inputNodeId,
+        inputSlotIndex,
+        parentRerouteId
+      } of movedOutputNormalLinks) {
+        const inputNode = graph.getNodeById(inputNodeId)
+        const inputSlot = inputNode?.inputs?.[inputSlotIndex]
+        if (!inputNode || !inputSlot) continue
+
+        targetNode.connectSlots(
+          targetOutput,
+          inputNode,
+          inputSlot,
+          parentRerouteId
+        )
+      }
+
+      // Move any floating links across to the new output
+      const sourceNodeAtStart = graph.getNodeById(Number(source.nodeId))
+      const sourceOutputAtStart = sourceNodeAtStart?.outputs?.[source.slotIndex]
+      if (sourceOutputAtStart?._floatingLinks?.size) {
+        for (const floatingLink of movedOutputFloatingLinks) {
+          sourceOutputAtStart._floatingLinks?.delete(floatingLink)
+
+          floatingLink.origin_id = targetNode.id
+          floatingLink.origin_slot = slotLayout.index
+
+          targetOutput._floatingLinks ??= new Set()
+          targetOutput._floatingLinks.add(floatingLink)
+        }
+      }
+
+      return true
+    }
 
     if (source.type === 'output' && slotLayout.type === 'input') {
       const outputSlot = sourceNode.outputs?.[source.slotIndex]
@@ -459,6 +522,50 @@ export function useSlotLinkInteraction({
       existingLink._dragging = true
     }
 
+    const outputSlot =
+      type === 'output' ? resolvedNode?.outputs?.[index] : undefined
+    const isMultiOutputDrag =
+      type === 'output' &&
+      Boolean(
+        outputSlot &&
+          (outputSlot.links?.length || outputSlot._floatingLinks?.size)
+      ) &&
+      event.shiftKey
+
+    if (isMultiOutputDrag && outputSlot) {
+      movedOutputNormalLinks.length = 0
+      movedOutputFloatingLinks.length = 0
+
+      if (outputSlot.links?.length) {
+        for (const linkId of outputSlot.links) {
+          const link = graph.getLink(linkId)
+          if (!link) continue
+
+          const firstReroute = LLink.getFirstReroute(graph, link)
+          if (firstReroute) {
+            firstReroute._dragging = true
+            draggingRerouteIds.add(firstReroute.id)
+          } else {
+            link._dragging = true
+            draggingLinkIds.add(link.id)
+          }
+
+          movedOutputNormalLinks.push({
+            linkId: link.id,
+            inputNodeId: link.target_id,
+            inputSlotIndex: link.target_slot,
+            parentRerouteId: link.parentId
+          })
+        }
+      }
+
+      if (outputSlot._floatingLinks?.size) {
+        for (const floatingLink of outputSlot._floatingLinks) {
+          movedOutputFloatingLinks.push(floatingLink)
+        }
+      }
+    }
+
     const direction = existingAnchor?.direction ?? baseDirection
     const startPosition = existingAnchor?.position ?? {
       x: layout.position.x,
@@ -472,7 +579,8 @@ export function useSlotLinkInteraction({
         type,
         direction,
         position: startPosition,
-        linkId: !shouldBreakExistingLink ? existingLink?.id : undefined
+        linkId: !shouldBreakExistingLink ? existingLink?.id : undefined,
+        multiOutputDrag: isMultiOutputDrag
       },
       event.pointerId
     )

@@ -39,8 +39,8 @@ export function evaluateCompatibility(
   }
 
   if (source.type === 'output') {
-    if (candidate.layout.type !== 'input') {
-      return { allowable: false }
+    if (candidate.layout.type === 'output') {
+      return { allowable: Boolean(source.multiOutputDrag), targetNode }
     }
 
     const outputSlot = sourceNode.outputs?.[source.slotIndex]
