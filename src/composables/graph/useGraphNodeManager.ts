@@ -9,7 +9,6 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
 
@@ -56,11 +55,6 @@ export interface VueNodeData {
   }
 }
 
-interface SpatialMetrics {
-  queryTime: number
-  nodesInIndex: number
-}
-
 export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
@@ -69,7 +63,6 @@ export interface GraphNodeManager {
   getNode(id: string): LGraphNode | undefined
 
   // Lifecycle methods
-  setupEventListeners(): () => void
   cleanup(): void
 
   // Update methods
@@ -78,16 +71,6 @@ export interface GraphNodeManager {
     priority?: 'critical' | 'normal' | 'low'
   ): void
   forceSync(): void
-
-  // Spatial queries
-  getVisibleNodeIds(viewportBounds: Bounds): Set<string>
-
-  // Performance
-  performanceMetrics: PerformanceMetrics
-  spatialMetrics: SpatialMetrics
-
-  // Debug
-  getSpatialIndexDebugInfo(): SpatialIndexDebugInfo | null
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
@@ -119,13 +102,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     { x: -10000, y: -10000, width: 20000, height: 20000 },
     { maxDepth: 6, maxItemsPerNode: 4 }
   )
-  let lastSpatialQueryTime = 0
-
-  // Spatial metrics
-  const spatialMetrics = reactive<SpatialMetrics>({
-    queryTime: 0,
-    nodesInIndex: 0
-  })
 
   // Update batching
   const pendingUpdates = new Set<string>()
@@ -437,21 +413,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     performanceMetrics.nodeCount = vueNodeData.size
   }
 
-  // Most performant: Direct position sync without re-setting entire node
-  // Query visible nodes using QuadTree spatial index
-  const getVisibleNodeIds = (viewportBounds: Bounds): Set<string> => {
-    const startTime = performance.now()
-
-    // Use QuadTree for fast spatial query
-    const results: string[] = spatialIndex.query(viewportBounds)
-    const visibleIds = new Set(results)
-
-    lastSpatialQueryTime = performance.now() - startTime
-    spatialMetrics.queryTime = lastSpatialQueryTime
-
-    return visibleIds
-  }
-
   /**
    * Handles node addition to the graph - sets up Vue state and spatial indexing
    * Defers position extraction until after potential configure() calls
@@ -672,13 +633,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   return {
     vueNodeData,
     getNode,
-    setupEventListeners,
     cleanup,
     scheduleUpdate,
-    forceSync: syncWithGraph,
-    getVisibleNodeIds,
-    performanceMetrics,
-    spatialMetrics,
-    getSpatialIndexDebugInfo: () => spatialIndex.getDebugInfo()
+    forceSync: syncWithGraph
   }
 }
