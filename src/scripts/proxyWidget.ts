@@ -10,23 +10,22 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
-const originalConfigureAfterSlots =
-  SubgraphNode.prototype._internalConfigureAfterSlots
-SubgraphNode.prototype._internalConfigureAfterSlots = function () {
+const originalOnConfigure = SubgraphNode.prototype.onConfigure
+SubgraphNode.prototype.onConfigure = function (serialisedNode) {
+  if (!this.isSubgraphNode())
+    throw new Error("Can't add proxyWidgets to non-subgraphNode")
+
   const canvasStore = useCanvasStore()
   const subgraphNode = this
   //Must give value to proxyWidgets prior to defining or it won't serialize
   subgraphNode.properties.proxyWidgets ??= '[]'
-  const proxyWidgets = subgraphNode.properties.proxyWidgets
+  let proxyWidgets = subgraphNode.properties.proxyWidgets
 
-  originalConfigureAfterSlots?.bind(this)?.()
+  originalOnConfigure?.bind(this)?.(serialisedNode)
 
   Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
     get: () => {
-      const result = subgraphNode.widgets
-        .filter((w) => isProxyWidget(w))
-        .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
-      return JSON.stringify(result)
+      return proxyWidgets
     },
     set: (property: string) => {
       const parsed = parseProxyWidgets(property)
@@ -51,6 +50,7 @@ SubgraphNode.prototype._internalConfigureAfterSlots = function () {
           widgetState.widget = w
         }
       }
+      proxyWidgets = property
       canvasStore.canvas?.setDirty(true, true)
       subgraphNode._setConcreteSlots()
       subgraphNode.arrange()
