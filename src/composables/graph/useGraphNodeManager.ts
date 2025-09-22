@@ -13,13 +13,6 @@ import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
 
-export interface NodeState {
-  visible: boolean
-  dirty: boolean
-  lastUpdate: number
-  culled: boolean
-}
-
 interface NodeMetadata {
   lastRenderTime: number
   cachedBounds: DOMRect | null
@@ -71,7 +64,6 @@ interface SpatialMetrics {
 export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
-  nodeState: ReadonlyMap<string, NodeState>
 
   // Access to original LiteGraph nodes (non-reactive)
   getNode(id: string): LGraphNode | undefined
@@ -103,7 +95,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const { createNode, deleteNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
-  const nodeState = reactive(new Map<string, NodeState>())
 
   // Non-reactive storage for original LiteGraph nodes
   const nodeRefs = new Map<string, LGraphNode>()
@@ -348,23 +339,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     })
   }
 
-  // Uncomment when needed for future features
-  // const getNodeMetadata = (node: LGraphNode): NodeMetadata => {
-  //   let metadata = nodeMetadata.get(node)
-  //   if (!metadata) {
-  //     attachMetadata(node)
-  //     metadata = nodeMetadata.get(node)!
-  //   }
-  //   return metadata
-  // }
   const scheduleUpdate = (
     nodeId?: string,
     priority: 'critical' | 'normal' | 'low' = 'normal'
   ) => {
     if (nodeId) {
-      const state = nodeState.get(nodeId)
-      if (state) state.dirty = true
-
       // Priority queuing
       if (priority === 'critical') {
         criticalUpdates.add(nodeId)
@@ -422,7 +401,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       if (!currentNodes.has(id)) {
         nodeRefs.delete(id)
         vueNodeData.delete(id)
-        nodeState.delete(id)
         lastNodesSnapshot.delete(id)
         spatialIndex.remove(id)
       }
@@ -441,13 +419,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Extract and store safe data for Vue
       vueNodeData.set(id, extractVueNodeData(node))
 
-      if (!nodeState.has(id)) {
-        nodeState.set(id, {
-          visible: true,
-          dirty: false,
-          lastUpdate: performance.now(),
-          culled: false
-        })
+      if (!nodeMetadata.has(node)) {
         attachMetadata(node)
 
         // Add to spatial index
@@ -463,9 +435,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Update performance metrics
     performanceMetrics.nodeCount = vueNodeData.size
-    performanceMetrics.culledCount = Array.from(nodeState.values()).filter(
-      (s) => s.culled
-    ).length
   }
 
   // Most performant: Direct position sync without re-setting entire node
@@ -501,14 +470,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
-
-    // Set up reactive tracking state
-    nodeState.set(id, {
-      visible: true,
-      dirty: false,
-      lastUpdate: performance.now(),
-      culled: false
-    })
 
     const initializeVueNodeLayout = () => {
       // Extract actual positions after configure() has potentially updated them
@@ -579,7 +540,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Clean up all tracking references
     nodeRefs.delete(id)
     vueNodeData.delete(id)
-    nodeState.delete(id)
     lastNodesSnapshot.delete(id)
 
     // Call original callback if provided
@@ -611,7 +571,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Clear all state maps
       nodeRefs.clear()
       vueNodeData.clear()
-      nodeState.clear()
       lastNodesSnapshot.clear()
       pendingUpdates.clear()
       criticalUpdates.clear()
@@ -712,7 +671,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
   return {
     vueNodeData,
-    nodeState,
     getNode,
     setupEventListeners,
     cleanup,
