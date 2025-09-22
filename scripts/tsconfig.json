@@ -3,7 +3,7 @@
   "compilerOptions": {
     /* Script files configuration */
     "noEmit": true,
-    "strict": false,
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true

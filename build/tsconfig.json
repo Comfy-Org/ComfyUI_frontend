@@ -3,7 +3,7 @@
   "compilerOptions": {
     /* Build scripts configuration */
     "noEmit": true,
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
