@@ -282,10 +282,14 @@ export function mapSubgraphInputsAndLinks(
       const linkData = link.asSerialisable()
 
       let child: SerialisableLLink | Reroute = linkData
-      let nextReroute = reroutes.get(child.parentId ?? 0)
-      while (child.parentId && nextReroute) {
+      let nextReroute =
+        child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+      while (child.parentId !== undefined && nextReroute) {
         child = nextReroute
-        nextReroute = reroutes.get(child.parentId ?? 0)
+        nextReroute =
+          child.parentId === undefined
+            ? undefined
+            : reroutes.get(child.parentId)
       }
       //set outside link to first remaining reroute OR undefined
       link.parentId = child.parentId
@@ -371,10 +375,14 @@ export function mapSubgraphOutputsAndLinks(
       const linkData = link.asSerialisable()
 
       let child: SerialisableLLink | Reroute = link
-      let nextReroute = reroutes.get(child.parentId ?? 0)
-      while (child.parentId && nextReroute) {
+      let nextReroute =
+        child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+      while (child.parentId !== undefined && nextReroute) {
         child = nextReroute
-        nextReroute = reroutes.get(child.parentId ?? 0)
+        nextReroute =
+          child.parentId === undefined
+            ? undefined
+            : reroutes.get(child.parentId)
       }
       linkData.parentId = child.parentId
       child.parentId = undefined
