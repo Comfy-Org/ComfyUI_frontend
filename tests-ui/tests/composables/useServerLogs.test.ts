@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useServerLogs } from '@/composables/useServerLogs'
-import { LogsWsMessage } from '@/schemas/apiSchema'
+import type { LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 vi.mock('@/scripts/api', () => ({

@@ -1,11 +1,12 @@
 import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { compare } from 'semver'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
-import { compareVersions, stringToLocale } from '@/utils/formatUtil'
+import { stringToLocale } from '@/utils/formatUtil'
 
 import { type ReleaseNote, useReleaseService } from './releaseService'
 
@@ -56,16 +57,19 @@ export const useReleaseStore = defineStore('release', () => {
   const isNewVersionAvailable = computed(
     () =>
       !!recentRelease.value &&
-      compareVersions(
+      compare(
         recentRelease.value.version,
-        currentComfyUIVersion.value
+        currentComfyUIVersion.value || '0.0.0'
       ) > 0
   )
 
   const isLatestVersion = computed(
     () =>
       !!recentRelease.value &&
-      !compareVersions(recentRelease.value.version, currentComfyUIVersion.value)
+      compare(
+        recentRelease.value.version,
+        currentComfyUIVersion.value || '0.0.0'
+      ) === 0
   )
 
   const hasMediumOrHighAttention = computed(() =>

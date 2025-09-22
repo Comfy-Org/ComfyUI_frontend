@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 
-import { EventManagerInterface, LightingManagerInterface } from './interfaces'
+import {
+  type EventManagerInterface,
+  type LightingManagerInterface
+} from './interfaces'
 
 export class LightingManager implements LightingManagerInterface {
   lights: THREE.Light[] = []

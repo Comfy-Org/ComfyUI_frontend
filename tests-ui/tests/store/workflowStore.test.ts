@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
-  ComfyWorkflow,
-  LoadedComfyWorkflow,
+  type LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'

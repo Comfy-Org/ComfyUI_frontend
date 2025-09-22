@@ -26,7 +26,8 @@
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
 import Button from 'primevue/button'
-import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
@@ -46,7 +47,7 @@ const hasSelection = ref(false)
 const isHovered = useElementHover(rootEl)
 
 const terminalData = useTerminal(terminalEl)
-emit('created', terminalData, rootEl)
+emit('created', terminalData, ref(rootEl))
 
 const { terminal } = terminalData
 let selectionDisposable: IDisposable | undefined

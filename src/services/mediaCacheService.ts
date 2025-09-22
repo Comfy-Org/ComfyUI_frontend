@@ -113,7 +113,7 @@ class MediaCacheService {
 
     try {
       // Fetch the media
-      const response = await fetch(src)
+      const response = await fetch(src, { cache: 'force-cache' })
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`)
       }

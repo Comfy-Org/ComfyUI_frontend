@@ -4,8 +4,11 @@ import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
-import type { MergedNodePack, RegistryPack } from '@/types/comfyManagerTypes'
+import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
+import type {
+  MergedNodePack,
+  RegistryPack
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Mock dependencies
 vi.mock('vue-i18n', () => ({
@@ -21,7 +24,7 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-vi.mock('@/stores/comfyManagerStore', () => ({
+vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
     isPackInstalled: vi.fn(() => false),
     isPackEnabled: vi.fn(() => true),

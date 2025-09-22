@@ -14,7 +14,7 @@ import type {
   UserData,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import { ComfyApp } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 
 import type {
   BottomPanelExtension,

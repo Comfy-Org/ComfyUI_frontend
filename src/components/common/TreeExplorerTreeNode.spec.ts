@@ -9,10 +9,8 @@ import { createI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import {
-  InjectKeyHandleEditLabelFunction,
-  RenderedTreeExplorerNode
-} from '@/types/treeExplorerTypes'
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
 
 // Create a mock i18n instance
 const i18n = createI18n({
