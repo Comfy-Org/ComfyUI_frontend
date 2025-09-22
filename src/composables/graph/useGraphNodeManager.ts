@@ -7,7 +7,6 @@ import { reactive } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
@@ -16,7 +15,6 @@ interface NodeMetadata {
   lastRenderTime: number
   cachedBounds: DOMRect | null
   lodLevel: 'high' | 'medium' | 'low'
-  spatialIndex?: QuadTree<string>
 }
 export interface SafeWidgetData {
   name: string
@@ -66,24 +64,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // WeakMap for heavy data that auto-GCs when nodes are removed
   const nodeMetadata = new WeakMap<LGraphNode, NodeMetadata>()
 
-  // Spatial indexing using QuadTree
-  const spatialIndex = new QuadTree<string>(
-    { x: -10000, y: -10000, width: 20000, height: 20000 },
-    { maxDepth: 6, maxItemsPerNode: 4 }
-  )
-
-  // Change detection state
-  const lastNodesSnapshot = new Map<
-    string,
-    { pos: [number, number]; size: [number, number] }
-  >()
-
   const attachMetadata = (node: LGraphNode) => {
     nodeMetadata.set(node, {
       lastRenderTime: performance.now(),
       cachedBounds: null,
-      lodLevel: 'high',
-      spatialIndex: undefined
+      lodLevel: 'high'
     })
   }
 
@@ -286,8 +271,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       if (!currentNodes.has(id)) {
         nodeRefs.delete(id)
         vueNodeData.delete(id)
-        lastNodesSnapshot.delete(id)
-        spatialIndex.remove(id)
       }
     }
 
@@ -306,15 +289,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
       if (!nodeMetadata.has(node)) {
         attachMetadata(node)
-
-        // Add to spatial index
-        const bounds: Bounds = {
-          x: node.pos[0],
-          y: node.pos[1],
-          width: node.size[0],
-          height: node.size[1]
-        }
-        spatialIndex.insert(id, bounds, id)
       }
     })
   }
@@ -344,15 +318,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       const nodeSize = { width: node.size[0], height: node.size[1] }
 
       attachMetadata(node)
-
-      // Add to spatial index for viewport culling with final positions
-      const nodeBounds: Bounds = {
-        x: nodePosition.x,
-        y: nodePosition.y,
-        width: nodeSize.width,
-        height: nodeSize.height
-      }
-      spatialIndex.insert(id, nodeBounds, id)
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)
@@ -397,9 +362,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   ) => {
     const id = String(node.id)
 
-    // Remove from spatial index
-    spatialIndex.remove(id)
-
     // Remove node from layout store
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
@@ -407,7 +369,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Clean up all tracking references
     nodeRefs.delete(id)
     vueNodeData.delete(id)
-    lastNodesSnapshot.delete(id)
 
     // Call original callback if provided
     if (originalCallback) {
@@ -432,8 +393,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Clear all state maps
       nodeRefs.clear()
       vueNodeData.clear()
-      lastNodesSnapshot.clear()
-      spatialIndex.clear()
     }
   }
 
