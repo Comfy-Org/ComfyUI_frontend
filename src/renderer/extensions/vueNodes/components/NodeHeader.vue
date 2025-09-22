@@ -73,6 +73,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { app } from '@/scripts/app'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { adjustColor } from '@/utils/colorUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
@@ -121,6 +123,30 @@ const tooltipConfig = computed(() => {
   }
   const description = getNodeDescription.value
   return createTooltipConfig(description)
+})
+
+// Header style that replicates LiteGraph's ColorOption and drawNode logic
+const headerStyle = computed(() => {
+  if (!nodeData?.color) {
+    return { backgroundColor: '' } // Explicitly clear background color
+  }
+
+  const colorPaletteStore = useColorPaletteStore()
+  let headerColor = nodeData.color
+
+  // Apply base header darkening to replicate LiteGraph's ColorOption system
+  // When header and body colors are the same/similar, darken the header
+  if (nodeData.bgcolor && nodeData.color === nodeData.bgcolor) {
+    // Darken header relative to body (opposite of light theme adjustment)
+    headerColor = adjustColor(nodeData.color, { lightness: -0.15 })
+  }
+
+  // Apply light theme lightening on top of base darkening (same as drawNode monkey patch)
+  if (colorPaletteStore.completedActivePalette.light_theme) {
+    headerColor = adjustColor(headerColor, { lightness: 0.5 })
+  }
+
+  return { backgroundColor: headerColor }
 })
 
 const resolveTitle = (info: VueNodeData | undefined) => {

@@ -332,12 +332,38 @@ export class LGraphNode
 
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
+    const oldColor = this.color
+    const oldBgcolor = this.bgcolor
+
     if (colorOption == null) {
       delete this.color
       delete this.bgcolor
     } else {
       this.color = colorOption.color
       this.bgcolor = colorOption.bgcolor
+    }
+
+    // Trigger property change events for Vue node synchronization
+    if (this.graph) {
+      const newColor = this.color // undefined if deleted
+      const newBgcolor = this.bgcolor // undefined if deleted
+
+      if (oldColor !== newColor) {
+        this.graph.trigger('node:property:changed', {
+          nodeId: this.id,
+          property: 'color',
+          oldValue: oldColor,
+          newValue: newColor
+        })
+      }
+      if (oldBgcolor !== newBgcolor) {
+        this.graph.trigger('node:property:changed', {
+          nodeId: this.id,
+          property: 'bgcolor',
+          oldValue: oldBgcolor,
+          newValue: newBgcolor
+        })
+      }
     }
   }
 

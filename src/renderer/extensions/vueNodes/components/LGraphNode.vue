@@ -34,7 +34,8 @@
     :style="[
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
+        zIndex: zIndex,
+        backgroundColor: nodeData.bgcolor || ''
       },
       dragStyle
     ]"
@@ -49,7 +50,13 @@
       </template>
       <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, isCollapsed, nodeData.flags?.pinned]"
+        v-memo="[
+          nodeData.title,
+          nodeData.color,
+          nodeData.bgcolor,
+          isCollapsed,
+          nodeData.flags?.pinned
+        ]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
