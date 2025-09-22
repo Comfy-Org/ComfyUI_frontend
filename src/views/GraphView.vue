@@ -1,24 +1,3 @@
-<template>
-  <div class="comfyui-body grid h-full w-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top">
-      <TopMenubar v-if="showTopMenu" />
-    </div>
-    <div id="comfyui-body-bottom" class="comfyui-body-bottom">
-      <TopMenubar v-if="showBottomMenu" />
-    </div>
-    <div id="comfyui-body-left" class="comfyui-body-left" />
-    <div id="comfyui-body-right" class="comfyui-body-right" />
-    <div id="graph-canvas-container" class="graph-canvas-container">
-      <GraphCanvas @ready="onGraphReady" />
-    </div>
-  </div>
-
-  <GlobalToast />
-  <RerouteMigrationToast />
-  <UnloadWindowConfirmDialog v-if="!isElectron()" />
-  <MenuHamburger />
-</template>
-
 <script setup lang="ts">
 import { useBreakpoints, useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
@@ -280,6 +259,27 @@ const onGraphReady = () => {
   }, 1000)
 }
 </script>
+
+<template>
+  <div class="comfyui-body grid h-full w-full overflow-hidden">
+    <div id="comfyui-body-top" class="comfyui-body-top">
+      <TopMenubar v-if="showTopMenu" />
+    </div>
+    <div id="comfyui-body-bottom" class="comfyui-body-bottom">
+      <TopMenubar v-if="showBottomMenu" />
+    </div>
+    <div id="comfyui-body-left" class="comfyui-body-left" />
+    <div id="comfyui-body-right" class="comfyui-body-right" />
+    <div id="graph-canvas-container" class="graph-canvas-container">
+      <GraphCanvas @ready="onGraphReady" />
+    </div>
+  </div>
+
+  <GlobalToast />
+  <RerouteMigrationToast />
+  <UnloadWindowConfirmDialog v-if="!isElectron()" />
+  <MenuHamburger />
+</template>
 
 <style scoped>
 .comfyui-body {

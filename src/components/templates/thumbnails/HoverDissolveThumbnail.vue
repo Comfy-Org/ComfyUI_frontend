@@ -1,24 +1,3 @@
-<template>
-  <BaseThumbnail :is-hovered="isHovered">
-    <div class="relative w-full h-full">
-      <div class="absolute inset-0">
-        <LazyImage
-          :src="baseImageSrc"
-          :alt="alt"
-          :image-class="baseImageClass"
-        />
-      </div>
-      <div class="absolute inset-0 z-10">
-        <LazyImage
-          :src="overlayImageSrc"
-          :alt="alt"
-          :image-class="overlayImageClass"
-        />
-      </div>
-    </div>
-  </BaseThumbnail>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -53,3 +32,24 @@ const overlayImageClass = computed(() => {
   return `${baseClasses} ${sizeClasses} ${opacityClasses}`
 })
 </script>
+
+<template>
+  <BaseThumbnail :is-hovered="isHovered">
+    <div class="relative w-full h-full">
+      <div class="absolute inset-0">
+        <LazyImage
+          :src="baseImageSrc"
+          :alt="alt"
+          :image-class="baseImageClass"
+        />
+      </div>
+      <div class="absolute inset-0 z-10">
+        <LazyImage
+          :src="overlayImageSrc"
+          :alt="alt"
+          :image-class="overlayImageClass"
+        />
+      </div>
+    </div>
+  </BaseThumbnail>
+</template>

@@ -1,10 +1,3 @@
-<template>
-  <video controls width="100%" height="100%">
-    <source :src="url" :type="htmlVideoType" />
-    {{ $t('g.videoFailedToLoad') }}
-  </video>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -37,3 +30,10 @@ const htmlVideoType = computed(() =>
   vhsAdvancedPreviews.value ? 'video/webm' : props.result.htmlVideoType
 )
 </script>
+
+<template>
+  <video controls width="100%" height="100%">
+    <source :src="url" :type="htmlVideoType" />
+    {{ $t('g.videoFailedToLoad') }}
+  </video>
+</template>

@@ -1,3 +1,46 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Chip from 'primevue/chip'
+import ProgressBar from 'primevue/progressbar'
+import { useI18n } from 'vue-i18n'
+
+import {
+  type ElectronDownload,
+  useElectronDownloadStore
+} from '@/stores/electronDownloadStore'
+
+const { t } = useI18n()
+
+const electronDownloadStore = useElectronDownloadStore()
+
+const props = defineProps<{
+  download: ElectronDownload
+}>()
+
+const getDownloadLabel = (savePath: string) => {
+  let parts = savePath.split('/')
+  parts = parts.length === 1 ? parts[0].split('\\') : parts
+  const name = parts.pop()
+  const dir = parts.pop()
+  return `${dir}/${name}`
+}
+
+const triggerCancelDownload = () =>
+  electronDownloadStore.cancel(props.download.url)
+const triggerPauseDownload = () =>
+  electronDownloadStore.pause(props.download.url)
+const triggerResumeDownload = () =>
+  electronDownloadStore.resume(props.download.url)
+
+const handleRemoveDownload = () => {
+  electronDownloadStore.$patch((state) => {
+    state.downloads = state.downloads.filter(
+      ({ url }) => url !== props.download.url
+    )
+  })
+}
+</script>
+
 <template>
   <div class="flex flex-col">
     <div>
@@ -60,46 +103,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Chip from 'primevue/chip'
-import ProgressBar from 'primevue/progressbar'
-import { useI18n } from 'vue-i18n'
-
-import {
-  type ElectronDownload,
-  useElectronDownloadStore
-} from '@/stores/electronDownloadStore'
-
-const { t } = useI18n()
-
-const electronDownloadStore = useElectronDownloadStore()
-
-const props = defineProps<{
-  download: ElectronDownload
-}>()
-
-const getDownloadLabel = (savePath: string) => {
-  let parts = savePath.split('/')
-  parts = parts.length === 1 ? parts[0].split('\\') : parts
-  const name = parts.pop()
-  const dir = parts.pop()
-  return `${dir}/${name}`
-}
-
-const triggerCancelDownload = () =>
-  electronDownloadStore.cancel(props.download.url)
-const triggerPauseDownload = () =>
-  electronDownloadStore.pause(props.download.url)
-const triggerResumeDownload = () =>
-  electronDownloadStore.resume(props.download.url)
-
-const handleRemoveDownload = () => {
-  electronDownloadStore.$patch((state) => {
-    state.downloads = state.downloads.filter(
-      ({ url }) => url !== props.download.url
-    )
-  })
-}
-</script>

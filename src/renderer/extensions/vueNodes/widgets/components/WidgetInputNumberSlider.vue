@@ -1,35 +1,3 @@
-<template>
-  <WidgetLayoutField :widget="widget">
-    <div
-      :class="
-        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full pl-4 pr-2')
-      "
-    >
-      <Slider
-        :model-value="[localValue]"
-        v-bind="filteredProps"
-        :disabled="readonly"
-        class="flex-grow text-xs"
-        :step="stepValue"
-        @update:model-value="updateLocalValue"
-      />
-      <InputNumber
-        :key="timesEmptied"
-        :model-value="localValue"
-        v-bind="filteredProps"
-        :disabled="readonly"
-        :step="stepValue"
-        :min-fraction-digits="precision"
-        :max-fraction-digits="precision"
-        size="small"
-        pt:pc-input-text:root="min-w-full bg-transparent border-none text-center"
-        class="w-16"
-        @update:model-value="handleNumberInputUpdate"
-      />
-    </div>
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import { computed, ref } from 'vue'
@@ -105,3 +73,35 @@ const stepValue = computed(() => {
   return 1 / Math.pow(10, precision.value)
 })
 </script>
+
+<template>
+  <WidgetLayoutField :widget="widget">
+    <div
+      :class="
+        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full pl-4 pr-2')
+      "
+    >
+      <Slider
+        :model-value="[localValue]"
+        v-bind="filteredProps"
+        :disabled="readonly"
+        class="flex-grow text-xs"
+        :step="stepValue"
+        @update:model-value="updateLocalValue"
+      />
+      <InputNumber
+        :key="timesEmptied"
+        :model-value="localValue"
+        v-bind="filteredProps"
+        :disabled="readonly"
+        :step="stepValue"
+        :min-fraction-digits="precision"
+        :max-fraction-digits="precision"
+        size="small"
+        pt:pc-input-text:root="min-w-full bg-transparent border-none text-center"
+        class="w-16"
+        @update:model-value="handleNumberInputUpdate"
+      />
+    </div>
+  </WidgetLayoutField>
+</template>

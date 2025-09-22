@@ -1,28 +1,3 @@
-<template>
-  <Load3DScene
-    ref="load3DSceneRef"
-    :node="node"
-    :input-spec="inputSpec"
-    :background-color="backgroundColor"
-    :show-grid="showGrid"
-    :light-intensity="lightIntensity"
-    :fov="fov"
-    :camera-type="cameraType"
-    :show-preview="showPreview"
-    :extra-listeners="animationListeners"
-    :background-image="backgroundImage"
-    :up-direction="upDirection"
-    :material-mode="materialMode"
-    @material-mode-change="listenMaterialModeChange"
-    @background-color-change="listenBackgroundColorChange"
-    @light-intensity-change="listenLightIntensityChange"
-    @fov-change="listenFOVChange"
-    @camera-type-change="listenCameraTypeChange"
-    @show-grid-change="listenShowGridChange"
-    @show-preview-change="listenShowPreviewChange"
-    @recording-status-change="listenRecordingStatusChange"
-  />
-</template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
@@ -206,3 +181,28 @@ defineExpose({
   load3DSceneRef
 })
 </script>
+<template>
+  <Load3DScene
+    ref="load3DSceneRef"
+    :node="node"
+    :input-spec="inputSpec"
+    :background-color="backgroundColor"
+    :show-grid="showGrid"
+    :light-intensity="lightIntensity"
+    :fov="fov"
+    :camera-type="cameraType"
+    :show-preview="showPreview"
+    :extra-listeners="animationListeners"
+    :background-image="backgroundImage"
+    :up-direction="upDirection"
+    :material-mode="materialMode"
+    @material-mode-change="listenMaterialModeChange"
+    @background-color-change="listenBackgroundColorChange"
+    @light-intensity-change="listenLightIntensityChange"
+    @fov-change="listenFOVChange"
+    @camera-type-change="listenCameraTypeChange"
+    @show-grid-change="listenShowGridChange"
+    @show-preview-change="listenShowPreviewChange"
+    @recording-status-change="listenRecordingStatusChange"
+  />
+</template>

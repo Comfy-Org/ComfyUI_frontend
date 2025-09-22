@@ -1,31 +1,3 @@
-<template>
-  <div class="flex flex-col gap-4 text-sm">
-    <template v-if="mappedNodeDefs?.length">
-      <div
-        v-for="nodeDef in mappedNodeDefs"
-        :key="createNodeDefKey(nodeDef)"
-        class="border rounded-lg p-4"
-      >
-        <NodePreview :node-def="nodeDef" class="text-[.625rem]! min-w-full!" />
-      </div>
-    </template>
-    <template v-else-if="isLoading">
-      <ProgressSpinner />
-    </template>
-    <template v-else-if="nodeNames.length">
-      <div v-for="node in nodeNames" :key="node" class="text-muted truncate">
-        {{ node }}
-      </div>
-    </template>
-    <template v-else>
-      <NoResultsPlaceholder
-        :title="$t('manager.noNodesFound')"
-        :message="$t('manager.noNodesFoundDescription')"
-      />
-    </template>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -91,3 +63,31 @@ const mappedNodeDefs = computed(() => {
 const createNodeDefKey = (nodeDef: components['schemas']['ComfyNode']) =>
   `${nodeDef.category}${nodeDef.comfy_node_name ?? useId()}`
 </script>
+
+<template>
+  <div class="flex flex-col gap-4 text-sm">
+    <template v-if="mappedNodeDefs?.length">
+      <div
+        v-for="nodeDef in mappedNodeDefs"
+        :key="createNodeDefKey(nodeDef)"
+        class="border rounded-lg p-4"
+      >
+        <NodePreview :node-def="nodeDef" class="text-[.625rem]! min-w-full!" />
+      </div>
+    </template>
+    <template v-else-if="isLoading">
+      <ProgressSpinner />
+    </template>
+    <template v-else-if="nodeNames.length">
+      <div v-for="node in nodeNames" :key="node" class="text-muted truncate">
+        {{ node }}
+      </div>
+    </template>
+    <template v-else>
+      <NoResultsPlaceholder
+        :title="$t('manager.noNodesFound')"
+        :message="$t('manager.noNodesFoundDescription')"
+      />
+    </template>
+  </div>
+</template>

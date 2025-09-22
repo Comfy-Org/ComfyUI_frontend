@@ -1,27 +1,3 @@
-<template>
-  <div ref="rootEl" class="relative overflow-hidden h-full w-full bg-black">
-    <div class="p-terminal rounded-none h-full w-full p-2">
-      <div ref="terminalEl" class="h-full terminal-host" />
-    </div>
-    <Button
-      v-tooltip.left="{
-        value: tooltipText,
-        showDelay: 300
-      }"
-      icon="pi pi-copy"
-      severity="secondary"
-      size="small"
-      :class="
-        cn('absolute top-2 right-8 transition-opacity', {
-          'opacity-0 pointer-events-none select-none': !isHovered
-        })
-      "
-      :aria-label="tooltipText"
-      @click="handleCopy"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
@@ -96,6 +72,30 @@ onUnmounted(() => {
   emit('unmounted')
 })
 </script>
+
+<template>
+  <div ref="rootEl" class="relative overflow-hidden h-full w-full bg-black">
+    <div class="p-terminal rounded-none h-full w-full p-2">
+      <div ref="terminalEl" class="h-full terminal-host" />
+    </div>
+    <Button
+      v-tooltip.left="{
+        value: tooltipText,
+        showDelay: 300
+      }"
+      icon="pi pi-copy"
+      severity="secondary"
+      size="small"
+      :class="
+        cn('absolute top-2 right-8 transition-opacity', {
+          'opacity-0 pointer-events-none select-none': !isHovered
+        })
+      "
+      :aria-label="tooltipText"
+      @click="handleCopy"
+    />
+  </div>
+</template>
 
 <style scoped>
 :deep(.p-terminal) .xterm {

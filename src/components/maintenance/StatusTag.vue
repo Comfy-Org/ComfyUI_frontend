@@ -1,7 +1,3 @@
-<template>
-  <Tag :icon :severity :value />
-</template>
-
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
 import Tag from 'primevue/tag'
@@ -34,3 +30,7 @@ const value = computed(() => {
   return t('maintenance.OK')
 })
 </script>
+
+<template>
+  <Tag :icon :severity :value />
+</template>

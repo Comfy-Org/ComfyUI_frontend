@@ -1,36 +1,3 @@
-<template>
-  <teleport :to="teleportTarget">
-    <nav class="side-tool-bar-container" :class="{ 'small-sidebar': isSmall }">
-      <SidebarIcon
-        v-for="tab in tabs"
-        :key="tab.id"
-        :icon="tab.icon"
-        :icon-badge="tab.iconBadge"
-        :tooltip="tab.tooltip"
-        :tooltip-suffix="getTabTooltipSuffix(tab)"
-        :label="tab.label || tab.title"
-        :is-small="isSmall"
-        :selected="tab.id === selectedTab?.id"
-        :class="tab.id + '-tab-button'"
-        @click="onTabClick(tab)"
-      />
-      <SidebarTemplatesButton />
-      <div class="side-tool-bar-end">
-        <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
-        <SidebarHelpCenterIcon />
-        <SidebarBottomPanelToggleButton />
-        <SidebarShortcutsToggleButton />
-      </div>
-    </nav>
-  </teleport>
-  <div
-    v-if="selectedTab"
-    class="sidebar-content-container h-full overflow-y-auto overflow-x-hidden"
-  >
-    <ExtensionSlot :extension="selectedTab" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -75,6 +42,39 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   return keybinding ? ` (${keybinding.combo.toString()})` : ''
 }
 </script>
+
+<template>
+  <teleport :to="teleportTarget">
+    <nav class="side-tool-bar-container" :class="{ 'small-sidebar': isSmall }">
+      <SidebarIcon
+        v-for="tab in tabs"
+        :key="tab.id"
+        :icon="tab.icon"
+        :icon-badge="tab.iconBadge"
+        :tooltip="tab.tooltip"
+        :tooltip-suffix="getTabTooltipSuffix(tab)"
+        :label="tab.label || tab.title"
+        :is-small="isSmall"
+        :selected="tab.id === selectedTab?.id"
+        :class="tab.id + '-tab-button'"
+        @click="onTabClick(tab)"
+      />
+      <SidebarTemplatesButton />
+      <div class="side-tool-bar-end">
+        <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
+        <SidebarHelpCenterIcon />
+        <SidebarBottomPanelToggleButton />
+        <SidebarShortcutsToggleButton />
+      </div>
+    </nav>
+  </teleport>
+  <div
+    v-if="selectedTab"
+    class="sidebar-content-container h-full overflow-y-auto overflow-x-hidden"
+  >
+    <ExtensionSlot :extension="selectedTab" />
+  </div>
+</template>
 
 <style>
 /* Global CSS variables for sidebar

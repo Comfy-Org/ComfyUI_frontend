@@ -1,3 +1,40 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import { computed } from 'vue'
+
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
+
+const taskStore = useMaintenanceTaskStore()
+const runner = computed(() => taskStore.getRunner(props.task))
+
+// Properties
+const props = defineProps<{
+  task: MaintenanceTask
+}>()
+
+// Events
+defineEmits<{
+  execute: [event: MouseEvent]
+}>()
+
+// Bindings
+const description = computed(() =>
+  runner.value.state === 'error'
+    ? props.task.errorDescription ?? props.task.shortDescription
+    : props.task.shortDescription
+)
+
+// Use a minimum run time to ensure tasks "feel" like they have run
+const reactiveLoading = computed(() => !!runner.value.refreshing)
+const reactiveExecuting = computed(() => !!runner.value.executing)
+
+const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
+const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
+</script>
+
 <template>
   <div
     class="task-div max-w-48 min-h-52 grid relative"
@@ -47,43 +84,6 @@
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import { computed } from 'vue'
-
-import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
-import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
-import { useMinLoadingDurationRef } from '@/utils/refUtil'
-
-const taskStore = useMaintenanceTaskStore()
-const runner = computed(() => taskStore.getRunner(props.task))
-
-// Properties
-const props = defineProps<{
-  task: MaintenanceTask
-}>()
-
-// Events
-defineEmits<{
-  execute: [event: MouseEvent]
-}>()
-
-// Bindings
-const description = computed(() =>
-  runner.value.state === 'error'
-    ? props.task.errorDescription ?? props.task.shortDescription
-    : props.task.shortDescription
-)
-
-// Use a minimum run time to ensure tasks "feel" like they have run
-const reactiveLoading = computed(() => !!runner.value.refreshing)
-const reactiveExecuting = computed(() => !!runner.value.executing)
-
-const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
-const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
-</script>
 
 <style scoped>
 @reference '../../assets/css/style.css';

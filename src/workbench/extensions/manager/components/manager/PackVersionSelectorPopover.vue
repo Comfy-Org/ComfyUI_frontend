@@ -1,84 +1,3 @@
-<template>
-  <div class="w-64 pt-1">
-    <div class="py-2">
-      <span class="pl-3 text-md font-semibold text-neutral-500">
-        {{ $t('manager.selectVersion') }}
-      </span>
-    </div>
-    <div
-      v-if="isLoadingVersions || isQueueing"
-      class="text-center text-muted py-4 flex flex-col items-center"
-    >
-      <ProgressSpinner class="w-8 h-8 mb-2" />
-      {{ $t('manager.loadingVersions') }}
-    </div>
-    <div v-else-if="versionOptions.length === 0" class="py-2">
-      <NoResultsPlaceholder
-        :title="$t('g.noResultsFound')"
-        :message="$t('manager.tryAgainLater')"
-        icon="pi pi-exclamation-circle"
-        class="p-0"
-      />
-    </div>
-    <Listbox
-      v-else
-      v-model="selectedVersion"
-      option-label="label"
-      option-value="value"
-      :options="processedVersionOptions"
-      :highlight-on-select="false"
-      class="w-full max-h-[50vh] border-none shadow-none rounded-md"
-      :pt="{
-        listContainer: { class: 'scrollbar-hide' }
-      }"
-    >
-      <template #option="slotProps">
-        <div class="flex justify-between items-center w-full p-1">
-          <div class="flex items-center gap-2">
-            <template v-if="slotProps.option.value === 'nightly'">
-              <div class="w-4"></div>
-            </template>
-            <template v-else>
-              <i
-                v-if="slotProps.option.hasConflict"
-                v-tooltip="{
-                  value: slotProps.option.conflictMessage,
-                  showDelay: 300
-                }"
-                class="pi pi-exclamation-triangle text-yellow-500"
-              />
-              <VerifiedIcon v-else :size="20" class="relative right-0.5" />
-            </template>
-            <span>{{ slotProps.option.label }}</span>
-          </div>
-          <i
-            v-if="slotProps.option.isSelected"
-            class="pi pi-check text-highlight"
-          />
-        </div>
-      </template>
-    </Listbox>
-    <ContentDivider class="my-2" />
-    <div class="flex justify-end gap-2 py-1 px-3">
-      <Button
-        text
-        class="text-sm"
-        severity="secondary"
-        :label="$t('g.cancel')"
-        :disabled="isQueueing"
-        @click="emit('cancel')"
-      />
-      <Button
-        severity="secondary"
-        :label="$t('g.install')"
-        class="py-2.5 px-4 text-sm dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
-        :disabled="isQueueing"
-        @click="handleSubmit"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
@@ -312,3 +231,84 @@ const processedVersionOptions = computed(() => {
   })
 })
 </script>
+
+<template>
+  <div class="w-64 pt-1">
+    <div class="py-2">
+      <span class="pl-3 text-md font-semibold text-neutral-500">
+        {{ $t('manager.selectVersion') }}
+      </span>
+    </div>
+    <div
+      v-if="isLoadingVersions || isQueueing"
+      class="text-center text-muted py-4 flex flex-col items-center"
+    >
+      <ProgressSpinner class="w-8 h-8 mb-2" />
+      {{ $t('manager.loadingVersions') }}
+    </div>
+    <div v-else-if="versionOptions.length === 0" class="py-2">
+      <NoResultsPlaceholder
+        :title="$t('g.noResultsFound')"
+        :message="$t('manager.tryAgainLater')"
+        icon="pi pi-exclamation-circle"
+        class="p-0"
+      />
+    </div>
+    <Listbox
+      v-else
+      v-model="selectedVersion"
+      option-label="label"
+      option-value="value"
+      :options="processedVersionOptions"
+      :highlight-on-select="false"
+      class="w-full max-h-[50vh] border-none shadow-none rounded-md"
+      :pt="{
+        listContainer: { class: 'scrollbar-hide' }
+      }"
+    >
+      <template #option="slotProps">
+        <div class="flex justify-between items-center w-full p-1">
+          <div class="flex items-center gap-2">
+            <template v-if="slotProps.option.value === 'nightly'">
+              <div class="w-4"></div>
+            </template>
+            <template v-else>
+              <i
+                v-if="slotProps.option.hasConflict"
+                v-tooltip="{
+                  value: slotProps.option.conflictMessage,
+                  showDelay: 300
+                }"
+                class="pi pi-exclamation-triangle text-yellow-500"
+              />
+              <VerifiedIcon v-else :size="20" class="relative right-0.5" />
+            </template>
+            <span>{{ slotProps.option.label }}</span>
+          </div>
+          <i
+            v-if="slotProps.option.isSelected"
+            class="pi pi-check text-highlight"
+          />
+        </div>
+      </template>
+    </Listbox>
+    <ContentDivider class="my-2" />
+    <div class="flex justify-end gap-2 py-1 px-3">
+      <Button
+        text
+        class="text-sm"
+        severity="secondary"
+        :label="$t('g.cancel')"
+        :disabled="isQueueing"
+        @click="emit('cancel')"
+      />
+      <Button
+        severity="secondary"
+        :label="$t('g.install')"
+        class="py-2.5 px-4 text-sm dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
+        :disabled="isQueueing"
+        @click="handleSubmit"
+      />
+    </div>
+  </div>
+</template>

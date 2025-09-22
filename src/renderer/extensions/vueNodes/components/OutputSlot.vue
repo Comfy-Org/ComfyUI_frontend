@@ -1,24 +1,3 @@
-<template>
-  <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
-  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <!-- Slot Name -->
-    <span
-      v-if="!dotOnly"
-      class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200"
-    >
-      {{ slotData.name || `Output ${index}` }}
-    </span>
-
-    <!-- Connection Dot -->
-    <SlotConnectionDot
-      ref="connectionDotRef"
-      :color="slotColor"
-      class="translate-x-1/2"
-      v-on="readonly ? {} : { pointerdown: onPointerDown }"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
@@ -121,3 +100,24 @@ const { onPointerDown } = useSlotLinkInteraction({
   readonly: props.readonly
 })
 </script>
+
+<template>
+  <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
+  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
+    <!-- Slot Name -->
+    <span
+      v-if="!dotOnly"
+      class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200"
+    >
+      {{ slotData.name || `Output ${index}` }}
+    </span>
+
+    <!-- Connection Dot -->
+    <SlotConnectionDot
+      ref="connectionDotRef"
+      :color="slotColor"
+      class="translate-x-1/2"
+      v-on="readonly ? {} : { pointerdown: onPointerDown }"
+    />
+  </div>
+</template>

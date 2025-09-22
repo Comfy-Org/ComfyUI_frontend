@@ -1,3 +1,57 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import { onMounted, onUnmounted, ref } from 'vue'
+
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { useCommandStore } from '@/stores/commandStore'
+
+import MiniMapPanel from './MiniMapPanel.vue'
+
+const commandStore = useCommandStore()
+
+const minimapRef = ref<HTMLDivElement>()
+
+const {
+  initialized,
+  visible,
+  containerRef,
+  canvasRef,
+  containerStyles,
+  viewportStyles,
+  width,
+  height,
+  panelStyles,
+  nodeColors,
+  showLinks,
+  showGroups,
+  renderBypass,
+  renderError,
+  updateOption,
+  destroy,
+  handlePointerDown,
+  handlePointerMove,
+  handlePointerUp,
+  handleWheel,
+  setMinimapRef
+} = useMinimap()
+
+const showOptionsPanel = ref(false)
+
+const toggleOptionsPanel = () => {
+  showOptionsPanel.value = !showOptionsPanel.value
+}
+
+onMounted(() => {
+  if (minimapRef.value) {
+    setMinimapRef(minimapRef.value)
+  }
+})
+
+onUnmounted(() => {
+  destroy()
+})
+</script>
+
 <template>
   <div
     v-if="visible && initialized"
@@ -71,60 +125,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import { onMounted, onUnmounted, ref } from 'vue'
-
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
-
-import MiniMapPanel from './MiniMapPanel.vue'
-
-const commandStore = useCommandStore()
-
-const minimapRef = ref<HTMLDivElement>()
-
-const {
-  initialized,
-  visible,
-  containerRef,
-  canvasRef,
-  containerStyles,
-  viewportStyles,
-  width,
-  height,
-  panelStyles,
-  nodeColors,
-  showLinks,
-  showGroups,
-  renderBypass,
-  renderError,
-  updateOption,
-  destroy,
-  handlePointerDown,
-  handlePointerMove,
-  handlePointerUp,
-  handleWheel,
-  setMinimapRef
-} = useMinimap()
-
-const showOptionsPanel = ref(false)
-
-const toggleOptionsPanel = () => {
-  showOptionsPanel.value = !showOptionsPanel.value
-}
-
-onMounted(() => {
-  if (minimapRef.value) {
-    setMinimapRef(minimapRef.value)
-  }
-})
-
-onUnmounted(() => {
-  destroy()
-})
-</script>
 
 <style scoped>
 .litegraph-minimap {

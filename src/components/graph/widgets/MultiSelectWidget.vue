@@ -1,17 +1,3 @@
-<template>
-  <div>
-    <MultiSelect
-      v-model="selectedItems"
-      :options="options"
-      filter
-      :placeholder="placeholder"
-      :max-selected-labels="3"
-      :display="display"
-      class="w-full"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import MultiSelect from 'primevue/multiselect'
 
@@ -28,3 +14,17 @@ const options = inputSpec.options ?? []
 const placeholder = inputSpec.multi_select?.placeholder ?? 'Select items'
 const display = inputSpec.multi_select?.chip ? 'chip' : 'comma'
 </script>
+
+<template>
+  <div>
+    <MultiSelect
+      v-model="selectedItems"
+      :options="options"
+      filter
+      :placeholder="placeholder"
+      :max-selected-labels="3"
+      :display="display"
+      class="w-full"
+    />
+  </div>
+</template>

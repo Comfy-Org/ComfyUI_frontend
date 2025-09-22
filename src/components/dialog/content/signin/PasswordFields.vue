@@ -1,3 +1,23 @@
+<script setup lang="ts">
+import { FormField } from '@primevue/forms'
+import Password from 'primevue/password'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+const password = ref('')
+
+// TODO: Use dynamic form to better organize the password checks.
+// Ref: https://primevue.org/forms/#dynamic
+const passwordChecks = computed(() => ({
+  length: password.value.length >= 8 && password.value.length <= 32,
+  uppercase: /[A-Z]/.test(password.value),
+  lowercase: /[a-z]/.test(password.value),
+  number: /\d/.test(password.value),
+  special: /[^A-Za-z0-9]/.test(password.value)
+}))
+</script>
+
 <template>
   <!-- Password Field -->
   <FormField v-slot="$field" name="password" class="flex flex-col gap-2">
@@ -89,23 +109,3 @@
     }}</small>
   </FormField>
 </template>
-
-<script setup lang="ts">
-import { FormField } from '@primevue/forms'
-import Password from 'primevue/password'
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
-const password = ref('')
-
-// TODO: Use dynamic form to better organize the password checks.
-// Ref: https://primevue.org/forms/#dynamic
-const passwordChecks = computed(() => ({
-  length: password.value.length >= 8 && password.value.length <= 32,
-  uppercase: /[A-Z]/.test(password.value),
-  lowercase: /[a-z]/.test(password.value),
-  number: /\d/.test(password.value),
-  special: /[^A-Za-z0-9]/.test(password.value)
-}))
-</script>

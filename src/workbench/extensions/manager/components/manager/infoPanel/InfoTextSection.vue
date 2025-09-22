@@ -1,3 +1,19 @@
+<script setup lang="ts">
+import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
+
+export interface TextSection {
+  title: string
+  text: string
+  isUrl?: boolean
+}
+
+defineProps<{
+  sections: TextSection[]
+}>()
+
+const isGitHubLink = (url: string): boolean => url.includes('github.com')
+</script>
+
 <template>
   <div class="flex flex-col gap-4 text-sm">
     <div v-for="(section, index) in sections" :key="index" class="mb-4">
@@ -20,19 +36,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
-
-export interface TextSection {
-  title: string
-  text: string
-  isUrl?: boolean
-}
-
-defineProps<{
-  sections: TextSection[]
-}>()
-
-const isGitHubLink = (url: string): boolean => url.includes('github.com')
-</script>

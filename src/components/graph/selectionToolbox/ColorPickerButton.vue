@@ -1,52 +1,3 @@
-<template>
-  <div class="relative">
-    <Button
-      v-tooltip.top="{
-        value: localizedCurrentColorName ?? t('color.noColor'),
-        showDelay: 1000
-      }"
-      data-testid="color-picker-button"
-      severity="secondary"
-      text
-      @click="() => (showColorPicker = !showColorPicker)"
-    >
-      <div class="flex items-center gap-1 px-0">
-        <i
-          class="w-4 h-4 pi pi-circle-fill"
-          :style="{ color: currentColor ?? '' }"
-        />
-        <i
-          class="w-4 h-4 pi pi-chevron-down py-1"
-          :style="{ fontSize: '0.5rem' }"
-        />
-      </div>
-    </Button>
-    <div
-      v-if="showColorPicker"
-      class="color-picker-container absolute -top-10 left-1/2"
-    >
-      <SelectButton
-        :model-value="selectedColorOption"
-        :options="colorOptions"
-        option-label="name"
-        data-key="value"
-        @update:model-value="applyColor"
-      >
-        <template #option="{ option }">
-          <i
-            v-tooltip.top="option.localizedName"
-            class="pi pi-circle-fill"
-            :style="{
-              color: isLightTheme ? option.value.light : option.value.dark
-            }"
-            :data-testid="option.name"
-          />
-        </template>
-      </SelectButton>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
@@ -163,6 +114,55 @@ watch(
   { immediate: true }
 )
 </script>
+
+<template>
+  <div class="relative">
+    <Button
+      v-tooltip.top="{
+        value: localizedCurrentColorName ?? t('color.noColor'),
+        showDelay: 1000
+      }"
+      data-testid="color-picker-button"
+      severity="secondary"
+      text
+      @click="() => (showColorPicker = !showColorPicker)"
+    >
+      <div class="flex items-center gap-1 px-0">
+        <i
+          class="w-4 h-4 pi pi-circle-fill"
+          :style="{ color: currentColor ?? '' }"
+        />
+        <i
+          class="w-4 h-4 pi pi-chevron-down py-1"
+          :style="{ fontSize: '0.5rem' }"
+        />
+      </div>
+    </Button>
+    <div
+      v-if="showColorPicker"
+      class="color-picker-container absolute -top-10 left-1/2"
+    >
+      <SelectButton
+        :model-value="selectedColorOption"
+        :options="colorOptions"
+        option-label="name"
+        data-key="value"
+        @update:model-value="applyColor"
+      >
+        <template #option="{ option }">
+          <i
+            v-tooltip.top="option.localizedName"
+            class="pi pi-circle-fill"
+            :style="{
+              color: isLightTheme ? option.value.light : option.value.dark
+            }"
+            :data-testid="option.name"
+          />
+        </template>
+      </SelectButton>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 @reference '../../../assets/css/style.css';

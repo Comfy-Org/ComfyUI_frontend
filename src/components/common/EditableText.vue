@@ -1,30 +1,3 @@
-<template>
-  <div class="editable-text">
-    <span v-if="!isEditing">
-      {{ modelValue }}
-    </span>
-    <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
-    <InputText
-      v-else
-      ref="inputRef"
-      v-model:model-value="inputValue"
-      v-focus
-      type="text"
-      size="small"
-      fluid
-      :pt="{
-        root: {
-          onBlur: finishEditing,
-          ...inputAttrs
-        }
-      }"
-      @keyup.enter="blurInputElement"
-      @keyup.escape="cancelEditing"
-      @click.stop
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import { nextTick, ref, watch } from 'vue'
@@ -89,6 +62,33 @@ const vFocus = {
   mounted: (el: HTMLElement) => el.focus()
 }
 </script>
+
+<template>
+  <div class="editable-text">
+    <span v-if="!isEditing">
+      {{ modelValue }}
+    </span>
+    <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
+    <InputText
+      v-else
+      ref="inputRef"
+      v-model:model-value="inputValue"
+      v-focus
+      type="text"
+      size="small"
+      fluid
+      :pt="{
+        root: {
+          onBlur: finishEditing,
+          ...inputAttrs
+        }
+      }"
+      @keyup.enter="blurInputElement"
+      @keyup.escape="cancelEditing"
+      @click.stop
+    />
+  </div>
+</template>
 
 <style scoped>
 .editable-text {

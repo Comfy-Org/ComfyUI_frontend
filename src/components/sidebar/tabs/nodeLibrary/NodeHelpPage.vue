@@ -1,3 +1,38 @@
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed } from 'vue'
+
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
+
+const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
+
+const nodeHelpStore = useNodeHelpStore()
+const { renderedHelpHtml, isLoading, error } = storeToRefs(nodeHelpStore)
+
+defineEmits<{
+  (e: 'close'): void
+}>()
+
+const inputList = computed(() =>
+  Object.values(node.inputs).map((spec) => ({
+    name: spec.name,
+    type: spec.type,
+    tooltip: spec.tooltip || ''
+  }))
+)
+
+const outputList = computed(() =>
+  node.outputs.map((spec) => ({
+    name: spec.name,
+    type: spec.type,
+    tooltip: spec.tooltip || ''
+  }))
+)
+</script>
+
 <template>
   <div class="flex flex-col h-full bg-(--p-tree-background) overflow-auto">
     <div
@@ -82,41 +117,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
-import { computed } from 'vue'
-
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
-
-const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
-
-const nodeHelpStore = useNodeHelpStore()
-const { renderedHelpHtml, isLoading, error } = storeToRefs(nodeHelpStore)
-
-defineEmits<{
-  (e: 'close'): void
-}>()
-
-const inputList = computed(() =>
-  Object.values(node.inputs).map((spec) => ({
-    name: spec.name,
-    type: spec.type,
-    tooltip: spec.tooltip || ''
-  }))
-)
-
-const outputList = computed(() =>
-  node.outputs.map((spec) => ({
-    name: spec.name,
-    type: spec.type,
-    tooltip: spec.tooltip || ''
-  }))
-)
-</script>
 
 <style scoped>
 @reference './../../../../assets/css/style.css';

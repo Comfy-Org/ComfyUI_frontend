@@ -1,27 +1,3 @@
-<template>
-  <IconField class="w-full">
-    <InputText
-      v-bind="$attrs"
-      :model-value="internalValue"
-      class="w-full"
-      :invalid="validationState === ValidationState.INVALID"
-      @update:model-value="handleInput"
-      @blur="handleBlur"
-    />
-    <InputIcon
-      :class="{
-        'pi pi-spin pi-spinner text-neutral-400':
-          validationState === ValidationState.LOADING,
-        'pi pi-check text-green-500 cursor-pointer':
-          validationState === ValidationState.VALID,
-        'pi pi-times text-red-500 cursor-pointer':
-          validationState === ValidationState.INVALID
-      }"
-      @click="validateUrl(props.modelValue)"
-    />
-  </IconField>
-</template>
-
 <script setup lang="ts">
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
@@ -127,3 +103,27 @@ defineOptions({
   inheritAttrs: false
 })
 </script>
+
+<template>
+  <IconField class="w-full">
+    <InputText
+      v-bind="$attrs"
+      :model-value="internalValue"
+      class="w-full"
+      :invalid="validationState === ValidationState.INVALID"
+      @update:model-value="handleInput"
+      @blur="handleBlur"
+    />
+    <InputIcon
+      :class="{
+        'pi pi-spin pi-spinner text-neutral-400':
+          validationState === ValidationState.LOADING,
+        'pi pi-check text-green-500 cursor-pointer':
+          validationState === ValidationState.VALID,
+        'pi pi-times text-red-500 cursor-pointer':
+          validationState === ValidationState.INVALID
+      }"
+      @click="validateUrl(props.modelValue)"
+    />
+  </IconField>
+</template>

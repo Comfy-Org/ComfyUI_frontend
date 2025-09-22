@@ -1,142 +1,3 @@
-<template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
-    {{ $t('Node Render Error') }}
-  </div>
-  <div
-    v-else
-    ref="nodeContainerRef"
-    :data-node-id="nodeData.id"
-    :class="
-      cn(
-        'bg-white dark-theme:bg-charcoal-800',
-        'lg-node absolute rounded-2xl',
-        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
-        // hover (only when node should handle events)
-        shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
-        'outline-transparent -outline-offset-2 outline-2',
-        borderClass,
-        outlineClass,
-        {
-          'animate-pulse': executing,
-          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
-            bypassed,
-          'will-change-transform': isDragging
-        },
-        lodCssClass,
-        shouldHandleNodePointerEvents
-          ? 'pointer-events-auto'
-          : 'pointer-events-none'
-      )
-    "
-    :style="[
-      {
-        transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
-      },
-      dragStyle
-    ]"
-    @pointerdown="handlePointerDown"
-    @pointermove="handlePointerMove"
-    @pointerup="handlePointerUp"
-    @wheel="handleWheel"
-  >
-    <div class="flex items-center">
-      <template v-if="isCollapsed">
-        <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
-        <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
-      </template>
-      <!-- Header only updates on title/color changes -->
-      <NodeHeader
-        v-memo="[nodeData.title, lodLevel, isCollapsed]"
-        :node-data="nodeData"
-        :readonly="readonly"
-        :lod-level="lodLevel"
-        :collapsed="isCollapsed"
-        @collapse="handleCollapse"
-        @update:title="handleHeaderTitleUpdate"
-        @enter-subgraph="handleEnterSubgraph"
-      />
-    </div>
-
-    <div
-      v-if="
-        (isMinimalLOD || isCollapsed) && executing && progress !== undefined
-      "
-      :class="
-        cn(
-          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
-          progressClasses
-        )
-      "
-      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-    />
-
-    <template v-if="!isMinimalLOD && !isCollapsed">
-      <div class="mb-4 relative">
-        <div :class="separatorClasses" />
-        <!-- Progress bar for executing state -->
-        <div
-          v-if="executing && progress !== undefined"
-          :class="
-            cn(
-              'absolute inset-x-0 top-1/2 -translate-y-1/2',
-              !!(progress < 1) && 'rounded-r-full',
-              progressClasses
-            )
-          "
-          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-        />
-      </div>
-
-      <!-- Node Body - rendered based on LOD level and collapsed state -->
-      <div
-        class="flex flex-col gap-4 pb-4"
-        :data-testid="`node-body-${nodeData.id}`"
-      >
-        <!-- Slots only rendered at full detail -->
-        <NodeSlots
-          v-if="shouldRenderSlots"
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length, lodLevel]"
-          :node-data="nodeData"
-          :readonly="readonly"
-          :lod-level="lodLevel"
-        />
-
-        <!-- Widgets rendered at reduced+ detail -->
-        <NodeWidgets
-          v-if="shouldShowWidgets"
-          v-memo="[nodeData.widgets?.length, lodLevel]"
-          :node-data="nodeData"
-          :readonly="readonly"
-          :lod-level="lodLevel"
-        />
-
-        <!-- Custom content at reduced+ detail -->
-        <NodeContent
-          v-if="shouldShowContent"
-          :node-data="nodeData"
-          :readonly="readonly"
-          :lod-level="lodLevel"
-          :image-urls="nodeImageUrls"
-        />
-        <!-- Live preview image -->
-        <div
-          v-if="shouldShowPreviewImg"
-          v-memo="[latestPreviewUrl]"
-          class="px-4"
-        >
-          <img
-            :src="latestPreviewUrl"
-            alt="preview"
-            class="w-full max-h-64 object-contain"
-          />
-        </div>
-      </div>
-    </template>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
@@ -388,3 +249,142 @@ const nodeImageUrls = computed(() => {
 const nodeContainerRef = ref()
 provide('tooltipContainer', nodeContainerRef)
 </script>
+
+<template>
+  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+    {{ $t('Node Render Error') }}
+  </div>
+  <div
+    v-else
+    ref="nodeContainerRef"
+    :data-node-id="nodeData.id"
+    :class="
+      cn(
+        'bg-white dark-theme:bg-charcoal-800',
+        'lg-node absolute rounded-2xl',
+        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
+        // hover (only when node should handle events)
+        shouldHandleNodePointerEvents &&
+          'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
+        'outline-transparent -outline-offset-2 outline-2',
+        borderClass,
+        outlineClass,
+        {
+          'animate-pulse': executing,
+          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
+            bypassed,
+          'will-change-transform': isDragging
+        },
+        lodCssClass,
+        shouldHandleNodePointerEvents
+          ? 'pointer-events-auto'
+          : 'pointer-events-none'
+      )
+    "
+    :style="[
+      {
+        transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+        zIndex: zIndex
+      },
+      dragStyle
+    ]"
+    @pointerdown="handlePointerDown"
+    @pointermove="handlePointerMove"
+    @pointerup="handlePointerUp"
+    @wheel="handleWheel"
+  >
+    <div class="flex items-center">
+      <template v-if="isCollapsed">
+        <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
+        <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
+      </template>
+      <!-- Header only updates on title/color changes -->
+      <NodeHeader
+        v-memo="[nodeData.title, lodLevel, isCollapsed]"
+        :node-data="nodeData"
+        :readonly="readonly"
+        :lod-level="lodLevel"
+        :collapsed="isCollapsed"
+        @collapse="handleCollapse"
+        @update:title="handleHeaderTitleUpdate"
+        @enter-subgraph="handleEnterSubgraph"
+      />
+    </div>
+
+    <div
+      v-if="
+        (isMinimalLOD || isCollapsed) && executing && progress !== undefined
+      "
+      :class="
+        cn(
+          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
+          progressClasses
+        )
+      "
+      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+    />
+
+    <template v-if="!isMinimalLOD && !isCollapsed">
+      <div class="mb-4 relative">
+        <div :class="separatorClasses" />
+        <!-- Progress bar for executing state -->
+        <div
+          v-if="executing && progress !== undefined"
+          :class="
+            cn(
+              'absolute inset-x-0 top-1/2 -translate-y-1/2',
+              !!(progress < 1) && 'rounded-r-full',
+              progressClasses
+            )
+          "
+          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+        />
+      </div>
+
+      <!-- Node Body - rendered based on LOD level and collapsed state -->
+      <div
+        class="flex flex-col gap-4 pb-4"
+        :data-testid="`node-body-${nodeData.id}`"
+      >
+        <!-- Slots only rendered at full detail -->
+        <NodeSlots
+          v-if="shouldRenderSlots"
+          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length, lodLevel]"
+          :node-data="nodeData"
+          :readonly="readonly"
+          :lod-level="lodLevel"
+        />
+
+        <!-- Widgets rendered at reduced+ detail -->
+        <NodeWidgets
+          v-if="shouldShowWidgets"
+          v-memo="[nodeData.widgets?.length, lodLevel]"
+          :node-data="nodeData"
+          :readonly="readonly"
+          :lod-level="lodLevel"
+        />
+
+        <!-- Custom content at reduced+ detail -->
+        <NodeContent
+          v-if="shouldShowContent"
+          :node-data="nodeData"
+          :readonly="readonly"
+          :lod-level="lodLevel"
+          :image-urls="nodeImageUrls"
+        />
+        <!-- Live preview image -->
+        <div
+          v-if="shouldShowPreviewImg"
+          v-memo="[latestPreviewUrl]"
+          class="px-4"
+        >
+          <img
+            :src="latestPreviewUrl"
+            alt="preview"
+            class="w-full max-h-64 object-contain"
+          />
+        </div>
+      </div>
+    </template>
+  </div>
+</template>

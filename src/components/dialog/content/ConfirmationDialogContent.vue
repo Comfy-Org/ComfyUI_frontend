@@ -1,3 +1,41 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
+import Message from 'primevue/message'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ConfirmationDialogType } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
+
+const props = defineProps<{
+  message: string
+  type: ConfirmationDialogType
+  onConfirm: (value?: boolean) => void
+  itemList?: string[]
+  hint?: string
+}>()
+
+const { t } = useI18n()
+
+const onCancel = () => useDialogStore().closeDialog()
+
+const doNotAskAgain = ref(false)
+
+const onDeny = () => {
+  props.onConfirm(false)
+  useDialogStore().closeDialog()
+}
+
+const onConfirm = () => {
+  if (props.type === 'overwriteBlueprint' && doNotAskAgain.value)
+    void useSettingStore().set('Comfy.Workflow.WarnBlueprintOverwrite', false)
+  props.onConfirm(true)
+  useDialogStore().closeDialog()
+}
+</script>
+
 <template>
   <section class="prompt-dialog-content flex flex-col gap-6 m-2 mt-4">
     <span>{{ message }}</span>
@@ -86,44 +124,6 @@
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import Message from 'primevue/message'
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ConfirmationDialogType } from '@/services/dialogService'
-import { useDialogStore } from '@/stores/dialogStore'
-
-const props = defineProps<{
-  message: string
-  type: ConfirmationDialogType
-  onConfirm: (value?: boolean) => void
-  itemList?: string[]
-  hint?: string
-}>()
-
-const { t } = useI18n()
-
-const onCancel = () => useDialogStore().closeDialog()
-
-const doNotAskAgain = ref(false)
-
-const onDeny = () => {
-  props.onConfirm(false)
-  useDialogStore().closeDialog()
-}
-
-const onConfirm = () => {
-  if (props.type === 'overwriteBlueprint' && doNotAskAgain.value)
-    void useSettingStore().set('Comfy.Workflow.WarnBlueprintOverwrite', false)
-  props.onConfirm(true)
-  useDialogStore().closeDialog()
-}
-</script>
 
 <style lang="css" scoped>
 .prompt-dialog-content {

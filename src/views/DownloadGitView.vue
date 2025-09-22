@@ -1,3 +1,20 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import { useRouter } from 'vue-router'
+
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+
+const openGitDownloads = () => {
+  window.open('https://git-scm.com/downloads/', '_blank')
+}
+
+const skipGit = async () => {
+  console.warn('pushing')
+  const router = useRouter()
+  await router.push('install')
+}
+</script>
+
 <template>
   <BaseViewTemplate>
     <div
@@ -40,20 +57,3 @@
     </div>
   </BaseViewTemplate>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import { useRouter } from 'vue-router'
-
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
-
-const openGitDownloads = () => {
-  window.open('https://git-scm.com/downloads/', '_blank')
-}
-
-const skipGit = async () => {
-  console.warn('pushing')
-  const router = useRouter()
-  await router.push('install')
-}
-</script>

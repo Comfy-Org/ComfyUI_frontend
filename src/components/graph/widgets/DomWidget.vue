@@ -1,22 +1,3 @@
-<template>
-  <div
-    v-show="widgetState.visible"
-    ref="widgetElement"
-    class="dom-widget"
-    :title="tooltip"
-    :style="style"
-  >
-    <component
-      :is="widget.component"
-      v-if="isComponentWidget(widget)"
-      :model-value="widget.value"
-      :widget="widget"
-      v-bind="widget.props"
-      @update:model-value="emit('update:widgetValue', $event)"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useElementBounding, useEventListener } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
@@ -188,6 +169,25 @@ watch(
   }
 )
 </script>
+
+<template>
+  <div
+    v-show="widgetState.visible"
+    ref="widgetElement"
+    class="dom-widget"
+    :title="tooltip"
+    :style="style"
+  >
+    <component
+      :is="widget.component"
+      v-if="isComponentWidget(widget)"
+      :model-value="widget.value"
+      :widget="widget"
+      v-bind="widget.props"
+      @update:model-value="emit('update:widgetValue', $event)"
+    />
+  </div>
+</template>
 
 <style scoped>
 @reference '../../../assets/css/style.css';

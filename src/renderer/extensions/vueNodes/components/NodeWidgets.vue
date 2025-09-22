@@ -1,56 +1,3 @@
-<template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
-    {{ $t('Node Widgets Error') }}
-  </div>
-  <div
-    v-else
-    :class="
-      cn(
-        'lg-node-widgets flex flex-col gap-2 pr-4',
-        shouldHandleNodePointerEvents
-          ? 'pointer-events-auto'
-          : 'pointer-events-none'
-      )
-    "
-    @pointerdown="handleWidgetPointerEvent"
-    @pointermove="handleWidgetPointerEvent"
-    @pointerup="handleWidgetPointerEvent"
-  >
-    <div
-      v-for="(widget, index) in processedWidgets"
-      :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container relative flex items-center group"
-    >
-      <!-- Widget Input Slot Dot -->
-      <div
-        class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-      >
-        <InputSlot
-          :slot-data="{
-            name: widget.name,
-            type: widget.type,
-            boundingRect: [0, 0, 0, 0]
-          }"
-          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="getWidgetInputIndex(widget)"
-          :readonly="readonly"
-          :dot-only="true"
-        />
-      </div>
-      <!-- Widget Component -->
-      <component
-        :is="widget.vueComponent"
-        v-tooltip.left="widget.tooltipConfig"
-        :widget="widget.simplified"
-        :model-value="widget.value"
-        :readonly="readonly"
-        class="flex-1"
-        @update:model-value="widget.updateHandler"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { type Ref, computed, inject, onErrorCaptured, ref } from 'vue'
 
@@ -185,3 +132,56 @@ const getWidgetInputIndex = (widget: ProcessedWidget): number => {
   return idx >= 0 ? idx : 0
 }
 </script>
+
+<template>
+  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+    {{ $t('Node Widgets Error') }}
+  </div>
+  <div
+    v-else
+    :class="
+      cn(
+        'lg-node-widgets flex flex-col gap-2 pr-4',
+        shouldHandleNodePointerEvents
+          ? 'pointer-events-auto'
+          : 'pointer-events-none'
+      )
+    "
+    @pointerdown="handleWidgetPointerEvent"
+    @pointermove="handleWidgetPointerEvent"
+    @pointerup="handleWidgetPointerEvent"
+  >
+    <div
+      v-for="(widget, index) in processedWidgets"
+      :key="`widget-${index}-${widget.name}`"
+      class="lg-widget-container relative flex items-center group"
+    >
+      <!-- Widget Input Slot Dot -->
+      <div
+        class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+      >
+        <InputSlot
+          :slot-data="{
+            name: widget.name,
+            type: widget.type,
+            boundingRect: [0, 0, 0, 0]
+          }"
+          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+          :index="getWidgetInputIndex(widget)"
+          :readonly="readonly"
+          :dot-only="true"
+        />
+      </div>
+      <!-- Widget Component -->
+      <component
+        :is="widget.vueComponent"
+        v-tooltip.left="widget.tooltipConfig"
+        :widget="widget.simplified"
+        :model-value="widget.value"
+        :readonly="readonly"
+        class="flex-1"
+        @update:model-value="widget.updateHandler"
+      />
+    </div>
+  </div>
+</template>

@@ -1,27 +1,3 @@
-<template>
-  <FormItem
-    :id="setting.id"
-    :item="formItem"
-    :form-value="settingValue"
-    @update:form-value="updateSettingValue"
-  >
-    <template #name-prefix>
-      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
-      <Tag
-        v-if="setting.experimental"
-        v-tooltip="{
-          value: $t('g.experimental'),
-          showDelay: 600
-        }"
-      >
-        <template #icon>
-          <i-material-symbols:experiment-outline />
-        </template>
-      </Tag>
-    </template>
-  </FormItem>
-</template>
-
 <script setup lang="ts">
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
@@ -79,3 +55,27 @@ const updateSettingValue = async (value: any) => {
   await settingStore.set(props.setting.id, value)
 }
 </script>
+
+<template>
+  <FormItem
+    :id="setting.id"
+    :item="formItem"
+    :form-value="settingValue"
+    @update:form-value="updateSettingValue"
+  >
+    <template #name-prefix>
+      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
+      <Tag
+        v-if="setting.experimental"
+        v-tooltip="{
+          value: $t('g.experimental'),
+          showDelay: 600
+        }"
+      >
+        <template #icon>
+          <i-material-symbols:experiment-outline />
+        </template>
+      </Tag>
+    </template>
+  </FormItem>
+</template>

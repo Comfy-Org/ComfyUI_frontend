@@ -1,3 +1,41 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
+import { ref } from 'vue'
+
+import { t } from '@/i18n'
+
+const backgroundColor = defineModel<string>('backgroundColor')
+const showGrid = defineModel<boolean>('showGrid')
+
+defineProps<{
+  hasBackgroundImage?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'updateBackgroundImage', file: File | null): void
+}>()
+
+const imagePickerRef = ref<HTMLInputElement | null>(null)
+
+const openImagePicker = () => {
+  imagePickerRef.value?.click()
+}
+
+const handleImageUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    emit('updateBackgroundImage', input.files[0])
+  }
+
+  input.value = ''
+}
+
+const removeBackgroundImage = () => {
+  emit('updateBackgroundImage', null)
+}
+</script>
+
 <template>
   <div class="space-y-4">
     <div v-if="!hasBackgroundImage">
@@ -42,41 +80,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import { ref } from 'vue'
-
-import { t } from '@/i18n'
-
-const backgroundColor = defineModel<string>('backgroundColor')
-const showGrid = defineModel<boolean>('showGrid')
-
-defineProps<{
-  hasBackgroundImage?: boolean
-}>()
-
-const emit = defineEmits<{
-  (e: 'updateBackgroundImage', file: File | null): void
-}>()
-
-const imagePickerRef = ref<HTMLInputElement | null>(null)
-
-const openImagePicker = () => {
-  imagePickerRef.value?.click()
-}
-
-const handleImageUpload = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  if (input.files && input.files[0]) {
-    emit('updateBackgroundImage', input.files[0])
-  }
-
-  input.value = ''
-}
-
-const removeBackgroundImage = () => {
-  emit('updateBackgroundImage', null)
-}
-</script>

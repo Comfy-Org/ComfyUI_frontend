@@ -1,82 +1,3 @@
-<template>
-  <div
-    class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96"
-  >
-    <div
-      v-if="enableNodePreview"
-      class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
-    >
-      <NodePreview
-        v-if="hoveredSuggestion"
-        :key="hoveredSuggestion?.name || ''"
-        :node-def="hoveredSuggestion"
-      />
-    </div>
-
-    <Button
-      icon="pi pi-filter"
-      severity="secondary"
-      class="filter-button z-10"
-      @click="nodeSearchFilterVisible = true"
-    />
-    <Dialog
-      v-model:visible="nodeSearchFilterVisible"
-      class="min-w-96"
-      dismissable-mask
-      modal
-      @hide="reFocusInput"
-    >
-      <template #header>
-        <h3>{{ $t('g.addNodeFilterCondition') }}</h3>
-      </template>
-      <div class="_dialog-body">
-        <NodeSearchFilter @add-filter="onAddFilter" />
-      </div>
-    </Dialog>
-
-    <AutoCompletePlus
-      :model-value="filters"
-      class="comfy-vue-node-search-box z-10 grow"
-      scroll-height="40vh"
-      :placeholder="placeholder"
-      :input-id="inputId"
-      append-to="self"
-      :suggestions="suggestions"
-      :min-length="0"
-      :delay="100"
-      :loading="!nodeFrequencyStore.isLoaded"
-      complete-on-focus
-      auto-option-focus
-      force-selection
-      multiple
-      :option-label="'display_name'"
-      @complete="search($event.query)"
-      @option-select="emit('addNode', $event.value)"
-      @focused-option-changed="setHoverSuggestion($event)"
-    >
-      <template #option="{ option }">
-        <NodeSearchItem :node-def="option" :current-query="currentQuery" />
-      </template>
-      <!-- FilterAndValue -->
-      <template #chip="{ value }">
-        <SearchFilterChip
-          v-if="value.filterDef && value.value"
-          :key="`${value.filterDef.id}-${value.value}`"
-          :text="value.value"
-          :badge="value.filterDef.invokeSequence.toUpperCase()"
-          :badge-class="value.filterDef.invokeSequence + '-badge'"
-          @remove="
-            onRemoveFilter(
-              $event,
-              value as FuseFilterWithValue<ComfyNodeDefImpl, string>
-            )
-          "
-        />
-      </template>
-    </AutoCompletePlus>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -165,3 +86,82 @@ const setHoverSuggestion = (index: number) => {
   hoveredSuggestion.value = value
 }
 </script>
+
+<template>
+  <div
+    class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96"
+  >
+    <div
+      v-if="enableNodePreview"
+      class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
+    >
+      <NodePreview
+        v-if="hoveredSuggestion"
+        :key="hoveredSuggestion?.name || ''"
+        :node-def="hoveredSuggestion"
+      />
+    </div>
+
+    <Button
+      icon="pi pi-filter"
+      severity="secondary"
+      class="filter-button z-10"
+      @click="nodeSearchFilterVisible = true"
+    />
+    <Dialog
+      v-model:visible="nodeSearchFilterVisible"
+      class="min-w-96"
+      dismissable-mask
+      modal
+      @hide="reFocusInput"
+    >
+      <template #header>
+        <h3>{{ $t('g.addNodeFilterCondition') }}</h3>
+      </template>
+      <div class="_dialog-body">
+        <NodeSearchFilter @add-filter="onAddFilter" />
+      </div>
+    </Dialog>
+
+    <AutoCompletePlus
+      :model-value="filters"
+      class="comfy-vue-node-search-box z-10 grow"
+      scroll-height="40vh"
+      :placeholder="placeholder"
+      :input-id="inputId"
+      append-to="self"
+      :suggestions="suggestions"
+      :min-length="0"
+      :delay="100"
+      :loading="!nodeFrequencyStore.isLoaded"
+      complete-on-focus
+      auto-option-focus
+      force-selection
+      multiple
+      :option-label="'display_name'"
+      @complete="search($event.query)"
+      @option-select="emit('addNode', $event.value)"
+      @focused-option-changed="setHoverSuggestion($event)"
+    >
+      <template #option="{ option }">
+        <NodeSearchItem :node-def="option" :current-query="currentQuery" />
+      </template>
+      <!-- FilterAndValue -->
+      <template #chip="{ value }">
+        <SearchFilterChip
+          v-if="value.filterDef && value.value"
+          :key="`${value.filterDef.id}-${value.value}`"
+          :text="value.value"
+          :badge="value.filterDef.invokeSequence.toUpperCase()"
+          :badge-class="value.filterDef.invokeSequence + '-badge'"
+          @remove="
+            onRemoveFilter(
+              $event,
+              value as FuseFilterWithValue<ComfyNodeDefImpl, string>
+            )
+          "
+        />
+      </template>
+    </AutoCompletePlus>
+  </div>
+</template>

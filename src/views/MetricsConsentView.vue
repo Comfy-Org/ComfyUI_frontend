@@ -1,3 +1,38 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { useToast } from 'primevue/usetoast'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
+import { electronAPI } from '@/utils/envUtil'
+
+const toast = useToast()
+const { t } = useI18n()
+
+const allowMetrics = ref(true)
+const router = useRouter()
+const isUpdating = ref(false)
+
+const updateConsent = async () => {
+  isUpdating.value = true
+  try {
+    await electronAPI().setMetricsConsent(allowMetrics.value)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('install.errorUpdatingConsent'),
+      detail: t('install.errorUpdatingConsentDetail'),
+      life: 3000
+    })
+  } finally {
+    isUpdating.value = false
+  }
+  await router.push('/')
+}
+</script>
+
 <template>
   <BaseViewTemplate dark>
     <div class="h-full p-8 2xl:p-16 flex flex-col items-center justify-center">
@@ -46,38 +81,3 @@
     </div>
   </BaseViewTemplate>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { useToast } from 'primevue/usetoast'
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-
-import { electronAPI } from '@/utils/envUtil'
-
-const toast = useToast()
-const { t } = useI18n()
-
-const allowMetrics = ref(true)
-const router = useRouter()
-const isUpdating = ref(false)
-
-const updateConsent = async () => {
-  isUpdating.value = true
-  try {
-    await electronAPI().setMetricsConsent(allowMetrics.value)
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('install.errorUpdatingConsent'),
-      detail: t('install.errorUpdatingConsentDetail'),
-      life: 3000
-    })
-  } finally {
-    isUpdating.value = false
-  }
-  await router.push('/')
-}
-</script>

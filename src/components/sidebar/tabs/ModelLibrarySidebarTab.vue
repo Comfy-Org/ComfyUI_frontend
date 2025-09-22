@@ -1,49 +1,3 @@
-<template>
-  <SidebarTabTemplate
-    :title="$t('sideToolbar.modelLibrary')"
-    class="bg-(--p-tree-background)"
-  >
-    <template #tool-buttons>
-      <Button
-        v-tooltip.bottom="$t('g.refresh')"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
-        @click="modelStore.loadModelFolders"
-      />
-      <Button
-        v-tooltip.bottom="$t('g.loadAllFolders')"
-        icon="pi pi-cloud-download"
-        severity="secondary"
-        text
-        @click="modelStore.loadModels"
-      />
-    </template>
-    <template #header>
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="model-lib-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchModels') + '...'"
-        @search="handleSearch"
-      />
-    </template>
-    <template #body>
-      <ElectronDownloadItems v-if="isElectron()" />
-
-      <TreeExplorer
-        v-model:expanded-keys="expandedKeys"
-        class="model-lib-tree-explorer"
-        :root="renderedRoot"
-      >
-        <template #node="{ node }">
-          <ModelTreeLeaf :node="node" />
-        </template>
-      </TreeExplorer>
-    </template>
-  </SidebarTabTemplate>
-  <div id="model-library-model-preview-container" />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
@@ -186,6 +140,52 @@ onMounted(async () => {
   }
 })
 </script>
+
+<template>
+  <SidebarTabTemplate
+    :title="$t('sideToolbar.modelLibrary')"
+    class="bg-(--p-tree-background)"
+  >
+    <template #tool-buttons>
+      <Button
+        v-tooltip.bottom="$t('g.refresh')"
+        icon="pi pi-refresh"
+        severity="secondary"
+        text
+        @click="modelStore.loadModelFolders"
+      />
+      <Button
+        v-tooltip.bottom="$t('g.loadAllFolders')"
+        icon="pi pi-cloud-download"
+        severity="secondary"
+        text
+        @click="modelStore.loadModels"
+      />
+    </template>
+    <template #header>
+      <SearchBox
+        v-model:model-value="searchQuery"
+        class="model-lib-search-box p-2 2xl:p-4"
+        :placeholder="$t('g.searchModels') + '...'"
+        @search="handleSearch"
+      />
+    </template>
+    <template #body>
+      <ElectronDownloadItems v-if="isElectron()" />
+
+      <TreeExplorer
+        v-model:expanded-keys="expandedKeys"
+        class="model-lib-tree-explorer"
+        :root="renderedRoot"
+      >
+        <template #node="{ node }">
+          <ModelTreeLeaf :node="node" />
+        </template>
+      </TreeExplorer>
+    </template>
+  </SidebarTabTemplate>
+  <div id="model-library-model-preview-container" />
+</template>
 
 <style scoped>
 :deep(.pi-fake-spacer) {

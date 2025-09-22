@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import Listbox from 'primevue/listbox'
+import ScrollPanel from 'primevue/scrollpanel'
+
+import ContentDivider from '@/components/common/ContentDivider.vue'
+import type { TabItem } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+
+defineProps<{
+  tabs: TabItem[]
+}>()
+
+const selectedTab = defineModel<TabItem>('selectedTab')
+</script>
+
 <template>
   <aside
     class="flex translate-x-0 max-w-[250px] w-3/12 z-5 transition-transform duration-300 ease-in-out"
@@ -26,17 +40,3 @@
     <ContentDivider orientation="vertical" :width="0.3" />
   </aside>
 </template>
-
-<script setup lang="ts">
-import Listbox from 'primevue/listbox'
-import ScrollPanel from 'primevue/scrollpanel'
-
-import ContentDivider from '@/components/common/ContentDivider.vue'
-import type { TabItem } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-
-defineProps<{
-  tabs: TabItem[]
-}>()
-
-const selectedTab = defineModel<TabItem>('selectedTab')
-</script>

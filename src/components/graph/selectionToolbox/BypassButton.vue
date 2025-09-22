@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import { useI18n } from 'vue-i18n'
+
+import { useCommandStore } from '@/stores/commandStore'
+
+const { t } = useI18n()
+const commandStore = useCommandStore()
+
+const toggleBypass = async () => {
+  await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
+}
+</script>
+
 <template>
   <Button
     v-tooltip.top="{
@@ -15,17 +29,3 @@
     </template>
   </Button>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import { useI18n } from 'vue-i18n'
-
-import { useCommandStore } from '@/stores/commandStore'
-
-const { t } = useI18n()
-const commandStore = useCommandStore()
-
-const toggleBypass = async () => {
-  await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
-}
-</script>

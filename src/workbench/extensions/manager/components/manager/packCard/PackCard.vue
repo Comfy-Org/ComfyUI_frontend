@@ -1,3 +1,62 @@
+<script setup lang="ts">
+import Card from 'primevue/card'
+import { computed, provide } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
+import PackBanner from '@/workbench/extensions/manager/components/manager/packBanner/PackBanner.vue'
+import PackCardFooter from '@/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import {
+  IsInstallingKey,
+  type MergedNodePack,
+  type RegistryPack,
+  isMergedNodePack
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
+
+const { nodePack, isSelected = false } = defineProps<{
+  nodePack: MergedNodePack | RegistryPack
+  isSelected?: boolean
+}>()
+
+const { d } = useI18n()
+
+const colorPaletteStore = useColorPaletteStore()
+const isLightTheme = computed(
+  () => colorPaletteStore.completedActivePalette.light_theme
+)
+
+const { isPackInstalled, isPackEnabled, isPackInstalling } =
+  useComfyManagerStore()
+
+const isInstalling = computed(() => isPackInstalling(nodePack?.id))
+provide(IsInstallingKey, isInstalling)
+
+const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+const isDisabled = computed(
+  () => isInstalled.value && !isPackEnabled(nodePack?.id)
+)
+
+const nodesCount = computed(() =>
+  isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined
+)
+const publisherName = computed(() => {
+  if (!nodePack) return null
+
+  const { publisher, author } = nodePack
+  return publisher?.name ?? publisher?.id ?? author
+})
+
+const formattedLatestVersionDate = computed(() => {
+  if (!nodePack.latest_version?.createdAt) return null
+
+  return d(new Date(nodePack.latest_version.createdAt), {
+    dateStyle: 'medium'
+  })
+})
+</script>
+
 <template>
   <Card
     class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-lg shadow-elevation-3 dark-theme:bg-dark-elevation-2 transition-all duration-200"
@@ -69,65 +128,6 @@
     </template>
   </Card>
 </template>
-
-<script setup lang="ts">
-import Card from 'primevue/card'
-import { computed, provide } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
-import PackBanner from '@/workbench/extensions/manager/components/manager/packBanner/PackBanner.vue'
-import PackCardFooter from '@/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import {
-  IsInstallingKey,
-  type MergedNodePack,
-  type RegistryPack,
-  isMergedNodePack
-} from '@/workbench/extensions/manager/types/comfyManagerTypes'
-
-const { nodePack, isSelected = false } = defineProps<{
-  nodePack: MergedNodePack | RegistryPack
-  isSelected?: boolean
-}>()
-
-const { d } = useI18n()
-
-const colorPaletteStore = useColorPaletteStore()
-const isLightTheme = computed(
-  () => colorPaletteStore.completedActivePalette.light_theme
-)
-
-const { isPackInstalled, isPackEnabled, isPackInstalling } =
-  useComfyManagerStore()
-
-const isInstalling = computed(() => isPackInstalling(nodePack?.id))
-provide(IsInstallingKey, isInstalling)
-
-const isInstalled = computed(() => isPackInstalled(nodePack?.id))
-const isDisabled = computed(
-  () => isInstalled.value && !isPackEnabled(nodePack?.id)
-)
-
-const nodesCount = computed(() =>
-  isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined
-)
-const publisherName = computed(() => {
-  if (!nodePack) return null
-
-  const { publisher, author } = nodePack
-  return publisher?.name ?? publisher?.id ?? author
-})
-
-const formattedLatestVersionDate = computed(() => {
-  if (!nodePack.latest_version?.createdAt) return null
-
-  return d(new Date(nodePack.latest_version.createdAt), {
-    dateStyle: 'medium'
-  })
-})
-</script>
 
 <style scoped>
 .selected-card {

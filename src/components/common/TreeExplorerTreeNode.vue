@@ -1,40 +1,3 @@
-<template>
-  <div
-    ref="container"
-    :class="[
-      'tree-node',
-      {
-        'can-drop': canDrop,
-        'tree-folder': !props.node.leaf,
-        'tree-leaf': props.node.leaf
-      }
-    ]"
-  >
-    <div class="node-content">
-      <span class="node-label">
-        <slot name="before-label" :node="props.node" />
-        <EditableText
-          :model-value="node.label"
-          :is-editing="isEditing"
-          @edit="handleRename"
-        />
-        <slot name="after-label" :node="props.node" />
-      </span>
-      <Badge
-        v-if="showNodeBadgeText"
-        :value="nodeBadgeText"
-        severity="secondary"
-        class="leaf-count-badge"
-      />
-    </div>
-    <div
-      class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
-    >
-      <slot name="actions" :node="props.node" />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
 import Badge from 'primevue/badge'
@@ -133,6 +96,43 @@ if (props.node.droppable) {
   })
 }
 </script>
+
+<template>
+  <div
+    ref="container"
+    :class="[
+      'tree-node',
+      {
+        'can-drop': canDrop,
+        'tree-folder': !props.node.leaf,
+        'tree-leaf': props.node.leaf
+      }
+    ]"
+  >
+    <div class="node-content">
+      <span class="node-label">
+        <slot name="before-label" :node="props.node" />
+        <EditableText
+          :model-value="node.label"
+          :is-editing="isEditing"
+          @edit="handleRename"
+        />
+        <slot name="after-label" :node="props.node" />
+      </span>
+      <Badge
+        v-if="showNodeBadgeText"
+        :value="nodeBadgeText"
+        severity="secondary"
+        class="leaf-count-badge"
+      />
+    </div>
+    <div
+      class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
+    >
+      <slot name="actions" :node="props.node" />
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .tree-node {

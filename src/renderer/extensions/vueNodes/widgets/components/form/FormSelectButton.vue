@@ -1,40 +1,3 @@
-<template>
-  <div
-    :class="
-      cn(
-        WidgetInputBaseClass,
-        'p-1 inline-flex justify-center items-center gap-1'
-      )
-    "
-  >
-    <button
-      v-for="(option, index) in options"
-      :key="getOptionValue(option, index)"
-      :class="
-        cn(
-          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out',
-          'bg-transparent border-none',
-          'text-center text-xs font-normal',
-          {
-            'bg-white': isSelected(option) && !disabled,
-            'hover:bg-zinc-200/50': !isSelected(option) && !disabled,
-            'opacity-50 cursor-not-allowed': disabled,
-            'cursor-pointer': !disabled
-          },
-          {
-            'text-neutral-900': isSelected(option) && !disabled,
-            'text-zinc-500': !isSelected(option) || disabled
-          }
-        )
-      "
-      :disabled="disabled"
-      @click="handleSelect(option)"
-    >
-      {{ getOptionLabel(option) }}
-    </button>
-  </div>
-</template>
-
 <script
   setup
   lang="ts"
@@ -106,3 +69,40 @@ const handleSelect = (option: T) => {
   emit('update:modelValue', optionValue)
 }
 </script>
+
+<template>
+  <div
+    :class="
+      cn(
+        WidgetInputBaseClass,
+        'p-1 inline-flex justify-center items-center gap-1'
+      )
+    "
+  >
+    <button
+      v-for="(option, index) in options"
+      :key="getOptionValue(option, index)"
+      :class="
+        cn(
+          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out',
+          'bg-transparent border-none',
+          'text-center text-xs font-normal',
+          {
+            'bg-white': isSelected(option) && !disabled,
+            'hover:bg-zinc-200/50': !isSelected(option) && !disabled,
+            'opacity-50 cursor-not-allowed': disabled,
+            'cursor-pointer': !disabled
+          },
+          {
+            'text-neutral-900': isSelected(option) && !disabled,
+            'text-zinc-500': !isSelected(option) || disabled
+          }
+        )
+      "
+      :disabled="disabled"
+      @click="handleSelect(option)"
+    >
+      {{ getOptionLabel(option) }}
+    </button>
+  </div>
+</template>

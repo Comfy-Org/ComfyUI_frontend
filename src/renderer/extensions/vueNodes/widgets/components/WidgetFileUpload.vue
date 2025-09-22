@@ -1,3 +1,152 @@
+<script setup lang="ts">
+import Button from 'primevue/button'
+import Select from 'primevue/select'
+import { computed, onUnmounted, ref, watch } from 'vue'
+
+import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+const {
+  widget,
+  modelValue,
+  readonly = false
+} = defineProps<{
+  widget: SimplifiedWidget<File[] | null>
+  modelValue: File[] | null
+  readonly?: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: File[] | null]
+}>()
+
+const { localValue, onChange } = useWidgetValue({
+  widget,
+  modelValue,
+  defaultValue: null,
+  emit
+})
+
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
+
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
+// Since we only support single file, get the first file
+const selectedFile = computed(() => {
+  const files = localValue.value || []
+  return files.length > 0 ? files[0] : null
+})
+
+// Quick file type detection for testing
+const detectFileType = (file: File) => {
+  const type = file.type?.toLowerCase() || ''
+  const name = file.name?.toLowerCase() || ''
+
+  if (
+    type.startsWith('image/') ||
+    name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)
+  ) {
+    return 'image'
+  }
+  if (type.startsWith('video/') || name.match(/\.(mp4|webm|ogg|mov)$/)) {
+    return 'video'
+  }
+  if (type.startsWith('audio/') || name.match(/\.(mp3|wav|ogg|flac)$/)) {
+    return 'audio'
+  }
+  if (type === 'application/pdf' || name.endsWith('.pdf')) {
+    return 'pdf'
+  }
+  if (type.includes('zip') || name.match(/\.(zip|rar|7z|tar|gz)$/)) {
+    return 'archive'
+  }
+  return 'file'
+}
+
+// Check if we have an image file
+const hasImageFile = computed(() => {
+  return selectedFile.value && detectFileType(selectedFile.value) === 'image'
+})
+
+// Check if we have an audio file
+const hasAudioFile = computed(() => {
+  return selectedFile.value && detectFileType(selectedFile.value) === 'audio'
+})
+
+// Get image URL for preview
+const imageUrl = computed(() => {
+  if (hasImageFile.value && selectedFile.value) {
+    return URL.createObjectURL(selectedFile.value)
+  }
+  return ''
+})
+
+// // Get audio URL for playback
+// const audioUrl = computed(() => {
+//   if (hasAudioFile.value && selectedFile.value) {
+//     return URL.createObjectURL(selectedFile.value)
+//   }
+//   return ''
+// })
+
+// Clean up image URL when file changes
+watch(imageUrl, (newUrl, oldUrl) => {
+  if (oldUrl && oldUrl !== newUrl) {
+    URL.revokeObjectURL(oldUrl)
+  }
+})
+
+const triggerFileInput = () => {
+  fileInputRef.value?.click()
+}
+
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (!readonly && target.files && target.files.length > 0) {
+    // Since we only support single file, take the first one
+    const file = target.files[0]
+
+    // Use the composable's onChange handler with an array
+    onChange([file])
+
+    // Reset input to allow selecting same file again
+    target.value = ''
+  }
+}
+
+const clearFile = () => {
+  // Clear the file
+  onChange(null)
+
+  // Reset file input
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+const handleEdit = () => {
+  // TODO: hook up with maskeditor
+}
+
+// Clear file input when value is cleared externally
+watch(localValue, (newValue) => {
+  if (!newValue || newValue.length === 0) {
+    if (fileInputRef.value) {
+      fileInputRef.value.value = ''
+    }
+  }
+})
+
+// Clean up image URL on unmount
+onUnmounted(() => {
+  if (imageUrl.value) {
+    URL.revokeObjectURL(imageUrl.value)
+  }
+})
+</script>
+
 <template>
   <!-- Replace entire widget with image preview when image is loaded -->
   <!-- Edge-to-edge: -mx-2 removes the parent's p-2 (8px) padding on each side -->
@@ -177,152 +326,3 @@
     @change="handleFileChange"
   />
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import Select from 'primevue/select'
-import { computed, onUnmounted, ref, watch } from 'vue'
-
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
-const {
-  widget,
-  modelValue,
-  readonly = false
-} = defineProps<{
-  widget: SimplifiedWidget<File[] | null>
-  modelValue: File[] | null
-  readonly?: boolean
-}>()
-
-const emit = defineEmits<{
-  'update:modelValue': [value: File[] | null]
-}>()
-
-const { localValue, onChange } = useWidgetValue({
-  widget,
-  modelValue,
-  defaultValue: null,
-  emit
-})
-
-// Transform compatibility props for overlay positioning
-const transformCompatProps = useTransformCompatOverlayProps()
-
-const fileInputRef = ref<HTMLInputElement | null>(null)
-
-// Since we only support single file, get the first file
-const selectedFile = computed(() => {
-  const files = localValue.value || []
-  return files.length > 0 ? files[0] : null
-})
-
-// Quick file type detection for testing
-const detectFileType = (file: File) => {
-  const type = file.type?.toLowerCase() || ''
-  const name = file.name?.toLowerCase() || ''
-
-  if (
-    type.startsWith('image/') ||
-    name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)
-  ) {
-    return 'image'
-  }
-  if (type.startsWith('video/') || name.match(/\.(mp4|webm|ogg|mov)$/)) {
-    return 'video'
-  }
-  if (type.startsWith('audio/') || name.match(/\.(mp3|wav|ogg|flac)$/)) {
-    return 'audio'
-  }
-  if (type === 'application/pdf' || name.endsWith('.pdf')) {
-    return 'pdf'
-  }
-  if (type.includes('zip') || name.match(/\.(zip|rar|7z|tar|gz)$/)) {
-    return 'archive'
-  }
-  return 'file'
-}
-
-// Check if we have an image file
-const hasImageFile = computed(() => {
-  return selectedFile.value && detectFileType(selectedFile.value) === 'image'
-})
-
-// Check if we have an audio file
-const hasAudioFile = computed(() => {
-  return selectedFile.value && detectFileType(selectedFile.value) === 'audio'
-})
-
-// Get image URL for preview
-const imageUrl = computed(() => {
-  if (hasImageFile.value && selectedFile.value) {
-    return URL.createObjectURL(selectedFile.value)
-  }
-  return ''
-})
-
-// // Get audio URL for playback
-// const audioUrl = computed(() => {
-//   if (hasAudioFile.value && selectedFile.value) {
-//     return URL.createObjectURL(selectedFile.value)
-//   }
-//   return ''
-// })
-
-// Clean up image URL when file changes
-watch(imageUrl, (newUrl, oldUrl) => {
-  if (oldUrl && oldUrl !== newUrl) {
-    URL.revokeObjectURL(oldUrl)
-  }
-})
-
-const triggerFileInput = () => {
-  fileInputRef.value?.click()
-}
-
-const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (!readonly && target.files && target.files.length > 0) {
-    // Since we only support single file, take the first one
-    const file = target.files[0]
-
-    // Use the composable's onChange handler with an array
-    onChange([file])
-
-    // Reset input to allow selecting same file again
-    target.value = ''
-  }
-}
-
-const clearFile = () => {
-  // Clear the file
-  onChange(null)
-
-  // Reset file input
-  if (fileInputRef.value) {
-    fileInputRef.value.value = ''
-  }
-}
-
-const handleEdit = () => {
-  // TODO: hook up with maskeditor
-}
-
-// Clear file input when value is cleared externally
-watch(localValue, (newValue) => {
-  if (!newValue || newValue.length === 0) {
-    if (fileInputRef.value) {
-      fileInputRef.value.value = ''
-    }
-  }
-})
-
-// Clean up image URL on unmount
-onUnmounted(() => {
-  if (imageUrl.value) {
-    URL.revokeObjectURL(imageUrl.value)
-  }
-})
-</script>

@@ -1,72 +1,3 @@
-<template>
-  <div class="flex flex-col gap-6 w-[600px]">
-    <!-- Installation Path Section -->
-    <div class="flex flex-col gap-4">
-      <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.chooseInstallationLocation') }}
-      </h2>
-
-      <p class="text-neutral-400 my-0">
-        {{ $t('install.installLocationDescription') }}
-      </p>
-
-      <div class="flex gap-2">
-        <IconField class="flex-1">
-          <InputText
-            v-model="installPath"
-            class="w-full"
-            :class="{ 'p-invalid': pathError }"
-            @update:model-value="validatePath"
-            @focus="onFocus"
-          />
-          <InputIcon
-            v-tooltip.top="$t('install.installLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </IconField>
-        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
-      </div>
-
-      <Message v-if="pathError" severity="error" class="whitespace-pre-line">
-        {{ pathError }}
-      </Message>
-      <Message v-if="pathExists" severity="warn">
-        {{ $t('install.pathExists') }}
-      </Message>
-      <Message v-if="nonDefaultDrive" severity="warn">
-        {{ $t('install.nonDefaultDrive') }}
-      </Message>
-    </div>
-
-    <!-- System Paths Info -->
-    <div class="bg-neutral-800 p-4 rounded-lg">
-      <h3 class="text-lg font-medium mt-0 mb-3 text-neutral-100">
-        {{ $t('install.systemLocations') }}
-      </h3>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-folder text-neutral-400" />
-          <span class="text-neutral-400">App Data:</span>
-          <span class="text-neutral-200">{{ appData }}</span>
-          <span
-            v-tooltip="$t('install.appDataLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <i class="pi pi-desktop text-neutral-400" />
-          <span class="text-neutral-400">App Path:</span>
-          <span class="text-neutral-200">{{ appPath }}</span>
-          <span
-            v-tooltip="$t('install.appPathLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
@@ -151,3 +82,72 @@ const onFocus = async () => {
   await validatePath(installPath.value)
 }
 </script>
+
+<template>
+  <div class="flex flex-col gap-6 w-[600px]">
+    <!-- Installation Path Section -->
+    <div class="flex flex-col gap-4">
+      <h2 class="text-2xl font-semibold text-neutral-100">
+        {{ $t('install.chooseInstallationLocation') }}
+      </h2>
+
+      <p class="text-neutral-400 my-0">
+        {{ $t('install.installLocationDescription') }}
+      </p>
+
+      <div class="flex gap-2">
+        <IconField class="flex-1">
+          <InputText
+            v-model="installPath"
+            class="w-full"
+            :class="{ 'p-invalid': pathError }"
+            @update:model-value="validatePath"
+            @focus="onFocus"
+          />
+          <InputIcon
+            v-tooltip.top="$t('install.installLocationTooltip')"
+            class="pi pi-info-circle"
+          />
+        </IconField>
+        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
+      </div>
+
+      <Message v-if="pathError" severity="error" class="whitespace-pre-line">
+        {{ pathError }}
+      </Message>
+      <Message v-if="pathExists" severity="warn">
+        {{ $t('install.pathExists') }}
+      </Message>
+      <Message v-if="nonDefaultDrive" severity="warn">
+        {{ $t('install.nonDefaultDrive') }}
+      </Message>
+    </div>
+
+    <!-- System Paths Info -->
+    <div class="bg-neutral-800 p-4 rounded-lg">
+      <h3 class="text-lg font-medium mt-0 mb-3 text-neutral-100">
+        {{ $t('install.systemLocations') }}
+      </h3>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-folder text-neutral-400" />
+          <span class="text-neutral-400">App Data:</span>
+          <span class="text-neutral-200">{{ appData }}</span>
+          <span
+            v-tooltip="$t('install.appDataLocationTooltip')"
+            class="pi pi-info-circle"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <i class="pi pi-desktop text-neutral-400" />
+          <span class="text-neutral-400">App Path:</span>
+          <span class="text-neutral-200">{{ appPath }}</span>
+          <span
+            v-tooltip="$t('install.appPathLocationTooltip')"
+            class="pi pi-info-circle"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

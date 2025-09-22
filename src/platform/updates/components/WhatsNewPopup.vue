@@ -1,68 +1,3 @@
-<template>
-  <div v-if="shouldShow" class="whats-new-popup-container">
-    <!-- Arrow pointing to help center -->
-    <div class="help-center-arrow">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="19"
-        viewBox="0 0 16 19"
-        fill="none"
-      >
-        <!-- Arrow fill -->
-        <path
-          d="M15.25 1.27246L15.25 17.7275L0.999023 9.5L15.25 1.27246Z"
-          fill="#353535"
-        />
-        <!-- Top and bottom outlines only -->
-        <path
-          d="M15.25 1.27246L0.999023 9.5"
-          stroke="#4e4e4e"
-          stroke-width="1"
-          fill="none"
-        />
-        <path
-          d="M0.999023 9.5L15.25 17.7275"
-          stroke="#4e4e4e"
-          stroke-width="1"
-          fill="none"
-        />
-      </svg>
-    </div>
-
-    <div class="whats-new-popup" @click.stop>
-      <!-- Close Button -->
-      <button
-        class="close-button"
-        :aria-label="$t('g.close')"
-        @click="closePopup"
-      >
-        <div class="close-icon"></div>
-      </button>
-
-      <!-- Release Content -->
-      <div class="popup-content">
-        <div class="content-text" v-html="formattedContent"></div>
-
-        <!-- Actions Section -->
-        <div class="popup-actions">
-          <a
-            class="learn-more-link"
-            :href="changelogUrl"
-            target="_blank"
-            rel="noopener,noreferrer"
-            @click="closePopup"
-          >
-            {{ $t('whatsNewPopup.learnMore') }}
-          </a>
-          <!-- TODO: CTA button -->
-          <!-- <button class="cta-button" @click="handleCTA">CTA</button> -->
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { marked } from 'marked'
 import { computed, onMounted, ref } from 'vue'
@@ -162,6 +97,71 @@ defineExpose({
   hide
 })
 </script>
+
+<template>
+  <div v-if="shouldShow" class="whats-new-popup-container">
+    <!-- Arrow pointing to help center -->
+    <div class="help-center-arrow">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="19"
+        viewBox="0 0 16 19"
+        fill="none"
+      >
+        <!-- Arrow fill -->
+        <path
+          d="M15.25 1.27246L15.25 17.7275L0.999023 9.5L15.25 1.27246Z"
+          fill="#353535"
+        />
+        <!-- Top and bottom outlines only -->
+        <path
+          d="M15.25 1.27246L0.999023 9.5"
+          stroke="#4e4e4e"
+          stroke-width="1"
+          fill="none"
+        />
+        <path
+          d="M0.999023 9.5L15.25 17.7275"
+          stroke="#4e4e4e"
+          stroke-width="1"
+          fill="none"
+        />
+      </svg>
+    </div>
+
+    <div class="whats-new-popup" @click.stop>
+      <!-- Close Button -->
+      <button
+        class="close-button"
+        :aria-label="$t('g.close')"
+        @click="closePopup"
+      >
+        <div class="close-icon"></div>
+      </button>
+
+      <!-- Release Content -->
+      <div class="popup-content">
+        <div class="content-text" v-html="formattedContent"></div>
+
+        <!-- Actions Section -->
+        <div class="popup-actions">
+          <a
+            class="learn-more-link"
+            :href="changelogUrl"
+            target="_blank"
+            rel="noopener,noreferrer"
+            @click="closePopup"
+          >
+            {{ $t('whatsNewPopup.learnMore') }}
+          </a>
+          <!-- TODO: CTA button -->
+          <!-- <button class="cta-button" @click="handleCTA">CTA</button> -->
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 /* Popup container - positioning handled by parent */

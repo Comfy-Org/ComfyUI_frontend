@@ -1,71 +1,3 @@
-<template>
-  <div ref="container" class="node-lib-node-container">
-    <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
-      <template #before-label>
-        <Tag
-          v-if="nodeDef.experimental"
-          :value="$t('g.experimental')"
-          severity="primary"
-        />
-        <Tag
-          v-if="nodeDef.deprecated"
-          :value="$t('g.deprecated')"
-          severity="danger"
-        />
-      </template>
-      <template
-        v-if="nodeDef.name.startsWith(useSubgraphStore().typePrefix)"
-        #actions
-      >
-        <Button
-          size="small"
-          icon="pi pi-trash"
-          text
-          severity="danger"
-          @click.stop="deleteBlueprint"
-        >
-        </Button>
-        <Button
-          size="small"
-          text
-          severity="secondary"
-          @click.stop="editBlueprint"
-        >
-          <template #icon>
-            <i-lucide:square-pen />
-          </template>
-        </Button>
-      </template>
-      <template v-else #actions>
-        <Button
-          class="bookmark-button"
-          size="small"
-          :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-          text
-          severity="secondary"
-          @click.stop="toggleBookmark"
-        />
-        <Button
-          v-tooltip.bottom="$t('g.learnMore')"
-          class="help-button"
-          size="small"
-          icon="pi pi-question"
-          text
-          severity="secondary"
-          @click.stop="props.openNodeHelp(nodeDef)"
-        />
-      </template>
-    </TreeExplorerTreeNode>
-
-    <teleport v-if="isHovered" to="#node-library-node-preview-container">
-      <div class="node-lib-node-preview" :style="nodePreviewStyle">
-        <NodePreview ref="previewRef" :node-def="nodeDef" />
-      </div>
-    </teleport>
-  </div>
-  <ContextMenu ref="menu" :model="menuItems" />
-</template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
@@ -182,6 +114,74 @@ onUnmounted(() => {
   nodeContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
 })
 </script>
+
+<template>
+  <div ref="container" class="node-lib-node-container">
+    <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
+      <template #before-label>
+        <Tag
+          v-if="nodeDef.experimental"
+          :value="$t('g.experimental')"
+          severity="primary"
+        />
+        <Tag
+          v-if="nodeDef.deprecated"
+          :value="$t('g.deprecated')"
+          severity="danger"
+        />
+      </template>
+      <template
+        v-if="nodeDef.name.startsWith(useSubgraphStore().typePrefix)"
+        #actions
+      >
+        <Button
+          size="small"
+          icon="pi pi-trash"
+          text
+          severity="danger"
+          @click.stop="deleteBlueprint"
+        >
+        </Button>
+        <Button
+          size="small"
+          text
+          severity="secondary"
+          @click.stop="editBlueprint"
+        >
+          <template #icon>
+            <i-lucide:square-pen />
+          </template>
+        </Button>
+      </template>
+      <template v-else #actions>
+        <Button
+          class="bookmark-button"
+          size="small"
+          :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+          text
+          severity="secondary"
+          @click.stop="toggleBookmark"
+        />
+        <Button
+          v-tooltip.bottom="$t('g.learnMore')"
+          class="help-button"
+          size="small"
+          icon="pi pi-question"
+          text
+          severity="secondary"
+          @click.stop="props.openNodeHelp(nodeDef)"
+        />
+      </template>
+    </TreeExplorerTreeNode>
+
+    <teleport v-if="isHovered" to="#node-library-node-preview-container">
+      <div class="node-lib-node-preview" :style="nodePreviewStyle">
+        <NodePreview ref="previewRef" :node-def="nodeDef" />
+      </div>
+    </teleport>
+  </div>
+  <ContextMenu ref="menu" :model="menuItems" />
+</template>
 
 <style scoped>
 @reference '../../../../assets/css/style.css';

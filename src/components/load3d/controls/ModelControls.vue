@@ -1,98 +1,3 @@
-<template>
-  <div class="flex flex-col">
-    <div class="relative show-up-direction">
-      <Button class="p-button-rounded p-button-text" @click="toggleUpDirection">
-        <i
-          v-tooltip.right="{
-            value: t('load3d.upDirection'),
-            showDelay: 300
-          }"
-          class="pi pi-arrow-up text-white text-lg"
-        />
-      </Button>
-      <div
-        v-show="showUpDirection"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
-      >
-        <div class="flex flex-col">
-          <Button
-            v-for="direction in upDirections"
-            :key="direction"
-            class="p-button-text text-white"
-            :class="{ 'bg-blue-500': upDirection === direction }"
-            @click="selectUpDirection(direction)"
-          >
-            {{ formatOption(direction) }}
-          </Button>
-        </div>
-      </div>
-    </div>
-
-    <div class="relative show-material-mode">
-      <Button
-        class="p-button-rounded p-button-text"
-        @click="toggleMaterialMode"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.materialMode'),
-            showDelay: 300
-          }"
-          class="pi pi-box text-white text-lg"
-        />
-      </Button>
-      <div
-        v-show="showMaterialMode"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
-      >
-        <div class="flex flex-col">
-          <Button
-            v-for="mode in materialModes"
-            :key="mode"
-            class="p-button-text text-white"
-            :class="{ 'bg-blue-500': materialMode === mode }"
-            @click="selectMaterialMode(mode)"
-          >
-            {{ formatMaterialMode(mode) }}
-          </Button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="materialMode === 'lineart'" class="relative show-edge-threshold">
-      <Button
-        class="p-button-rounded p-button-text"
-        @click="toggleEdgeThreshold"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.edgeThreshold'),
-            showDelay: 300
-          }"
-          class="pi pi-sliders-h text-white text-lg"
-        />
-      </Button>
-      <div
-        v-show="showEdgeThreshold"
-        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
-        style="width: 150px"
-      >
-        <label class="text-white text-xs mb-1 block"
-          >{{ t('load3d.edgeThreshold') }}: {{ edgeThreshold }}°</label
-        >
-        <Slider
-          v-model="edgeThreshold"
-          class="w-full"
-          :min="0"
-          :max="120"
-          :step="1"
-          @change="updateEdgeThreshold"
-        />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
@@ -246,3 +151,98 @@ onUnmounted(() => {
   document.removeEventListener('click', closeSceneSlider)
 })
 </script>
+
+<template>
+  <div class="flex flex-col">
+    <div class="relative show-up-direction">
+      <Button class="p-button-rounded p-button-text" @click="toggleUpDirection">
+        <i
+          v-tooltip.right="{
+            value: t('load3d.upDirection'),
+            showDelay: 300
+          }"
+          class="pi pi-arrow-up text-white text-lg"
+        />
+      </Button>
+      <div
+        v-show="showUpDirection"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+      >
+        <div class="flex flex-col">
+          <Button
+            v-for="direction in upDirections"
+            :key="direction"
+            class="p-button-text text-white"
+            :class="{ 'bg-blue-500': upDirection === direction }"
+            @click="selectUpDirection(direction)"
+          >
+            {{ formatOption(direction) }}
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative show-material-mode">
+      <Button
+        class="p-button-rounded p-button-text"
+        @click="toggleMaterialMode"
+      >
+        <i
+          v-tooltip.right="{
+            value: t('load3d.materialMode'),
+            showDelay: 300
+          }"
+          class="pi pi-box text-white text-lg"
+        />
+      </Button>
+      <div
+        v-show="showMaterialMode"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+      >
+        <div class="flex flex-col">
+          <Button
+            v-for="mode in materialModes"
+            :key="mode"
+            class="p-button-text text-white"
+            :class="{ 'bg-blue-500': materialMode === mode }"
+            @click="selectMaterialMode(mode)"
+          >
+            {{ formatMaterialMode(mode) }}
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="materialMode === 'lineart'" class="relative show-edge-threshold">
+      <Button
+        class="p-button-rounded p-button-text"
+        @click="toggleEdgeThreshold"
+      >
+        <i
+          v-tooltip.right="{
+            value: t('load3d.edgeThreshold'),
+            showDelay: 300
+          }"
+          class="pi pi-sliders-h text-white text-lg"
+        />
+      </Button>
+      <div
+        v-show="showEdgeThreshold"
+        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
+        style="width: 150px"
+      >
+        <label class="text-white text-xs mb-1 block"
+          >{{ t('load3d.edgeThreshold') }}: {{ edgeThreshold }}°</label
+        >
+        <Slider
+          v-model="edgeThreshold"
+          class="w-full"
+          :min="0"
+          :max="120"
+          :step="1"
+          @change="updateEdgeThreshold"
+        />
+      </div>
+    </div>
+  </div>
+</template>

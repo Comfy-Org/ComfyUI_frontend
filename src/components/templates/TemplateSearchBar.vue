@@ -1,3 +1,23 @@
+<script setup lang="ts">
+import AutoComplete from 'primevue/autocomplete'
+import Button from 'primevue/button'
+
+const { filteredCount } = defineProps<{
+  filteredCount?: number | null
+}>()
+
+const searchQuery = defineModel<string>('searchQuery', { default: '' })
+
+const emit = defineEmits<{
+  clearFilters: []
+}>()
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  emit('clearFilters')
+}
+</script>
+
 <template>
   <div class="relative w-full p-4">
     <div class="h-12 flex items-center gap-4 justify-between">
@@ -42,23 +62,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import AutoComplete from 'primevue/autocomplete'
-import Button from 'primevue/button'
-
-const { filteredCount } = defineProps<{
-  filteredCount?: number | null
-}>()
-
-const searchQuery = defineModel<string>('searchQuery', { default: '' })
-
-const emit = defineEmits<{
-  clearFilters: []
-}>()
-
-const clearFilters = () => {
-  searchQuery.value = ''
-  emit('clearFilters')
-}
-</script>

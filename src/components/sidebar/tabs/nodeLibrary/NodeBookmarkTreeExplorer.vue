@@ -1,26 +1,3 @@
-<template>
-  <TreeExplorer
-    ref="treeExplorerRef"
-    class="node-lib-bookmark-tree-explorer"
-    :root="renderedBookmarkedRoot"
-    :expanded-keys="expandedKeys"
-  >
-    <template #folder="{ node }">
-      <NodeTreeFolder :node="node" />
-    </template>
-    <template #node="{ node }">
-      <NodeTreeLeaf :node="node" :open-node-help="props.openNodeHelp" />
-    </template>
-  </TreeExplorer>
-
-  <FolderCustomizationDialog
-    v-model="showCustomizationDialog"
-    :initial-icon="initialIcon"
-    :initial-color="initialColor"
-    @confirm="updateCustomization"
-  />
-</template>
-
 <script setup lang="ts">
 import { computed, h, nextTick, ref, render, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -222,3 +199,26 @@ const updateCustomization = async (icon: string, color: string) => {
   }
 }
 </script>
+
+<template>
+  <TreeExplorer
+    ref="treeExplorerRef"
+    class="node-lib-bookmark-tree-explorer"
+    :root="renderedBookmarkedRoot"
+    :expanded-keys="expandedKeys"
+  >
+    <template #folder="{ node }">
+      <NodeTreeFolder :node="node" />
+    </template>
+    <template #node="{ node }">
+      <NodeTreeLeaf :node="node" :open-node-help="props.openNodeHelp" />
+    </template>
+  </TreeExplorer>
+
+  <FolderCustomizationDialog
+    v-model="showCustomizationDialog"
+    :initial-icon="initialIcon"
+    :initial-color="initialColor"
+    @confirm="updateCustomization"
+  />
+</template>

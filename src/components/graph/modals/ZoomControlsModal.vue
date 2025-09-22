@@ -1,3 +1,97 @@
+<script setup lang="ts">
+import type { InputNumberInputEvent } from 'primevue'
+import { Button, InputNumber } from 'primevue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { useCommandStore } from '@/stores/commandStore'
+
+const { t } = useI18n()
+const minimap = useMinimap()
+const settingStore = useSettingStore()
+const commandStore = useCommandStore()
+const canvasStore = useCanvasStore()
+const { formatKeySequence } = useCommandStore()
+
+interface Props {
+  visible: boolean
+}
+
+const props = defineProps<Props>()
+
+const interval = ref<number | null>(null)
+
+// Computed properties for reactive states
+const minimapToggleText = computed(() =>
+  settingStore.get('Comfy.Minimap.Visible')
+    ? t('zoomControls.hideMinimap')
+    : t('zoomControls.showMinimap')
+)
+
+const applyZoom = (val: InputNumberInputEvent) => {
+  const inputValue = val.value as number
+  if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
+    return
+  }
+  canvasStore.setAppZoomFromPercentage(inputValue)
+}
+
+const executeCommand = (command: string) => {
+  void commandStore.execute(command)
+}
+
+const startRepeat = (command: string) => {
+  if (interval.value) return
+  const cmd = () => commandStore.execute(command)
+  void cmd()
+  interval.value = window.setInterval(cmd, 100)
+}
+
+const stopRepeat = () => {
+  if (interval.value) {
+    clearInterval(interval.value)
+    interval.value = null
+  }
+}
+const filteredMinimapStyles = computed(() => {
+  return {
+    ...minimap.containerStyles.value,
+    height: undefined,
+    width: undefined
+  }
+})
+const zoomInCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ZoomIn'))
+)
+const zoomOutCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ZoomOut'))
+)
+const zoomToFitCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
+)
+const showMinimapCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ToggleMinimap'))
+)
+const zoomInput = ref<InstanceType<typeof InputNumber> | null>(null)
+const zoomInputContainer = ref<HTMLDivElement | null>(null)
+
+watch(
+  () => props.visible,
+  async (newVal) => {
+    if (newVal) {
+      await nextTick()
+      const input = zoomInputContainer.value?.querySelector(
+        'input'
+      ) as HTMLInputElement
+      input?.focus()
+    }
+  }
+)
+</script>
+
 <template>
   <div
     v-if="visible"
@@ -133,100 +227,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { InputNumberInputEvent } from 'primevue'
-import { Button, InputNumber } from 'primevue'
-import { computed, nextTick, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
-
-const { t } = useI18n()
-const minimap = useMinimap()
-const settingStore = useSettingStore()
-const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
-const { formatKeySequence } = useCommandStore()
-
-interface Props {
-  visible: boolean
-}
-
-const props = defineProps<Props>()
-
-const interval = ref<number | null>(null)
-
-// Computed properties for reactive states
-const minimapToggleText = computed(() =>
-  settingStore.get('Comfy.Minimap.Visible')
-    ? t('zoomControls.hideMinimap')
-    : t('zoomControls.showMinimap')
-)
-
-const applyZoom = (val: InputNumberInputEvent) => {
-  const inputValue = val.value as number
-  if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
-    return
-  }
-  canvasStore.setAppZoomFromPercentage(inputValue)
-}
-
-const executeCommand = (command: string) => {
-  void commandStore.execute(command)
-}
-
-const startRepeat = (command: string) => {
-  if (interval.value) return
-  const cmd = () => commandStore.execute(command)
-  void cmd()
-  interval.value = window.setInterval(cmd, 100)
-}
-
-const stopRepeat = () => {
-  if (interval.value) {
-    clearInterval(interval.value)
-    interval.value = null
-  }
-}
-const filteredMinimapStyles = computed(() => {
-  return {
-    ...minimap.containerStyles.value,
-    height: undefined,
-    width: undefined
-  }
-})
-const zoomInCommandText = computed(() =>
-  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ZoomIn'))
-)
-const zoomOutCommandText = computed(() =>
-  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ZoomOut'))
-)
-const zoomToFitCommandText = computed(() =>
-  formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
-)
-const showMinimapCommandText = computed(() =>
-  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ToggleMinimap'))
-)
-const zoomInput = ref<InstanceType<typeof InputNumber> | null>(null)
-const zoomInputContainer = ref<HTMLDivElement | null>(null)
-
-watch(
-  () => props.visible,
-  async (newVal) => {
-    if (newVal) {
-      await nextTick()
-      const input = zoomInputContainer.value?.querySelector(
-        'input'
-      ) as HTMLInputElement
-      input?.focus()
-    }
-  }
-)
-</script>
 <style>
 .zoomInputContainer:focus-within {
   border: 1px solid rgb(204, 204, 204);

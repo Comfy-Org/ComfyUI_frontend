@@ -1,62 +1,3 @@
-<template>
-  <div>
-    <SidebarIcon
-      icon="pi pi-question-circle"
-      class="comfy-help-center-btn"
-      :tooltip="$t('sideToolbar.helpCenter')"
-      :icon-badge="shouldShowRedDot ? '•' : ''"
-      @click="toggleHelpCenter"
-    />
-
-    <!-- Help Center Popup positioned within canvas area -->
-    <Teleport to="#graph-canvas-container">
-      <div
-        v-if="isHelpCenterVisible"
-        class="help-center-popup"
-        :class="{
-          'sidebar-left': sidebarLocation === 'left',
-          'sidebar-right': sidebarLocation === 'right',
-          'small-sidebar': sidebarSize === 'small'
-        }"
-      >
-        <HelpCenterMenuContent @close="closeHelpCenter" />
-      </div>
-    </Teleport>
-
-    <!-- Release Notification Toast positioned within canvas area -->
-    <Teleport to="#graph-canvas-container">
-      <ReleaseNotificationToast
-        :class="{
-          'sidebar-left': sidebarLocation === 'left',
-          'sidebar-right': sidebarLocation === 'right',
-          'small-sidebar': sidebarSize === 'small'
-        }"
-      />
-    </Teleport>
-
-    <!-- WhatsNew Popup positioned within canvas area -->
-    <Teleport to="#graph-canvas-container">
-      <WhatsNewPopup
-        :class="{
-          'sidebar-left': sidebarLocation === 'left',
-          'sidebar-right': sidebarLocation === 'right',
-          'small-sidebar': sidebarSize === 'small'
-        }"
-        @whats-new-dismissed="handleWhatsNewDismissed"
-      />
-    </Teleport>
-
-    <!-- Backdrop to close popup when clicking outside -->
-    <Teleport to="body">
-      <div
-        v-if="isHelpCenterVisible"
-        class="help-center-backdrop"
-        @click="closeHelpCenter"
-      />
-    </Teleport>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
@@ -143,6 +84,65 @@ onMounted(async () => {
   await releaseStore.initialize()
 })
 </script>
+
+<template>
+  <div>
+    <SidebarIcon
+      icon="pi pi-question-circle"
+      class="comfy-help-center-btn"
+      :tooltip="$t('sideToolbar.helpCenter')"
+      :icon-badge="shouldShowRedDot ? '•' : ''"
+      @click="toggleHelpCenter"
+    />
+
+    <!-- Help Center Popup positioned within canvas area -->
+    <Teleport to="#graph-canvas-container">
+      <div
+        v-if="isHelpCenterVisible"
+        class="help-center-popup"
+        :class="{
+          'sidebar-left': sidebarLocation === 'left',
+          'sidebar-right': sidebarLocation === 'right',
+          'small-sidebar': sidebarSize === 'small'
+        }"
+      >
+        <HelpCenterMenuContent @close="closeHelpCenter" />
+      </div>
+    </Teleport>
+
+    <!-- Release Notification Toast positioned within canvas area -->
+    <Teleport to="#graph-canvas-container">
+      <ReleaseNotificationToast
+        :class="{
+          'sidebar-left': sidebarLocation === 'left',
+          'sidebar-right': sidebarLocation === 'right',
+          'small-sidebar': sidebarSize === 'small'
+        }"
+      />
+    </Teleport>
+
+    <!-- WhatsNew Popup positioned within canvas area -->
+    <Teleport to="#graph-canvas-container">
+      <WhatsNewPopup
+        :class="{
+          'sidebar-left': sidebarLocation === 'left',
+          'sidebar-right': sidebarLocation === 'right',
+          'small-sidebar': sidebarSize === 'small'
+        }"
+        @whats-new-dismissed="handleWhatsNewDismissed"
+      />
+    </Teleport>
+
+    <!-- Backdrop to close popup when clicking outside -->
+    <Teleport to="body">
+      <div
+        v-if="isHelpCenterVisible"
+        class="help-center-backdrop"
+        @click="closeHelpCenter"
+      />
+    </Teleport>
+  </div>
+</template>
 
 <style scoped>
 .help-center-backdrop {

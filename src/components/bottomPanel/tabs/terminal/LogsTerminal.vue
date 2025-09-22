@@ -1,16 +1,3 @@
-<template>
-  <div class="bg-black h-full w-full">
-    <p v-if="errorMessage" class="p-4 text-center">
-      {{ errorMessage }}
-    </p>
-    <ProgressSpinner
-      v-else-if="loading"
-      class="relative inset-0 flex justify-center items-center h-full z-10"
-    />
-    <BaseTerminal v-show="!loading" @created="terminalCreated" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -87,6 +74,19 @@ const terminalCreated = (
   })
 }
 </script>
+
+<template>
+  <div class="bg-black h-full w-full">
+    <p v-if="errorMessage" class="p-4 text-center">
+      {{ errorMessage }}
+    </p>
+    <ProgressSpinner
+      v-else-if="loading"
+      class="relative inset-0 flex justify-center items-center h-full z-10"
+    />
+    <BaseTerminal v-show="!loading" @created="terminalCreated" />
+  </div>
+</template>
 
 <style scoped>
 :deep(.p-terminal) .xterm {

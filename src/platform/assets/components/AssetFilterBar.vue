@@ -1,42 +1,3 @@
-<template>
-  <div :class="containerClasses" data-component-id="asset-filter-bar">
-    <div :class="leftSideClasses" data-component-id="asset-filter-bar-left">
-      <MultiSelect
-        v-model="fileFormats"
-        :label="$t('assetBrowser.fileFormats')"
-        :options="fileFormatOptions"
-        :class="selectClasses"
-        data-component-id="asset-filter-file-formats"
-        @update:model-value="handleFilterChange"
-      />
-
-      <MultiSelect
-        v-model="baseModels"
-        :label="$t('assetBrowser.baseModels')"
-        :options="baseModelOptions"
-        :class="selectClasses"
-        data-component-id="asset-filter-base-models"
-        @update:model-value="handleFilterChange"
-      />
-    </div>
-
-    <div :class="rightSideClasses" data-component-id="asset-filter-bar-right">
-      <SingleSelect
-        v-model="sortBy"
-        :label="$t('assetBrowser.sortBy')"
-        :options="sortOptions"
-        :class="selectClasses"
-        data-component-id="asset-filter-sort"
-        @update:model-value="handleFilterChange"
-      >
-        <template #icon>
-          <i-lucide:arrow-up-down class="size-3" />
-        </template>
-      </SingleSelect>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 
@@ -101,3 +62,42 @@ function handleFilterChange() {
   })
 }
 </script>
+
+<template>
+  <div :class="containerClasses" data-component-id="asset-filter-bar">
+    <div :class="leftSideClasses" data-component-id="asset-filter-bar-left">
+      <MultiSelect
+        v-model="fileFormats"
+        :label="$t('assetBrowser.fileFormats')"
+        :options="fileFormatOptions"
+        :class="selectClasses"
+        data-component-id="asset-filter-file-formats"
+        @update:model-value="handleFilterChange"
+      />
+
+      <MultiSelect
+        v-model="baseModels"
+        :label="$t('assetBrowser.baseModels')"
+        :options="baseModelOptions"
+        :class="selectClasses"
+        data-component-id="asset-filter-base-models"
+        @update:model-value="handleFilterChange"
+      />
+    </div>
+
+    <div :class="rightSideClasses" data-component-id="asset-filter-bar-right">
+      <SingleSelect
+        v-model="sortBy"
+        :label="$t('assetBrowser.sortBy')"
+        :options="sortOptions"
+        :class="selectClasses"
+        data-component-id="asset-filter-sort"
+        @update:model-value="handleFilterChange"
+      >
+        <template #icon>
+          <i-lucide:arrow-up-down class="size-3" />
+        </template>
+      </SingleSelect>
+    </div>
+  </div>
+</template>

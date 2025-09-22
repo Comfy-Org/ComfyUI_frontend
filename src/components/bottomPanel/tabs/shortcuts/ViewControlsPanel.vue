@@ -1,14 +1,3 @@
-<template>
-  <div class="h-full flex flex-col p-4">
-    <div class="flex-1 min-h-0 overflow-auto">
-      <ShortcutsList
-        :commands="viewControlsCommands"
-        :subcategories="viewControlsSubcategories"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -31,3 +20,14 @@ const { subcategories: viewControlsSubcategories } = useCommandSubcategories(
   VIEW_CONTROLS_CONFIG
 )
 </script>
+
+<template>
+  <div class="h-full flex flex-col p-4">
+    <div class="flex-1 min-h-0 overflow-auto">
+      <ShortcutsList
+        :commands="viewControlsCommands"
+        :subcategories="viewControlsSubcategories"
+      />
+    </div>
+  </div>
+</template>

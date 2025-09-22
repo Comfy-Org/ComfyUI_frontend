@@ -1,46 +1,3 @@
-<template>
-  <div v-if="nodePacks?.length" class="flex flex-col items-center">
-    <slot name="thumbnail">
-      <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
-    </slot>
-    <h2
-      class="text-2xl font-bold text-center mt-4 mb-2"
-      style="word-break: break-all"
-    >
-      <slot name="title">
-        <span class="inline-block text-base">{{ nodePacks[0].name }}</span>
-      </slot>
-    </h2>
-    <div
-      v-if="!importFailed"
-      class="mt-2 mb-4 w-full max-w-xs flex justify-center"
-    >
-      <slot name="install-button">
-        <PackUninstallButton
-          v-if="isAllInstalled"
-          v-bind="$attrs"
-          size="md"
-          :node-packs="nodePacks"
-        />
-        <PackInstallButton
-          v-else
-          v-bind="$attrs"
-          size="md"
-          :node-packs="nodePacks"
-          :has-conflict="hasConflict || computedHasConflict"
-          :conflict-info="conflictInfo"
-        />
-      </slot>
-    </div>
-  </div>
-  <div v-else class="flex flex-col items-center">
-    <NoResultsPlaceholder
-      :message="$t('manager.status.unknown')"
-      :title="$t('manager.tryAgainLater')"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 
@@ -95,3 +52,46 @@ const conflictInfo = computed<ConflictDetail[]>(() => {
 
 const computedHasConflict = computed(() => conflictInfo.value.length > 0)
 </script>
+
+<template>
+  <div v-if="nodePacks?.length" class="flex flex-col items-center">
+    <slot name="thumbnail">
+      <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
+    </slot>
+    <h2
+      class="text-2xl font-bold text-center mt-4 mb-2"
+      style="word-break: break-all"
+    >
+      <slot name="title">
+        <span class="inline-block text-base">{{ nodePacks[0].name }}</span>
+      </slot>
+    </h2>
+    <div
+      v-if="!importFailed"
+      class="mt-2 mb-4 w-full max-w-xs flex justify-center"
+    >
+      <slot name="install-button">
+        <PackUninstallButton
+          v-if="isAllInstalled"
+          v-bind="$attrs"
+          size="md"
+          :node-packs="nodePacks"
+        />
+        <PackInstallButton
+          v-else
+          v-bind="$attrs"
+          size="md"
+          :node-packs="nodePacks"
+          :has-conflict="hasConflict || computedHasConflict"
+          :conflict-info="conflictInfo"
+        />
+      </slot>
+    </div>
+  </div>
+  <div v-else class="flex flex-col items-center">
+    <NoResultsPlaceholder
+      :message="$t('manager.status.unknown')"
+      :title="$t('manager.tryAgainLater')"
+    />
+  </div>
+</template>

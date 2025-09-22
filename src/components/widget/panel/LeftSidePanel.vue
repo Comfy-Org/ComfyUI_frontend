@@ -1,40 +1,3 @@
-<template>
-  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800">
-    <PanelHeader>
-      <template #icon>
-        <slot name="header-icon"></slot>
-      </template>
-      <slot name="header-title"></slot>
-    </PanelHeader>
-
-    <nav class="flex-1 px-3 py-4 flex flex-col gap-1">
-      <template v-for="(item, index) in navItems" :key="index">
-        <div v-if="'items' in item" class="flex flex-col gap-2">
-          <NavTitle :title="item.title" />
-          <NavItem
-            v-for="subItem in item.items"
-            :key="subItem.id"
-            :icon="subItem.icon"
-            :active="activeItem === subItem.id"
-            @click="activeItem = subItem.id"
-          >
-            {{ subItem.label }}
-          </NavItem>
-        </div>
-        <div v-else class="flex flex-col gap-2">
-          <NavItem
-            :icon="item.icon"
-            :active="activeItem === item.id"
-            @click="activeItem = item.id"
-          >
-            {{ item.label }}
-          </NavItem>
-        </div>
-      </template>
-    </nav>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -75,3 +38,40 @@ const activeItem = computed({
   set: (value: string | null) => emit('update:modelValue', value)
 })
 </script>
+
+<template>
+  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800">
+    <PanelHeader>
+      <template #icon>
+        <slot name="header-icon"></slot>
+      </template>
+      <slot name="header-title"></slot>
+    </PanelHeader>
+
+    <nav class="flex-1 px-3 py-4 flex flex-col gap-1">
+      <template v-for="(item, index) in navItems" :key="index">
+        <div v-if="'items' in item" class="flex flex-col gap-2">
+          <NavTitle :title="item.title" />
+          <NavItem
+            v-for="subItem in item.items"
+            :key="subItem.id"
+            :icon="subItem.icon"
+            :active="activeItem === subItem.id"
+            @click="activeItem = subItem.id"
+          >
+            {{ subItem.label }}
+          </NavItem>
+        </div>
+        <div v-else class="flex flex-col gap-2">
+          <NavItem
+            :icon="item.icon"
+            :active="activeItem === item.id"
+            @click="activeItem = item.id"
+          >
+            {{ item.label }}
+          </NavItem>
+        </div>
+      </template>
+    </nav>
+  </div>
+</template>

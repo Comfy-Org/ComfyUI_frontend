@@ -1,14 +1,3 @@
-<template>
-  <SidebarIcon
-    icon="icon-[comfy--template]"
-    :tooltip="$t('sideToolbar.templates')"
-    :label="$t('sideToolbar.labels.templates')"
-    :is-small="isSmall"
-    class="templates-tab-button"
-    @click="openTemplates"
-  />
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -28,3 +17,14 @@ const openTemplates = () => {
   void commandStore.execute('Comfy.BrowseTemplates')
 }
 </script>
+
+<template>
+  <SidebarIcon
+    icon="icon-[comfy--template]"
+    :tooltip="$t('sideToolbar.templates')"
+    :label="$t('sideToolbar.labels.templates')"
+    :is-small="isSmall"
+    class="templates-tab-button"
+    @click="openTemplates"
+  />
+</template>

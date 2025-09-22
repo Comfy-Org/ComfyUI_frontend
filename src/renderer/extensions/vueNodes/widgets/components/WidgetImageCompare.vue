@@ -1,29 +1,3 @@
-<template>
-  <ImageCompare
-    :tabindex="widget.options?.tabindex ?? 0"
-    :aria-label="widget.options?.ariaLabel"
-    :aria-labelledby="widget.options?.ariaLabelledby"
-    :pt="widget.options?.pt"
-    :pt-options="widget.options?.ptOptions"
-    :unstyled="widget.options?.unstyled"
-  >
-    <template #left>
-      <img
-        :src="beforeImage"
-        :alt="beforeAlt"
-        class="w-full h-full object-cover"
-      />
-    </template>
-    <template #right>
-      <img
-        :src="afterImage"
-        :alt="afterAlt"
-        class="w-full h-full object-cover"
-      />
-    </template>
-  </ImageCompare>
-</template>
-
 <script setup lang="ts">
 import ImageCompare from 'primevue/imagecompare'
 import { computed } from 'vue'
@@ -68,3 +42,29 @@ const afterAlt = computed(() => {
     : 'After image'
 })
 </script>
+
+<template>
+  <ImageCompare
+    :tabindex="widget.options?.tabindex ?? 0"
+    :aria-label="widget.options?.ariaLabel"
+    :aria-labelledby="widget.options?.ariaLabelledby"
+    :pt="widget.options?.pt"
+    :pt-options="widget.options?.ptOptions"
+    :unstyled="widget.options?.unstyled"
+  >
+    <template #left>
+      <img
+        :src="beforeImage"
+        :alt="beforeAlt"
+        class="w-full h-full object-cover"
+      />
+    </template>
+    <template #right>
+      <img
+        :src="afterImage"
+        :alt="afterAlt"
+        class="w-full h-full object-cover"
+      />
+    </template>
+  </ImageCompare>
+</template>

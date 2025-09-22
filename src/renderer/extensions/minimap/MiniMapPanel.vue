@@ -1,3 +1,22 @@
+<script setup lang="ts">
+import Checkbox from 'primevue/checkbox'
+
+import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
+
+defineProps<{
+  panelStyles: any
+  nodeColors: boolean
+  showLinks: boolean
+  showGroups: boolean
+  renderBypass: boolean
+  renderError: boolean
+}>()
+
+defineEmits<{
+  updateOption: [key: MinimapSettingsKey, value: boolean]
+}>()
+</script>
+
 <template>
   <div
     class="minimap-panel p-3 mr-2 flex flex-col gap-3 text-sm"
@@ -76,22 +95,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Checkbox from 'primevue/checkbox'
-
-import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
-
-defineProps<{
-  panelStyles: any
-  nodeColors: boolean
-  showLinks: boolean
-  showGroups: boolean
-  renderBypass: boolean
-  renderError: boolean
-}>()
-
-defineEmits<{
-  updateOption: [key: MinimapSettingsKey, value: boolean]
-}>()
-</script>

@@ -1,20 +1,3 @@
-<template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
-    {{ $t('Node Content Error') }}
-  </div>
-  <div v-else class="lg-node-content">
-    <!-- Default slot for custom content -->
-    <slot>
-      <ImagePreview
-        v-if="hasImages"
-        :image-urls="props.imageUrls || []"
-        :node-id="nodeId"
-        class="mt-2"
-      />
-    </slot>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
@@ -52,3 +35,20 @@ onErrorCaptured((error) => {
   return false
 })
 </script>
+
+<template>
+  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+    {{ $t('Node Content Error') }}
+  </div>
+  <div v-else class="lg-node-content">
+    <!-- Default slot for custom content -->
+    <slot>
+      <ImagePreview
+        v-if="hasImages"
+        :image-urls="props.imageUrls || []"
+        :node-id="nodeId"
+        class="mt-2"
+      />
+    </slot>
+  </div>
+</template>

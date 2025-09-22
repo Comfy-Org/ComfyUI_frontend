@@ -1,3 +1,21 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
+import { t } from '@/i18n'
+import type { components } from '@/types/comfyRegistryTypes'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { getConflictMessage } from '@/utils/conflictMessageUtil'
+
+const { nodePack, conflictResult } = defineProps<{
+  nodePack: components['schemas']['Node']
+  conflictResult: ConflictDetectionResult | null | undefined
+}>()
+const packageId = computed(() => nodePack?.id || '')
+const { importFailedInfo, showImportFailedDialog } =
+  useImportFailedDetection(packageId)
+</script>
+
 <template>
   <div class="flex flex-col gap-3">
     <button
@@ -23,21 +41,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-
-import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
-import { t } from '@/i18n'
-import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import { getConflictMessage } from '@/utils/conflictMessageUtil'
-
-const { nodePack, conflictResult } = defineProps<{
-  nodePack: components['schemas']['Node']
-  conflictResult: ConflictDetectionResult | null | undefined
-}>()
-const packageId = computed(() => nodePack?.id || '')
-const { importFailedInfo, showImportFailedDialog } =
-  useImportFailedDetection(packageId)
-</script>

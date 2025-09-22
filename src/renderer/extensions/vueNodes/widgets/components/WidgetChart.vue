@@ -1,13 +1,3 @@
-<template>
-  <div class="flex flex-col gap-1">
-    <div
-      class="p-4 border border-gray-300 dark-theme:border-gray-600 rounded max-h-[48rem]"
-    >
-      <Chart :type="chartType" :data="chartData" :options="chartOptions" />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import type { ChartData } from 'chart.js'
 import Chart from 'primevue/chart'
@@ -76,3 +66,13 @@ const chartOptions = computed(() => ({
   }
 }))
 </script>
+
+<template>
+  <div class="flex flex-col gap-1">
+    <div
+      class="p-4 border border-gray-300 dark-theme:border-gray-600 rounded max-h-[48rem]"
+    >
+      <Chart :type="chartType" :data="chartData" :options="chartOptions" />
+    </div>
+  </div>
+</template>

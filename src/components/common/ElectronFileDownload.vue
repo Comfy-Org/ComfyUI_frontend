@@ -1,4 +1,58 @@
 <!-- A Electron-backed download button with a label, size hint and progress bar -->
+<script setup lang="ts">
+import Button from 'primevue/button'
+import ProgressBar from 'primevue/progressbar'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useDownload } from '@/composables/useDownload'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { formatSize } from '@/utils/formatUtil'
+
+const props = defineProps<{
+  url: string
+  hint?: string
+  label?: string
+  error?: string
+}>()
+
+const { t } = useI18n()
+const label = computed(() => props.label || props.url.split('/').pop())
+const hint = computed(() => props.hint || props.url)
+const download = useDownload(props.url)
+const downloadProgress = ref<number>(0)
+const status = ref<string | null>(null)
+const fileSize = computed(() =>
+  download.fileSize.value ? formatSize(download.fileSize.value) : '?'
+)
+const electronDownloadStore = useElectronDownloadStore()
+// @ts-expect-error fixme ts strict error
+const [savePath, filename] = props.label.split('/')
+
+electronDownloadStore.$subscribe((_, { downloads }) => {
+  const download = downloads.find((download) => props.url === download.url)
+
+  if (download) {
+    // @ts-expect-error fixme ts strict error
+    downloadProgress.value = Number((download.progress * 100).toFixed(1))
+    // @ts-expect-error fixme ts strict error
+    status.value = download.status
+  }
+})
+
+const triggerDownload = async () => {
+  await electronDownloadStore.start({
+    url: props.url,
+    savePath: savePath.trim(),
+    filename: filename.trim()
+  })
+}
+
+const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
+const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
+const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
+</script>
+
 <template>
   <div class="flex flex-col">
     <div class="flex flex-row items-center gap-2">
@@ -73,57 +127,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Button from 'primevue/button'
-import ProgressBar from 'primevue/progressbar'
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useDownload } from '@/composables/useDownload'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
-import { formatSize } from '@/utils/formatUtil'
-
-const props = defineProps<{
-  url: string
-  hint?: string
-  label?: string
-  error?: string
-}>()
-
-const { t } = useI18n()
-const label = computed(() => props.label || props.url.split('/').pop())
-const hint = computed(() => props.hint || props.url)
-const download = useDownload(props.url)
-const downloadProgress = ref<number>(0)
-const status = ref<string | null>(null)
-const fileSize = computed(() =>
-  download.fileSize.value ? formatSize(download.fileSize.value) : '?'
-)
-const electronDownloadStore = useElectronDownloadStore()
-// @ts-expect-error fixme ts strict error
-const [savePath, filename] = props.label.split('/')
-
-electronDownloadStore.$subscribe((_, { downloads }) => {
-  const download = downloads.find((download) => props.url === download.url)
-
-  if (download) {
-    // @ts-expect-error fixme ts strict error
-    downloadProgress.value = Number((download.progress * 100).toFixed(1))
-    // @ts-expect-error fixme ts strict error
-    status.value = download.status
-  }
-})
-
-const triggerDownload = async () => {
-  await electronDownloadStore.start({
-    url: props.url,
-    savePath: savePath.trim(),
-    filename: filename.trim()
-  })
-}
-
-const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
-const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
-const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
-</script>

@@ -1,91 +1,3 @@
-<template>
-  <div
-    class="relative w-full h-full"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-  >
-    <Load3DScene
-      ref="load3DSceneRef"
-      :node="node"
-      :input-spec="inputSpec"
-      :background-color="backgroundColor"
-      :show-grid="showGrid"
-      :light-intensity="lightIntensity"
-      :fov="fov"
-      :camera-type="cameraType"
-      :show-preview="showPreview"
-      :background-image="backgroundImage"
-      :up-direction="upDirection"
-      :material-mode="materialMode"
-      :edge-threshold="edgeThreshold"
-      @material-mode-change="listenMaterialModeChange"
-      @background-color-change="listenBackgroundColorChange"
-      @light-intensity-change="listenLightIntensityChange"
-      @fov-change="listenFOVChange"
-      @camera-type-change="listenCameraTypeChange"
-      @show-grid-change="listenShowGridChange"
-      @show-preview-change="listenShowPreviewChange"
-      @background-image-change="listenBackgroundImageChange"
-      @up-direction-change="listenUpDirectionChange"
-      @edge-threshold-change="listenEdgeThresholdChange"
-      @recording-status-change="listenRecordingStatusChange"
-    />
-    <Load3DControls
-      :input-spec="inputSpec"
-      :background-color="backgroundColor"
-      :show-grid="showGrid"
-      :show-preview="showPreview"
-      :light-intensity="lightIntensity"
-      :show-light-intensity-button="showLightIntensityButton"
-      :fov="fov"
-      :show-f-o-v-button="showFOVButton"
-      :show-preview-button="showPreviewButton"
-      :camera-type="cameraType"
-      :has-background-image="hasBackgroundImage"
-      :up-direction="upDirection"
-      :material-mode="materialMode"
-      :edge-threshold="edgeThreshold"
-      @update-background-image="handleBackgroundImageUpdate"
-      @switch-camera="switchCamera"
-      @toggle-grid="toggleGrid"
-      @update-background-color="handleBackgroundColorChange"
-      @update-light-intensity="handleUpdateLightIntensity"
-      @toggle-preview="togglePreview"
-      @update-f-o-v="handleUpdateFOV"
-      @update-up-direction="handleUpdateUpDirection"
-      @update-material-mode="handleUpdateMaterialMode"
-      @update-edge-threshold="handleUpdateEdgeThreshold"
-      @export-model="handleExportModel"
-    />
-    <div
-      v-if="enable3DViewer"
-      class="absolute top-12 right-2 z-20 pointer-events-auto"
-    >
-      <ViewerControls :node="node" />
-    </div>
-
-    <div
-      v-if="showRecordingControls"
-      class="absolute right-2 z-20 pointer-events-auto"
-      :class="{
-        'top-12': !enable3DViewer,
-        'top-24': enable3DViewer
-      }"
-    >
-      <RecordingControls
-        :node="node"
-        :is-recording="isRecording"
-        :has-recording="hasRecording"
-        :recording-duration="recordingDuration"
-        @start-recording="handleStartRecording"
-        @stop-recording="handleStopRecording"
-        @export-recording="handleExportRecording"
-        @clear-recording="handleClearRecording"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -334,3 +246,91 @@ const listenBackgroundImageChange = (value: string) => {
   }
 }
 </script>
+
+<template>
+  <div
+    class="relative w-full h-full"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
+    <Load3DScene
+      ref="load3DSceneRef"
+      :node="node"
+      :input-spec="inputSpec"
+      :background-color="backgroundColor"
+      :show-grid="showGrid"
+      :light-intensity="lightIntensity"
+      :fov="fov"
+      :camera-type="cameraType"
+      :show-preview="showPreview"
+      :background-image="backgroundImage"
+      :up-direction="upDirection"
+      :material-mode="materialMode"
+      :edge-threshold="edgeThreshold"
+      @material-mode-change="listenMaterialModeChange"
+      @background-color-change="listenBackgroundColorChange"
+      @light-intensity-change="listenLightIntensityChange"
+      @fov-change="listenFOVChange"
+      @camera-type-change="listenCameraTypeChange"
+      @show-grid-change="listenShowGridChange"
+      @show-preview-change="listenShowPreviewChange"
+      @background-image-change="listenBackgroundImageChange"
+      @up-direction-change="listenUpDirectionChange"
+      @edge-threshold-change="listenEdgeThresholdChange"
+      @recording-status-change="listenRecordingStatusChange"
+    />
+    <Load3DControls
+      :input-spec="inputSpec"
+      :background-color="backgroundColor"
+      :show-grid="showGrid"
+      :show-preview="showPreview"
+      :light-intensity="lightIntensity"
+      :show-light-intensity-button="showLightIntensityButton"
+      :fov="fov"
+      :show-f-o-v-button="showFOVButton"
+      :show-preview-button="showPreviewButton"
+      :camera-type="cameraType"
+      :has-background-image="hasBackgroundImage"
+      :up-direction="upDirection"
+      :material-mode="materialMode"
+      :edge-threshold="edgeThreshold"
+      @update-background-image="handleBackgroundImageUpdate"
+      @switch-camera="switchCamera"
+      @toggle-grid="toggleGrid"
+      @update-background-color="handleBackgroundColorChange"
+      @update-light-intensity="handleUpdateLightIntensity"
+      @toggle-preview="togglePreview"
+      @update-f-o-v="handleUpdateFOV"
+      @update-up-direction="handleUpdateUpDirection"
+      @update-material-mode="handleUpdateMaterialMode"
+      @update-edge-threshold="handleUpdateEdgeThreshold"
+      @export-model="handleExportModel"
+    />
+    <div
+      v-if="enable3DViewer"
+      class="absolute top-12 right-2 z-20 pointer-events-auto"
+    >
+      <ViewerControls :node="node" />
+    </div>
+
+    <div
+      v-if="showRecordingControls"
+      class="absolute right-2 z-20 pointer-events-auto"
+      :class="{
+        'top-12': !enable3DViewer,
+        'top-24': enable3DViewer
+      }"
+    >
+      <RecordingControls
+        :node="node"
+        :is-recording="isRecording"
+        :has-recording="hasRecording"
+        :recording-duration="recordingDuration"
+        @start-recording="handleStartRecording"
+        @stop-recording="handleStopRecording"
+        @export-recording="handleExportRecording"
+        @clear-recording="handleClearRecording"
+      />
+    </div>
+  </div>
+</template>
