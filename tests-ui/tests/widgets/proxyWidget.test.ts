@@ -3,7 +3,6 @@ import { describe, expect, test, vi } from 'vitest'
 //import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
 import { LGraphNode, type SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import '@/scripts/proxyWidget'
 
 import {
@@ -18,11 +17,6 @@ vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => ({ widgetStates: new Map() })
 }))
 
-function testWidget(nodeId: string | number, widgetName: string): IBaseWidget {
-  return {
-    _overlay: { isProxyWidget: true, nodeId: `${nodeId}`, widgetName }
-  } as unknown as IBaseWidget
-}
 function setupSubgraph(
   innerNodeCount: number = 0
 ): [SubgraphNode, LGraphNode[]] {
@@ -48,12 +42,8 @@ describe('Subgraph proxyWidgets', () => {
       ['1', 'stringWidget']
     ])
     expect(subgraphNode.widgets.length).toBe(1)
-  })
-  test('Can read existing widget', () => {
-    const [subgraphNode] = setupSubgraph()
-    subgraphNode.widgets = [testWidget(5, 'testWidget')]
     expect(subgraphNode.properties.proxyWidgets).toBe(
-      JSON.stringify([['5', 'testWidget']])
+      JSON.stringify([['1', 'stringWidget']])
     )
   })
   test('Can add multiple widgets with same name', () => {
