@@ -2,14 +2,13 @@ import Fuse from 'fuse.js'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import { SMALL_MODEL_SIZE_LIMIT } from '@/constants/templateWorkflows'
 import { i18n, st } from '@/i18n'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { getCategoryIcon } from '@/utils/categoryIcons'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import {
+import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
@@ -20,9 +19,8 @@ interface EnhancedTemplate extends TemplateInfo {
   sourceModule: string
   category?: string
   categoryType?: string
-  isAPI?: boolean
-  isPerformance?: boolean
-  isMacCompatible?: boolean
+  categoryGroup?: string // 'GENERATION TYPE' or 'CLOSED SOURCE MODELS'
+  isEssential?: boolean
   searchableText?: string
 }
 
@@ -32,6 +30,14 @@ export const useWorkflowTemplatesStore = defineStore(
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const isLoaded = ref(false)
+
+    // Store filter mappings for dynamic categories
+    type FilterData = {
+      category?: string
+      categoryGroup?: string
+    }
+
+    const categoryFilters = ref(new Map<string, FilterData>())
 
     /**
      * Add localization fields to a template.
@@ -182,39 +188,13 @@ export const useWorkflowTemplatesStore = defineStore(
       // Process core templates
       coreTemplates.value.forEach((category) => {
         category.templates.forEach((template) => {
-          const isAPI = category.title?.includes('API') || false
-          // Determine performance ("Small Models") based primarily on explicit size prop (<=3GB)
-          // Fallback to heuristic based on model name keywords for backward compatibility.
-          const explicitSize = template.size
-          const heuristicPerformance = template.models?.some(
-            (model) =>
-              model.toLowerCase().includes('turbo') ||
-              model.toLowerCase().includes('fast') ||
-              model.toLowerCase().includes('schnell') ||
-              model.toLowerCase().includes('fp8')
-          )
-          const isPerformance =
-            (typeof explicitSize === 'number' &&
-              explicitSize <= SMALL_MODEL_SIZE_LIMIT) ||
-            (!!explicitSize === false && heuristicPerformance) ||
-            false
-
-          const isMacCompatible =
-            template.models?.some(
-              (model) =>
-                model.toLowerCase().includes('fp8') ||
-                model.toLowerCase().includes('turbo') ||
-                model.toLowerCase().includes('schnell')
-            ) || false
-
           const enhancedTemplate: EnhancedTemplate = {
             ...template,
             sourceModule: category.moduleName,
             category: category.title,
             categoryType: category.type,
-            isAPI,
-            isPerformance,
-            isMacCompatible,
+            categoryGroup: category.category,
+            isEssential: category.isEssential,
             searchableText: [
               template.title || template.name,
               template.description || '',
@@ -241,9 +221,6 @@ export const useWorkflowTemplatesStore = defineStore(
               sourceModule: moduleName,
               category: 'Extensions',
               categoryType: 'extension',
-              isAPI: false,
-              isPerformance: false,
-              isMacCompatible: false,
               searchableText: `${name} ${moduleName} extension`
             }
             allTemplates.push(enhancedTemplate)
@@ -273,196 +250,145 @@ export const useWorkflowTemplatesStore = defineStore(
     })
 
     /**
-     * Filter templates by category using Fuse.js
+     * Filter templates by category ID using stored filter mappings
      */
     const filterTemplatesByCategory = (categoryId: string) => {
       if (categoryId === 'all') {
         return enhancedTemplates.value
       }
 
-      switch (categoryId) {
-        case 'getting-started':
-          return enhancedTemplates.value.filter((t) => t.category === 'Basics')
-
-        case 'generation-image':
-          return enhancedTemplates.value.filter(
-            (t) => t.categoryType === 'image' && !t.isAPI
-          )
-
-        case 'generation-video':
-          return enhancedTemplates.value.filter(
-            (t) => t.categoryType === 'video' && !t.isAPI
-          )
-
-        case 'generation-3d':
-          return enhancedTemplates.value.filter(
-            (t) => t.categoryType === '3d' && !t.isAPI
-          )
-
-        case 'generation-audio':
-          return enhancedTemplates.value.filter(
-            (t) => t.categoryType === 'audio' && !t.isAPI
-          )
-
-        case 'generation-llm':
-          return enhancedTemplates.value.filter(
-            (t) => t.tags?.includes('LLM') || t.tags?.includes('Chat')
-          )
-
-        case 'api-nodes':
-          return enhancedTemplates.value.filter((t) => t.isAPI)
-
-        case 'extensions':
-          return enhancedTemplates.value.filter(
-            (t) => t.sourceModule !== 'default'
-          )
-
-        // Removed lora-training filter (deprecated)
-
-        case 'performance-small':
-        case 'performance-mac':
-          return enhancedTemplates.value // deprecated filters; return all
-
-        default:
-          // Handle extension-specific filters
-          if (categoryId.startsWith('extension-')) {
-            const moduleName = categoryId.replace('extension-', '')
-            return enhancedTemplates.value.filter(
-              (t) => t.sourceModule === moduleName
-            )
-          }
-          return enhancedTemplates.value
+      if (categoryId === 'basics') {
+        // Filter for templates from categories marked as essential
+        return enhancedTemplates.value.filter((t) => t.isEssential)
       }
+
+      // Handle extension-specific filters
+      if (categoryId.startsWith('extension-')) {
+        const moduleName = categoryId.replace('extension-', '')
+        return enhancedTemplates.value.filter(
+          (t) => t.sourceModule === moduleName
+        )
+      }
+
+      // Look up the filter from our stored mappings
+      const filter = categoryFilters.value.get(categoryId)
+      if (!filter) {
+        return enhancedTemplates.value
+      }
+
+      // Apply the filter
+      return enhancedTemplates.value.filter((template) => {
+        if (filter.category && template.category !== filter.category) {
+          return false
+        }
+        if (
+          filter.categoryGroup &&
+          template.categoryGroup !== filter.categoryGroup
+        ) {
+          return false
+        }
+        return true
+      })
     }
 
     /**
-     * New navigation structure matching NavItemData | NavGroupData format
+     * New navigation structure dynamically built from JSON categories
      */
     const navGroupedTemplates = computed<(NavItemData | NavGroupData)[]>(() => {
       if (!isLoaded.value) return []
 
       const items: (NavItemData | NavGroupData)[] = []
 
-      // Count templates for each category
-      const imageCounts = enhancedTemplates.value.filter(
-        (t) => t.categoryType === 'image' && !t.isAPI
-      ).length
-      const videoCounts = enhancedTemplates.value.filter(
-        (t) => t.categoryType === 'video' && !t.isAPI
-      ).length
-      const audioCounts = enhancedTemplates.value.filter(
-        (t) => t.categoryType === 'audio' && !t.isAPI
-      ).length
-      const llmCounts = enhancedTemplates.value.filter(
-        (t) => t.tags?.includes('LLM') || t.tags?.includes('Chat')
-      ).length
-      const threeDCounts = enhancedTemplates.value.filter(
-        (t) => t.categoryType === '3d' && !t.isAPI
-      ).length
-      const apiCounts = enhancedTemplates.value.filter((t) => t.isAPI).length
-      const gettingStartedCounts = enhancedTemplates.value.filter(
-        (t) => t.category === 'Basics'
-      ).length
-      const extensionCounts = enhancedTemplates.value.filter(
-        (t) => t.sourceModule !== 'default'
-      ).length
+      // Clear and rebuild filter mappings
+      categoryFilters.value.clear()
 
-      // All Templates - as a simple selector
+      // 1. All Templates - always first
       items.push({
         id: 'all',
         label: st('templateWorkflows.category.All', 'All Templates'),
         icon: getCategoryIcon('all')
       })
 
-      // Getting Started - as a simple selector
-      if (gettingStartedCounts > 0) {
+      // 2. Basics (isEssential categories) - always second if it exists
+      const hasEssentialCategories = coreTemplates.value.some(
+        (cat) => cat.isEssential && cat.templates.length > 0
+      )
+      if (hasEssentialCategories) {
         items.push({
-          id: 'getting-started',
-          label: st(
-            'templateWorkflows.category.GettingStarted',
-            'Getting Started'
-          ),
-          icon: getCategoryIcon('getting-started')
+          id: 'basics',
+          label: st('templateWorkflows.category.Basics', 'Basics'),
+          icon: 'icon-[lucide--graduation-cap]'
         })
       }
 
-      // Generation Type - as a group with sub-items
-      if (
-        imageCounts > 0 ||
-        videoCounts > 0 ||
-        threeDCounts > 0 ||
-        audioCounts > 0 ||
-        llmCounts > 0
-      ) {
-        const generationTypeItems: NavItemData[] = []
+      // 3. Group categories from JSON dynamically
+      const categoryGroups = new Map<
+        string,
+        { title: string; items: NavItemData[] }
+      >()
 
-        if (imageCounts > 0) {
-          generationTypeItems.push({
-            id: 'generation-image',
-            label: st('templateWorkflows.category.Image', 'Image'),
-            icon: getCategoryIcon('generation-image')
+      // Process all categories from JSON
+      coreTemplates.value.forEach((category) => {
+        // Skip essential categories as they're handled as Basics
+        if (category.isEssential) return
+
+        const categoryGroup = category.category
+        const categoryIcon = category.icon
+
+        if (categoryGroup) {
+          if (!categoryGroups.has(categoryGroup)) {
+            categoryGroups.set(categoryGroup, {
+              title: categoryGroup,
+              items: []
+            })
+          }
+
+          const group = categoryGroups.get(categoryGroup)!
+
+          // Generate unique ID for this category
+          const categoryId = `${categoryGroup.toLowerCase().replace(/\s+/g, '-')}-${category.title.toLowerCase().replace(/\s+/g, '-')}`
+
+          // Store the filter mapping
+          categoryFilters.value.set(categoryId, {
+            category: category.title,
+            categoryGroup: categoryGroup
+          })
+
+          group.items.push({
+            id: categoryId,
+            label: st(
+              `templateWorkflows.category.${normalizeI18nKey(category.title)}`,
+              category.title
+            ),
+            icon: categoryIcon || getCategoryIcon(category.type || 'default')
           })
         }
+      })
 
-        if (videoCounts > 0) {
-          generationTypeItems.push({
-            id: 'generation-video',
-            label: st('templateWorkflows.category.Video', 'Video'),
-            icon: getCategoryIcon('generation-video')
+      // Add grouped categories
+      categoryGroups.forEach((group, groupName) => {
+        if (group.items.length > 0) {
+          items.push({
+            title: st(
+              `templateWorkflows.category.${normalizeI18nKey(groupName)}`,
+              groupName
+                .split(' ')
+                .map(
+                  (word) =>
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                )
+                .join(' ')
+            ),
+            items: group.items
           })
         }
+      })
 
-        if (threeDCounts > 0) {
-          generationTypeItems.push({
-            id: 'generation-3d',
-            label: st('templateWorkflows.category.3DModels', '3D Models'),
-            icon: getCategoryIcon('generation-3d')
-          })
-        }
+      // 4. Extensions - always last
+      const extensionCounts = enhancedTemplates.value.filter(
+        (t) => t.sourceModule !== 'default'
+      ).length
 
-        if (audioCounts > 0) {
-          generationTypeItems.push({
-            id: 'generation-audio',
-            label: st('templateWorkflows.category.Audio', 'Audio'),
-            icon: getCategoryIcon('generation-audio')
-          })
-        }
-
-        if (llmCounts > 0) {
-          generationTypeItems.push({
-            id: 'generation-llm',
-            label: st('templateWorkflows.category.LLMs', 'LLMs'),
-            icon: getCategoryIcon('generation-llm')
-          })
-        }
-
-        items.push({
-          title: st(
-            'templateWorkflows.category.GenerationType',
-            'Generation Type'
-          ),
-          items: generationTypeItems
-        })
-      }
-
-      // Closed Models (API nodes) - as a group
-      if (apiCounts > 0) {
-        items.push({
-          title: st(
-            'templateWorkflows.category.ClosedSourceModels',
-            'Closed Source Models'
-          ),
-          items: [
-            {
-              id: 'api-nodes',
-              label: st('templateWorkflows.category.APINodes', 'API nodes'),
-              icon: getCategoryIcon('api-nodes')
-            }
-          ]
-        })
-      }
-
-      // Extensions - as a group with sub-items
       if (extensionCounts > 0) {
         // Get unique extension modules
         const extensionModules = Array.from(
@@ -490,10 +416,6 @@ export const useWorkflowTemplatesStore = defineStore(
           collapsible: true
         })
       }
-
-      // Removed Model Training (LoRA) group
-
-      // Removed Performance group (Small Models / Runs on Mac) per request
 
       return items
     })

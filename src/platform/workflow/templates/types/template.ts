@@ -11,6 +11,7 @@ export interface TemplateInfo {
   description: string
   localizedTitle?: string
   localizedDescription?: string
+  isEssential?: boolean
   sourceModule?: string
   tags?: string[]
   models?: string[]
@@ -27,6 +28,8 @@ export interface WorkflowTemplates {
   localizedTitle?: string
   category?: string
   type?: string
+  icon?: string
+  isEssential?: boolean
 }
 
 export interface TemplateGroup {
