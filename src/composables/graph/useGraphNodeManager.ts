@@ -18,18 +18,6 @@ interface NodeMetadata {
   lodLevel: 'high' | 'medium' | 'low'
   spatialIndex?: QuadTree<string>
 }
-
-interface PerformanceMetrics {
-  fps: number
-  frameTime: number
-  updateTime: number
-  nodeCount: number
-  culledCount: number
-  callbackUpdateCount: number
-  rafUpdateCount: number
-  adaptiveQuality: boolean
-}
-
 export interface SafeWidgetData {
   name: string
   type: string
@@ -70,7 +58,6 @@ export interface GraphNodeManager {
     nodeId?: string,
     priority?: 'critical' | 'normal' | 'low'
   ): void
-  forceSync(): void
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
@@ -84,18 +71,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
   // WeakMap for heavy data that auto-GCs when nodes are removed
   const nodeMetadata = new WeakMap<LGraphNode, NodeMetadata>()
-
-  // Performance tracking
-  const performanceMetrics = reactive<PerformanceMetrics>({
-    fps: 0,
-    frameTime: 0,
-    updateTime: 0,
-    nodeCount: 0,
-    culledCount: 0,
-    callbackUpdateCount: 0,
-    rafUpdateCount: 0,
-    adaptiveQuality: false
-  })
 
   // Spatial indexing using QuadTree
   const spatialIndex = new QuadTree<string>(
@@ -245,7 +220,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         ...currentData,
         widgets: updatedWidgets
       })
-      performanceMetrics.callbackUpdateCount++
     } catch (error) {
       // Ignore widget update errors to prevent cascade failures
     }
@@ -347,8 +321,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   const flush = () => {
-    const startTime = performance.now()
-
     if (batchTimeoutId !== null) {
       clearTimeout(batchTimeoutId)
       batchTimeoutId = null
@@ -362,9 +334,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Sync with graph state
     syncWithGraph()
-
-    const endTime = performance.now()
-    performanceMetrics.updateTime = endTime - startTime
   }
 
   const syncWithGraph = () => {
@@ -408,9 +377,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         spatialIndex.insert(id, bounds, id)
       }
     })
-
-    // Update performance metrics
-    performanceMetrics.nodeCount = vueNodeData.size
   }
 
   /**
@@ -634,7 +600,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     vueNodeData,
     getNode,
     cleanup,
-    scheduleUpdate,
-    forceSync: syncWithGraph
+    scheduleUpdate
   }
 }
