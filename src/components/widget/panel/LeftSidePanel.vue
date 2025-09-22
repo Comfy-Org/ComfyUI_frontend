@@ -1,5 +1,7 @@
 <template>
-  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800">
+  <div
+    class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800 overflow-y-scroll"
+  >
     <PanelHeader>
       <template #icon>
         <slot name="header-icon"></slot>
