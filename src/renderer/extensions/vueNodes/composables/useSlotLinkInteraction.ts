@@ -170,14 +170,15 @@ export function useSlotLinkInteraction({
     node: LGraphNode,
     inputSlot: INodeInputSlot
   ): boolean {
-    let didConnect = false
-    for (const link of links) {
-      if (!isInputConnectableLink(link)) continue
-      if (!link.canConnectToInput(node, inputSlot)) continue
+    const validCandidates = links
+      .filter(isInputConnectableLink)
+      .filter((link) => link.canConnectToInput(node, inputSlot))
+
+    for (const link of validCandidates) {
       link.connectToInput(node, inputSlot, adapter?.linkConnector.events)
-      didConnect = true
     }
-    return didConnect
+
+    return validCandidates.length > 0
   }
 
   function connectLinksToOutput(
@@ -185,14 +186,15 @@ export function useSlotLinkInteraction({
     node: LGraphNode,
     outputSlot: INodeOutputSlot
   ): boolean {
-    let didConnect = false
-    for (const link of links) {
-      if (!isOutputConnectableLink(link)) continue
-      if (!link.canConnectToOutput(node, outputSlot)) continue
+    const validCandidates = links
+      .filter(isOutputConnectableLink)
+      .filter((link) => link.canConnectToOutput(node, outputSlot))
+
+    for (const link of validCandidates) {
       link.connectToOutput(node, outputSlot, adapter?.linkConnector.events)
-      didConnect = true
     }
-    return didConnect
+
+    return validCandidates.length > 0
   }
 
   const resolveLinkOrigin = (
