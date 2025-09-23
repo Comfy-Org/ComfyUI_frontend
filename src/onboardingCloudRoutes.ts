@@ -7,6 +7,12 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
       import('@/platform/onboarding/cloud/components/CloudLayoutView.vue'),
     children: [
       {
+        path: 'code/:code',
+        name: 'cloud-invite-code',
+        component: () =>
+          import('@/platform/onboarding/cloud/CloudInviteEntryView.vue')
+      },
+      {
         path: 'login',
         name: 'cloud-login',
         component: () =>
@@ -43,13 +49,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         name: 'cloud-user-check',
         component: () =>
           import('@/platform/onboarding/cloud/UserCheckView.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'code/:code',
-        name: 'cloud-invite-code',
-        component: () =>
-          import('@/platform/onboarding/cloud/CloudInviteEntryView.vue'),
         meta: { requiresAuth: true }
       },
       {
