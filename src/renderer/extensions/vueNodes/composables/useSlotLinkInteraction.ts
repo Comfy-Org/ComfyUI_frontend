@@ -436,60 +436,65 @@ export function useSlotLinkInteraction({
     )
     if (!layout) return
 
-    const resolvedNode = graph.getNodeById(Number(nodeId))
-    const inputSlot =
-      type === 'input' ? resolvedNode?.inputs?.[index] : undefined
+    const numericNodeId = Number(nodeId)
+    const isInputSlot = type === 'input'
+    const isOutputSlot = type === 'output'
+
+    const resolvedNode = graph.getNodeById(numericNodeId)
+    const inputSlot = isInputSlot ? resolvedNode?.inputs?.[index] : undefined
+    const outputSlot = isOutputSlot ? resolvedNode?.outputs?.[index] : undefined
 
     const ctrlOrMeta = event.ctrlKey || event.metaKey
-    const hasExistingInputLink = Boolean(
-      inputSlot && (inputSlot.link != null || inputSlot._floatingLinks?.size)
-    )
 
-    const shouldBreakExistingLink =
-      hasExistingInputLink && ctrlOrMeta && event.altKey && !event.shiftKey
+    const inputLinkId = inputSlot?.link ?? null
+    const inputFloatingCount = inputSlot?._floatingLinks?.size ?? 0
+    const hasExistingInputLink = inputLinkId != null || inputFloatingCount > 0
 
-    const existingLink =
-      type === 'input' && inputSlot?.link != null
-        ? graph.getLink(inputSlot.link)
+    const outputLinkCount = outputSlot?.links?.length ?? 0
+    const outputFloatingCount = outputSlot?._floatingLinks?.size ?? 0
+    const hasExistingOutputLink = outputLinkCount > 0 || outputFloatingCount > 0
+
+    const shouldBreakExistingInputLink =
+      isInputSlot &&
+      hasExistingInputLink &&
+      ctrlOrMeta &&
+      event.altKey &&
+      !event.shiftKey
+
+    const existingInputLink =
+      isInputSlot && inputLinkId != null
+        ? graph.getLink(inputLinkId)
         : undefined
 
-    if (shouldBreakExistingLink && resolvedNode) {
+    if (shouldBreakExistingInputLink && resolvedNode) {
       resolvedNode.disconnectInput(index, true)
     }
 
-    const baseDirection =
-      type === 'input'
-        ? inputSlot?.dir ?? LinkDirection.LEFT
-        : resolvedNode?.outputs?.[index]?.dir ?? LinkDirection.RIGHT
+    const baseDirection = isInputSlot
+      ? inputSlot?.dir ?? LinkDirection.LEFT
+      : outputSlot?.dir ?? LinkDirection.RIGHT
 
     const existingAnchor =
-      type === 'input' && !shouldBreakExistingLink
+      isInputSlot && !shouldBreakExistingInputLink
         ? resolveExistingInputLinkAnchor(graph, inputSlot)
         : null
 
-    const outputSlot =
-      type === 'output' ? resolvedNode?.outputs?.[index] : undefined
-    const hasExistingOutputLink = Boolean(
-      outputSlot &&
-        ((outputSlot.links?.length ?? 0) > 0 ||
-          (outputSlot._floatingLinks?.size ?? 0) > 0)
-    )
     const shouldMoveExistingOutput =
-      type === 'output' && event.shiftKey && hasExistingOutputLink
+      isOutputSlot && event.shiftKey && hasExistingOutputLink
+
+    const shouldMoveExistingInput =
+      isInputSlot && !shouldBreakExistingInputLink && hasExistingInputLink
 
     adapter ??= createLinkConnectorAdapter()
     if (adapter) {
-      if (type === 'output') {
-        adapter.beginFromOutput(Number(nodeId), index, {
+      if (isOutputSlot) {
+        adapter.beginFromOutput(numericNodeId, index, {
           moveExisting: shouldMoveExistingOutput
         })
       } else {
-        const moveExisting = !!(
-          inputSlot &&
-          !shouldBreakExistingLink &&
-          (inputSlot.link != null || inputSlot._floatingLinks?.size)
-        )
-        adapter.beginFromInput(Number(nodeId), index, { moveExisting })
+        adapter.beginFromInput(numericNodeId, index, {
+          moveExisting: shouldMoveExistingInput
+        })
       }
     }
 
@@ -506,7 +511,9 @@ export function useSlotLinkInteraction({
         type,
         direction,
         position: startPosition,
-        linkId: !shouldBreakExistingLink ? existingLink?.id : undefined,
+        linkId: !shouldBreakExistingInputLink
+          ? existingInputLink?.id
+          : undefined,
         movingExistingOutput: shouldMoveExistingOutput
       },
       event.pointerId
