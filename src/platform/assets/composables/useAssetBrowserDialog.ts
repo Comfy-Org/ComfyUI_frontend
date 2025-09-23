@@ -35,10 +35,10 @@ export const useAssetBrowserDialog = () => {
           class: 'rounded-2xl overflow-hidden asset-browser-dialog'
         },
         header: {
-          class: 'p-0 hidden'
+          class: '!p-0 hidden'
         },
         content: {
-          class: 'p-0 m-0 h-full w-full'
+          class: '!p-0 !m-0 h-full w-full'
         }
       }
     }
