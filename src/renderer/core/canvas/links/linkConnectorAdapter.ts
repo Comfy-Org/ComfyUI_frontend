@@ -56,7 +56,6 @@ export class LinkConnectorAdapter {
         if (!r) return undefined
         return graph.getReroute(r.id)
       }
-      // getIoNodeOnPos: not required yet; can be added when UI exposes IO nodes
     }
   }
 
