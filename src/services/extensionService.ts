@@ -49,7 +49,6 @@ export const useExtensionService = () => {
    * @param extension The extension to register
    */
   const registerExtension = (extension: ComfyExtension) => {
-    console.log('extension registered')
     extensionStore.registerExtension(extension)
 
     const addKeybinding = wrapWithErrorHandling(
