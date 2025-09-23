@@ -105,7 +105,7 @@ export function useSlotLinkInteraction({
     if (state.source) {
       const canvas = app.canvas
       const graph = canvas?.graph
-      adapter ??= createLinkConnectorAdapter()
+      const adapter = ensureActiveAdapter()
       if (graph && adapter) {
         if (layout.type === 'input') {
           candidate.compatible = adapter.isInputValidDrop(
@@ -127,7 +127,12 @@ export function useSlotLinkInteraction({
   const conversion = useSharedCanvasPositionConversion()
 
   const pointerSession = createPointerSession()
-  let adapter: LinkConnectorAdapter | null = null
+  let activeAdapter: LinkConnectorAdapter | null = null
+
+  const ensureActiveAdapter = (): LinkConnectorAdapter | null => {
+    if (!activeAdapter) activeAdapter = createLinkConnectorAdapter()
+    return activeAdapter
+  }
 
   function hasCanConnectToReroute(
     link: RenderLink
@@ -175,7 +180,7 @@ export function useSlotLinkInteraction({
       .filter((link) => link.canConnectToInput(node, inputSlot))
 
     for (const link of validCandidates) {
-      link.connectToInput(node, inputSlot, adapter?.linkConnector.events)
+      link.connectToInput(node, inputSlot, activeAdapter?.linkConnector.events)
     }
 
     return validCandidates.length > 0
@@ -191,7 +196,11 @@ export function useSlotLinkInteraction({
       .filter((link) => link.canConnectToOutput(node, outputSlot))
 
     for (const link of validCandidates) {
-      link.connectToOutput(node, outputSlot, adapter?.linkConnector.events)
+      link.connectToOutput(
+        node,
+        outputSlot,
+        activeAdapter?.linkConnector.events
+      )
     }
 
     return validCandidates.length > 0
@@ -269,9 +278,10 @@ export function useSlotLinkInteraction({
   }
 
   const cleanupInteraction = () => {
-    adapter?.reset()
+    activeAdapter?.reset()
     pointerSession.clear()
     endDrag()
+    activeAdapter = null
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -291,100 +301,108 @@ export function useSlotLinkInteraction({
     app.canvas?.setDirty(true)
   }
 
+  // Attempt to finalize by connecting to a DOM slot candidate
+  const tryConnectToCandidate = (
+    candidate: SlotDropCandidate | null
+  ): boolean => {
+    if (!candidate?.compatible) return false
+    const graph = app.canvas?.graph
+    const adapter = ensureActiveAdapter()
+    if (!graph || !adapter) return false
+
+    const nodeId = Number(candidate.layout.nodeId)
+    const targetNode = graph.getNodeById(nodeId)
+    if (!targetNode) return false
+
+    if (candidate.layout.type === 'input') {
+      const inputSlot = targetNode.inputs?.[candidate.layout.index]
+      return (
+        !!inputSlot &&
+        connectLinksToInput(adapter.renderLinks, targetNode, inputSlot)
+      )
+    }
+
+    if (candidate.layout.type === 'output') {
+      const outputSlot = targetNode.outputs?.[candidate.layout.index]
+      return (
+        !!outputSlot &&
+        connectLinksToOutput(adapter.renderLinks, targetNode, outputSlot)
+      )
+    }
+
+    return false
+  }
+
+  // Attempt to finalize by dropping on a reroute under the pointer
+  const tryConnectViaRerouteAtPointer = (): boolean => {
+    const rerouteLayout = layoutStore.queryRerouteAtPoint({
+      x: state.pointer.canvas.x,
+      y: state.pointer.canvas.y
+    })
+    const graph = app.canvas?.graph
+    const adapter = ensureActiveAdapter()
+    if (!rerouteLayout || !graph || !adapter) return false
+
+    const reroute = graph.getReroute(rerouteLayout.id)
+    if (!reroute || !adapter.isRerouteValidDrop(reroute.id)) return false
+
+    let didConnect = false
+
+    const results = reroute.findTargetInputs() ?? []
+    const maybeReroutes = reroute.getReroutes()
+    if (results.length && maybeReroutes !== null) {
+      const originalReroutes = maybeReroutes.slice(0, -1).reverse()
+      for (const link of adapter.renderLinks) {
+        if (!isInputConnectableLink(link)) continue
+        for (const result of results) {
+          link.connectToRerouteInput(
+            reroute,
+            result,
+            adapter.linkConnector.events,
+            originalReroutes
+          )
+          didConnect = true
+        }
+      }
+    }
+
+    const sourceOutput = reroute.findSourceOutput()
+    if (sourceOutput) {
+      const { node, output } = sourceOutput
+      for (const link of adapter.renderLinks) {
+        if (!isOutputConnectableLink(link)) continue
+        if (hasCanConnectToReroute(link) && !link.canConnectToReroute(reroute))
+          continue
+        link.connectToRerouteOutput(
+          reroute,
+          node,
+          output,
+          adapter.linkConnector.events
+        )
+        didConnect = true
+      }
+    }
+
+    return didConnect
+  }
+
   const finishInteraction = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     event.preventDefault()
 
-    if (state.source) {
-      const candidate = candidateFromTarget(event.target)
-      let connected = false
-      if (candidate?.compatible) {
-        const canvas = app.canvas
-        const graph = canvas?.graph
-        if (graph) {
-          adapter ??= createLinkConnectorAdapter()
-          const targetNode = graph.getNodeById(Number(candidate.layout.nodeId))
-          if (adapter && targetNode) {
-            if (candidate.layout.type === 'input') {
-              const inputSlot = targetNode.inputs?.[candidate.layout.index]
-              if (
-                inputSlot &&
-                connectLinksToInput(adapter.renderLinks, targetNode, inputSlot)
-              )
-                connected = true
-            } else if (candidate.layout.type === 'output') {
-              const outputSlot = targetNode.outputs?.[candidate.layout.index]
-              if (
-                outputSlot &&
-                connectLinksToOutput(
-                  adapter.renderLinks,
-                  targetNode,
-                  outputSlot
-                )
-              )
-                connected = true
-            }
-          }
-        }
-      }
+    if (!state.source) {
+      cleanupInteraction()
+      app.canvas?.setDirty(true)
+      return
+    }
 
-      // Try reroute drop when no DOM slot was detected
-      if (!connected) {
-        const rerouteLayout = layoutStore.queryRerouteAtPoint({
-          x: state.pointer.canvas.x,
-          y: state.pointer.canvas.y
-        })
-        const graph = app.canvas?.graph
-        adapter ??= createLinkConnectorAdapter()
-        if (rerouteLayout && graph && adapter) {
-          const reroute = graph.getReroute(rerouteLayout.id)
-          if (reroute && adapter.isRerouteValidDrop(reroute.id)) {
-            const results = reroute.findTargetInputs() ?? []
-            const maybeReroutes = reroute.getReroutes()
-            if (results.length && maybeReroutes !== null) {
-              const originalReroutes = maybeReroutes.slice(0, -1).reverse()
-              for (const link of adapter.renderLinks) {
-                if (!isInputConnectableLink(link)) continue
-                for (const result of results) {
-                  link.connectToRerouteInput(
-                    reroute,
-                    result,
-                    adapter.linkConnector.events,
-                    originalReroutes
-                  )
-                  connected = true
-                }
-              }
-            }
+    const candidate = candidateFromTarget(event.target)
+    let connected = tryConnectToCandidate(candidate)
+    if (!connected) connected = tryConnectViaRerouteAtPointer() || connected
 
-            const sourceOutput = reroute.findSourceOutput()
-            if (sourceOutput) {
-              const { node, output } = sourceOutput
-              for (const link of adapter.renderLinks) {
-                if (!isOutputConnectableLink(link)) continue
-                if (
-                  hasCanConnectToReroute(link) &&
-                  !link.canConnectToReroute(reroute)
-                )
-                  continue
-                link.connectToRerouteOutput(
-                  reroute,
-                  node,
-                  output,
-                  adapter.linkConnector.events
-                )
-                connected = true
-              }
-            }
-          }
-        }
-      }
-
-      // Drop on canvas: disconnect moving input link(s)
-      if (!connected && !candidate && state.source.type === 'input') {
-        adapter ??= createLinkConnectorAdapter()
-        adapter?.disconnectMovingLinks()
-      }
+    // Drop on canvas: disconnect moving input link(s)
+    if (!connected && !candidate && state.source.type === 'input') {
+      ensureActiveAdapter()?.disconnectMovingLinks()
     }
 
     cleanupInteraction()
@@ -409,6 +427,8 @@ export function useSlotLinkInteraction({
     const canvas = app.canvas
     const graph = canvas?.graph
     if (!canvas || !graph) return
+
+    ensureActiveAdapter()
 
     const layout = layoutStore.getSlotLayout(
       getSlotKey(nodeId, index, type === 'input')
@@ -464,7 +484,7 @@ export function useSlotLinkInteraction({
     const shouldMoveExistingInput =
       isInputSlot && !shouldBreakExistingInputLink && hasExistingInputLink
 
-    adapter ??= createLinkConnectorAdapter()
+    const adapter = ensureActiveAdapter()
     if (adapter) {
       if (isOutputSlot) {
         adapter.beginFromOutput(numericNodeId, index, {
