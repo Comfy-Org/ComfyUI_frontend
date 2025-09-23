@@ -112,16 +112,12 @@
     </div>
 
     <div
-      class="transition-opacity flex gap-3 h-0"
+      class="transition-opacity flex gap-3 h-0 items-center"
       :class="{
         'opacity-40': selected && selected !== 'cpu'
       }"
     >
-      <ToggleSwitch
-        v-model="cpuMode"
-        input-id="cpu-mode"
-        class="-translate-y-40"
-      />
+      <ToggleSwitch v-model="cpuMode" input-id="cpu-mode" />
       <label for="cpu-mode" class="select-none">
         {{ $t('install.gpuSelection.enableCpuMode') }}
       </label>
