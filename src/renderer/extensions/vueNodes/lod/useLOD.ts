@@ -17,9 +17,8 @@ interface Camera {
 }
 
 export function useLOD(camera: Camera) {
-  const { pixelRatio } = useDevicePixelRatio()
-
   const isLOD = computed(() => {
+    const { pixelRatio } = useDevicePixelRatio()
     const baseFontSize = 14
     const dprAdjustment = Math.sqrt(pixelRatio.value)
 
