@@ -23,7 +23,7 @@
             bypassed,
           'will-change-transform': isDragging
         },
-        lodCssClass,
+
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -48,10 +48,9 @@
       </template>
       <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, lodLevel, isCollapsed]"
+        v-memo="[nodeData.title, isCollapsed]"
         :node-data="nodeData"
         :readonly="readonly"
-        :lod-level="lodLevel"
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
@@ -60,9 +59,7 @@
     </div>
 
     <div
-      v-if="
-        (isMinimalLOD || isCollapsed) && executing && progress !== undefined
-      "
+      v-if="isCollapsed && executing && progress !== undefined"
       :class="
         cn(
           'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
@@ -72,7 +69,7 @@
       :style="{ width: `${Math.min(progress * 100, 100)}%` }"
     />
 
-    <template v-if="!isMinimalLOD && !isCollapsed">
+    <template v-if="!isCollapsed">
       <div class="mb-4 relative">
         <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
@@ -96,28 +93,24 @@
       >
         <!-- Slots only rendered at full detail -->
         <NodeSlots
-          v-if="shouldRenderSlots"
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length, lodLevel]"
+          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
           :node-data="nodeData"
           :readonly="readonly"
-          :lod-level="lodLevel"
         />
 
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
-          v-if="shouldShowWidgets"
-          v-memo="[nodeData.widgets?.length, lodLevel]"
+          v-if="nodeData.widgets?.length"
+          v-memo="[nodeData.widgets?.length]"
           :node-data="nodeData"
           :readonly="readonly"
-          :lod-level="lodLevel"
         />
 
         <!-- Custom content at reduced+ detail -->
         <NodeContent
-          v-if="shouldShowContent"
+          v-if="hasCustomContent"
           :node-data="nodeData"
           :readonly="readonly"
-          :lod-level="lodLevel"
           :image-urls="nodeImageUrls"
         />
         <!-- Live preview image -->
@@ -152,7 +145,6 @@ import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/compo
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
-import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -180,8 +172,7 @@ interface LGraphNodeProps {
 const {
   nodeData,
   error = null,
-  readonly = false,
-  zoomLevel = 1
+  readonly = false
 } = defineProps<LGraphNodeProps>()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
@@ -217,18 +208,6 @@ const bypassed = computed((): boolean => nodeData.mode === 4)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
-
-// LOD (Level of Detail) system based on zoom level
-const {
-  lodLevel,
-  shouldRenderWidgets,
-  shouldRenderSlots,
-  shouldRenderContent,
-  lodCssClass
-} = useLOD(() => zoomLevel)
-
-// Computed properties for template usage
-const isMinimalLOD = computed(() => lodLevel.value === LODLevel.MINIMAL)
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -271,26 +250,15 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = cn(
-  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full'
-)
-const progressClasses = cn('h-2 bg-primary-500 transition-all duration-300')
+const separatorClasses =
+  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full lod-toggle'
+const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
   {
-    isMinimalLOD,
     isCollapsed
   }
-)
-
-// Common condition computations to avoid repetition
-const shouldShowWidgets = computed(
-  () => shouldRenderWidgets.value && nodeData.widgets?.length
-)
-
-const shouldShowContent = computed(
-  () => shouldRenderContent.value && hasCustomContent.value
 )
 
 const borderClass = computed(() => {

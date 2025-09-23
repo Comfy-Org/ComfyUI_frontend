@@ -19,9 +19,10 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container relative flex items-center group"
+      class="lg-widget-container flex items-center group"
     >
       <!-- Widget Input Slot Dot -->
+
       <div
         class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
       >
@@ -61,12 +62,10 @@ import type {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
   getComponent,
-  isEssential,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -77,10 +76,9 @@ import InputSlot from './InputSlot.vue'
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
   readonly?: boolean
-  lodLevel?: LODLevel
 }
 
-const { nodeData, readonly, lodLevel } = defineProps<NodeWidgetsProps>()
+const { nodeData, readonly } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -125,17 +123,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const widgets = nodeData.widgets as SafeWidgetData[]
   const result: ProcessedWidget[] = []
 
-  if (lodLevel === LODLevel.MINIMAL) {
-    return []
-  }
-
   for (const widget of widgets) {
     if (widget.options?.hidden) continue
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
-
-    if (lodLevel === LODLevel.REDUCED && !isEssential(widget.type)) continue
 
     const vueComponent = getComponent(widget.type) || WidgetInputText
 
