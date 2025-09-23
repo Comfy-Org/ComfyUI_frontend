@@ -35,8 +35,8 @@ const containerClasses = computed(() => {
 const containerStyle = computed(() =>
   maxWidth || minWidth
     ? {
-        maxWidth: `${maxWidth}px`,
-        minWidth: `${minWidth}px`
+        maxWidth: maxWidth ? `${maxWidth}px` : undefined,
+        minWidth: minWidth ? `${minWidth}px` : undefined
       }
     : {}
 )
