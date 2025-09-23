@@ -112,20 +112,19 @@ test.describe('Templates', () => {
     // Set locale to French before opening templates
     await comfyPage.setSetting('Comfy.Locale', 'fr')
 
-    // Capture request for the French index file
-    let frenchIndexRequested = false
-    await comfyPage.page.route('**/templates/index.fr.json', async (route) => {
-      frenchIndexRequested = true
-      // Return the actual French index file
-      await route.continue()
-    })
+    // Load the templates dialog and wait for the French index file request
+    const requestPromise = comfyPage.page.waitForRequest(
+      '**/templates/index.fr.json'
+    )
 
-    // Load the templates dialog
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
-    await expect(comfyPage.templates.content).toBeVisible()
+
+    const request = await requestPromise
 
     // Verify French index was requested
-    expect(frenchIndexRequested).toBe(true)
+    expect(request.url()).toContain('templates/index.fr.json')
+
+    await expect(comfyPage.templates.content).toBeVisible()
   })
 
   test('Falls back to English templates when locale file not found', async ({
@@ -170,14 +169,14 @@ test.describe('Templates', () => {
       comfyPage.templates.content.getByRole('heading', {
         name: 'Image Generation'
       })
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
 
     // Also verify English descriptions
     await expect(
       comfyPage.templates.content.getByText(
         'Generate images from text prompts.'
       )
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
   })
 
   test('template cards are dynamically sized and responsive', async ({

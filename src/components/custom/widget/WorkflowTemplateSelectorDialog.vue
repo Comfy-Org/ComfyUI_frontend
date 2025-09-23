@@ -95,6 +95,14 @@
           </SingleSelect>
         </div>
       </div>
+      <div
+        v-if="!isLoading"
+        class="px-6 pt-4 pb-2 text-2xl font-semibold text-neutral"
+      >
+        <span>
+          {{ pageTitle }}
+        </span>
+      </div>
     </template>
 
     <template #content>
@@ -118,15 +126,10 @@
       </div>
       <div v-else>
         <!-- Title -->
-        <div class="px-6 pt-4 pb-2 text-2xl font-semibold text-neutral">
-          <span
-            v-if="isLoading"
-            class="inline-block h-8 w-48 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
-          ></span>
-          <span v-else>
-            {{ pageTitle }}
-          </span>
-        </div>
+        <span
+          v-if="isLoading"
+          class="inline-block h-8 w-48 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+        ></span>
 
         <!-- Template Cards Grid -->
         <div
