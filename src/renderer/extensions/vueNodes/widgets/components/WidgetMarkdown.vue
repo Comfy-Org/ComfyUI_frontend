@@ -6,7 +6,7 @@
     <!-- Display mode: Rendered markdown -->
     <div
       v-if="!isEditing"
-      class="comfy-markdown-content text-xs min-h-[60px] rounded-lg px-4 py-2 overflow-y-auto"
+      class="comfy-markdown-content text-xs min-h-[60px] rounded-lg px-4 py-2 overflow-y-auto lod-toggle"
       v-html="renderedHtml"
     />
 
