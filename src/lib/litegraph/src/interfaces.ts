@@ -183,8 +183,10 @@ export interface ItemLocator {
   ): SubgraphInputNode | SubgraphOutputNode | undefined
 }
 
+export type LinkSegment = Reroute | LLink
+
 /** Contains a cached 2D canvas path and a centre point, with an optional forward angle. */
-export interface LinkSegment {
+export interface ILinkSegment {
   /** Link / reroute ID */
   readonly id: LinkId | RerouteId
   /** The {@link id} of the reroute that this segment starts from (output side), otherwise `undefined`.  */

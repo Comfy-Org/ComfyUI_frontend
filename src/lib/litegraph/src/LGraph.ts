@@ -1341,9 +1341,9 @@ export class LGraph
   createReroute(pos: Point, before: LinkSegment): Reroute {
     const layoutMutations = useLayoutMutations()
     const rerouteId = ++this.state.lastRerouteId
-    const linkIds = before instanceof Reroute ? before.linkIds : []
+    const linkIds = before instanceof Reroute ? before.linkIds : [before.id]
     const floatingLinkIds =
-      before instanceof Reroute ? before.floatingLinkIds : []
+      before instanceof Reroute ? before.floatingLinkIds : [before.id]
     const reroute = new Reroute(
       rerouteId,
       this,

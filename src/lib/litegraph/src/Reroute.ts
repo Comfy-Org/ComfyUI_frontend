@@ -6,10 +6,10 @@ import type { LGraphNode, NodeId } from './LGraphNode'
 import { LLink, type LinkId } from './LLink'
 import type {
   CanvasColour,
+  ILinkSegment,
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  LinkSegment,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -36,7 +36,7 @@ export interface FloatingRerouteSlot {
  * and a `WeakRef` to a {@link LinkNetwork} to resolve them.
  */
 export class Reroute
-  implements Positionable, LinkSegment, Serialisable<SerialisableReroute>
+  implements Positionable, ILinkSegment, Serialisable<SerialisableReroute>
 {
   static radius: number = 10
   /** Maximum distance from reroutes to their bezier curve control points. */

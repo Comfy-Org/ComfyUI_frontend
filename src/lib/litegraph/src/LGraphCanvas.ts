@@ -6168,13 +6168,8 @@ export class LGraphCanvas
 
         case 'Delete': {
           // segment can be a Reroute object, in which case segment.id is the reroute id
-          if (!(segment instanceof Reroute) && !(segment instanceof LLink))
-            // FIXME: Need better way of determining if segment is a Link or Reroute
-            throw new Error('Unimplemented link type')
           const linkIds =
-            segment instanceof Reroute
-              ? segment.linkIds
-              : [segment.id satisfies LinkId]
+            segment instanceof Reroute ? segment.linkIds : [segment.id]
           for (const linkId of linkIds) {
             if (linkId !== undefined) {
               graph.removeLink(linkId)
