@@ -1,10 +1,10 @@
 import { useNodeImage } from '@/composables/node/useNodeImage'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -16,21 +16,20 @@ SubgraphNode.prototype.onConfigure = function (serialisedNode) {
     throw new Error("Can't add proxyWidgets to non-subgraphNode")
 
   const canvasStore = useCanvasStore()
-  const subgraphNode = this
   //Must give value to proxyWidgets prior to defining or it won't serialize
-  subgraphNode.properties.proxyWidgets ??= '[]'
-  let proxyWidgets = subgraphNode.properties.proxyWidgets
+  this.properties.proxyWidgets ??= '[]'
+  let proxyWidgets = this.properties.proxyWidgets
 
-  originalOnConfigure?.bind(this)?.(serialisedNode)
+  originalOnConfigure?.call(this, serialisedNode)
 
-  Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
+  Object.defineProperty(this.properties, 'proxyWidgets', {
     get: () => {
       return proxyWidgets
     },
     set: (property: string) => {
       const parsed = parseProxyWidgets(property)
       const { widgetStates } = useDomWidgetStore()
-      for (const w of subgraphNode.widgets ?? []) {
+      for (const w of this.widgets ?? []) {
         if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
           const widgetState = widgetStates.get(w.id)
           if (!widgetState) continue
@@ -38,11 +37,9 @@ SubgraphNode.prototype.onConfigure = function (serialisedNode) {
         }
       }
       //NOTE: This does not apply to pushed entries, only initial load
-      subgraphNode.widgets = subgraphNode.widgets.filter(
-        (w) => !isProxyWidget(w)
-      )
+      this.widgets = this.widgets.filter((w) => !isProxyWidget(w))
       for (const [nodeId, widgetName] of parsed) {
-        const w = addProxyWidget(subgraphNode, `${nodeId}`, widgetName)
+        const w = addProxyWidget(this, `${nodeId}`, widgetName)
         if (w instanceof DOMWidgetImpl) {
           const widgetState = widgetStates.get(w.id)
           if (!widgetState) continue
@@ -52,11 +49,11 @@ SubgraphNode.prototype.onConfigure = function (serialisedNode) {
       }
       proxyWidgets = property
       canvasStore.canvas?.setDirty(true, true)
-      subgraphNode._setConcreteSlots()
-      subgraphNode.arrange()
+      this._setConcreteSlots()
+      this.arrange()
     }
   })
-  subgraphNode.properties.proxyWidgets = proxyWidgets
+  this.properties.proxyWidgets = proxyWidgets
 }
 type Overlay = Partial<IBaseWidget> & {
   graph: LGraph
@@ -139,7 +136,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedReceiver = receiver
       if (property == '_overlay') return overlay
       else if (property == 'value') redirectedReceiver = backingWidget
-      if (overlay.hasOwnProperty(property)) {
+      if (Object.prototype.hasOwnProperty.call(overlay, property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay
       }
@@ -154,7 +151,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
         backingWidget = linkedWidget ?? disconnectedWidget
       }
-      if (overlay.hasOwnProperty(property)) {
+      if (Object.prototype.hasOwnProperty.call(overlay, property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay
       }
@@ -168,7 +165,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
     },
     has(_t: IBaseWidget, property: string) {
       let redirectedTarget: object = backingWidget
-      if (overlay.hasOwnProperty(property)) {
+      if (Object.prototype.hasOwnProperty.call(overlay, property)) {
         redirectedTarget = overlay
       }
       return Reflect.has(redirectedTarget, property)
