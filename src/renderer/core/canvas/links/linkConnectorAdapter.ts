@@ -59,7 +59,6 @@ export class LinkConnectorAdapter {
         : undefined
 
     if (opts?.moveExisting) {
-      console.log("I'm fully aware")
       this.linkConnector.moveOutputLink(this.network, output)
     } else {
       this.linkConnector.dragNewFromOutput(
