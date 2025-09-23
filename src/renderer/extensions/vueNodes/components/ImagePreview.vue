@@ -35,7 +35,7 @@
         v-else
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="w-full h-[352px] object-cover block"
+        class="w-full h-[352px] object-contain block"
         @load="handleImageLoad"
         @error="handleImageError"
       />
