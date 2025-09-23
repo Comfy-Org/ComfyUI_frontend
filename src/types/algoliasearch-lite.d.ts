@@ -1,8 +1,5 @@
 declare module 'algoliasearch/dist/lite/builds/browser' {
-  import type {
-    LiteClient,
-    ClientOptions
-  } from 'algoliasearch/dist/lite/browser'
+  import { LiteClient, ClientOptions } from 'algoliasearch/dist/lite/browser'
 
   /**
    * Creates a new Algolia Search client that uses the Lite API Client (Browser version)

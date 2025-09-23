@@ -5,23 +5,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import {
   useComfyManagerStore,
   useManagerProgressDialogStore
-} from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import type { TaskLog } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+} from '@/stores/comfyManagerStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { TaskLog } from '@/types/comfyManagerTypes'
 
 // Mock modules
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore')
+vi.mock('@/stores/comfyManagerStore')
 vi.mock('@/stores/dialogStore')
 vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/commandStore')
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService')
+vi.mock('@/services/comfyManagerService')
 vi.mock('@/composables/useConflictDetection', () => ({
   useConflictDetection: vi.fn(() => ({
     conflictedPackages: { value: [] },

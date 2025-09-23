@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual('vue-i18n')

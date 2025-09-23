@@ -1,15 +1,15 @@
 import { computed, onUnmounted, ref } from 'vue'
 
 import { useNodePacks } from '@/composables/nodePack/useNodePacks'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import type { UseNodePacksOptions } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type WorkflowPack = {
   id:

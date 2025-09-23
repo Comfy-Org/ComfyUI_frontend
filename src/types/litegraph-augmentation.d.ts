@@ -82,7 +82,7 @@ declare module '@/lib/litegraph/src/litegraph' {
   }
 
   // Add interface augmentations into the class itself
-
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface BaseWidget extends IBaseWidget {}
 
   interface LGraphNode {

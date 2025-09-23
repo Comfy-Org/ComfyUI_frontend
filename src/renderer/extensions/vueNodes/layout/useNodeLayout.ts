@@ -1,14 +1,12 @@
-import { storeToRefs } from 'pinia'
-import {
-  type CSSProperties,
-  type MaybeRefOrGetter,
-  computed,
-  inject,
-  toValue
-} from 'vue'
+/**
+ * Composable for individual Vue node components
+ *
+ * Uses customRef for shared write access with Canvas renderer.
+ * Provides dragging functionality and reactive layout state.
+ */
+import { computed, inject } from 'vue'
 
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource, type Point } from '@/renderer/core/layout/types'
@@ -17,16 +15,20 @@ import { LayoutSource, type Point } from '@/renderer/core/layout/types'
  * Composable for individual Vue node components
  * Uses customRef for shared write access with Canvas renderer
  */
-export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
-  const nodeId = toValue(nodeIdMaybe)
+export function useNodeLayout(nodeId: string) {
+  const store = layoutStore
   const mutations = useLayoutMutations()
-  const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
   // Get transform utilities from TransformPane if available
-  const transformState = inject(TransformStateKey)
+  const transformState = inject('transformState') as
+    | {
+        canvasToScreen: (point: Point) => Point
+        screenToCanvas: (point: Point) => Point
+      }
+    | undefined
 
   // Get the customRef for this node (shared write access)
-  const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+  const layoutRef = store.getNodeLayoutRef(nodeId)
 
   // Computed properties for easy access
   const position = computed(() => {
@@ -54,6 +56,8 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
+
+  const selectedNodeIds = inject(SelectedNodeIdsKey, null)
 
   /**
    * Start dragging the node
@@ -188,16 +192,14 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     endDrag,
 
     // Computed styles for Vue templates
-    nodeStyle: computed(
-      (): CSSProperties => ({
-        position: 'absolute' as const,
-        left: `${position.value.x}px`,
-        top: `${position.value.y}px`,
-        width: `${size.value.width}px`,
-        height: `${size.value.height}px`,
-        zIndex: zIndex.value,
-        cursor: isDragging ? 'grabbing' : 'grab'
-      })
-    )
+    nodeStyle: computed(() => ({
+      position: 'absolute' as const,
+      left: `${position.value.x}px`,
+      top: `${position.value.y}px`,
+      width: `${size.value.width}px`,
+      height: `${size.value.height}px`,
+      zIndex: zIndex.value,
+      cursor: isDragging ? 'grabbing' : 'grab'
+    }))
   }
 }

@@ -1,6 +1,6 @@
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { type NodeStorageInterface } from './interfaces'
+import { NodeStorageInterface } from './interfaces'
 
 export class NodeStorage implements NodeStorageInterface {
   private node: LGraphNode

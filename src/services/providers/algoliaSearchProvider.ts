@@ -16,6 +16,7 @@ import type {
   SearchAttribute,
   SearchNodePacksParams
 } from '@/types/algoliaTypes'
+import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
@@ -23,7 +24,6 @@ import type {
   SortableField
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
-import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 

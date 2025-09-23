@@ -1,17 +1,14 @@
 import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type {
-  ISubgraphInput,
-  IWidgetLocator
-} from '@/lib/litegraph/src/interfaces'
-import type {
-  INodeInputSlot,
-  ISlotType,
-  NodeId
+import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
+import {
+  type INodeInputSlot,
+  type ISlotType,
+  type NodeId
 } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
@@ -81,10 +78,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const existingInput = this.inputs.find((i) => i.name == name)
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
-          const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
+          const { inputNode } = subgraph.links[linkId].resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name == name)
-          if (widget)
-            this.#setWidget(subgraphInput, existingInput, widget, input?.widget)
+          if (widget) this.#setWidget(subgraphInput, existingInput, widget)
           return
         }
         const input = this.addInput(name, type)
@@ -189,14 +185,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     subgraphInput.events.addEventListener(
       'input-connected',
-      (e) => {
+      () => {
         if (input._widget) return
 
         const widget = subgraphInput._widget
         if (!widget) return
 
-        const widgetLocator = e.detail.input.widget
-        this.#setWidget(subgraphInput, input, widget, widgetLocator)
+        this.#setWidget(subgraphInput, input, widget)
       },
       { signal }
     )
@@ -306,7 +301,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = resolved.inputNode.getWidgetFromSlot(resolved.input)
         if (!widget) continue
 
-        this.#setWidget(subgraphInput, input, widget, resolved.input.widget)
+        this.#setWidget(subgraphInput, input, widget)
         break
       }
     }
@@ -315,13 +310,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   #setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
-    widget: Readonly<IBaseWidget>,
-    inputWidget: IWidgetLocator | undefined
+    widget: Readonly<IBaseWidget>
   ) {
     // Use the first matching widget
-    const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(
-      this
-    )
+    const targetWidget = toConcreteWidget(widget, this)
+    const promotedWidget = targetWidget.createCopyForNode(this)
 
     Object.assign(promotedWidget, {
       get name() {
@@ -379,9 +372,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
     // creating new objects. Have care when making changes.
+    const backingInput =
+      targetWidget.node.findInputSlot(widget.name, true)?.widget ?? {}
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
-    if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
+    Object.setPrototypeOf(input.widget, backingInput)
 
     input._widget = promotedWidget
   }

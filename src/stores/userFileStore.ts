@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import { UserDataFullInfo } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { buildTree } from '@/utils/treeUtil'

@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, vi } from 'vitest'
 
-import type { LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
 import {
+  LGraph,
   LGraphNode,
   LLink,
+  Reroute,
   type RerouteId
 } from '@/lib/litegraph/src/litegraph'
 import { LinkConnector } from '@/lib/litegraph/src/litegraph'
@@ -333,10 +334,10 @@ describe('LinkConnector Integration', () => {
         } = graph.getNodeById(nodeId)!
 
         expect(input.link).toBeNull()
-        expect(output.links?.length).toBeOneOf([0, undefined])
+        expect(output.links?.length || 0).toBe(0)
 
-        expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-        expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
+        expect(input._floatingLinks?.size || 0).toBe(0)
+        expect(output._floatingLinks?.size || 0).toBe(0)
       }
     })
 
@@ -533,10 +534,10 @@ describe('LinkConnector Integration', () => {
         } = graph.getNodeById(nodeId)!
 
         expect(input.link).toBeNull()
-        expect(output.links?.length).toBeOneOf([0, undefined])
+        expect(output.links?.length || 0).toBe(0)
 
-        expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-        expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
+        expect(input._floatingLinks?.size || 0).toBe(0)
+        expect(output._floatingLinks?.size || 0).toBe(0)
       }
     })
 
@@ -849,10 +850,10 @@ describe('LinkConnector Integration', () => {
       } = graph.getNodeById(nodeId)!
 
       expect(input.link).toBeNull()
-      expect(output.links?.length).toBeOneOf([0, undefined])
+      expect(output.links?.length || 0).toBe(0)
 
-      expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-      expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
+      expect(input._floatingLinks?.size || 0).toBe(0)
+      expect(output._floatingLinks?.size || 0).toBe(0)
     }
   })
 

@@ -1,6 +1,6 @@
-import type { Page } from '@playwright/test'
+import { Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
+import { ComfyPage } from '../ComfyPage'
 
 export class SettingDialog {
   constructor(

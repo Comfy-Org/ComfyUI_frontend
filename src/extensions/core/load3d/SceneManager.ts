@@ -2,10 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import Load3dUtils from './Load3dUtils'
-import {
-  type EventManagerInterface,
-  type SceneManagerInterface
-} from './interfaces'
+import { EventManagerInterface, SceneManagerInterface } from './interfaces'
 
 export class SceneManager implements SceneManagerInterface {
   scene: THREE.Scene

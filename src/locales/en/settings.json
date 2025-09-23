@@ -30,7 +30,7 @@
     "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
   },
   "Comfy_Canvas_NavigationMode": {
-    "name": "Navigation Mode",
+    "name": "Canvas Navigation Mode",
     "options": {
       "Standard (New)": "Standard (New)",
       "Drag Navigation": "Drag Navigation"

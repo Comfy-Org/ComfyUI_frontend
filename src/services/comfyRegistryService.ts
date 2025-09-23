@@ -1,5 +1,4 @@
-import type { AxiosError, AxiosResponse } from 'axios'
-import axios from 'axios'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
 import type { components, operations } from '@/types/comfyRegistryTypes'

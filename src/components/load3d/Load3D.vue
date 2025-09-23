@@ -95,7 +95,7 @@ import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import type {
+import {
   CameraType,
   Load3DNodeType,
   MaterialMode,

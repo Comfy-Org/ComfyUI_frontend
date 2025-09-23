@@ -4,7 +4,7 @@ import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { MovingOutputLink } from '@/lib/litegraph/src/canvas/MovingOutputLink'
 import { ToOutputRenderLink } from '@/lib/litegraph/src/canvas/ToOutputRenderLink'
 import { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import type { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 
 import { createTestSubgraph } from '../subgraph/fixtures/subgraphHelpers'
 

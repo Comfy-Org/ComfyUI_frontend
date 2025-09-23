@@ -19,7 +19,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import {
-  type ComfyApiWorkflow,
+  ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
   type NodeId,
@@ -35,7 +35,6 @@ import {
   isComboInputSpecV1,
   isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
-import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
@@ -61,9 +60,9 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { type ExtensionManager } from '@/types/extensionTypes'
+import { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -596,10 +595,7 @@ export class ComfyApp {
         const keybindingStore = useKeybindingStore()
         const keybinding = keybindingStore.getKeybinding(keyCombo)
 
-        if (
-          keybinding &&
-          keybinding.targetElementId === 'graph-canvas-container'
-        ) {
+        if (keybinding && keybinding.targetElementId === 'graph-canvas') {
           useCommandStore().execute(keybinding.commandId)
 
           this.graph.change()
@@ -841,29 +837,22 @@ export class ComfyApp {
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
+        // Assertion: Not yet defined in litegraph.
         const { newGraph } = e.detail
 
+        const nodeSet = new Set(newGraph.nodes)
         const widgetStore = useDomWidgetStore()
 
-        const activeWidgets: Record<
-          string,
-          BaseDOMWidget<object | string>
-        > = Object.fromEntries(
-          newGraph.nodes
-            .flatMap((node) => node.widgets ?? [])
-            .filter((w) => w instanceof DOMWidgetImpl)
-            .map((w) => [w.id, w])
-        )
+        // Assertions: UnwrapRef
+        for (const { widget } of widgetStore.activeWidgetStates) {
+          if (!nodeSet.has(widget.node)) {
+            widgetStore.deactivateWidget(widget.id)
+          }
+        }
 
-        for (const [
-          widgetId,
-          widgetState
-        ] of widgetStore.widgetStates.entries()) {
-          if (widgetId in activeWidgets) {
-            widgetState.active = true
-            widgetState.widget = activeWidgets[widgetId]
-          } else {
-            widgetState.active = false
+        for (const { widget } of widgetStore.inactiveWidgetStates) {
+          if (nodeSet.has(widget.node)) {
+            widgetStore.activateWidget(widget.id)
           }
         }
       }
@@ -1124,13 +1113,6 @@ export class ComfyApp {
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
     ) => {
-      if (!Array.isArray(nodes)) {
-        console.warn(
-          'Workflow nodes data is missing or invalid, skipping node processing',
-          { nodes, path }
-        )
-        return
-      }
       for (let n of nodes) {
         // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
         if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'

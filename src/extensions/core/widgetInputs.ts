@@ -8,7 +8,7 @@ import type {
   INodeOutputSlot,
   ISlotType,
   LLink,
-  Point
+  Vector2
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -557,7 +557,7 @@ app.registerExtension({
       }
     )
 
-    function isNodeAtPos(pos: Point) {
+    function isNodeAtPos(pos: Vector2) {
       for (const n of app.graph.nodes) {
         if (n.pos[0] === pos[0] && n.pos[1] === pos[1]) {
           return true

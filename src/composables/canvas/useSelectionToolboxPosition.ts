@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
@@ -102,8 +102,6 @@ export function useSelectionToolboxPosition(
 
     worldPosition.value = {
       x: unionBounds.x + unionBounds.width / 2,
-      // createBounds() applied a default padding of 10px
-      // so adjust Y to maintain visual consistency
       y: unionBounds.y - 10
     }
 
@@ -170,75 +168,50 @@ export function useSelectionToolboxPosition(
     }
   )
 
-  const handleDragStateChange = (dragging: boolean) => {
-    if (dragging) {
-      handleDragStart()
-      return
-    }
+  // Watch for dragging state
+  watch(
+    () => canvasStore.canvas?.state?.draggingItems,
+    (dragging) => {
+      if (dragging) {
+        visible.value = false
 
-    handleDragEnd()
-  }
+        if (moreOptionsOpen.value) {
+          const currentSig = buildSelectionSignature(canvasStore)
+          if (currentSig !== moreOptionsSelectionSignature) {
+            moreOptionsSelectionSignature = null
+          }
+          moreOptionsWasOpenBeforeDrag = true
+          moreOptionsOpen.value = false
+          moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
+          if (moreOptionsRestorePending.value) {
+            forceCloseMoreOptionsSignal.value++
+          } else {
+            moreOptionsWasOpenBeforeDrag = false
+          }
+        } else {
+          moreOptionsRestorePending.value = false
+          moreOptionsWasOpenBeforeDrag = false
+        }
+      } else {
+        requestAnimationFrame(() => {
+          updateSelectionBounds()
+          const selectionMatches = currentSelectionMatchesSignature(canvasStore)
+          const shouldRestore =
+            moreOptionsWasOpenBeforeDrag &&
+            visible.value &&
+            moreOptionsRestorePending.value &&
+            selectionMatches
 
-  const handleDragStart = () => {
-    visible.value = false
-
-    // Early return if more options wasn't open
-    if (!moreOptionsOpen.value) {
-      moreOptionsRestorePending.value = false
-      moreOptionsWasOpenBeforeDrag = false
-      return
-    }
-
-    // Handle more options cleanup
-    const currentSig = buildSelectionSignature(canvasStore)
-    const selectionChanged = currentSig !== moreOptionsSelectionSignature
-
-    if (selectionChanged) {
-      moreOptionsSelectionSignature = null
-    }
-    moreOptionsOpen.value = false
-    moreOptionsWasOpenBeforeDrag = true
-    moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
-
-    if (moreOptionsRestorePending.value) {
-      forceCloseMoreOptionsSignal.value++
-      return
-    }
-
-    moreOptionsWasOpenBeforeDrag = false
-  }
-
-  const handleDragEnd = () => {
-    requestAnimationFrame(() => {
-      updateSelectionBounds()
-
-      const selectionMatches = currentSelectionMatchesSignature(canvasStore)
-      const shouldRestore =
-        moreOptionsWasOpenBeforeDrag &&
-        visible.value &&
-        moreOptionsRestorePending.value &&
-        selectionMatches
-
-      // Single point of assignment for each ref
-      moreOptionsRestorePending.value =
-        shouldRestore && moreOptionsRestorePending.value
-      moreOptionsWasOpenBeforeDrag = false
-
-      if (shouldRestore) {
-        restoreMoreOptionsSignal.value++
+          if (shouldRestore) {
+            restoreMoreOptionsSignal.value++
+          } else {
+            moreOptionsRestorePending.value = false
+          }
+          moreOptionsWasOpenBeforeDrag = false
+        })
       }
-    })
-  }
-
-  // Unified dragging state - combines both LiteGraph and Vue node dragging
-  const isDragging = computed((): boolean => {
-    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
-    const vueNodeDragging =
-      shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
-    return litegraphDragging || vueNodeDragging
-  })
-
-  watch(isDragging, handleDragStateChange)
+    }
+  )
 
   onUnmounted(() => {
     resetMoreOptionsState()

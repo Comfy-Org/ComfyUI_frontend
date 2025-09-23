@@ -1,12 +1,10 @@
-import type { AxiosError, AxiosResponse } from 'axios'
-import axios from 'axios'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import type { operations } from '@/types/comfyRegistryTypes'
-import type { components } from '@/types/comfyRegistryTypes'
+import { type components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 export enum EventType {

@@ -19,7 +19,6 @@
     "downlevelIteration": true,
     "noImplicitOverride": true,
     "allowJs": true,
-    "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
@@ -29,15 +28,12 @@
     "rootDir": "./"
   },
   "include": [
-    ".storybook/**/*",
-    "eslint.config.ts",
-    "global.d.ts",
-    "knip.config.ts",
-    "src/**/*.vue",
     "src/**/*",
+    "src/**/*.vue",
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
+    "global.d.ts",
     "vite.config.mts",
-    "vitest.config.ts",
+    ".storybook/**/*"
   ]
 }
