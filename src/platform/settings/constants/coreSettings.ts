@@ -404,7 +404,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'ko', text: '한국어' },
       { value: 'fr', text: 'Français' },
       { value: 'es', text: 'Español' },
-      { value: 'ar', text: 'عربي' }
+      { value: 'ar', text: 'عربي' },
+      { value: 'tr', text: 'Türkçe' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -594,7 +595,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     migrateDeprecatedValue: (value: any[]) => {
       return value.map((keybinding) => {
         if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas'
+          keybinding['targetElementId'] = 'graph-canvas-container'
         }
         return keybinding
       })

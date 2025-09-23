@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
+import { compare, valid } from 'semver'
 import { ref } from 'vue'
 
 import type { SettingParams } from '@/platform/settings/types'
@@ -7,7 +8,6 @@ import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -132,20 +132,25 @@ export const useSettingStore = defineStore('setting', () => {
 
       if (installedVersion) {
         const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
-          (a, b) => compareVersions(b, a)
+          (a, b) => compare(b, a)
         )
 
         for (const version of sortedVersions) {
           // Ensure the version is in a valid format before comparing
-          if (!isSemVer(version)) {
+          if (!valid(version)) {
             continue
           }
 
-          if (compareVersions(installedVersion, version) >= 0) {
-            const versionedDefault = defaultsByInstallVersion[version]
-            return typeof versionedDefault === 'function'
-              ? versionedDefault()
-              : versionedDefault
+          if (compare(installedVersion, version) >= 0) {
+            const versionedDefault =
+              defaultsByInstallVersion[
+                version as keyof typeof defaultsByInstallVersion
+              ]
+            if (versionedDefault !== undefined) {
+              return typeof versionedDefault === 'function'
+                ? versionedDefault()
+                : versionedDefault
+            }
           }
         }
       }

@@ -1,5 +1,5 @@
-import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 

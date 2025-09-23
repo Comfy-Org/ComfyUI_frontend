@@ -22,7 +22,7 @@ const config: KnipConfig = {
   ],
   ignore: [
     // Auto generated manager types
-    'src/types/generatedManagerTypes.ts',
+    'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'src/types/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',

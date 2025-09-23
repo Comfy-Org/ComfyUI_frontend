@@ -33,7 +33,7 @@
 
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
-    v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
@@ -43,8 +43,6 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
-      :position="nodePositions.get(nodeData.id)"
-      :size="nodeSizes.get(nodeData.id)"
       :readonly="false"
       :error="
         executionStore.lastExecutionError?.node_id === nodeData.id
@@ -53,9 +51,6 @@
       "
       :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
-      @node-click="handleNodeSelect"
-      @update:collapsed="handleNodeCollapse"
-      @update:title="handleNodeTitleUpdate"
     />
   </TransformPane>
 
@@ -76,9 +71,9 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import {
   computed,
+  nextTick,
   onMounted,
   onUnmounted,
-  provide,
   ref,
   shallowRef,
   watch,
@@ -96,7 +91,6 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -117,12 +111,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { attachSlotLinkPreviewRenderer } from '@/renderer/core/canvas/links/slotLinkPreviewRenderer'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useExecutionStateProvider } from '@/renderer/extensions/vueNodes/execution/useExecutionStateProvider'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -169,44 +162,33 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
-const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
 
 // Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle(isVueNodesEnabled)
-const viewportCulling = useViewportCulling(
-  isVueNodesEnabled,
-  vueNodeLifecycle.vueNodeData,
-  vueNodeLifecycle.nodeDataTrigger,
-  vueNodeLifecycle.nodeManager
-)
-const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
+const vueNodeLifecycle = useVueNodeLifecycle()
+const viewportCulling = useViewportCulling()
 
-const nodePositions = vueNodeLifecycle.nodePositions
-const nodeSizes = vueNodeLifecycle.nodeSizes
-const allNodes = viewportCulling.allNodes
-
-const handleTransformUpdate = () => {
-  viewportCulling.handleTransformUpdate()
-  // TODO: Fix paste position sync in separate PR
-  vueNodeLifecycle.detectChangesInRAF.value()
+const handleVueNodeLifecycleReset = async () => {
+  if (shouldRenderVueNodes.value) {
+    vueNodeLifecycle.disposeNodeManagerAndSyncs()
+    await nextTick()
+    vueNodeLifecycle.initializeNodeManager()
+  }
 }
-const handleNodeSelect = nodeEventHandlers.handleNodeSelect
-const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
-const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
 
-// Provide selection state to all Vue nodes
-const selectedNodeIds = computed(
-  () =>
-    new Set(
-      canvasStore.selectedItems
-        .filter((item) => item.id !== undefined)
-        .map((item) => String(item.id))
-    )
+watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
+
+watch(
+  () => canvasStore.isInSubgraph,
+  async (newValue, oldValue) => {
+    if (oldValue && !newValue) {
+      useWorkflowStore().updateActiveGraph()
+    }
+    await handleVueNodeLifecycleReset()
+  }
 )
-provide(SelectedNodeIdsKey, selectedNodeIds)
 
-// Provide execution state to all Vue nodes
-useExecutionStateProvider()
+const allNodes = viewportCulling.allNodes
+const handleTransformUpdate = viewportCulling.handleTransformUpdate
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -404,6 +386,7 @@ onMounted(async () => {
 
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
+  attachSlotLinkPreviewRenderer(comfyApp.canvas)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false

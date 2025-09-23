@@ -2,7 +2,7 @@ import {
   type AvifIinfBox,
   type AvifIlocBox,
   type AvifInfeBox,
-  ComfyMetadata,
+  type ComfyMetadata,
   ComfyMetadataTags,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
