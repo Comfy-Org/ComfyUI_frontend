@@ -14,7 +14,7 @@
       <slot name="bottom-left"></slot>
     </div>
 
-    <div class="absolute bottom-2 right-2 flex gap-2">
+    <div class="absolute bottom-2 right-2 flex gap-2 flex-wrap">
       <slot name="bottom-right"></slot>
     </div>
   </div>
