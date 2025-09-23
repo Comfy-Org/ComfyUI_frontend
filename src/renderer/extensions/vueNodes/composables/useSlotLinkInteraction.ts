@@ -1,5 +1,4 @@
 import { type Fn, useEventListener } from '@vueuse/core'
-import log from 'loglevel'
 import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -24,8 +23,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { app } from '@/scripts/app'
-
-const logger = log.getLogger('useSlotLinkInteraction')
 
 interface SlotInteractionOptions {
   nodeId: string
@@ -199,35 +196,15 @@ export function useSlotLinkInteraction({
   }
 
   const resolveLinkOrigin = (
-    graph: LGraph,
     link: LLink | undefined
   ): { position: Point; direction: LinkDirection } | null => {
     if (!link) return null
 
-    const originNodeId = link.origin_id
-    const originSlotIndex = link.origin_slot
-
-    const slotKey = getSlotKey(String(originNodeId), originSlotIndex, false)
+    const slotKey = getSlotKey(String(link.origin_id), link.origin_slot, false)
     const layout = layoutStore.getSlotLayout(slotKey)
+    if (!layout) return null
 
-    if (layout) {
-      return { position: { ...layout.position }, direction: LinkDirection.NONE }
-    } else {
-      const originNode = graph.getNodeById(originNodeId)
-
-      logger.warn('Slot layout missing', {
-        slotKey,
-        originNodeId,
-        originSlotIndex,
-        linkId: link.id,
-        fallback: originNode ? 'graph' : 'none'
-      })
-
-      if (!originNode) return null
-
-      const [x, y] = originNode.getOutputPos(originSlotIndex)
-      return { position: toPoint(x, y), direction: LinkDirection.NONE }
-    }
+    return { position: { ...layout.position }, direction: LinkDirection.NONE }
   }
 
   const resolveExistingInputLinkAnchor = (
@@ -258,7 +235,7 @@ export function useSlotLinkInteraction({
         }
       }
 
-      const directAnchor = resolveLinkOrigin(graph, directLink)
+      const directAnchor = resolveLinkOrigin(directLink)
       if (directAnchor) return directAnchor
     }
 
