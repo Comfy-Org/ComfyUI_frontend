@@ -3,7 +3,10 @@ import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { Reroute, RerouteId } from '@/lib/litegraph/src/Reroute'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { ItemLocator } from '@/lib/litegraph/src/interfaces'
+import type {
+  ConnectingLink,
+  ItemLocator
+} from '@/lib/litegraph/src/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
@@ -26,10 +29,8 @@ export class LinkConnectorAdapter {
     readonly network: LGraph
   ) {
     // No-op legacy setter to avoid side effects when connectors update
-    const setConnectingLinks = (_value: unknown[]) => {}
-    this.linkConnector = new LinkConnector(
-      setConnectingLinks as (value: any[]) => void
-    )
+    const setConnectingLinks: (value: ConnectingLink[]) => void = () => {}
+    this.linkConnector = new LinkConnector(setConnectingLinks)
   }
 
   /**
@@ -37,8 +38,7 @@ export class LinkConnectorAdapter {
    * Prefer this over accessing `linkConnector.renderLinks` directly.
    */
   get renderLinks(): ReadonlyArray<RenderLink> {
-    return this.linkConnector
-      .renderLinks as unknown as ReadonlyArray<RenderLink>
+    return this.linkConnector.renderLinks
   }
 
   /** ItemLocator backed by layoutStore for nodes/reroutes. */
