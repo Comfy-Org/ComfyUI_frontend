@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import Fuse from 'fuse.js'
+import { type UseFuseOptions, useFuse } from '@vueuse/integrations/useFuse'
 import Button from 'primevue/button'
 import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
 import MultiSelect from 'primevue/multiselect'
@@ -171,14 +171,17 @@ const popoverStyle = usePopoverSizing({
 const attrs = useAttrs()
 const originalOptions = computed(() => (attrs.options as Option[]) || [])
 
-const fuse = computed(
-  () =>
-    new Fuse(originalOptions.value, {
-      keys: ['name', 'value'],
-      threshold: 0.3,
-      includeScore: false
-    })
-)
+// Use VueUse's useFuse for better reactivity and performance
+const fuseOptions: UseFuseOptions<Option> = {
+  fuseOptions: {
+    keys: ['name', 'value'],
+    threshold: 0.3,
+    includeScore: false
+  },
+  matchAllWhenSearchEmpty: true
+}
+
+const { results } = useFuse(searchQuery, originalOptions, fuseOptions)
 
 // Filter options based on search, but always include selected items
 const filteredOptions = computed(() => {
@@ -186,12 +189,15 @@ const filteredOptions = computed(() => {
     return originalOptions.value
   }
 
-  const searchResults = fuse.value
-    .search(searchQuery.value)
-    .map((result) => result.item)
+  // results.value already contains the search results from useFuse
+  const searchResults = results.value.map(
+    (result: { item: Option }) => result.item
+  )
 
+  // Include selected items that aren't in search results
   const selectedButNotInResults = selectedItems.value.filter(
-    (item) => !searchResults.some((result) => result.value === item.value)
+    (item) =>
+      !searchResults.some((result: Option) => result.value === item.value)
   )
 
   return [...selectedButNotInResults, ...searchResults]
