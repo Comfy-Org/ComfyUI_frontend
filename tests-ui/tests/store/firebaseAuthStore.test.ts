@@ -150,6 +150,13 @@ describe('useFirebaseAuthStore', () => {
     expect(store.loading).toBe(false)
   })
 
+  it('should set persistence to local storage on initialization', () => {
+    expect(firebaseAuth.setPersistence).toHaveBeenCalledWith(
+      mockAuth,
+      firebaseAuth.browserLocalPersistence
+    )
+  })
+
   it('should properly clean up error state between operations', async () => {
     // First, cause an error
     const mockError = new Error('Invalid password')
