@@ -1,4 +1,4 @@
-import type { Component } from 'vue'
+import { Component } from 'vue'
 
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'

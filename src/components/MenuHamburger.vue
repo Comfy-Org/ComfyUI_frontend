@@ -21,8 +21,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import type { CSSProperties } from 'vue'
-import { computed, watchEffect } from 'vue'
+import { CSSProperties, computed, watchEffect } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'

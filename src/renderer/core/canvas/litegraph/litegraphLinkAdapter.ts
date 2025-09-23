@@ -7,10 +7,13 @@
  * Maintains backward compatibility with existing litegraph integration.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type {
   CanvasColour,
+  INodeInputSlot,
+  INodeOutputSlot,
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -24,6 +27,7 @@ import {
   type ArrowShape,
   CanvasPathRenderer,
   type Direction,
+  type DragLinkData,
   type LinkRenderData,
   type RenderContext as PathRenderContext,
   type Point,
@@ -205,6 +209,7 @@ export class LitegraphLinkAdapter {
       case LinkDirection.DOWN:
         return 'down'
       case LinkDirection.CENTER:
+      case LinkDirection.NONE:
         return 'none'
       default:
         return 'right'
@@ -497,33 +502,57 @@ export class LitegraphLinkAdapter {
     }
   }
 
+  /**
+   * Render a link being dragged from a slot to mouse position
+   * Used during link creation/reconnection
+   */
   renderDraggingLink(
     ctx: CanvasRenderingContext2D,
-    from: ReadOnlyPoint,
-    to: ReadOnlyPoint,
-    colour: CanvasColour,
-    startDir: LinkDirection,
-    endDir: LinkDirection,
-    context: LinkRenderContext
+    fromNode: LGraphNode | null,
+    fromSlot: INodeOutputSlot | INodeInputSlot,
+    fromSlotIndex: number,
+    toPosition: ReadOnlyPoint,
+    context: LinkRenderContext,
+    options: {
+      fromInput?: boolean
+      color?: CanvasColour
+      disabled?: boolean
+    } = {}
   ): void {
-    this.renderLinkDirect(
-      ctx,
-      from,
-      to,
-      null,
-      false,
-      null,
-      colour,
-      startDir,
-      endDir,
-      {
-        ...context,
-        linkMarkerShape: LinkMarkerShape.None
-      },
-      {
-        disabled: false
-      }
+    if (!fromNode) return
+
+    // Get slot position using layout tree if available
+    const slotPos = getSlotPosition(
+      fromNode,
+      fromSlotIndex,
+      options.fromInput || false
     )
+    if (!slotPos) return
+
+    // Get slot direction
+    const slotDir =
+      fromSlot.dir ||
+      (options.fromInput ? LinkDirection.LEFT : LinkDirection.RIGHT)
+
+    // Create drag data
+    const dragData: DragLinkData = {
+      fixedPoint: { x: slotPos[0], y: slotPos[1] },
+      fixedDirection: this.convertDirection(slotDir),
+      dragPoint: { x: toPosition[0], y: toPosition[1] },
+      color: options.color ? String(options.color) : undefined,
+      type: fromSlot.type !== undefined ? String(fromSlot.type) : undefined,
+      disabled: options.disabled || false,
+      fromInput: options.fromInput || false
+    }
+
+    // Convert context
+    const pathContext = this.convertToPathRenderContext(context)
+
+    // Hide center marker when dragging links
+    pathContext.style.showCenterMarker = false
+
+    // Render using pure renderer
+    this.pathRenderer.drawDraggingLink(ctx, dragData, pathContext)
   }
 
   /**

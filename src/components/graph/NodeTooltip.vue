@@ -33,11 +33,9 @@ const tooltipText = ref('')
 const left = ref<string>()
 const top = ref<string>()
 
-function hideTooltip() {
-  return (tooltipText.value = '')
-}
+const hideTooltip = () => (tooltipText.value = '')
 
-async function showTooltip(tooltip: string | null | undefined) {
+const showTooltip = async (tooltip: string | null | undefined) => {
   if (!tooltip) return
 
   left.value = comfyApp.canvas.mouse[0] + 'px'
@@ -58,9 +56,9 @@ async function showTooltip(tooltip: string | null | undefined) {
   }
 }
 
-function onIdle() {
+const onIdle = () => {
   const { canvas } = comfyApp
-  const node = canvas?.node_over
+  const node = canvas.node_over
   if (!node) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
@@ -70,7 +68,7 @@ function onIdle() {
     ctor.title_mode !== LiteGraph.NO_TITLE &&
     canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
   ) {
-    return showTooltip(nodeDef?.description)
+    return showTooltip(nodeDef.description)
   }
 
   if (node.flags?.collapsed) return
@@ -85,7 +83,7 @@ function onIdle() {
     const inputName = node.inputs[inputSlot].name
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
-      nodeDef?.inputs[inputName]?.tooltip ?? ''
+      nodeDef.inputs[inputName]?.tooltip ?? ''
     )
     return showTooltip(translatedTooltip)
   }
@@ -99,7 +97,7 @@ function onIdle() {
   if (outputSlot !== -1) {
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.outputs.${outputSlot}.tooltip`,
-      nodeDef?.outputs[outputSlot]?.tooltip ?? ''
+      nodeDef.outputs[outputSlot]?.tooltip ?? ''
     )
     return showTooltip(translatedTooltip)
   }
@@ -109,7 +107,7 @@ function onIdle() {
   if (widget && !isDOMWidget(widget)) {
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
-      nodeDef?.inputs[widget.name]?.tooltip ?? ''
+      nodeDef.inputs[widget.name]?.tooltip ?? ''
     )
     // Widget tooltip can be set dynamically, current translation collection does not support this.
     return showTooltip(widget.tooltip ?? translatedTooltip)

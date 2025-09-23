@@ -1,5 +1,9 @@
-import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
+  Positionable,
+  Reroute
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import {

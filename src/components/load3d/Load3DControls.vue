@@ -99,7 +99,7 @@ import ExportControls from '@/components/load3d/controls/ExportControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
-import type {
+import {
   CameraType,
   MaterialMode,
   UpDirection

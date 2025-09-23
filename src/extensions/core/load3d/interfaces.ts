@@ -2,13 +2,13 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 export type Load3DNodeType = 'Load3D' | 'Preview3D'
 

@@ -3,9 +3,8 @@
 </template>
 
 <script setup lang="ts">
-import type { IDisposable } from '@xterm/xterm'
-import type { Ref } from 'vue'
-import { onMounted, onUnmounted } from 'vue'
+import { IDisposable } from '@xterm/xterm'
+import { Ref, onMounted, onUnmounted } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'

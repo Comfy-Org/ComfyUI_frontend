@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { SettingParams } from '../../src/platform/settings/types'
+import { SettingParams } from '../../src/platform/settings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {

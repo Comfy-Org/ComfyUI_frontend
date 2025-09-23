@@ -1,14 +1,14 @@
 import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   ASCII,
-  type ComfyMetadata,
+  ComfyMetadata,
   ComfyMetadataTags,
-  type GltfChunkHeader,
-  type GltfHeader,
-  type GltfJsonData,
+  GltfChunkHeader,
+  GltfHeader,
+  GltfJsonData,
   GltfSizeBytes
 } from '@/types/metadataTypes'
 

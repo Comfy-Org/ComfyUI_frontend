@@ -8,8 +8,10 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  SettingTreeNode,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'

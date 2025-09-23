@@ -33,7 +33,6 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
@@ -49,7 +48,7 @@ import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
@@ -254,30 +253,33 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
-  runWhenGlobalIdle(() => {
-    // Setting values now available after comfyApp.setup.
-    // Load keybindings.
-    wrapWithErrorHandling(useKeybindingService().registerUserKeybindings)()
+  requestIdleCallback(
+    () => {
+      // Setting values now available after comfyApp.setup.
+      // Load keybindings.
+      wrapWithErrorHandling(useKeybindingService().registerUserKeybindings)()
 
-    // Load server config
-    wrapWithErrorHandling(useServerConfigStore().loadServerConfig)(
-      SERVER_CONFIG_ITEMS,
-      settingStore.get('Comfy.Server.ServerConfigValues')
-    )
+      // Load server config
+      wrapWithErrorHandling(useServerConfigStore().loadServerConfig)(
+        SERVER_CONFIG_ITEMS,
+        settingStore.get('Comfy.Server.ServerConfigValues')
+      )
 
-    // Load model folders
-    void wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
+      // Load model folders
+      void wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
 
-    // Non-blocking load of node frequencies
-    void wrapWithErrorHandlingAsync(
-      useNodeFrequencyStore().loadNodeFrequencies
-    )()
+      // Non-blocking load of node frequencies
+      void wrapWithErrorHandlingAsync(
+        useNodeFrequencyStore().loadNodeFrequencies
+      )()
 
-    // Node defs now available after comfyApp.setup.
-    // Explicitly initialize nodeSearchService to avoid indexing delay when
-    // node search is triggered
-    useNodeDefStore().nodeSearchService.searchNode('')
-  }, 1000)
+      // Node defs now available after comfyApp.setup.
+      // Explicitly initialize nodeSearchService to avoid indexing delay when
+      // node search is triggered
+      useNodeDefStore().nodeSearchService.searchNode('')
+    },
+    { timeout: 1000 }
+  )
 }
 </script>
 

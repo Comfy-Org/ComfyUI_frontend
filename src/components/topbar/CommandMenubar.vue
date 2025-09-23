@@ -82,6 +82,7 @@ import { useI18n } from 'vue-i18n'
 
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import { useManagerState } from '@/composables/useManagerState'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
@@ -89,11 +90,10 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()

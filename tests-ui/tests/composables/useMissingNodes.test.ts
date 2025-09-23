@@ -5,9 +5,9 @@ import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 // Mock Vue's onMounted to execute immediately for testing
 vi.mock('vue', async () => {
@@ -23,7 +23,7 @@ vi.mock('@/composables/nodePack/useWorkflowPacks', () => ({
   useWorkflowPacks: vi.fn()
 }))
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
+vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn()
 }))
 

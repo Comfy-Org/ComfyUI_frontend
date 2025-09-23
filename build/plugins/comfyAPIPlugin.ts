@@ -1,5 +1,5 @@
 import path from 'path'
-import type { Plugin } from 'vite'
+import { Plugin } from 'vite'
 
 interface ShimResult {
   code: string

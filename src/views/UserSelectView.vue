@@ -50,8 +50,7 @@ import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import type { User } from '@/stores/userStore'
-import { useUserStore } from '@/stores/userStore'
+import { User, useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const userStore = useUserStore()

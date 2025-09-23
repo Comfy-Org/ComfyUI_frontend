@@ -330,8 +330,4 @@ export interface LayoutStore {
   batchUpdateNodeBounds(
     updates: Array<{ nodeId: NodeId; bounds: Bounds }>
   ): void
-
-  batchUpdateSlotLayouts(
-    updates: Array<{ key: string; layout: SlotLayout }>
-  ): void
 }

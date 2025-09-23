@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {

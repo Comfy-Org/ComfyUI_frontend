@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import type { NavItemData } from '@/types/navTypes'
+import { NavItemData } from '@/types/navTypes'
 
 import NavIcon from './NavIcon.vue'
 

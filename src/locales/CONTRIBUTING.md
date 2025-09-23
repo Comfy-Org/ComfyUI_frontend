@@ -24,7 +24,7 @@ Add your language code to the `outputLocales` array:
 ```javascript
 module.exports = defineConfig({
   // ... existing config
-  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es', 'tr'], // Add your language here
+  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es'], // Add your language here
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream.
   'latent' is the short form of 'latent space'.
   'mask' is in the context of image processing.

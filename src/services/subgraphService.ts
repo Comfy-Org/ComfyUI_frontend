@@ -1,7 +1,7 @@
-import type {
-  ExportedSubgraph,
-  ExportedSubgraphInstance,
-  Subgraph
+import {
+  type ExportedSubgraph,
+  type ExportedSubgraphInstance,
+  type Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'

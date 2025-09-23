@@ -1,4 +1,4 @@
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -7,7 +7,6 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
-import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 type Widgets = Record<string, ComfyWidgetConstructor>
@@ -166,13 +165,6 @@ export interface ComfyExtension {
   afterConfigureGraph?(
     missingNodeTypes: MissingNodeType[]
   ): Promise<void> | void
-
-  /**
-   * Fired whenever authentication resolves, providing the anonymized user id..
-   * Extensions can register at any time and will receive the latest value immediately.
-   * This is an experimental API and may be changed or removed in the future.
-   */
-  onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
 
   [key: string]: any
 }

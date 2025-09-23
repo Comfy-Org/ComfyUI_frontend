@@ -1,4 +1,4 @@
-import type { FormItem } from '@/platform/settings/types'
+import { FormItem } from '@/platform/settings/types'
 import {
   CrossAttentionMethod,
   CudaMalloc,

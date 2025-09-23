@@ -1,7 +1,6 @@
 import _ from 'es-toolkit/compat'
 
-import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import { Reroute } from '@/lib/litegraph/src/litegraph'
+import { ColorOption, LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphGroup,
   LGraphNode,

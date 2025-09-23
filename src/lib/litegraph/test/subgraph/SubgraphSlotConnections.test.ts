@@ -4,8 +4,8 @@ import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraphNode, type LinkNetwork } from '@/lib/litegraph/src/litegraph'
-import type { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import type { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import {
   isSubgraphInput,
   isSubgraphOutput

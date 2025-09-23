@@ -70,7 +70,7 @@ export interface RenderContext {
   highlightedIds?: Set<string>
 }
 
-interface DragLinkData {
+export interface DragLinkData {
   /** Fixed end - the slot being dragged from */
   fixedPoint: Point
   fixedDirection: Direction

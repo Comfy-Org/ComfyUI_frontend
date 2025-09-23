@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/litegraph'
+import { INodeInputSlot, INodeOutputSlot } from '@/lib/litegraph/src/litegraph'
 import {
   inputAsSerialisable,
   outputAsSerialisable

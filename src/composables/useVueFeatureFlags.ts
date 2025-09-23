@@ -2,17 +2,16 @@
  * Vue-related feature flags composable
  * Manages local settings-driven flags and LiteGraph integration
  */
-import { createSharedComposable } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LiteGraph } from '../lib/litegraph/src/litegraph'
 
-function useVueFeatureFlagsIndividual() {
+export const useVueFeatureFlags = () => {
   const settingStore = useSettingStore()
 
-  const shouldRenderVueNodes = computed(() => {
+  const isVueNodesEnabled = computed(() => {
     try {
       return settingStore.get('Comfy.VueNodes.Enabled') ?? false
     } catch {
@@ -20,20 +19,20 @@ function useVueFeatureFlagsIndividual() {
     }
   })
 
+  // Whether Vue nodes should render
+  const shouldRenderVueNodes = computed(() => isVueNodesEnabled.value)
+
+  // Sync the Vue nodes flag with LiteGraph global settings
+  const syncVueNodesFlag = () => {
+    LiteGraph.vueNodesMode = isVueNodesEnabled.value
+  }
+
   // Watch for changes and update LiteGraph immediately
-  watch(
-    shouldRenderVueNodes,
-    () => {
-      LiteGraph.vueNodesMode = shouldRenderVueNodes.value
-    },
-    { immediate: true }
-  )
+  watch(isVueNodesEnabled, syncVueNodesFlag, { immediate: true })
 
   return {
-    shouldRenderVueNodes
+    isVueNodesEnabled,
+    shouldRenderVueNodes,
+    syncVueNodesFlag
   }
 }
-
-export const useVueFeatureFlags = createSharedComposable(
-  useVueFeatureFlagsIndividual
-)

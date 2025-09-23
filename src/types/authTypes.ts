@@ -7,7 +7,3 @@ export type ApiKeyAuthHeader = {
 }
 
 export type AuthHeader = LoggedInAuthHeader | ApiKeyAuthHeader
-
-export interface AuthUserInfo {
-  id: string
-}

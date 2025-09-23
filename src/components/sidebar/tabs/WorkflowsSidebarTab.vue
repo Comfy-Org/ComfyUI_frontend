@@ -14,7 +14,7 @@
     </template>
     <template #header>
       <SearchBox
-        v-model:model-value="searchQuery"
+        v-model:modelValue="searchQuery"
         class="workflows-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchWorkflows') + '...'"
         @search="handleSearch"
@@ -32,7 +32,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expanded-keys="dummyExpandedKeys"
+            v-model:expandedKeys="dummyExpandedKeys"
             :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
             :selection-keys="selectionKeys"
           >
@@ -74,7 +74,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expanded-keys="dummyExpandedKeys"
+            v-model:expandedKeys="dummyExpandedKeys"
             :root="
               renderTreeNode(
                 bookmarkedWorkflowsTree,
@@ -96,7 +96,7 @@
           />
           <TreeExplorer
             v-if="workflowStore.persistedWorkflows.length > 0"
-            v-model:expanded-keys="expandedKeys"
+            v-model:expandedKeys="expandedKeys"
             :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
             :selection-keys="selectionKeys"
           >
@@ -114,7 +114,7 @@
       </div>
       <div v-else class="comfyui-workflows-search-panel">
         <TreeExplorer
-          v-model:expanded-keys="expandedKeys"
+          v-model:expandedKeys="expandedKeys"
           :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
         >
           <template #node="{ node }">
@@ -150,7 +150,7 @@ import {
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
