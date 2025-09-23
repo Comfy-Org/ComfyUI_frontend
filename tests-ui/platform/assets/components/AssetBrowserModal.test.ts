@@ -7,6 +7,27 @@ import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vu
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
+// Mock @/i18n for useAssetBrowser and AssetFilterBar
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key,
+  d: (date: Date) => date.toLocaleDateString()
+}))
+
+// Mock assetService for useAssetBrowser
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    getAssetDetails: vi.fn((id: string) =>
+      Promise.resolve({
+        id,
+        name: 'Test Model',
+        user_metadata: {
+          filename: 'Test Model'
+        }
+      })
+    )
+  }
+}))
+
 // Mock external dependencies with minimal functionality needed for business logic tests
 vi.mock('@/components/input/SearchBox.vue', () => ({
   default: {
@@ -92,6 +113,11 @@ vi.mock('@/platform/assets/components/AssetGrid.vue', () => ({
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
+  }),
+  createI18n: () => ({
+    global: {
+      t: (key: string) => key
+    }
   })
 }))
 

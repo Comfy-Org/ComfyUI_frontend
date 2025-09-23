@@ -35,7 +35,9 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   // State
   const searchQuery = ref('')
   const selectedCategory = ref('all')
-  const sortBy = ref('name')
+  const sortBy = ref('name-asc')
+  const fileFormats = ref<string[]>([])
+  const baseModels = ref<string[]>([])
 
   // Transform API asset to display asset
   function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
@@ -84,16 +86,14 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     }
   }
 
-  // Extract available categories from assets
   const availableCategories = computed(() => {
     const categorySet = new Set<string>()
 
-    assets.forEach((asset) => {
-      // Second tag is the category (after 'models' root tag)
-      if (asset.tags.length > 1 && asset.tags[0] === 'models') {
-        categorySet.add(asset.tags[1])
-      }
-    })
+    for (const asset of assets) {
+      if (asset.tags.length <= 1) continue
+      if (asset.tags[0] !== 'models') continue
+      categorySet.add(asset.tags[1])
+    }
 
     return [
       {
@@ -109,6 +109,41 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
           icon: 'icon-[lucide--package]'
         }))
     ]
+  })
+
+  const availableFileFormats = computed(() => {
+    const extensionSet = new Set<string>()
+
+    for (const asset of assets) {
+      // Extract file extension from filename (e.g. "model.safetensors" -> "safetensors")
+      const extension = asset.name.split('.').pop()?.toLowerCase()
+      if (!extension) continue
+      extensionSet.add(extension)
+    }
+
+    return Array.from(extensionSet)
+      .sort()
+      .map((ext) => ({
+        name: `.${ext}`,
+        value: ext
+      }))
+  })
+
+  const availableBaseModels = computed(() => {
+    const modelSet = new Set<string>()
+
+    for (const asset of assets) {
+      const baseModel = getAssetBaseModel(asset)
+      if (!baseModel) continue
+      modelSet.add(baseModel)
+    }
+
+    return Array.from(modelSet)
+      .sort()
+      .map((model) => ({
+        name: model,
+        value: model
+      }))
   })
 
   // Compute content title from selected category
@@ -140,20 +175,40 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     )
   }
 
+  const filterByFileFormats = (formats: string[]) => (asset: AssetItem) => {
+    if (formats.length === 0) return true
+    const formatSet = new Set(formats)
+    const extension = asset.name.split('.').pop()?.toLowerCase()
+    return extension ? formatSet.has(extension) : false
+  }
+
+  const filterByBaseModels = (models: string[]) => (asset: AssetItem) => {
+    if (models.length === 0) return true
+    const modelSet = new Set(models)
+    const baseModel = getAssetBaseModel(asset)
+    return baseModel ? modelSet.has(baseModel) : false
+  }
+
   // Computed filtered and transformed assets
   const filteredAssets = computed(() => {
     const filtered = assets
       .filter(filterByCategory(selectedCategory.value))
       .filter(filterByQuery(searchQuery.value))
+      .filter(filterByFileFormats(fileFormats.value))
+      .filter(filterByBaseModels(baseModels.value))
 
     // Sort assets
     filtered.sort((a, b) => {
       switch (sortBy.value) {
-        case 'date':
+        case 'name-desc':
+          return b.name.localeCompare(a.name)
+        case 'recent':
           return (
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )
-        case 'name':
+        case 'popular':
+          return a.name.localeCompare(b.name)
+        case 'name-asc':
         default:
           return a.name.localeCompare(b.name)
       }
@@ -200,18 +255,33 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     }
   }
 
+  function updateFilters(filters: {
+    fileFormats: string[]
+    baseModels: string[]
+    sortBy: string
+  }) {
+    fileFormats.value = filters.fileFormats
+    baseModels.value = filters.baseModels
+    sortBy.value = filters.sortBy
+  }
+
   return {
     // State
     searchQuery,
     selectedCategory,
     sortBy,
+    fileFormats,
+    baseModels,
 
     // Computed
     availableCategories,
+    availableFileFormats,
+    availableBaseModels,
     contentTitle,
     filteredAssets,
 
     // Actions
-    selectAssetWithCallback
+    selectAssetWithCallback,
+    updateFilters
   }
 }

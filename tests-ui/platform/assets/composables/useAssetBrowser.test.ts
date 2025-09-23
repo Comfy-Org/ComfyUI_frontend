@@ -246,7 +246,7 @@ describe('useAssetBrowser', () => {
 
       const { sortBy, filteredAssets } = useAssetBrowser(assets)
 
-      sortBy.value = 'date'
+      sortBy.value = 'recent'
       await nextTick()
 
       const dates = filteredAssets.value.map((asset) => asset.created_at)

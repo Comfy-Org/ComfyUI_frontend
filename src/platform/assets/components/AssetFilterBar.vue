@@ -2,18 +2,20 @@
   <div :class="containerClasses" data-component-id="asset-filter-bar">
     <div :class="leftSideClasses" data-component-id="asset-filter-bar-left">
       <MultiSelect
+        v-if="availableFileFormats.length > 0"
         v-model="fileFormats"
         :label="$t('assetBrowser.fileFormats')"
-        :options="fileFormatOptions"
+        :options="availableFileFormats"
         :class="selectClasses"
         data-component-id="asset-filter-file-formats"
         @update:model-value="handleFilterChange"
       />
 
       <MultiSelect
+        v-if="availableBaseModels.length > 0"
         v-model="baseModels"
         :label="$t('assetBrowser.baseModels')"
-        :options="baseModelOptions"
+        :options="availableBaseModels"
         :class="selectClasses"
         data-component-id="asset-filter-base-models"
         @update:model-value="handleFilterChange"
@@ -44,6 +46,8 @@ import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
 import { t } from '@/i18n'
+import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { cn } from '@/utils/tailwindUtil'
 
 export interface FilterState {
@@ -52,25 +56,18 @@ export interface FilterState {
   sortBy: string
 }
 
+const props = defineProps<{
+  assets?: AssetItem[]
+}>()
+
 const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
 const sortBy = ref('name-asc')
 
-// TODO: Make fileFormatOptions configurable via props or assetService
-// Should support dynamic file formats based on available assets or server capabilities
-const fileFormatOptions = [
-  { name: '.ckpt', value: 'ckpt' },
-  { name: '.safetensors', value: 'safetensors' },
-  { name: '.pt', value: 'pt' }
-]
-
-// TODO: Make baseModelOptions configurable via props or assetService
-// Should support dynamic base models based on available assets or server detection
-const baseModelOptions = [
-  { name: 'SD 1.5', value: 'sd15' },
-  { name: 'SD XL', value: 'sdxl' },
-  { name: 'SD 3.5', value: 'sd35' }
-]
+// Get dynamic filter options from actual assets
+const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
+  props.assets || []
+)
 
 // TODO: Make sortOptions configurable via props
 // Different asset types might need different sorting options
