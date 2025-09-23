@@ -98,16 +98,9 @@
     </template>
 
     <template #content>
-      <!-- Loading State -->
-      <div v-if="isLoading" class="flex items-center justify-center h-64">
-        <div class="text-neutral-500">
-          {{ $t('templateWorkflows.loading', 'Loading templates...') }}
-        </div>
-      </div>
-
-      <!-- No Results State -->
+      <!-- No Results State (only show when loaded and no results) -->
       <div
-        v-else-if="filteredTemplates.length === 0 && !isLoading"
+        v-if="!isLoading && filteredTemplates.length === 0"
         class="flex flex-col items-center justify-center h-64 text-neutral-500"
       >
         <i-lucide:search class="w-12 h-12 mb-4 opacity-50" />
@@ -126,8 +119,11 @@
       <div v-else>
         <!-- Title -->
         <div class="px-6 pt-4 pb-2 text-2xl font-semibold text-neutral">
-          <!-- show selected nav -->
-          <span>
+          <span
+            v-if="isLoading"
+            class="inline-block h-8 w-48 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+          ></span>
+          <span v-else>
             {{ pageTitle }}
           </span>
         </div>
@@ -137,8 +133,40 @@
           class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4 py-4"
           data-testid="template-workflows-content"
         >
+          <!-- Loading Skeletons (show while loading initial data) -->
           <CardContainer
-            v-for="template in displayTemplates"
+            v-for="n in isLoading ? 12 : 0"
+            :key="`initial-skeleton-${n}`"
+            ratio="square"
+            :max-width="300"
+            :min-width="200"
+          >
+            <template #top>
+              <CardTop ratio="landscape">
+                <template #default>
+                  <div
+                    class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
+                  ></div>
+                </template>
+              </CardTop>
+            </template>
+            <template #bottom>
+              <CardBottom>
+                <div class="px-4 py-3">
+                  <div
+                    class="h-6 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse mb-2"
+                  ></div>
+                  <div
+                    class="h-4 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+                  ></div>
+                </div>
+              </CardBottom>
+            </template>
+          </CardContainer>
+
+          <!-- Actual Template Cards -->
+          <CardContainer
+            v-for="template in isLoading ? [] : displayTemplates"
             :key="template.name"
             ref="cardRefs"
             v-memo="[template.name, hoveredTemplate === template.name]"
@@ -355,8 +383,9 @@
 </template>
 
 <script setup lang="ts">
+import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -420,8 +449,36 @@ const openTutorial = (template: TemplateInfo) => {
   }
 }
 
-// Get navigation items from the store
+// Get navigation items from the store, with skeleton items while loading
 const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
+  // Show skeleton navigation items while loading
+  if (isLoading.value) {
+    return [
+      {
+        id: 'skeleton-all',
+        label: 'All Templates',
+        icon: 'icon-[lucide--layout-grid]'
+      },
+      {
+        id: 'skeleton-basics',
+        label: 'Basics',
+        icon: 'icon-[lucide--graduation-cap]'
+      },
+      {
+        title: 'Generation Type',
+        items: [
+          { id: 'skeleton-1', label: '...', icon: 'icon-[lucide--loader-2]' },
+          { id: 'skeleton-2', label: '...', icon: 'icon-[lucide--loader-2]' }
+        ]
+      },
+      {
+        title: 'Closed Source Models',
+        items: [
+          { id: 'skeleton-3', label: '...', icon: 'icon-[lucide--loader-2]' }
+        ]
+      }
+    ]
+  }
   return workflowTemplatesStore.navGroupedTemplates
 })
 
@@ -490,7 +547,6 @@ const selectedLicenseObjects = computed({
 })
 
 // Loading states
-const isLoading = ref(true)
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
@@ -663,12 +719,22 @@ const pageTitle = computed(() => {
         t('templateWorkflows.allTemplates', 'All Templates')
 })
 
-// Initialize
-onMounted(async () => {
-  await loadTemplates()
-  await workflowTemplatesStore.loadWorkflowTemplates()
-  isLoading.value = false
-})
+// Initialize templates loading with useAsyncState
+const { isLoading } = useAsyncState(
+  async () => {
+    // Run both operations in parallel for better performance
+    await Promise.all([
+      loadTemplates(),
+      workflowTemplatesStore.loadWorkflowTemplates()
+    ])
+    return true
+  },
+  false, // initial state
+  {
+    immediate: true // Start loading immediately
+  }
+)
+
 onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs
 })
