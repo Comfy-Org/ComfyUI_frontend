@@ -3,6 +3,8 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+
 export class VueNodeHelpers {
   constructor(private page: Page) {}
 
@@ -39,7 +41,7 @@ export class VueNodeHelpers {
   /**
    * Get all Vue node IDs currently in the DOM
    */
-  async getNodeIds(): Promise<string[]> {
+  async getNodeIds(): Promise<NodeId[]> {
     return await this.nodes.evaluateAll((nodes) =>
       nodes
         .map((n) => n.getAttribute('data-node-id'))
@@ -50,14 +52,14 @@ export class VueNodeHelpers {
   /**
    * Select a specific Vue node by ID
    */
-  async selectNode(nodeId: string): Promise<void> {
+  async selectNode(nodeId: nodeId): Promise<void> {
     await this.page.locator(`[data-node-id="${nodeId}"]`).click()
   }
 
   /**
    * Select multiple Vue nodes by IDs using Ctrl+click
    */
-  async selectNodes(nodeIds: string[]): Promise<void> {
+  async selectNodes(nodeIds: NodeId[]): Promise<void> {
     if (nodeIds.length === 0) return
 
     // Select first node normally

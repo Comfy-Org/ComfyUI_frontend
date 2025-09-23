@@ -105,7 +105,7 @@ export function createNodeLocatorId(
  * @param id The NodeExecutionId to parse
  * @returns Array of node IDs from root to target, or null if not an execution ID
  */
-export function parseNodeExecutionId(id: string): NodeId[] | null {
+export function parseNodeExecutionId(id: NodeExecutionId): NodeId[] | null {
   if (!isNodeExecutionId(id)) return null
 
   return id

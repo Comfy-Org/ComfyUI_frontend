@@ -1,6 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 interface ChatHistoryEntry {
@@ -33,7 +35,7 @@ async function renderChatHistory(page: Page, history: ChatHistoryEntry[]) {
 }
 
 test.describe('Chat History Widget', () => {
-  let nodeId: string
+  let nodeId: NodeId
 
   test.beforeEach(async ({ comfyPage }) => {
     nodeId = await renderChatHistory(comfyPage.page, [

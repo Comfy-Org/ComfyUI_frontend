@@ -151,8 +151,9 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          const nodeId = String(this.id)
-          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(
+            this.id
+          )
           const state =
             useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
           if (state === 'running') {
@@ -376,7 +377,7 @@ export const useLitegraphService = () => {
     node.title = nodeDef.display_name || nodeDef.name
   }
 
-  async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
+  async function registerNodeDef(type: string, nodeDefV1: ComfyNodeDefV1) {
     const node = class ComfyNode extends LGraphNode {
       static comfyClass: string
       static override title: string
@@ -416,8 +417,9 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          const nodeId = String(this.id)
-          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(
+            this.id
+          )
           const state =
             useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
           if (state === 'running') {
@@ -649,7 +651,7 @@ export const useLitegraphService = () => {
 
     const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
     node.nodeData = nodeDef
-    LiteGraph.registerNodeType(nodeId, node)
+    LiteGraph.registerNodeType(type, node)
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
     // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category

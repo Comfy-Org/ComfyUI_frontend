@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   LGraph,
   LGraphNode,
@@ -61,7 +62,7 @@ function createMockSubgraph(id: string, nodes: LGraphNode[]): Subgraph {
     id,
     _nodes: nodes,
     nodes: nodes,
-    getNodeById: (nodeId: string | number) =>
+    getNodeById: (nodeId: NodeId) =>
       nodes.find((n) => String(n.id) === String(nodeId)) || null
   } as unknown as Subgraph
 }

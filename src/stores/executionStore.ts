@@ -28,7 +28,7 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 interface QueuedPrompt {
@@ -78,8 +78,10 @@ function getSubgraphsFromInstanceIds(
  * @param nodeId The node ID from execution context (could be execution ID)
  * @returns The NodeLocatorId
  */
-function executionIdToNodeLocatorId(nodeId: string | number): NodeLocatorId {
-  const nodeIdStr = String(nodeId)
+function executionIdToNodeLocatorId(
+  executionId: NodeExecutionId
+): NodeLocatorId {
+  const nodeIdStr = String(executionId)
 
   if (!nodeIdStr.includes(':')) {
     // It's a top-level node ID

@@ -16,7 +16,6 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 // Remove any previous global types
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Window {}
 }
 
@@ -148,7 +147,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
     })
 
     it('should handle numeric node IDs', () => {
-      const result = store.executionIdToNodeLocatorId(123)
+      const result = store.executionIdToNodeLocatorId('123')
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
