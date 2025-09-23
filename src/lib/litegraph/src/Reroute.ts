@@ -13,14 +13,15 @@ import type {
   Point,
   Positionable,
   ReadOnlyRect,
-  ReadonlyLinkNetwork
+  ReadonlyLinkNetwork,
+  UniqueId
 } from './interfaces'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 
-export type RerouteId = number & { type?: 'RerouteId' }
+export type RerouteId = UniqueId<number, 'RerouteId'>
 
 /** The input or output slot that an incomplete reroute link is connected to. */
 export interface FloatingRerouteSlot {

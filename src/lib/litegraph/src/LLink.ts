@@ -15,7 +15,8 @@ import type {
   ISlotType,
   LinkNetwork,
   LinkSegment,
-  ReadonlyLinkNetwork
+  ReadonlyLinkNetwork,
+  UniqueId
 } from './interfaces'
 import type {
   Serialisable,
@@ -25,7 +26,7 @@ import type {
 
 const layoutMutations = useLayoutMutations()
 
-export type LinkId = number & { type?: 'LinkId' }
+export type LinkId = UniqueId<number, 'LinkId'>
 
 export type SerialisedLLinkArray = [
   id: LinkId,

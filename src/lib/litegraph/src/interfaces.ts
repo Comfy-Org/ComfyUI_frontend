@@ -11,6 +11,9 @@ import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { LinkDirection, RenderShape } from './types/globalEnums'
 import type { IBaseWidget } from './types/widgets'
 
+declare const __brand: unique symbol
+export type UniqueId<T, B> = T & { [__brand]?: B }
+
 export type Dictionary<T> = { [key: string]: T }
 
 /** Allows all properties to be null.  The same as `Partial<T>`, but adds null instead of undefined. */

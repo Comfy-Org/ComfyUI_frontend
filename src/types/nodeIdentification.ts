@@ -1,3 +1,4 @@
+import type { UniqueId } from '@/lib/litegraph/src/interfaces'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
@@ -15,7 +16,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
  * Unlike execution IDs which change based on the instance path,
  * NodeLocatorId remains the same for all instances of a particular node.
  */
-export type NodeLocatorId = string & { type?: 'LocatorId' }
+export type NodeLocatorId = UniqueId<string, 'NodeLocatorId'>
 
 /**
  * An execution identifier representing a node's position in nested subgraphs.
@@ -24,7 +25,8 @@ export type NodeLocatorId = string & { type?: 'LocatorId' }
  * Format: Colon-separated path of node IDs
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
  */
-export type NodeExecutionId = string & { type?: 'ExecutionId' }
+declare const __executionIdBrand: unique symbol
+export type NodeExecutionId = UniqueId<string, 'NodeExecutionId'>
 
 /**
  * Type guard to check if a value is a NodeLocatorId
