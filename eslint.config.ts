@@ -34,7 +34,11 @@ export default defineConfig([
       parserOptions: {
         parser: tseslint.parser,
         projectService: {
-          allowDefaultProject: ['*.config.mts']
+          allowDefaultProject: [
+            'vite.config.mts',
+            'vite.electron.config.mts',
+            'vite.types.config.mts'
+          ]
         },
         tsConfigRootDir: import.meta.dirname,
         ecmaVersion: 2020,
