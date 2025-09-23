@@ -65,7 +65,7 @@
       class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
       @click="stopPlayback"
     >
-      <i class="icon-[lucide--pause] size-4 text-[#00D2D3]" />
+      <i class="icon-[lucide--square] size-4 text-[#00D2D3]" />
     </button>
   </div>
   <!-- Hidden audio element -->
@@ -76,6 +76,7 @@
     :src="recordedURL"
     class="hidden"
     @ended="onPlaybackEnded"
+    @loadedmetadata="onAudioMetadataLoaded"
   />
 </template>
 
@@ -132,196 +133,148 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-// Initialize waveform
 const initWaveform = () => {
-  console.log('[WidgetRecordAudio] Initializing waveform...')
   waveformBars.value = Array.from({ length: WAVEFORM_NUM_BARS }, () => ({
-    height: Math.random() * 28 + 4 // Random height between 4 and 32
+    height: Math.random() * 28 + 4
   }))
-  console.log(
-    '[WidgetRecordAudio] Waveform heights:',
-    waveformBars.value.slice(0, 5).map((b) => b.height)
-  )
 }
 
-// Update waveform visualization
 const updateWaveform = () => {
-  console.log(
-    '[WidgetRecordAudio] updateWaveform called - isRecording:',
-    isRecording.value,
-    'isPlaying:',
-    isPlaying.value
-  )
-
-  if (!isRecording.value && !isPlaying.value) {
-    console.log(
-      '[WidgetRecordAudio] updateWaveform stopped - no recording or playing'
-    )
-    return
-  }
+  if (!isRecording.value && !isPlaying.value) return
 
   if (analyser.value && dataArray.value) {
-    analyser.value.getByteFrequencyData(dataArray.value as any)
-
-    // Update bar heights based on audio data
-    const barCount = waveformBars.value.length
-    const samplesPerBar = Math.floor(dataArray.value.length / barCount)
-
-    waveformBars.value = waveformBars.value.map((_, i) => {
-      let sum = 0
-      for (let j = 0; j < samplesPerBar; j++) {
-        sum += dataArray.value![i * samplesPerBar + j] || 0
-      }
-      const average = sum / samplesPerBar
-      const normalizedHeight = (average / 255) * 28 + 4 // Scale to 4-32px range
-      return { height: normalizedHeight }
-    })
-    console.log(
-      '[WidgetRecordAudio] Waveform updated with frequency data, first 5 bars:',
-      waveformBars.value.slice(0, 5).map((b) => b.height)
-    )
+    updateWaveformFromAudio()
   } else {
-    // Simulate waveform when not recording
-    waveformBars.value = waveformBars.value.map((bar) => ({
-      height: Math.max(4, Math.min(32, bar.height + (Math.random() - 0.5) * 4))
-    }))
-    console.log(
-      '[WidgetRecordAudio] Waveform updated with random data, first 5 bars:',
-      waveformBars.value.slice(0, 5).map((b) => b.height)
-    )
+    updateWaveformRandom()
   }
 
   animationId.value = requestAnimationFrame(updateWaveform)
 }
 
-// Start recording
-async function startRecording() {
-  try {
-    if (props.readonly) {
-      console.log('[WidgetRecordAudio] Recording blocked - readonly mode')
-      return
-    }
+const updateWaveformFromAudio = () => {
+  if (!analyser.value || !dataArray.value) return
 
-    console.log('[WidgetRecordAudio] Starting recording...')
+  analyser.value.getByteFrequencyData(dataArray.value as any)
+  const barCount = waveformBars.value.length
+  const samplesPerBar = Math.floor(dataArray.value.length / barCount)
+
+  waveformBars.value = waveformBars.value.map((_, i) => {
+    let sum = 0
+    for (let j = 0; j < samplesPerBar; j++) {
+      sum += dataArray.value![i * samplesPerBar + j] || 0
+    }
+    const average = sum / samplesPerBar
+    const normalizedHeight = (average / 255) * 28 + 4
+    return { height: normalizedHeight }
+  })
+}
+
+const updateWaveformRandom = () => {
+  waveformBars.value = waveformBars.value.map((bar) => ({
+    height: Math.max(4, Math.min(32, bar.height + (Math.random() - 0.5) * 4))
+  }))
+}
+
+const setupAudioContext = async () => {
+  if (audioContext.value && audioContext.value.state !== 'closed') {
+    await audioContext.value.close()
+  }
+  audioContext.value = null
+  mediaElementSource.value = null
+}
+
+const setupRecordingAudio = async () => {
+  await useAudioService().registerWavEncoder()
+  stream.value = await navigator.mediaDevices.getUserMedia({ audio: true })
+
+  audioContext.value = new (window.AudioContext ||
+    (window as any).webkitAudioContext)()
+  analyser.value = audioContext.value.createAnalyser()
+  const source = audioContext.value.createMediaStreamSource(stream.value)
+  source.connect(analyser.value)
+
+  analyser.value.fftSize = 256
+  dataArray.value = new Uint8Array(analyser.value.frequencyBinCount)
+}
+
+const handleRecordingStop = async () => {
+  const blob = new Blob(audioChunks.value, { type: 'audio/wav' })
+
+  if (recordedURL.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(recordedURL.value)
+  }
+  recordedURL.value = URL.createObjectURL(blob)
+
+  try {
+    const path = await useAudioService().convertBlobToFileAndSubmit(blob)
+    modelValue.value = path
+
+    if (props.nodeData?.widgets) {
+      const audioWidget = props.nodeData.widgets.find(
+        (w: any) => w.name === 'audio'
+      )
+      if (audioWidget) {
+        if (
+          audioWidget.options?.values &&
+          !audioWidget.options.values.includes(path)
+        ) {
+          audioWidget.options.values.push(path)
+        }
+        audioWidget.value = path
+      }
+    }
+  } catch (e) {
+    useToastStore().addAlert('Failed to upload recorded audio')
+  }
+
+  cleanup()
+}
+
+async function startRecording() {
+  if (props.readonly) return
+
+  try {
     audioChunks.value = []
     recordedURL.value = null
     timer.value = 0
 
-    // Clean up any existing audio context and media element source
-    if (audioContext.value && audioContext.value.state !== 'closed') {
-      await audioContext.value.close()
-    }
-    audioContext.value = null
-    mediaElementSource.value = null
+    await setupAudioContext()
+    await setupRecordingAudio()
 
-    await useAudioService().registerWavEncoder()
-    console.log('[WidgetRecordAudio] WAV encoder registered')
-
-    stream.value = await navigator.mediaDevices.getUserMedia({ audio: true })
-    console.log('[WidgetRecordAudio] Microphone access granted')
-
-    // Setup audio context for visualization
-    audioContext.value = new (window.AudioContext ||
-      (window as any).webkitAudioContext)()
-    analyser.value = audioContext.value.createAnalyser()
-    const source = audioContext.value.createMediaStreamSource(stream.value)
-    source.connect(analyser.value)
-
-    analyser.value.fftSize = 256
-    dataArray.value = new Uint8Array(analyser.value.frequencyBinCount)
-    console.log('[WidgetRecordAudio] Audio context and analyser setup complete')
-
-    // Create recorder
-    mediaRecorder.value = new ExtendableMediaRecorder(stream.value, {
+    mediaRecorder.value = new ExtendableMediaRecorder(stream.value!, {
       mimeType: 'audio/wav'
     }) as unknown as MediaRecorder
-    console.log('[WidgetRecordAudio] MediaRecorder created')
 
     mediaRecorder.value.ondataavailable = (e) => {
       audioChunks.value.push(e.data)
     }
 
-    mediaRecorder.value.onstop = async () => {
-      console.log('[WidgetRecordAudio] Recording stopped, processing...')
-
-      const blob = new Blob(audioChunks.value, { type: 'audio/wav' })
-      console.log('[WidgetRecordAudio] Audio blob created:', {
-        size: blob.size,
-        type: blob.type,
-        chunks: audioChunks.value.length
-      })
-
-      if (recordedURL.value?.startsWith('blob:')) {
-        URL.revokeObjectURL(recordedURL.value)
-      }
-      recordedURL.value = URL.createObjectURL(blob)
-      console.log('[WidgetRecordAudio] Blob URL created:', recordedURL.value)
-
-      // Immediately upload and update widget values so execution has a valid path
-      try {
-        const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-        modelValue.value = path
-        console.log('[WidgetRecordAudio] Uploaded and set modelValue:', path)
-
-        if (props.nodeData?.widgets) {
-          const audioWidget = props.nodeData.widgets.find(
-            (w: any) => w.name === 'audio'
-          )
-          if (audioWidget) {
-            if (
-              audioWidget.options?.values &&
-              !audioWidget.options.values.includes(path)
-            ) {
-              audioWidget.options.values.push(path)
-            }
-            audioWidget.value = path
-            console.log('[WidgetRecordAudio] Audio widget updated:', path)
-          }
-        }
-      } catch (e) {
-        console.error('[WidgetRecordAudio] Upload failed:', e)
-        useToastStore().addAlert('Failed to upload recorded audio')
-      }
-
-      console.log('[WidgetRecordAudio] Recording process complete')
-      cleanup()
-    }
+    mediaRecorder.value.onstop = handleRecordingStop
 
     mediaRecorder.value.start()
     isRecording.value = true
-    console.log('[WidgetRecordAudio] Recording started')
 
-    // Start timer
     timerInterval.value = window.setInterval(() => {
       timer.value += 1
     }, 1000)
 
-    // Initialize waveform first to ensure it has some data
     initWaveform()
-
-    // Then start the animation
     updateWaveform()
   } catch (err) {
-    console.error('Error accessing microphone:', err)
     useToastStore().addAlert(
       t('g.micPermissionDenied') || 'Microphone permission denied'
     )
   }
 }
 
-// Stop recording
 function stopRecording() {
-  console.log('[WidgetRecordAudio] Stop recording requested')
   if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
-    console.log('[WidgetRecordAudio] Stopping MediaRecorder...')
     mediaRecorder.value.stop()
   } else {
-    console.log('[WidgetRecordAudio] MediaRecorder already inactive or null')
     cleanup()
   }
 }
 
-// Cleanup recording resources
 function cleanup() {
   isRecording.value = false
 
@@ -339,48 +292,29 @@ function cleanup() {
     cancelAnimationFrame(animationId.value)
   }
 
-  // Close audio context used for recording
   if (audioContext.value) {
     void audioContext.value.close()
     audioContext.value = null
   }
 
-  // Reset media element source reference
   mediaElementSource.value = null
 }
 
-// Play recording
-async function playRecording() {
-  if (!recordedURL.value) return
-
-  timer.value = 0
-  isPlaying.value = true
-
-  // Clean up existing audio context if it exists
+const setupPlaybackAudio = async () => {
   if (audioContext.value && audioContext.value.state !== 'closed') {
     await audioContext.value.close()
   }
 
-  // Reset mediaElementSource when creating new context
   mediaElementSource.value = null
-
-  // Force recreation of audio element by changing key
   audioElementKey.value += 1
-
-  // Wait for Vue to recreate the audio element
   await nextTick()
 
-  if (!audioRef.value) {
-    console.error('[WidgetRecordAudio] Audio element not available after recreation')
-    return
-  }
+  if (!audioRef.value) return false
 
-  // Always create fresh audio context and connections for playback
   audioContext.value = new (window.AudioContext ||
     (window as any).webkitAudioContext)()
   analyser.value = audioContext.value.createAnalyser()
 
-  // Create MediaElementSource with the fresh audio element
   mediaElementSource.value = audioContext.value.createMediaElementSource(
     audioRef.value
   )
@@ -391,22 +325,30 @@ async function playRecording() {
   analyser.value.fftSize = 256
   dataArray.value = new Uint8Array(analyser.value.frequencyBinCount)
 
-  // Start timer
+  return true
+}
+
+async function playRecording() {
+  if (!recordedURL.value) return
+
+  timer.value = 0
+  isPlaying.value = true
+
+  const audioSetup = await setupPlaybackAudio()
+  if (!audioSetup) return
+
   timerInterval.value = window.setInterval(() => {
     timer.value = Math.floor(audioRef.value?.currentTime || 0)
   }, 100)
 
-  audioRef.value.play().catch((error) => {
-    console.error('Error playing audio:', error)
-  })
+  void audioRef.value?.play()
   updateWaveform()
-  // Also ensure waveform is initialized when starting playback
+
   if (!analyser.value || !dataArray.value) {
     initWaveform()
   }
 }
 
-// Stop playback
 function stopPlayback() {
   if (audioRef.value) {
     audioRef.value.pause()
@@ -415,10 +357,14 @@ function stopPlayback() {
   void onPlaybackEnded()
 }
 
-// Playback ended
-async function onPlaybackEnded() {
+function onAudioMetadataLoaded() {
+  if (!isPlaying.value && !isRecording.value && audioRef.value?.duration) {
+    timer.value = Math.floor(audioRef.value.duration)
+  }
+}
+
+function onPlaybackEnded() {
   isPlaying.value = false
-  timer.value = 0
 
   if (timerInterval.value) {
     clearInterval(timerInterval.value)
@@ -429,32 +375,17 @@ async function onPlaybackEnded() {
     cancelAnimationFrame(animationId.value)
   }
 
-  // Don't close AudioContext immediately to allow for replay
-  // It will be closed when component unmounts
+  if (audioRef.value?.duration) {
+    timer.value = Math.floor(audioRef.value.duration)
+  } else {
+    timer.value = 0
+  }
 }
 
-// Initialize on mount
 onMounted(() => {
-  console.log('[WidgetRecordAudio] Mounted:', {
-    nodeClass:
-      props.nodeData?.constructor?.comfyClass ||
-      props.nodeData?.type ||
-      'Unknown',
-    nodeTitle: props.nodeData?.title,
-    hasNodeData: !!props.nodeData,
-    readonly: props.readonly,
-    modelValue: modelValue.value,
-    availableWidgets:
-      props.nodeData?.widgets?.map((w: any) => ({
-        name: w.name,
-        type: w.type
-      })) || []
-  })
-
   initWaveform()
 })
 
-// Cleanup on unmount
 onUnmounted(() => {
   stopRecording()
   stopPlayback()
@@ -462,82 +393,9 @@ onUnmounted(() => {
     URL.revokeObjectURL(recordedURL.value)
   }
 
-  // Clean up audio context on unmount
   if (audioContext.value && audioContext.value.state !== 'closed') {
     void audioContext.value.close()
   }
   mediaElementSource.value = null
 })
-
-async function serializeValue() {
-  console.log('[WidgetRecordAudio] serializeValue called:', {
-    isRecording: isRecording.value,
-    hasRecordedURL: !!recordedURL.value,
-    modelValue: modelValue.value
-  })
-
-  // If still recording, stop and wait for completion
-  if (isRecording.value && mediaRecorder.value) {
-    console.log('[WidgetRecordAudio] Still recording, stopping first...')
-    mediaRecorder.value.stop()
-
-    // Wait for recording to complete
-    await new Promise((resolve) => {
-      const checkRecording = () => {
-        if (!isRecording.value) {
-          console.log(
-            '[WidgetRecordAudio] Recording stopped, continuing serialization'
-          )
-          resolve(undefined)
-        } else {
-          setTimeout(checkRecording, 100)
-        }
-      }
-      checkRecording()
-    })
-  }
-
-  // If we have a recorded audio blob but no uploaded path yet, upload now
-  if (recordedURL.value && !modelValue.value) {
-    console.log(
-      '[WidgetRecordAudio] Have recorded audio, uploading during serialization...'
-    )
-    try {
-      const blob = await fetch(recordedURL.value).then((r) => r.blob())
-      const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-      modelValue.value = path
-      console.log(
-        '[WidgetRecordAudio] Upload during serialization successful:',
-        path
-      )
-
-      // Update audio widget
-      if (props.nodeData?.widgets) {
-        const audioWidget = props.nodeData.widgets.find(
-          (w: any) => w.name === 'audio'
-        )
-        if (audioWidget) {
-          audioWidget.value = path
-          console.log(
-            '[WidgetRecordAudio] Audio widget updated during serialization:',
-            path
-          )
-        }
-      }
-    } catch (error) {
-      console.error(
-        '[WidgetRecordAudio] Upload during serialization failed:',
-        error
-      )
-      useToastStore().addAlert('Failed to upload recorded audio')
-      return ''
-    }
-  }
-
-  const finalValue = modelValue.value || ''
-  console.log('[WidgetRecordAudio] serializeValue returning:', finalValue)
-  return finalValue
-}
-
-defineExpose({ serializeValue })
 </script>
