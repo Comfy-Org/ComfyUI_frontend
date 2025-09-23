@@ -592,7 +592,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   ): NodeLocatorId | null => {
     // Handle simple node IDs (root graph - no colons)
     if (!nodeExecutionId.includes(':')) {
-      return nodeExecutionId
+      return nodeExecutionId as NodeLocatorId
     }
 
     const parts = parseNodeExecutionId(nodeExecutionId)

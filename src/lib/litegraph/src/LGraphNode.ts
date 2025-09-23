@@ -90,7 +90,9 @@ import { type WidgetTypeMap, toConcreteWidget } from './widgets/widgetMap'
 
 // #region Types
 
-export type NodeId = number | string
+export type NodeId =
+  | (number & { type?: 'NodeId' })
+  | (string & { type?: 'NodeId' })
 
 export type NodeProperty = string | number | boolean | object
 

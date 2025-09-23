@@ -25,7 +25,7 @@
  * SOFTWARE.
  */
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { LinkId, SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
@@ -105,7 +105,7 @@ export function fixBadLinks(
 
   const data: {
     patchedNodes: Array<ISerialisedNode | LGraphNode>
-    deletedLinks: number[]
+    deletedLinks: LinkId[]
   } = {
     patchedNodes: [],
     deletedLinks: []
@@ -419,7 +419,7 @@ export function fixBadLinks(
     for (let i = data.deletedLinks.length - 1; i >= 0; i--) {
       logger.log(`Deleting link #${data.deletedLinks[i]}.`)
       if ((graph as LGraph).getNodeById) {
-        delete graph.links[data.deletedLinks[i]!]
+        delete (graph as LGraph).links[data.deletedLinks[i]!]
       } else {
         graph = graph as ISerialisedGraph
         // Sometimes we got objects for links if passed after ComfyUI's loadGraphData modifies the

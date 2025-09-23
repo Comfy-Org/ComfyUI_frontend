@@ -24,7 +24,7 @@ import type {
 
 const layoutMutations = useLayoutMutations()
 
-export type LinkId = number
+export type LinkId = number & { type?: 'LinkId' }
 
 export type SerialisedLLinkArray = [
   id: LinkId,

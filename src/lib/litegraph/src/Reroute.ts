@@ -20,7 +20,7 @@ import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 
-export type RerouteId = number
+export type RerouteId = number & { type?: 'RerouteId' }
 
 /** The input or output slot that an incomplete reroute link is connected to. */
 export interface FloatingRerouteSlot {

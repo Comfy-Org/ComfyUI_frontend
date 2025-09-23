@@ -574,7 +574,7 @@ export class LGraph
     const S: LGraphNode[] = []
     const M: Dictionary<LGraphNode> = {}
     // to avoid repeating links
-    const visited_links: Record<NodeId, boolean> = {}
+    const visited_links: Record<LinkId, boolean> = {}
     const remaining_links: Record<NodeId, number> = {}
 
     // search for the nodes without inputs (starting nodes)
@@ -1341,9 +1341,9 @@ export class LGraph
   createReroute(pos: Point, before: LinkSegment): Reroute {
     const layoutMutations = useLayoutMutations()
     const rerouteId = ++this.state.lastRerouteId
-    const linkIds = before instanceof Reroute ? before.linkIds : [before.id]
+    const linkIds = before instanceof Reroute ? before.linkIds : []
     const floatingLinkIds =
-      before instanceof Reroute ? before.floatingLinkIds : [before.id]
+      before instanceof Reroute ? before.floatingLinkIds : []
     const reroute = new Reroute(
       rerouteId,
       this,
