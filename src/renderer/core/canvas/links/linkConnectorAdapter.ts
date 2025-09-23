@@ -53,10 +53,7 @@ export class LinkConnectorAdapter {
     const output = node?.outputs?.[outputIndex]
     if (!node || !output) return
 
-    const fromReroute =
-      opts?.fromRerouteId != null
-        ? this.network.getReroute(opts.fromRerouteId)
-        : undefined
+    const fromReroute = this.network.getReroute(opts?.fromRerouteId)
 
     if (opts?.moveExisting) {
       this.linkConnector.moveOutputLink(this.network, output)
@@ -85,10 +82,7 @@ export class LinkConnectorAdapter {
     const input = node?.inputs?.[inputIndex]
     if (!node || !input) return
 
-    const fromReroute =
-      opts?.fromRerouteId != null
-        ? this.network.getReroute(opts.fromRerouteId)
-        : undefined
+    const fromReroute = this.network.getReroute(opts?.fromRerouteId)
 
     if (opts?.moveExisting) {
       this.linkConnector.moveInputLink(this.network, input)
