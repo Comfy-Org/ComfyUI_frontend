@@ -1,3 +1,4 @@
+import { refDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { type Ref, computed, ref } from 'vue'
 
@@ -77,12 +78,14 @@ export function useTemplateFiltering(
     return ['Open Source', 'Closed Source (API Nodes)']
   })
 
+  const debouncedSearchQuery = refDebounced(searchQuery, 50)
+
   const filteredBySearch = computed(() => {
-    if (!searchQuery.value.trim()) {
+    if (!debouncedSearchQuery.value.trim()) {
       return templatesArray.value
     }
 
-    const results = fuse.value.search(searchQuery.value)
+    const results = fuse.value.search(debouncedSearchQuery.value)
     return results.map((result) => result.item)
   })
 
