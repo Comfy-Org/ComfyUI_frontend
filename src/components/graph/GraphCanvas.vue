@@ -2,7 +2,9 @@
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
+  <LiteGraphCanvasSplitterOverlay
+    v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
+  >
     <template v-if="!workspaceStore.focusMode" #side-bar-panel>
       <SideToolbar />
     </template>
@@ -15,22 +17,16 @@
           v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
         />
       </div>
-      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
-
-      <MiniMap
-        v-if="comfyAppReady && minimapEnabled"
-        class="pointer-events-auto"
-      />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
+  <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
+  <MiniMap v-if="comfyAppReady && minimapEnabled" class="pointer-events-auto" />
   <canvas
     id="graph-canvas"
     ref="canvasRef"
     tabindex="1"
     class="align-top w-full h-full touch-none"
   />
-
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
