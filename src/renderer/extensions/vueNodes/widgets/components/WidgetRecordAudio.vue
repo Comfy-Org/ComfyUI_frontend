@@ -1,23 +1,39 @@
 <template>
-  <div class="bg-[#262729] rounded-lg px-4 h-14 flex items-center gap-4">
+  <div class="mb-4">
+    <Button
+      class="w-full bg-[#2D2E32] text-white border-0"
+      :disabled="isRecording || readonly"
+      @click="startRecording"
+    >
+      {{ t('g.startRecording', 'Start Recording') }}
+      <i-lucide:mic class="ml-1" />
+    </Button>
+  </div>
+  <div
+    v-if="isRecording || isPlaying || recordedURL"
+    class="bg-[#262729] rounded-lg px-4 h-14 flex items-center gap-4"
+  >
     <!-- Recording Status -->
     <div class="flex gap-2 items-center shrink-0 text-white">
       <span class="text-xs">
         {{
           isRecording
-            ? t('g.listening') || 'Listening...'
+            ? t('g.listening', 'Listening...')
             : isPlaying
-              ? 'Playing...'
+              ? t('g.playing', 'Playing...')
               : recordedURL
-                ? 'Ready'
-                : 'Press record'
+                ? t('g.ready', 'Ready')
+                : ''
         }}
       </span>
       <span class="text-sm">{{ formatTime(timer) }}</span>
     </div>
 
     <!-- Waveform Visualization -->
-    <div class="flex-1 flex gap-2 items-center h-8 overflow-hidden">
+    <div
+      v-if="isRecording || isPlaying"
+      class="flex-1 flex gap-2 items-center h-8 overflow-hidden"
+    >
       <div
         v-for="i in 30"
         :key="i"
@@ -28,16 +44,7 @@
 
     <!-- Control Button -->
     <button
-      v-if="!isRecording && !recordedURL"
-      :title="t('g.startRecording') || 'Start Recording'"
-      class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-      @click="startRecording"
-    >
-      <div class="size-3 bg-[#FF4444] rounded-full" />
-    </button>
-
-    <button
-      v-else-if="isRecording"
+      v-if="isRecording"
       :title="t('g.stopRecording') || 'Stop Recording'"
       class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors animate-pulse"
       @click="stopRecording"
@@ -46,7 +53,7 @@
     </button>
 
     <button
-      v-else-if="recordedURL && !isPlaying"
+      v-else-if="!isRecording && recordedURL && !isPlaying"
       :title="t('g.playRecording') || 'Play Recording'"
       class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
       @click="playRecording"
@@ -63,23 +70,6 @@
       <i class="icon-[lucide--pause] size-4 text-[#00D2D3]" />
     </button>
   </div>
-
-  <!-- Additional Controls (optional, shown when recording exists) -->
-  <div v-if="showControls && recordedURL" class="mt-2 flex gap-2 justify-end">
-    <button
-      class="bg-[#3a3b3d] hover:bg-[#4a4b4d] text-white rounded px-3 py-1 text-xs transition-colors"
-      @click="downloadRecording"
-    >
-      {{ t('g.download') || 'Download' }}
-    </button>
-    <button
-      class="bg-[#3a3b3d] hover:bg-[#4a4b4d] text-white rounded px-3 py-1 text-xs transition-colors"
-      @click="clearRecording"
-    >
-      {{ t('g.clear') || 'Clear' }}
-    </button>
-  </div>
-
   <!-- Hidden audio element -->
   <audio
     v-if="recordedURL"
@@ -92,6 +82,7 @@
 
 <script setup lang="ts">
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
+import { Button } from 'primevue'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
@@ -101,7 +92,6 @@ import { useAudioService } from '@/services/audioService'
 const props = defineProps<{
   widget?: any
   nodeData?: any
-  showControls?: boolean
   readonly?: boolean
 }>()
 
@@ -369,32 +359,6 @@ async function onPlaybackEnded() {
   }
 }
 
-// Download recording
-function downloadRecording() {
-  if (!recordedURL.value) return
-
-  const a = document.createElement('a')
-  a.href = recordedURL.value
-  a.download = `recording_${Date.now()}.wav`
-  a.click()
-}
-
-// Clear recording
-function clearRecording() {
-  if (recordedURL.value) {
-    URL.revokeObjectURL(recordedURL.value)
-    recordedURL.value = null
-  }
-  timer.value = 0
-  modelValue.value = null
-  if (props.nodeData?.widgets) {
-    const audioWidget = props.nodeData.widgets.find(
-      (w: any) => w.name === 'audio'
-    )
-    if (audioWidget) audioWidget.value = ''
-  }
-}
-
 // Initialize on mount
 onMounted(() => {
   console.log('[WidgetRecordAudio] Mounted:', {
@@ -404,7 +368,6 @@ onMounted(() => {
       'Unknown',
     nodeTitle: props.nodeData?.title,
     hasNodeData: !!props.nodeData,
-    showControls: props.showControls,
     readonly: props.readonly,
     modelValue: modelValue.value,
     availableWidgets:

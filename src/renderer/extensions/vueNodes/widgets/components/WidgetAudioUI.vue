@@ -168,9 +168,9 @@ const props = defineProps<{
   node?: LGraphNode
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: any]
-}>()
+// const emit = defineEmits<{
+//   'update:modelValue': [value: any]
+// }>()
 
 const modelValue = defineModel<any>('modelValue')
 
