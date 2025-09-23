@@ -33,7 +33,13 @@ export default defineConfig([
       },
       parserOptions: {
         parser: tseslint.parser,
-        projectService: true,
+        projectService: {
+          allowDefaultProject: [
+            'vite.config.mts',
+            'vite.electron.config.mts',
+            'vite.types.config.mts'
+          ]
+        },
         tsConfigRootDir: import.meta.dirname,
         ecmaVersion: 2020,
         sourceType: 'module',
@@ -77,6 +83,12 @@ export default defineConfig([
       '@typescript-eslint/prefer-as-const': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-import-type-side-effects': 'error',
+      '@typescript-eslint/no-empty-object-type': [
+        'error',
+        {
+          allowInterfaces: 'always'
+        }
+      ],
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix

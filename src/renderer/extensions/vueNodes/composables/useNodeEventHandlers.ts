@@ -38,7 +38,7 @@ function useNodeEventHandlersIndividual() {
     const node = nodeManager.value.getNode(nodeData.id)
     if (!node) return
 
-    const isMultiSelect = event.ctrlKey || event.metaKey
+    const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
 
     if (isMultiSelect) {
       // Ctrl/Cmd+click -> toggle selection

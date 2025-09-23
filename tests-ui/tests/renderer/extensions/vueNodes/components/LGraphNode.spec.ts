@@ -1,12 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 const mockData = vi.hoisted(() => ({
@@ -26,6 +27,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
 })
 
 vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+  () => {
+    const handleNodeSelect = vi.fn()
+    return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
+  }
+)
+
+vi.mock(
   '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
   () => ({
     useVueElementTracking: vi.fn()
@@ -41,21 +50,11 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   useNodeLayout: () => ({
     position: { x: 100, y: 50 },
+    size: { width: 200, height: 100 },
     startDrag: vi.fn(),
     handleDrag: vi.fn(),
     endDrag: vi.fn()
   })
-}))
-
-vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
-  useLOD: () => ({
-    lodLevel: { value: 0 },
-    shouldRenderWidgets: { value: true },
-    shouldRenderSlots: { value: true },
-    shouldRenderContent: { value: false },
-    lodCssClass: { value: '' }
-  }),
-  LODLevel: { MINIMAL: 0 }
 }))
 
 vi.mock(
@@ -130,7 +129,13 @@ describe('LGraphNode', () => {
   it('should call resize tracking composable with node ID', () => {
     mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
+    expect(useVueElementTracking).toHaveBeenCalledWith(
+      expect.any(Function),
+      'node'
+    )
+    const idArg = vi.mocked(useVueElementTracking).mock.calls[0]?.[0]
+    const id = toValue(idArg)
+    expect(id).toEqual('test-node-123')
   })
 
   it('should render with data-node-id attribute', () => {
@@ -179,12 +184,16 @@ describe('LGraphNode', () => {
   })
 
   it('should emit node-click event on pointer up', async () => {
+    const { handleNodeSelect } = useNodeEventHandlers()
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
     await wrapper.trigger('pointerup')
 
-    expect(wrapper.emitted('node-click')).toHaveLength(1)
-    expect(wrapper.emitted('node-click')?.[0]).toHaveLength(3)
-    expect(wrapper.emitted('node-click')?.[0][1]).toEqual(mockNodeData)
+    expect(handleNodeSelect).toHaveBeenCalledOnce()
+    expect(handleNodeSelect).toHaveBeenCalledWith(
+      expect.any(PointerEvent),
+      mockNodeData,
+      expect.any(Boolean)
+    )
   })
 })

@@ -1,11 +1,11 @@
 import { storeToRefs } from 'pinia'
-/**
- * Composable for individual Vue node components
- *
- * Uses customRef for shared write access with Canvas renderer.
- * Provides dragging functionality and reactive layout state.
- */
-import { computed, inject } from 'vue'
+import {
+  type CSSProperties,
+  type MaybeRefOrGetter,
+  computed,
+  inject,
+  toValue
+} from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -17,7 +17,8 @@ import { LayoutSource, type Point } from '@/renderer/core/layout/types'
  * Composable for individual Vue node components
  * Uses customRef for shared write access with Canvas renderer
  */
-export function useNodeLayout(nodeId: string) {
+export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
+  const nodeId = toValue(nodeIdMaybe)
   const mutations = useLayoutMutations()
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
@@ -187,14 +188,16 @@ export function useNodeLayout(nodeId: string) {
     endDrag,
 
     // Computed styles for Vue templates
-    nodeStyle: computed(() => ({
-      position: 'absolute' as const,
-      left: `${position.value.x}px`,
-      top: `${position.value.y}px`,
-      width: `${size.value.width}px`,
-      height: `${size.value.height}px`,
-      zIndex: zIndex.value,
-      cursor: isDragging ? 'grabbing' : 'grab'
-    }))
+    nodeStyle: computed(
+      (): CSSProperties => ({
+        position: 'absolute' as const,
+        left: `${position.value.x}px`,
+        top: `${position.value.y}px`,
+        width: `${size.value.width}px`,
+        height: `${size.value.height}px`,
+        zIndex: zIndex.value,
+        cursor: isDragging ? 'grabbing' : 'grab'
+      })
+    )
   }
 }

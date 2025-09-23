@@ -1548,6 +1548,71 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     ByteDanceImageReferenceNode: {
       displayPrice: byteDanceVideoPricingCalculator
+    },
+    WanTextToVideoApi: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'size'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
+
+        const seconds = parseFloat(String(durationWidget.value))
+        const resolutionStr = String(resolutionWidget.value).toLowerCase()
+
+        const resKey = resolutionStr.includes('1080')
+          ? '1080p'
+          : resolutionStr.includes('720')
+            ? '720p'
+            : resolutionStr.includes('480')
+              ? '480p'
+              : resolutionStr.match(/^\s*(\d{3,4}p)/)?.[1] ?? ''
+
+        const pricePerSecond: Record<string, number> = {
+          '480p': 0.05,
+          '720p': 0.1,
+          '1080p': 0.15
+        }
+
+        const pps = pricePerSecond[resKey]
+        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
+
+        const cost = (pps * seconds).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    WanImageToVideoApi: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
+
+        const seconds = parseFloat(String(durationWidget.value))
+        const resolution = String(resolutionWidget.value).trim().toLowerCase()
+
+        const pricePerSecond: Record<string, number> = {
+          '480p': 0.05,
+          '720p': 0.1,
+          '1080p': 0.15
+        }
+
+        const pps = pricePerSecond[resolution]
+        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
+
+        const cost = (pps * seconds).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    WanTextToImageApi: {
+      displayPrice: '$0.03/Run'
     }
   }
 
@@ -1647,7 +1712,9 @@ export const useNodePricing = () => {
       ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
       ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
       ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
-      ByteDanceImageReferenceNode: ['model', 'duration', 'resolution']
+      ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
+      WanTextToVideoApi: ['duration', 'size'],
+      WanImageToVideoApi: ['duration', 'resolution']
     }
     return widgetMap[nodeType] || []
   }

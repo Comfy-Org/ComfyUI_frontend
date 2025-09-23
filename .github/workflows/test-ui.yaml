@@ -27,12 +27,10 @@ jobs:
           repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
 
-      - name: Checkout ComfyUI_devtools
-        uses: actions/checkout@v4
-        with:
-          repository: 'Comfy-Org/ComfyUI_devtools'
-          path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
-          ref: 'd05fd48dd787a4192e16802d4244cfcc0e2f9684'
+      - name: Copy ComfyUI_devtools from frontend repo
+        run: |
+          mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
+          cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4

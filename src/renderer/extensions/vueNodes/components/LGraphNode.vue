@@ -23,7 +23,7 @@
             bypassed,
           'will-change-transform': isDragging
         },
-        lodCssClass,
+
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -31,7 +31,7 @@
     "
     :style="[
       {
-        transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex
       },
       dragStyle
@@ -48,21 +48,18 @@
       </template>
       <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, lodLevel, isCollapsed]"
+        v-memo="[nodeData.title, isCollapsed]"
         :node-data="nodeData"
         :readonly="readonly"
-        :lod-level="lodLevel"
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
-        @update:title="handleTitleUpdate"
+        @update:title="handleHeaderTitleUpdate"
         @enter-subgraph="handleEnterSubgraph"
       />
     </div>
 
     <div
-      v-if="
-        (isMinimalLOD || isCollapsed) && executing && progress !== undefined
-      "
+      v-if="isCollapsed && executing && progress !== undefined"
       :class="
         cn(
           'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
@@ -72,7 +69,7 @@
       :style="{ width: `${Math.min(progress * 100, 100)}%` }"
     />
 
-    <template v-if="!isMinimalLOD && !isCollapsed">
+    <template v-if="!isCollapsed">
       <div class="mb-4 relative">
         <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
@@ -96,29 +93,24 @@
       >
         <!-- Slots only rendered at full detail -->
         <NodeSlots
-          v-if="shouldRenderSlots"
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length, lodLevel]"
+          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
           :node-data="nodeData"
           :readonly="readonly"
-          :lod-level="lodLevel"
-          @slot-click="handleSlotClick"
         />
 
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
-          v-if="shouldShowWidgets"
-          v-memo="[nodeData.widgets?.length, lodLevel]"
+          v-if="nodeData.widgets?.length"
+          v-memo="[nodeData.widgets?.length]"
           :node-data="nodeData"
           :readonly="readonly"
-          :lod-level="lodLevel"
         />
 
         <!-- Custom content at reduced+ detail -->
         <NodeContent
-          v-if="shouldShowContent"
+          v-if="hasCustomContent"
           :node-data="nodeData"
           :readonly="readonly"
-          :lod-level="lodLevel"
           :image-urls="nodeImageUrls"
         />
         <!-- Live preview image -->
@@ -140,15 +132,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  inject,
-  onErrorCaptured,
-  onMounted,
-  ref,
-  toRef,
-  watch
-} from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -156,13 +140,12 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
-import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -181,8 +164,6 @@ import SlotConnectionDot from './SlotConnectionDot.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   nodeData: VueNodeData
-  position?: { x: number; y: number }
-  size?: { width: number; height: number }
   readonly?: boolean
   error?: string | null
   zoomLevel?: number
@@ -190,30 +171,14 @@ interface LGraphNodeProps {
 
 const {
   nodeData,
-  position = { x: 0, y: 0 },
-  size = { width: 100, height: 50 },
   error = null,
-  readonly = false,
-  zoomLevel = 1
+  readonly = false
 } = defineProps<LGraphNodeProps>()
 
-const emit = defineEmits<{
-  'node-click': [
-    event: PointerEvent,
-    nodeData: VueNodeData,
-    wasDragging: boolean
-  ]
-  'slot-click': [
-    event: PointerEvent,
-    nodeData: VueNodeData,
-    slotIndex: number,
-    isInput: boolean
-  ]
-  'update:collapsed': [nodeId: string, collapsed: boolean]
-  'update:title': [nodeId: string, newTitle: string]
-}>()
+const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
+  useNodeEventHandlers()
 
-useVueElementTracking(nodeData.id, 'node')
+useVueElementTracking(() => nodeData.id, 'node')
 
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
@@ -226,7 +191,7 @@ const isSelected = computed(() => {
 })
 
 // Use execution state composable
-const { executing, progress } = useNodeExecutionState(nodeData.id)
+const { executing, progress } = useNodeExecutionState(() => nodeData.id)
 
 // Direct access to execution store for error state
 const executionStore = useExecutionStore()
@@ -244,19 +209,6 @@ const bypassed = computed((): boolean => nodeData.mode === 4)
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
 
-// LOD (Level of Detail) system based on zoom level
-const zoomRef = toRef(() => zoomLevel)
-const {
-  lodLevel,
-  shouldRenderWidgets,
-  shouldRenderSlots,
-  shouldRenderContent,
-  lodCssClass
-} = useLOD(zoomRef)
-
-// Computed properties for template usage
-const isMinimalLOD = computed(() => lodLevel.value === LODLevel.MINIMAL)
-
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
@@ -268,40 +220,28 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const { position: layoutPosition, zIndex, resize } = useNodeLayout(nodeData.id)
+const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
 const {
   handlePointerDown,
   handlePointerUp,
   handlePointerMove,
   isDragging,
   dragStyle
-} = useNodePointerInteractions(nodeData, (event, nodeData, wasDragging) => {
-  emit('node-click', event, nodeData, wasDragging)
-})
+} = useNodePointerInteractions(() => nodeData, handleNodeSelect)
 
 onMounted(() => {
-  if (size && transformState?.camera) {
+  if (size.value && transformState?.camera) {
     const scale = transformState.camera.z
     const screenSize = {
-      width: size.width * scale,
-      height: size.height * scale
+      width: size.value.width * scale,
+      height: size.value.height * scale
     }
     resize(screenSize)
   }
 })
 
 // Track collapsed state
-const isCollapsed = ref(nodeData.flags?.collapsed ?? false)
-
-// Watch for external changes to the collapsed state
-watch(
-  () => nodeData.flags?.collapsed,
-  (newCollapsed: boolean | undefined) => {
-    if (newCollapsed !== undefined && newCollapsed !== isCollapsed.value) {
-      isCollapsed.value = newCollapsed
-    }
-  }
-)
+const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 
 // Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
@@ -311,24 +251,14 @@ const hasCustomContent = computed(() => {
 
 // Computed classes and conditions for better reusability
 const separatorClasses =
-  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full'
+  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
-  nodeData.id,
+  () => nodeData.id,
   {
-    isMinimalLOD,
     isCollapsed
   }
-)
-
-// Common condition computations to avoid repetition
-const shouldShowWidgets = computed(
-  () => shouldRenderWidgets.value && nodeData.widgets?.length
-)
-
-const shouldShowContent = computed(
-  () => shouldRenderContent.value && hasCustomContent.value
 )
 
 const borderClass = computed(() => {
@@ -356,31 +286,11 @@ const outlineClass = computed(() => {
 
 // Event handlers
 const handleCollapse = () => {
-  isCollapsed.value = !isCollapsed.value
-  // Emit event so parent can sync with LiteGraph if needed
-  emit('update:collapsed', nodeData.id, isCollapsed.value)
+  handleNodeCollapse(nodeData.id, !isCollapsed.value)
 }
 
-const handleSlotClick = (
-  event: PointerEvent,
-  slotIndex: number,
-  isInput: boolean
-) => {
-  if (!nodeData) {
-    console.warn('LGraphNode: nodeData is null/undefined in handleSlotClick')
-    return
-  }
-
-  // Don't handle slot clicks when canvas is in panning mode
-  if (!shouldHandleNodePointerEvents.value) {
-    return
-  }
-
-  emit('slot-click', event, nodeData, slotIndex, isInput)
-}
-
-const handleTitleUpdate = (newTitle: string) => {
-  emit('update:title', nodeData.id, newTitle)
+const handleHeaderTitleUpdate = (newTitle: string) => {
+  handleNodeTitleUpdate(nodeData.id, newTitle)
 }
 
 const handleEnterSubgraph = () => {
@@ -410,15 +320,17 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeImageUrls = ref<string[]>([])
-const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
+const nodeOutputLocatorId = computed(() =>
+  nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
+)
+const nodeImageUrls = computed(() => {
+  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const locatorId = getLocatorIdFromNodeData(nodeData)
 
   // Use root graph for getNodeByLocatorId since it needs to traverse from root
   const rootGraph = app.graph?.rootGraph || app.graph
   if (!rootGraph) {
-    nodeImageUrls.value = []
-    return
+    return []
   }
 
   const node = getNodeByLocatorId(rootGraph, locatorId)
@@ -426,23 +338,13 @@ const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
   if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
     if (urls) {
-      nodeImageUrls.value = urls
+      return urls
     }
-  } else {
-    // Clear URLs if no outputs or no images
-    nodeImageUrls.value = []
   }
-}
+  // Clear URLs if no outputs or no images
+  return []
+})
 
-const nodeOutputLocatorId = computed(() =>
-  nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
-)
-
-watch(
-  () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
-  (newOutputs) => {
-    onNodeOutputsUpdate(newOutputs)
-  },
-  { deep: true }
-)
+const nodeContainerRef = ref()
+provide('tooltipContainer', nodeContainerRef)
 </script>
