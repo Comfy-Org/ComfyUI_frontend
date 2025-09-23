@@ -6,6 +6,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../fixtures/ComfyPage'
+import { getMiddlePoint } from '../../fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '../../helpers/fitToView'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
@@ -461,6 +462,202 @@ test.describe('Vue Node Link Interaction', () => {
     })
     expect(await samplerOutput.getLinkCount()).toBe(1)
     expect(await vaeInput.getLinkCount()).toBe(1)
+  })
+
+  test('rerouted input drag preview remains anchored to reroute', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+    const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+
+    const samplerNode = samplerNodes[0]
+    const vaeNode = vaeNodes[0]
+
+    const samplerOutput = await samplerNode.getOutput(0)
+    const vaeInput = await vaeNode.getInput(0)
+
+    const samplerOutputKey = getSlotKey(String(samplerNode.id), 0, false)
+    const vaeInputKey = getSlotKey(String(vaeNode.id), 0, true)
+
+    const samplerOutputLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerOutputKey}"]`
+    )
+    const vaeInputLocator = comfyPage.page.locator(
+      `[data-slot-key="${vaeInputKey}"]`
+    )
+
+    await expect(samplerOutputLocator).toBeVisible()
+    await expect(vaeInputLocator).toBeVisible()
+
+    await samplerOutputLocator.dragTo(vaeInputLocator)
+    await comfyPage.nextFrame()
+
+    const outputPosition = await samplerOutput.getPosition()
+    const inputPosition = await vaeInput.getPosition()
+    const reroutePoint = getMiddlePoint(outputPosition, inputPosition)
+
+    // Insert a reroute programmatically on the existing link between sampler output[0] and VAE input[0].
+    // This avoids relying on an exact path hit-test position.
+    await comfyPage.page.evaluate(
+      ([targetNodeId, targetSlot, clientPoint]) => {
+        const app = (window as any)['app']
+        const graph = app?.canvas?.graph ?? app?.graph
+        if (!graph) throw new Error('Graph not available')
+        const node = graph.getNodeById(targetNodeId)
+        if (!node) throw new Error('Target node not found')
+        const input = node.inputs?.[targetSlot]
+        if (!input) throw new Error('Target input slot not found')
+
+        const linkId = input.link
+        if (linkId == null) throw new Error('Expected existing link on input')
+        const link = graph.getLink(linkId)
+        if (!link) throw new Error('Link not found')
+
+        // Convert the client/canvas pixel coordinates to graph space
+        const pos = app.canvas.ds.convertCanvasToOffset([
+          clientPoint.x,
+          clientPoint.y
+        ])
+        graph.createReroute(pos, link)
+      },
+      [vaeNode.id, 0, reroutePoint] as const
+    )
+
+    await comfyPage.nextFrame()
+
+    const vaeInputCenter = await getCenter(vaeInputLocator)
+    const dragTarget = {
+      x: vaeInputCenter.x + 160,
+      y: vaeInputCenter.y - 120
+    }
+
+    let dropped = false
+    try {
+      await comfyMouse.move(vaeInputCenter)
+      await comfyMouse.drag(dragTarget)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-node-reroute-input-drag.png'
+      )
+      await comfyMouse.move(vaeInputCenter)
+      await comfyMouse.drop()
+      dropped = true
+    } finally {
+      if (!dropped) {
+        await comfyMouse.drop().catch(() => {})
+      }
+    }
+
+    await comfyPage.nextFrame()
+
+    const linkDetails = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
+    expect(linkDetails).not.toBeNull()
+    expect(linkDetails?.originId).toBe(samplerNode.id)
+    expect(linkDetails?.parentId).not.toBeNull()
+  })
+
+  test('rerouted output shift-drag preview remains anchored to reroute', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const samplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+    expect(samplerNodes.length).toBeGreaterThan(0)
+    const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+    expect(vaeNodes.length).toBeGreaterThan(0)
+
+    const samplerNode = samplerNodes[0]
+    const vaeNode = vaeNodes[0]
+
+    const samplerOutput = await samplerNode.getOutput(0)
+    const vaeInput = await vaeNode.getInput(0)
+
+    await samplerOutput.removeLinks()
+    await vaeInput.removeLinks()
+
+    const samplerOutputKey = getSlotKey(String(samplerNode.id), 0, false)
+    const vaeInputKey = getSlotKey(String(vaeNode.id), 0, true)
+
+    const samplerOutputLocator = comfyPage.page.locator(
+      `[data-slot-key="${samplerOutputKey}"]`
+    )
+    const vaeInputLocator = comfyPage.page.locator(
+      `[data-slot-key="${vaeInputKey}"]`
+    )
+
+    await expect(samplerOutputLocator).toBeVisible()
+    await expect(vaeInputLocator).toBeVisible()
+
+    await samplerOutputLocator.dragTo(vaeInputLocator)
+    await comfyPage.nextFrame()
+
+    const outputPosition = await samplerOutput.getPosition()
+    const inputPosition = await vaeInput.getPosition()
+    const reroutePoint = getMiddlePoint(outputPosition, inputPosition)
+
+    // Insert a reroute programmatically on the existing link between sampler output[0] and VAE input[0].
+    // This avoids relying on an exact path hit-test position.
+    await comfyPage.page.evaluate(
+      ([targetNodeId, targetSlot, clientPoint]) => {
+        const app = (window as any)['app']
+        const graph = app?.canvas?.graph ?? app?.graph
+        if (!graph) throw new Error('Graph not available')
+        const node = graph.getNodeById(targetNodeId)
+        if (!node) throw new Error('Target node not found')
+        const input = node.inputs?.[targetSlot]
+        if (!input) throw new Error('Target input slot not found')
+
+        const linkId = input.link
+        if (linkId == null) throw new Error('Expected existing link on input')
+        const link = graph.getLink(linkId)
+        if (!link) throw new Error('Link not found')
+
+        // Convert the client/canvas pixel coordinates to graph space
+        const pos = app.canvas.ds.convertCanvasToOffset([
+          clientPoint.x,
+          clientPoint.y
+        ])
+        graph.createReroute(pos, link)
+      },
+      [vaeNode.id, 0, reroutePoint] as const
+    )
+
+    await comfyPage.nextFrame()
+
+    const outputCenter = await getCenter(samplerOutputLocator)
+    const dragTarget = {
+      x: outputCenter.x + 150,
+      y: outputCenter.y - 140
+    }
+
+    let dropPending = false
+    let shiftHeld = false
+    try {
+      await comfyMouse.move(outputCenter)
+      await comfyPage.page.keyboard.down('Shift')
+      shiftHeld = true
+      dropPending = true
+      await comfyMouse.drag(dragTarget)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-node-reroute-output-shift-drag.png'
+      )
+      await comfyMouse.move(outputCenter)
+      await comfyMouse.drop()
+      dropPending = false
+    } finally {
+      if (dropPending) {
+        await comfyMouse.drop().catch(() => {})
+      }
+      if (shiftHeld) {
+        await comfyPage.page.keyboard.up('Shift').catch(() => {})
+      }
+    }
+
+    await comfyPage.nextFrame()
+
+    const linkDetails = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
+    expect(linkDetails).not.toBeNull()
+    expect(linkDetails?.originId).toBe(samplerNode.id)
+    expect(linkDetails?.parentId).not.toBeNull()
   })
 
   test('dragging input to input drags existing link', async ({
