@@ -28,6 +28,7 @@
       @click.stop
       @keydown.stop
     />
+    <LODFallback />
   </div>
 </template>
 
@@ -38,6 +39,8 @@ import { computed, nextTick, ref } from 'vue'
 import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+
+import LODFallback from '../../components/LODFallback.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string>
