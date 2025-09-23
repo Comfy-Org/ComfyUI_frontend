@@ -10,12 +10,15 @@
     />
 
     <!-- Slot Name -->
-    <span
-      v-if="!dotOnly"
-      class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200"
-    >
-      {{ slotData.localized_name || slotData.name || `Input ${index}` }}
-    </span>
+    <div class="relative">
+      <span
+        v-if="!dotOnly"
+        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+      >
+        {{ slotData.localized_name || slotData.name || `Input ${index}` }}
+      </span>
+      <LODFallback />
+    </div>
   </div>
 </template>
 
@@ -38,6 +41,7 @@ import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composabl
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@/utils/tailwindUtil'
 
+import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface InputSlotProps {

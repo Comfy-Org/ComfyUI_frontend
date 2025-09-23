@@ -2,41 +2,14 @@
  * Vue node lifecycle management for LiteGraph integration
  * Provides event-driven reactivity with performance optimizations
  */
-import { nextTick, reactive } from 'vue'
+import { reactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
-
-export interface NodeState {
-  visible: boolean
-  dirty: boolean
-  lastUpdate: number
-  culled: boolean
-}
-
-interface NodeMetadata {
-  lastRenderTime: number
-  cachedBounds: DOMRect | null
-  lodLevel: 'high' | 'medium' | 'low'
-  spatialIndex?: QuadTree<string>
-}
-
-interface PerformanceMetrics {
-  fps: number
-  frameTime: number
-  updateTime: number
-  nodeCount: number
-  culledCount: number
-  callbackUpdateCount: number
-  rafUpdateCount: number
-  adaptiveQuality: boolean
-}
 
 export interface SafeWidgetData {
   name: string
@@ -63,39 +36,15 @@ export interface VueNodeData {
   }
 }
 
-interface SpatialMetrics {
-  queryTime: number
-  nodesInIndex: number
-}
-
 export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
-  nodeState: ReadonlyMap<string, NodeState>
 
   // Access to original LiteGraph nodes (non-reactive)
   getNode(id: string): LGraphNode | undefined
 
   // Lifecycle methods
-  setupEventListeners(): () => void
   cleanup(): void
-
-  // Update methods
-  scheduleUpdate(
-    nodeId?: string,
-    priority?: 'critical' | 'normal' | 'low'
-  ): void
-  forceSync(): void
-
-  // Spatial queries
-  getVisibleNodeIds(viewportBounds: Bounds): Set<string>
-
-  // Performance
-  performanceMetrics: PerformanceMetrics
-  spatialMetrics: SpatialMetrics
-
-  // Debug
-  getSpatialIndexDebugInfo(): SpatialIndexDebugInfo | null
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
@@ -103,60 +52,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const { createNode, deleteNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
-  const nodeState = reactive(new Map<string, NodeState>())
 
   // Non-reactive storage for original LiteGraph nodes
   const nodeRefs = new Map<string, LGraphNode>()
-
-  // WeakMap for heavy data that auto-GCs when nodes are removed
-  const nodeMetadata = new WeakMap<LGraphNode, NodeMetadata>()
-
-  // Performance tracking
-  const performanceMetrics = reactive<PerformanceMetrics>({
-    fps: 0,
-    frameTime: 0,
-    updateTime: 0,
-    nodeCount: 0,
-    culledCount: 0,
-    callbackUpdateCount: 0,
-    rafUpdateCount: 0,
-    adaptiveQuality: false
-  })
-
-  // Spatial indexing using QuadTree
-  const spatialIndex = new QuadTree<string>(
-    { x: -10000, y: -10000, width: 20000, height: 20000 },
-    { maxDepth: 6, maxItemsPerNode: 4 }
-  )
-  let lastSpatialQueryTime = 0
-
-  // Spatial metrics
-  const spatialMetrics = reactive<SpatialMetrics>({
-    queryTime: 0,
-    nodesInIndex: 0
-  })
-
-  // Update batching
-  const pendingUpdates = new Set<string>()
-  const criticalUpdates = new Set<string>()
-  const lowPriorityUpdates = new Set<string>()
-  let updateScheduled = false
-  let batchTimeoutId: number | null = null
-
-  // Change detection state
-  const lastNodesSnapshot = new Map<
-    string,
-    { pos: [number, number]; size: [number, number] }
-  >()
-
-  const attachMetadata = (node: LGraphNode) => {
-    nodeMetadata.set(node, {
-      lastRenderTime: performance.now(),
-      cachedBounds: null,
-      lodLevel: 'high',
-      spatialIndex: undefined
-    })
-  }
 
   // Extract safe data from LiteGraph node for Vue consumption
   const extractVueNodeData = (node: LGraphNode): VueNodeData => {
@@ -278,7 +176,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         ...currentData,
         widgets: updatedWidgets
       })
-      performanceMetrics.callbackUpdateCount++
     } catch (error) {
       // Ignore widget update errors to prevent cascade failures
     }
@@ -348,70 +245,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     })
   }
 
-  // Uncomment when needed for future features
-  // const getNodeMetadata = (node: LGraphNode): NodeMetadata => {
-  //   let metadata = nodeMetadata.get(node)
-  //   if (!metadata) {
-  //     attachMetadata(node)
-  //     metadata = nodeMetadata.get(node)!
-  //   }
-  //   return metadata
-  // }
-  const scheduleUpdate = (
-    nodeId?: string,
-    priority: 'critical' | 'normal' | 'low' = 'normal'
-  ) => {
-    if (nodeId) {
-      const state = nodeState.get(nodeId)
-      if (state) state.dirty = true
-
-      // Priority queuing
-      if (priority === 'critical') {
-        criticalUpdates.add(nodeId)
-        flush() // Immediate flush for critical updates
-        return
-      } else if (priority === 'low') {
-        lowPriorityUpdates.add(nodeId)
-      } else {
-        pendingUpdates.add(nodeId)
-      }
-    }
-
-    if (!updateScheduled) {
-      updateScheduled = true
-
-      // Adaptive batching strategy
-      if (pendingUpdates.size > 10) {
-        // Many updates - batch in nextTick
-        void nextTick(() => flush())
-      } else {
-        // Few updates - small delay for more batching
-        batchTimeoutId = window.setTimeout(() => flush(), 4)
-      }
-    }
-  }
-
-  const flush = () => {
-    const startTime = performance.now()
-
-    if (batchTimeoutId !== null) {
-      clearTimeout(batchTimeoutId)
-      batchTimeoutId = null
-    }
-
-    // Clear all pending updates
-    criticalUpdates.clear()
-    pendingUpdates.clear()
-    lowPriorityUpdates.clear()
-    updateScheduled = false
-
-    // Sync with graph state
-    syncWithGraph()
-
-    const endTime = performance.now()
-    performanceMetrics.updateTime = endTime - startTime
-  }
-
   const syncWithGraph = () => {
     if (!graph?._nodes) return
 
@@ -422,9 +255,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       if (!currentNodes.has(id)) {
         nodeRefs.delete(id)
         vueNodeData.delete(id)
-        nodeState.delete(id)
-        lastNodesSnapshot.delete(id)
-        spatialIndex.remove(id)
       }
     }
 
@@ -440,47 +270,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
       // Extract and store safe data for Vue
       vueNodeData.set(id, extractVueNodeData(node))
-
-      if (!nodeState.has(id)) {
-        nodeState.set(id, {
-          visible: true,
-          dirty: false,
-          lastUpdate: performance.now(),
-          culled: false
-        })
-        attachMetadata(node)
-
-        // Add to spatial index
-        const bounds: Bounds = {
-          x: node.pos[0],
-          y: node.pos[1],
-          width: node.size[0],
-          height: node.size[1]
-        }
-        spatialIndex.insert(id, bounds, id)
-      }
     })
-
-    // Update performance metrics
-    performanceMetrics.nodeCount = vueNodeData.size
-    performanceMetrics.culledCount = Array.from(nodeState.values()).filter(
-      (s) => s.culled
-    ).length
-  }
-
-  // Most performant: Direct position sync without re-setting entire node
-  // Query visible nodes using QuadTree spatial index
-  const getVisibleNodeIds = (viewportBounds: Bounds): Set<string> => {
-    const startTime = performance.now()
-
-    // Use QuadTree for fast spatial query
-    const results: string[] = spatialIndex.query(viewportBounds)
-    const visibleIds = new Set(results)
-
-    lastSpatialQueryTime = performance.now() - startTime
-    spatialMetrics.queryTime = lastSpatialQueryTime
-
-    return visibleIds
   }
 
   /**
@@ -502,29 +292,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
 
-    // Set up reactive tracking state
-    nodeState.set(id, {
-      visible: true,
-      dirty: false,
-      lastUpdate: performance.now(),
-      culled: false
-    })
-
     const initializeVueNodeLayout = () => {
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
-
-      attachMetadata(node)
-
-      // Add to spatial index for viewport culling with final positions
-      const nodeBounds: Bounds = {
-        x: nodePosition.x,
-        y: nodePosition.y,
-        width: nodeSize.width,
-        height: nodeSize.height
-      }
-      spatialIndex.insert(id, nodeBounds, id)
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)
@@ -569,9 +340,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   ) => {
     const id = String(node.id)
 
-    // Remove from spatial index
-    spatialIndex.remove(id)
-
     // Remove node from layout store
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
@@ -579,8 +347,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Clean up all tracking references
     nodeRefs.delete(id)
     vueNodeData.delete(id)
-    nodeState.delete(id)
-    lastNodesSnapshot.delete(id)
 
     // Call original callback if provided
     if (originalCallback) {
@@ -602,21 +368,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       graph.onNodeRemoved = originalOnNodeRemoved || undefined
       graph.onTrigger = originalOnTrigger || undefined
 
-      // Clear pending updates
-      if (batchTimeoutId !== null) {
-        clearTimeout(batchTimeoutId)
-        batchTimeoutId = null
-      }
-
       // Clear all state maps
       nodeRefs.clear()
       vueNodeData.clear()
-      nodeState.clear()
-      lastNodesSnapshot.clear()
-      pendingUpdates.clear()
-      criticalUpdates.clear()
-      lowPriorityUpdates.clear()
-      spatialIndex.clear()
     }
   }
 
@@ -712,15 +466,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
   return {
     vueNodeData,
-    nodeState,
     getNode,
-    setupEventListeners,
-    cleanup,
-    scheduleUpdate,
-    forceSync: syncWithGraph,
-    getVisibleNodeIds,
-    performanceMetrics,
-    spatialMetrics,
-    getSpatialIndexDebugInfo: () => spatialIndex.getDebugInfo()
+    cleanup
   }
 }

@@ -1379,6 +1379,7 @@ class LayoutStoreImpl implements LayoutStore {
 
         this.spatialIndex.update(nodeId, bounds)
         ynode.set('bounds', bounds)
+        ynode.set('position', { x: bounds.x, y: bounds.y })
         ynode.set('size', { width: bounds.width, height: bounds.height })
       }
     }, this.currentActor)
