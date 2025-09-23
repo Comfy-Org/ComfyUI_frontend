@@ -1,16 +1,10 @@
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  ReadOnlyPoint
-} from '@/lib/litegraph/src/interfaces'
+import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+import type { ReadOnlyPoint } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveConnectingLinkColor } from '@/lib/litegraph/src/utils/linkColors'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import {
-  type SlotDragSource,
-  useSlotLinkDragState
-} from '@/renderer/core/canvas/links/slotLinkDragState'
+import { useSlotLinkDragState } from '@/renderer/core/canvas/links/slotLinkDragState'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -44,7 +38,7 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     const { state } = useSlotLinkDragState()
     if (!state.active || !state.source) return
 
-    const { pointer, source } = state
+    const { pointer } = state
 
     const linkRenderer = canvas.linkRenderer
     if (!linkRenderer) return
@@ -53,80 +47,123 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     // Prefer LinkConnector render links when available (multi-link drags, move-existing, reroutes)
     const adapter = createLinkConnectorAdapter()
     const renderLinks = adapter?.renderLinks
-    if (adapter && renderLinks && renderLinks.length > 0) {
-      const to: ReadOnlyPoint = [pointer.canvas.x, pointer.canvas.y]
-      ctx.save()
-      for (const link of renderLinks) {
-        // Prefer Vue slot layout position for accuracy in Vue Nodes mode
-        let fromPoint = link.fromPos
-        const nodeId = (link.node as any)?.id
-        if (typeof nodeId === 'number') {
-          const isInputFrom = link.toType === 'output'
-          const key = getSlotKey(
-            String(nodeId),
-            link.fromSlotIndex,
-            isInputFrom
-          )
-          const layout = layoutStore.getSlotLayout(key)
-          if (layout) fromPoint = [layout.position.x, layout.position.y]
-        }
+    if (!adapter || !renderLinks || renderLinks.length === 0) return
 
-        const colour = resolveConnectingLinkColor(link.fromSlot.type)
-        const startDir = link.fromDirection ?? LinkDirection.RIGHT
-        const endDir = link.dragDirection ?? LinkDirection.CENTER
+    const uniqueLinks = dedupeRenderLinks(renderLinks)
 
-        linkRenderer.renderDraggingLink(
-          ctx,
-          fromPoint,
-          to,
-          colour,
-          startDir,
-          endDir,
-          context
-        )
-      }
-      ctx.restore()
-      return
-    }
-
-    // Fallback to legacy single-link preview based on composable state
-    const start = source.position
-    const sourceSlot = resolveSourceSlot(canvas, source)
-    const from: ReadOnlyPoint = [start.x, start.y]
     const to: ReadOnlyPoint = [pointer.canvas.x, pointer.canvas.y]
-    const startDir = source.direction ?? LinkDirection.RIGHT
-    const endDir = LinkDirection.CENTER
-    const colour = resolveConnectingLinkColor(sourceSlot?.type)
     ctx.save()
-    linkRenderer.renderDraggingLink(
-      ctx,
-      from,
-      to,
-      colour,
-      startDir,
-      endDir,
-      context
-    )
+    for (const link of uniqueLinks) {
+      const startDir = link.fromDirection ?? LinkDirection.RIGHT
+      const endDir = link.dragDirection ?? LinkDirection.CENTER
+      const colour = resolveConnectingLinkColor(link.fromSlot.type)
+
+      const fromPoint = resolveRenderLinkOrigin(link)
+
+      linkRenderer.renderDraggingLink(
+        ctx,
+        fromPoint,
+        to,
+        colour,
+        startDir,
+        endDir,
+        context
+      )
+    }
     ctx.restore()
   }
 
   canvas.onDrawForeground = patched
 }
 
-function resolveSourceSlot(
-  canvas: LGraphCanvas,
-  source: SlotDragSource
-): INodeInputSlot | INodeOutputSlot | undefined {
-  const graph = canvas.graph
-  if (!graph) return undefined
+function dedupeRenderLinks(links: ReadonlyArray<RenderLink>): RenderLink[] {
+  const uniqueByKey = new Map<string, RenderLink>()
+  const fallback: RenderLink[] = []
 
-  const nodeId = Number(source.nodeId)
-  if (!Number.isFinite(nodeId)) return undefined
+  for (const link of links) {
+    const key = getRenderLinkKey(link)
+    if (!key) {
+      fallback.push(link)
+      continue
+    }
 
-  const node = graph.getNodeById(nodeId)
-  if (!node) return undefined
+    const existing = uniqueByKey.get(key)
+    if (!existing) {
+      uniqueByKey.set(key, link)
+      continue
+    }
 
-  return source.type === 'output'
-    ? node.outputs?.[source.slotIndex]
-    : node.inputs?.[source.slotIndex]
+    // Prefer links that originate from reroutes to keep anchors stable
+    if (!existing.fromReroute && link.fromReroute) {
+      uniqueByKey.set(key, link)
+    } else if (existing.fromReroute === link.fromReroute) {
+      // Prefer the one with an explicit drag direction when both share the same origin
+      if (
+        (!existing.dragDirection ||
+          existing.dragDirection === LinkDirection.CENTER) &&
+        link.dragDirection &&
+        link.dragDirection !== LinkDirection.CENTER
+      ) {
+        uniqueByKey.set(key, link)
+      }
+    }
+  }
+
+  return [...uniqueByKey.values(), ...fallback]
+}
+
+function resolveRenderLinkOrigin(link: RenderLink): ReadOnlyPoint {
+  if (link.fromReroute) {
+    const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
+    if (rerouteLayout) {
+      return [rerouteLayout.position.x, rerouteLayout.position.y]
+    }
+
+    const [x, y] = link.fromReroute.pos
+    return [x, y]
+  }
+
+  const nodeId = getRenderLinkNodeId(link)
+  if (nodeId != null) {
+    const isInputFrom = link.toType === 'output'
+    const key = getSlotKey(String(nodeId), link.fromSlotIndex, isInputFrom)
+    const layout = layoutStore.getSlotLayout(key)
+    if (layout) {
+      return [layout.position.x, layout.position.y]
+    }
+  }
+
+  return link.fromPos
+}
+
+function getRenderLinkNodeId(link: RenderLink): number | null {
+  const node = link.node
+  if (typeof node === 'object' && node !== null && 'id' in node) {
+    const maybeId = node.id
+    if (typeof maybeId === 'number') return maybeId
+  }
+  return null
+}
+
+function getRenderLinkKey(link: RenderLink): string | null {
+  const linkId = getUnderlyingLinkId(link)
+  if (linkId != null) return `link:${linkId}`
+
+  const rerouteId = link.fromReroute?.id
+  if (typeof rerouteId === 'number') {
+    return `reroute:${rerouteId}`
+  }
+
+  const nodeId = getRenderLinkNodeId(link)
+  if (nodeId != null) {
+    return `node:${nodeId}:slot:${link.fromSlotIndex}:to:${link.toType}`
+  }
+
+  return null
+}
+
+function getUnderlyingLinkId(link: RenderLink): number | null {
+  const maybeLink = (link as { link?: { id?: unknown } }).link
+  const maybeId = maybeLink?.id
+  return typeof maybeId === 'number' ? maybeId : null
 }
