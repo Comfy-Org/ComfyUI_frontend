@@ -360,14 +360,6 @@ onUpdated(() => {
   @apply visible;
 }
 
-:deep(.p-togglebutton:hover) .status-indicator {
-  @apply hidden;
-}
-
-:deep(.p-togglebutton) .close-button {
-  @apply invisible;
-}
-
 :deep(.p-scrollpanel-content) {
   @apply h-full;
 }
