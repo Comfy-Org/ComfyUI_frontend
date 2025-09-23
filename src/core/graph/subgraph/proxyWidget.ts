@@ -29,7 +29,7 @@ SubgraphNode.prototype.onConfigure = function (serialisedNode) {
     set: (property: string) => {
       const parsed = parseProxyWidgets(property)
       const { widgetStates } = useDomWidgetStore()
-      for (const w of this.widgets ?? []) {
+      for (const w of this.widgets.filter((w) => isProxyWidget(w))) {
         if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
           const widgetState = widgetStates.get(w.id)
           if (!widgetState) continue
