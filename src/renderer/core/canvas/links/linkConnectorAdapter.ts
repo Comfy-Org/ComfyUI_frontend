@@ -115,8 +115,8 @@ export class LinkConnectorAdapter {
     const node = this.network.getNodeById(nodeId)
     const output = node?.outputs?.[outputIndex]
     if (!node || !output) return false
-    return (this.linkConnector.renderLinks as any[]).some(
-      (link) => link?.canConnectToOutput?.(node, output) === true
+    return this.linkConnector.renderLinks.some((link) =>
+      link.canConnectToOutput(node, output)
     )
   }
 
