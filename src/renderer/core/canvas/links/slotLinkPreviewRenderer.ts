@@ -44,7 +44,6 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     if (!linkRenderer) return
     const context = buildContext(canvas)
 
-    // Prefer LinkConnector render links when available (multi-link drags, move-existing, reroutes)
     const adapter = createLinkConnectorAdapter()
     const renderLinks = adapter?.renderLinks
     if (!adapter || !renderLinks || renderLinks.length === 0) return
