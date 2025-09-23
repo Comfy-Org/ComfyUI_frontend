@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import {
   calculateMinimapScale,
   enforceMinimumBounds
@@ -126,7 +126,7 @@ export function useMinimapViewport(
   }
 
   const { startSync: startViewportSync, stopSync: stopViewportSync } =
-    useCanvasTransformSync(updateViewport, { autoStart: false })
+    useCanvasTransformSync(undefined, updateViewport, {}, { autoStart: false })
 
   return {
     bounds: computed(() => bounds.value),

@@ -53,7 +53,6 @@ import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import {
   forceCloseMoreOptionsSignal,
   moreOptionsOpen,
@@ -66,6 +65,7 @@ import {
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
+import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 import MenuOptionItem from './MenuOptionItem.vue'
@@ -152,9 +152,14 @@ const repositionPopover = () => {
   }
 }
 
-const { startSync, stopSync } = useCanvasTransformSync(repositionPopover, {
-  autoStart: false
-})
+const { startSync, stopSync } = useCanvasTransformSync(
+  undefined,
+  repositionPopover,
+  {},
+  {
+    autoStart: false
+  }
+)
 
 function openPopover(triggerEvent?: Event): boolean {
   const el = getButtonEl()

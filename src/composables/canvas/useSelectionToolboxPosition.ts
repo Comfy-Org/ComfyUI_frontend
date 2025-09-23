@@ -1,13 +1,13 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
@@ -128,9 +128,14 @@ export function useSelectionToolboxPosition(
   }
 
   // Sync with canvas transform
-  const { startSync, stopSync } = useCanvasTransformSync(updateTransform, {
-    autoStart: false
-  })
+  const { startSync, stopSync } = useCanvasTransformSync(
+    undefined,
+    updateTransform,
+    {},
+    {
+      autoStart: false
+    }
+  )
 
   // Watch for selection changes
   watch(

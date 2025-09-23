@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-vi.mock('@/composables/canvas/useCanvasTransformSync')
+vi.mock('@/renderer/core/layout/transform/useCanvasTransformSync')
 vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
   calculateNodeBounds: vi.fn(),
   calculateMinimapScale: vi.fn(),
