@@ -29,7 +29,7 @@ import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from './app'
 import './domWidget'
 import './errorNodeWidgets'
-import './proxyWidget'
+import '@/core/graph/subgraph/proxyWidget'
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,
