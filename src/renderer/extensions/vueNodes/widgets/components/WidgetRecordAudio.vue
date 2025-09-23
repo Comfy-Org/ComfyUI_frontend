@@ -1,7 +1,7 @@
 <template>
   <div class="mb-4">
     <Button
-      class="w-full bg-[#2D2E32] text-white border-0"
+      class="bg-[#2D2E32] text-white border-0 w-[413px]"
       :disabled="isRecording || readonly"
       @click="startRecording"
     >
@@ -11,11 +11,11 @@
   </div>
   <div
     v-if="isRecording || isPlaying || recordedURL"
-    class="bg-[#262729] rounded-lg px-4 h-14 flex items-center gap-4"
+    class="bg-[#262729] rounded-lg px-4 h-14 flex items-center gap-4 w-[413px]"
   >
     <!-- Recording Status -->
-    <div class="flex gap-2 items-center shrink-0 text-white">
-      <span class="text-xs">
+    <div class="flex gap-2 items-center text-white min-w-[120px]">
+      <span class="text-xs min-w-[80px]">
         {{
           isRecording
             ? t('g.listening', 'Listening...')
@@ -26,19 +26,17 @@
                 : ''
         }}
       </span>
-      <span class="text-sm">{{ formatTime(timer) }}</span>
+      <span class="text-sm min-w-[40px]">{{ formatTime(timer) }}</span>
     </div>
 
     <!-- Waveform Visualization -->
-    <div
-      v-if="isRecording || isPlaying"
-      class="flex-1 flex gap-2 items-center h-8 overflow-hidden"
-    >
+    <div class="flex-1 flex gap-2 items-center h-8 overflow-x-clip">
       <div
-        v-for="i in 30"
-        :key="i"
-        class="w-[3px] bg-[#9c9eab] rounded-[1.5px] transition-all duration-100"
-        :style="{ height: `${waveformHeights[i - 1] || 16}px` }"
+        v-for="(bar, index) in waveformBars"
+        :key="index"
+        class="w-[3px] bg-[#9c9eab] rounded-[1.5px] transition-all duration-100 min-h-[4px] max-h-[32px]"
+        :style="{ height: bar.height + 'px' }"
+        :title="`Bar ${index + 1}: ${bar.height}px`"
       />
     </div>
 
@@ -74,6 +72,7 @@
   <audio
     v-if="recordedURL"
     ref="audioRef"
+    :key="audioElementKey"
     :src="recordedURL"
     class="hidden"
     @ended="onPlaybackEnded"
@@ -83,12 +82,13 @@
 <script setup lang="ts">
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 import { Button } from 'primevue'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAudioService } from '@/services/audioService'
 
+const WAVEFORM_NUM_BARS = 18
 const props = defineProps<{
   widget?: any
   nodeData?: any
@@ -102,7 +102,11 @@ const isRecording = ref(false)
 const isPlaying = ref(false)
 const timer = ref(0)
 const recordedURL = ref<string | null>(null)
-const waveformHeights = ref<number[]>(Array(30).fill(16))
+const waveformBars = ref<Array<{ height: number }>>(
+  Array(WAVEFORM_NUM_BARS)
+    .fill(null)
+    .map(() => ({ height: 16 }))
+)
 
 // Recording
 const mediaRecorder = ref<MediaRecorder | null>(null)
@@ -115,9 +119,11 @@ const audioContext = ref<AudioContext | null>(null)
 const analyser = ref<AnalyserNode | null>(null)
 const dataArray = ref<Uint8Array | null>(null)
 const animationId = ref<number | null>(null)
+const mediaElementSource = ref<MediaElementAudioSourceNode | null>(null)
 
 // Audio element
 const audioRef = ref<HTMLAudioElement>()
+const audioElementKey = ref(0)
 
 // Format time
 const formatTime = (seconds: number): string => {
@@ -128,33 +134,60 @@ const formatTime = (seconds: number): string => {
 
 // Initialize waveform
 const initWaveform = () => {
-  for (let i = 0; i < 30; i++) {
-    waveformHeights.value[i] = Math.random() * 28 + 4
-  }
+  console.log('[WidgetRecordAudio] Initializing waveform...')
+  waveformBars.value = Array.from({ length: WAVEFORM_NUM_BARS }, () => ({
+    height: Math.random() * 28 + 4 // Random height between 4 and 32
+  }))
+  console.log(
+    '[WidgetRecordAudio] Waveform heights:',
+    waveformBars.value.slice(0, 5).map((b) => b.height)
+  )
 }
 
 // Update waveform visualization
 const updateWaveform = () => {
-  if (!isRecording.value && !isPlaying.value) return
+  console.log(
+    '[WidgetRecordAudio] updateWaveform called - isRecording:',
+    isRecording.value,
+    'isPlaying:',
+    isPlaying.value
+  )
+
+  if (!isRecording.value && !isPlaying.value) {
+    console.log(
+      '[WidgetRecordAudio] updateWaveform stopped - no recording or playing'
+    )
+    return
+  }
 
   if (analyser.value && dataArray.value) {
     analyser.value.getByteFrequencyData(dataArray.value as any)
 
-    // Update heights based on frequency data
-    const bars = []
-    for (let i = 0; i < 30; i++) {
-      const samplesPerBar = Math.floor(dataArray.value.length / 30)
+    // Update bar heights based on audio data
+    const barCount = waveformBars.value.length
+    const samplesPerBar = Math.floor(dataArray.value.length / barCount)
+
+    waveformBars.value = waveformBars.value.map((_, i) => {
       let sum = 0
       for (let j = 0; j < samplesPerBar; j++) {
-        sum += dataArray.value[i * samplesPerBar + j] || 0
+        sum += dataArray.value![i * samplesPerBar + j] || 0
       }
-      bars.push((sum / samplesPerBar / 255) * 28 + 4)
-    }
-    waveformHeights.value = bars
+      const average = sum / samplesPerBar
+      const normalizedHeight = (average / 255) * 28 + 4 // Scale to 4-32px range
+      return { height: normalizedHeight }
+    })
+    console.log(
+      '[WidgetRecordAudio] Waveform updated with frequency data, first 5 bars:',
+      waveformBars.value.slice(0, 5).map((b) => b.height)
+    )
   } else {
-    // Animate randomly when no data
-    waveformHeights.value = waveformHeights.value.map((h) =>
-      Math.max(4, Math.min(32, h + (Math.random() - 0.5) * 4))
+    // Simulate waveform when not recording
+    waveformBars.value = waveformBars.value.map((bar) => ({
+      height: Math.max(4, Math.min(32, bar.height + (Math.random() - 0.5) * 4))
+    }))
+    console.log(
+      '[WidgetRecordAudio] Waveform updated with random data, first 5 bars:',
+      waveformBars.value.slice(0, 5).map((b) => b.height)
     )
   }
 
@@ -173,6 +206,13 @@ async function startRecording() {
     audioChunks.value = []
     recordedURL.value = null
     timer.value = 0
+
+    // Clean up any existing audio context and media element source
+    if (audioContext.value && audioContext.value.state !== 'closed') {
+      await audioContext.value.close()
+    }
+    audioContext.value = null
+    mediaElementSource.value = null
 
     await useAudioService().registerWavEncoder()
     console.log('[WidgetRecordAudio] WAV encoder registered')
@@ -256,6 +296,10 @@ async function startRecording() {
       timer.value += 1
     }, 1000)
 
+    // Initialize waveform first to ensure it has some data
+    initWaveform()
+
+    // Then start the animation
     updateWaveform()
   } catch (err) {
     console.error('Error accessing microphone:', err)
@@ -295,25 +339,53 @@ function cleanup() {
     cancelAnimationFrame(animationId.value)
   }
 
+  // Close audio context used for recording
   if (audioContext.value) {
     void audioContext.value.close()
     audioContext.value = null
   }
+
+  // Reset media element source reference
+  mediaElementSource.value = null
 }
 
 // Play recording
 async function playRecording() {
-  if (!audioRef.value || !recordedURL.value) return
+  if (!recordedURL.value) return
 
   timer.value = 0
   isPlaying.value = true
 
-  // Setup visualization
+  // Clean up existing audio context if it exists
+  if (audioContext.value && audioContext.value.state !== 'closed') {
+    await audioContext.value.close()
+  }
+
+  // Reset mediaElementSource when creating new context
+  mediaElementSource.value = null
+
+  // Force recreation of audio element by changing key
+  audioElementKey.value += 1
+
+  // Wait for Vue to recreate the audio element
+  await nextTick()
+
+  if (!audioRef.value) {
+    console.error('[WidgetRecordAudio] Audio element not available after recreation')
+    return
+  }
+
+  // Always create fresh audio context and connections for playback
   audioContext.value = new (window.AudioContext ||
     (window as any).webkitAudioContext)()
   analyser.value = audioContext.value.createAnalyser()
-  const source = audioContext.value.createMediaElementSource(audioRef.value)
-  source.connect(analyser.value)
+
+  // Create MediaElementSource with the fresh audio element
+  mediaElementSource.value = audioContext.value.createMediaElementSource(
+    audioRef.value
+  )
+
+  mediaElementSource.value.connect(analyser.value)
   analyser.value.connect(audioContext.value.destination)
 
   analyser.value.fftSize = 256
@@ -328,6 +400,10 @@ async function playRecording() {
     console.error('Error playing audio:', error)
   })
   updateWaveform()
+  // Also ensure waveform is initialized when starting playback
+  if (!analyser.value || !dataArray.value) {
+    initWaveform()
+  }
 }
 
 // Stop playback
@@ -353,10 +429,8 @@ async function onPlaybackEnded() {
     cancelAnimationFrame(animationId.value)
   }
 
-  if (audioContext.value) {
-    await audioContext.value.close()
-    audioContext.value = null
-  }
+  // Don't close AudioContext immediately to allow for replay
+  // It will be closed when component unmounts
 }
 
 // Initialize on mount
@@ -387,6 +461,12 @@ onUnmounted(() => {
   if (recordedURL.value) {
     URL.revokeObjectURL(recordedURL.value)
   }
+
+  // Clean up audio context on unmount
+  if (audioContext.value && audioContext.value.state !== 'closed') {
+    void audioContext.value.close()
+  }
+  mediaElementSource.value = null
 })
 
 async function serializeValue() {
