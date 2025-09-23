@@ -1,14 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { Reroute, RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type {
-  ConnectingLink,
-  ItemLocator
-} from '@/lib/litegraph/src/interfaces'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point } from '@/renderer/core/layout/types'
+import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import { app } from '@/scripts/app'
 
 // Keep one adapter per graph so rendering and interaction share state.
@@ -39,24 +34,6 @@ export class LinkConnectorAdapter {
    */
   get renderLinks(): ReadonlyArray<RenderLink> {
     return this.linkConnector.renderLinks
-  }
-
-  /** ItemLocator backed by layoutStore for nodes/reroutes. */
-  get locator(): ItemLocator {
-    const graph = this.network
-
-    return {
-      getNodeOnPos: (x: number, y: number): LGraphNode | null => {
-        const id = layoutStore.queryNodeAtPoint(point(x, y))
-        if (id == null) return null
-        return graph.getNodeById(id) as LGraphNode | null
-      },
-      getRerouteOnPos: (x: number, y: number): Reroute | undefined => {
-        const r = layoutStore.queryRerouteAtPoint(point(x, y))
-        if (!r) return undefined
-        return graph.getReroute(r.id)
-      }
-    }
   }
 
   // Drag helpers
@@ -179,8 +156,4 @@ export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
     adapterByGraph.set(graph, adapter)
   }
   return adapter
-}
-
-function point(x: number, y: number): Point {
-  return { x, y }
 }
