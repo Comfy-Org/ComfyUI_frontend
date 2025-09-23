@@ -4,7 +4,12 @@
     <InputText
       ref="input"
       v-model="searchQuery"
-      :placeholder="placeHolder || 'Search...'"
+      :aria-label="
+        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+      "
+      :placeholder="
+        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+      "
       type="text"
       unstyled
       :class="inputStyle"
@@ -16,6 +21,7 @@
 import InputText from 'primevue/inputtext'
 import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
 const {

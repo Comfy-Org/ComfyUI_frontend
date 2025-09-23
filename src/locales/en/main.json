@@ -989,7 +989,8 @@
     "sort": {
       "recommended": "Recommended",
       "alphabetical": "A → Z",
-      "newest": "Newest"
+      "newest": "Newest",
+      "searchPlaceholder": "Search..."
     }
   },
   "graphCanvasMenu": {
