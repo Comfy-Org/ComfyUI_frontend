@@ -32,6 +32,37 @@ export enum BadgeVariant {
   DEPRECATED = 'deprecated'
 }
 
+// Global singleton for NodeOptions component reference
+let nodeOptionsInstance: any = null
+
+/**
+ * Toggle the node options popover
+ * @param event - The trigger event
+ * @param element - The target element (button) that triggered the popover
+ */
+export function toggleNodeOptions(event: Event, element: HTMLElement) {
+  if (nodeOptionsInstance?.toggle) {
+    nodeOptionsInstance.toggle(event, element)
+  }
+}
+
+/**
+ * Hide the node options popover
+ */
+export function hideNodeOptions() {
+  if (nodeOptionsInstance?.hide) {
+    nodeOptionsInstance.hide()
+  }
+}
+
+/**
+ * Register the NodeOptions component instance
+ * @param instance - The NodeOptions component instance
+ */
+export function registerNodeOptionsInstance(instance: any) {
+  nodeOptionsInstance = instance
+}
+
 /**
  * Composable for managing the More Options menu configuration
  * Refactored to use smaller, focused composables for better maintainability
@@ -181,6 +212,7 @@ export function useMoreOptionsMenu() {
     menuOptions,
     menuOptionsWithSubmenu,
     bump,
-    hasSubgraphs
+    hasSubgraphs,
+    registerNodeOptionsInstance
   }
 }

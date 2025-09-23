@@ -1,20 +1,5 @@
 <template>
-  <div class="relative inline-flex items-center">
-    <Button
-      ref="buttonRef"
-      v-tooltip.top="{
-        value: $t('g.moreOptions'),
-        showDelay: 1000
-      }"
-      data-testid="more-options-button"
-      text
-      class="h-8 w-8 px-0"
-      severity="secondary"
-      @click="toggle"
-    >
-      <i-lucide:more-vertical class="w-4 h-4" />
-    </Button>
-
+  <div>
     <Popover
       ref="popover"
       :append-to="'body'"
@@ -49,7 +34,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -63,6 +47,7 @@ import {
 import {
   type MenuOption,
   type SubMenuOption,
+  registerNodeOptionsInstance,
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
@@ -72,7 +57,7 @@ import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
 
 const popover = ref<InstanceType<typeof Popover>>()
-const buttonRef = ref<InstanceType<typeof Button> | HTMLElement | null>(null)
+const targetElement = ref<HTMLElement | null>(null)
 // Track open state ourselves so we can restore after drag/move
 const isOpen = ref(false)
 const wasOpenBeforeHide = ref(false)
@@ -88,11 +73,6 @@ const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
 
-function getButtonEl(): HTMLElement | null {
-  const el = (buttonRef.value as any)?.$el || buttonRef.value
-  return el instanceof HTMLElement ? el : null
-}
-
 let lastLogTs = 0
 const LOG_INTERVAL = 120 // ms
 let overlayElCache: HTMLElement | null = null
@@ -107,7 +87,7 @@ function resolveOverlayEl(): HTMLElement | null {
     return direct
   }
   // Fallback: try to locate a recent popover root near the button (same z-index class + absolute)
-  const btn = getButtonEl()
+  const btn = targetElement.value
   if (btn) {
     const candidates = Array.from(
       document.querySelectorAll('div.absolute.z-50')
@@ -130,7 +110,7 @@ function resolveOverlayEl(): HTMLElement | null {
 
 const repositionPopover = () => {
   if (!isOpen.value) return
-  const btn = getButtonEl()
+  const btn = targetElement.value
   const overlayEl = resolveOverlayEl()
   if (!btn || !overlayEl) return
   const rect = btn.getBoundingClientRect()
@@ -143,7 +123,7 @@ const repositionPopover = () => {
     overlayEl.style.top = `${top}px`
     overlayEl.style.transform = 'translate(-50%, 0)'
   } catch (e) {
-    console.warn('[MoreOptions] Failed to set overlay style', e)
+    console.warn('[NodeOptions] Failed to set overlay style', e)
     return
   }
   const now = performance.now()
@@ -156,9 +136,10 @@ const { startSync, stopSync } = useCanvasTransformSync(repositionPopover, {
   autoStart: false
 })
 
-function openPopover(triggerEvent?: Event): boolean {
-  const el = getButtonEl()
+function openPopover(triggerEvent?: Event, element?: HTMLElement): boolean {
+  const el = element || targetElement.value
   if (!el || !el.isConnected) return false
+  targetElement.value = el
   bump()
   popover.value?.show(triggerEvent ?? new Event('reopen'), el)
   isOpen.value = true
@@ -191,7 +172,7 @@ function attemptRestore() {
   if (isOpen.value) return
   if (!wasOpenBeforeHide.value && !moreOptionsRestorePending.value) return
   // Try immediately
-  if (openPopover(new Event('reopen'))) {
+  if (openPopover(new Event('reopen'), targetElement.value || undefined)) {
     wasOpenBeforeHide.value = false
     restoreAttempts = 0
     return
@@ -202,12 +183,19 @@ function attemptRestore() {
   requestAnimationFrame(() => attemptRestore())
 }
 
-const toggle = (event: Event) => {
+const toggle = (event: Event, element?: HTMLElement) => {
   if (isOpen.value) closePopover('manual')
-  else openPopover(event)
+  else openPopover(event, element)
 }
 
 const hide = (reason: HideReason = 'manual') => closePopover(reason)
+
+// Export functions for external triggering
+defineExpose({
+  toggle,
+  hide,
+  isOpen
+})
 
 const hideAll = () => {
   hideAllSubmenus(
@@ -305,6 +293,13 @@ watch(
 )
 
 onMounted(() => {
+  // Register this instance globally
+  registerNodeOptionsInstance({
+    toggle,
+    hide,
+    isOpen
+  })
+
   if (moreOptionsRestorePending.value && !isOpen.value) {
     requestAnimationFrame(() => attemptRestore())
   }
@@ -312,5 +307,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopSync()
+  // Unregister on unmount
+  registerNodeOptionsInstance(null)
 })
 </script>
