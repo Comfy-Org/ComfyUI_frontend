@@ -141,6 +141,7 @@
             v-for="template in displayTemplates"
             :key="template.name"
             ref="cardRefs"
+            v-memo="[template.name, hoveredTemplate === template.name]"
             ratio="none"
             :max-width="300"
             :min-width="200"
@@ -355,7 +356,7 @@
 
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -667,6 +668,9 @@ onMounted(async () => {
   await loadTemplates()
   await workflowTemplatesStore.loadWorkflowTemplates()
   isLoading.value = false
+})
+onBeforeUnmount(() => {
+  cardRefs.value = [] // Release DOM refs
 })
 </script>
 
