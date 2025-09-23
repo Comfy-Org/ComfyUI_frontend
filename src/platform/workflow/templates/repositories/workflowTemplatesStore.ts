@@ -316,7 +316,10 @@ export const useWorkflowTemplatesStore = defineStore(
       if (hasEssentialCategories) {
         items.push({
           id: 'basics',
-          label: st('templateWorkflows.category.Basics', 'Basics'),
+          label: st(
+            'templateWorkflows.category.GettingStarted',
+            'Getting Started'
+          ),
           icon: 'icon-[lucide--graduation-cap]'
         })
       }

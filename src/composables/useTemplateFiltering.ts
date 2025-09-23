@@ -4,20 +4,6 @@ import { type Ref, computed, ref } from 'vue'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
-// @ts-expect-error unused (To be used later?)
-interface TemplateFilterOptions {
-  searchQuery?: string
-  selectedModels?: string[]
-  selectedUseCases?: string[] // Now represents selected tags
-  selectedLicenses?: string[]
-  sortBy?:
-    | 'default'
-    | 'alphabetical'
-    | 'newest'
-    | 'vram-low-to-high'
-    | 'model-size-low-to-high'
-}
-
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
@@ -57,7 +43,7 @@ export function useTemplateFiltering(
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
     templatesArray.value.forEach((template) => {
-      if (template.models && Array.isArray(template.models)) {
+      if (Array.isArray(template.models)) {
         template.models.forEach((model) => modelSet.add(model))
       }
     })
