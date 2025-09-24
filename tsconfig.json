@@ -34,7 +34,6 @@
     "global.d.ts",
     "knip.config.ts",
     "playwright.i18n.config.ts",
-    "scripts/collect-i18n-*.ts",
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",
