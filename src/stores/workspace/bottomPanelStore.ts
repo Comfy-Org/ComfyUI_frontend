@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
 import {
   useCommandTerminalTab,
   useLogsTerminalTab
@@ -10,6 +9,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'
+import { useShortcutsTab } from '@/workbench/keybindings/composables/useShortcutsTab'
 
 type PanelType = 'terminal' | 'shortcuts'
 

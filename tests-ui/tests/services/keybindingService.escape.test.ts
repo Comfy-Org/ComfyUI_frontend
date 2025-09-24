@@ -1,15 +1,15 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
-import { useKeybindingService } from '@/services/keybindingService'
+import { CORE_KEYBINDINGS } from '@/platform/keybinding/constants/coreKeybindings'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useKeybindingService } from '@/workbench/keybindings/services/keybindingService'
 import {
   KeyComboImpl,
   KeybindingImpl,
   useKeybindingStore
-} from '@/stores/keybindingStore'
+} from '@/workbench/keybindings/stores/keybindingStore'
 
 // Mock stores
 vi.mock('@/platform/settings/settingStore', () => ({

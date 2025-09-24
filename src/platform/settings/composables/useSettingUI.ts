@@ -101,7 +101,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/KeybindingPanel.vue')
+      () => import('@/workbench/keybindings/components/KeybindingPanel.vue')
     )
   }
 

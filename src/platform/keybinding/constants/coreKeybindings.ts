@@ -1,4 +1,4 @@
-import type { Keybinding } from '@/schemas/keyBindingSchema'
+import type { Keybinding } from '@/platform/keybinding/types/keybinding'
 
 export const CORE_KEYBINDINGS: Keybinding[] = [
   {

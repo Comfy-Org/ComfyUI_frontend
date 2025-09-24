@@ -142,17 +142,17 @@ import { computed, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import { useKeybindingService } from '@/services/keybindingService'
+import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import { useCommandStore } from '@/stores/commandStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+import { useKeybindingService } from '@/workbench/keybindings/services/keybindingService'
 import {
   KeyComboImpl,
   KeybindingImpl,
   useKeybindingStore
-} from '@/stores/keybindingStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+} from '@/workbench/keybindings/stores/keybindingStore'
 
-import PanelTemplate from './PanelTemplate.vue'
-import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
+import KeyComboDisplay from './KeyComboDisplay.vue'
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }

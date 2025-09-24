@@ -3,8 +3,10 @@ import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ComfyExtension } from '@/types/comfy'
-
-import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
+import {
+  type KeybindingImpl,
+  useKeybindingStore
+} from '@/workbench/keybindings/stores/keybindingStore'
 
 export interface ComfyCommand {
   id: string

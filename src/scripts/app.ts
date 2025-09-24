@@ -53,7 +53,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -81,6 +80,10 @@ import {
 } from '@/utils/migration/migrateReroute'
 import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import {
+  KeyComboImpl,
+  useKeybindingStore
+} from '@/workbench/keybindings/stores/keybindingStore'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'

@@ -5,11 +5,14 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
+import {
+  KeybindingImpl,
+  useKeybindingStore
+} from '@/workbench/keybindings/stores/keybindingStore'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()

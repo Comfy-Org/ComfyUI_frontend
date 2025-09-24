@@ -2,9 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '@/scripts/app'
-import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useKeybindingService } from '@/workbench/keybindings/services/keybindingService'
 
 // Mock the app and canvas using factory functions
 vi.mock('@/scripts/app', () => {

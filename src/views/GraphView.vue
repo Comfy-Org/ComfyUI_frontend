@@ -53,7 +53,6 @@ import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -69,6 +68,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
+import { useKeybindingService } from '@/workbench/keybindings/services/keybindingService'
 
 setupAutoQueueHandler()
 useProgressFavicon()

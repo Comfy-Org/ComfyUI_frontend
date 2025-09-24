@@ -1,9 +1,9 @@
 import { markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EssentialsPanel from '@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue'
-import ViewControlsPanel from '@/components/bottomPanel/tabs/shortcuts/ViewControlsPanel.vue'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
+import EssentialsPanel from '@/workbench/keybindings/components/shortcuts/EssentialsPanel.vue'
+import ViewControlsPanel from '@/workbench/keybindings/components/shortcuts/ViewControlsPanel.vue'
 
 export const useShortcutsTab = (): BottomPanelExtension[] => {
   const { t } = useI18n()
