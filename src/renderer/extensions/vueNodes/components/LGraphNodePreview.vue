@@ -31,14 +31,6 @@
           :readonly="readonly"
           :image-urls="nodeImageUrls"
         />
-        <!-- Live preview image -->
-        <!-- <div v-if="shouldShowPreviewImg" class="px-4">
-          <img
-            :src="latestPreviewUrl"
-            alt="preview"
-            class="w-full max-h-64 object-contain"
-          />
-        </div> -->
       </div>
     </div>
   </div>
@@ -63,7 +55,6 @@ const widgetStore = useWidgetStore()
 
 // Convert nodeDef into VueNodeData
 const nodeData = computed<VueNodeData>(() => {
-  // Convert inputs to widgets (those that have widget constructors)
   const widgets = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
@@ -85,7 +76,6 @@ const nodeData = computed<VueNodeData>(() => {
       }
     }))
 
-  // Filter non-widget inputs for slots
   const inputs = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => !widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
@@ -111,12 +101,6 @@ const nodeData = computed<VueNodeData>(() => {
 })
 
 const readonly = true
-
-const hasCustomContent = computed(() => {
-  return false
-})
-
-const nodeImageUrls = computed(() => {
-  return []
-})
+const hasCustomContent = false
+const nodeImageUrls = ['']
 </script>
