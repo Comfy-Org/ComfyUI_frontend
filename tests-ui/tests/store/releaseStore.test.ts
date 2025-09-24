@@ -12,7 +12,8 @@ vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/systemStatsStore')
 vi.mock('@vueuse/core', () => ({
   until: vi.fn(() => Promise.resolve()),
-  useStorage: vi.fn(() => ({ value: {} }))
+  useStorage: vi.fn(() => ({ value: {} })),
+  createSharedComposable: vi.fn((fn) => fn)
 }))
 
 describe('useReleaseStore', () => {
