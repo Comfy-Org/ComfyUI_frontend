@@ -56,14 +56,9 @@ export interface FilterState {
   sortBy: string
 }
 
-const props = withDefaults(
-  defineProps<{
+const { assets = [] } = defineProps<{
     assets?: AssetItem[]
-  }>(),
-  {
-    assets: () => []
-  }
-)
+  }>()
 
 const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
