@@ -45,7 +45,8 @@ vi.mock('@vueuse/core', async () => {
     whenever: vi.fn(),
     useStorage: vi.fn((_key, defaultValue) => {
       return ref(defaultValue)
-    })
+    }),
+    createSharedComposable: vi.fn((fn) => fn)
   }
 })
 
