@@ -1,3 +1,4 @@
+import '@/core/graph/subgraph/proxyWidget'
 import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -29,7 +30,6 @@ import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from './app'
 import './domWidget'
 import './errorNodeWidgets'
-import '@/core/graph/subgraph/proxyWidget'
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,

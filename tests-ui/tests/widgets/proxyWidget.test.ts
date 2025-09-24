@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
 
+import '@/core/graph/subgraph/proxyWidget'
 //import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
 import { LGraphNode, type SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import '@/core/graph/subgraph/proxyWidget'
 
 import {
   createTestSubgraph,
