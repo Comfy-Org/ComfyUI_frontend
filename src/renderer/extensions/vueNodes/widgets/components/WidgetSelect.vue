@@ -1,33 +1,23 @@
 <template>
-  <WidgetLayoutField :widget>
-    <Select
-      v-model="localValue"
-      :options="selectOptions"
-      v-bind="combinedProps"
-      :disabled="readonly"
-      class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
-      size="small"
-      :pt="{
-        option: 'text-xs'
-      }"
-      @update:model-value="onChange"
-    />
-  </WidgetLayoutField>
+  <WidgetSelectDropdown
+    v-if="isMediaWidget"
+    v-bind="props"
+    @update:model-value="handleUpdateModelValue"
+  />
+  <WidgetSelectDefault
+    v-else
+    v-bind="props"
+    @update:model-value="handleUpdateModelValue"
+  />
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
 import { computed } from 'vue'
 
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
-import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+import WidgetSelectDefault from './WidgetSelectDefault.vue'
+import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
@@ -39,30 +29,46 @@ const emit = defineEmits<{
   'update:modelValue': [value: string | number | undefined]
 }>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
-  defaultValue: props.widget.options?.values?.[0] || '',
-  emit
-})
+function handleUpdateModelValue(value: string | number | undefined) {
+  emit('update:modelValue', value)
+}
 
-// Transform compatibility props for overlay positioning
-const transformCompatProps = useTransformCompatOverlayProps()
+const isMediaWidget = computed(() =>
+  shouldUseMediaDropdown(props.widget as any)
+)
 
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
-
-// Extract select options from widget options
-const selectOptions = computed(() => {
-  const options = props.widget.options
-
-  if (options?.values && Array.isArray(options.values)) {
-    return options.values
+function shouldUseMediaDropdown(
+  widget: SimplifiedWidget<WidgetValue>
+): boolean {
+  // Method 1: Check for image_upload, video_upload, or audio_upload flags
+  const options = widget.options
+  if (
+    options?.image_upload ||
+    options?.video_upload ||
+    options?.animated_image_upload
+  ) {
+    return true
   }
 
-  return []
-})
+  // Method 2: Check if values contain media file extensions
+  const values = options?.values || []
+  if (Array.isArray(values) && values.length > 0) {
+    const hasMediaFiles = values.some((value) => {
+      if (typeof value !== 'string') return false
+
+      // Check for common media file extensions
+      const mediaExtensions =
+        /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|ico|mp4|webm|ogg|mov|avi|mkv|mp3|wav|flac|ogg|aac|m4a)$/i
+      return mediaExtensions.test(value)
+    })
+
+    if (hasMediaFiles) return true
+  }
+
+  // Method 3: Future - check for Asset input type (when backend supports it)
+  // This is placeholder for future implementation
+  // if (widget.inputType === 'Asset') return true
+
+  return false
+}
 </script>

@@ -4,14 +4,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-
-// Data structure interfaces
-interface DropdownItem {
-  id: string | number
-  imageSrc: string
-  name: string
-  metadata: string
-}
+import type { DropdownItem } from './types'
 
 interface Props {
   items: DropdownItem[]
