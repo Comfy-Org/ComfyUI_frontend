@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRafFn } from '@vueuse/core'
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -65,8 +66,6 @@ import {
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 import MenuOptionItem from './MenuOptionItem.vue'
@@ -85,7 +84,6 @@ const currentSubmenu = ref<string | null>(null)
 
 const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
-const canvasStore = useCanvasStore()
 
 const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
@@ -154,14 +152,7 @@ const repositionPopover = () => {
   }
 }
 
-const { startSync, stopSync } = useCanvasTransformSync(
-  canvasStore.getCanvas(),
-  repositionPopover,
-  {},
-  {
-    autoStart: false
-  }
-)
+const { resume: startSync, pause: stopSync } = useRafFn(repositionPopover)
 
 function openPopover(triggerEvent?: Event): boolean {
   const el = getButtonEl()

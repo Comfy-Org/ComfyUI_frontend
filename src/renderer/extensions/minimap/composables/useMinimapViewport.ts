@@ -1,9 +1,8 @@
+import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import {
   calculateMinimapScale,
   enforceMinimumBounds
@@ -125,14 +124,8 @@ export function useMinimapViewport(
 
     c.setDirty(true, true)
   }
-  const canvasStore = useCanvasStore()
-  const { startSync: startViewportSync, stopSync: stopViewportSync } =
-    useCanvasTransformSync(
-      canvasStore.getCanvas(),
-      updateViewport,
-      {},
-      { autoStart: false }
-    )
+  const { resume: startViewportSync, pause: stopViewportSync } =
+    useRafFn(updateViewport)
 
   return {
     bounds: computed(() => bounds.value),

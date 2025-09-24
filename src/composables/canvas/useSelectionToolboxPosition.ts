@@ -1,3 +1,4 @@
+import { useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -7,7 +8,6 @@ import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
@@ -128,14 +128,7 @@ export function useSelectionToolboxPosition(
   }
 
   // Sync with canvas transform
-  const { startSync, stopSync } = useCanvasTransformSync(
-    canvasStore.getCanvas(),
-    updateTransform,
-    {},
-    {
-      autoStart: false
-    }
-  )
+  const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
 
   // Watch for selection changes
   watch(
