@@ -25,8 +25,6 @@ const config: any = defineConfig({
 // Configure babel plugins for TypeScript with declare fields and module resolution
 config['@playwright/test'] = {
   babelPlugins: [
-    // Stub Vue and CSS imports to prevent parsing errors
-    [path.join(__dirname, 'scripts/babel-plugin-stub-vue-imports.cjs')],
     // Module resolver to handle @ alias
     [
       'babel-plugin-module-resolver',
