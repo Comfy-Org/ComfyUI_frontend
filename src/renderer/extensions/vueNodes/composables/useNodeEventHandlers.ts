@@ -82,7 +82,6 @@ function useNodeEventHandlersIndividual() {
     const currentCollapsed = node.flags?.collapsed ?? false
     if (currentCollapsed !== collapsed) {
       node.collapse()
-      nodeManager.value.scheduleUpdate(nodeId, 'critical')
     }
   }
 

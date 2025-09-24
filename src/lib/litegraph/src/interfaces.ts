@@ -82,6 +82,7 @@ export interface Positionable extends Parent<Positionable>, HasBoundingRect {
    * @default 0,0
    */
   readonly pos: Point
+  readonly size?: Size
   /** true if this object is part of the selection, otherwise false. */
   selected?: boolean
 

@@ -35,7 +35,7 @@
         v-else
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="w-full h-[352px] object-cover block"
+        class="w-full h-[352px] object-contain block"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -94,17 +94,20 @@
       </div>
     </div>
 
-    <!-- Image Dimensions -->
-    <div class="text-white text-xs text-center mt-2">
-      <span v-if="imageError" class="text-red-400">
-        {{ $t('g.errorLoadingImage') }}
-      </span>
-      <span v-else-if="isLoading" class="text-gray-400">
-        {{ $t('g.loading') }}...
-      </span>
-      <span v-else>
-        {{ actualDimensions || $t('g.calculatingDimensions') }}
-      </span>
+    <div class="relative">
+      <!-- Image Dimensions -->
+      <div class="text-white text-xs text-center mt-2">
+        <span v-if="imageError" class="text-red-400">
+          {{ $t('g.errorLoadingImage') }}
+        </span>
+        <span v-else-if="isLoading" class="text-gray-400">
+          {{ $t('g.loading') }}...
+        </span>
+        <span v-else>
+          {{ actualDimensions || $t('g.calculatingDimensions') }}
+        </span>
+      </div>
+      <LODFallback />
     </div>
   </div>
 </template>
@@ -118,6 +121,8 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+
+import LODFallback from './LODFallback.vue'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */

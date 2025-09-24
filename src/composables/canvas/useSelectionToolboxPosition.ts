@@ -1,7 +1,7 @@
+import { useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
@@ -128,9 +128,7 @@ export function useSelectionToolboxPosition(
   }
 
   // Sync with canvas transform
-  const { startSync, stopSync } = useCanvasTransformSync(updateTransform, {
-    autoStart: false
-  })
+  const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
 
   // Watch for selection changes
   watch(

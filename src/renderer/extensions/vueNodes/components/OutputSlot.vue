@@ -1,14 +1,16 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <!-- Slot Name -->
-    <span
-      v-if="!dotOnly"
-      class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200"
-    >
-      {{ slotData.name || `Output ${index}` }}
-    </span>
-
+    <div class="relative">
+      <!-- Slot Name -->
+      <span
+        v-if="!dotOnly"
+        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+      >
+        {{ slotData.name || `Output ${index}` }}
+      </span>
+      <LODFallback />
+    </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
@@ -38,6 +40,7 @@ import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composabl
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@/utils/tailwindUtil'
 
+import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {

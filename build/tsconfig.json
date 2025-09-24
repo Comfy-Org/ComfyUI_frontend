@@ -1,13 +1,17 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    /* Test files should not be compiled */
+    /* Build scripts configuration */
     "noEmit": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true
   },
   "include": [
-    "**/*.ts",
+    "**/*.ts"
   ]
 }
