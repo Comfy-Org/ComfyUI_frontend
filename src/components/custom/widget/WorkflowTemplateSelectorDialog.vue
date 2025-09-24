@@ -261,16 +261,6 @@
                       :label="tag"
                     />
                   </template>
-                  <template v-else>
-                    <SquareChip
-                      v-if="template.mediaType"
-                      :label="template.mediaType"
-                    />
-                    <SquareChip
-                      v-if="template.models && template.models.length > 0"
-                      :label="template.models[0]"
-                    />
-                  </template>
                 </template>
               </CardTop>
             </template>
