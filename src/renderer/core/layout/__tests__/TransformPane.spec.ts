@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 import TransformPane from '../transform/TransformPane.vue'
@@ -34,28 +35,30 @@ vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
   }))
 }))
 
-describe('TransformPane', () => {
-  let mockCanvas: any
+function createMockCanvas(): LGraphCanvas {
+  return {
+    canvas: {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    },
+    ds: {
+      offset: [0, 0],
+      scale: 1
+    }
+  } as unknown as LGraphCanvas
+}
 
+describe('TransformPane', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.resetAllMocks()
 
     // Create mock canvas with LiteGraph interface
-    mockCanvas = {
-      canvas: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      },
-      ds: {
-        offset: [0, 0],
-        scale: 1
-      }
-    }
   })
 
   describe('component mounting', () => {
     it('should mount successfully with minimal props', () => {
+      const mockCanvas = createMockCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -72,6 +75,7 @@ describe('TransformPane', () => {
         transformOrigin: '0 0'
       }
 
+      const mockCanvas = createMockCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -85,6 +89,7 @@ describe('TransformPane', () => {
     })
 
     it('should render slot content', () => {
+      const mockCanvas = createMockCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -101,7 +106,7 @@ describe('TransformPane', () => {
 
   describe('RAF synchronization', () => {
     it('should call syncWithCanvas during RAF updates', async () => {
-      const transformState = useTransformState()
+      const mockCanvas = createMockCanvas()
       mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -111,12 +116,14 @@ describe('TransformPane', () => {
       await nextTick()
 
       // Allow RAF to execute
-      await vi.advanceTimersToNextFrame()
+      vi.advanceTimersToNextFrame()
 
+      const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
     })
 
     it('should emit transform update timing', async () => {
+      const mockCanvas = createMockCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -134,6 +141,7 @@ describe('TransformPane', () => {
 
   describe('canvas event listeners', () => {
     it('should add event listeners to canvas on mount', async () => {
+      const mockCanvas = createMockCanvas()
       mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -165,6 +173,7 @@ describe('TransformPane', () => {
     })
 
     it('should remove event listeners on unmount', async () => {
+      const mockCanvas = createMockCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -199,6 +208,7 @@ describe('TransformPane', () => {
 
   describe('interaction state management', () => {
     it('should apply interacting class during interactions', async () => {
+      const mockCanvas = createMockCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -216,6 +226,7 @@ describe('TransformPane', () => {
     })
 
     it('should handle pointer events for node delegation', async () => {
+      const mockCanvas = createMockCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -236,13 +247,14 @@ describe('TransformPane', () => {
 
   describe('transform state integration', () => {
     it('should provide transform utilities to child components', () => {
-      const transformState = useTransformState()
+      const mockCanvas = createMockCanvas()
       mount(TransformPane, {
         props: {
           canvas: mockCanvas
         }
       })
 
+      const transformState = useTransformState()
       // The component should provide transform state via Vue's provide/inject
       // This is tested indirectly through the composable integration
       expect(transformState.syncWithCanvas).toBeDefined()
