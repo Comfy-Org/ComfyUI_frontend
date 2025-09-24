@@ -318,6 +318,7 @@ test.describe('Animated image widget', () => {
 test.describe('Load audio widget', () => {
   test('Can load audio', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_audio_widget')
+    await comfyPage.page.waitForTimeout(300)
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })
