@@ -398,4 +398,57 @@ onUnmounted(() => {
   }
   mediaElementSource.value = null
 })
+
+// Serialization function for workflow execution
+async function serializeValue() {
+  // If still recording, stop and wait for completion
+  if (isRecording.value && mediaRecorder.value) {
+    mediaRecorder.value.stop()
+
+    // Wait for recording to complete
+    await new Promise((resolve) => {
+      const checkRecording = () => {
+        if (!isRecording.value) {
+          resolve(undefined)
+        } else {
+          setTimeout(checkRecording, 100)
+        }
+      }
+      checkRecording()
+    })
+  }
+
+  // If we have a recorded audio blob but no uploaded path yet, upload now
+  if (recordedURL.value && !modelValue.value) {
+    try {
+      const blob = await fetch(recordedURL.value).then((r) => r.blob())
+      const path = await useAudioService().convertBlobToFileAndSubmit(blob)
+      modelValue.value = path
+
+      // Update audio widget
+      if (props.nodeData?.widgets) {
+        const audioWidget = props.nodeData.widgets.find(
+          (w: any) => w.name === 'audio'
+        )
+        if (audioWidget) {
+          if (
+            audioWidget.options?.values &&
+            !audioWidget.options.values.includes(path)
+          ) {
+            audioWidget.options.values.push(path)
+          }
+          audioWidget.value = path
+        }
+      }
+    } catch (error) {
+      useToastStore().addAlert('Failed to upload recorded audio')
+      return ''
+    }
+  }
+
+  return modelValue.value || ''
+}
+
+// Expose serializeValue for workflow execution
+defineExpose({ serializeValue })
 </script>
