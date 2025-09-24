@@ -2,11 +2,6 @@ import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import * as Sentry from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
-import {
-  browserLocalPersistence,
-  browserSessionPersistence,
-  indexedDBLocalPersistence
-} from 'firebase/auth'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -14,7 +9,7 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
-import { VueFire, VueFireAuthWithDependencies } from 'vuefire'
+import { VueFire, VueFireAuth } from 'vuefire'
 
 import { FIREBASE_CONFIG } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -71,18 +66,6 @@ app
   .use(i18n)
   .use(VueFire, {
     firebaseApp,
-    modules: [
-      // Configure Firebase Auth persistence: localStorage first, IndexedDB last.
-      // Localstorage is preferred to IndexedDB for mobile Safari compatibility.
-      VueFireAuthWithDependencies({
-        dependencies: {
-          persistence: [
-            browserLocalPersistence,
-            browserSessionPersistence,
-            indexedDBLocalPersistence
-          ]
-        }
-      })
-    ]
+    modules: [VueFireAuth()]
   })
   .mount('#vue-app')

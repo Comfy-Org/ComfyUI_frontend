@@ -49,11 +49,11 @@
 </template>
 
 <script setup lang="ts">
+import { useRafFn } from '@vueuse/core'
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import {
   forceCloseMoreOptionsSignal,
   moreOptionsOpen,
@@ -152,9 +152,7 @@ const repositionPopover = () => {
   }
 }
 
-const { startSync, stopSync } = useCanvasTransformSync(repositionPopover, {
-  autoStart: false
-})
+const { resume: startSync, pause: stopSync } = useRafFn(repositionPopover)
 
 function openPopover(triggerEvent?: Event): boolean {
   const el = getButtonEl()

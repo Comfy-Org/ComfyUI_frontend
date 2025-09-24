@@ -1,5 +1,11 @@
 import { storeToRefs } from 'pinia'
-import { type MaybeRefOrGetter, computed, inject, toValue } from 'vue'
+import {
+  type CSSProperties,
+  type MaybeRefOrGetter,
+  computed,
+  inject,
+  toValue
+} from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -182,14 +188,16 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     endDrag,
 
     // Computed styles for Vue templates
-    nodeStyle: computed(() => ({
-      position: 'absolute' as const,
-      left: `${position.value.x}px`,
-      top: `${position.value.y}px`,
-      width: `${size.value.width}px`,
-      height: `${size.value.height}px`,
-      zIndex: zIndex.value,
-      cursor: isDragging ? 'grabbing' : 'grab'
-    }))
+    nodeStyle: computed(
+      (): CSSProperties => ({
+        position: 'absolute' as const,
+        left: `${position.value.x}px`,
+        top: `${position.value.y}px`,
+        width: `${size.value.width}px`,
+        height: `${size.value.height}px`,
+        zIndex: zIndex.value,
+        cursor: isDragging ? 'grabbing' : 'grab'
+      })
+    )
   }
 }

@@ -4032,6 +4032,18 @@ export class LGraphCanvas
 
     // TODO: Report failures, i.e. `failedNodes`
 
+    const newPositions = created.map((node) => ({
+      nodeId: String(node.id),
+      bounds: {
+        x: node.pos[0],
+        y: node.pos[1],
+        width: node.size?.[0] ?? 100,
+        height: node.size?.[1] ?? 200
+      }
+    }))
+
+    layoutStore.batchUpdateNodeBounds(newPositions)
+
     this.selectItems(created)
 
     graph.afterChange()

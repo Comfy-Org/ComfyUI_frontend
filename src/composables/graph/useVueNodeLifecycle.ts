@@ -1,20 +1,9 @@
-/**
- * Vue Node Lifecycle Management Composable
- *
- * Handles the complete lifecycle of Vue node rendering system including:
- * - Node manager initialization and cleanup
- * - Layout store synchronization
- * - Slot and link sync management
- * - Reactive state management for node data, positions, and sizes
- * - Memory management and proper cleanup
- */
 import { createSharedComposable } from '@vueuse/core'
-import { computed, readonly, ref, shallowRef, watch } from 'vue'
+import { readonly, ref, shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type {
   GraphNodeManager,
-  NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
@@ -42,21 +31,9 @@ function useVueNodeLifecycleIndividual() {
 
   // Vue node data state
   const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
-  const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
-  const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
-    new Map()
-  )
-  const nodeSizes = ref<ReadonlyMap<string, { width: number; height: number }>>(
-    new Map()
-  )
-
-  // Change detection function
-  const detectChangesInRAF = ref<() => void>(() => {})
 
   // Trigger for forcing computed re-evaluation
   const nodeDataTrigger = ref(0)
-
-  const isNodeManagerReady = computed(() => nodeManager.value !== null)
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -70,10 +47,6 @@ function useVueNodeLifecycleIndividual() {
 
     // Use the manager's data maps
     vueNodeData.value = manager.vueNodeData
-    nodeState.value = manager.nodeState
-    nodePositions.value = manager.nodePositions
-    nodeSizes.value = manager.nodeSizes
-    detectChangesInRAF.value = manager.detectChangesInRAF
 
     // Initialize layout system with existing nodes from active graph
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
@@ -136,12 +109,6 @@ function useVueNodeLifecycleIndividual() {
 
     // Reset reactive maps to clean state
     vueNodeData.value = new Map()
-    nodeState.value = new Map()
-    nodePositions.value = new Map()
-    nodeSizes.value = new Map()
-
-    // Reset change detection function
-    detectChangesInRAF.value = () => {}
   }
 
   // Watch for Vue nodes enabled state changes
@@ -235,13 +202,7 @@ function useVueNodeLifecycleIndividual() {
 
   return {
     vueNodeData,
-    nodeState,
-    nodePositions,
-    nodeSizes,
-    nodeDataTrigger: readonly(nodeDataTrigger),
     nodeManager: readonly(nodeManager),
-    detectChangesInRAF: readonly(detectChangesInRAF),
-    isNodeManagerReady,
 
     // Lifecycle methods
     initializeNodeManager,

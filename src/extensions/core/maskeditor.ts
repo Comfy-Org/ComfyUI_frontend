@@ -3901,6 +3901,19 @@ class UIManager {
         this.paintBucketSettingsHTML.style.display = 'none'
       }
     }
+    if (tool === Tools.MaskColorFill) {
+      this.brushSettingsHTML.style.display = 'none'
+      this.colorSelectSettingsHTML.style.display = 'flex'
+      this.paintBucketSettingsHTML.style.display = 'none'
+    } else if (tool === Tools.MaskBucket) {
+      this.brushSettingsHTML.style.display = 'none'
+      this.colorSelectSettingsHTML.style.display = 'none'
+      this.paintBucketSettingsHTML.style.display = 'flex'
+    } else {
+      this.brushSettingsHTML.style.display = 'flex'
+      this.colorSelectSettingsHTML.style.display = 'none'
+      this.paintBucketSettingsHTML.style.display = 'none'
+    }
     this.messageBroker.publish('setTool', tool)
     this.onToolChange()
     const newActiveLayer = this.toolSettings[tool].newActiveLayerOnSet

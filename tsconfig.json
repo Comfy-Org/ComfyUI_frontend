@@ -37,7 +37,5 @@
     "src/**/*",
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
-    "vite.config.mts",
-    "vitest.config.ts",
   ]
 }

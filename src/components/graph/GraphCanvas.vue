@@ -43,8 +43,6 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
-      :position="nodePositions.get(nodeData.id)"
-      :size="nodeSizes.get(nodeData.id)"
       :readonly="false"
       :error="
         executionStore.lastExecutionError?.node_id === nodeData.id
@@ -189,15 +187,8 @@ watch(
   }
 )
 
-const nodePositions = vueNodeLifecycle.nodePositions
-const nodeSizes = vueNodeLifecycle.nodeSizes
 const allNodes = viewportCulling.allNodes
-
-const handleTransformUpdate = () => {
-  viewportCulling.handleTransformUpdate()
-  // TODO: Fix paste position sync in separate PR
-  vueNodeLifecycle.detectChangesInRAF.value()
-}
+const handleTransformUpdate = viewportCulling.handleTransformUpdate
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
