@@ -8,7 +8,8 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
   const fitAddon = new FitAddon()
   const terminal = markRaw(
     new Terminal({
-      convertEol: true
+      convertEol: true,
+      theme: { background: '#171717' }
     })
   )
   terminal.loadAddon(fitAddon)
