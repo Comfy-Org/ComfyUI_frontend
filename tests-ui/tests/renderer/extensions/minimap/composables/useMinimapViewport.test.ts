@@ -1,12 +1,12 @@
+import { useRafFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useCanvasTransformSync } from '@/renderer/core/layout/transform/useCanvasTransformSync'
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-vi.mock('@/renderer/core/layout/transform/useCanvasTransformSync')
+vi.mock('@vueuse/core')
 vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
   calculateNodeBounds: vi.fn(),
   calculateMinimapScale: vi.fn(),
@@ -41,10 +41,10 @@ describe('useMinimapViewport', () => {
       ]
     } as any
 
-    vi.mocked(useCanvasTransformSync).mockReturnValue({
-      startSync: vi.fn(),
-      stopSync: vi.fn()
-    } as any)
+    vi.mocked(useRafFn, { partial: true }).mockReturnValue({
+      resume: vi.fn(),
+      pause: vi.fn()
+    })
   })
 
   it('should initialize with default bounds', () => {
@@ -206,10 +206,10 @@ describe('useMinimapViewport', () => {
     const startSyncMock = vi.fn()
     const stopSyncMock = vi.fn()
 
-    vi.mocked(useCanvasTransformSync).mockReturnValue({
-      startSync: startSyncMock,
-      stopSync: stopSyncMock
-    } as any)
+    vi.mocked(useRafFn, { partial: true }).mockReturnValue({
+      resume: startSyncMock,
+      pause: stopSyncMock
+    })
 
     const canvasRef = ref(mockCanvas as any)
     const graphRef = ref(mockGraph as any)
