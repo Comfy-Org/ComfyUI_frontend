@@ -1,7 +1,7 @@
 <template>
   <BaseViewTemplate>
     <div
-      class="max-w-(--breakpoint-sm) flex flex-col gap-8 p-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-no-repeat bg-top-right bg-origin-padding"
+      class="max-w-screen-sm flex flex-col gap-8 p-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-no-repeat bg-top-right bg-origin-padding"
     >
       <!-- Header -->
       <h1 class="mt-24 text-4xl font-bold text-red-500">
