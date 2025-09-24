@@ -3,7 +3,7 @@ import { type ComputedRef, type Ref, computed, unref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { cn } from '@/utils/tailwindUtil'
 
-export interface NodePresentationOptions {
+interface NodePresentationOptions {
   readonly?: boolean
   isPreview?: boolean
   scale?: number
@@ -18,7 +18,7 @@ export interface NodePresentationOptions {
   shouldHandleNodePointerEvents?: ComputedRef<boolean>
 }
 
-export interface NodePresentationState {
+interface NodePresentationState {
   // Classes
   containerBaseClasses: ComputedRef<string>
   separatorClasses: string
