@@ -282,7 +282,7 @@ const borderClass = computed(() => {
     return 'border-red-500 dark-theme:border-red-500'
   }
   if (executing.value) {
-    return 'border-blue-500 dark-theme:border-blue-500'
+    return 'border-blue-500'
   }
   return undefined
 })
