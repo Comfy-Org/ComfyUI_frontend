@@ -238,10 +238,8 @@ const handleRecordingStop = async () => {
       })
     }
 
-    // Force trigger any change callbacks or reactivity
-    if (props.widget) {
-      props.widget.value = path
-    }
+    // Update the model value to trigger reactivity and parent updates
+    modelValue.value = path
 
     // Update LiteGraph node widgets directly
     if (props.node && (props.node as any).widgets) {
