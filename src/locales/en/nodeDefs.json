@@ -8915,6 +8915,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "display_name": "Rodin 3D Generate - Gen-2 Generate",
+    "description": "Generate 3D Assets using Rodin API",
+    "inputs": {
+      "Images": {
+        "name": "Images"
+      },
+      "Seed": {
+        "name": "Seed"
+      },
+      "Material_Type": {
+        "name": "Material_Type"
+      },
+      "Polygon_count": {
+        "name": "Polygon_count"
+      },
+      "TAPose": {
+        "name": "TAPose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D Model Path"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "display_name": "Rodin 3D Generate - Regular Generate",
     "description": "Generate 3D Assets using Rodin API",

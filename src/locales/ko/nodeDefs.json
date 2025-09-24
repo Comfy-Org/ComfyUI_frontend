@@ -8898,6 +8898,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "description": "Rodin API를 사용하여 3D 에셋 생성",
+    "display_name": "Rodin 3D 생성 - Gen-2 생성",
+    "inputs": {
+      "Images": {
+        "name": "이미지"
+      },
+      "Material_Type": {
+        "name": "재질 유형"
+      },
+      "Polygon_count": {
+        "name": "폴리곤 수"
+      },
+      "Seed": {
+        "name": "시드"
+      },
+      "TAPose": {
+        "name": "TAPose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 모델 경로"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Rodin API를 사용하여 3D 에셋을 생성합니다",
     "display_name": "Rodin 3D 생성 - 일반 생성",

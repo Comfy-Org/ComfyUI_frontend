@@ -8898,6 +8898,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "description": "Rodin API kullanarak 3D Varlıklar oluşturun",
+    "display_name": "Rodin 3D Oluştur - Gen-2 Oluştur",
+    "inputs": {
+      "Images": {
+        "name": "Görseller"
+      },
+      "Material_Type": {
+        "name": "Malzeme_Türü"
+      },
+      "Polygon_count": {
+        "name": "Poligon_sayısı"
+      },
+      "Seed": {
+        "name": "Tohum"
+      },
+      "TAPose": {
+        "name": "TAPose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D Model Yolu"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Rodin API kullanarak 3D Varlıklar oluştur",
     "display_name": "Rodin 3D Oluştur - Standart Oluştur",

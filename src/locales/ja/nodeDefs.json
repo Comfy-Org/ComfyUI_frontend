@@ -8898,6 +8898,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "description": "Rodin API を使用して3Dアセットを生成します",
+    "display_name": "Rodin 3D 生成 - Gen-2 生成",
+    "inputs": {
+      "Images": {
+        "name": "画像"
+      },
+      "Material_Type": {
+        "name": "マテリアルタイプ"
+      },
+      "Polygon_count": {
+        "name": "ポリゴン数"
+      },
+      "Seed": {
+        "name": "シード"
+      },
+      "TAPose": {
+        "name": "Tポーズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3Dモデルパス"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Rodin APIを使用して3Dアセットを生成します",
     "display_name": "Rodin 3D生成 - 通常生成",

@@ -8898,6 +8898,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "description": "使用 Rodin API 生成 3D 资产",
+    "display_name": "Rodin 3D 生成 - Gen-2 生成",
+    "inputs": {
+      "Images": {
+        "name": "图像"
+      },
+      "Material_Type": {
+        "name": "材质类型"
+      },
+      "Polygon_count": {
+        "name": "多边形数量"
+      },
+      "Seed": {
+        "name": "种子"
+      },
+      "TAPose": {
+        "name": "TAPose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 模型路径"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "使用 Rodin API 生成 3D 资产",
     "display_name": "Rodin 3D 生成 - 常规生成",

@@ -8898,6 +8898,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "description": "توليد أصول ثلاثية الأبعاد باستخدام Rodin API",
+    "display_name": "Rodin 3D توليد - توليد Gen-2",
+    "inputs": {
+      "Images": {
+        "name": "صور"
+      },
+      "Material_Type": {
+        "name": "نوع المادة"
+      },
+      "Polygon_count": {
+        "name": "عدد المضلعات"
+      },
+      "Seed": {
+        "name": "البذرة"
+      },
+      "TAPose": {
+        "name": "وضعية TA"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مسار النموذج ثلاثي الأبعاد"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "توليد أصول ثلاثية الأبعاد باستخدام Rodin API",
     "display_name": "Rodin 3D توليد - توليد عادي",

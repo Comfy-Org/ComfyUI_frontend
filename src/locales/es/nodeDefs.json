@@ -8898,6 +8898,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "description": "Genera activos 3D usando la API de Rodin",
+    "display_name": "Rodin 3D Generar - Gen-2 Generar",
+    "inputs": {
+      "Images": {
+        "name": "Imágenes"
+      },
+      "Material_Type": {
+        "name": "Tipo de material"
+      },
+      "Polygon_count": {
+        "name": "Cantidad de polígonos"
+      },
+      "Seed": {
+        "name": "Semilla"
+      },
+      "TAPose": {
+        "name": "TAPose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ruta del modelo 3D"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Generar activos 3D usando la API de Rodin",
     "display_name": "Rodin 3D Generar - Generación Regular",

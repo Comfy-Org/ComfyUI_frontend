@@ -8898,6 +8898,32 @@
       }
     }
   },
+  "Rodin3D_Gen2": {
+    "description": "Генерируйте 3D-ассеты с помощью Rodin API",
+    "display_name": "Rodin 3D Генерация - Gen-2 Генерация",
+    "inputs": {
+      "Images": {
+        "name": "Изображения"
+      },
+      "Material_Type": {
+        "name": "Тип материала"
+      },
+      "Polygon_count": {
+        "name": "Количество полигонов"
+      },
+      "Seed": {
+        "name": "Сид"
+      },
+      "TAPose": {
+        "name": "TAPose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Путь к 3D-модели"
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Генерация 3D-ассетов с помощью Rodin API",
     "display_name": "Rodin 3D Генерация — Обычная генерация",
