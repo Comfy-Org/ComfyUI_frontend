@@ -6,27 +6,18 @@
  * 2. Set display none on element to avoid cascade resolution overhead
  * 3. Only run when transform changes (event driven)
  */
-import { type Ref, computed } from 'vue'
+import { useThrottleFn } from '@vueuse/core'
+import { computed } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app as comfyApp } from '@/scripts/app'
 
-interface NodeManager {
-  getNode: (id: string) => any
-}
-
-export function useViewportCulling(
-  isVueNodesEnabled: Ref<boolean>,
-  vueNodeData: Ref<ReadonlyMap<string, VueNodeData>>,
-  nodeDataTrigger: Ref<number>,
-  nodeManager: Ref<NodeManager | null>
-) {
+export function useViewportCulling() {
   const canvasStore = useCanvasStore()
+  const { vueNodeData, nodeManager } = useVueNodeLifecycle()
 
   const allNodes = computed(() => {
-    if (!isVueNodesEnabled.value) return []
-    void nodeDataTrigger.value // Force re-evaluation when nodeManager initializes
     return Array.from(vueNodeData.value.values())
   })
 
@@ -34,7 +25,7 @@ export function useViewportCulling(
    * Update visibility of all nodes based on viewport
    * Queries DOM directly - no cache maintenance needed
    */
-  const updateVisibility = () => {
+  function updateVisibility() {
     if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
 
     const canvas = canvasStore.canvas
@@ -76,31 +67,17 @@ export function useViewportCulling(
     }
   }
 
+  const updateVisibilityDebounced = useThrottleFn(updateVisibility, 20)
+
   // RAF throttling for smooth updates during continuous panning
-  let rafId: number | null = null
-
-  /**
-   * Handle transform update - called by TransformPane event
-   * Uses RAF to batch updates for smooth performance
-   */
-  const handleTransformUpdate = () => {
-    if (!isVueNodesEnabled.value) return
-
-    // Cancel previous RAF if still pending
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-    }
-
-    // Schedule update in next animation frame
-    rafId = requestAnimationFrame(() => {
-      updateVisibility()
-      rafId = null
+  function handleTransformUpdate() {
+    requestAnimationFrame(async () => {
+      await updateVisibilityDebounced()
     })
   }
 
   return {
     allNodes,
-    handleTransformUpdate,
-    updateVisibility
+    handleTransformUpdate
   }
 }

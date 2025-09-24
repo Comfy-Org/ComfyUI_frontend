@@ -87,6 +87,7 @@ import type { PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
+import { resolveConnectingLinkColor } from './utils/linkColors'
 import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -4031,6 +4032,18 @@ export class LGraphCanvas
 
     // TODO: Report failures, i.e. `failedNodes`
 
+    const newPositions = created.map((node) => ({
+      nodeId: String(node.id),
+      bounds: {
+        x: node.pos[0],
+        y: node.pos[1],
+        width: node.size?.[0] ?? 100,
+        height: node.size?.[1] ?? 200
+      }
+    }))
+
+    layoutStore.batchUpdateNodeBounds(newPositions)
+
     this.selectItems(created)
 
     graph.afterChange()
@@ -4716,29 +4729,20 @@ export class LGraphCanvas
           const connShape = fromSlot.shape
           const connType = fromSlot.type
 
-          const colour =
-            connType === LiteGraph.EVENT
-              ? LiteGraph.EVENT_LINK_COLOR
-              : LiteGraph.CONNECTING_LINK_COLOR
+          const colour = resolveConnectingLinkColor(connType)
 
           // the connection being dragged by the mouse
           if (this.linkRenderer) {
-            this.linkRenderer.renderLinkDirect(
+            this.linkRenderer.renderDraggingLink(
               ctx,
               pos,
               highlightPos,
-              null,
-              false,
-              null,
               colour,
               fromDirection,
               dragDirection,
               {
                 ...this.buildLinkRenderContext(),
                 linkMarkerShape: LinkMarkerShape.None
-              },
-              {
-                disabled: false
               }
             )
           }

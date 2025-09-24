@@ -4,6 +4,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
+const mockGetCategoryForNodeType = vi.fn()
+
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: vi.fn(() => ({
     getRegisteredNodeTypes: vi.fn(
@@ -14,7 +16,13 @@ vi.mock('@/stores/modelToNodeStore', () => ({
           'VAELoader',
           'TestNode'
         ])
-    )
+    ),
+    getCategoryForNodeType: mockGetCategoryForNodeType,
+    modelToNodeMap: {
+      checkpoints: [{ nodeDef: { name: 'CheckpointLoaderSimple' } }],
+      loras: [{ nodeDef: { name: 'LoraLoader' } }],
+      vae: [{ nodeDef: { name: 'VAELoader' } }]
+    }
   }))
 }))
 
@@ -208,6 +216,89 @@ describe('assetService', () => {
       expect(
         assetService.isAssetBrowserEligible('lora_name', 'UnknownNode')
       ).toBe(false)
+    })
+  })
+
+  describe('getAssetsForNodeType', () => {
+    beforeEach(() => {
+      mockGetCategoryForNodeType.mockClear()
+    })
+
+    it('should return empty array for unregistered node types', async () => {
+      mockGetCategoryForNodeType.mockReturnValue(undefined)
+
+      const result = await assetService.getAssetsForNodeType('UnknownNode')
+
+      expect(mockGetCategoryForNodeType).toHaveBeenCalledWith('UnknownNode')
+      expect(result).toEqual([])
+    })
+
+    it('should use getCategoryForNodeType for efficient category lookup', async () => {
+      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+      const testAssets = [MOCK_ASSETS.checkpoints]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsForNodeType(
+        'CheckpointLoaderSimple'
+      )
+
+      expect(mockGetCategoryForNodeType).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple'
+      )
+      expect(result).toEqual(testAssets)
+
+      // Verify API call includes correct category
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models,checkpoints'
+      )
+    })
+
+    it('should return empty array when no category found', async () => {
+      mockGetCategoryForNodeType.mockReturnValue(undefined)
+
+      const result = await assetService.getAssetsForNodeType('TestNode')
+
+      expect(result).toEqual([])
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    })
+
+    it('should handle API errors gracefully', async () => {
+      mockGetCategoryForNodeType.mockReturnValue('loras')
+      mockApiError(500, 'Internal Server Error')
+
+      await expect(
+        assetService.getAssetsForNodeType('LoraLoader')
+      ).rejects.toThrow(
+        'Unable to load assets for LoraLoader: Server returned 500. Please try again.'
+      )
+    })
+
+    it('should return all assets without filtering for different categories', async () => {
+      // Test checkpoints
+      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+      const checkpointAssets = [MOCK_ASSETS.checkpoints]
+      mockApiResponse(checkpointAssets)
+
+      let result = await assetService.getAssetsForNodeType(
+        'CheckpointLoaderSimple'
+      )
+      expect(result).toEqual(checkpointAssets)
+
+      // Test loras
+      mockGetCategoryForNodeType.mockReturnValue('loras')
+      const loraAssets = [MOCK_ASSETS.loras]
+      mockApiResponse(loraAssets)
+
+      result = await assetService.getAssetsForNodeType('LoraLoader')
+      expect(result).toEqual(loraAssets)
+
+      // Test vae
+      mockGetCategoryForNodeType.mockReturnValue('vae')
+      const vaeAssets = [MOCK_ASSETS.vae]
+      mockApiResponse(vaeAssets)
+
+      result = await assetService.getAssetsForNodeType('VAELoader')
+      expect(result).toEqual(vaeAssets)
     })
   })
 })

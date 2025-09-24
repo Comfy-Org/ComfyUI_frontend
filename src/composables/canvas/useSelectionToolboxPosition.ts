@@ -1,7 +1,7 @@
-import { onUnmounted, ref, watch } from 'vue'
+import { useRafFn } from '@vueuse/core'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
@@ -128,9 +128,7 @@ export function useSelectionToolboxPosition(
   }
 
   // Sync with canvas transform
-  const { startSync, stopSync } = useCanvasTransformSync(updateTransform, {
-    autoStart: false
-  })
+  const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
 
   // Watch for selection changes
   watch(
@@ -170,50 +168,75 @@ export function useSelectionToolboxPosition(
     }
   )
 
-  // Watch for dragging state
-  watch(
-    () => canvasStore.canvas?.state?.draggingItems,
-    (dragging) => {
-      if (dragging) {
-        visible.value = false
-
-        if (moreOptionsOpen.value) {
-          const currentSig = buildSelectionSignature(canvasStore)
-          if (currentSig !== moreOptionsSelectionSignature) {
-            moreOptionsSelectionSignature = null
-          }
-          moreOptionsWasOpenBeforeDrag = true
-          moreOptionsOpen.value = false
-          moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
-          if (moreOptionsRestorePending.value) {
-            forceCloseMoreOptionsSignal.value++
-          } else {
-            moreOptionsWasOpenBeforeDrag = false
-          }
-        } else {
-          moreOptionsRestorePending.value = false
-          moreOptionsWasOpenBeforeDrag = false
-        }
-      } else {
-        requestAnimationFrame(() => {
-          updateSelectionBounds()
-          const selectionMatches = currentSelectionMatchesSignature(canvasStore)
-          const shouldRestore =
-            moreOptionsWasOpenBeforeDrag &&
-            visible.value &&
-            moreOptionsRestorePending.value &&
-            selectionMatches
-
-          if (shouldRestore) {
-            restoreMoreOptionsSignal.value++
-          } else {
-            moreOptionsRestorePending.value = false
-          }
-          moreOptionsWasOpenBeforeDrag = false
-        })
-      }
+  const handleDragStateChange = (dragging: boolean) => {
+    if (dragging) {
+      handleDragStart()
+      return
     }
-  )
+
+    handleDragEnd()
+  }
+
+  const handleDragStart = () => {
+    visible.value = false
+
+    // Early return if more options wasn't open
+    if (!moreOptionsOpen.value) {
+      moreOptionsRestorePending.value = false
+      moreOptionsWasOpenBeforeDrag = false
+      return
+    }
+
+    // Handle more options cleanup
+    const currentSig = buildSelectionSignature(canvasStore)
+    const selectionChanged = currentSig !== moreOptionsSelectionSignature
+
+    if (selectionChanged) {
+      moreOptionsSelectionSignature = null
+    }
+    moreOptionsOpen.value = false
+    moreOptionsWasOpenBeforeDrag = true
+    moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
+
+    if (moreOptionsRestorePending.value) {
+      forceCloseMoreOptionsSignal.value++
+      return
+    }
+
+    moreOptionsWasOpenBeforeDrag = false
+  }
+
+  const handleDragEnd = () => {
+    requestAnimationFrame(() => {
+      updateSelectionBounds()
+
+      const selectionMatches = currentSelectionMatchesSignature(canvasStore)
+      const shouldRestore =
+        moreOptionsWasOpenBeforeDrag &&
+        visible.value &&
+        moreOptionsRestorePending.value &&
+        selectionMatches
+
+      // Single point of assignment for each ref
+      moreOptionsRestorePending.value =
+        shouldRestore && moreOptionsRestorePending.value
+      moreOptionsWasOpenBeforeDrag = false
+
+      if (shouldRestore) {
+        restoreMoreOptionsSignal.value++
+      }
+    })
+  }
+
+  // Unified dragging state - combines both LiteGraph and Vue node dragging
+  const isDragging = computed((): boolean => {
+    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
+    const vueNodeDragging =
+      shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
+    return litegraphDragging || vueNodeDragging
+  })
+
+  watch(isDragging, handleDragStateChange)
 
   onUnmounted(() => {
     resetMoreOptionsState()

@@ -1,12 +1,13 @@
-import { Locator, expect } from '@playwright/test'
-import { Position } from '@vueuse/core'
+import type { Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
+import type { Position } from '@vueuse/core'
 
 import {
   type ComfyPage,
   comfyPageFixture as test,
   testComfySnapToGridGridSize
 } from '../fixtures/ComfyPage'
-import { type NodeReference } from '../fixtures/utils/litegraphUtils'
+import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.describe('Item Interaction', () => {
   test('Can select/delete all items', async ({ comfyPage }) => {

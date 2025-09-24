@@ -8,7 +8,13 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted } from 'vue'
+import {
+  type MaybeRefOrGetter,
+  getCurrentInstance,
+  onMounted,
+  onUnmounted,
+  toValue
+} from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -154,9 +160,10 @@ const resizeObserver = new ResizeObserver((entries) => {
  * ```
  */
 export function useVueElementTracking(
-  appIdentifier: string,
+  appIdentifierMaybe: MaybeRefOrGetter<string>,
   trackingType: string
 ) {
+  const appIdentifier = toValue(appIdentifierMaybe)
   onMounted(() => {
     const element = getCurrentInstance()?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
