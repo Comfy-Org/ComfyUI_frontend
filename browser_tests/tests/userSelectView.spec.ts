@@ -47,7 +47,7 @@ test.describe('User Select View', () => {
     // Try to click first option if it exists
     const firstOption = page.locator('.p-select-list .p-select-option').first()
 
-    if (await firstOption.count() > 0) {
+    if ((await firstOption.count()) > 0) {
       await firstOption.click()
     } else {
       // No options available - close dropdown and use new user input
