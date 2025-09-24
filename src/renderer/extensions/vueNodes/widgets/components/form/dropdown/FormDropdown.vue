@@ -27,6 +27,7 @@ const filterIndex = defineModel<number>('filterIndex', { default: 0 })
 const layoutMode = defineModel<'list' | 'grid'>('layoutMode', {
   default: 'grid'
 })
+const files = defineModel<File[]>('files', { default: [] })
 
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
@@ -56,16 +57,10 @@ const closeDropdown = () => {
   }
 }
 
-const files = ref<File[]>([])
-
-// TODO handleFileChange
 function handleFileChange(event: Event) {
-  // 处理文件选择事件
-  console.log('File selected:', event)
   const input = event.target as HTMLInputElement
   if (input.files) {
     files.value = Array.from(input.files)
-    console.log('Selected files:', files.value)
   }
   // Clear the input value to allow re-selecting the same file
   input.value = ''
@@ -106,6 +101,7 @@ function handleMaxSelectionReached() {
       :is-open="isOpen"
       :placeholder="placeholder"
       :items="items"
+      :max-selectable="maxSelectable"
       :selected="selected"
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
