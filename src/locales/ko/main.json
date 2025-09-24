@@ -323,6 +323,9 @@
     "quit": "종료",
     "reinstall": "재설치"
   },
+  "desktopStart": {
+    "initialising": "초기화 중..."
+  },
   "desktopUpdate": {
     "description": "ComfyUI 데스크톱이 새로운 종속성을 설치하고 있습니다. 이 작업은 몇 분 정도 걸릴 수 있습니다.",
     "errorCheckingUpdate": "업데이트 확인 중 오류가 발생했습니다",
@@ -449,6 +452,7 @@
     "loading": "로딩 중",
     "loadingPanel": "{panel} 패널 불러오는 중...",
     "login": "로그인",
+    "logoAlt": "ComfyUI 로고",
     "logs": "로그",
     "micPermissionDenied": "마이크 권한이 거부되었습니다",
     "migrate": "이전(migrate)",
@@ -590,6 +594,17 @@
     "desktopSettings": "데스크탑 설정",
     "failedToSelectDirectory": "디렉토리 선택 실패",
     "gpu": "GPU",
+    "gpuPicker": {
+      "appleMetalDescription": "Mac의 GPU를 활용하여 더 빠르고 향상된 경험을 제공합니다.",
+      "cpuDescription": "GPU 가속이 불가능할 때 호환성을 위해 CPU 모드를 사용하세요.",
+      "cpuSubtitle": "CPU 모드",
+      "manualDescription": "고급 설정이나 지원되지 않는 하드웨어를 위해 ComfyUI를 수동으로 구성하세요.",
+      "manualSubtitle": "수동 설정",
+      "nvidiaDescription": "CUDA 가속이 적용된 NVIDIA GPU를 사용하여 최고의 성능을 누리세요.",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "recommended": "추천",
+      "title": "하드웨어 설정 선택"
+    },
     "gpuSelection": {
       "cpuMode": "CPU 모드",
       "cpuModeDescription": "CPU 모드는 개발자와 드문 경우에만 사용됩니다.",
@@ -611,6 +626,16 @@
     "installLocationTooltip": "ComfyUI의 사용자 데이터 디렉토리. 저장소:\n- Python 환경\n- 모델\n- 커스텀 노드\n",
     "insufficientFreeSpace": "공간이 부족합니다 - 최소한의 여유 공간",
     "isOneDrive": "OneDrive에 설치하면 문제가 발생할 수 있습니다. OneDrive가 아닌 위치에 설치하는 것을 강력히 권장합니다.",
+    "locationPicker": {
+      "chooseDownloadServers": "다운로드 서버 수동 선택",
+      "downloadServersDescription": "위치에 따라 Python, PyPI 패키지, PyTorch 다운로드를 위한 미러 서버를 선택하세요.",
+      "migrateDescription": "이전 ComfyUI 설치에서 기존 모델, 커스텀 노드, 설정을 복사하거나 연결합니다.",
+      "migrateFromExisting": "기존 설치에서 마이그레이션",
+      "migrationPathPlaceholder": "기존 ComfyUI 설치 선택 (선택 사항)",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "subtitle": "ComfyUI 파일을 저장할 폴더를 선택하세요. Python도 자동으로 설정됩니다.",
+      "title": "ComfyUI 설치 위치 선택"
+    },
     "manualConfiguration": {
       "createVenv": "다음 디렉토리에 가상 환경을 생성해야 합니다",
       "requirements": "요구 사항",
@@ -1302,6 +1327,10 @@
   "serverStart": {
     "copyAllTooltip": "전체 복사",
     "copySelectionTooltip": "선택 복사",
+    "errorMessage": "ComfyUI Desktop을 시작할 수 없습니다",
+    "installation": {
+      "title": "ComfyUI 설치 중"
+    },
     "openLogs": "로그 열기",
     "process": {
       "error": "ComfyUI Desktop을 시작할 수 없습니다",
@@ -1312,6 +1341,7 @@
     },
     "reportIssue": "문제 보고",
     "showTerminal": "터미널 보기",
+    "title": "ComfyUI 시작 중",
     "troubleshoot": "문제 해결"
   },
   "settingsCategories": {

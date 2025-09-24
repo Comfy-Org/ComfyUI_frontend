@@ -323,6 +323,9 @@
     "quit": "خروج",
     "reinstall": "إعادة التثبيت"
   },
+  "desktopStart": {
+    "initialising": "جارٍ التهيئة..."
+  },
   "desktopUpdate": {
     "description": "يقوم ComfyUI Desktop بتثبيت تبعيات جديدة. قد يستغرق هذا بضع دقائق.",
     "errorCheckingUpdate": "حدث خطأ أثناء التحقق من التحديثات",
@@ -449,6 +452,7 @@
     "loading": "جارٍ التحميل",
     "loadingPanel": "جارٍ تحميل لوحة {panel}...",
     "login": "تسجيل الدخول",
+    "logoAlt": "شعار ComfyUI",
     "logs": "السجلات",
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
@@ -590,6 +594,17 @@
     "desktopSettings": "إعدادات سطح المكتب",
     "failedToSelectDirectory": "فشل في اختيار الدليل",
     "gpu": "وحدة معالجة الرسومات (GPU)",
+    "gpuPicker": {
+      "appleMetalDescription": "يستفيد من وحدة معالجة الرسومات في جهاز Mac الخاص بك لسرعة أعلى وتجربة أفضل بشكل عام",
+      "cpuDescription": "استخدم وضع المعالج المركزي (CPU) للتوافق عندما لا يتوفر تسريع GPU",
+      "cpuSubtitle": "وضع المعالج المركزي (CPU)",
+      "manualDescription": "قم بإعداد ComfyUI يدويًا للإعدادات المتقدمة أو الأجهزة غير المدعومة",
+      "manualSubtitle": "إعداد يدوي",
+      "nvidiaDescription": "استخدم وحدة معالجة الرسومات NVIDIA الخاصة بك مع تسريع CUDA لأفضل أداء.",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "recommended": "موصى به",
+      "title": "اختر إعداد الأجهزة الخاص بك"
+    },
     "gpuSelection": {
       "cpuMode": "وضع وحدة المعالجة المركزية (CPU)",
       "cpuModeDescription": "وضع المعالج مخصص للمطورين وحالات نادرة فقط.",
@@ -611,6 +626,16 @@
     "installLocationTooltip": "دليل بيانات مستخدم ComfyUI. يحتوي على:\n- بيئة بايثون\n- النماذج\n- العقد المخصصة\n",
     "insufficientFreeSpace": "مساحة غير كافية - الحد الأدنى للمساحة الحرة",
     "isOneDrive": "OneDrive غير مدعوم. يرجى تثبيت ComfyUI في موقع آخر.",
+    "locationPicker": {
+      "chooseDownloadServers": "اختر خوادم التنزيل يدويًا",
+      "downloadServersDescription": "حدد خوادم مرآة معينة لتنزيل Python وحزم PyPI وPyTorch بناءً على موقعك.",
+      "migrateDescription": "انسخ أو اربط النماذج والعُقد المخصصة والإعدادات الخاصة بك من تثبيت ComfyUI سابق.",
+      "migrateFromExisting": "الترحيل من تثبيت موجود",
+      "migrationPathPlaceholder": "حدد تثبيت ComfyUI الحالي (اختياري)",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "subtitle": "اختر مجلدًا لملفات ComfyUI. سنقوم أيضًا بإعداد Python هناك تلقائيًا.",
+      "title": "اختر مكان تثبيت ComfyUI"
+    },
     "manualConfiguration": {
       "createVenv": "ستحتاج إلى إنشاء بيئة افتراضية في الدليل التالي",
       "requirements": "المتطلبات",
@@ -1302,6 +1327,10 @@
   "serverStart": {
     "copyAllTooltip": "نسخ الكل",
     "copySelectionTooltip": "نسخ التحديد",
+    "errorMessage": "تعذر بدء تشغيل ComfyUI Desktop",
+    "installation": {
+      "title": "تثبيت ComfyUI"
+    },
     "openLogs": "فتح السجلات",
     "process": {
       "error": "غير قادر على بدء ComfyUI Desktop",
@@ -1312,6 +1341,7 @@
     },
     "reportIssue": "الإبلاغ عن مشكلة",
     "showTerminal": "إظهار الطرفية",
+    "title": "بدء تشغيل ComfyUI",
     "troubleshoot": "استكشاف الأخطاء"
   },
   "settingsCategories": {

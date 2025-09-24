@@ -323,6 +323,9 @@
     "quit": "Salir",
     "reinstall": "Reinstalar"
   },
+  "desktopStart": {
+    "initialising": "Inicializando..."
+  },
   "desktopUpdate": {
     "description": "ComfyUI Desktop está instalando nuevas dependencias. Esto puede tardar unos minutos.",
     "errorCheckingUpdate": "Error al buscar actualizaciones",
@@ -449,6 +452,7 @@
     "loading": "Cargando",
     "loadingPanel": "Cargando panel {panel}...",
     "login": "Iniciar sesión",
+    "logoAlt": "Logo de ComfyUI",
     "logs": "Registros",
     "micPermissionDenied": "Permiso de micrófono denegado",
     "migrate": "Migrar",
@@ -590,6 +594,17 @@
     "desktopSettings": "Configuraciones de Escritorio",
     "failedToSelectDirectory": "Falló al seleccionar el directorio",
     "gpu": "GPU",
+    "gpuPicker": {
+      "appleMetalDescription": "Aprovecha la GPU de tu Mac para mayor velocidad y una mejor experiencia general",
+      "cpuDescription": "Usa el modo CPU para compatibilidad cuando la aceleración por GPU no esté disponible",
+      "cpuSubtitle": "Modo CPU",
+      "manualDescription": "Configura ComfyUI manualmente para configuraciones avanzadas o hardware no soportado",
+      "manualSubtitle": "Configuración manual",
+      "nvidiaDescription": "Utiliza tu GPU NVIDIA con aceleración CUDA para obtener el mejor rendimiento.",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "recommended": "RECOMENDADO",
+      "title": "Elige tu configuración de hardware"
+    },
     "gpuSelection": {
       "cpuMode": "Modo CPU",
       "cpuModeDescription": "El modo CPU está destinado para desarrolladores y casos extremos raros solamente.",
@@ -611,6 +626,16 @@
     "installLocationTooltip": "Directorio de datos de usuario de ComfyUI. Almacena:\n- Entorno Python\n- Modelos\n- Nodos personalizados\n",
     "insufficientFreeSpace": "Espacio insuficiente - espacio libre mínimo",
     "isOneDrive": "OneDrive no es compatible. Por favor instala ComfyUI en otra ubicación.",
+    "locationPicker": {
+      "chooseDownloadServers": "Elegir servidores de descarga manualmente",
+      "downloadServersDescription": "Selecciona servidores espejo específicos para descargar Python, paquetes PyPI y PyTorch según tu ubicación.",
+      "migrateDescription": "Copia o enlaza tus modelos existentes, nodos personalizados y configuraciones de una instalación previa de ComfyUI.",
+      "migrateFromExisting": "Migrar desde una instalación existente",
+      "migrationPathPlaceholder": "Selecciona una instalación existente de ComfyUI (opcional)",
+      "pathPlaceholder": "/Usuarios/usuario/Documentos/ComfyUI",
+      "subtitle": "Selecciona una carpeta para los archivos de ComfyUI. También configuraremos Python automáticamente allí.",
+      "title": "Elige dónde instalar ComfyUI"
+    },
     "manualConfiguration": {
       "createVenv": "Necesitarás crear un entorno virtual en el siguiente directorio",
       "requirements": "Requisitos",
@@ -1302,6 +1327,10 @@
   "serverStart": {
     "copyAllTooltip": "Copiar todo",
     "copySelectionTooltip": "Copiar selección",
+    "errorMessage": "No se puede iniciar ComfyUI Desktop",
+    "installation": {
+      "title": "Instalando ComfyUI"
+    },
     "openLogs": "Abrir registros",
     "process": {
       "error": "No se puede iniciar ComfyUI Desktop",
@@ -1312,6 +1341,7 @@
     },
     "reportIssue": "Reportar problema",
     "showTerminal": "Mostrar terminal",
+    "title": "Iniciando ComfyUI",
     "troubleshoot": "Solucionar problemas"
   },
   "settingsCategories": {

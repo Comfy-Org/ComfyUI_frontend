@@ -323,6 +323,9 @@
     "quit": "退出",
     "reinstall": "重新安裝"
   },
+  "desktopStart": {
+    "initialising": "初始化中..."
+  },
   "desktopUpdate": {
     "description": "ComfyUI Desktop 正在安裝新相依套件，這可能需要幾分鐘。",
     "errorCheckingUpdate": "檢查更新時發生錯誤",
@@ -449,6 +452,7 @@
     "loading": "載入中",
     "loadingPanel": "正在載入{panel}面板...",
     "login": "登入",
+    "logoAlt": "ComfyUI 標誌",
     "logs": "日誌",
     "micPermissionDenied": "麥克風權限被拒絕",
     "migrate": "遷移",
@@ -590,6 +594,17 @@
     "desktopSettings": "桌面設定",
     "failedToSelectDirectory": "選擇目錄失敗",
     "gpu": "GPU",
+    "gpuPicker": {
+      "appleMetalDescription": "利用您的 Mac GPU 提升速度，帶來更佳體驗",
+      "cpuDescription": "當無法使用 GPU 加速時，請使用 CPU 模式以確保相容性",
+      "cpuSubtitle": "CPU 模式",
+      "manualDescription": "針對進階設定或不支援的硬體，手動設定 ComfyUI",
+      "manualSubtitle": "手動設定",
+      "nvidiaDescription": "使用 NVIDIA GPU 與 CUDA 加速，獲得最佳效能。",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "recommended": "推薦",
+      "title": "選擇您的硬體配置"
+    },
     "gpuSelection": {
       "cpuMode": "CPU 模式",
       "cpuModeDescription": "CPU 模式僅供開發者及極少數特殊情境使用。",
@@ -611,6 +626,16 @@
     "installLocationTooltip": "ComfyUI 的使用者資料目錄。儲存：\n- Python 環境\n- 模型\n- 自訂節點\n",
     "insufficientFreeSpace": "空間不足 - 最低可用空間",
     "isOneDrive": "不支援 OneDrive。請將 ComfyUI 安裝在其他位置。",
+    "locationPicker": {
+      "chooseDownloadServers": "手動選擇下載伺服器",
+      "downloadServersDescription": "根據您的地區，選擇特定的鏡像伺服器來下載 Python、PyPI 套件與 PyTorch。",
+      "migrateDescription": "從先前的 ComfyUI 安裝複製或連結您的模型、自訂節點與設定。",
+      "migrateFromExisting": "從現有安裝移轉",
+      "migrationPathPlaceholder": "選擇現有的 ComfyUI 安裝路徑（可選）",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "subtitle": "請選擇 ComfyUI 檔案的資料夾。我們也會自動在此安裝 Python。",
+      "title": "選擇安裝 ComfyUI 的位置"
+    },
     "manualConfiguration": {
       "createVenv": "您需要在下列目錄建立虛擬環境",
       "requirements": "需求",
@@ -1302,6 +1327,10 @@
   "serverStart": {
     "copyAllTooltip": "複製全部",
     "copySelectionTooltip": "複製所選內容",
+    "errorMessage": "無法啟動 ComfyUI 桌面版",
+    "installation": {
+      "title": "正在安裝 ComfyUI"
+    },
     "openLogs": "開啟日誌",
     "process": {
       "error": "無法啟動 ComfyUI 桌面版",
@@ -1312,6 +1341,7 @@
     },
     "reportIssue": "回報問題",
     "showTerminal": "顯示終端機",
+    "title": "啟動 ComfyUI",
     "troubleshoot": "疑難排解"
   },
   "settingsCategories": {

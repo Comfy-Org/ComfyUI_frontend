@@ -323,6 +323,9 @@
     "quit": "Çık",
     "reinstall": "Yeniden Yükle"
   },
+  "desktopStart": {
+    "initialising": "Başlatılıyor..."
+  },
   "desktopUpdate": {
     "description": "ComfyUI Masaüstü yeni bağımlılıkları yüklüyor. Bu birkaç dakika sürebilir.",
     "errorCheckingUpdate": "Güncellemeler kontrol edilirken hata oluştu",
@@ -449,6 +452,7 @@
     "loading": "Yükleniyor",
     "loadingPanel": "{panel} paneli yükleniyor...",
     "login": "Giriş Yap",
+    "logoAlt": "ComfyUI Logosu",
     "logs": "Kayıtlar",
     "micPermissionDenied": "Mikrofon izni reddedildi",
     "migrate": "Taşı",
@@ -590,6 +594,17 @@
     "desktopSettings": "Masaüstü Ayarları",
     "failedToSelectDirectory": "Dizin seçilemedi",
     "gpu": "GPU",
+    "gpuPicker": {
+      "appleMetalDescription": "Daha hızlı ve daha iyi bir deneyim için Mac'inizin GPU'sunu kullanır",
+      "cpuDescription": "GPU hızlandırması mevcut olmadığında uyumluluk için CPU modunu kullanın",
+      "cpuSubtitle": "CPU Modu",
+      "manualDescription": "Gelişmiş kurulumlar veya desteklenmeyen donanımlar için ComfyUI'yi manuel olarak yapılandırın",
+      "manualSubtitle": "Manuel Kurulum",
+      "nvidiaDescription": "En iyi performans için NVIDIA GPU'nuzu CUDA hızlandırmasıyla kullanın.",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "recommended": "ÖNERİLEN",
+      "title": "Donanım yapılandırmanızı seçin"
+    },
     "gpuSelection": {
       "cpuMode": "CPU Modu",
       "cpuModeDescription": "CPU modu yalnızca geliştiriciler ve nadir uç durumlar için tasarlanmıştır.",
@@ -611,6 +626,16 @@
     "installLocationTooltip": "ComfyUI'nin kullanıcı veri dizini. Saklar:\n- Python Ortamı\n- Modeller\n- Özel düğümler\n",
     "insufficientFreeSpace": "Yetersiz alan - minimum boş alan",
     "isOneDrive": "OneDrive desteklenmiyor. Lütfen ComfyUI'yi başka bir konuma yükleyin.",
+    "locationPicker": {
+      "chooseDownloadServers": "İndirme sunucularını manuel olarak seçin",
+      "downloadServersDescription": "Konumunuza göre Python, PyPI paketleri ve PyTorch'u indirmek için belirli yansıtma sunucularını seçin.",
+      "migrateDescription": "Mevcut modellerinizi, özel düğümlerinizi ve yapılandırmalarınızı önceki bir ComfyUI kurulumundan kopyalayın veya bağlayın.",
+      "migrateFromExisting": "Mevcut kurulumdan taşı",
+      "migrationPathPlaceholder": "Mevcut ComfyUI kurulumunu seçin (isteğe bağlı)",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "subtitle": "ComfyUI dosyaları için bir klasör seçin. Python'u da otomatik olarak oraya kuracağız.",
+      "title": "ComfyUI'nin nereye kurulacağını seçin"
+    },
     "manualConfiguration": {
       "createVenv": "Aşağıdaki dizinde bir sanal ortam oluşturmanız gerekecektir",
       "requirements": "Gereksinimler",
@@ -1302,6 +1327,10 @@
   "serverStart": {
     "copyAllTooltip": "Tümünü kopyala",
     "copySelectionTooltip": "Seçimi kopyala",
+    "errorMessage": "ComfyUI Desktop başlatılamadı",
+    "installation": {
+      "title": "ComfyUI Kuruluyor"
+    },
     "openLogs": "Kayıtları Aç",
     "process": {
       "error": "ComfyUI Desktop başlatılamıyor",
@@ -1312,6 +1341,7 @@
     },
     "reportIssue": "Sorun Bildir",
     "showTerminal": "Terminali Göster",
+    "title": "ComfyUI Başlatılıyor",
     "troubleshoot": "Sorun Giderme"
   },
   "settingsCategories": {
