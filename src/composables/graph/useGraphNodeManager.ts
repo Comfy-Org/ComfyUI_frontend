@@ -435,6 +435,28 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               })
           }
         }
+      } else if (
+        action === 'node:slot-errors:changed' &&
+        param &&
+        typeof param === 'object'
+      ) {
+        const event = param as { nodeId: string | number }
+        const nodeId = String(event.nodeId)
+        const litegraphNode = nodeRefs.get(nodeId)
+        const currentData = vueNodeData.get(nodeId)
+
+        if (litegraphNode && currentData) {
+          // Re-extract slot data with updated hasErrors properties
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            inputs: litegraphNode.inputs
+              ? [...litegraphNode.inputs]
+              : undefined,
+            outputs: litegraphNode.outputs
+              ? [...litegraphNode.outputs]
+              : undefined
+          })
+        }
       }
 
       // Call original trigger handler if it exists
