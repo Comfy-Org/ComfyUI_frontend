@@ -176,7 +176,7 @@
             ratio="none"
             :max-width="300"
             :min-width="200"
-            class="cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+            class="cursor-pointer"
             :data-testid="`template-workflow-${template.name}`"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
@@ -251,6 +251,14 @@
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 w-12 h-12 m-auto"
                     />
+                    <button
+                      v-if="template.tutorialUrl"
+                      v-tooltip.bottom="$t('g.seeTutorial')"
+                      class="absolute top-2 right-2 z-20 inline-flex items-center justify-center rounded-lg bg-black/20 w-8 h-8 cursor-pointer border-0"
+                      @click.stop="openTutorial(template)"
+                    >
+                      <i class="pi pi-question-circle text-white/80 text-lg" />
+                    </button>
                   </div>
                 </template>
                 <template #bottom-right>
@@ -284,31 +292,12 @@
                         )
                       }}
                     </h3>
-                    <div class="flex justify-between gap-2">
-                      <p
-                        class="line-clamp-2 text-sm text-muted mb-3"
-                        :title="getTemplateDescription(template)"
-                      >
-                        {{ getTemplateDescription(template) }}
-                      </p>
-                      <div
-                        v-if="template.tutorialUrl"
-                        class="flex flex-col-reverse justify-center"
-                      >
-                        <button
-                          v-tooltip.bottom="$t('g.seeTutorial')"
-                          :class="[
-                            'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
-                            hoveredTemplate === template.name
-                              ? 'opacity-100'
-                              : 'opacity-0 pointer-events-none'
-                          ]"
-                          @click.stop="openTutorial(template)"
-                        >
-                          <i class="icon-[comfy--dark-info] w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                    <p
+                      class="line-clamp-5 text-sm text-muted mb-3"
+                      :title="getTemplateDescription(template)"
+                    >
+                      {{ getTemplateDescription(template) }}
+                    </p>
                   </div>
                 </div>
               </CardBottom>

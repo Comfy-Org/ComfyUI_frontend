@@ -20,7 +20,7 @@ const {
 
 const containerClasses = computed(() => {
   const baseClasses =
-    'flex flex-col hover:bg-white dark-theme:hover:bg-zinc-800 rounded-lg hover:shadow-sm hover:border hover:border-zinc-200 dark-theme:hover:border-zinc-700 overflow-hidden hover:p-2'
+    'flex flex-col bg-white dark-theme:bg-zinc-900 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden'
 
   const ratioClasses = {
     square: 'aspect-256/308',
