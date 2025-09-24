@@ -5,6 +5,8 @@
 import { reactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { WidgetValue } from '@/types/simplifiedWidget'
@@ -28,8 +30,8 @@ export interface VueNodeData {
   executing: boolean
   subgraphId?: string | null
   widgets?: SafeWidgetData[]
-  inputs?: unknown[]
-  outputs?: unknown[]
+  inputs?: INodeInputSlot[]
+  outputs?: INodeOutputSlot[]
   hasErrors?: boolean
   flags?: {
     collapsed?: boolean
