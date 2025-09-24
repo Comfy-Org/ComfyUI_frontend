@@ -189,11 +189,8 @@ const setupAudioContext = async () => {
 }
 
 const setupRecordingAudio = async () => {
-  console.log('Setting up recording audio...')
   await useAudioService().registerWavEncoder()
-  console.log('WAV encoder registered')
   stream.value = await navigator.mediaDevices.getUserMedia({ audio: true })
-  console.log('Got user media stream')
 
   audioContext.value = new (window.AudioContext ||
     (window as any).webkitAudioContext)()
@@ -296,29 +293,19 @@ async function startRecording() {
     await setupAudioContext()
     await setupRecordingAudio()
 
-    console.log('Creating ExtendableMediaRecorder...')
     mediaRecorder.value = new ExtendableMediaRecorder(stream.value!, {
       mimeType: 'audio/wav'
     }) as unknown as MediaRecorder
 
-    console.log('MediaRecorder created, setting up event handlers')
-
     mediaRecorder.value.ondataavailable = (e) => {
-      console.log('Data available event:', e.data.size, 'bytes')
       audioChunks.value.push(e.data)
     }
 
     mediaRecorder.value.onstop = handleRecordingStop
 
-    mediaRecorder.value.onerror = (event) => {
-      console.error('MediaRecorder error:', event)
-    }
-
     // Start recording with minimum chunk interval to ensure we get data
-    console.log('Starting MediaRecorder...')
     mediaRecorder.value.start(100)
     isRecording.value = true
-    console.log('Recording started')
 
     timerInterval.value = window.setInterval(() => {
       timer.value += 1
