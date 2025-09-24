@@ -79,8 +79,25 @@ const nodeData = computed<VueNodeData>(() => {
     .map(([name, input]) => ({
       name,
       type: input.type,
-      shape: input.isOptional ? 'HollowCircle' : undefined
+      shape: input.isOptional ? 'HollowCircle' : undefined,
+      boundingRect: [0, 0, 0, 0] as [number, number, number, number]
     }))
+
+  const outputs = (nodeDef.outputs || []).map((output) => {
+    // Handle both string and object formats for outputs
+    if (typeof output === 'string') {
+      return {
+        name: output,
+        type: output,
+        boundingRect: [0, 0, 0, 0] as [number, number, number, number]
+      }
+    }
+    // If it's already an object, add boundingRect
+    return {
+      ...output,
+      boundingRect: [0, 0, 0, 0] as [number, number, number, number]
+    }
+  })
 
   return {
     id: `preview-${nodeDef.name}`,
@@ -91,7 +108,7 @@ const nodeData = computed<VueNodeData>(() => {
     executing: false,
     widgets,
     inputs,
-    outputs: nodeDef.outputs || [],
+    outputs,
     flags: {
       collapsed: false
     }
