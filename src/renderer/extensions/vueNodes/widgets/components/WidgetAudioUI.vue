@@ -1,8 +1,11 @@
 <template>
   <div class="w-full">
-    <!-- RecordAudio Widget for RecordAudio nodes -->
+    <!-- Route to appropriate sub-widget based on audio widget type -->
+
+    <!-- Recording Widget for AUDIO_RECORD types -->
     <WidgetRecordAudio
-      v-if="isRecordAudioNode"
+      v-if="audioWidgetType === 'record'"
+      ref="recordAudioRef"
       :widget="widget"
       :model-value="modelValue"
       :readonly="readonly"
@@ -11,7 +14,44 @@
       @update:model-value="$emit('update:modelValue', $event)"
     />
 
-    <!-- Standard Audio UI for other audio nodes -->
+    <!-- Upload-focused UI for AUDIOUPLOAD types -->
+    <div
+      v-else-if="audioWidgetType === 'upload'"
+      :class="
+        cn(
+          'bg-[#262729] box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0'
+        )
+      "
+      @dragover="handleDragOver"
+      @drop="handleDrop"
+      @paste="handlePaste"
+    >
+      <!-- Hidden audio input for file upload -->
+      <input
+        ref="audioInputRef"
+        type="file"
+        accept="audio/*"
+        class="hidden"
+        @change="handleFileChange"
+      />
+
+      <!-- Upload UI with prominent upload button -->
+      <div class="flex items-center gap-2 flex-1">
+        <i class="icon-[lucide--upload] size-4 text-[#8a8a8a]" />
+        <span class="text-white text-sm">{{
+          audioFileName || 'Drop audio file or click to upload'
+        }}</span>
+      </div>
+
+      <button
+        class="px-3 py-1 bg-[#444] text-white rounded text-sm hover:bg-[#555]"
+        @click="openFileSelection"
+      >
+        {{ t('upload', 'Upload') }}
+      </button>
+    </div>
+
+    <!-- Preview/Playback UI for preview types (default) -->
     <div
       v-else
       :class="widgetClasses"
@@ -129,6 +169,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import {
+  registerVueWidgetSerialization,
+  unregisterVueWidgetSerialization
+} from '@/extensions/core/uploadAudio'
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
@@ -141,6 +186,7 @@ import { cn } from '@/utils/tailwindUtil'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
 
 interface NodeDataType {
+  id?: string | number
   widgets?: Array<{
     name: string
     type: string
@@ -173,6 +219,10 @@ const props = defineProps<{
 
 const modelValue = defineModel<any>('modelValue')
 
+defineEmits<{
+  'update:modelValue': [value: any]
+}>()
+
 // Helper function to split file path
 function splitFilePath(path: string): [string, string] {
   const folder_separator = path.lastIndexOf('/')
@@ -204,6 +254,7 @@ function getResourceURL(
 // Refs
 const audioInputRef = ref<HTMLInputElement>()
 const audioRef = ref<HTMLAudioElement>()
+const recordAudioRef = ref<InstanceType<typeof WidgetRecordAudio>>()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
@@ -235,15 +286,81 @@ const isOutputNode = computed(() => {
   return fromNodeData || fromNode || isPreviewOrSaveNode
 })
 
-// Check if this is a RecordAudio node
-const isRecordAudioNode = computed(() => {
+// Audio widget type detection based on exact uploadAudio.ts patterns for workflow compatibility
+const audioWidgetType = computed(() => {
+  // Debug logging to help identify widget detection
   const nodeClass =
     props.nodeData?.constructor?.comfyClass ||
     props.node?.constructor?.comfyClass ||
     props.nodeData?.type ||
+    props.node?.type ||
     'Unknown'
-  return nodeClass === 'RecordAudio'
+
+  // PRIORITY 1: Check the current widget's type first (for workflow compatibility)
+  if (props.widget?.type === 'AUDIO_RECORD') {
+    return 'record'
+  }
+
+  if (props.widget?.type === 'AUDIOUPLOAD') {
+    return 'upload'
+  }
+
+  if (props.widget?.type === 'AUDIOUI') {
+    return 'preview'
+  }
+
+  // PRIORITY 2: Check for other audio widgets on the same node (context clues)
+  const hasRecordWidget =
+    props.nodeData?.widgets?.some((w) => w.type === 'AUDIO_RECORD') ?? false
+  const hasUploadWidget =
+    props.nodeData?.widgets?.some((w) => w.type === 'AUDIOUPLOAD') ?? false
+  const hasAudioUIWidget =
+    props.nodeData?.widgets?.some((w) => w.type === 'AUDIOUI') ?? false
+
+  if (hasRecordWidget) {
+    return 'record'
+  }
+
+  if (hasUploadWidget) {
+    return 'upload'
+  }
+
+  // PRIORITY 3: Check node class patterns (for workflow compatibility)
+  if (nodeClass === 'RecordAudio' || nodeClass.includes('Record')) {
+    return 'record'
+  }
+
+  // PRIORITY 4: Check widget name patterns (for workflow compatibility)
+  if (props.widget?.name === 'upload' || props.widget?.name === 'audioUpload') {
+    return 'upload'
+  }
+
+  if (props.widget?.name === 'audioUI') {
+    return 'preview'
+  }
+
+  if (hasAudioUIWidget) {
+    return 'preview'
+  }
+
+  // Check for audio output/preview nodes
+  const audioOutputNodes = [
+    'LoadAudio',
+    'SaveAudio',
+    'PreviewAudio',
+    'SaveAudioMP3',
+    'SaveAudioOpus'
+  ]
+  if (audioOutputNodes.includes(nodeClass)) {
+    return 'preview'
+  }
+
+  // Default to preview
+  return 'preview'
 })
+
+// Legacy computed for backward compatibility
+// const isRecordAudioNode = computed(() => audioWidgetType.value === 'record')
 
 // Check if we should show upload functionality
 const showUploadButton = computed(() => {
@@ -472,10 +589,15 @@ function handleNodeExecuted(message: AudioOutputMessage) {
   }
 }
 
-// Serialization support for workflow saving
-function serializeValue() {
-  // Return the current audio file path or empty string
-  return audioFileName.value || ''
+// Serialization support for workflow saving - route based on widget type
+async function serializeValue() {
+  // For recording widgets, delegate to the record audio component
+  if (audioWidgetType.value === 'record' && recordAudioRef.value) {
+    return await recordAudioRef.value.serializeValue()
+  }
+
+  // For all other widget types, return the current audio file path
+  return audioFileName.value || modelValue.value || ''
 }
 
 // Watch for audio file changes and load the audio
@@ -546,11 +668,39 @@ onMounted(() => {
   }
 })
 
+// Register serialization function for RecordAudio nodes
+const nodeId = computed(() => props.nodeData?.id || props.node?.id)
+const registrationKey = computed(() =>
+  nodeId.value ? `${nodeId.value}-audioUI` : null
+)
+
+// Watch for audioWidgetType changes and register/unregister appropriately
+watch(
+  [audioWidgetType, registrationKey],
+  ([widgetType, key], [prevWidgetType, prevKey]) => {
+    // Unregister previous key if it exists
+    if (prevKey && prevWidgetType === 'record') {
+      unregisterVueWidgetSerialization(prevKey)
+    }
+
+    // Register new key if it's a record widget
+    if (widgetType === 'record' && key) {
+      registerVueWidgetSerialization(key, serializeValue)
+    }
+  },
+  { immediate: true }
+)
+
 // Cleanup
 onUnmounted(() => {
   if (audioRef.value) {
     audioRef.value.pause()
     audioRef.value.src = ''
+  }
+
+  // Unregister serialization function
+  if (registrationKey.value) {
+    unregisterVueWidgetSerialization(registrationKey.value)
   }
 })
 
