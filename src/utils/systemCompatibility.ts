@@ -15,8 +15,9 @@ function getRegistryOS(systemOS?: string): RegistryOS | undefined {
   if (!systemOS) return undefined
 
   const lower = systemOS.toLowerCase()
-  if (lower.includes('win')) return 'Windows'
+  // Check darwin first to avoid matching 'win' in 'darwin'
   if (lower.includes('darwin') || lower.includes('mac')) return 'macOS'
+  if (lower.includes('win')) return 'Windows'
   if (lower.includes('linux')) return 'Linux'
 
   return undefined

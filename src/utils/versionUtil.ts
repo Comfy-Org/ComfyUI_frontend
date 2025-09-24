@@ -17,21 +17,6 @@ function cleanVersion(version: string): string {
 }
 
 /**
- * Checks if a version satisfies a version range
- * @param version Current version
- * @param range Version range (e.g., ">=1.0.0", "^1.2.0", "1.0.0 - 2.0.0")
- * @returns true if version satisfies the range
- */
-function satisfiesVersion(version: string, range: string): boolean {
-  try {
-    const cleanedVersion = cleanVersion(version)
-    return satisfies(cleanedVersion, range)
-  } catch {
-    return false
-  }
-}
-
-/**
  * Checks version compatibility and returns conflict details.
  * Supports all semver ranges including >=, <=, >, <, ~, ^ operators.
  * @param type Conflict type (e.g., 'comfyui_version', 'frontend_version')
@@ -55,15 +40,27 @@ export function checkVersionCompatibility(
   }
 
   // Clean and check version compatibility
-  const cleanCurrent = cleanVersion(currentVersion ?? '')
-  const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion ?? '')
+  const cleanCurrent = cleanVersion(currentVersion)
+
+  // Check if version satisfies the range
+  let isCompatible = false
+  try {
+    isCompatible = satisfies(cleanCurrent, supportedVersion)
+  } catch {
+    // If semver can't parse it, return conflict
+    return {
+      type,
+      current_value: currentVersion,
+      required_value: supportedVersion
+    }
+  }
 
   if (isCompatible) return null
 
   return {
     type,
-    current_value: currentVersion ?? '',
-    required_value: supportedVersion ?? ''
+    current_value: currentVersion,
+    required_value: supportedVersion
   }
 }
 
