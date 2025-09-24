@@ -1,126 +1,66 @@
 <template>
-  <div class="flex flex-col gap-6 w-[600px] h-[30rem] select-none">
-    <!-- Installation Path Section -->
-    <div class="grow flex flex-col gap-4 text-neutral-300">
-      <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.gpuSelection.selectGpu') }}
-      </h2>
+  <div
+    class="grid grid-rows-[1fr_auto_auto_1fr] w-full max-w-3xl mx-auto h-[40rem] select-none"
+  >
+    <h2 class="font-inter font-bold text-3xl text-neutral-100 text-center">
+      {{ $t('install.gpuPicker.title') }}
+    </h2>
 
-      <p class="m-1 text-neutral-400">
-        {{ $t('install.gpuSelection.selectGpuDescription') }}:
-      </p>
+    <!-- GPU Selection buttons - takes up remaining space and centers content -->
+    <div class="flex-1 flex gap-8 justify-center items-center">
+      <!-- Apple Metal / NVIDIA -->
+      <HardwareOption
+        v-if="platform === 'darwin'"
+        :image-path="'/assets/images/apple-mps-logo.png'"
+        placeholder-text="Apple Metal"
+        subtitle="Apple Metal"
+        :value="'mps'"
+        :selected="selected === 'mps'"
+        :recommended="true"
+        @click="pickGpu('mps')"
+      />
+      <HardwareOption
+        v-else
+        :image-path="'/assets/images/nvidia-logo-square.jpg'"
+        placeholder-text="NVIDIA"
+        :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
+        :value="'nvidia'"
+        :selected="selected === 'nvidia'"
+        :recommended="true"
+        @click="pickGpu('nvidia')"
+      />
+      <!-- CPU -->
+      <HardwareOption
+        placeholder-text="CPU"
+        :subtitle="$t('install.gpuPicker.cpuSubtitle')"
+        :value="'cpu'"
+        :selected="selected === 'cpu'"
+        @click="pickGpu('cpu')"
+      />
+      <!-- Manual Install -->
+      <HardwareOption
+        placeholder-text="Manual Install"
+        :subtitle="$t('install.gpuPicker.manualSubtitle')"
+        :value="'unsupported'"
+        :selected="selected === 'unsupported'"
+        @click="pickGpu('unsupported')"
+      />
+    </div>
 
-      <!-- GPU Selection buttons -->
-      <div
-        class="flex gap-2 text-center transition-opacity"
-        :class="{ selected: selected }"
-      >
-        <!-- NVIDIA -->
-        <div
-          v-if="platform !== 'darwin'"
-          class="gpu-button"
-          :class="{ selected: selected === 'nvidia' }"
-          role="button"
-          @click="pickGpu('nvidia')"
-        >
-          <img
-            class="m-12"
-            alt="NVIDIA logo"
-            width="196"
-            height="32"
-            src="/assets/images/nvidia-logo.svg"
-          />
-        </div>
-        <!-- MPS -->
-        <div
-          v-if="platform === 'darwin'"
-          class="gpu-button"
-          :class="{ selected: selected === 'mps' }"
-          role="button"
-          @click="pickGpu('mps')"
-        >
-          <img
-            class="rounded-lg hover-brighten"
-            alt="Apple Metal Performance Shaders Logo"
-            width="292"
-            ratio
-            src="/assets/images/apple-mps-logo.png"
-          />
-        </div>
-        <!-- Manual configuration -->
-        <div
-          class="gpu-button"
-          :class="{ selected: selected === 'unsupported' }"
-          role="button"
-          @click="pickGpu('unsupported')"
-        >
-          <img
-            class="m-12"
-            alt="Manual configuration"
-            width="196"
-            src="/assets/images/manual-configuration.svg"
-          />
-        </div>
-      </div>
-
-      <!-- Details on selected GPU -->
-      <p v-if="selected === 'nvidia'" class="m-1">
-        <Tag icon="pi pi-check" severity="success" :value="'CUDA'" />
-        {{ $t('install.gpuSelection.nvidiaDescription') }}
-      </p>
-
-      <p v-if="selected === 'mps'" class="m-1">
-        <Tag icon="pi pi-check" severity="success" :value="'MPS'" />
-        {{ $t('install.gpuSelection.mpsDescription') }}
-      </p>
-
-      <div v-if="selected === 'unsupported'" class="text-neutral-300">
-        <p class="m-1">
-          <Tag
-            icon="pi pi-exclamation-triangle"
-            severity="warn"
-            :value="t('icon.exclamation-triangle')"
-          />
-          {{ $t('install.gpuSelection.customSkipsPython') }}
-        </p>
-
-        <ul>
-          <li>
-            <strong>
-              {{ $t('install.gpuSelection.customComfyNeedsPython') }}
-            </strong>
-          </li>
-          <li>{{ $t('install.gpuSelection.customManualVenv') }}</li>
-          <li>{{ $t('install.gpuSelection.customInstallRequirements') }}</li>
-          <li>{{ $t('install.gpuSelection.customMayNotWork') }}</li>
-        </ul>
-      </div>
-
-      <div v-if="selected === 'cpu'">
-        <p class="m-1">
-          <Tag
-            icon="pi pi-exclamation-triangle"
-            severity="warn"
-            :value="t('icon.exclamation-triangle')"
-          />
-          {{ $t('install.gpuSelection.cpuModeDescription') }}
-        </p>
-        <p class="m-1">
-          {{ $t('install.gpuSelection.cpuModeDescription2') }}
-        </p>
+    <div class="pt-12 px-24 h-16">
+      <div v-show="showRecommendedBadge" class="flex items-center gap-2">
+        <Tag
+          :value="$t('install.gpuPicker.recommended')"
+          class="bg-neutral-300 text-neutral-900 rounded-full text-sm font-bold px-2 py-[1px]"
+        />
+        <i-lucide:badge-check class="text-neutral-300 text-lg" />
       </div>
     </div>
 
-    <div
-      class="transition-opacity flex gap-3 h-0 items-center"
-      :class="{
-        'opacity-40': selected && selected !== 'cpu'
-      }"
-    >
-      <ToggleSwitch v-model="cpuMode" input-id="cpu-mode" />
-      <label for="cpu-mode" class="select-none">
-        {{ $t('install.gpuSelection.enableCpuMode') }}
-      </label>
+    <div class="text-neutral-300 px-24">
+      <p v-show="descriptionText" class="leading-relaxed">
+        {{ descriptionText }}
+      </p>
     </div>
   </div>
 </template>
@@ -128,20 +68,12 @@
 <script setup lang="ts">
 import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import Tag from 'primevue/tag'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import HardwareOption from '@/components/install/HardwareOption.vue'
+import { st } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 
-const { t } = useI18n()
-
-const cpuMode = computed({
-  get: () => selected.value === 'cpu',
-  set: (value) => {
-    selected.value = value ? 'cpu' : null
-  }
-})
 const selected = defineModel<TorchDeviceType | null>('device', {
   required: true
 })
@@ -149,55 +81,23 @@ const selected = defineModel<TorchDeviceType | null>('device', {
 const electron = electronAPI()
 const platform = electron.getPlatform()
 
-const pickGpu = (value: typeof selected.value) => {
-  const newValue = selected.value === value ? null : value
-  selected.value = newValue
+const showRecommendedBadge = computed(
+  () => selected.value === 'mps' || selected.value === 'nvidia'
+)
+
+const descriptionKeys = {
+  mps: 'appleMetal',
+  nvidia: 'nvidia',
+  cpu: 'cpu',
+  unsupported: 'manual'
+} as const
+
+const descriptionText = computed(() => {
+  const key = selected.value ? descriptionKeys[selected.value] : undefined
+  return st(`install.gpuPicker.${key}Description`, '')
+})
+
+const pickGpu = (value: TorchDeviceType) => {
+  selected.value = value
 }
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-.p-tag {
-  --p-tag-gap: 0.5rem;
-}
-
-.hover-brighten {
-  @apply transition-colors;
-  transition-property: filter, box-shadow;
-
-  &:hover {
-    filter: brightness(107%) contrast(105%);
-    box-shadow: 0 0 0.25rem #ffffff79;
-  }
-}
-.p-accordioncontent-content {
-  @apply bg-neutral-900 rounded-lg transition-colors;
-}
-
-div.selected {
-  .gpu-button:not(.selected) {
-    @apply opacity-50 hover:opacity-100;
-  }
-}
-
-.gpu-button {
-  @apply w-1/2 m-0 cursor-pointer rounded-lg flex flex-col items-center justify-around bg-neutral-800/50 hover:bg-neutral-800/75 transition-colors;
-
-  &.selected {
-    @apply opacity-100 bg-neutral-700/50 hover:bg-neutral-700/60;
-  }
-}
-
-.disabled {
-  @apply pointer-events-none opacity-40;
-}
-
-.p-card-header {
-  @apply text-center grow;
-}
-
-.p-card-body {
-  @apply text-center pt-0;
-}
-</style>
