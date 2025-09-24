@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { d, t } from '@/i18n'
+import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -9,6 +10,44 @@ import {
   getAssetDescription
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { formatSize } from '@/utils/formatUtil'
+
+function filterByCategory(category: string) {
+  return (asset: AssetItem) => {
+    if (category === 'all') return true
+    return asset.tags.includes(category)
+  }
+}
+
+function filterByQuery(query: string) {
+  return (asset: AssetItem) => {
+    if (!query) return true
+    const lowerQuery = query.toLowerCase()
+    const description = getAssetDescription(asset)
+    return (
+      asset.name.toLowerCase().includes(lowerQuery) ||
+      (description && description.toLowerCase().includes(lowerQuery)) ||
+      asset.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
+    )
+  }
+}
+
+function filterByFileFormats(formats: string[]) {
+  return (asset: AssetItem) => {
+    if (formats.length === 0) return true
+    const formatSet = new Set(formats)
+    const extension = asset.name.split('.').pop()?.toLowerCase()
+    return extension ? formatSet.has(extension) : false
+  }
+}
+
+function filterByBaseModels(models: string[]) {
+  return (asset: AssetItem) => {
+    if (models.length === 0) return true
+    const modelSet = new Set(models)
+    const baseModel = getAssetBaseModel(asset)
+    return baseModel ? modelSet.has(baseModel) : false
+  }
+}
 
 type AssetBadge = {
   label: string
@@ -35,9 +74,11 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   // State
   const searchQuery = ref('')
   const selectedCategory = ref('all')
-  const sortBy = ref('name-asc')
-  const fileFormats = ref<string[]>([])
-  const baseModels = ref<string[]>([])
+  const filters = ref<FilterState>({
+    sortBy: 'name-asc',
+    fileFormats: [],
+    baseModels: []
+  })
 
   // Transform API asset to display asset
   function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
@@ -87,13 +128,17 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   }
 
   const availableCategories = computed(() => {
-    const categorySet = new Set<string>()
+    const categories = assets
+      .filter((asset) => asset.tags[0] === 'models' && asset.tags[1])
+      .map((asset) => asset.tags[1])
 
-    for (const asset of assets) {
-      if (asset.tags.length <= 1) continue
-      if (asset.tags[0] !== 'models') continue
-      categorySet.add(asset.tags[1])
-    }
+    const uniqueCategories = Array.from(new Set(categories))
+      .sort()
+      .map((category) => ({
+        id: category,
+        label: category.charAt(0).toUpperCase() + category.slice(1),
+        icon: 'icon-[lucide--package]'
+      }))
 
     return [
       {
@@ -101,49 +146,8 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
         label: t('assetBrowser.allModels'),
         icon: 'icon-[lucide--folder]'
       },
-      ...Array.from(categorySet)
-        .sort()
-        .map((category) => ({
-          id: category,
-          label: category.charAt(0).toUpperCase() + category.slice(1),
-          icon: 'icon-[lucide--package]'
-        }))
+      ...uniqueCategories
     ]
-  })
-
-  const availableFileFormats = computed(() => {
-    const extensionSet = new Set<string>()
-
-    for (const asset of assets) {
-      // Extract file extension from filename (e.g. "model.safetensors" -> "safetensors")
-      const extension = asset.name.split('.').pop()?.toLowerCase()
-      if (!extension) continue
-      extensionSet.add(extension)
-    }
-
-    return Array.from(extensionSet)
-      .sort()
-      .map((ext) => ({
-        name: `.${ext}`,
-        value: ext
-      }))
-  })
-
-  const availableBaseModels = computed(() => {
-    const modelSet = new Set<string>()
-
-    for (const asset of assets) {
-      const baseModel = getAssetBaseModel(asset)
-      if (!baseModel) continue
-      modelSet.add(baseModel)
-    }
-
-    return Array.from(modelSet)
-      .sort()
-      .map((model) => ({
-        name: model,
-        value: model
-      }))
   })
 
   // Compute content title from selected category
@@ -158,48 +162,16 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return category?.label || t('assetBrowser.assets')
   })
 
-  // Filter functions
-  const filterByCategory = (category: string) => (asset: AssetItem) => {
-    if (category === 'all') return true
-    return asset.tags.includes(category)
-  }
-
-  const filterByQuery = (query: string) => (asset: AssetItem) => {
-    if (!query) return true
-    const lowerQuery = query.toLowerCase()
-    const description = getAssetDescription(asset)
-    return (
-      asset.name.toLowerCase().includes(lowerQuery) ||
-      (description && description.toLowerCase().includes(lowerQuery)) ||
-      asset.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
-    )
-  }
-
-  const filterByFileFormats = (formats: string[]) => (asset: AssetItem) => {
-    if (formats.length === 0) return true
-    const formatSet = new Set(formats)
-    const extension = asset.name.split('.').pop()?.toLowerCase()
-    return extension ? formatSet.has(extension) : false
-  }
-
-  const filterByBaseModels = (models: string[]) => (asset: AssetItem) => {
-    if (models.length === 0) return true
-    const modelSet = new Set(models)
-    const baseModel = getAssetBaseModel(asset)
-    return baseModel ? modelSet.has(baseModel) : false
-  }
-
-  // Computed filtered and transformed assets
   const filteredAssets = computed(() => {
     const filtered = assets
       .filter(filterByCategory(selectedCategory.value))
       .filter(filterByQuery(searchQuery.value))
-      .filter(filterByFileFormats(fileFormats.value))
-      .filter(filterByBaseModels(baseModels.value))
+      .filter(filterByFileFormats(filters.value.fileFormats))
+      .filter(filterByBaseModels(filters.value.baseModels))
 
     // Sort assets
     filtered.sort((a, b) => {
-      switch (sortBy.value) {
+      switch (filters.value.sortBy) {
         case 'name-desc':
           return b.name.localeCompare(a.name)
         case 'recent':
@@ -255,32 +227,20 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     }
   }
 
-  function updateFilters(filters: {
-    fileFormats: string[]
-    baseModels: string[]
-    sortBy: string
-  }) {
-    fileFormats.value = filters.fileFormats
-    baseModels.value = filters.baseModels
-    sortBy.value = filters.sortBy
+  function updateFilters(newFilters: FilterState) {
+    filters.value = {
+      sortBy: newFilters.sortBy,
+      fileFormats: newFilters.fileFormats,
+      baseModels: newFilters.baseModels
+    }
   }
 
   return {
-    // State
     searchQuery,
     selectedCategory,
-    sortBy,
-    fileFormats,
-    baseModels,
-
-    // Computed
     availableCategories,
-    availableFileFormats,
-    availableBaseModels,
     contentTitle,
     filteredAssets,
-
-    // Actions
     selectAssetWithCallback,
     updateFilters
   }

@@ -56,17 +56,21 @@ export interface FilterState {
   sortBy: string
 }
 
-const props = defineProps<{
-  assets?: AssetItem[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    assets?: AssetItem[]
+  }>(),
+  {
+    assets: () => []
+  }
+)
 
 const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
 const sortBy = ref('name-asc')
 
-// Get dynamic filter options from actual assets
 const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
-  props.assets || []
+  props.assets
 )
 
 // TODO: Make sortOptions configurable via props
