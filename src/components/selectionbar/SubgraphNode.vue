@@ -162,15 +162,15 @@ const recommendedWidgets = computed(() => {
 function showRecommended() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  node.properties.proxyWidgets = JSON.stringify(
-    recommendedWidgets.value.map(([node, widget]) => [
-      `${node.id}`,
-      widget.name
-    ])
+  const pw = parseProxyWidgets(node.properties.proxyWidgets)
+  const toAdd: ProxyWidgetsProperty = recommendedWidgets.value.map(
+    ([n, w]: WidgetItem) => [`${n.id}`, w.name]
   )
-  triggerUpdate.value++
   //TODO: Add sort step here
   //Input should always be before output by default
+  pw.push(...toAdd)
+  node.properties.proxyWidgets = JSON.stringify(pw)
+  triggerUpdate.value++
 }
 
 const filteredActive = computed<WidgetItem[]>(() => {
