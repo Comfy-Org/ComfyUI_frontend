@@ -47,11 +47,8 @@ export class MovingInputLink extends MovingLinkBase {
     return this.node.canConnectTo(inputNode, input, this.outputSlot)
   }
 
-  canConnectToOutput(
-    outputNode: NodeLike,
-    output: INodeOutputSlot | SubgraphIO
-  ): boolean {
-    return outputNode.canConnectTo(this.inputNode, this.inputSlot, output)
+  canConnectToOutput(): boolean {
+    return false
   }
 
   canConnectToReroute(reroute: Reroute): boolean {
@@ -148,34 +145,8 @@ export class MovingInputLink extends MovingLinkBase {
     if (newLink) events.dispatch('input-moved', this)
   }
 
-  connectToRerouteOutput(
-    reroute: Reroute,
-    outputNode: LGraphNode,
-    output: INodeOutputSlot,
-    events: CustomEventTarget<LinkConnectorEventMap>
-  ): void {
-    const { inputNode, inputSlot, fromReroute } = this
-
-    this.inputNode.disconnectInput(this.inputIndex, true)
-
-    const floatingTerminus = reroute?.floating?.slotType === 'output'
-
-    if (fromReroute) {
-      fromReroute.parentId = reroute.id
-    } else {
-      this.link.parentId = reroute.id
-    }
-
-    const newLink = outputNode.connectSlots(
-      output,
-      inputNode,
-      inputSlot,
-      this.link.parentId
-    )
-
-    if (floatingTerminus) reroute.removeAllFloatingLinks()
-
-    if (newLink) events.dispatch('input-moved', this)
+  connectToRerouteOutput(): never {
+    throw new Error('MovingInputLink cannot connect to an output.')
   }
 
   disconnect(): boolean {
