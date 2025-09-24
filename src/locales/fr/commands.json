@@ -257,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "Se déconnecter"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "Expérimental : activer les nœuds Vue"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Fermer le flux de travail actuel"
   },

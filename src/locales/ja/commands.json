@@ -257,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "サインアウト"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "実験的: Vueノードを有効にする"
+  },
   "Workspace_CloseWorkflow": {
     "label": "現在のワークフローを閉じる"
   },

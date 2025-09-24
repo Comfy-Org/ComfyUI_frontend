@@ -257,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "로그아웃"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "실험적: Vue 노드 활성화"
+  },
   "Workspace_CloseWorkflow": {
     "label": "현재 워크플로 닫기"
   },

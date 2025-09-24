@@ -25,13 +25,32 @@
     },
     "tooltip": "自訂：以 ComfyUI 的頂部選單取代系統標題列"
   },
+  "Comfy_Assets_UseAssetAPI": {
+    "name": "使用資產 API 於模型庫",
+    "tooltip": "使用新的資產 API 來瀏覽模型"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "畫布背景圖片",
     "tooltip": "畫布背景的圖片網址。你可以在輸出面板中右鍵點擊圖片並選擇「設為背景」來使用，或是使用上傳按鈕上傳你自己的圖片。"
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "滑鼠左鍵點擊行為",
+    "options": {
+      "Panning": "平移",
+      "Select": "選取"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "滑鼠滾輪捲動",
+    "options": {
+      "Panning": "平移",
+      "Zoom in/out": "縮放"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "畫布導航模式",
     "options": {
+      "Custom": "自訂",
       "Drag Navigation": "拖曳導覽",
       "Standard (New)": "標準（新）"
     }
@@ -380,6 +399,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "覆蓋現有子圖藍圖時需確認"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "已開啟工作流程的位置",
     "options": {
@@ -391,6 +413,10 @@
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "畫布允許渲染的最大每秒幀數。限制GPU使用率，但可能影響流暢度。若設為0，則使用螢幕的更新率。預設值：0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "節點縮放細節等級 - 字體大小門檻",
+    "tooltip": "控制節點何時切換為低品質 LOD 渲染。以像素為單位的字體大小來決定切換時機。設為 0 可停用。1-24 的值設定 LOD 的最小字體大小門檻－較高的值（24px）＝縮小時更早切換為簡化渲染，較低的值（1px）＝維持完整節點品質更久。"
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大時縮放節點組合小工具選單（清單）"

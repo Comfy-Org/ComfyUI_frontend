@@ -25,13 +25,32 @@
     },
     "tooltip": "Choisissez l'option personnalisée pour masquer la barre de titre du système"
   },
+  "Comfy_Assets_UseAssetAPI": {
+    "name": "Utiliser l'API Asset pour la bibliothèque de modèles",
+    "tooltip": "Utiliser la nouvelle API Asset pour la navigation des modèles"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Image de fond du canevas",
     "tooltip": "URL de l'image pour le fond du canevas. Vous pouvez faire un clic droit sur une image dans le panneau de sortie et sélectionner « Définir comme fond » pour l'utiliser."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Comportement du clic gauche de la souris",
+    "options": {
+      "Panning": "Déplacement",
+      "Select": "Sélectionner"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Défilement de la molette de la souris",
+    "options": {
+      "Panning": "Déplacement",
+      "Zoom in/out": "Zoom avant/arrière"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "Mode de navigation sur le canvas",
     "options": {
+      "Custom": "Personnalisé",
       "Drag Navigation": "Navigation par glisser-déposer",
       "Standard (New)": "Standard (Nouveau)"
     }
@@ -380,6 +399,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Trier les ID de nœuds lors de l'enregistrement du flux de travail"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Exiger une confirmation pour écraser un blueprint de sous-graphe existant"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "Position des flux de travail ouverts",
     "options": {
@@ -391,6 +413,10 @@
   "LiteGraph_Canvas_MaximumFps": {
     "name": "FPS maximum",
     "tooltip": "Le nombre maximum d'images par seconde que le canevas est autorisé à rendre. Limite l'utilisation du GPU au détriment de la fluidité. Si 0, le taux de rafraîchissement de l'écran est utilisé. Par défaut : 0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "Niveau de détail des nœuds selon le zoom - seuil de taille de police",
+    "tooltip": "Contrôle quand les nœuds passent au rendu LOD de basse qualité. Utilise la taille de police en pixels pour déterminer le moment du changement. Mettre à 0 pour désactiver. Les valeurs de 1 à 24 définissent le seuil minimal de taille de police pour le LOD - des valeurs plus élevées (24px) = passage plus rapide au rendu simplifié lors du zoom arrière, des valeurs plus basses (1px) = maintien de la qualité complète des nœuds plus longtemps."
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Mise à l'échelle des menus de widgets combinés de nœuds (listes) lors du zoom"

@@ -25,13 +25,32 @@
     },
     "tooltip": "Özel: Sistem başlık çubuğunu ComfyUI'nin Üst menüsüyle değiştirin"
   },
+  "Comfy_Assets_UseAssetAPI": {
+    "name": "Model kitaplığı için Varlık API'sini kullan",
+    "tooltip": "Model taraması için yeni Varlık API'sini kullan"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Tuval arka plan resmi",
     "tooltip": "Tuval arka planı için resim URL'si. Çıktılar panelindeki bir resme sağ tıklayıp \"Arka Plan Olarak Ayarla\"yı seçerek kullanabilir veya yükleme düğmesini kullanarak kendi resminizi yükleyebilirsiniz."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Sol Fare Tıklama Davranışı",
+    "options": {
+      "Panning": "Kaydırma",
+      "Select": "Seç"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Fare Tekerleği Kaydırma",
+    "options": {
+      "Panning": "Kaydırma",
+      "Zoom in/out": "Yakınlaştır/Uzaklaştır"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "Tuval Gezinme Modu",
     "options": {
+      "Custom": "Özel",
       "Drag Navigation": "Sürükleyerek Gezinme",
       "Standard (New)": "Standart (Yeni)"
     }
@@ -379,6 +398,9 @@
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Mevcut bir alt grafik şemasının üzerine yazmak için onay iste"
   },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "Açılan iş akışları konumu",

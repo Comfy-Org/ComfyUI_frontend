@@ -25,13 +25,32 @@
     },
     "tooltip": "选择自定义选项以隐藏系统标题栏"
   },
+  "Comfy_Assets_UseAssetAPI": {
+    "name": "使用资产 API 进行模型库管理",
+    "tooltip": "使用新的资产 API 浏览模型"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "画布背景图像",
     "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左键点击行为",
+    "options": {
+      "Panning": "平移",
+      "Select": "选择"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "鼠标滚轮滚动",
+    "options": {
+      "Panning": "平移",
+      "Zoom in/out": "缩放"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "画布导航模式",
     "options": {
+      "Custom": "自定义",
       "Drag Navigation": "拖动画布",
       "Standard (New)": "标准（新）"
     }
@@ -380,6 +399,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "保存节点ID到工作流"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "覆盖已有子图蓝图时需要确认"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "已打开工作流的位置",
     "options": {
@@ -391,6 +413,10 @@
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "画布允许渲染的最大帧数。限制GPU使用以换取流畅度。如果为0，则使用屏幕刷新率。默认值：0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "缩放节点细节级别 - 字体大小阈值",
+    "tooltip": "控制节点何时切换到低质量细节渲染。使用像素为单位的字体大小来判断何时切换。设置为 0 可禁用。1-24 的值设置 LOD 的最小字体大小阈值——更高的值（24px）= 缩小时更早切换为简化渲染，更低的值（1px）= 更长时间保持完整节点质量。"
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"

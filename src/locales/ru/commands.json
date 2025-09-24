@@ -257,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "Выйти"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "Экспериментально: Включить Vue-узлы"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Закрыть текущий рабочий процесс"
   },

@@ -25,13 +25,32 @@
     },
     "tooltip": "システムタイトルバーを非表示にするにはカスタムオプションを選択してください"
   },
+  "Comfy_Assets_UseAssetAPI": {
+    "name": "モデルライブラリにアセットAPIを使用",
+    "tooltip": "モデル閲覧に新しいアセットAPIを使用します"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "キャンバス背景画像",
     "tooltip": "キャンバスの背景画像のURLです。出力パネルで画像を右クリックし、「背景として設定」を選択すると使用できます。"
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左クリックの動作",
+    "options": {
+      "Panning": "パン",
+      "Select": "選択"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "マウスホイールスクロール",
+    "options": {
+      "Panning": "パン",
+      "Zoom in/out": "ズームイン／アウト"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "キャンバスナビゲーションモード",
     "options": {
+      "Custom": "カスタム",
       "Drag Navigation": "ドラッグナビゲーション",
       "Standard (New)": "標準（新）"
     }
@@ -380,6 +399,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ワークフローを保存する際にノードIDをソート"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "既存のサブグラフブループリントを上書きする際に確認を要求"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "開いているワークフローの位置",
     "options": {
@@ -391,6 +413,10 @@
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "キャンバスがレンダリングできる最大フレーム数です。スムーズさの代わりにGPU使用量を制限します。0の場合、画面のリフレッシュレートが使用されます。デフォルト：0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "ノード詳細レベルのズーム - フォントサイズ閾値",
+    "tooltip": "ノードが低品質LOD描画に切り替わるタイミングを制御します。ピクセル単位のフォントサイズで切り替えを判断します。0で無効化。1～24の値でLODの最小フォントサイズ閾値を設定します。値が大きい（24px）ほどズームアウト時に早く簡易描画に切り替わり、小さい（1px）ほど高品質ノード表示を長く維持します。"
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
