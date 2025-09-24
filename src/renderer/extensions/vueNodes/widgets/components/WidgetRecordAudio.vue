@@ -87,6 +87,7 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
 
 const WAVEFORM_NUM_BARS = 18
@@ -94,6 +95,7 @@ const props = defineProps<{
   widget?: any
   nodeData?: any
   readonly?: boolean
+  node?: any
 }>()
 
 const modelValue = defineModel<any>('modelValue')
@@ -125,6 +127,9 @@ const mediaElementSource = ref<MediaElementAudioSourceNode | null>(null)
 // Audio element
 const audioRef = ref<HTMLAudioElement>()
 const audioElementKey = ref(0)
+
+// Keep track of the last uploaded path as a backup
+let lastUploadedPath = ''
 
 // Format time
 const formatTime = (seconds: number): string => {
@@ -184,8 +189,11 @@ const setupAudioContext = async () => {
 }
 
 const setupRecordingAudio = async () => {
+  console.log('Setting up recording audio...')
   await useAudioService().registerWavEncoder()
+  console.log('WAV encoder registered')
   stream.value = await navigator.mediaDevices.getUserMedia({ audio: true })
+  console.log('Got user media stream')
 
   audioContext.value = new (window.AudioContext ||
     (window as any).webkitAudioContext)()
@@ -207,20 +215,63 @@ const handleRecordingStop = async () => {
 
   try {
     const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-    modelValue.value = path
 
+    // Immediately update all values - this is the new recording, override everything
+    modelValue.value = path
+    lastUploadedPath = path
+
+    // Update Vue nodeData widgets
     if (props.nodeData?.widgets) {
-      const audioWidget = props.nodeData.widgets.find(
-        (w: any) => w.name === 'audio'
+      const audioWidgets = props.nodeData.widgets.filter(
+        (w: any) =>
+          w.name === 'audio' ||
+          w.name === 'audioUI' ||
+          w.type === 'AUDIO_RECORD' ||
+          w.type === 'AUDIOUPLOAD'
       )
-      if (audioWidget) {
-        if (
-          audioWidget.options?.values &&
-          !audioWidget.options.values.includes(path)
-        ) {
-          audioWidget.options.values.push(path)
+
+      audioWidgets.forEach((widget: any) => {
+        if (widget.options?.values && !widget.options.values.includes(path)) {
+          widget.options.values.push(path)
         }
-        audioWidget.value = path
+        widget.value = path
+      })
+    }
+
+    // Force trigger any change callbacks or reactivity
+    if (props.widget) {
+      props.widget.value = path
+    }
+
+    // Update LiteGraph node widgets directly
+    if (props.node && (props.node as any).widgets) {
+      const litegraphWidgets = (props.node as any).widgets
+      litegraphWidgets.forEach((widget: any) => {
+        if (widget.name === 'audio' || widget.name === 'audioUI') {
+          widget.value = path
+          if (widget.options?.values && !widget.options.values.includes(path)) {
+            widget.options.values.push(path)
+          }
+        }
+      })
+    } else if (app && app.graph && app.graph.nodes) {
+      // Try to find the LiteGraph node in the global graph
+      const recordAudioNode = app.graph.nodes.find(
+        (node: any) => node.constructor?.comfyClass === 'RecordAudio'
+      )
+
+      if (recordAudioNode && recordAudioNode.widgets) {
+        recordAudioNode.widgets.forEach((widget: any) => {
+          if (widget.name === 'audio' || widget.name === 'audioUI') {
+            widget.value = path
+            if (
+              widget.options?.values &&
+              !widget.options.values.includes(path)
+            ) {
+              widget.options.values.push(path)
+            }
+          }
+        })
       }
     }
   } catch (e) {
@@ -234,25 +285,42 @@ async function startRecording() {
   if (props.readonly) return
 
   try {
+    // Clean up previous recording
+    if (recordedURL.value?.startsWith('blob:')) {
+      URL.revokeObjectURL(recordedURL.value)
+    }
+
     audioChunks.value = []
     recordedURL.value = null
+    // Don't clear modelValue here - it will be updated when recording stops
     timer.value = 0
 
     await setupAudioContext()
     await setupRecordingAudio()
 
+    console.log('Creating ExtendableMediaRecorder...')
     mediaRecorder.value = new ExtendableMediaRecorder(stream.value!, {
       mimeType: 'audio/wav'
     }) as unknown as MediaRecorder
 
+    console.log('MediaRecorder created, setting up event handlers')
+
     mediaRecorder.value.ondataavailable = (e) => {
+      console.log('Data available event:', e.data.size, 'bytes')
       audioChunks.value.push(e.data)
     }
 
     mediaRecorder.value.onstop = handleRecordingStop
 
-    mediaRecorder.value.start()
+    mediaRecorder.value.onerror = (event) => {
+      console.error('MediaRecorder error:', event)
+    }
+
+    // Start recording with minimum chunk interval to ensure we get data
+    console.log('Starting MediaRecorder...')
+    mediaRecorder.value.start(100)
     isRecording.value = true
+    console.log('Recording started')
 
     timerInterval.value = window.setInterval(() => {
       timer.value += 1
@@ -405,10 +473,10 @@ async function serializeValue() {
   if (isRecording.value && mediaRecorder.value) {
     mediaRecorder.value.stop()
 
-    // Wait for recording to complete
+    // Wait for recording to complete and upload
     await new Promise((resolve) => {
       const checkRecording = () => {
-        if (!isRecording.value) {
+        if (!isRecording.value && modelValue.value) {
           resolve(undefined)
         } else {
           setTimeout(checkRecording, 100)
@@ -418,35 +486,8 @@ async function serializeValue() {
     })
   }
 
-  // If we have a recorded audio blob but no uploaded path yet, upload now
-  if (recordedURL.value && !modelValue.value) {
-    try {
-      const blob = await fetch(recordedURL.value).then((r) => r.blob())
-      const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-      modelValue.value = path
-
-      // Update audio widget
-      if (props.nodeData?.widgets) {
-        const audioWidget = props.nodeData.widgets.find(
-          (w: any) => w.name === 'audio'
-        )
-        if (audioWidget) {
-          if (
-            audioWidget.options?.values &&
-            !audioWidget.options.values.includes(path)
-          ) {
-            audioWidget.options.values.push(path)
-          }
-          audioWidget.value = path
-        }
-      }
-    } catch (error) {
-      useToastStore().addAlert('Failed to upload recorded audio')
-      return ''
-    }
-  }
-
-  return modelValue.value || ''
+  // Return the current model value - it should always be up to date now
+  return modelValue.value || lastUploadedPath || ''
 }
 
 // Expose serializeValue for workflow execution
