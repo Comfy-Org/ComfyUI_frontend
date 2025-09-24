@@ -129,7 +129,7 @@ export function useSelectionToolboxPosition(
 
   // Sync with canvas transform
   const { startSync, stopSync } = useCanvasTransformSync(
-    undefined,
+    canvasStore.getCanvas(),
     updateTransform,
     {},
     {
