@@ -4,6 +4,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { promoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { st, t } from '@/i18n'
 import {
   type IContextMenuValue,
@@ -741,7 +742,7 @@ export const useLitegraphService = () => {
       ]
     }
 
-    node.prototype.getExtraMenuOptions = function (_, options) {
+    node.prototype.getExtraMenuOptions = function (canvas, options) {
       if (this.imgs) {
         // If this node has images then we add an open in new tab item
         let img
@@ -788,7 +789,7 @@ export const useLitegraphService = () => {
         content: 'Bypass',
         callback: () => {
           toggleSelectedNodesMode(LGraphEventMode.BYPASS)
-          app.canvas.setDirty(true, true)
+          canvas.setDirty(true, true)
         }
       })
 
@@ -831,6 +832,18 @@ export const useLitegraphService = () => {
             this.graph.unpackSubgraph(this)
           }
         })
+      }
+      if (this.graph && !this.graph.isRootGraph) {
+        const [x, y] = canvas.canvas_mouse
+        const overWidget = this.getWidgetOnPos(x, y, true)
+        if (overWidget) {
+          options.unshift({
+            content: `Promote Widget: ${overWidget.label ?? overWidget.name}`,
+            callback: () => {
+              promoteWidget(overWidget, this)
+            }
+          })
+        }
       }
 
       return []
