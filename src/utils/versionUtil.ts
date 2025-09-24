@@ -29,12 +29,12 @@ export function checkVersionCompatibility(
   currentVersion?: string,
   supportedVersion?: string
 ): ConflictDetail | null {
-  // Use es-toolkit for null/empty checks
+  // If current version is unknown, assume compatible (no conflict)
   if (isNil(currentVersion) || isEmpty(currentVersion)) {
     return null
   }
 
-  // Use es-toolkit for supported version validation
+  // If no version requirement specified, assume compatible (no conflict)
   if (isNil(supportedVersion) || isEmpty(supportedVersion?.trim())) {
     return null
   }
