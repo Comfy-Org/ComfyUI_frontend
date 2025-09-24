@@ -600,7 +600,11 @@
       "cpuSubtitle": "Modo CPU",
       "manualDescription": "Configura ComfyUI manualmente para configuraciones avanzadas o hardware no soportado",
       "manualSubtitle": "Configuración manual",
+<<<<<<< Updated upstream
       "nvidiaDescription": "Utiliza tu GPU NVIDIA con aceleración CUDA para obtener el mejor rendimiento.",
+=======
+      "nvidiaDescription": "Utiliza tu GPU NVIDIA con aceleración CUDA para el mejor rendimiento.",
+>>>>>>> Stashed changes
       "nvidiaSubtitle": "NVIDIA CUDA",
       "recommended": "RECOMENDADO",
       "title": "Elige tu configuración de hardware"

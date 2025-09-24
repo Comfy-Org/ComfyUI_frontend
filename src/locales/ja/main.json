@@ -595,12 +595,21 @@
     "failedToSelectDirectory": "ディレクトリの選択に失敗しました",
     "gpu": "GPU",
     "gpuPicker": {
+<<<<<<< Updated upstream
       "appleMetalDescription": "Mac の GPU を活用し、より高速で快適な体験を実現します",
       "cpuDescription": "GPU アクセラレーションが利用できない場合は、互換性のために CPU モードを使用します",
       "cpuSubtitle": "CPU モード",
       "manualDescription": "高度なセットアップや未対応のハードウェア向けに ComfyUI を手動で構成します",
       "manualSubtitle": "手動セットアップ",
       "nvidiaDescription": "CUDA アクセラレーションで NVIDIA GPU を使用し、最高のパフォーマンスを発揮します。",
+=======
+      "appleMetalDescription": "MacのGPUを活用し、より高速で快適な体験を実現します",
+      "cpuDescription": "GPUアクセラレーションが利用できない場合は、互換性のためにCPUモードを使用します",
+      "cpuSubtitle": "CPU モード",
+      "manualDescription": "高度なセットアップや未対応のハードウェア向けにComfyUIを手動で構成します",
+      "manualSubtitle": "手動セットアップ",
+      "nvidiaDescription": "CUDAアクセラレーションでNVIDIA GPUを使用し、最高のパフォーマンスを発揮します。",
+>>>>>>> Stashed changes
       "nvidiaSubtitle": "NVIDIA CUDA",
       "recommended": "推奨",
       "title": "ハードウェア構成を選択してください"
@@ -628,6 +637,7 @@
     "isOneDrive": "OneDriveにインストールすると問題が発生する可能性があります。非OneDriveの場所にインストールすることを強くお勧めします。",
     "locationPicker": {
       "chooseDownloadServers": "ダウンロードサーバーを手動で選択",
+<<<<<<< Updated upstream
       "downloadServersDescription": "お住まいの地域に合わせて、Python、PyPI パッケージ、PyTorch のダウンロード用ミラーサーバーを選択します。",
       "migrateDescription": "以前の ComfyUI インストールから既存のモデル、カスタムノード、設定をコピーまたはリンクします。",
       "migrateFromExisting": "既存のインストールから移行",
@@ -635,6 +645,15 @@
       "pathPlaceholder": "/Users/username/Documents/ComfyUI",
       "subtitle": "ComfyUI のファイル用のフォルダを選択します。Python も自動的にセットアップされます。",
       "title": "ComfyUI のインストール場所を選択してください"
+=======
+      "downloadServersDescription": "お住まいの地域に合わせて、Python、PyPIパッケージ、PyTorchのダウンロード用ミラーサーバーを選択します。",
+      "migrateDescription": "以前のComfyUIインストールから既存のモデル、カスタムノード、設定をコピーまたはリンクします。",
+      "migrateFromExisting": "既存のインストールから移行",
+      "migrationPathPlaceholder": "既存のComfyUIインストールを選択（オプション）",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "subtitle": "ComfyUIのファイル用のフォルダを選択します。Pythonも自動的にセットアップされます。",
+      "title": "ComfyUIのインストール場所を選択してください"
+>>>>>>> Stashed changes
     },
     "manualConfiguration": {
       "createVenv": "次のディレクトリに仮想環境を作成する必要があります",
@@ -1327,9 +1346,15 @@
   "serverStart": {
     "copyAllTooltip": "すべてコピー",
     "copySelectionTooltip": "選択範囲をコピー",
+<<<<<<< Updated upstream
     "errorMessage": "ComfyUI Desktop を起動できません",
     "installation": {
       "title": "ComfyUI をインストール中"
+=======
+    "errorMessage": "ComfyUI Desktopを起動できません",
+    "installation": {
+      "title": "ComfyUIをインストール中"
+>>>>>>> Stashed changes
     },
     "openLogs": "ログを開く",
     "process": {
@@ -1341,7 +1366,11 @@
     },
     "reportIssue": "問題を報告",
     "showTerminal": "ターミナルを表示",
+<<<<<<< Updated upstream
     "title": "ComfyUI を起動中",
+=======
+    "title": "ComfyUIを起動中",
+>>>>>>> Stashed changes
     "troubleshoot": "トラブルシューティング"
   },
   "settingsCategories": {

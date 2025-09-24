@@ -633,7 +633,11 @@
       "migrateFromExisting": "从现有安装迁移",
       "migrationPathPlaceholder": "选择已有的 ComfyUI 安装（可选）",
       "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+<<<<<<< Updated upstream
       "subtitle": "为 ComfyUI 文件选择一个文件夹。我们也会自动在此处设置 Python。",
+=======
+      "subtitle": "为 ComfyUI 的文件选择一个文件夹。我们也会自动在此处设置 Python。",
+>>>>>>> Stashed changes
       "title": "选择 ComfyUI 的安装位置"
     },
     "manualConfiguration": {

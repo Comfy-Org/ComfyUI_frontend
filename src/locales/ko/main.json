@@ -596,7 +596,11 @@
     "gpu": "GPU",
     "gpuPicker": {
       "appleMetalDescription": "Mac의 GPU를 활용하여 더 빠르고 향상된 경험을 제공합니다.",
+<<<<<<< Updated upstream
       "cpuDescription": "GPU 가속이 불가능할 때 호환성을 위해 CPU 모드를 사용하세요.",
+=======
+      "cpuDescription": "GPU 가속을 사용할 수 없을 때 호환성을 위해 CPU 모드를 사용하세요.",
+>>>>>>> Stashed changes
       "cpuSubtitle": "CPU 모드",
       "manualDescription": "고급 설정이나 지원되지 않는 하드웨어를 위해 ComfyUI를 수동으로 구성하세요.",
       "manualSubtitle": "수동 설정",

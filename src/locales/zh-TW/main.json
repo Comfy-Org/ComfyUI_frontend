@@ -595,7 +595,11 @@
     "failedToSelectDirectory": "選擇目錄失敗",
     "gpu": "GPU",
     "gpuPicker": {
+<<<<<<< Updated upstream
       "appleMetalDescription": "利用您的 Mac GPU 提升速度，帶來更佳體驗",
+=======
+      "appleMetalDescription": "利用您的 Mac GPU 提升速度，獲得更佳體驗",
+>>>>>>> Stashed changes
       "cpuDescription": "當無法使用 GPU 加速時，請使用 CPU 模式以確保相容性",
       "cpuSubtitle": "CPU 模式",
       "manualDescription": "針對進階設定或不支援的硬體，手動設定 ComfyUI",
@@ -628,8 +632,13 @@
     "isOneDrive": "不支援 OneDrive。請將 ComfyUI 安裝在其他位置。",
     "locationPicker": {
       "chooseDownloadServers": "手動選擇下載伺服器",
+<<<<<<< Updated upstream
       "downloadServersDescription": "根據您的地區，選擇特定的鏡像伺服器來下載 Python、PyPI 套件與 PyTorch。",
       "migrateDescription": "從先前的 ComfyUI 安裝複製或連結您的模型、自訂節點與設定。",
+=======
+      "downloadServersDescription": "根據您的地區選擇特定的鏡像伺服器來下載 Python、PyPI 套件與 PyTorch。",
+      "migrateDescription": "從先前的 ComfyUI 安裝複製或連結您的模型、自訂節點與設定檔。",
+>>>>>>> Stashed changes
       "migrateFromExisting": "從現有安裝移轉",
       "migrationPathPlaceholder": "選擇現有的 ComfyUI 安裝路徑（可選）",
       "pathPlaceholder": "/Users/username/Documents/ComfyUI",
