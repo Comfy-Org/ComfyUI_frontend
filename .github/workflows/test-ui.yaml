@@ -123,22 +123,11 @@ jobs:
         working-directory: ComfyUI
 
 
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v4
-        id: cache-playwright-browsers
+      - name: Setup Playwright
+        uses: ./ComfyUI_frontend/.github/actions/setup-playwright
         with:
-          path: '~/.cache/ms-playwright'
-          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
-
-      - name: Install Playwright Browsers
-        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
-
-      - name: Install Playwright Browsers (operating system dependencies)
-        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps
-        working-directory: ComfyUI_frontend
+          playwright-version: ${{ needs.setup.outputs.playwright-version }}
+          working-directory: ComfyUI_frontend
 
       - name: Start ComfyUI server
         run: |
@@ -202,22 +191,11 @@ jobs:
           pip install wait-for-it
         working-directory: ComfyUI
 
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v4
-        id: cache-playwright-browsers
+      - name: Setup Playwright
+        uses: ./ComfyUI_frontend/.github/actions/setup-playwright
         with:
-          path: '~/.cache/ms-playwright'
-          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
-
-      - name: Install Playwright Browsers
-        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
-
-      - name: Install Playwright Browsers (operating system dependencies)
-        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps
-        working-directory: ComfyUI_frontend
+          playwright-version: ${{ needs.setup.outputs.playwright-version }}
+          working-directory: ComfyUI_frontend
 
       - name: Start ComfyUI server
         run: |
