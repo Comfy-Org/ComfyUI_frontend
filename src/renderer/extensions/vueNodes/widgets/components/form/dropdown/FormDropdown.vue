@@ -14,11 +14,14 @@ interface Props {
    * it specifies the maximum number of selections allowed.
    */
   multiple?: boolean | number
+
+  uploadable?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Select...',
-  multiple: false
+  multiple: false,
+  uploadable: false
 })
 
 // Define models for two-way binding
@@ -103,6 +106,7 @@ function handleMaxSelectionReached() {
       :items="items"
       :max-selectable="maxSelectable"
       :selected="selected"
+      :uploadable="uploadable"
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />

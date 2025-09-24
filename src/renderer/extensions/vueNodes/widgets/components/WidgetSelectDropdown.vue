@@ -35,6 +35,7 @@ const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
   readonly?: boolean
+  fileType?: 'image' | 'video' | 'audio' | 'model' | 'unknown'
 }>()
 
 const emit = defineEmits<{
@@ -55,7 +56,6 @@ const combinedProps = computed(() => ({
   ...transformCompatProps.value
 }))
 
-// Media dropdown specific logic
 const selectedSet = ref<Set<number>>(new Set())
 const dropdownItems = computed<DropdownItem[]>(() => {
   const values = props.widget.options?.values || []
@@ -75,17 +75,23 @@ const dropdownItems = computed<DropdownItem[]>(() => {
 const mediaPlaceholder = computed(() => {
   const options = props.widget.options
 
-  // Use widget-provided placeholder if available
   if (options?.placeholder) {
     return options.placeholder
   }
 
-  // Generate placeholder based on media type
-  if (options?.image_upload) return 'Select image...'
-  if (options?.video_upload) return 'Select video...'
-  if (options?.audio_upload) return 'Select audio...'
+  switch (props.fileType) {
+    case 'image':
+      return 'Select image...'
+    case 'video':
+      return 'Select video...'
+    case 'audio':
+      return 'Select audio...'
+    case 'model':
+      return 'Select model...'
+    case 'unknown':
+      return 'Select media...'
+  }
 
-  // Generic fallback
   return 'Select media...'
 })
 
@@ -190,6 +196,7 @@ async function handleFilesUpdate(files: File[]) {
 }
 
 function getMediaUrl(filename: string): string {
+  if (props.fileType !== 'image') return ''
   // TODO: This needs to be adapted based on actual ComfyUI API structure
   return `/api/view?filename=${encodeURIComponent(filename)}&type=input`
 }

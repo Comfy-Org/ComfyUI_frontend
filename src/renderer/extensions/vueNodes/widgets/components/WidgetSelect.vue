@@ -1,6 +1,7 @@
 <template>
   <WidgetSelectDropdown
-    v-if="isMediaWidget"
+    v-if="isDropdownUIWidget"
+    :file-type="fileType"
     v-bind="props"
     @update:model-value="handleUpdateModelValue"
   />
@@ -14,7 +15,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
@@ -33,42 +34,61 @@ function handleUpdateModelValue(value: string | number | undefined) {
   emit('update:modelValue', value)
 }
 
-const isMediaWidget = computed(() =>
-  shouldUseMediaDropdown(props.widget as any)
+const isImageWidget = computed(() =>
+  hasFilesWithExtensions(
+    props.widget.options?.values || [],
+    /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|ico)$/i
+  )
 )
 
-function shouldUseMediaDropdown(
-  widget: SimplifiedWidget<WidgetValue>
+const isVideoWidget = computed(() =>
+  hasFilesWithExtensions(
+    props.widget.options?.values || [],
+    /\.(mp4|webm|ogg|mov)$/i
+  )
+)
+
+const isAudioWidget = computed(() =>
+  hasFilesWithExtensions(
+    props.widget.options?.values || [],
+    /\.(mp3|wav|ogg|flac|aac|m4a)$/i
+  )
+)
+
+const isModelWidget = computed(() =>
+  hasFilesWithExtensions(
+    props.widget.options?.values || [],
+    /\.(safetensors)$/i
+  )
+)
+
+const isDropdownUIWidget = computed(
+  () =>
+    isImageWidget.value ||
+    isVideoWidget.value ||
+    isAudioWidget.value ||
+    isModelWidget.value
+)
+
+const fileType = computed(() => {
+  if (isImageWidget.value) return 'image'
+  if (isVideoWidget.value) return 'video'
+  if (isAudioWidget.value) return 'audio'
+  if (isModelWidget.value) return 'model'
+  return 'unknown'
+})
+
+function hasFilesWithExtensions(
+  values: any[],
+  extensionPattern: RegExp
 ): boolean {
-  // Method 1: Check for image_upload, video_upload, or audio_upload flags
-  const options = widget.options
-  if (
-    options?.image_upload ||
-    options?.video_upload ||
-    options?.animated_image_upload
-  ) {
-    return true
+  if (!Array.isArray(values) || values.length === 0) {
+    return false
   }
 
-  // Method 2: Check if values contain media file extensions
-  const values = options?.values || []
-  if (Array.isArray(values) && values.length > 0) {
-    const hasMediaFiles = values.some((value) => {
-      if (typeof value !== 'string') return false
-
-      // Check for common media file extensions
-      const mediaExtensions =
-        /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|ico|mp4|webm|ogg|mov|avi|mkv|mp3|wav|flac|ogg|aac|m4a)$/i
-      return mediaExtensions.test(value)
-    })
-
-    if (hasMediaFiles) return true
-  }
-
-  // Method 3: Future - check for Asset input type (when backend supports it)
-  // This is placeholder for future implementation
-  // if (widget.inputType === 'Asset') return true
-
-  return false
+  return values.some((value) => {
+    if (typeof value !== 'string') return false
+    return extensionPattern.test(value)
+  })
 }
 </script>

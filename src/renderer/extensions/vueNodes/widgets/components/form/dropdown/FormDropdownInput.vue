@@ -12,6 +12,7 @@ interface Props {
   items: unknown[]
   selected: Set<number>
   maxSelectable: number
+  uploadable: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -35,7 +36,7 @@ const chevronClass = computed(() =>
 )
 
 const theButtonStyle = [
-  'bg-transparent border-none outline-none cursor-pointer text-zinc-400',
+  'bg-transparent border-0 outline-none cursor-pointer text-zinc-400',
   'hover:bg-zinc-500/30 hover:text-black hover:dark-theme:text-white'
 ]
 </script>
@@ -45,10 +46,10 @@ const theButtonStyle = [
     <!-- Dropdown -->
     <button
       :class="
-        cn(
-          'flex justify-between items-center flex-1 h-8 rounded-l-lg',
-          theButtonStyle
-        )
+        cn(theButtonStyle, 'flex justify-between items-center flex-1 h-8', {
+          'rounded-l-lg': uploadable,
+          'rounded-lg': !uploadable
+        })
       "
       @click="emit('select-click', $event)"
     >
@@ -64,11 +65,12 @@ const theButtonStyle = [
     </button>
     <!-- Open File -->
     <label
+      v-if="uploadable"
       :class="
         cn(
+          theButtonStyle,
           'relative',
-          'size-8 flex justify-center items-center border-l rounded-r-lg border-zinc-300/10',
-          theButtonStyle
+          'size-8 flex justify-center items-center border-l rounded-r-lg border-zinc-300/10'
         )
       "
     >

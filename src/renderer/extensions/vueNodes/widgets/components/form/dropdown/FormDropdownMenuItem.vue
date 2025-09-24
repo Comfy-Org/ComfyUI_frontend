@@ -61,9 +61,14 @@ function handleImageLoad(event: Event) {
         <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
       </div>
       <img
+        v-if="imageSrc"
         :src="imageSrc"
         class="size-full object-cover"
         @load="handleImageLoad"
+      />
+      <div
+        v-else
+        class="size-full bg-gradient-to-tr from-blue-400 via-teal-500 to-green-400"
       />
     </div>
     <!-- Name -->
