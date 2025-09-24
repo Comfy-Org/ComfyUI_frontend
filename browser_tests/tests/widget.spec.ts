@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Combo text widget', () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
     await comfyPage.resizeLoadCheckpointNode(0.2, 1)
