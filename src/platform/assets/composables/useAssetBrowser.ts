@@ -228,11 +228,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   }
 
   function updateFilters(newFilters: FilterState) {
-    filters.value = {
-      sortBy: newFilters.sortBy,
-      fileFormats: newFilters.fileFormats,
-      baseModels: newFilters.baseModels
-    }
+    filters.value = { ...newFilters }
   }
 
   return {
