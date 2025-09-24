@@ -97,14 +97,10 @@ export function useConflictDetection() {
         comfyui_version: systemStats?.system.comfyui_version ?? '',
         frontend_version: frontendVersion,
         os: systemStats?.system.os ?? '',
-        accelerator: systemStats?.devices[0].type ?? ''
+        accelerator: systemStats?.devices?.[0]?.type ?? ''
       }
 
       systemEnvironment.value = environment
-      console.debug(
-        '[ConflictDetection] System environment detection completed:',
-        environment
-      )
       return environment
     } catch (error) {
       const fallbackEnvironment: SystemEnvironment = {
@@ -441,7 +437,6 @@ export function useConflictDetection() {
    */
   async function runFullConflictAnalysis(): Promise<ConflictDetectionResponse> {
     if (isDetecting.value) {
-      console.debug('[ConflictDetection] Already detecting, skipping')
       return {
         success: false,
         error_message: 'Already detecting conflicts',
@@ -569,9 +564,6 @@ export function useConflictDetection() {
       const managerState = useManagerState()
 
       if (!managerState.isNewManagerUI.value) {
-        console.debug(
-          '[ConflictDetection] Manager is not new Manager, skipping conflict detection'
-        )
         return
       }
 
@@ -610,15 +602,8 @@ export function useConflictDetection() {
    * Check if conflicts should trigger modal display after "What's New" dismissal
    */
   async function shouldShowConflictModalAfterUpdate(): Promise<boolean> {
-    console.debug(
-      '[ConflictDetection] Checking if conflict modal should show after update...'
-    )
-
     // Ensure conflict detection has run
     if (detectionResults.value.length === 0) {
-      console.debug(
-        '[ConflictDetection] No detection results, running conflict detection...'
-      )
       await runFullConflictAnalysis()
     }
 
@@ -627,12 +612,6 @@ export function useConflictDetection() {
     // For now, we'll assume it's an update if we have conflicts and modal hasn't been dismissed
     const hasActualConflicts = hasConflicts.value
     const canShowModal = acknowledgment.shouldShowConflictModal.value
-
-    console.debug('[ConflictDetection] Modal check:', {
-      hasConflicts: hasActualConflicts,
-      canShowModal: canShowModal,
-      conflictedPackagesCount: conflictedPackages.value.length
-    })
 
     return hasActualConflicts && canShowModal
   }
