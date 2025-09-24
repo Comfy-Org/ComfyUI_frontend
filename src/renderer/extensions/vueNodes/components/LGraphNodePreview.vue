@@ -38,6 +38,11 @@
 import { computed } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
+import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeContent from '@/renderer/extensions/vueNodes/components/NodeContent.vue'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -74,26 +79,29 @@ const nodeData = computed<VueNodeData>(() => {
       }
     }))
 
-  const inputs = Object.entries(nodeDef.inputs || {})
+  const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => !widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
       name,
       type: input.type,
-      shape: input.isOptional ? 'HollowCircle' : undefined,
-      boundingRect: [0, 0, 0, 0]
+      shape: input.isOptional ? RenderShape.HollowCircle : undefined,
+      boundingRect: [0, 0, 0, 0],
+      link: null
     }))
 
-  const outputs = (nodeDef.outputs || []).map((output) => {
+  const outputs: INodeOutputSlot[] = (nodeDef.outputs || []).map((output) => {
     if (typeof output === 'string') {
       return {
         name: output,
         type: output,
-        boundingRect: [0, 0, 0, 0]
+        boundingRect: [0, 0, 0, 0],
+        links: []
       }
     }
     return {
       ...output,
-      boundingRect: [0, 0, 0, 0]
+      boundingRect: [0, 0, 0, 0],
+      links: []
     }
   })
 
