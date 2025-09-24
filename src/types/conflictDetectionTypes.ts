@@ -70,26 +70,11 @@ export interface ConflictDetail {
 }
 
 /**
- * Overall conflict detection summary
- */
-export interface ConflictDetectionSummary {
-  total_packages: number
-  compatible_packages: number
-  conflicted_packages: number
-  banned_packages: number
-  pending_packages: number
-  conflicts_by_type_details: Record<ConflictType, string[]>
-  last_check_timestamp: string
-  check_duration_ms: number
-}
-
-/**
  * Response payload from conflict detection API
  */
 export interface ConflictDetectionResponse {
   success: boolean
   error_message?: string
-  summary?: ConflictDetectionSummary
   results: ConflictDetectionResult[]
   detected_system_environment?: Partial<SystemEnvironment>
 }

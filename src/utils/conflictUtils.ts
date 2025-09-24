@@ -2,9 +2,7 @@ import { groupBy, uniqBy } from 'es-toolkit/compat'
 
 import type {
   ConflictDetail,
-  ConflictDetectionResult,
-  ConflictDetectionSummary,
-  ConflictType
+  ConflictDetectionResult
 } from '@/types/conflictDetectionTypes'
 import { normalizePackId } from '@/utils/packUtils'
 
@@ -82,33 +80,4 @@ export function consolidateConflictsByPackage(
       is_compatible: uniqueConflicts.length === 0
     }
   })
-}
-
-/**
- * Generates summary of conflict detection results.
- */
-export function generateConflictSummary(
-  results: ConflictDetectionResult[],
-  durationMs: number
-): ConflictDetectionSummary {
-  const conflictsByTypeDetails: Record<ConflictType, string[]> = {
-    comfyui_version: [],
-    frontend_version: [],
-    import_failed: [],
-    os: [],
-    accelerator: [],
-    banned: [],
-    pending: []
-  }
-
-  return {
-    total_packages: results.length,
-    compatible_packages: results.filter((r) => r.is_compatible).length,
-    conflicted_packages: results.filter((r) => r.has_conflict).length,
-    banned_packages: conflictsByTypeDetails['banned'].length,
-    pending_packages: conflictsByTypeDetails['pending'].length,
-    conflicts_by_type_details: conflictsByTypeDetails,
-    last_check_timestamp: new Date().toISOString(),
-    check_duration_ms: durationMs
-  }
 }

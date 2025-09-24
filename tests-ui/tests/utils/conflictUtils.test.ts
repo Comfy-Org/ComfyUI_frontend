@@ -7,8 +7,7 @@ import type {
 import {
   consolidateConflictsByPackage,
   createBannedConflict,
-  createPendingConflict,
-  generateConflictSummary
+  createPendingConflict
 } from '@/utils/conflictUtils'
 
 describe('conflictUtils', () => {
@@ -203,97 +202,6 @@ describe('conflictUtils', () => {
         current_value: '1.0.0',
         required_value: '>=2.0.0'
       })
-    })
-  })
-
-  describe('generateConflictSummary', () => {
-    it('should generate correct summary for results with conflicts', () => {
-      const results: ConflictDetectionResult[] = [
-        {
-          package_name: 'pack1',
-          package_id: 'pack1',
-          conflicts: [
-            { type: 'os', current_value: 'Windows', required_value: 'Linux' }
-          ],
-          has_conflict: true,
-          is_compatible: false
-        },
-        {
-          package_name: 'pack2',
-          package_id: 'pack2',
-          conflicts: [],
-          has_conflict: false,
-          is_compatible: true
-        },
-        {
-          package_name: 'pack3',
-          package_id: 'pack3',
-          conflicts: [
-            {
-              type: 'banned',
-              current_value: 'installed',
-              required_value: 'not_banned'
-            }
-          ],
-          has_conflict: true,
-          is_compatible: false
-        }
-      ]
-
-      const durationMs = 1500
-      const summary = generateConflictSummary(results, durationMs)
-
-      expect(summary.total_packages).toBe(3)
-      expect(summary.compatible_packages).toBe(1)
-      expect(summary.conflicted_packages).toBe(2)
-      expect(summary.banned_packages).toBe(0) // Note: The current implementation doesn't populate these
-      expect(summary.pending_packages).toBe(0)
-      expect(summary.check_duration_ms).toBe(1500)
-      expect(summary.last_check_timestamp).toBeDefined()
-      expect(summary.conflicts_by_type_details).toBeDefined()
-    })
-
-    it('should handle empty results', () => {
-      const summary = generateConflictSummary([], 100)
-
-      expect(summary.total_packages).toBe(0)
-      expect(summary.compatible_packages).toBe(0)
-      expect(summary.conflicted_packages).toBe(0)
-      expect(summary.banned_packages).toBe(0)
-      expect(summary.pending_packages).toBe(0)
-      expect(summary.check_duration_ms).toBe(100)
-    })
-
-    it('should generate ISO timestamp', () => {
-      const summary = generateConflictSummary([], 0)
-      const timestamp = new Date(summary.last_check_timestamp)
-      expect(timestamp).toBeInstanceOf(Date)
-      expect(timestamp.getTime()).toBeLessThanOrEqual(Date.now())
-    })
-
-    it('should handle all compatible packages', () => {
-      const results: ConflictDetectionResult[] = [
-        {
-          package_name: 'pack1',
-          package_id: 'pack1',
-          conflicts: [],
-          has_conflict: false,
-          is_compatible: true
-        },
-        {
-          package_name: 'pack2',
-          package_id: 'pack2',
-          conflicts: [],
-          has_conflict: false,
-          is_compatible: true
-        }
-      ]
-
-      const summary = generateConflictSummary(results, 500)
-
-      expect(summary.total_packages).toBe(2)
-      expect(summary.compatible_packages).toBe(2)
-      expect(summary.conflicted_packages).toBe(0)
     })
   })
 })

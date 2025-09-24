@@ -5,12 +5,14 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { RegistryAccelerator } from '@/types/compatibility.types'
+import type {
+  RegistryAccelerator,
+  RegistryOS
+} from '@/types/compatibility.types'
 import type {
   ConflictDetail,
   ConflictDetectionResponse,
   ConflictDetectionResult,
-  ConflictDetectionSummary,
   Node,
   NodeRequirements,
   SystemEnvironment
@@ -18,8 +20,7 @@ import type {
 import {
   consolidateConflictsByPackage,
   createBannedConflict,
-  createPendingConflict,
-  generateConflictSummary
+  createPendingConflict
 } from '@/utils/conflictUtils'
 import {
   checkAcceleratorCompatibility,
@@ -59,7 +60,6 @@ export function useConflictDetection() {
   const detectionResults = ref<ConflictDetectionResult[]>([])
   // Store merged conflicts separately for testing
   const storedMergedConflicts = ref<ConflictDetectionResult[]>([])
-  const detectionSummary = ref<ConflictDetectionSummary | undefined>(undefined)
 
   // Registry API request cancellation
   const abortController = ref<AbortController | null>(null)
@@ -296,14 +296,14 @@ export function useConflictDetection() {
 
     // 3. OS compatibility check
     const osConflict = checkOSCompatibility(
-      packageReq.supported_os as any,
+      packageReq.supported_os as RegistryOS[] | undefined,
       systemEnvInfo.os
     )
     if (osConflict) conflicts.push(osConflict)
 
     // 4. Accelerator compatibility check
     const acceleratorConflict = checkAcceleratorCompatibility(
-      packageReq.supported_accelerators as any,
+      packageReq.supported_accelerators as RegistryAccelerator[] | undefined,
       systemEnvInfo.accelerator
     )
     if (acceleratorConflict) conflicts.push(acceleratorConflict)
@@ -445,14 +445,12 @@ export function useConflictDetection() {
       return {
         success: false,
         error_message: 'Already detecting conflicts',
-        summary: detectionSummary.value!,
         results: detectionResults.value
       }
     }
 
     isDetecting.value = true
     detectionError.value = null
-    const startTime = Date.now()
 
     try {
       // 1. Collect system environment information
@@ -489,21 +487,9 @@ export function useConflictDetection() {
       // 5. Combine all results
       const allResults = [...packageResults, ...importFailResults]
 
-      // 6. Generate summary information
-      const summary = generateConflictSummary(
-        allResults,
-        Date.now() - startTime
-      )
-
-      // 7. Update state
+      // 6. Update state
       detectionResults.value = allResults
-      detectionSummary.value = summary
       lastDetectionTime.value = new Date().toISOString()
-
-      console.debug(
-        '[ConflictDetection] Conflict detection completed:',
-        summary
-      )
 
       // Store conflict results for later UI display
       // Dialog will be shown based on specific events, not on app mount
@@ -524,17 +510,12 @@ export function useConflictDetection() {
         conflictStore.setConflictedPackages(mergedConflicts)
 
         // Also update local state for backward compatibility
-        detectionResults.value.splice(
-          0,
-          detectionResults.value.length,
-          ...mergedConflicts
-        )
+        detectionResults.value = [...mergedConflicts]
         storedMergedConflicts.value = [...mergedConflicts]
 
         // Use merged conflicts in response as well
         const response: ConflictDetectionResponse = {
           success: true,
-          summary,
           results: mergedConflicts,
           detected_system_environment: systemEnvInfo
         }
@@ -547,7 +528,6 @@ export function useConflictDetection() {
 
       const response: ConflictDetectionResponse = {
         success: true,
-        summary,
         results: allResults,
         detected_system_environment: systemEnvInfo
       }
@@ -564,7 +544,6 @@ export function useConflictDetection() {
       return {
         success: false,
         error_message: detectionError.value,
-        summary: detectionSummary.value,
         results: []
       }
     } finally {
@@ -736,7 +715,6 @@ export function useConflictDetection() {
     detectionError: readonly(detectionError),
     systemEnvironment: readonly(systemEnvironment),
     detectionResults: readonly(detectionResults),
-    detectionSummary: readonly(detectionSummary),
 
     // Computed
     hasConflicts,
