@@ -1,46 +1,14 @@
 <template>
   <div class="scale-75">
-    <div
-      class="bg-white dark-theme:bg-charcoal-800 lg-node absolute rounded-2xl border border-solid border-sand-100 dark-theme:border-charcoal-600 outline-transparent -outline-offset-2 outline-2 pointer-events-none"
-    >
-      <div class="flex items-center">
-        <NodeHeader :node-data="nodeData" :readonly="readonly" />
-      </div>
-
-      <div class="mb-4 relative">
-        <div class="bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full" />
-      </div>
-
-      <div class="flex flex-col gap-4 pb-4">
-        <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
-
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
-
-        <NodeContent
-          v-if="hasCustomContent"
-          :node-data="nodeData"
-          :readonly="readonly"
-          :image-urls="nodeImageUrls"
-        />
-        <!-- Live preview image -->
-        <!-- <div v-if="shouldShowPreviewImg" class="px-4">
-          <img
-            :src="latestPreviewUrl"
-            alt="preview"
-            class="w-full max-h-64 object-contain"
-          />
-        </div> -->
-      </div>
-    </div>
+    <NodeBaseTemplate
+      :node-data="nodeData"
+      :readonly="true"
+      :container-classes="presentation.containerBaseClasses.value"
+      :is-collapsed="false"
+      :separator-classes="presentation.separatorClasses"
+      :has-custom-content="false"
+      :image-urls="[]"
+    />
   </div>
 </template>
 
@@ -48,12 +16,11 @@
 import { computed } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import NodeContent from '@/renderer/extensions/vueNodes/components/NodeContent.vue'
-import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
-import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
-import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import { useNodePresentation } from '@/renderer/extensions/vueNodes/composables/useNodePresentation'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+
+import NodeBaseTemplate from './NodeBaseTemplate.vue'
 
 const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefV2
@@ -110,13 +77,9 @@ const nodeData = computed<VueNodeData>(() => {
   }
 })
 
-const readonly = true
-
-const hasCustomContent = computed(() => {
-  return false
-})
-
-const nodeImageUrls = computed(() => {
-  return []
+// Use the presentation composable with preview mode
+const presentation = useNodePresentation(() => nodeData.value, {
+  readonly: true,
+  isPreview: true
 })
 </script>

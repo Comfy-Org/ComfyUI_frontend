@@ -2,137 +2,39 @@
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
     {{ $t('Node Render Error') }}
   </div>
-  <div
+  <NodeBaseTemplate
     v-else
-    ref="nodeContainerRef"
-    :data-node-id="nodeData.id"
-    :class="
-      cn(
-        'bg-white dark-theme:bg-charcoal-800',
-        'lg-node absolute rounded-2xl',
-        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
-        // hover (only when node should handle events)
-        shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
-        'outline-transparent -outline-offset-2 outline-2',
-        borderClass,
-        outlineClass,
-        {
-          'animate-pulse': executing,
-          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
-            bypassed,
-          'will-change-transform': isDragging
-        },
-
-        shouldHandleNodePointerEvents
-          ? 'pointer-events-auto'
-          : 'pointer-events-none'
-      )
-    "
-    :style="[
-      {
-        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
-      },
-      dragStyle
-    ]"
-    @pointerdown="handlePointerDown"
-    @pointermove="handlePointerMove"
-    @pointerup="handlePointerUp"
-    @wheel="handleWheel"
-  >
-    <div class="flex items-center">
-      <template v-if="isCollapsed">
-        <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
-        <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
-      </template>
-      <!-- Header only updates on title/color changes -->
-      <NodeHeader
-        v-memo="[nodeData.title, isCollapsed]"
-        :node-data="nodeData"
-        :readonly="readonly"
-        :collapsed="isCollapsed"
-        @collapse="handleCollapse"
-        @update:title="handleHeaderTitleUpdate"
-        @enter-subgraph="handleEnterSubgraph"
-      />
-    </div>
-
-    <div
-      v-if="isCollapsed && executing && progress !== undefined"
-      :class="
-        cn(
-          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
-          progressClasses
-        )
-      "
-      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-    />
-
-    <template v-if="!isCollapsed">
-      <div class="mb-4 relative">
-        <div :class="separatorClasses" />
-        <!-- Progress bar for executing state -->
-        <div
-          v-if="executing && progress !== undefined"
-          :class="
-            cn(
-              'absolute inset-x-0 top-1/2 -translate-y-1/2',
-              !!(progress < 1) && 'rounded-r-full',
-              progressClasses
-            )
-          "
-          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-        />
-      </div>
-
-      <!-- Node Body - rendered based on LOD level and collapsed state -->
-      <div
-        class="flex flex-col gap-4 pb-4"
-        :data-testid="`node-body-${nodeData.id}`"
-      >
-        <!-- Slots only rendered at full detail -->
-        <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
-
-        <!-- Widgets rendered at reduced+ detail -->
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
-
-        <!-- Custom content at reduced+ detail -->
-        <NodeContent
-          v-if="hasCustomContent"
-          :node-data="nodeData"
-          :readonly="readonly"
-          :image-urls="nodeImageUrls"
-        />
-        <!-- Live preview image -->
-        <div
-          v-if="shouldShowPreviewImg"
-          v-memo="[latestPreviewUrl]"
-          class="px-4"
-        >
-          <img
-            :src="latestPreviewUrl"
-            alt="preview"
-            class="w-full max-h-64 object-contain"
-          />
-        </div>
-      </div>
-    </template>
-  </div>
+    :node-data="nodeData"
+    :readonly="readonly"
+    :container-classes="presentation.containerBaseClasses.value"
+    :container-style="containerStyle"
+    :is-collapsed="presentation.isCollapsed.value"
+    :separator-classes="presentation.separatorClasses"
+    :progress-classes="presentation.progressClasses"
+    :progress-bar-classes="presentation.progressBarClasses.value"
+    :show-progress="presentation.showProgress.value"
+    :progress-value="progress"
+    :progress-style="presentation.progressStyle.value"
+    :progress-bar-style="presentation.progressBarStyle.value"
+    :has-custom-content="hasCustomContent"
+    :image-urls="nodeImageUrls"
+    :show-preview-image="shouldShowPreviewImg"
+    :preview-image-url="latestPreviewUrl"
+    :event-handlers="{
+      onPointerdown: handlePointerDown,
+      onPointermove: handlePointerMove,
+      onPointerup: handlePointerUp,
+      onWheel: handleWheel
+    }"
+    @collapse="handleCollapse"
+    @update:title="handleHeaderTitleUpdate"
+    @enter-subgraph="handleEnterSubgraph"
+  />
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -142,6 +44,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useNodePresentation } from '@/renderer/extensions/vueNodes/composables/useNodePresentation'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -153,13 +56,8 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
-import { cn } from '@/utils/tailwindUtil'
 
-import NodeContent from './NodeContent.vue'
-import NodeHeader from './NodeHeader.vue'
-import NodeSlots from './NodeSlots.vue'
-import NodeWidgets from './NodeWidgets.vue'
-import SlotConnectionDot from './SlotConnectionDot.vue'
+import NodeBaseTemplate from './NodeBaseTemplate.vue'
 
 // Extended props for main node component
 interface LGraphNodeProps {
@@ -240,8 +138,28 @@ onMounted(() => {
   }
 })
 
-// Track collapsed state
-const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+// Use the new presentation composable
+const presentation = useNodePresentation(() => nodeData, {
+  readonly,
+  isPreview: false,
+  isSelected,
+  executing,
+  progress,
+  hasExecutionError,
+  hasAnyError,
+  bypassed,
+  isDragging,
+  shouldHandleNodePointerEvents
+})
+
+// Container style combining position and drag styles
+const containerStyle = computed(() => [
+  {
+    transform: `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+    zIndex: zIndex.value
+  },
+  dragStyle.value
+])
 
 // Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
@@ -249,44 +167,16 @@ const hasCustomContent = computed(() => {
   return nodeImageUrls.value.length > 0
 })
 
-// Computed classes and conditions for better reusability
-const separatorClasses =
-  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full lod-toggle'
-const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
-
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
   {
-    isCollapsed
+    isCollapsed: presentation.isCollapsed
   }
 )
 
-const borderClass = computed(() => {
-  if (hasAnyError.value) {
-    return 'border-error'
-  }
-  if (executing.value) {
-    return 'border-blue-500'
-  }
-  return undefined
-})
-
-const outlineClass = computed(() => {
-  if (!isSelected.value) {
-    return undefined
-  }
-  if (hasAnyError.value) {
-    return 'outline-error'
-  }
-  if (executing.value) {
-    return 'outline-blue-500'
-  }
-  return 'outline-black dark-theme:outline-white'
-})
-
 // Event handlers
 const handleCollapse = () => {
-  handleNodeCollapse(nodeData.id, !isCollapsed.value)
+  handleNodeCollapse(nodeData.id, !presentation.isCollapsed.value)
 }
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
@@ -344,7 +234,4 @@ const nodeImageUrls = computed(() => {
   // Clear URLs if no outputs or no images
   return []
 })
-
-const nodeContainerRef = ref()
-provide('tooltipContainer', nodeContainerRef)
 </script>
