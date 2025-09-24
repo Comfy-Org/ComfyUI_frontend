@@ -3,13 +3,11 @@
     <div
       class="bg-white dark-theme:bg-charcoal-800 lg-node absolute rounded-2xl border border-solid border-sand-100 dark-theme:border-charcoal-600 outline-transparent -outline-offset-2 outline-2 pointer-events-none"
     >
-      <div class="flex items-center">
-        <NodeHeader :node-data="nodeData" :readonly="readonly" />
-      </div>
+      <NodeHeader :node-data="nodeData" :readonly="readonly" />
 
-      <div class="mb-4 relative">
-        <div class="bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full" />
-      </div>
+      <div
+        class="bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full mb-4"
+      />
 
       <div class="flex flex-col gap-4 pb-4">
         <NodeSlots
