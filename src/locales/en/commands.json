@@ -278,6 +278,9 @@
   "Workspace_ToggleBottomPanel_Shortcuts": {
     "label": "Show Keybindings Dialog"
   },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Toggle Terminal Bottom Panel"
+  },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Toggle Logs Bottom Panel"
   },

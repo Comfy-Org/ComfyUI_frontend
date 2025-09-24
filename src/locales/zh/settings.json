@@ -343,14 +343,6 @@
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
   },
-  "Comfy_VueNodes_Enabled": {
-    "name": "启用 Vue 节点渲染",
-    "tooltip": "将节点渲染为 Vue 组件，而不是画布元素。实验性功能。"
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "启用Vue小部件",
-    "tooltip": "在Vue节点中将小部件渲染为Vue组件。"
-  },
   "Comfy_WidgetControlMode": {
     "name": "组件控制模式",
     "options": {
@@ -395,10 +387,6 @@
       "Topbar": "顶部栏",
       "Topbar (2nd-row)": "顶部栏 (第二行)"
     }
-  },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "低质量渲染缩放阈值",
-    "tooltip": "在缩小时渲染低质量形状"
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
