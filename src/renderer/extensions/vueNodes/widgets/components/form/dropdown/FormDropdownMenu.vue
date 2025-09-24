@@ -2,14 +2,7 @@
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-
-// Data structure interfaces
-interface DropdownItem {
-  id: string | number
-  imageSrc: string
-  name: string
-  metadata: string
-}
+import type { DropdownItem } from './types'
 
 interface Props {
   items: DropdownItem[]

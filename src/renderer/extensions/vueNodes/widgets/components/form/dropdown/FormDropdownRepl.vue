@@ -3,14 +3,7 @@ import { ref } from 'vue'
 
 import FormDropdown from './FormDropdown.vue'
 import FormDropdownDrop from './FormDropdownDrop.vue'
-
-// Data structure for dropdown items
-interface DropdownItem {
-  id: string | number
-  imageSrc: string
-  name: string
-  metadata: string
-}
+import type { DropdownItem } from './types'
 
 // Mock data for demonstration
 const imageItems = ref<DropdownItem[]>(
