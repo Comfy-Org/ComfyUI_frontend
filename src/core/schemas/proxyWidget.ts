@@ -10,14 +10,14 @@ export function parseProxyWidgets(
   property: NodeProperty | undefined
 ): ProxyWidgetsProperty {
   if (typeof property !== 'string') {
-    console.error(`Found non-string value for properties.proxyWidgets`)
-    return []
+    throw new Error(
+      'Invalid assignment for properties.proxyWidgets:\nValue must be a string'
+    )
   }
   const parsed = JSON.parse(property)
   const result = proxyWidgetsPropertySchema.safeParse(parsed)
-  if (result.success) return result.data ?? []
+  if (result.success) return result.data
 
   const error = fromZodError(result.error)
-  console.error(`Invalid assignment for properties.proxyWidgets:\n${error}`)
-  return []
+  throw new Error(`Invalid assignment for properties.proxyWidgets:\n${error}`)
 }

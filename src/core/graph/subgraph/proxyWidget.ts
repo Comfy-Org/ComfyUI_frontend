@@ -10,6 +10,39 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
+/**
+ * @typedef {object} Overlay - Each proxy Widget has an associated overlay object
+ * Accessing a property which exists in the overlay object will
+ * instead result in the action being performed on the overlay object
+ * 3 properties are added for locating the proxied widget
+ * @property {LGraph} graph - The graph the widget resides in. Used for widget lookup
+ * @property {string} nodeId - The NodeId the proxy Widget is located on
+ * @property {string} widgetName - The name of the linked widget
+ *
+ * @property {boolean} isProxyWidget - Always true, used as type guard
+ * @property {LGraphNode} node - not included on IBaseWidget, but required for overlay
+ */
+type Overlay = Partial<IBaseWidget> & {
+  graph: LGraph
+  nodeId: string
+  widgetName: string
+  isProxyWidget: boolean
+  node?: LGraphNode
+}
+// A ProxyWidget can be treated like a normal widget.
+// the _overlay property can be used to directly access the Overlay object
+/**
+ * @typedef {object} ProxyWidget - a reference to a widget that can
+ * be displayed and owned by a separate node
+ * @property {Overlay} _overlay - a special property to access the overlay of the widget
+ * Any property that exists in the overlay will be accessed instead of the property
+ * on the linked widget
+ */
+type ProxyWidget = IBaseWidget & { _overlay: Overlay }
+function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
+  return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
+}
+
 const originalOnConfigure = SubgraphNode.prototype.onConfigure
 SubgraphNode.prototype.onConfigure = function (serialisedNode) {
   if (!this.isSubgraphNode())
@@ -28,24 +61,14 @@ SubgraphNode.prototype.onConfigure = function (serialisedNode) {
     },
     set: (property: string) => {
       const parsed = parseProxyWidgets(property)
-      const { widgetStates } = useDomWidgetStore()
+      const { deactivateWidget, setWidget } = useDomWidgetStore()
       for (const w of this.widgets.filter((w) => isProxyWidget(w))) {
-        if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
-          const widgetState = widgetStates.get(w.id)
-          if (!widgetState) continue
-          widgetState.active = false
-        }
+        if (w instanceof DOMWidgetImpl) deactivateWidget(w.id)
       }
-      //NOTE: This does not apply to pushed entries, only initial load
       this.widgets = this.widgets.filter((w) => !isProxyWidget(w))
       for (const [nodeId, widgetName] of parsed) {
         const w = addProxyWidget(this, `${nodeId}`, widgetName)
-        if (w instanceof DOMWidgetImpl) {
-          const widgetState = widgetStates.get(w.id)
-          if (!widgetState) continue
-          widgetState.active = true
-          widgetState.widget = w
-        }
+        if (w instanceof DOMWidgetImpl) setWidget(w)
       }
       proxyWidgets = property
       canvasStore.canvas?.setDirty(true, true)
@@ -54,17 +77,6 @@ SubgraphNode.prototype.onConfigure = function (serialisedNode) {
     }
   })
   this.properties.proxyWidgets = proxyWidgets
-}
-type Overlay = Partial<IBaseWidget> & {
-  graph: LGraph
-  nodeId: string
-  widgetName: string
-  isProxyWidget: boolean
-  node?: LGraphNode
-}
-type ProxyWidget = IBaseWidget & { _overlay: Overlay }
-function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
-  return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
 }
 
 function addProxyWidget(
