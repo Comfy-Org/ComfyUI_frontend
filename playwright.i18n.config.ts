@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const config: any = defineConfig({
   testDir: './scripts',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5173'
   },
   reporter: 'list',
   timeout: 60000,
@@ -46,10 +46,13 @@ config['@playwright/test'] = {
       }
     ],
     // Inject browser globals AFTER TypeScript transformation
-    [path.join(__dirname, 'scripts/babel-plugin-inject-globals.cjs'), {
-      filenamePattern: 'collect-i18n-',
-      setupFile: './setup-browser-globals.mjs'
-    }]
+    [
+      path.join(__dirname, 'scripts/babel-plugin-inject-globals.cjs'),
+      {
+        filenamePattern: 'collect-i18n-',
+        setupFile: './setup-browser-globals.mjs'
+      }
+    ]
   ]
 }
 

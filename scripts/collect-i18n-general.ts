@@ -4,8 +4,8 @@ import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { DESKTOP_DIALOGS } from '../src/constants/desktopDialogs'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
-import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/platform/settings/types'
+import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
@@ -76,10 +76,10 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     const workspace = window['app'].extensionManager
     const settings = workspace.setting.settings as Record<string, SettingParams>
     return Object.values(settings)
-      .sort((a, b) => a.id.localeCompare(b.id))
+      .sort((a, b) => String(a.id).localeCompare(String(b.id)))
       .filter((setting) => setting.type !== 'hidden')
       .map((setting) => ({
-        id: setting.id,
+        id: String(setting.id),
         name: setting.name,
         tooltip: setting.tooltip,
         category: setting.category,
