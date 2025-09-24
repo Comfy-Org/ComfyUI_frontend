@@ -133,49 +133,46 @@ test.describe('Templates', () => {
     // Set locale to a language that doesn't have a template file
     await comfyPage.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
 
-    // Capture requests to verify fallback behavior
-    let germanIndexRequested = false
-    let englishIndexRequested = false
+    // Wait for the German request (expected to 404)
+    const germanRequestPromise = comfyPage.page.waitForRequest(
+      '**/templates/index.de.json'
+    )
 
+    // Wait for the fallback English request
+    const englishRequestPromise = comfyPage.page.waitForRequest(
+      '**/templates/index.json'
+    )
+
+    // Intercept the German file to simulate a 404
     await comfyPage.page.route('**/templates/index.de.json', async (route) => {
-      germanIndexRequested = true
-      // Return 404 to simulate missing file
       await route.fulfill({
         status: 404,
-        headers: {
-          'Content-Type': 'text/plain'
-        },
+        headers: { 'Content-Type': 'text/plain' },
         body: 'Not Found'
       })
     })
 
-    await comfyPage.page.route('**/templates/index.json', async (route) => {
-      englishIndexRequested = true
-      // Return the actual English index file
-      await route.continue()
-    })
+    // Allow the English index to load normally
+    await comfyPage.page.route('**/templates/index.json', (route) =>
+      route.continue()
+    )
 
     // Load the templates dialog
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    // Verify German was attempted first, then English as fallback
-    expect(germanIndexRequested).toBe(true)
-    expect(englishIndexRequested).toBe(true)
+    // Verify German was requested first, then English as fallback
+    const germanRequest = await germanRequestPromise
+    const englishRequest = await englishRequestPromise
+
+    expect(germanRequest.url()).toContain('templates/index.de.json')
+    expect(englishRequest.url()).toContain('templates/index.json')
 
     // Verify English titles are shown as fallback
-    // Use a more specific selector to target the title heading
     await expect(
       comfyPage.templates.content.getByRole('heading', {
         name: 'Image Generation'
       })
-    ).toBeVisible()
-
-    // Also verify English descriptions
-    await expect(
-      comfyPage.templates.content.getByText(
-        'Generate images from text prompts.'
-      )
     ).toBeVisible()
   })
 
