@@ -241,7 +241,11 @@ app.registerExtension({
 app.registerExtension({
   name: 'Comfy.UploadAudio',
   async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
-    if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
+    // Only add the upload widget if Vue nodes are disabled
+    if (
+      nodeData?.input?.required?.audio?.[1]?.audio_upload === true &&
+      !LiteGraph.vueNodesMode
+    ) {
       nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
     }
   },
@@ -251,8 +255,15 @@ app.registerExtension({
         // Skip companion widget creation when Vue nodes are enabled
         // Vue components will handle all audio functionality
         if (LiteGraph.vueNodesMode) {
-          // Return a placeholder widget that will be ignored
-          return { widget: node.addWidget('button', inputName, '', () => {}) }
+          // Create a simple placeholder widget for backend compatibility
+          // It will be hidden by the Vue component
+          const placeholderWidget = node.addWidget(
+            'button',
+            inputName,
+            '',
+            () => {}
+          )
+          return { widget: placeholderWidget }
         }
 
         // The widget that allows user to select file.
@@ -337,8 +348,42 @@ app.registerExtension({
         // Skip companion widget creation when Vue nodes are enabled
         // Vue components will handle all audio functionality
         if (LiteGraph.vueNodesMode) {
-          // Return a placeholder widget that will be ignored
-          return { widget: node.addWidget('button', inputName, '', () => {}) }
+          // Create a simple placeholder widget for backend compatibility
+          // It will be hidden by the Vue component
+          const placeholderWidget = node.addWidget(
+            'text',
+            inputName,
+            '',
+            () => {},
+            { serialize: true }
+          )
+
+          // Set up the serialization bridge for RecordAudio
+          const nodeId = node.id
+          placeholderWidget.serializeValue = async () => {
+            // Use the global registry to find the Vue component's serialization function
+            let serializationFn = vueWidgetSerializationRegistry.get(
+              `${nodeId}-audioUI`
+            )
+
+            // Fallback: try with current node.id in case it changed
+            if (!serializationFn && node.id !== nodeId) {
+              serializationFn = vueWidgetSerializationRegistry.get(
+                `${node.id}-audioUI`
+              )
+            }
+
+            if (serializationFn) {
+              const result = await serializationFn()
+              // Update the widget value for the backend
+              placeholderWidget.value = result
+              return result
+            }
+
+            return placeholderWidget.value || ''
+          }
+
+          return { widget: placeholderWidget }
         }
 
         const audio = document.createElement('audio')
