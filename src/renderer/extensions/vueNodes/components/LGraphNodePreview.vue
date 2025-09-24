@@ -3,9 +3,9 @@
     <NodeBaseTemplate
       :node-data="nodeData"
       :readonly="true"
-      :container-classes="presentation.containerBaseClasses.value"
+      :container-classes="containerClasses"
       :is-collapsed="false"
-      :separator-classes="presentation.separatorClasses"
+      :separator-classes="separatorClasses"
       :has-custom-content="false"
       :image-urls="[]"
     />
@@ -16,7 +16,6 @@
 import { computed } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useNodePresentation } from '@/renderer/extensions/vueNodes/composables/useNodePresentation'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 
@@ -77,9 +76,9 @@ const nodeData = computed<VueNodeData>(() => {
   }
 })
 
-// Use the presentation composable with preview mode
-const presentation = useNodePresentation(() => nodeData.value, {
-  readonly: true,
-  isPreview: true
-})
+// Static classes for preview mode
+const containerClasses =
+  'bg-white dark-theme:bg-charcoal-800 lg-node absolute rounded-2xl border border-solid border-sand-100 dark-theme:border-charcoal-600 outline-transparent -outline-offset-2 outline-2 pointer-events-none'
+const separatorClasses =
+  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full'
 </script>

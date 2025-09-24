@@ -6,16 +6,16 @@
     v-else
     :node-data="nodeData"
     :readonly="readonly"
-    :container-classes="presentation.containerBaseClasses.value"
+    :container-classes="containerClasses"
     :container-style="containerStyle"
-    :is-collapsed="presentation.isCollapsed.value"
-    :separator-classes="presentation.separatorClasses"
-    :progress-classes="presentation.progressClasses"
-    :progress-bar-classes="presentation.progressBarClasses.value"
-    :show-progress="presentation.showProgress.value"
+    :is-collapsed="isCollapsed"
+    :separator-classes="separatorClasses"
+    :progress-classes="progressClasses"
+    :progress-bar-classes="progressBarClasses"
+    :show-progress="showProgress"
     :progress-value="progress"
-    :progress-style="presentation.progressStyle.value"
-    :progress-bar-style="presentation.progressBarStyle.value"
+    :progress-style="progressStyle"
+    :progress-bar-style="progressBarStyle"
     :has-custom-content="hasCustomContent"
     :image-urls="nodeImageUrls"
     :show-preview-image="shouldShowPreviewImg"
@@ -44,7 +44,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useNodePresentation } from '@/renderer/extensions/vueNodes/composables/useNodePresentation'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -56,6 +55,7 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import NodeBaseTemplate from './NodeBaseTemplate.vue'
 
@@ -138,19 +138,82 @@ onMounted(() => {
   }
 })
 
-// Use the new presentation composable
-const presentation = useNodePresentation(() => nodeData, {
-  readonly,
-  isPreview: false,
-  isSelected,
-  executing,
-  progress,
-  hasExecutionError,
-  hasAnyError,
-  bypassed,
-  isDragging,
-  shouldHandleNodePointerEvents
+// Collapsed state
+const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+
+// Show progress when executing with defined progress
+const showProgress = computed(() => {
+  return !!(executing.value && progress.value !== undefined)
 })
+
+// Progress styles
+const progressStyle = computed(() => {
+  if (!showProgress.value || !progress.value) return undefined
+  return { width: `${Math.min(progress.value * 100, 100)}%` }
+})
+
+const progressBarStyle = progressStyle
+
+// Border class based on state
+const borderClass = computed(() => {
+  if (hasAnyError.value) {
+    return 'border-error'
+  }
+  if (executing.value) {
+    return 'border-blue-500'
+  }
+  return undefined
+})
+
+// Outline class based on selection and state
+const outlineClass = computed(() => {
+  if (!isSelected.value) {
+    return undefined
+  }
+  if (hasAnyError.value) {
+    return 'outline-error'
+  }
+  if (executing.value) {
+    return 'outline-blue-500'
+  }
+  return 'outline-black dark-theme:outline-white'
+})
+
+// Container classes
+const containerClasses = computed(() => {
+  return cn(
+    'bg-white dark-theme:bg-charcoal-800',
+    'lg-node absolute rounded-2xl',
+    'border border-solid border-sand-100 dark-theme:border-charcoal-600',
+    // hover (only when node should handle events)
+    shouldHandleNodePointerEvents.value &&
+      'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
+    'outline-transparent -outline-offset-2 outline-2',
+    borderClass.value,
+    outlineClass.value,
+    {
+      'animate-pulse': executing.value,
+      'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
+        bypassed.value,
+      'will-change-transform': isDragging.value
+    },
+    shouldHandleNodePointerEvents.value
+      ? 'pointer-events-auto'
+      : 'pointer-events-none'
+  )
+})
+
+const progressBarClasses = computed(() => {
+  return cn(
+    'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
+    progressClasses
+  )
+})
+
+// Static classes
+const separatorClasses =
+  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full lod-toggle'
+const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 // Container style combining position and drag styles
 const containerStyle = computed(() => [
@@ -170,13 +233,13 @@ const hasCustomContent = computed(() => {
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
   {
-    isCollapsed: presentation.isCollapsed
+    isCollapsed
   }
 )
 
 // Event handlers
 const handleCollapse = () => {
-  handleNodeCollapse(nodeData.id, !presentation.isCollapsed.value)
+  handleNodeCollapse(nodeData.id, !isCollapsed.value)
 }
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
