@@ -257,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "退出登录"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "实验性：启用 Vue 节点"
+  },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"
   },

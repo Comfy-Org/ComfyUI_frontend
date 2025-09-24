@@ -257,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "Çıkış Yap"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "Deneysel: Vue Düğümlerini Etkinleştir"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Mevcut İş Akışını Kapat"
   },

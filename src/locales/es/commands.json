@@ -257,6 +257,9 @@
   "Comfy_User_SignOut": {
     "label": "Cerrar sesión"
   },
+  "Experimental_ToggleVueNodes": {
+    "label": "Experimental: Activar nodos Vue"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Cerrar Flujo de Trabajo Actual"
   },

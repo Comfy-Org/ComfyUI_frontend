@@ -25,13 +25,32 @@
     },
     "tooltip": "시스템 제목 표시 줄을 숨기려면 사용자 정의 옵션을 선택하세요"
   },
+  "Comfy_Assets_UseAssetAPI": {
+    "name": "모델 라이브러리에 Asset API 사용",
+    "tooltip": "모델 탐색을 위한 새로운 Asset API 사용"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "캔버스 배경 이미지",
     "tooltip": "캔버스 배경에 사용할 이미지 URL입니다. 출력 패널에서 이미지를 마우스 오른쪽 버튼으로 클릭한 후 \"배경으로 설정\"을 선택해 사용할 수 있습니다."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "왼쪽 마우스 클릭 동작",
+    "options": {
+      "Panning": "이동",
+      "Select": "선택"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "마우스 휠 스크롤",
+    "options": {
+      "Panning": "이동",
+      "Zoom in/out": "확대/축소"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "캔버스 내비게이션 모드",
     "options": {
+      "Custom": "사용자 지정",
       "Drag Navigation": "드래그 내비게이션",
       "Standard (New)": "표준(신규)"
     }
@@ -380,6 +399,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "워크플로 저장 시 노드 ID 정렬"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "기존 서브그래프 블루프린트 덮어쓰기 시 확인 필요"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "열린 워크플로 위치",
     "options": {
@@ -391,6 +413,10 @@
   "LiteGraph_Canvas_MaximumFps": {
     "name": "최대 FPS",
     "tooltip": "캔버스가 렌더링할 수 있는 최대 프레임 수입니다. 부드럽게 동작하도록 GPU 사용률을 제한 합니다. 0이면 화면 주사율로 작동 합니다. 기본값: 0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "노드 LOD(상세 수준) - 글꼴 크기 임계값",
+    "tooltip": "노드가 저품질 LOD 렌더링으로 전환되는 시점을 제어합니다. 전환 시점을 결정하기 위해 픽셀 단위의 글꼴 크기를 사용합니다. 0으로 설정하면 비활성화됩니다. 1~24 값은 LOD의 최소 글꼴 크기 임계값을 설정합니다. 값이 높을수록(24px) 축소 시 더 빨리 단순화된 렌더링으로 전환되고, 값이 낮을수록(1px) 더 오래 전체 노드 품질을 유지합니다."
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
