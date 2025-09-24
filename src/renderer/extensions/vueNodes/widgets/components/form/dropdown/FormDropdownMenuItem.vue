@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
@@ -6,17 +8,29 @@ interface Props {
   selected: boolean
   imageSrc: string
   name: string
-  metadata: string
+  metadata?: string
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   click: [index: number]
+  imageLoad: [event: Event]
 }>()
 
-const handleClick = () => {
+const actualDimensions = ref<string | null>(null)
+
+function handleClick() {
   emit('click', props.index)
+}
+
+function handleImageLoad(event: Event) {
+  emit('imageLoad', event)
+  if (!event.target || !(event.target instanceof HTMLImageElement)) return
+  const img = event.target
+  if (img.naturalWidth && img.naturalHeight) {
+    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+  }
 }
 </script>
 
@@ -46,7 +60,11 @@ const handleClick = () => {
       >
         <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
       </div>
-      <img :src="imageSrc" class="size-full object-cover" />
+      <img
+        :src="imageSrc"
+        class="size-full object-cover"
+        @load="handleImageLoad"
+      />
     </div>
     <!-- Name -->
     <span
@@ -62,6 +80,8 @@ const handleClick = () => {
       {{ name }}
     </span>
     <!-- Meta Data -->
-    <span class="block text-xs text-slate-400">{{ metadata }}</span>
+    <span class="block text-xs text-slate-400">{{
+      metadata || actualDimensions
+    }}</span>
   </div>
 </template>

@@ -11,6 +11,7 @@ interface Props {
   files: File[]
   items: unknown[]
   selected: Set<number>
+  maxSelectable: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -75,6 +76,7 @@ const theButtonStyle = [
       <input
         type="file"
         class="opacity-0 absolute inset-0 -z-1"
+        :multiple="maxSelectable > 1"
         @change="emit('file-change', $event)"
       />
     </label>
