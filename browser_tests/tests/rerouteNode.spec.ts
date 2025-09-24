@@ -40,6 +40,7 @@ test.describe('Reroute Node', () => {
 
 test.describe('LiteGraph Native Reroute Node', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
     await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)
   })
 
