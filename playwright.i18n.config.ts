@@ -8,7 +8,6 @@ const config: any = defineConfig({
   testDir: './scripts',
   use: {
     baseURL: 'http://localhost:5173',
-    headless: true
   },
   reporter: 'list',
   timeout: 60000,
@@ -26,8 +25,8 @@ const config: any = defineConfig({
 // Configure babel plugins for TypeScript with declare fields and module resolution
 config['@playwright/test'] = {
   babelPlugins: [
-    // Stub Vue and CSS imports first to prevent parsing errors
-    [path.join(__dirname, 'babel-plugin-stub-vue-imports.cjs')],
+    // Stub Vue and CSS imports to prevent parsing errors
+    [path.join(__dirname, 'scripts/babel-plugin-stub-vue-imports.cjs')],
     // Module resolver to handle @ alias
     [
       'babel-plugin-module-resolver',
@@ -38,14 +37,19 @@ config['@playwright/test'] = {
         }
       }
     ],
-    // Then TypeScript transformation with declare field support
+    // TypeScript transformation with declare field support
     [
       '@babel/plugin-transform-typescript',
       {
         allowDeclareFields: true,
         onlyRemoveTypeImports: true
       }
-    ]
+    ],
+    // Inject browser globals AFTER TypeScript transformation
+    [path.join(__dirname, 'scripts/babel-plugin-inject-globals.cjs'), {
+      filenamePattern: 'collect-i18n-',
+      setupFile: './setup-browser-globals.mjs'
+    }]
   ]
 }
 

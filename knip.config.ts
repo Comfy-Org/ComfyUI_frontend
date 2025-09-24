@@ -18,7 +18,10 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@trivago/prettier-plugin-sort-imports',
+    // Used by playwright.i18n.config.ts babel plugins
+    '@babel/plugin-transform-typescript',
+    'babel-plugin-module-resolver'
   ],
   ignore: [
     // Auto generated manager types
