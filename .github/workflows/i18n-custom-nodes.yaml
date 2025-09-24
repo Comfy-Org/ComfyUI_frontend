@@ -77,9 +77,10 @@ jobs:
         python main.py --cpu --multi-user &
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
-    - name: Install Playwright Browsers
-      run: pnpm exec playwright install chromium --with-deps
-      working-directory: ComfyUI_frontend
+    - name: Setup Playwright
+      uses: ./ComfyUI_frontend/.github/actions/setup-playwright
+      with:
+        working-directory: ComfyUI_frontend
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.
