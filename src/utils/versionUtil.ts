@@ -12,7 +12,7 @@ import type {
  * @param version Raw version string (e.g., "v1.2.3", "1.2.3-alpha")
  * @returns Cleaned version string or original if cleaning fails
  */
-export function cleanVersion(version: string): string {
+function cleanVersion(version: string): string {
   return clean(version) || version
 }
 

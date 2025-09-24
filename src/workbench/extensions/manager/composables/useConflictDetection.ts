@@ -5,7 +5,7 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { RegistryAccelerator } from '@/types/compatibility.types'
+import type { RegistryAccelerator } from '@/types/compatibility.types'
 import type {
   ConflictDetail,
   ConflictDetectionResponse,
