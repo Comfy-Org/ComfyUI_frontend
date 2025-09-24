@@ -5,6 +5,7 @@
       :items="dropdownItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
+      :uploadable="uploadable"
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"
@@ -93,6 +94,10 @@ const mediaPlaceholder = computed(() => {
   }
 
   return 'Select media...'
+})
+
+const uploadable = computed(() => {
+  return props.fileType === 'image'
 })
 
 watch(

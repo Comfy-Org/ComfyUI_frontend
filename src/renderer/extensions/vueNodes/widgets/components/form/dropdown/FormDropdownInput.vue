@@ -53,11 +53,11 @@ const theButtonStyle = [
       "
       @click="emit('select-click', $event)"
     >
-      <span class="px-4 py-2 min-w-0">
+      <span class="px-4 py-2 min-w-0 text-left">
         <span v-if="!selectedItems.length" class="min-w-0">
           {{ props.placeholder }}
         </span>
-        <span v-else class="line-clamp-1 min-w-0">
+        <span v-else class="line-clamp-1 min-w-0 break-all">
           {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
         </span>
       </span>
