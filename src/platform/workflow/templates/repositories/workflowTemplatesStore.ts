@@ -310,16 +310,19 @@ export const useWorkflowTemplatesStore = defineStore(
       })
 
       // 2. Basics (isEssential categories) - always second if it exists
-      const hasEssentialCategories = coreTemplates.value.some(
+      let gettingStartedText = 'Getting Started'
+      const essentialCat = coreTemplates.value.find(
         (cat) => cat.isEssential && cat.templates.length > 0
       )
+      const hasEssentialCategories = Boolean(essentialCat)
+
+      if (essentialCat) {
+        gettingStartedText = essentialCat.title
+      }
       if (hasEssentialCategories) {
         items.push({
           id: 'basics',
-          label: st(
-            'templateWorkflows.category.GettingStarted',
-            'Getting Started'
-          ),
+          label: gettingStartedText,
           icon: 'icon-[lucide--graduation-cap]'
         })
       }
