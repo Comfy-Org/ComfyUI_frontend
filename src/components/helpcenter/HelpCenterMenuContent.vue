@@ -168,7 +168,8 @@ const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
+  DESKTOP_GUIDE_WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
+  DESKTOP_GUIDE_MACOS: 'https://docs.comfy.org/installation/desktop/macos',
   UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
@@ -222,7 +223,11 @@ const moreItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.desktopUserGuide'),
       visible: isElectron(),
       action: () => {
-        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+        const docsUrl =
+          electronAPI().getPlatform() === 'darwin'
+            ? EXTERNAL_LINKS.DESKTOP_GUIDE_MACOS
+            : EXTERNAL_LINKS.DESKTOP_GUIDE_WINDOWS
+        openExternalLink(docsUrl)
         emit('close')
       }
     },
