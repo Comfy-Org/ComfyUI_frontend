@@ -5,7 +5,7 @@ import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { type LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IStringWidget
@@ -20,6 +20,21 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
+
+// Global registry to bridge Vue components with LiteGraph widgets
+const vueWidgetSerializationRegistry = new Map<string, () => Promise<string>>()
+
+// Export functions to allow Vue components to register/unregister serialization
+export function registerVueWidgetSerialization(
+  key: string,
+  serializeFn: () => Promise<string>
+) {
+  vueWidgetSerializationRegistry.set(key, serializeFn)
+}
+
+export function unregisterVueWidgetSerialization(key: string) {
+  vueWidgetSerializationRegistry.delete(key)
+}
 
 function splitFilePath(path: string): [string, string] {
   const folder_separator = path.lastIndexOf('/')
@@ -102,7 +117,8 @@ app.registerExtension({
         'SaveAudio',
         'PreviewAudio',
         'SaveAudioMP3',
-        'SaveAudioOpus'
+        'SaveAudioOpus',
+        'RecordAudio'
       ].includes(
         // @ts-expect-error fixme ts strict error
         nodeType.prototype.comfyClass
@@ -156,6 +172,48 @@ app.registerExtension({
           }
         )
 
+        // Add serialization support for RecordAudio nodes when Vue nodes are enabled
+        if (
+          (node.constructor as any).comfyClass === 'RecordAudio' &&
+          LiteGraph.vueNodesMode
+        ) {
+          const nodeId = node.id
+          audioUIWidget.serializeValue = async () => {
+            // Use the global registry to find the Vue component's serialization function
+            let serializationFn = vueWidgetSerializationRegistry.get(
+              `${nodeId}-audioUI`
+            )
+
+            // Fallback: try with current node.id in case it changed
+            if (!serializationFn && node.id !== nodeId) {
+              serializationFn = vueWidgetSerializationRegistry.get(
+                `${node.id}-audioUI`
+              )
+            }
+
+            if (serializationFn) {
+              const result = await serializationFn()
+
+              // Update both LiteGraph widgets for consistency
+              const audioWidget = node.widgets?.find((w) => w.name === 'audio')
+              const audioUIWidget = node.widgets?.find(
+                (w) => w.name === 'audioUI'
+              )
+
+              if (audioWidget && result) {
+                audioWidget.value = result
+              }
+              if (audioUIWidget && result) {
+                audioUIWidget.value = result
+              }
+
+              return result
+            }
+
+            return ''
+          }
+        }
+
         return { widget: audioUIWidget }
       }
     }
@@ -190,6 +248,13 @@ app.registerExtension({
   getCustomWidgets() {
     return {
       AUDIOUPLOAD(node, inputName: string) {
+        // Skip companion widget creation when Vue nodes are enabled
+        // Vue components will handle all audio functionality
+        if (LiteGraph.vueNodesMode) {
+          // Return a placeholder widget that will be ignored
+          return { widget: node.addWidget('button', inputName, '', () => {}) }
+        }
+
         // The widget that allows user to select file.
         // @ts-expect-error fixme ts strict error
         const audioWidget = node.widgets.find(
@@ -269,6 +334,13 @@ app.registerExtension({
   getCustomWidgets() {
     return {
       AUDIO_RECORD(node, inputName: string) {
+        // Skip companion widget creation when Vue nodes are enabled
+        // Vue components will handle all audio functionality
+        if (LiteGraph.vueNodesMode) {
+          // Return a placeholder widget that will be ignored
+          return { widget: node.addWidget('button', inputName, '', () => {}) }
+        }
+
         const audio = document.createElement('audio')
         audio.controls = true
         audio.classList.add('comfy-audio')
