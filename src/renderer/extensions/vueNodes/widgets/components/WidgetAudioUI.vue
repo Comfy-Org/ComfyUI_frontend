@@ -31,6 +31,7 @@
       <!-- Hidden audio element for playback -->
       <audio
         ref="audioRef"
+        key="nodeData"
         @loadedmetadata="handleLoadedMetadata"
         @timeupdate="handleTimeUpdate"
         @ended="handleEnded"
@@ -133,6 +134,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
@@ -167,10 +170,6 @@ const props = defineProps<{
   nodeData?: NodeDataType
   node?: LGraphNode
 }>()
-
-// const emit = defineEmits<{
-//   'update:modelValue': [value: any]
-// }>()
 
 const modelValue = defineModel<any>('modelValue')
 
@@ -216,7 +215,24 @@ const hasAudio = ref(false)
 
 // Check if this is an output node (PreviewAudio, SaveAudio, etc)
 const isOutputNode = computed(() => {
-  return props.nodeData?.output_node === true
+  const fromNodeData = props.nodeData?.output_node === true
+  const fromNode = props.node?.constructor?.nodeData?.output_node === true
+
+  const nodeClass =
+    props.nodeData?.constructor?.comfyClass ||
+    props.node?.constructor?.comfyClass ||
+    props.nodeData?.type ||
+    props.node?.type ||
+    'Unknown'
+
+  const isPreviewOrSaveNode = [
+    'PreviewAudio',
+    'SaveAudio',
+    'SaveAudioMP3',
+    'SaveAudioOpus'
+  ].includes(nodeClass)
+
+  return fromNodeData || fromNode || isPreviewOrSaveNode
 })
 
 // Check if this is a RecordAudio node
@@ -241,12 +257,22 @@ const progressPercentage = computed(() => {
   return (currentTime.value / duration.value) * 100
 })
 
+// Check if we have audio from node outputs
+const hasAudioFromOutputs = computed(() => {
+  if (!nodeLocatorId.value) return false
+  const nodeOutput = nodeOutputStore.nodeOutputs[nodeLocatorId.value]
+  return !!nodeOutput?.audio?.length
+})
+
 // Widget classes - hide when no audio for output nodes
 const widgetClasses = computed(() => {
+  const shouldHide =
+    isOutputNode.value && !hasAudio.value && !hasAudioFromOutputs.value
+
   return cn(
     'bg-[#262729] box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
     {
-      'empty-audio-widget': isOutputNode.value && !hasAudio.value
+      hidden: shouldHide
     }
   )
 })
@@ -265,13 +291,6 @@ const audioFileName = computed(() => {
 // File upload handling
 async function uploadFile(file: File, pasted = false) {
   try {
-    console.log('[WidgetAudioUI] uploadFile started:', {
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      pasted
-    })
-
     const body = new FormData()
     body.append('image', file)
     if (pasted) body.append('subfolder', 'pasted')
@@ -286,44 +305,23 @@ async function uploadFile(file: File, pasted = false) {
       let path = data.name
       if (data.subfolder) path = data.subfolder + '/' + path
 
-      console.log('[WidgetAudioUI] Upload successful:', {
-        originalName: file.name,
-        serverPath: path,
-        data
-      })
-
       // Update the audio widget value if it exists
       const audioWidget = props.nodeData?.widgets?.find(
         (w) => w.name === 'audio'
       )
       if (audioWidget) {
-        console.log('[WidgetAudioUI] Updating audio widget:', {
-          oldValue: audioWidget.value,
-          newValue: path
-        })
-
         // Add to options if combo widget
         if (
           audioWidget.options?.values &&
           !audioWidget.options.values.includes(path)
         ) {
           audioWidget.options.values.push(path)
-          console.log(
-            '[WidgetAudioUI] Added to combo options:',
-            audioWidget.options.values
-          )
         }
-        // Update value
         audioWidget.value = path
       }
 
-      // Load the audio
-      console.log('[WidgetAudioUI] Loading audio from uploaded path:', path)
       loadAudioFromPath(path)
-
-      // Update model value
       modelValue.value = path
-      console.log('[WidgetAudioUI] Model value updated:', path)
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
     }
@@ -436,7 +434,7 @@ const toggleMute = () => {
 }
 
 const handleOptionsClick = () => {
-  // Options button functionality - could implement playback speed, loop, etc.
+  // TODO: Implement options menu (playback speed, loop, etc.)
 }
 
 const formatTime = (seconds: number): string => {
@@ -449,29 +447,14 @@ const formatTime = (seconds: number): string => {
 
 // Load audio from path
 function loadAudioFromPath(path: string) {
-  if (!path || !audioRef.value) {
-    console.log('[WidgetAudioUI] loadAudioFromPath skipped:', {
-      path,
-      hasAudioRef: !!audioRef.value
-    })
-    return
-  }
+  if (!path || !audioRef.value) return
 
   const [subfolder, filename] = splitFilePath(path)
   const audioUrl = api.apiURL(getResourceURL(subfolder, filename))
 
-  console.log('[WidgetAudioUI] loadAudioFromPath:', {
-    path,
-    subfolder,
-    filename,
-    audioUrl
-  })
-
   audioRef.value.src = audioUrl
   audioRef.value.load()
   hasAudio.value = true
-
-  console.log('[WidgetAudioUI] Audio loaded, hasAudio set to true')
 }
 
 // Handle node execution output for output nodes
@@ -506,16 +489,46 @@ watch(
   { immediate: true }
 )
 
-// Setup node execution handler for output nodes
+// Get node locator ID for output tracking
+const nodeLocatorId = computed(() => {
+  if (!props.nodeData) return null
+  return getLocatorIdFromNodeData(props.nodeData as any)
+})
+
+// Watch node outputs store for audio updates (for Vue nodes)
+const nodeOutputStore = useNodeOutputStore()
+
+watch(
+  () => {
+    if (!nodeLocatorId.value) return null
+    return nodeOutputStore.nodeOutputs[nodeLocatorId.value]
+  },
+  (nodeOutput) => {
+    if (!nodeOutput?.audio || nodeOutput.audio.length === 0) return
+
+    const audio = nodeOutput.audio[0]
+    if (audioRef.value && audio.filename) {
+      const audioUrl = api.apiURL(
+        getResourceURL(
+          audio.subfolder || '',
+          audio.filename,
+          audio.type || 'output'
+        )
+      )
+      audioRef.value.src = audioUrl
+      audioRef.value.load()
+      hasAudio.value = true
+    }
+  }
+)
+
+// Setup node execution handler for output nodes (for litegraph compatibility)
 watch(
   () => props.node,
   (node) => {
     if (!node || !isOutputNode.value) return
 
-    // Store original onExecuted
     const originalOnExecuted = node.onExecuted
-
-    // Override onExecuted to handle audio output
     node.onExecuted = function (message: any) {
       if (originalOnExecuted) {
         originalOnExecuted.call(this, message)
@@ -528,32 +541,13 @@ watch(
 
 // Load audio on mount if filename is available
 onMounted(() => {
-  console.log('[WidgetAudioUI] Mounted:', {
-    nodeClass:
-      props.nodeData?.constructor?.comfyClass ||
-      props.node?.constructor?.comfyClass ||
-      props.nodeData?.type ||
-      'Unknown',
-    nodeTitle: props.nodeData?.title || props.node?.title,
-    audioFileName: audioFileName.value,
-    hasAudio: hasAudio.value,
-    isOutputNode: isOutputNode.value,
-    showUploadButton: showUploadButton.value,
-    modelValue: modelValue.value,
-    availableWidgets:
-      props.nodeData?.widgets?.map((w) => ({ name: w.name, type: w.type })) ||
-      []
-  })
-
   if (audioFileName.value) {
-    console.log('[WidgetAudioUI] Loading audio from path:', audioFileName.value)
     loadAudioFromPath(audioFileName.value)
   }
 })
 
 // Cleanup
 onUnmounted(() => {
-  // Pause audio and clear source
   if (audioRef.value) {
     audioRef.value.pause()
     audioRef.value.src = ''
@@ -567,9 +561,3 @@ defineExpose({
   hasAudio
 })
 </script>
-
-<style scoped>
-.empty-audio-widget {
-  display: none;
-}
-</style>
