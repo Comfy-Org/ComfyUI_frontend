@@ -25,7 +25,7 @@ import {
   checkAcceleratorCompatibility,
   checkOSCompatibility,
   normalizeOSList
-} from '@/utils/simpleCompatibility'
+} from '@/utils/systemCompatibility'
 import {
   checkVersionCompatibility,
   getFrontendVersion
