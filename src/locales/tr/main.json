@@ -595,11 +595,7 @@
     "failedToSelectDirectory": "Dizin seçilemedi",
     "gpu": "GPU",
     "gpuPicker": {
-<<<<<<< Updated upstream
       "appleMetalDescription": "Daha hızlı ve daha iyi bir deneyim için Mac'inizin GPU'sunu kullanır",
-=======
-      "appleMetalDescription": "Daha hızlı hız ve daha iyi bir genel deneyim için Mac'inizin GPU'sunu kullanır",
->>>>>>> Stashed changes
       "cpuDescription": "GPU hızlandırması mevcut olmadığında uyumluluk için CPU modunu kullanın",
       "cpuSubtitle": "CPU Modu",
       "manualDescription": "Gelişmiş kurulumlar veya desteklenmeyen donanımlar için ComfyUI'yi manuel olarak yapılandırın",
@@ -607,11 +603,7 @@
       "nvidiaDescription": "En iyi performans için NVIDIA GPU'nuzu CUDA hızlandırmasıyla kullanın.",
       "nvidiaSubtitle": "NVIDIA CUDA",
       "recommended": "ÖNERİLEN",
-<<<<<<< Updated upstream
       "title": "Donanım yapılandırmanızı seçin"
-=======
-      "title": "Donanım kurulumunuzu seçin"
->>>>>>> Stashed changes
     },
     "gpuSelection": {
       "cpuMode": "CPU Modu",

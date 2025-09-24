@@ -596,15 +596,9 @@
     "gpu": "وحدة معالجة الرسومات (GPU)",
     "gpuPicker": {
       "appleMetalDescription": "يستفيد من وحدة معالجة الرسومات في جهاز Mac الخاص بك لسرعة أعلى وتجربة أفضل بشكل عام",
-<<<<<<< Updated upstream
       "cpuDescription": "استخدم وضع المعالج المركزي (CPU) للتوافق عندما لا يتوفر تسريع GPU",
       "cpuSubtitle": "وضع المعالج المركزي (CPU)",
       "manualDescription": "قم بإعداد ComfyUI يدويًا للإعدادات المتقدمة أو الأجهزة غير المدعومة",
-=======
-      "cpuDescription": "استخدم وضع المعالج لضمان التوافق عندما لا تتوفر تسريع وحدة معالجة الرسومات",
-      "cpuSubtitle": "وضع المعالج",
-      "manualDescription": "قم بإعداد ComfyUI يدوياً للإعدادات المتقدمة أو الأجهزة غير المدعومة",
->>>>>>> Stashed changes
       "manualSubtitle": "إعداد يدوي",
       "nvidiaDescription": "استخدم وحدة معالجة الرسومات NVIDIA الخاصة بك مع تسريع CUDA لأفضل أداء.",
       "nvidiaSubtitle": "NVIDIA CUDA",
@@ -633,7 +627,6 @@
     "insufficientFreeSpace": "مساحة غير كافية - الحد الأدنى للمساحة الحرة",
     "isOneDrive": "OneDrive غير مدعوم. يرجى تثبيت ComfyUI في موقع آخر.",
     "locationPicker": {
-<<<<<<< Updated upstream
       "chooseDownloadServers": "اختر خوادم التنزيل يدويًا",
       "downloadServersDescription": "حدد خوادم مرآة معينة لتنزيل Python وحزم PyPI وPyTorch بناءً على موقعك.",
       "migrateDescription": "انسخ أو اربط النماذج والعُقد المخصصة والإعدادات الخاصة بك من تثبيت ComfyUI سابق.",
@@ -641,15 +634,6 @@
       "migrationPathPlaceholder": "حدد تثبيت ComfyUI الحالي (اختياري)",
       "pathPlaceholder": "/Users/username/Documents/ComfyUI",
       "subtitle": "اختر مجلدًا لملفات ComfyUI. سنقوم أيضًا بإعداد Python هناك تلقائيًا.",
-=======
-      "chooseDownloadServers": "اختر خوادم التنزيل يدوياً",
-      "downloadServersDescription": "حدد خوادم مرآة معينة لتنزيل Python وحزم PyPI وPyTorch بناءً على موقعك.",
-      "migrateDescription": "انسخ أو اربط النماذج الحالية والعُقد المخصصة والإعدادات من تثبيت ComfyUI سابق.",
-      "migrateFromExisting": "الترحيل من تثبيت موجود",
-      "migrationPathPlaceholder": "حدد تثبيت ComfyUI الحالي (اختياري)",
-      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
-      "subtitle": "اختر مجلداً لملفات ComfyUI. سنقوم أيضاً بإعداد Python هناك تلقائياً.",
->>>>>>> Stashed changes
       "title": "اختر مكان تثبيت ComfyUI"
     },
     "manualConfiguration": {

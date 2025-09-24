@@ -595,11 +595,7 @@
     "failedToSelectDirectory": "Не удалось выбрать директорию",
     "gpu": "GPU",
     "gpuPicker": {
-<<<<<<< Updated upstream
       "appleMetalDescription": "Использует GPU вашего Mac для более высокой скорости и лучшего опыта",
-=======
-      "appleMetalDescription": "Использует GPU вашего Mac для более высокой скорости и лучшего общего опыта",
->>>>>>> Stashed changes
       "cpuDescription": "Используйте режим CPU для совместимости, если ускорение GPU недоступно",
       "cpuSubtitle": "Режим CPU",
       "manualDescription": "Настройте ComfyUI вручную для продвинутых конфигураций или неподдерживаемого оборудования",
@@ -637,11 +633,7 @@
       "migrateFromExisting": "Мигрировать из существующей установки",
       "migrationPathPlaceholder": "Выберите существующую установку ComfyUI (необязательно)",
       "pathPlaceholder": "/Users/username/Documents/ComfyUI",
-<<<<<<< Updated upstream
       "subtitle": "Выберите папку для файлов ComfyUI. Мы также автоматически установим Python туда.",
-=======
-      "subtitle": "Выберите папку для файлов ComfyUI. Мы также автоматически установим туда Python.",
->>>>>>> Stashed changes
       "title": "Выберите место установки ComfyUI"
     },
     "manualConfiguration": {
