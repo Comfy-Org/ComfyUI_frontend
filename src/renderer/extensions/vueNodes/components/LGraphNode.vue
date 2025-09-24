@@ -136,7 +136,11 @@ import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  type INodeInputSlot,
+  type INodeOutputSlot,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -200,9 +204,21 @@ const hasExecutionError = computed(
 )
 
 // Computed error states for styling
-const hasAnyError = computed(
-  (): boolean => !!(hasExecutionError.value || nodeData.hasErrors || error)
-)
+const hasAnyError = computed((): boolean => {
+  return (
+    !!hasExecutionError.value ||
+    !!nodeData.hasErrors ||
+    !!error ||
+    // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
+    // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
+    !!nodeData.inputs?.some(
+      (slot) => (slot as INodeInputSlot)?.hasErrors ?? false
+    ) ||
+    !!nodeData.outputs?.some(
+      (slot) => (slot as INodeOutputSlot)?.hasErrors ?? false
+    )
+  )
+})
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
 
@@ -263,10 +279,10 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   if (hasAnyError.value) {
-    return 'border-error'
+    return 'border-red-500 dark-theme:border-red-500'
   }
   if (executing.value) {
-    return 'border-blue-500'
+    return 'border-blue-500 dark-theme:border-blue-500'
   }
   return undefined
 })
@@ -276,7 +292,7 @@ const outlineClass = computed(() => {
     return undefined
   }
   if (hasAnyError.value) {
-    return 'outline-error'
+    return 'outline-red-500'
   }
   if (executing.value) {
     return 'outline-blue-500'

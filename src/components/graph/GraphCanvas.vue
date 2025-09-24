@@ -307,13 +307,23 @@ watch(
       removeSlotError(node)
       const nodeErrors = lastNodeErrors?.[node.id]
       if (!nodeErrors) continue
+
+      let slotErrorsChanged = false
       for (const error of nodeErrors.errors) {
-        if (error.extra_info && error.extra_info.input_name) {
-          const inputIndex = node.findInputSlot(error.extra_info.input_name)
-          if (inputIndex !== -1) {
-            node.inputs[inputIndex].hasErrors = true
-          }
-        }
+        if (!error.extra_info?.input_name) continue
+
+        const inputIndex = node.findInputSlot(error.extra_info.input_name)
+        if (inputIndex === -1) continue
+
+        node.inputs[inputIndex].hasErrors = true
+        slotErrorsChanged = true
+      }
+
+      // Trigger Vue node data update if slot errors changed
+      if (slotErrorsChanged && comfyApp.graph.onTrigger) {
+        comfyApp.graph.onTrigger('node:slot-errors:changed', {
+          nodeId: node.id
+        })
       }
     }
 
