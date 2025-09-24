@@ -40,6 +40,7 @@ const layoutMode = ref<'list' | 'grid'>('grid')
           :items="imageItems"
           placeholder="Select Image..."
           multiple
+          uploadable
         />
       </div>
     </div>
