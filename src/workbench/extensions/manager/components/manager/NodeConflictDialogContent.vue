@@ -172,8 +172,8 @@ import type {
   ConflictDetail,
   ConflictDetectionResult
 } from '@/types/conflictDetectionTypes'
-import { getConflictMessage } from '@/utils/conflictMessageUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { getConflictMessage } from '@/workbench/extensions/manager/utils/conflictMessageUtil'
 
 const { showAfterWhatsNew = false, conflictedPackages } = defineProps<{
   showAfterWhatsNew?: boolean

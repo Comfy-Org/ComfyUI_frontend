@@ -30,8 +30,8 @@ import { computed } from 'vue'
 import { t } from '@/i18n'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import { getConflictMessage } from '@/utils/conflictMessageUtil'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
+import { getConflictMessage } from '@/workbench/extensions/manager/utils/conflictMessageUtil'
 
 const { nodePack, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']

@@ -8,7 +8,7 @@ import {
   checkAcceleratorCompatibility,
   checkOSCompatibility,
   normalizeOSList
-} from '@/utils/systemCompatibility'
+} from '@/workbench/extensions/manager/utils/systemCompatibility'
 
 describe('systemCompatibility', () => {
   describe('checkOSCompatibility', () => {

@@ -17,25 +17,25 @@ import type {
   NodeRequirements,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
-import {
-  consolidateConflictsByPackage,
-  createBannedConflict,
-  createPendingConflict
-} from '@/utils/conflictUtils'
-import {
-  checkAcceleratorCompatibility,
-  checkOSCompatibility,
-  normalizeOSList
-} from '@/utils/systemCompatibility'
-import {
-  checkVersionCompatibility,
-  getFrontendVersion
-} from '@/utils/versionUtil'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
+import {
+  consolidateConflictsByPackage,
+  createBannedConflict,
+  createPendingConflict
+} from '@/workbench/extensions/manager/utils/conflictUtils'
+import {
+  checkAcceleratorCompatibility,
+  checkOSCompatibility,
+  normalizeOSList
+} from '@/workbench/extensions/manager/utils/systemCompatibility'
+import {
+  checkVersionCompatibility,
+  getFrontendVersion
+} from '@/workbench/extensions/manager/utils/versionUtil'
 
 /**
  * Composable for conflict detection system.

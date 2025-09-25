@@ -8,7 +8,7 @@ import {
   consolidateConflictsByPackage,
   createBannedConflict,
   createPendingConflict
-} from '@/utils/conflictUtils'
+} from '@/workbench/extensions/manager/utils/conflictUtils'
 
 describe('conflictUtils', () => {
   describe('createBannedConflict', () => {
