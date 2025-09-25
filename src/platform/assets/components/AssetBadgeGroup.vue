@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { cn } from '@/utils/tailwindUtil'
 
 type AssetBadge = {
   label: string

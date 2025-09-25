@@ -38,13 +38,13 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
 import { t } from '@/i18n'
+import { cn } from '@/utils/tailwindUtil'
 
 export interface FilterState {
   fileFormats: string[]

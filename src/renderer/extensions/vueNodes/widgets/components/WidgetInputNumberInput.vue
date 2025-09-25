@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

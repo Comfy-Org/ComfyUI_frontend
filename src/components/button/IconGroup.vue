@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { cn } from '@/utils/tailwindUtil'
 
 const iconGroupClasses = cn(
   'flex justify-center items-center shrink-0',

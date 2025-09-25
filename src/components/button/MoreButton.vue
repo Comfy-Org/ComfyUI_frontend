@@ -22,9 +22,10 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 import IconButton from './IconButton.vue'
 

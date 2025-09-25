@@ -40,7 +40,7 @@
   lang="ts"
   generic="T extends string | number | { label: string; value: any }"
 >
-import { cn } from '@comfyorg/tailwind-utils'
+import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../layout'
 

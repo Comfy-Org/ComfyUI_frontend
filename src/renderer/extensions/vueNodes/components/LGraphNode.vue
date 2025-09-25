@@ -131,7 +131,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
@@ -154,6 +153,7 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'

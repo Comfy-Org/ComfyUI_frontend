@@ -15,12 +15,12 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import Textarea from 'primevue/textarea'
 import { computed } from 'vue'
 
 import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

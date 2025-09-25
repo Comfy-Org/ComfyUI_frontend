@@ -26,7 +26,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
 import Button from 'primevue/button'
@@ -36,6 +35,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI, isElectron } from '@/utils/envUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 

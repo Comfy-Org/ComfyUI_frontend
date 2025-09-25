@@ -31,13 +31,13 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import InputNumber from 'primevue/inputnumber'
 import { computed, ref } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps

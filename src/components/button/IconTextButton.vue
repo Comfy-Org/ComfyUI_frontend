@@ -13,7 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
@@ -24,6 +23,7 @@ import {
   getButtonSizeClasses,
   getButtonTypeClasses
 } from '@/types/buttonTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 defineOptions({
   inheritAttrs: false

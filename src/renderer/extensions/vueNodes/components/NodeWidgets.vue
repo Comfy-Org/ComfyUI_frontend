@@ -53,7 +53,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { type Ref, computed, inject, onErrorCaptured, ref } from 'vue'
 
 import type {
@@ -70,6 +69,7 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
 

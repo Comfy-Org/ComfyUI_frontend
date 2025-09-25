@@ -23,7 +23,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   type ComponentPublicInstance,
   type Ref,
@@ -40,6 +39,7 @@ import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'

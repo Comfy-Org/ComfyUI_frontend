@@ -12,9 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 const {
   placeHolder,

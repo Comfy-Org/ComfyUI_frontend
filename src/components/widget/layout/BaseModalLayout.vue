@@ -68,12 +68,12 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useBreakpoints } from '@vueuse/core'
 import { computed, inject, ref, useSlots, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const { contentTitle } = defineProps<{
   contentTitle: string

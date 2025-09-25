@@ -16,7 +16,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useRafFn } from '@vueuse/core'
 import { computed, provide } from 'vue'
 
@@ -25,6 +24,7 @@ import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { cn } from '@/utils/tailwindUtil'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas
