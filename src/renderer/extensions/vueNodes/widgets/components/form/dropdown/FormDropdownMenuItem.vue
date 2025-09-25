@@ -45,7 +45,7 @@ function handleImageLoad(event: Event) {
         'transition-all duration-150',
         {
           'flex-col text-center': layout === 'grid',
-          'flex-row text-left bg-zinc-500/20 rounded-lg hover:scale-102 active:scale-98':
+          'flex-row text-left max-h-16 bg-zinc-500/20 rounded-lg hover:scale-102 active:scale-98':
             layout === 'list',
           'flex-row text-left hover:bg-zinc-500/20 rounded-lg':
             layout === 'list-small',
