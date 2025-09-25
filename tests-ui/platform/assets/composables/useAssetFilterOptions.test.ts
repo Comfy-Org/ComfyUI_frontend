@@ -1,34 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
-// Test factory functions
-function createTestAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
-    id: 'test-uuid',
-    name: 'test-model.safetensors',
-    asset_hash: 'blake3:test123',
-    size: 123456,
-    mime_type: 'application/octet-stream',
-    tags: ['models', 'checkpoints'],
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    last_access_time: '2024-01-01T00:00:00Z',
-    user_metadata: {
-      base_model: 'sd15'
-    },
-    ...overrides
-  }
-}
+import {
+  createAssetWithSpecificBaseModel,
+  createAssetWithSpecificExtension,
+  createAssetWithoutBaseModel,
+  createAssetWithoutExtension,
+  createAssetWithoutUserMetadata
+} from '@/platform/assets/fixtures/ui-mock-assets'
 
 describe('useAssetFilterOptions', () => {
   describe('File Format Extraction', () => {
     it('extracts file formats from asset names', () => {
       const assets = [
-        createTestAsset({ name: 'model1.safetensors' }),
-        createTestAsset({ name: 'model2.ckpt' }),
-        createTestAsset({ name: 'model3.pt' })
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificExtension('ckpt'),
+        createAssetWithSpecificExtension('pt')
       ]
 
       const { availableFileFormats } = useAssetFilterOptions(assets)
@@ -42,9 +29,9 @@ describe('useAssetFilterOptions', () => {
 
     it('handles duplicate file formats', () => {
       const assets = [
-        createTestAsset({ name: 'model1.safetensors' }),
-        createTestAsset({ name: 'model2.safetensors' }),
-        createTestAsset({ name: 'model3.ckpt' })
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificExtension('ckpt')
       ]
 
       const { availableFileFormats } = useAssetFilterOptions(assets)
@@ -57,8 +44,8 @@ describe('useAssetFilterOptions', () => {
 
     it('handles assets with no file extension', () => {
       const assets = [
-        createTestAsset({ name: 'model_no_extension' }),
-        createTestAsset({ name: 'model.safetensors' })
+        createAssetWithoutExtension(),
+        createAssetWithSpecificExtension('safetensors')
       ]
 
       const { availableFileFormats } = useAssetFilterOptions(assets)
@@ -78,9 +65,9 @@ describe('useAssetFilterOptions', () => {
   describe('Base Model Extraction', () => {
     it('extracts base models from user metadata', () => {
       const assets = [
-        createTestAsset({ user_metadata: { base_model: 'sd15' } }),
-        createTestAsset({ user_metadata: { base_model: 'sdxl' } }),
-        createTestAsset({ user_metadata: { base_model: 'sd35' } })
+        createAssetWithSpecificBaseModel('sd15'),
+        createAssetWithSpecificBaseModel('sdxl'),
+        createAssetWithSpecificBaseModel('sd35')
       ]
 
       const { availableBaseModels } = useAssetFilterOptions(assets)
@@ -94,9 +81,9 @@ describe('useAssetFilterOptions', () => {
 
     it('handles duplicate base models', () => {
       const assets = [
-        createTestAsset({ user_metadata: { base_model: 'sd15' } }),
-        createTestAsset({ user_metadata: { base_model: 'sd15' } }),
-        createTestAsset({ user_metadata: { base_model: 'sdxl' } })
+        createAssetWithSpecificBaseModel('sd15'),
+        createAssetWithSpecificBaseModel('sd15'),
+        createAssetWithSpecificBaseModel('sdxl')
       ]
 
       const { availableBaseModels } = useAssetFilterOptions(assets)
@@ -109,8 +96,8 @@ describe('useAssetFilterOptions', () => {
 
     it('handles assets with missing user_metadata', () => {
       const assets = [
-        createTestAsset({ user_metadata: undefined }),
-        createTestAsset({ user_metadata: { base_model: 'sd15' } })
+        createAssetWithoutUserMetadata(),
+        createAssetWithSpecificBaseModel('sd15')
       ]
 
       const { availableBaseModels } = useAssetFilterOptions(assets)
@@ -122,8 +109,8 @@ describe('useAssetFilterOptions', () => {
 
     it('handles assets with missing base_model field', () => {
       const assets = [
-        createTestAsset({ user_metadata: { description: 'A test model' } }),
-        createTestAsset({ user_metadata: { base_model: 'sdxl' } })
+        createAssetWithoutBaseModel(),
+        createAssetWithSpecificBaseModel('sdxl')
       ]
 
       const { availableBaseModels } = useAssetFilterOptions(assets)
@@ -142,7 +129,7 @@ describe('useAssetFilterOptions', () => {
 
   describe('Reactivity', () => {
     it('returns computed properties that can be reactive', () => {
-      const assets = [createTestAsset({ name: 'model.safetensors' })]
+      const assets = [createAssetWithSpecificExtension('safetensors')]
 
       const { availableFileFormats, availableBaseModels } =
         useAssetFilterOptions(assets)
