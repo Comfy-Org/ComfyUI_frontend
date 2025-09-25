@@ -9,6 +9,10 @@ import {
 } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Item Interaction', () => {
   test('Can select/delete all items', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('groups/mixed_graph_items')

@@ -1,13 +1,13 @@
 import { groupBy } from 'es-toolkit/compat'
 import { computed, onMounted } from 'vue'
 
-import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 /**

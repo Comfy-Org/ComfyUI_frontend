@@ -970,10 +970,9 @@ audio.comfy-audio.empty-audio-widget {
   border-radius: 0;
   contain: layout style;
   transition: none;
- 
 }
 
-.isLOD .lg-node > * {
+.isLOD .lg-node-widgets {
   pointer-events: none;
 }
 
