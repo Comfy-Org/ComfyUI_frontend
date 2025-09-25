@@ -10,6 +10,7 @@ import FormDropdownMenu from './FormDropdownMenu.vue'
 import { defaultSearcher, getDefaultSortOptions } from './shared'
 import type {
   DropdownItem,
+  FilterOption,
   LayoutMode,
   OptionId,
   SelectedKey,
@@ -27,6 +28,7 @@ interface Props {
 
   uploadable?: boolean
   disabled?: boolean
+  filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
   isSelected?: (
     selected: Set<SelectedKey>,
@@ -45,23 +47,23 @@ const props = withDefaults(defineProps<Props>(), {
   multiple: false,
   uploadable: false,
   disabled: false,
+  filterOptions: () => [],
   sortOptions: () => getDefaultSortOptions(),
   isSelected: (selected, item, _index) => selected.has(item.id),
   searcher: defaultSearcher
 })
 
-// Define models for two-way binding
 const selected = defineModel<Set<SelectedKey>>('selected', {
   default: new Set()
 })
-const filterIndex = defineModel<number>('filterIndex', { default: 0 })
+const filterSelected = defineModel<OptionId>('filterSelected', { default: '' })
+const sortSelected = defineModel<OptionId>('sortSelected', {
+  default: 'default'
+})
 const layoutMode = defineModel<LayoutMode>('layoutMode', {
   default: 'grid'
 })
 const files = defineModel<File[]>('files', { default: [] })
-const sortSelected = defineModel<OptionId>('sortSelected', {
-  default: 'default'
-})
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const debouncedSearchQuery = refDebounced(searchQuery, 700, {
@@ -211,10 +213,11 @@ function handleSelection(item: DropdownItem, index: number) {
       @hide="isOpen = false"
     >
       <FormDropdownMenu
-        v-model:filter-index="filterIndex"
+        v-model:filter-selected="filterSelected"
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
+        :filter-options="filterOptions"
         :sort-options="sortOptions"
         :disabled="disabled"
         :is-querying="isQuerying"

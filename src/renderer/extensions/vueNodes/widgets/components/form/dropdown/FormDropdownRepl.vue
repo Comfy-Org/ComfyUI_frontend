@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import FormDropdown from './FormDropdown.vue'
 import FormDropdownDrop from './FormDropdownDrop.vue'
-import type { DropdownItem } from './types'
+import type { DropdownItem, FilterOption } from './types'
 
 // Mock data for demonstration
 const imageItems = ref<DropdownItem[]>(
@@ -19,6 +19,13 @@ const imageItems = ref<DropdownItem[]>(
 const selectedIndex = ref(0)
 const filterIndex = ref(0)
 const layoutMode = ref<'list' | 'grid'>('grid')
+
+const filterSelected = ref('all')
+const filterOptions = ref<FilterOption[]>([
+  { id: 'all', name: 'All' },
+  { id: 'image', name: 'Inputs' },
+  { id: 'video', name: 'Outputs' }
+])
 </script>
 
 <template>
@@ -37,11 +44,12 @@ const layoutMode = ref<'list' | 'grid'>('grid')
           v-model:selected-index="selectedIndex"
           v-model:filter-index="filterIndex"
           v-model:layout-mode="layoutMode"
+          v-model:filter-selected="filterSelected"
+          :filter-options="filterOptions"
           :items="imageItems"
           placeholder="Select Image..."
           multiple
           uploadable
-          disabled
         />
       </div>
     </div>
