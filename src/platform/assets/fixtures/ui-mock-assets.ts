@@ -126,3 +126,34 @@ export function createMockAssets(count: number = 20): AssetItem[] {
 }
 
 export const mockAssets = createMockAssets(20)
+
+// 🧪 Test helpers for edge cases - built on mock asset foundation
+export function createAssetWithoutExtension() {
+  const asset = createMockAssets(1)[0]
+  asset.name = 'model_no_extension'
+  return asset
+}
+
+export function createAssetWithoutBaseModel() {
+  const asset = createMockAssets(1)[0]
+  asset.user_metadata = { description: 'A test model' }
+  return asset
+}
+
+export function createAssetWithoutUserMetadata() {
+  const asset = createMockAssets(1)[0]
+  asset.user_metadata = undefined
+  return asset
+}
+
+export function createAssetWithSpecificExtension(extension: string) {
+  const asset = createMockAssets(1)[0]
+  asset.name = `test-model.${extension}`
+  return asset
+}
+
+export function createAssetWithSpecificBaseModel(baseModel: string) {
+  const asset = createMockAssets(1)[0]
+  asset.user_metadata = { ...asset.user_metadata, base_model: baseModel }
+  return asset
+}

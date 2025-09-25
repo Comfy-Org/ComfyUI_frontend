@@ -2,14 +2,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import * as dialogService from '@/services/dialogService'
-import * as conflictDetectionStore from '@/stores/conflictDetectionStore'
+import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import * as comfyManagerStore from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import * as conflictDetectionStore from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
 // Mock the stores and services
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore')
-vi.mock('@/stores/conflictDetectionStore')
+vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore')
 vi.mock('@/services/dialogService')
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-i18n')>()

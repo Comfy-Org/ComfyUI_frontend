@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800">
+  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-charcoal-600">
     <PanelHeader>
       <template #icon>
         <slot name="header-icon"></slot>

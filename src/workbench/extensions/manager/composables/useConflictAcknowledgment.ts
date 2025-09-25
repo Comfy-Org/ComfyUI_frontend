@@ -1,7 +1,7 @@
 import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
 
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
 /**
  * LocalStorage keys for conflict acknowledgment tracking

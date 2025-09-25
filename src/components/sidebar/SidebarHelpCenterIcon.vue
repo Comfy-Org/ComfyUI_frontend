@@ -62,14 +62,14 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 import SidebarIcon from './SidebarIcon.vue'
 

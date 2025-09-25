@@ -23,6 +23,13 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Get locator for a Vue node by the node's title (displayed name in the header)
+   */
+  getNodeByTitle(title: string): Locator {
+    return this.page.locator(`[data-node-id]`).filter({ hasText: title })
+  }
+
+  /**
    * Get total count of Vue nodes in the DOM
    */
   async getNodeCount(): Promise<number> {

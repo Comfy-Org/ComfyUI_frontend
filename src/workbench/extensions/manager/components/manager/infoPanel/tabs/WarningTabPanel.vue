@@ -27,11 +27,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { t } from '@/i18n'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
+import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 
 const { nodePack, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']

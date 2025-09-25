@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
 describe('useConflictDetectionStore', () => {
   beforeEach(() => {

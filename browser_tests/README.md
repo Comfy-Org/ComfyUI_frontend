@@ -56,14 +56,6 @@ TEST_COMFYUI_DIR=/path/to/your/ComfyUI
 
 ### Common Setup Issues
 
-**Most tests require the new menu system** - Add to your test:
-
-```typescript
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-})
-```
-
 ### Release API Mocking
 
 By default, all tests mock the release API (`api.comfy.org/releases`) to prevent release notification popups from interfering with test execution. This is necessary because the release notifications can appear over UI elements and block test interactions.
