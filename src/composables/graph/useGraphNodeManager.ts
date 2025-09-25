@@ -5,6 +5,8 @@
 import { reactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { WidgetValue } from '@/types/simplifiedWidget'
@@ -28,8 +30,8 @@ export interface VueNodeData {
   executing: boolean
   subgraphId?: string | null
   widgets?: SafeWidgetData[]
-  inputs?: unknown[]
-  outputs?: unknown[]
+  inputs?: INodeInputSlot[]
+  outputs?: INodeOutputSlot[]
   hasErrors?: boolean
   flags?: {
     collapsed?: boolean
@@ -432,6 +434,28 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 mode: typeof event.newValue === 'number' ? event.newValue : 0
               })
           }
+        }
+      } else if (
+        action === 'node:slot-errors:changed' &&
+        param &&
+        typeof param === 'object'
+      ) {
+        const event = param as { nodeId: string | number }
+        const nodeId = String(event.nodeId)
+        const litegraphNode = nodeRefs.get(nodeId)
+        const currentData = vueNodeData.get(nodeId)
+
+        if (litegraphNode && currentData) {
+          // Re-extract slot data with updated hasErrors properties
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            inputs: litegraphNode.inputs
+              ? [...litegraphNode.inputs]
+              : undefined,
+            outputs: litegraphNode.outputs
+              ? [...litegraphNode.outputs]
+              : undefined
+          })
         }
       }
 

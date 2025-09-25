@@ -64,9 +64,6 @@ import { useScroll, whenever } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useConflictDetection } from '@/composables/useConflictDetection'
-import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/types/importFailedTypes'
@@ -76,7 +73,10 @@ import PackEnableToggle from '@/workbench/extensions/manager/components/manager/
 import InfoPanelHeader from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelHeader.vue'
 import InfoTabs from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/workbench/extensions/manager/components/manager/infoPanel/MetadataRow.vue'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import { IsInstallingKey } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 interface InfoItem {

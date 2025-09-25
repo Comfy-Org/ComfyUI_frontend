@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Copy Paste', () => {
   test('Can copy and paste node', async ({ comfyPage }) => {
     await comfyPage.clickEmptyLatentNode()

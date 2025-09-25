@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Combo text widget', () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
     await comfyPage.resizeLoadCheckpointNode(0.2, 1)
@@ -318,6 +322,9 @@ test.describe('Animated image widget', () => {
 test.describe('Load audio widget', () => {
   test('Can load audio', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_audio_widget')
+    // Wait for the audio widget to be rendered in the DOM
+    await comfyPage.page.waitForSelector('.comfy-audio', { state: 'attached' })
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })

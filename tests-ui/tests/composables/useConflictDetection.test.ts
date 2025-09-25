@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import type { components } from '@/types/comfyRegistryTypes'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
@@ -45,17 +45,23 @@ vi.mock('@/config', () => ({
   }
 }))
 
-vi.mock('@/composables/useConflictAcknowledgment', () => ({
-  useConflictAcknowledgment: vi.fn()
-}))
+vi.mock(
+  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+  () => ({
+    useConflictAcknowledgment: vi.fn()
+  })
+)
 
-vi.mock('@/composables/nodePack/useInstalledPacks', () => ({
-  useInstalledPacks: vi.fn(() => ({
-    installedPacks: { value: [] },
-    refreshInstalledPacks: vi.fn(),
-    startFetchInstalled: vi.fn()
-  }))
-}))
+vi.mock(
+  '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
+  () => ({
+    useInstalledPacks: vi.fn(() => ({
+      installedPacks: { value: [] },
+      refreshInstalledPacks: vi.fn(),
+      startFetchInstalled: vi.fn()
+    }))
+  })
+)
 
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
@@ -64,7 +70,7 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   }))
 }))
 
-vi.mock('@/stores/conflictDetectionStore', () => ({
+vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
   useConflictDetectionStore: vi.fn(() => ({
     conflictResults: { value: [] },
     updateConflictResults: vi.fn(),
@@ -160,7 +166,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     // Mock useConflictAcknowledgment
     const { useConflictAcknowledgment } = await import(
-      '@/composables/useConflictAcknowledgment'
+      '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
     )
     vi.mocked(useConflictAcknowledgment).mockReturnValue(
       mockAcknowledgment as any

@@ -21,6 +21,8 @@
           'animate-pulse': executing,
           'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
+          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
+            muted,
           'will-change-transform': isDragging
         },
 
@@ -206,11 +208,20 @@ const hasExecutionError = computed(
 )
 
 // Computed error states for styling
-const hasAnyError = computed(
-  (): boolean => !!(hasExecutionError.value || nodeData.hasErrors || error)
-)
+const hasAnyError = computed((): boolean => {
+  return !!(
+    hasExecutionError.value ||
+    nodeData.hasErrors ||
+    error ||
+    // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
+    // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
+    nodeData.inputs?.some((slot) => slot?.hasErrors) ||
+    nodeData.outputs?.some((slot) => slot?.hasErrors)
+  )
+})
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
+const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -284,7 +295,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   if (hasAnyError.value) {
-    return 'border-error'
+    return 'border-error dark-theme:border-error'
   }
   if (executing.value) {
     return 'border-blue-500'
@@ -297,10 +308,10 @@ const outlineClass = computed(() => {
     return undefined
   }
   if (hasAnyError.value) {
-    return 'outline-error'
+    return 'outline-error dark-theme:outline-error'
   }
   if (executing.value) {
-    return 'outline-blue-500'
+    return 'outline-blue-500 dark-theme:outline-blue-500'
   }
   return 'outline-black dark-theme:outline-white'
 })

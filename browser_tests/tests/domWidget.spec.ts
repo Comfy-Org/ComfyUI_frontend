@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('DOM Widget', () => {
   test('Collapsed multiline textarea is not visible', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/collapsed_multiline')
