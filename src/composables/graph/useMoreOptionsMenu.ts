@@ -49,11 +49,11 @@ export function toggleNodeOptions(event: Event, element: HTMLElement) {
 /**
  * Hide the node options popover
  */
-export function hideNodeOptions() {
-  if (nodeOptionsInstance?.hide) {
-    nodeOptionsInstance.hide()
-  }
-}
+//export function hideNodeOptions() {
+//if (nodeOptionsInstance?.hide) {
+//nodeOptionsInstance.hide()
+//}
+//}
 
 /**
  * Register the NodeOptions component instance
