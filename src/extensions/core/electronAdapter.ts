@@ -50,6 +50,15 @@ const DESKTOP_DOCS = {
         onChange: onChangeRestartApp
       },
       {
+        id: 'Comfy-Desktop.LaunchOptions',
+        category: ['Comfy-Desktop', 'General', 'Launch Options'],
+        name: 'Custom Launch Arguments',
+        tooltip:
+          'Custom command line arguments for launching the backend (e.g., --cpu). Requires restart.',
+        type: 'text',
+        defaultValue: ''
+      },
+      {
         id: 'Comfy-Desktop.WindowStyle',
         category: ['Comfy-Desktop', 'General', 'Window Style'],
         name: 'Window Style',
