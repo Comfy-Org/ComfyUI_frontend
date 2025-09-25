@@ -1,19 +1,3 @@
-<template>
-  <WidgetLayoutField :widget>
-    <FormDropdown
-      v-model:selected="selectedSet"
-      :items="dropdownItems"
-      :placeholder="mediaPlaceholder"
-      :multiple="false"
-      :uploadable="uploadable"
-      v-bind="combinedProps"
-      class="w-full"
-      @update:selected="updateSelectedItems"
-      @update:files="handleFilesUpdate"
-    />
-  </WidgetLayoutField>
-</template>
-
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
@@ -49,6 +33,8 @@ const { localValue, onChange } = useWidgetValue({
   defaultValue: props.widget.options?.values?.[0] || '',
   emit
 })
+
+const toastStore = useToastStore()
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -147,7 +133,7 @@ const uploadFile = async (
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+    toastStore.addAlert(resp.status + ' - ' + resp.statusText)
     return null
   }
 
@@ -172,7 +158,7 @@ async function handleFilesUpdate(files: File[]) {
     const uploadedPaths = await uploadFiles(files)
 
     if (uploadedPaths.length === 0) {
-      useToastStore().addAlert('File upload failed')
+      toastStore.addAlert('File upload failed')
       return
     }
 
@@ -196,7 +182,7 @@ async function handleFilesUpdate(files: File[]) {
     }
   } catch (error) {
     console.error('Upload error:', error)
-    useToastStore().addAlert(`Upload failed: ${error}`)
+    toastStore.addAlert(`Upload failed: ${error}`)
   }
 }
 
@@ -206,3 +192,19 @@ function getMediaUrl(filename: string): string {
   return `/api/view?filename=${encodeURIComponent(filename)}&type=input`
 }
 </script>
+
+<template>
+  <WidgetLayoutField :widget>
+    <FormDropdown
+      v-model:selected="selectedSet"
+      :items="dropdownItems"
+      :placeholder="mediaPlaceholder"
+      :multiple="false"
+      :uploadable="uploadable"
+      v-bind="combinedProps"
+      class="w-full"
+      @update:selected="updateSelectedItems"
+      @update:files="handleFilesUpdate"
+    />
+  </WidgetLayoutField>
+</template>

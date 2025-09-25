@@ -12,7 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const filterButtonStyle =
-  'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer hover:text-black hover:dark-theme:text-white'
+  'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer hover:text-black hover:dark-theme:text-white hover:bg-zinc-500/10 transition-all duration-150 active:scale-95 select-none'
 
 const handleFilterClick = (index: number) => {
   emit('update:filterIndex', index)

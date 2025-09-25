@@ -2,9 +2,11 @@
 import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef } from 'vue'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import type { DropdownItem } from './types'
+import type { DropdownItem, LayoutMode, SortOptionLabel } from './types'
 
 interface Props {
   items: DropdownItem[]
@@ -27,11 +29,15 @@ const props = withDefaults(defineProps<Props>(), {
 // Define models for two-way binding
 const selected = defineModel<Set<number>>('selected', { default: new Set() })
 const filterIndex = defineModel<number>('filterIndex', { default: 0 })
-const layoutMode = defineModel<'list' | 'grid' | 'list-small'>('layoutMode', {
+const layoutMode = defineModel<LayoutMode>('layoutMode', {
   default: 'grid'
 })
 const files = defineModel<File[]>('files', { default: [] })
+const sortSelected = defineModel<SortOptionLabel>('sortSelected', {
+  default: 'default'
+})
 
+const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
 const isOpen = ref(false)
@@ -80,7 +86,7 @@ function handleSelection(item: DropdownItem, index: number) {
       sel.clear()
       sel.add(index)
     } else {
-      handleMaxSelectionReached()
+      toastStore.addAlert(`Maximum selection limit reached`)
       return
     }
   }
@@ -89,11 +95,6 @@ function handleSelection(item: DropdownItem, index: number) {
   if (maxSelectable.value === 1) {
     closeDropdown()
   }
-}
-
-function handleMaxSelectionReached() {
-  // TODO: Optionally provide user feedback when max selection is reached
-  console.log('Maximum selection limit reached')
 }
 </script>
 
@@ -128,6 +129,7 @@ function handleMaxSelectionReached() {
       <FormDropdownMenu
         v-model:filter-index="filterIndex"
         v-model:layout-mode="layoutMode"
+        v-model:sort-selected="sortSelected"
         :items="items"
         :is-selected="isSelected"
         :max-selectable="maxSelectable"
