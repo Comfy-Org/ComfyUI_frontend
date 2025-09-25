@@ -13,7 +13,7 @@ import { formatSize } from '@/utils/formatUtil'
 
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
-    return (category === 'all') || asset.tags.includes(category)
+    return category === 'all' || asset.tags.includes(category)
   }
 }
 
