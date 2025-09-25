@@ -165,7 +165,7 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
-const viewportCulling = useViewportCulling()
+const { handleTransformUpdate } = useViewportCulling()
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
@@ -187,8 +187,9 @@ watch(
   }
 )
 
-const allNodes = viewportCulling.allNodes
-const handleTransformUpdate = viewportCulling.handleTransformUpdate
+const allNodes = computed(() =>
+  Array.from(vueNodeLifecycle.vueNodeData.value.values())
+)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
