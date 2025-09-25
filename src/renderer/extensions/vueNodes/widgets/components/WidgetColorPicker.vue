@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import ColorPicker from 'primevue/colorpicker'
 import { computed, ref, watch } from 'vue'
 
@@ -34,7 +35,6 @@ import {
   isColorFormat,
   toHexFromFormat
 } from '@/utils/colorUtil'
-import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps

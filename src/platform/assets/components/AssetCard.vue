@@ -85,11 +85,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   asset: AssetDisplayItem

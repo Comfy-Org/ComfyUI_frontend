@@ -49,12 +49,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { createGridStyle } from '@/utils/gridUtil'
-import { cn } from '@/utils/tailwindUtil'
 
 defineProps<{
   assets: AssetDisplayItem[]
