@@ -12,7 +12,6 @@ import { computed } from 'vue'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app as comfyApp } from '@/scripts/app'
 
 type Bounds = [left: number, right: number, top: number, bottom: number]
 
@@ -24,8 +23,11 @@ function getNodeBounds(node: LGraphNode): Bounds {
 }
 
 function viewportEdges(
-  canvas: NonNullable<ReturnType<typeof useCanvasStore>['canvas']>
-): Bounds {
+  canvas: ReturnType<typeof useCanvasStore>['canvas']
+): Bounds | undefined {
+  if (!canvas) {
+    return
+  }
   const ds = canvas.ds
   const viewport_width = canvas.canvas.width
   const viewport_height = canvas.canvas.height
@@ -59,18 +61,17 @@ export function useViewportCulling() {
     return Array.from(vueNodeData.value.values())
   })
 
+  const viewport = computed(() => viewportEdges(canvasStore.canvas))
+
   /**
    * Update visibility of all nodes based on viewport
    * Queries DOM directly - no cache maintenance needed
    */
   function updateVisibility() {
-    if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
+    if (!nodeManager.value || !viewport.value) return
 
-    const canvas = canvasStore.canvas
     const manager = nodeManager.value
-
-    // Viewport bounds
-    const viewportBounds = viewportEdges(canvas)
+    const viewportBounds = viewport.value
 
     // Get all node elements at once
     const nodeElements = document.querySelectorAll('[data-node-id]')
@@ -84,13 +85,8 @@ export function useViewportCulling() {
       if (!node) continue
 
       const nodeBounds = getNodeBounds(node)
-
-      // Calculate if node is outside viewport
       const isNodeOutsideViewport = !boundsIntersect(nodeBounds, viewportBounds)
-
       const displayValue = isNodeOutsideViewport ? 'none' : ''
-
-      // Setting display none directly avoid potential cascade resolution
       if (
         element instanceof HTMLElement &&
         element.style.display !== displayValue
