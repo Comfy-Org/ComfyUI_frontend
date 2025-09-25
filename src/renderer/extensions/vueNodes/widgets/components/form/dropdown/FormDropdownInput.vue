@@ -4,13 +4,14 @@ import { computed } from 'vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../../layout'
+import type { DropdownItem, SelectedKey } from './types'
 
 interface Props {
   isOpen?: boolean
   placeholder?: string
   files: File[]
-  items: unknown[]
-  selected: Set<number>
+  items: DropdownItem[]
+  selected: Set<SelectedKey>
   maxSelectable: number
   uploadable: boolean
 }
@@ -26,7 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const selectedItems = computed(() => {
-  return Array.from(props.selected).map((index) => props.items[index])
+  return props.items.filter((item) => props.selected.has(item.id))
 })
 
 const chevronClass = computed(() =>
