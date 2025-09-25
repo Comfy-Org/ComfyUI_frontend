@@ -2585,7 +2585,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
           pointer.finally = () => (this.resizingGroup = null)
         } else {
-          const headerHeight = LiteGraph.GROUP_TEXT_SIZE * 1.4
+          const headerHeight = LiteGraph.NODE_TITLE_HEIGHT
           if (
             isInRectangle(
               x,
