@@ -201,14 +201,14 @@ const hasExecutionError = computed(
 
 // Computed error states for styling
 const hasAnyError = computed((): boolean => {
-  return (
-    !!hasExecutionError.value ||
-    !!nodeData.hasErrors ||
-    !!error ||
+  return !!(
+    hasExecutionError.value ||
+    nodeData.hasErrors ||
+    error ||
     // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
     // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
-    !!nodeData.inputs?.some((slot) => slot?.hasErrors ?? false) ||
-    !!nodeData.outputs?.some((slot) => slot?.hasErrors ?? false)
+    nodeData.inputs?.some((slot) => slot?.hasErrors) ||
+    nodeData.outputs?.some((slot) => slot?.hasErrors)
   )
 })
 
