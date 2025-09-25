@@ -206,6 +206,7 @@ function getMediaUrl(filename: string): string {
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable="uploadable"
+      :disabled="readonly"
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"

@@ -41,6 +41,7 @@ const layoutMode = ref<'list' | 'grid'>('grid')
           placeholder="Select Image..."
           multiple
           uploadable
+          disabled
         />
       </div>
     </div>
