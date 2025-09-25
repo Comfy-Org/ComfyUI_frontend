@@ -10,8 +10,33 @@ import { useThrottleFn } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app as comfyApp } from '@/scripts/app'
+
+function nodeBounds(node: LGraphNode): [number, number, number, number] {
+  const [nodeLeft, nodeTop] = node.pos
+  const nodeRight = nodeLeft + node.size[0]
+  const nodeBottom = nodeTop + node.size[1]
+  return [nodeLeft, nodeRight, nodeTop, nodeBottom]
+}
+
+function viewportEdges(
+  canvas: NonNullable<ReturnType<typeof useCanvasStore>['canvas']>
+) {
+  const ds = canvas.ds
+  const viewport_width = canvas.canvas.width
+  const viewport_height = canvas.canvas.height
+  const margin = 500 * ds.scale
+
+  const [xOffset, yOffset] = ds.offset
+
+  const leftEdge = -margin / ds.scale - xOffset
+  const rightEdge = (viewport_width + margin) / ds.scale - xOffset
+  const topEdge = -margin / ds.scale - yOffset
+  const bottomEdge = (viewport_height + margin) / ds.scale - yOffset
+  return [leftEdge, rightEdge, topEdge, bottomEdge]
+}
 
 export function useViewportCulling() {
   const canvasStore = useCanvasStore()
@@ -30,12 +55,9 @@ export function useViewportCulling() {
 
     const canvas = canvasStore.canvas
     const manager = nodeManager.value
-    const ds = canvas.ds
 
     // Viewport bounds
-    const viewport_width = canvas.canvas.width
-    const viewport_height = canvas.canvas.height
-    const margin = 500 * ds.scale
+    const [leftEdge, rightEdge, topEdge, bottomEdge] = viewportEdges(canvas)
 
     // Get all node elements at once
     const nodeElements = document.querySelectorAll('[data-node-id]')
@@ -48,36 +70,39 @@ export function useViewportCulling() {
       const node = manager.getNode(nodeId)
       if (!node) continue
 
-      // Calculate if node is outside viewport
-      const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
-      const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
-      const screen_width = node.size[0] * ds.scale
-      const screen_height = node.size[1] * ds.scale
+      const [nodeLeft, nodeRight, nodeTop, nodeBottom] = nodeBounds(node)
 
+      // Calculate if node is outside viewport
+      const leftOfViewport = nodeRight < leftEdge
+      const rightOfViewport = nodeLeft > rightEdge
+      const aboveViewport = nodeBottom < topEdge
+      const belowViewport = nodeTop > bottomEdge
       const isNodeOutsideViewport =
-        screen_x + screen_width < -margin ||
-        screen_x > viewport_width + margin ||
-        screen_y + screen_height < -margin ||
-        screen_y > viewport_height + margin
+        leftOfViewport || rightOfViewport || aboveViewport || belowViewport
+
+      console.log({
+        leftOfViewport,
+        rightOfViewport,
+        aboveViewport,
+        belowViewport
+      })
+
+      const displayValue = isNodeOutsideViewport ? 'none' : ''
 
       // Setting display none directly avoid potential cascade resolution
-      if (element instanceof HTMLElement) {
-        element.style.display = isNodeOutsideViewport ? 'none' : ''
+      if (
+        element instanceof HTMLElement &&
+        element.style.display !== displayValue
+      ) {
+        console.log('Flipping', element, displayValue)
+        element.style.display = displayValue
       }
     }
   }
-
-  const updateVisibilityDebounced = useThrottleFn(updateVisibility, 20)
-
-  // RAF throttling for smooth updates during continuous panning
-  function handleTransformUpdate() {
-    requestAnimationFrame(async () => {
-      await updateVisibilityDebounced()
-    })
-  }
+  const updateVisibilityDebounced = useThrottleFn(updateVisibility, 100, true)
 
   return {
     allNodes,
-    handleTransformUpdate
+    handleTransformUpdate: updateVisibilityDebounced
   }
 }
