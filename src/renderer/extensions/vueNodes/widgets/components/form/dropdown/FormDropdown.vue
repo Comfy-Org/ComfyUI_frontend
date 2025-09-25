@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { refDebounced } from '@vueuse/core'
 import Popover from 'primevue/popover'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -28,17 +29,26 @@ interface Props {
     item: DropdownItem,
     index: number
   ) => boolean
+  searcher?: (
+    query: string,
+    items: DropdownItem[],
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<DropdownItem[]>
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Select...',
   multiple: false,
   uploadable: false,
-  isSelected: (
-    selected: Set<SelectedKey>,
-    item: DropdownItem,
-    _index: number
-  ) => selected.has(item.id)
+  isSelected: (selected, item, _index) => selected.has(item.id),
+  searcher: async (query, items, _onCleanup) => {
+    if (query.trim() === '') return items
+    const words = query.trim().toLowerCase().split(' ')
+    return items.filter((item) => {
+      const name = item.name.toLowerCase()
+      return words.every((word) => name.includes(word))
+    })
+  }
 })
 
 // Define models for two-way binding
@@ -53,7 +63,12 @@ const files = defineModel<File[]>('files', { default: [] })
 const sortSelected = defineModel<SortOptionLabel>('sortSelected', {
   default: 'default'
 })
+const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
+const debouncedSearchQuery = refDebounced(searchQuery, 700, {
+  maxWait: 700
+})
+const isQuerying = ref(false)
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
@@ -65,15 +80,47 @@ const maxSelectable = computed(() => {
   return 1
 })
 
+const filteredItems = ref<DropdownItem[]>([])
+
+watch(searchQuery, (value) => {
+  isQuerying.value = value !== debouncedSearchQuery.value
+})
+
+watch(
+  debouncedSearchQuery,
+  (_, __, onCleanup) => {
+    let isCleanup = false
+    let cleanupFn: undefined | (() => void)
+    onCleanup(() => {
+      isCleanup = true
+      cleanupFn?.()
+    })
+
+    void props
+      .searcher(
+        debouncedSearchQuery.value,
+        props.items,
+        (cb) => (cleanupFn = cb)
+      )
+      .then((result) => {
+        if (!isCleanup) filteredItems.value = result
+      })
+      .finally(() => {
+        if (!isCleanup) isQuerying.value = false
+      })
+  },
+  { immediate: true }
+)
+
 const sortedItems = computed(() => {
   switch (sortSelected.value) {
     case 'a-z':
-      return props.items.slice().sort((a, b) => {
+      return filteredItems.value.slice().sort((a, b) => {
         return a.name.localeCompare(b.name)
       })
     case 'default':
     default:
-      return props.items.slice()
+      return filteredItems.value.slice()
   }
 })
 
@@ -159,6 +206,8 @@ function handleSelection(item: DropdownItem, index: number) {
         v-model:filter-index="filterIndex"
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
+        v-model:search-query="searchQuery"
+        :is-querying="isQuerying"
         :items="sortedItems"
         :is-selected="internalIsSelected"
         :max-selectable="maxSelectable"
