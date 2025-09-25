@@ -66,7 +66,7 @@ describe('keybindingService - Escape key handling', () => {
 
   it('should execute ExitSubgraph command when Escape is pressed', async () => {
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -83,7 +83,7 @@ describe('keybindingService - Escape key handling', () => {
 
   it('should not execute command when Escape is pressed with modifiers', async () => {
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
+      code: 'Escape',
       ctrlKey: true,
       bubbles: true,
       cancelable: true
@@ -100,7 +100,7 @@ describe('keybindingService - Escape key handling', () => {
   it('should not execute command when typing in input field', async () => {
     const inputElement = document.createElement('input')
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -130,7 +130,7 @@ describe('keybindingService - Escape key handling', () => {
     document.body.appendChild(dialog)
 
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -158,7 +158,7 @@ describe('keybindingService - Escape key handling', () => {
     )
 
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -185,7 +185,7 @@ describe('keybindingService - Escape key handling', () => {
     keybindingService = useKeybindingService()
 
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
