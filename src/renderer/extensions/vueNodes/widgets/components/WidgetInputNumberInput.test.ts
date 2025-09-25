@@ -166,43 +166,48 @@ describe('WidgetInputNumberInput Step Value', () => {
 })
 
 describe('WidgetInputNumberInput Grouping Behavior', () => {
-  it('disables grouping by default for int widgets', () => {
+  it('displays numbers without commas by default for int widgets', () => {
     const widget = createMockWidget(1000, 'int')
     const wrapper = mountComponent(widget, 1000)
 
-    const inputNumber = wrapper.findComponent(InputNumber)
-    expect(inputNumber.props('useGrouping')).toBe(false)
+    const input = getNumberInput(wrapper)
+    expect(input.value).toBe('1000')
+    expect(input.value).not.toContain(',')
   })
 
-  it('disables grouping by default for float widgets', () => {
+  it('displays numbers without commas by default for float widgets', () => {
     const widget = createMockWidget(1000.5, 'float')
     const wrapper = mountComponent(widget, 1000.5)
 
-    const inputNumber = wrapper.findComponent(InputNumber)
-    expect(inputNumber.props('useGrouping')).toBe(false)
+    const input = getNumberInput(wrapper)
+    expect(input.value).toBe('1000.5')
+    expect(input.value).not.toContain(',')
   })
 
-  it('enables grouping when explicitly set to true in widget options', () => {
+  it('displays numbers with commas when grouping enabled', () => {
     const widget = createMockWidget(1000, 'int', { useGrouping: true })
     const wrapper = mountComponent(widget, 1000)
 
-    const inputNumber = wrapper.findComponent(InputNumber)
-    expect(inputNumber.props('useGrouping')).toBe(true)
+    const input = getNumberInput(wrapper)
+    expect(input.value).toBe('1,000')
+    expect(input.value).toContain(',')
   })
 
-  it('keeps grouping disabled when explicitly set to false', () => {
+  it('displays numbers without commas when grouping explicitly disabled', () => {
     const widget = createMockWidget(1000, 'int', { useGrouping: false })
     const wrapper = mountComponent(widget, 1000)
 
-    const inputNumber = wrapper.findComponent(InputNumber)
-    expect(inputNumber.props('useGrouping')).toBe(false)
+    const input = getNumberInput(wrapper)
+    expect(input.value).toBe('1000')
+    expect(input.value).not.toContain(',')
   })
 
-  it('disables grouping when useGrouping option is undefined', () => {
+  it('displays numbers without commas when useGrouping option is undefined', () => {
     const widget = createMockWidget(1000, 'int', { useGrouping: undefined })
     const wrapper = mountComponent(widget, 1000)
 
-    const inputNumber = wrapper.findComponent(InputNumber)
-    expect(inputNumber.props('useGrouping')).toBe(false)
+    const input = getNumberInput(wrapper)
+    expect(input.value).toBe('1000')
+    expect(input.value).not.toContain(',')
   })
 })
