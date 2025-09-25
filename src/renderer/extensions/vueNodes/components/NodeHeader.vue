@@ -146,7 +146,7 @@ watch(
   }
 )
 
-const isPinned = computed(() => nodeData?.flags?.pinned ?? false)
+const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
 
 // Subgraph detection
 const isSubgraphNode = computed(() => {
