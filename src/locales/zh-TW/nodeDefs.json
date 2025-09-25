@@ -17,11 +17,6 @@
         "name": "norm_threshold",
         "tooltip": "將引導向量正規化為此值，設為 0 時停用正規化。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "AddNoise": {
@@ -53,10 +48,33 @@
       "steps": {
         "name": "步驟數"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "AudioAdjustVolume": {
+    "display_name": "音訊音量調整",
+    "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
+      "volume": {
+        "name": "音量",
+        "tooltip": "以分貝 (dB) 為單位的音量調整。0 = 無變化，+6 = 兩倍，-6 = 一半，依此類推"
+      }
+    }
+  },
+  "AudioConcat": {
+    "description": "依指定方向將 audio1 與 audio2 串接。",
+    "display_name": "音訊串接",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "direction": {
+        "name": "方向",
+        "tooltip": "選擇將 audio2 接在 audio1 之後或之前。"
       }
     }
   },
@@ -76,6 +94,22 @@
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
+      }
+    }
+  },
+  "AudioMerge": {
+    "description": "將兩個音軌的波形重疊合併。",
+    "display_name": "音訊合併",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "merge_method": {
+        "name": "合併方式",
+        "tooltip": "用於合併音訊波形的方法。"
       }
     }
   },
@@ -133,8 +167,7 @@
         "tooltip": "輸出影片的長寬比。"
       },
       "camera_fixed": {
-        "name": "camera_fixed",
-        "tooltip": "是否固定鏡頭。平台會在提示詞後自動加上固定鏡頭的指令，但不保證實際效果。"
+        "name": "camera_fixed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -164,17 +197,10 @@
         "tooltip": "輸出影片的解析度。"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的隨機種子。"
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在影片上加上「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -186,8 +212,7 @@
         "name": "control after generate"
       },
       "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "數值越高，圖像越貼合提示詞"
+        "name": "guidance_scale"
       },
       "image": {
         "name": "image",
@@ -202,17 +227,10 @@
         "tooltip": "圖像編輯指令"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的隨機種子"
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在圖像上加上「AI 生成」浮水印"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -224,8 +242,7 @@
         "name": "control after generate"
       },
       "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "數值越高，圖像越貼合提示詞"
+        "name": "guidance_scale"
       },
       "height": {
         "name": "height",
@@ -240,25 +257,18 @@
         "tooltip": "用於生成圖像的文字提示"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的種子"
+        "name": "seed"
       },
       "size_preset": {
         "name": "size_preset",
         "tooltip": "選擇建議尺寸。選擇自訂可使用下方的寬度與高度"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在圖像上添加「AI 生成」浮水印"
+        "name": "watermark"
       },
       "width": {
         "name": "width",
         "tooltip": "自訂圖像寬度。僅在 `size_preset` 設為 `Custom` 時有效"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -294,17 +304,10 @@
         "tooltip": "輸出影片的解析度。"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的種子。"
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在影片上添加「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -317,8 +320,7 @@
         "tooltip": "輸出影片的長寬比。"
       },
       "camera_fixed": {
-        "name": "camera_fixed",
-        "tooltip": "指定是否固定鏡頭。平台會在提示詞後自動加入固定鏡頭的指令，但不保證實際效果。"
+        "name": "camera_fixed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -344,17 +346,10 @@
         "tooltip": "輸出影片的解析度。"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的隨機種子。"
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在影片中加入「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -366,20 +361,17 @@
         "name": "control after generate"
       },
       "fail_on_partial": {
-        "name": "fail_on_partial",
-        "tooltip": "啟用時，若有任何請求的圖像缺失或發生錯誤則中止執行。"
+        "name": "fail_on_partial"
       },
       "height": {
-        "name": "height",
-        "tooltip": "自訂圖像高度。僅在 `size_preset` 設為 `Custom` 時有效。"
+        "name": "height"
       },
       "image": {
         "name": "image",
         "tooltip": "用於圖像轉圖像生成的輸入圖像。可為 1-10 張圖像，用於單參考或多參考生成。"
       },
       "max_images": {
-        "name": "max_images",
-        "tooltip": "當 sequential_image_generation='auto' 時，最多生成的圖像數量。總圖像數（輸入+生成）不可超過 15 張。"
+        "name": "max_images"
       },
       "model": {
         "name": "model",
@@ -390,29 +382,20 @@
         "tooltip": "用於創建或編輯圖像的文字提示詞。"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的隨機種子。"
+        "name": "seed"
       },
       "sequential_image_generation": {
-        "name": "sequential_image_generation",
-        "tooltip": "群組圖像生成模式。'disabled' 只生成單張圖像。'auto' 讓模型決定是否生成多張相關圖像（如故事場景、角色變體）。"
+        "name": "sequential_image_generation"
       },
       "size_preset": {
         "name": "size_preset",
         "tooltip": "選擇建議尺寸。選擇自訂時，請使用下方的寬度與高度。"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在圖像中加入「AI 生成」浮水印。"
+        "name": "watermark"
       },
       "width": {
-        "name": "width",
-        "tooltip": "自訂圖像寬度。僅在 `size_preset` 設為 `Custom` 時有效。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "width"
       }
     }
   },
@@ -425,8 +408,7 @@
         "tooltip": "輸出影片的長寬比。"
       },
       "camera_fixed": {
-        "name": "camera_fixed",
-        "tooltip": "指定是否固定鏡頭。平台會在提示詞後自動加上固定鏡頭的指令，但不保證實際效果。"
+        "name": "camera_fixed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -448,17 +430,10 @@
         "tooltip": "輸出影片的解析度。"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的隨機種子。"
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在影片中加入「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -491,8 +466,7 @@
     },
     "outputs": {
       "0": {
-        "name": "patched_model",
-        "tooltip": null
+        "name": "patched_model"
       }
     }
   },
@@ -526,11 +500,6 @@
       },
       "v": {
         "name": "v"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -622,11 +591,6 @@
         "name": "文字",
         "tooltip": "要編碼的文字內容。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "包含嵌入文字的條件，用於引導擴散模型。"
-      }
     }
   },
   "CLIPTextEncodeControlnet": {
@@ -640,11 +604,6 @@
       },
       "text": {
         "name": "文字"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -714,11 +673,6 @@
       "user_prompt": {
         "name": "user_prompt",
         "tooltip": "要編碼的文字內容。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "包含嵌入文字的條件，用於引導擴散模型。"
       }
     }
   },
@@ -846,11 +800,6 @@
       "low_threshold": {
         "name": "低閾值"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CaseConverter": {
@@ -861,11 +810,6 @@
       },
       "string": {
         "name": "string"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -887,17 +831,6 @@
       "ckpt_name": {
         "name": "ckpt_name",
         "tooltip": "要載入的檢查點（模型）名稱。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "用於對潛在空間進行去噪處理的模型。"
-      },
-      "1": {
-        "tooltip": "用於編碼文字提示的 CLIP 模型。"
-      },
-      "2": {
-        "tooltip": "用於將影像與潛在空間之間進行編碼與解碼的 VAE 模型。"
       }
     }
   },
@@ -940,11 +873,6 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "這些選項開始生效的第一個 sigma。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1309,11 +1237,6 @@
         "name": "模型",
         "tooltip": "在取樣時要套用上下文視窗的模型。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "在取樣時已套用上下文視窗的模型。"
-      }
     }
   },
   "ControlNetApply": {
@@ -1479,11 +1402,6 @@
       "width": {
         "name": "寬度"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CosmosPredict2ImageToVideoLatent": {
@@ -1509,11 +1427,6 @@
       },
       "width": {
         "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1672,11 +1585,6 @@
         "name": "影像",
         "tooltip": "用來建立影片的圖片。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CropMask": {
@@ -1800,11 +1708,6 @@
         "name": "詳細日誌",
         "tooltip": "是否記錄詳細資訊。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "已加入 EasyCache 的模型。"
-      }
     }
   },
   "EmptyAceStepLatentAudio": {
@@ -1817,10 +1720,22 @@
       "seconds": {
         "name": "秒數"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "EmptyAudio": {
+    "display_name": "空白音訊",
+    "inputs": {
+      "channels": {
+        "name": "聲道數",
+        "tooltip": "音訊聲道數（1 為單聲道，2 為立體聲）。"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "空白音訊片段的長度（秒）"
+      },
+      "sample_rate": {
+        "name": "取樣率",
+        "tooltip": "空白音訊片段的取樣率。"
       }
     }
   },
@@ -1835,11 +1750,6 @@
       },
       "width": {
         "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1857,11 +1767,6 @@
       },
       "width": {
         "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1969,11 +1874,6 @@
       "width": {
         "name": "寬度",
         "tooltip": "潛在影像的寬度（像素）。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "空白潛在影像批次。"
       }
     }
   },
@@ -2360,8 +2260,7 @@
         "name": "影像提示"
       },
       "image_prompt_strength": {
-        "name": "影像提示強度",
-        "tooltip": "提示詞與影像提示之間的混合比例。"
+        "name": "影像提示強度"
       },
       "prompt": {
         "name": "提示詞",
@@ -2773,19 +2672,16 @@
     "display_name": "Ideogram V1",
     "inputs": {
       "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "影像生成的長寬比。"
+        "name": "長寬比"
       },
       "control_after_generate": {
         "name": "生成後控制"
       },
       "magic_prompt_option": {
-        "name": "MagicPrompt 選項",
-        "tooltip": "決定生成時是否使用 MagicPrompt"
+        "name": "MagicPrompt 選項"
       },
       "negative_prompt": {
-        "name": "排除提示詞",
-        "tooltip": "描述要從影像中排除的內容"
+        "name": "排除提示詞"
       },
       "num_images": {
         "name": "影像數量"
@@ -2801,11 +2697,6 @@
         "name": "加速模式",
         "tooltip": "是否啟用加速模式（生成速度更快，但品質可能較低）"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "IdeogramV2": {
@@ -2813,19 +2704,16 @@
     "display_name": "Ideogram V2",
     "inputs": {
       "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "影像生成的長寬比。若解析度未設為自動，則此設定會被忽略。"
+        "name": "長寬比"
       },
       "control_after_generate": {
         "name": "生成後控制"
       },
       "magic_prompt_option": {
-        "name": "MagicPrompt 選項",
-        "tooltip": "決定生成時是否使用 MagicPrompt"
+        "name": "MagicPrompt 選項"
       },
       "negative_prompt": {
-        "name": "排除提示詞",
-        "tooltip": "描述影像中要排除的內容"
+        "name": "排除提示詞"
       },
       "num_images": {
         "name": "影像數量"
@@ -2835,24 +2723,17 @@
         "tooltip": "用於影像生成的提示詞"
       },
       "resolution": {
-        "name": "解析度",
-        "tooltip": "影像生成的解析度。若未設為自動，將覆蓋長寬比設定。"
+        "name": "解析度"
       },
       "seed": {
         "name": "種子值"
       },
       "style_type": {
-        "name": "風格類型",
-        "tooltip": "生成時的風格類型（僅限 V2）"
+        "name": "風格類型"
       },
       "turbo": {
         "name": "加速模式",
         "tooltip": "是否啟用加速模式（生成速度更快，但品質可能較低）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2861,8 +2742,7 @@
     "display_name": "Ideogram V3",
     "inputs": {
       "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "影像生成的長寬比。若解析度未設為自動，則此設定會被忽略。"
+        "name": "長寬比"
       },
       "character_image": {
         "name": "character_image",
@@ -2880,8 +2760,7 @@
         "tooltip": "（選填）用於影像編輯的參考圖片。"
       },
       "magic_prompt_option": {
-        "name": "MagicPrompt 選項",
-        "tooltip": "決定是否在生成時使用 MagicPrompt"
+        "name": "MagicPrompt 選項"
       },
       "mask": {
         "name": "遮罩",
@@ -2895,20 +2774,13 @@
         "tooltip": "用於影像生成或編輯的提示詞"
       },
       "rendering_speed": {
-        "name": "生成速度",
-        "tooltip": "控制生成速度與品質的取捨"
+        "name": "生成速度"
       },
       "resolution": {
-        "name": "解析度",
-        "tooltip": "影像生成的解析度。若未設為自動，將覆蓋長寬比設定。"
+        "name": "解析度"
       },
       "seed": {
         "name": "種子值"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -3418,11 +3290,6 @@
       "steps": {
         "name": "步驟數",
         "tooltip": "去噪過程中所使用的步數。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "去噪後的潛在空間。"
       }
     }
   },
@@ -4414,11 +4281,6 @@
         "name": "verbose",
         "tooltip": "是否輸出詳細資訊。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "已加載 LazyCache 的模型。"
-      }
     }
   },
   "Load3D": {
@@ -4569,15 +4431,13 @@
         "tooltip": "要從中載入影像的資料夾。"
       },
       "height": {
-        "name": "height",
-        "tooltip": "將影像調整為的高度。-1 代表使用原始高度。"
+        "name": "height"
       },
       "resize_method": {
         "name": "resize_method"
       },
       "width": {
-        "name": "width",
-        "tooltip": "將影像調整為的寬度。-1 代表使用原始寬度。"
+        "name": "width"
       }
     }
   },
@@ -4597,11 +4457,6 @@
       },
       "upload": {
         "name": "選擇要上傳的檔案"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -4629,14 +4484,6 @@
         "name": "strength_model",
         "tooltip": "調整 diffusion 模型的強度。此值可為負數。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "已修改的 diffusion 模型。"
-      },
-      "1": {
-        "tooltip": "已修改的 CLIP 模型。"
-      }
     }
   },
   "LoraLoaderModelOnly": {
@@ -4651,11 +4498,6 @@
       },
       "strength_model": {
         "name": "strength_model"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "已修改的 diffusion 模型。"
       }
     }
   },
@@ -4674,11 +4516,6 @@
       "strength_model": {
         "name": "strength_model",
         "tooltip": "調整擴散模型的強度。此值可為負數。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "已修改的擴散模型。"
       }
     }
   },
@@ -4978,33 +4815,24 @@
         "name": "生成後控制"
       },
       "duration": {
-        "name": "時長",
-        "tooltip": "輸出影片的長度（秒）。"
+        "name": "時長"
       },
       "first_frame_image": {
         "name": "起始影格圖片",
         "tooltip": "可選的圖片，作為影片生成的第一個影格。"
       },
       "prompt_optimizer": {
-        "name": "提示優化器",
-        "tooltip": "在需要時優化提示，以提升生成品質。"
+        "name": "提示優化器"
       },
       "prompt_text": {
         "name": "提示文字",
         "tooltip": "用於引導影片生成的文字提示。"
       },
       "resolution": {
-        "name": "解析度",
-        "tooltip": "影片顯示的尺寸。1080p 為 1920x1080，768p 為 1366x768。"
+        "name": "解析度"
       },
       "seed": {
-        "name": "隨機種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "隨機種子"
       }
     }
   },
@@ -5028,13 +4856,7 @@
         "tooltip": "用於引導影片生成的文字提示"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "種子"
       }
     }
   },
@@ -5054,13 +4876,7 @@
         "tooltip": "用於引導影片生成的文字提示"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "種子"
       }
     }
   },
@@ -7307,11 +7123,6 @@
         "name": "steps",
         "tooltip": "去雜訊步數"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyTxt2VideoNode": {
@@ -7343,11 +7154,6 @@
         "name": "steps",
         "tooltip": "推理步數"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyVideo2VideoNode": {
@@ -7357,8 +7163,7 @@
         "name": "control_type"
       },
       "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "僅在 control_type 為「Motion Transfer」時使用"
+        "name": "motion_intensity"
       },
       "negative_prompt": {
         "name": "negative_prompt",
@@ -7375,11 +7180,6 @@
       "video": {
         "name": "video",
         "tooltip": "用於生成輸出影片的參考影片。必須至少 5 秒長。超過 5 秒的影片會自動裁剪。僅支援 MP4 格式。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -7402,12 +7202,10 @@
     "display_name": "OpenAI ChatGPT 進階選項",
     "inputs": {
       "instructions": {
-        "name": "instructions",
-        "tooltip": "給模型的回應生成指示"
+        "name": "instructions"
       },
       "max_output_tokens": {
-        "name": "max_output_tokens",
-        "tooltip": "可產生的回應 token 上限，包括可見輸出 token"
+        "name": "max_output_tokens"
       },
       "truncation": {
         "name": "truncation",
@@ -7461,20 +7259,17 @@
         "tooltip": "可選的遮罩，用於修補（白色區域將被取代）"
       },
       "n": {
-        "name": "數量",
-        "tooltip": "要產生多少張影像"
+        "name": "數量"
       },
       "prompt": {
         "name": "提示詞",
         "tooltip": "DALL·E 的文字提示"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "後端尚未實作"
+        "name": "種子"
       },
       "size": {
-        "name": "尺寸",
-        "tooltip": "影像尺寸"
+        "name": "尺寸"
       }
     }
   },
@@ -7490,20 +7285,16 @@
         "tooltip": "DALL·E 的文字提示"
       },
       "quality": {
-        "name": "畫質",
-        "tooltip": "影像品質"
+        "name": "畫質"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "後端尚未實作"
+        "name": "種子"
       },
       "size": {
-        "name": "尺寸",
-        "tooltip": "影像尺寸"
+        "name": "尺寸"
       },
       "style": {
-        "name": "風格",
-        "tooltip": "「生動」會讓模型傾向產生超現實且戲劇化的影像。「自然」則會讓模型產生較自然、不那麼超現實的影像。"
+        "name": "風格"
       }
     }
   },
@@ -7512,8 +7303,7 @@
     "display_name": "OpenAI GPT Image 1",
     "inputs": {
       "background": {
-        "name": "背景",
-        "tooltip": "回傳有或無背景的影像"
+        "name": "背景"
       },
       "control_after_generate": {
         "name": "生成後控制"
@@ -7527,24 +7317,20 @@
         "tooltip": "可選的修補遮罩（白色區域將被取代）"
       },
       "n": {
-        "name": "數量",
-        "tooltip": "要產生多少張影像"
+        "name": "數量"
       },
       "prompt": {
         "name": "提示詞",
         "tooltip": "用於 GPT Image 1 的文字提示"
       },
       "quality": {
-        "name": "品質",
-        "tooltip": "影像品質，會影響費用與生成時間。"
+        "name": "品質"
       },
       "seed": {
-        "name": "種子值",
-        "tooltip": "後端尚未實作"
+        "name": "種子值"
       },
       "size": {
-        "name": "尺寸",
-        "tooltip": "影像尺寸"
+        "name": "尺寸"
       }
     }
   },
@@ -8249,11 +8035,6 @@
       "value": {
         "name": "值"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveFloat": {
@@ -8261,11 +8042,6 @@
     "inputs": {
       "value": {
         "name": "數值"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8278,11 +8054,6 @@
       "value": {
         "name": "數值"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveString": {
@@ -8291,11 +8062,6 @@
       "value": {
         "name": "值"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveStringMultiline": {
@@ -8303,11 +8069,6 @@
     "inputs": {
       "value": {
         "name": "值"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8741,11 +8502,6 @@
       "string": {
         "name": "字串"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RegexMatch": {
@@ -8769,8 +8525,7 @@
     },
     "outputs": {
       "0": {
-        "name": "比對結果",
-        "tooltip": null
+        "name": "比對結果"
       }
     }
   },
@@ -8782,12 +8537,10 @@
         "name": "不區分大小寫"
       },
       "count": {
-        "name": "次數",
-        "tooltip": "最多取代的次數。設為 0 代表取代所有出現（預設）。設為 1 只取代第一個，2 取代前兩個，以此類推。"
+        "name": "次數"
       },
       "dotall": {
-        "name": "點號全配",
-        "tooltip": "啟用時，點號 (.) 字元會比對任何字元（包含換行字元）。停用時，點號不會比對換行。"
+        "name": "點號全配"
       },
       "multiline": {
         "name": "多行"
@@ -8800,11 +8553,6 @@
       },
       "string": {
         "name": "字串"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9016,11 +8764,6 @@
         "name": "起始幀",
         "tooltip": "用於影片的起始幀"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayImageToVideoNodeGen3a": {
@@ -9047,11 +8790,6 @@
       "start_frame": {
         "name": "起始幀",
         "tooltip": "用於影片的起始幀"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9080,11 +8818,6 @@
         "name": "起始畫格",
         "tooltip": "用於影片的起始畫格"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayTextToImageNode": {
@@ -9101,11 +8834,6 @@
       "reference_image": {
         "name": "參考圖像",
         "tooltip": "可選的參考圖像，用於引導生成"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9445,11 +9173,6 @@
       "version": {
         "name": "版本"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerLCMUpscale": {
@@ -9463,11 +9186,6 @@
       },
       "upscale_method": {
         "name": "放大方法"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9897,6 +9615,23 @@
       }
     }
   },
+  "SplitAudioChannels": {
+    "description": "將音訊分離為左聲道與右聲道。",
+    "display_name": "分離音訊聲道",
+    "inputs": {
+      "audio": {
+        "name": "音訊"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "左聲道"
+      },
+      "1": {
+        "name": "右聲道"
+      }
+    }
+  },
   "SplitImageWithAlpha": {
     "display_name": "以 Alpha 通道分割影像",
     "inputs": {
@@ -9955,8 +9690,7 @@
         "name": "生成後控制"
       },
       "duration": {
-        "name": "時長",
-        "tooltip": "控制產生音訊的秒數。"
+        "name": "時長"
       },
       "mask_end": {
         "name": "遮罩終點"
@@ -9971,17 +9705,10 @@
         "name": "提示詞"
       },
       "seed": {
-        "name": "隨機種子",
-        "tooltip": "用於生成的隨機種子。"
+        "name": "隨機種子"
       },
       "steps": {
-        "name": "步數",
-        "tooltip": "控制取樣步數。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "步數"
       }
     }
   },
@@ -9997,8 +9724,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "控制產生音訊的秒數長度。"
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10007,21 +9733,13 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的隨機種子。"
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "控制取樣步數。"
+        "name": "steps"
       },
       "strength": {
-        "name": "strength",
-        "tooltip": "此參數控制音訊參數對生成音訊的影響程度。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "strength"
       }
     }
   },
@@ -10044,8 +9762,7 @@
         "name": "影像"
       },
       "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "輸入圖像的去噪程度；0.0 代表與輸入圖像完全相同，1.0 則如同未提供任何圖像。"
+        "name": "image_denoise"
       },
       "model": {
         "name": "model"
@@ -10066,11 +9783,6 @@
         "name": "style_preset",
         "tooltip": "可選的圖像風格。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityStableImageUltraNode": {
@@ -10088,8 +9800,7 @@
         "name": "影像"
       },
       "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "輸入影像的去噪程度；0.0 代表與輸入影像完全相同，1.0 則如同未提供任何影像。"
+        "name": "image_denoise"
       },
       "negative_prompt": {
         "name": "負向提示詞",
@@ -10107,11 +9818,6 @@
         "name": "style_preset",
         "tooltip": "（選填）希望生成影像的風格。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityTextToAudio": {
@@ -10122,8 +9828,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "控制產生音訊的秒數長度。"
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10132,17 +9837,10 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的隨機種子。"
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "控制取樣步數。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "steps"
       }
     }
   },
@@ -10171,11 +9869,6 @@
       "seed": {
         "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10209,11 +9902,6 @@
         "name": "風格預設",
         "tooltip": "可選擇產生影像的期望風格。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityUpscaleFastNode": {
@@ -10222,11 +9910,6 @@
     "inputs": {
       "image": {
         "name": "影像"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10263,11 +9946,6 @@
       },
       "stage_c": {
         "name": "stage_c"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10416,11 +10094,6 @@
       "string_b": {
         "name": "string_b"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringConcatenate": {
@@ -10434,11 +10107,6 @@
       },
       "string_b": {
         "name": "string_b"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10457,8 +10125,7 @@
     },
     "outputs": {
       "0": {
-        "name": "包含",
-        "tooltip": null
+        "name": "包含"
       }
     }
   },
@@ -10471,8 +10138,7 @@
     },
     "outputs": {
       "0": {
-        "name": "長度",
-        "tooltip": null
+        "name": "長度"
       }
     }
   },
@@ -10488,11 +10154,6 @@
       "string": {
         "name": "字串"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringSubstring": {
@@ -10507,11 +10168,6 @@
       "string": {
         "name": "字串"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringTrim": {
@@ -10522,11 +10178,6 @@
       },
       "string": {
         "name": "字串"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10570,11 +10221,6 @@
       "min_padding": {
         "name": "最小填充"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "TCFG": {
@@ -10605,11 +10251,6 @@
       },
       "tags": {
         "name": "標籤"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10790,6 +10431,23 @@
       }
     }
   },
+  "TrimAudioDuration": {
+    "description": "將音訊張量裁剪至選定的時間範圍。",
+    "display_name": "裁剪音訊時長",
+    "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "時長（秒）"
+      },
+      "start_index": {
+        "name": "起始時間",
+        "tooltip": "起始時間（秒），可為負數表示從結尾倒數（支援小數秒）。"
+      }
+    }
+  },
   "TrimVideoLatent": {
     "display_name": "裁剪影片潛在空間",
     "inputs": {
@@ -10798,11 +10456,6 @@
       },
       "trim_amount": {
         "name": "裁剪量"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10857,8 +10510,7 @@
         "name": "模型種子"
       },
       "model_version": {
-        "name": "模型版本",
-        "tooltip": "用於生成的模型版本"
+        "name": "模型版本"
       },
       "orientation": {
         "name": "方向"
@@ -10916,8 +10568,7 @@
         "name": "模型種子"
       },
       "model_version": {
-        "name": "模型版本",
-        "tooltip": "用於生成的模型版本"
+        "name": "模型版本"
       },
       "orientation": {
         "name": "方向"
@@ -11112,11 +10763,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetSelfAttentionMultiply": {
@@ -11137,11 +10783,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetTemporalAttentionMultiply": {
@@ -11161,11 +10802,6 @@
       },
       "self_temporal": {
         "name": "自我時間"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11202,11 +10838,6 @@
       "vae": {
         "name": "vae",
         "tooltip": "用於解碼 latent 的 VAE 模型。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "解碼後的影像。"
       }
     }
   },
@@ -11375,45 +11006,33 @@
         "name": "control after generate"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "輸出影片的秒數（Veo 3 僅支援 8 秒）"
+        "name": "duration_seconds"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "是否使用 AI 協助增強提示"
+        "name": "enhance_prompt"
       },
       "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "為影片生成音訊。所有 Veo 3 模型皆支援。"
+        "name": "generate_audio"
       },
       "image": {
         "name": "image",
         "tooltip": "可選的參考圖片，用於引導影片生成"
       },
       "model": {
-        "name": "model",
-        "tooltip": "用於影片生成的 Veo 3 模型"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "用於引導影片中應避免內容的負面文字提示"
+        "name": "negative_prompt"
       },
       "person_generation": {
-        "name": "person_generation",
-        "tooltip": "是否允許在影片中生成人物"
+        "name": "person_generation"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "影片的文字描述"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "影片生成的種子（0 為隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11429,41 +11048,30 @@
         "name": "生成後控制"
       },
       "duration_seconds": {
-        "name": "持續秒數",
-        "tooltip": "輸出影片的秒數"
+        "name": "持續秒數"
       },
       "enhance_prompt": {
-        "name": "增強提示詞",
-        "tooltip": "是否使用 AI 協助增強提示詞"
+        "name": "增強提示詞"
       },
       "image": {
         "name": "影像",
         "tooltip": "可選的參考圖片，用於引導影片生成"
       },
       "model": {
-        "name": "model",
-        "tooltip": "用於影片生成的 Veo 2 模型"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "用於引導影片中應避免內容的負面文字提示"
+        "name": "負向提示詞"
       },
       "person_generation": {
-        "name": "生成人物",
-        "tooltip": "是否允許在影片中生成人物"
+        "name": "生成人物"
       },
       "prompt": {
         "name": "提示詞",
         "tooltip": "影片的文字描述"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "影片生成的種子（0 為隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "種子"
       }
     }
   },
@@ -11497,8 +11105,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "輸出影片的秒數"
+        "name": "duration"
       },
       "image": {
         "name": "image",
@@ -11509,25 +11116,16 @@
         "tooltip": "模型名稱"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "畫面中物體的移動幅度"
+        "name": "movement_amplitude"
       },
       "prompt": {
-        "name": "prompt",
-        "tooltip": "影片生成的文字描述"
+        "name": "prompt"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "支援的值可能依模型與時長而異"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "影片生成的種子（0 為隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11536,15 +11134,13 @@
     "display_name": "Vidu 參考影像生成影片",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "輸出影片的長寬比"
+        "name": "aspect_ratio"
       },
       "control_after_generate": {
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "輸出影片的秒數"
+        "name": "duration"
       },
       "images": {
         "name": "images",
@@ -11555,25 +11151,17 @@
         "tooltip": "模型名稱"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "畫面中物體的移動幅度"
+        "name": "movement_amplitude"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "用於影片生成的文字描述"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "支援的數值可能依模型與時長而異"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "影片生成的種子（0 為隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11585,8 +11173,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "輸出影片的秒數"
+        "name": "duration"
       },
       "end_frame": {
         "name": "end_frame",
@@ -11601,25 +11188,16 @@
         "tooltip": "模型名稱"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "畫面中物體的移動幅度"
+        "name": "movement_amplitude"
       },
       "prompt": {
-        "name": "prompt",
-        "tooltip": "用於影片生成的文字描述"
+        "name": "prompt"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "支援的數值可能依模型與時長而異"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "影片生成的種子（0 為隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11628,40 +11206,30 @@
     "display_name": "Vidu 文字生成影片",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "輸出影片的長寬比"
+        "name": "aspect_ratio"
       },
       "control_after_generate": {
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "輸出影片的秒數"
+        "name": "duration"
       },
       "model": {
         "name": "model",
         "tooltip": "模型名稱"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "畫面中物體的移動幅度"
+        "name": "movement_amplitude"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "用於影片生成的文字描述"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "支援的數值可能依模型與時長而異"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "影片生成的種子（0 為隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11723,16 +11291,13 @@
     },
     "outputs": {
       "0": {
-        "name": "正向",
-        "tooltip": null
+        "name": "正向"
       },
       "1": {
-        "name": "反向",
-        "tooltip": null
+        "name": "反向"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -11756,11 +11321,6 @@
       },
       "width": {
         "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11819,28 +11379,22 @@
     },
     "outputs": {
       "0": {
-        "name": "正向",
-        "tooltip": null
+        "name": "正向"
       },
       "1": {
-        "name": "反向",
-        "tooltip": null
+        "name": "反向"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       },
       "3": {
-        "name": "裁剪 latent",
-        "tooltip": null
+        "name": "裁剪 latent"
       },
       "4": {
-        "name": "裁剪圖片",
-        "tooltip": null
+        "name": "裁剪圖片"
       },
       "5": {
-        "name": "影片幀偏移",
-        "tooltip": null
+        "name": "影片幀偏移"
       }
     }
   },
@@ -11877,20 +11431,16 @@
     },
     "outputs": {
       "0": {
-        "name": "camera_embedding",
-        "tooltip": null
+        "name": "camera_embedding"
       },
       "1": {
-        "name": "寬度",
-        "tooltip": null
+        "name": "寬度"
       },
       "2": {
-        "name": "高度",
-        "tooltip": null
+        "name": "高度"
       },
       "3": {
-        "name": "長度",
-        "tooltip": null
+        "name": "長度"
       }
     }
   },
@@ -11930,16 +11480,13 @@
     },
     "outputs": {
       "0": {
-        "name": "正向",
-        "tooltip": null
+        "name": "正向"
       },
       "1": {
-        "name": "負向",
-        "tooltip": null
+        "name": "負向"
       },
       "2": {
-        "name": "潛空間",
-        "tooltip": null
+        "name": "潛空間"
       }
     }
   },
@@ -11974,11 +11521,6 @@
       "model": {
         "name": "模型",
         "tooltip": "在取樣時要套用 context windows 的模型。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "取樣時已套用 context windows 的模型。"
       }
     }
   },
@@ -12156,16 +11698,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12224,12 +11763,10 @@
         "name": "生成後控制"
       },
       "duration": {
-        "name": "時長",
-        "tooltip": "可用時長：5 秒與 10 秒"
+        "name": "時長"
       },
       "generate_audio": {
-        "name": "自動生成音訊",
-        "tooltip": "若無音訊輸入，則自動生成音訊。"
+        "name": "自動生成音訊"
       },
       "image": {
         "name": "圖片"
@@ -12239,32 +11776,23 @@
         "tooltip": "要使用的模型。"
       },
       "negative_prompt": {
-        "name": "負面提示詞",
-        "tooltip": "用於引導避免內容的負面提示詞。"
+        "name": "負面提示詞"
       },
       "prompt": {
         "name": "提示詞",
         "tooltip": "用於描述元素與視覺特徵的提示詞，支援中英文。"
       },
       "prompt_extend": {
-        "name": "提示詞增強",
-        "tooltip": "是否使用 AI 協助增強提示詞。"
+        "name": "提示詞增強"
       },
       "resolution": {
         "name": "解析度"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "用於生成的種子。"
+        "name": "種子"
       },
       "watermark": {
-        "name": "浮水印",
-        "tooltip": "是否在結果中加入「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "浮水印"
       }
     }
   },
@@ -12298,20 +11826,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative_text",
-        "tooltip": null
+        "name": "negative_text"
       },
       "2": {
-        "name": "negative_img_text",
-        "tooltip": null
+        "name": "negative_img_text"
       },
       "3": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12354,16 +11878,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12397,16 +11918,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12425,32 +11943,23 @@
         "tooltip": "要使用的模型。"
       },
       "negative_prompt": {
-        "name": "負面提示詞",
-        "tooltip": "用於引導避免內容的負面文字提示。"
+        "name": "負面提示詞"
       },
       "prompt": {
         "name": "提示詞",
         "tooltip": "用於描述元素和視覺特徵的提示詞，支援中英文。"
       },
       "prompt_extend": {
-        "name": "提示詞增強",
-        "tooltip": "是否使用 AI 協助增強提示詞。"
+        "name": "提示詞增強"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "用於生成的種子。"
+        "name": "種子"
       },
       "watermark": {
-        "name": "浮水印",
-        "tooltip": "是否在結果中加入「AI 生成」浮水印。"
+        "name": "浮水印"
       },
       "width": {
         "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -12466,44 +11975,33 @@
         "name": "生成後控制"
       },
       "duration": {
-        "name": "時長",
-        "tooltip": "可用時長：5 秒與 10 秒"
+        "name": "時長"
       },
       "generate_audio": {
-        "name": "自動生成音訊",
-        "tooltip": "若無音訊輸入，則自動生成音訊。"
+        "name": "自動生成音訊"
       },
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
-        "tooltip": "用於引導避免內容的反向文字提示。"
+        "name": "反向提示詞"
       },
       "prompt": {
         "name": "提示詞",
         "tooltip": "用於描述元素與視覺特徵的提示詞，支援中英文。"
       },
       "prompt_extend": {
-        "name": "提示詞增強",
-        "tooltip": "是否使用 AI 協助增強提示詞。"
+        "name": "提示詞增強"
       },
       "seed": {
-        "name": "種子",
-        "tooltip": "用於生成的種子。"
+        "name": "種子"
       },
       "size": {
         "name": "尺寸"
       },
       "watermark": {
-        "name": "浮水印",
-        "tooltip": "是否在結果中加入「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "浮水印"
       }
     }
   },
@@ -12549,16 +12047,13 @@
     },
     "outputs": {
       "0": {
-        "name": "正向",
-        "tooltip": null
+        "name": "正向"
       },
       "1": {
-        "name": "反向",
-        "tooltip": null
+        "name": "反向"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },

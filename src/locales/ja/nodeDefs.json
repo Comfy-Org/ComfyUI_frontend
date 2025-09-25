@@ -17,11 +17,6 @@
         "name": "正規化閾値",
         "tooltip": "ガイダンスベクトルをこの値に正規化します。0に設定すると正規化は無効になります。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "AddNoise": {
@@ -53,10 +48,33 @@
       "steps": {
         "name": "ステップ"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "AudioAdjustVolume": {
+    "display_name": "オーディオ音量調整",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "volume": {
+        "name": "音量",
+        "tooltip": "デシベル（dB）での音量調整。0 = 変更なし、+6 = 2倍、-6 = 半分 など"
+      }
+    }
+  },
+  "AudioConcat": {
+    "description": "指定した方向でaudio1とaudio2を連結します。",
+    "display_name": "オーディオ連結",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "direction": {
+        "name": "方向",
+        "tooltip": "audio2をaudio1の後ろまたは前に追加するかどうか。"
       }
     }
   },
@@ -76,6 +94,22 @@
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
+      }
+    }
+  },
+  "AudioMerge": {
+    "description": "2つのオーディオトラックを重ねて合成します。",
+    "display_name": "オーディオ合成",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "merge_method": {
+        "name": "合成方法",
+        "tooltip": "オーディオ波形を合成する方法。"
       }
     }
   },
@@ -133,8 +167,7 @@
         "tooltip": "出力動画のアスペクト比。"
       },
       "camera_fixed": {
-        "name": "カメラ固定",
-        "tooltip": "カメラを固定するかどうかを指定します。プラットフォームはプロンプトにカメラ固定の指示を追加しますが、実際の効果は保証されません。"
+        "name": "カメラ固定"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -164,17 +197,10 @@
         "tooltip": "出力動画の解像度。"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値。"
+        "name": "シード"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "動画に「AI生成」ウォーターマークを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ウォーターマーク"
       }
     }
   },
@@ -186,8 +212,7 @@
         "name": "生成後のコントロール"
       },
       "guidance_scale": {
-        "name": "ガイダンススケール",
-        "tooltip": "値が高いほどプロンプトに忠実な画像になります"
+        "name": "ガイダンススケール"
       },
       "image": {
         "name": "画像",
@@ -202,17 +227,10 @@
         "tooltip": "画像編集の指示"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値"
+        "name": "シード"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "画像に「AI生成」ウォーターマークを追加するかどうか"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ウォーターマーク"
       }
     }
   },
@@ -224,8 +242,7 @@
         "name": "生成後のコントロール"
       },
       "guidance_scale": {
-        "name": "ガイダンススケール",
-        "tooltip": "値が高いほどプロンプトに忠実な画像になります"
+        "name": "ガイダンススケール"
       },
       "height": {
         "name": "高さ",
@@ -240,25 +257,18 @@
         "tooltip": "画像生成に使用するテキストプロンプト"
       },
       "seed": {
-        "name": "シード値",
-        "tooltip": "生成に使用するシード値"
+        "name": "シード値"
       },
       "size_preset": {
         "name": "サイズプリセット",
         "tooltip": "推奨サイズを選択します。カスタムを選ぶと下記の幅と高さが使用されます"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "画像に「AI生成」のウォーターマークを追加するかどうか"
+        "name": "ウォーターマーク"
       },
       "width": {
         "name": "幅",
         "tooltip": "画像のカスタム幅。`size_preset`が`カスタム`の場合のみ有効です"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -294,17 +304,10 @@
         "tooltip": "出力動画の解像度。"
       },
       "seed": {
-        "name": "シード値",
-        "tooltip": "生成に使用するシード値。"
+        "name": "シード値"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "動画に「AI生成」のウォーターマークを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ウォーターマーク"
       }
     }
   },
@@ -317,8 +320,7 @@
         "tooltip": "出力動画のアスペクト比。"
       },
       "camera_fixed": {
-        "name": "カメラ固定",
-        "tooltip": "カメラを固定するかどうかを指定します。プラットフォームはプロンプトにカメラ固定の指示を追加しますが、実際の効果は保証されません。"
+        "name": "カメラ固定"
       },
       "control_after_generate": {
         "name": "生成後の制御"
@@ -344,17 +346,10 @@
         "tooltip": "出力動画の解像度。"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値。"
+        "name": "シード"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "動画に「AI生成」のウォーターマークを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ウォーターマーク"
       }
     }
   },
@@ -366,20 +361,17 @@
         "name": "生成後の制御"
       },
       "fail_on_partial": {
-        "name": "部分失敗時中断",
-        "tooltip": "有効にすると、要求された画像の一部が欠落またはエラーの場合に実行を中止します。"
+        "name": "部分失敗時中断"
       },
       "height": {
-        "name": "高さ",
-        "tooltip": "画像のカスタム高さ。「サイズプリセット」が「カスタム」の場合のみ有効です。"
+        "name": "高さ"
       },
       "image": {
         "name": "画像",
         "tooltip": "画像から画像生成用の入力画像。1～10枚の画像リストで、単一または複数参照生成が可能。"
       },
       "max_images": {
-        "name": "最大画像数",
-        "tooltip": "sequential_image_generation='auto'時に生成する最大画像数。合計画像数（入力＋生成）は15枚を超えません。"
+        "name": "最大画像数"
       },
       "model": {
         "name": "モデル",
@@ -390,29 +382,20 @@
         "tooltip": "画像の作成または編集用テキストプロンプト。"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値。"
+        "name": "シード"
       },
       "sequential_image_generation": {
-        "name": "連続画像生成",
-        "tooltip": "グループ画像生成モード。「無効」は単一画像を生成。「自動」はモデルが複数の関連画像（例：ストーリーシーン、キャラクターのバリエーション）を生成するかどうかを判断します。"
+        "name": "連続画像生成"
       },
       "size_preset": {
         "name": "サイズプリセット",
         "tooltip": "推奨サイズを選択します。「カスタム」を選ぶと下記の幅と高さが使用されます。"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "画像に「AI生成」のウォーターマークを追加するかどうか。"
+        "name": "ウォーターマーク"
       },
       "width": {
-        "name": "幅",
-        "tooltip": "画像のカスタム幅。「サイズプリセット」が「カスタム」の場合のみ有効です。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "幅"
       }
     }
   },
@@ -425,8 +408,7 @@
         "tooltip": "出力ビデオのアスペクト比。"
       },
       "camera_fixed": {
-        "name": "カメラ固定",
-        "tooltip": "カメラを固定するかどうかを指定します。プラットフォームはプロンプトにカメラ固定の指示を追加しますが、実際の効果は保証されません。"
+        "name": "カメラ固定"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -448,17 +430,10 @@
         "tooltip": "出力ビデオの解像度。"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値。"
+        "name": "シード"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "ビデオに「AI生成」のウォーターマークを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ウォーターマーク"
       }
     }
   },
@@ -491,8 +466,7 @@
     },
     "outputs": {
       "0": {
-        "name": "パッチ済みモデル",
-        "tooltip": null
+        "name": "パッチ済みモデル"
       }
     }
   },
@@ -526,11 +500,6 @@
       },
       "v": {
         "name": "v"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -622,11 +591,6 @@
         "name": "テキスト",
         "tooltip": "エンコードするテキスト。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "拡散モデルをガイドするために使用される埋め込まれたテキストを含む条件付け。"
-      }
     }
   },
   "CLIPTextEncodeControlnet": {
@@ -640,11 +604,6 @@
       },
       "text": {
         "name": "テキスト"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -714,11 +673,6 @@
       "user_prompt": {
         "name": "user_prompt",
         "tooltip": "エンコードするテキスト。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "拡散モデルをガイドするために使用される埋め込まれたテキストを含む条件付け。"
       }
     }
   },
@@ -846,11 +800,6 @@
       "low_threshold": {
         "name": "低い閾値"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CaseConverter": {
@@ -861,11 +810,6 @@
       },
       "string": {
         "name": "文字列"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -887,17 +831,6 @@
       "ckpt_name": {
         "name": "ckpt名",
         "tooltip": "読み込むチェックポイント（モデル）の名前。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "潜在変数のデノイズに使用されるモデル。"
-      },
-      "1": {
-        "tooltip": "テキストプロンプトをエンコードするために使用されるCLIPモデル。"
-      },
-      "2": {
-        "tooltip": "画像を潜在空間にエンコードおよびデコードするために使用されるVAEモデル。"
       }
     }
   },
@@ -940,11 +873,6 @@
       "start_sigma": {
         "name": "開始シグマ",
         "tooltip": "これらのオプションが有効になる最初のシグマ。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1309,11 +1237,6 @@
         "name": "モデル",
         "tooltip": "サンプリング中にコンテキストウィンドウを適用するモデル。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "サンプリング中にコンテキストウィンドウが適用されたモデル。"
-      }
     }
   },
   "ControlNetApply": {
@@ -1479,11 +1402,6 @@
       "width": {
         "name": "幅"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CosmosPredict2ImageToVideoLatent": {
@@ -1509,11 +1427,6 @@
       },
       "width": {
         "name": "幅"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1672,11 +1585,6 @@
         "name": "画像",
         "tooltip": "動画を作成するための画像です。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CropMask": {
@@ -1800,11 +1708,6 @@
         "name": "詳細ログ",
         "tooltip": "詳細情報をログに記録するかどうか。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "EasyCacheが追加されたモデル。"
-      }
     }
   },
   "EmptyAceStepLatentAudio": {
@@ -1817,10 +1720,22 @@
       "seconds": {
         "name": "秒数"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "EmptyAudio": {
+    "display_name": "空のオーディオ",
+    "inputs": {
+      "channels": {
+        "name": "チャンネル数",
+        "tooltip": "オーディオチャンネル数（1はモノラル、2はステレオ）。"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "空のオーディオクリップの長さ（秒）"
+      },
+      "sample_rate": {
+        "name": "サンプルレート",
+        "tooltip": "空のオーディオクリップのサンプルレート。"
       }
     }
   },
@@ -1835,11 +1750,6 @@
       },
       "width": {
         "name": "幅"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1857,11 +1767,6 @@
       },
       "width": {
         "name": "幅"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1969,11 +1874,6 @@
       "width": {
         "name": "幅",
         "tooltip": "潜在画像の幅（ピクセル単位）。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "空の潜在画像バッチ。"
       }
     }
   },
@@ -2360,8 +2260,7 @@
         "name": "画像プロンプト"
       },
       "image_prompt_strength": {
-        "name": "画像プロンプト強度",
-        "tooltip": "プロンプトと画像プロンプトのブレンド比率。"
+        "name": "画像プロンプト強度"
       },
       "prompt": {
         "name": "プロンプト",
@@ -2773,19 +2672,16 @@
     "display_name": "Ideogram V1",
     "inputs": {
       "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "画像生成のアスペクト比。"
+        "name": "アスペクト比"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
       },
       "magic_prompt_option": {
-        "name": "マジックプロンプトオプション",
-        "tooltip": "生成時にMagicPromptを使用するかどうかを決定"
+        "name": "マジックプロンプトオプション"
       },
       "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "画像から除外したい内容の説明"
+        "name": "ネガティブプロンプト"
       },
       "num_images": {
         "name": "画像数"
@@ -2801,11 +2697,6 @@
         "name": "ターボ",
         "tooltip": "ターボモードを使用するかどうか（高速生成、品質が低下する可能性あり）"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "IdeogramV2": {
@@ -2813,19 +2704,16 @@
     "display_name": "Ideogram V2",
     "inputs": {
       "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "画像生成のアスペクト比。解像度がAUTOでない場合は無視されます。"
+        "name": "アスペクト比"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
       },
       "magic_prompt_option": {
-        "name": "マジックプロンプトオプション",
-        "tooltip": "生成時にMagicPromptを使用するかどうかを決定します"
+        "name": "マジックプロンプトオプション"
       },
       "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "画像から除外したい内容の説明"
+        "name": "ネガティブプロンプト"
       },
       "num_images": {
         "name": "画像数"
@@ -2835,24 +2723,17 @@
         "tooltip": "画像生成のためのプロンプト"
       },
       "resolution": {
-        "name": "解像度",
-        "tooltip": "画像生成の解像度。AUTOでない場合、aspect_ratioの設定を上書きします。"
+        "name": "解像度"
       },
       "seed": {
         "name": "シード"
       },
       "style_type": {
-        "name": "スタイルタイプ",
-        "tooltip": "生成時のスタイルタイプ（V2のみ）"
+        "name": "スタイルタイプ"
       },
       "turbo": {
         "name": "ターボ",
         "tooltip": "ターボモードを使用するかどうか（高速生成、品質が低下する可能性あり）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2861,8 +2742,7 @@
     "display_name": "Ideogram V3",
     "inputs": {
       "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "画像生成時のアスペクト比。解像度が自動でない場合は無視されます。"
+        "name": "アスペクト比"
       },
       "character_image": {
         "name": "キャラクター画像",
@@ -2880,8 +2760,7 @@
         "tooltip": "画像編集用のオプションの参照画像。"
       },
       "magic_prompt_option": {
-        "name": "マジックプロンプトオプション",
-        "tooltip": "生成時にMagicPromptを使用するかどうかを決定します"
+        "name": "マジックプロンプトオプション"
       },
       "mask": {
         "name": "マスク",
@@ -2895,20 +2774,13 @@
         "tooltip": "画像生成または編集のためのプロンプト"
       },
       "rendering_speed": {
-        "name": "レンダリング速度",
-        "tooltip": "生成速度と品質のトレードオフを制御します"
+        "name": "レンダリング速度"
       },
       "resolution": {
-        "name": "解像度",
-        "tooltip": "画像生成時の解像度。自動でない場合、アスペクト比の設定を上書きします。"
+        "name": "解像度"
       },
       "seed": {
         "name": "シード"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -3418,11 +3290,6 @@
       "steps": {
         "name": "ステップ",
         "tooltip": "デノイズプロセスで使用されるステップ数。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "デノイズされた潜在変数。"
       }
     }
   },
@@ -4414,11 +4281,6 @@
         "name": "verbose",
         "tooltip": "詳細な情報をログに記録するかどうか。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "LazyCache が適用されたモデル。"
-      }
     }
   },
   "Load3D": {
@@ -4569,15 +4431,13 @@
         "tooltip": "画像を読み込むフォルダ。"
       },
       "height": {
-        "name": "height",
-        "tooltip": "画像のリサイズ後の高さ。-1の場合は元の高さを使用します。"
+        "name": "height"
       },
       "resize_method": {
         "name": "resize_method"
       },
       "width": {
-        "name": "width",
-        "tooltip": "画像のリサイズ後の幅。-1の場合は元の幅を使用します。"
+        "name": "width"
       }
     }
   },
@@ -4597,11 +4457,6 @@
       },
       "upload": {
         "name": "アップロードするファイルを選択"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -4629,14 +4484,6 @@
         "name": "モデルの強度",
         "tooltip": "拡散モデルをどの程度変更するか。この値は負の値になる可能性があります。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "修正された拡散モデル。"
-      },
-      "1": {
-        "tooltip": "修正されたCLIPモデル。"
-      }
     }
   },
   "LoraLoaderModelOnly": {
@@ -4651,11 +4498,6 @@
       },
       "strength_model": {
         "name": "モデルの強度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "修正された拡散モデル。"
       }
     }
   },
@@ -4674,11 +4516,6 @@
       "strength_model": {
         "name": "strength_model",
         "tooltip": "拡散モデルをどの程度強く変更するか。この値は負にもできます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "変更された拡散モデル。"
       }
     }
   },
@@ -4978,33 +4815,24 @@
         "name": "生成後のコントロール"
       },
       "duration": {
-        "name": "長さ",
-        "tooltip": "出力ビデオの長さ（秒単位）。"
+        "name": "長さ"
       },
       "first_frame_image": {
         "name": "最初のフレーム画像",
         "tooltip": "ビデオ生成の最初のフレームとして使用するオプション画像。"
       },
       "prompt_optimizer": {
-        "name": "プロンプト最適化",
-        "tooltip": "必要に応じて生成品質を向上させるためにプロンプトを最適化します。"
+        "name": "プロンプト最適化"
       },
       "prompt_text": {
         "name": "プロンプトテキスト",
         "tooltip": "ビデオ生成をガイドするテキストプロンプト。"
       },
       "resolution": {
-        "name": "解像度",
-        "tooltip": "ビデオ表示の寸法。1080pは1920x1080、768pは1366x768です。"
+        "name": "解像度"
       },
       "seed": {
-        "name": "シード値",
-        "tooltip": "ノイズ生成に使用されるランダムシード。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "シード値"
       }
     }
   },
@@ -5028,13 +4856,7 @@
         "tooltip": "動画生成をガイドするテキストプロンプト"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "ノイズ生成に使用される乱数シード。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "シード"
       }
     }
   },
@@ -5054,13 +4876,7 @@
         "tooltip": "ビデオ生成をガイドするテキストプロンプト"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "ノイズ生成に使用されるランダムシード。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "シード"
       }
     }
   },
@@ -7307,11 +7123,6 @@
         "name": "ステップ数",
         "tooltip": "ノイズ除去ステップ数"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyTxt2VideoNode": {
@@ -7343,11 +7154,6 @@
         "name": "ステップ数",
         "tooltip": "推論ステップ数"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyVideo2VideoNode": {
@@ -7357,8 +7163,7 @@
         "name": "制御タイプ"
       },
       "motion_intensity": {
-        "name": "動きの強度",
-        "tooltip": "control_typeが「Motion Transfer」の場合のみ使用"
+        "name": "動きの強度"
       },
       "negative_prompt": {
         "name": "ネガティブプロンプト",
@@ -7375,11 +7180,6 @@
       "video": {
         "name": "動画",
         "tooltip": "出力動画生成に使用する参照動画。5秒以上である必要があります。5秒を超える動画は自動的にトリミングされます。MP4形式のみ対応。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -7402,12 +7202,10 @@
     "display_name": "OpenAI ChatGPT 高度なオプション",
     "inputs": {
       "instructions": {
-        "name": "指示",
-        "tooltip": "応答生成方法に関するモデルへの指示"
+        "name": "指示"
       },
       "max_output_tokens": {
-        "name": "最大出力トークン数",
-        "tooltip": "応答で生成できるトークン数の上限（表示される出力トークンを含む）"
+        "name": "最大出力トークン数"
       },
       "truncation": {
         "name": "切り捨て",
@@ -7461,20 +7259,17 @@
         "tooltip": "インペインティング用のオプションマスク（白い部分が置き換えられます）"
       },
       "n": {
-        "name": "生成数",
-        "tooltip": "生成する画像の枚数"
+        "name": "生成数"
       },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "DALL·E用のテキストプロンプト"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
+        "name": "シード"
       },
       "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
+        "name": "サイズ"
       }
     }
   },
@@ -7490,20 +7285,16 @@
         "tooltip": "DALL·E用のテキストプロンプト"
       },
       "quality": {
-        "name": "画質",
-        "tooltip": "画像の品質"
+        "name": "画質"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
+        "name": "シード"
       },
       "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
+        "name": "サイズ"
       },
       "style": {
-        "name": "スタイル",
-        "tooltip": "「Vivid」はモデルがハイパーリアルでドラマチックな画像を生成する傾向になります。「Natural」はより自然で、ハイパーリアルではない画像を生成します。"
+        "name": "スタイル"
       }
     }
   },
@@ -7512,8 +7303,7 @@
     "display_name": "OpenAI GPT Image 1",
     "inputs": {
       "background": {
-        "name": "背景",
-        "tooltip": "背景あり／なしの画像を返す"
+        "name": "背景"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -7527,24 +7317,20 @@
         "tooltip": "インペインティング用のオプションマスク（白い部分が置き換えられます）"
       },
       "n": {
-        "name": "生成数",
-        "tooltip": "生成する画像の枚数"
+        "name": "生成数"
       },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "GPT Image 1用のテキストプロンプト"
       },
       "quality": {
-        "name": "品質",
-        "tooltip": "画像の品質。コストと生成時間に影響します。"
+        "name": "品質"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
+        "name": "シード"
       },
       "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
+        "name": "サイズ"
       }
     }
   },
@@ -8249,11 +8035,6 @@
       "value": {
         "name": "値"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveFloat": {
@@ -8261,11 +8042,6 @@
     "inputs": {
       "value": {
         "name": "値"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8278,11 +8054,6 @@
       "value": {
         "name": "値"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveString": {
@@ -8291,11 +8062,6 @@
       "value": {
         "name": "値"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveStringMultiline": {
@@ -8303,11 +8069,6 @@
     "inputs": {
       "value": {
         "name": "値"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8741,11 +8502,6 @@
       "string": {
         "name": "文字列"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RegexMatch": {
@@ -8769,8 +8525,7 @@
     },
     "outputs": {
       "0": {
-        "name": "マッチ結果",
-        "tooltip": null
+        "name": "マッチ結果"
       }
     }
   },
@@ -8782,12 +8537,10 @@
         "name": "大文字小文字を区別しない"
       },
       "count": {
-        "name": "回数",
-        "tooltip": "置換を行う最大回数。0に設定するとすべての一致箇所を置換します（デフォルト）。1に設定すると最初の一致のみ、2に設定すると最初の2箇所のみ置換します。"
+        "name": "回数"
       },
       "dotall": {
-        "name": "ドットオール",
-        "tooltip": "有効にすると、ドット（.）は改行文字も含めてすべての文字にマッチします。無効の場合、ドットは改行にマッチしません。"
+        "name": "ドットオール"
       },
       "multiline": {
         "name": "複数行"
@@ -8800,11 +8553,6 @@
       },
       "string": {
         "name": "文字列"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9016,11 +8764,6 @@
         "name": "開始フレーム",
         "tooltip": "動画に使用する開始フレーム"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayImageToVideoNodeGen3a": {
@@ -9047,11 +8790,6 @@
       "start_frame": {
         "name": "開始フレーム",
         "tooltip": "動画に使用する開始フレーム"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9080,11 +8818,6 @@
         "name": "開始フレーム",
         "tooltip": "動画に使用する開始フレーム"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayTextToImageNode": {
@@ -9101,11 +8834,6 @@
       "reference_image": {
         "name": "参照画像",
         "tooltip": "生成をガイドするためのオプションの参照画像"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9445,11 +9173,6 @@
       "version": {
         "name": "バージョン"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerLCMUpscale": {
@@ -9463,11 +9186,6 @@
       },
       "upscale_method": {
         "name": "アップスケール方法"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9897,6 +9615,23 @@
       }
     }
   },
+  "SplitAudioChannels": {
+    "description": "オーディオを左右のチャンネルに分離します。",
+    "display_name": "オーディオチャンネル分離",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "左"
+      },
+      "1": {
+        "name": "右"
+      }
+    }
+  },
   "SplitImageWithAlpha": {
     "display_name": "アルファで画像を分割",
     "inputs": {
@@ -9955,8 +9690,7 @@
         "name": "生成後のコントロール"
       },
       "duration": {
-        "name": "長さ",
-        "tooltip": "生成されるオーディオの秒数を制御します。"
+        "name": "長さ"
       },
       "mask_end": {
         "name": "マスク終了"
@@ -9971,17 +9705,10 @@
         "name": "プロンプト"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用されるランダムシード。"
+        "name": "シード"
       },
       "steps": {
-        "name": "ステップ数",
-        "tooltip": "サンプリングステップ数を制御します。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ステップ数"
       }
     }
   },
@@ -9997,8 +9724,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "生成されるオーディオの長さ（秒）を制御します。"
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10007,21 +9733,13 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "生成に使用されるランダムシード。"
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "サンプリングステップ数を制御します。"
+        "name": "steps"
       },
       "strength": {
-        "name": "strength",
-        "tooltip": "このパラメータは生成されるオーディオに対するオーディオパラメータの影響度を制御します。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "strength"
       }
     }
   },
@@ -10044,8 +9762,7 @@
         "name": "画像"
       },
       "image_denoise": {
-        "name": "画像ノイズ除去",
-        "tooltip": "入力画像のノイズ除去度合い。0.0は入力画像と同一、1.0は画像が全く提供されていない状態と同じです。"
+        "name": "画像ノイズ除去"
       },
       "model": {
         "name": "モデル"
@@ -10066,11 +9783,6 @@
         "name": "スタイルプリセット",
         "tooltip": "生成画像に希望するスタイル（任意）。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityStableImageUltraNode": {
@@ -10088,8 +9800,7 @@
         "name": "image"
       },
       "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "入力画像のノイズ除去度合い。0.0は入力画像と同一、1.0は画像が全く提供されていない状態と同じです。"
+        "name": "image_denoise"
       },
       "negative_prompt": {
         "name": "negative_prompt",
@@ -10107,11 +9818,6 @@
         "name": "style_preset",
         "tooltip": "生成画像の任意のスタイル。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityTextToAudio": {
@@ -10122,8 +9828,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "生成されるオーディオの長さ（秒）を制御します。"
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10132,17 +9837,10 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "生成に使用されるランダムシード。"
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "サンプリングステップ数を制御します。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "steps"
       }
     }
   },
@@ -10171,11 +9869,6 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノイズ生成に使用されるランダムシードです。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10209,11 +9902,6 @@
         "name": "スタイルプリセット",
         "tooltip": "生成画像の希望するスタイル（任意）。"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityUpscaleFastNode": {
@@ -10222,11 +9910,6 @@
     "inputs": {
       "image": {
         "name": "画像"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10263,11 +9946,6 @@
       },
       "stage_c": {
         "name": "ステージc"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10416,11 +10094,6 @@
       "string_b": {
         "name": "string_b"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringConcatenate": {
@@ -10434,11 +10107,6 @@
       },
       "string_b": {
         "name": "string_b"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10457,8 +10125,7 @@
     },
     "outputs": {
       "0": {
-        "name": "含む",
-        "tooltip": null
+        "name": "含む"
       }
     }
   },
@@ -10471,8 +10138,7 @@
     },
     "outputs": {
       "0": {
-        "name": "長さ",
-        "tooltip": null
+        "name": "長さ"
       }
     }
   },
@@ -10488,11 +10154,6 @@
       "string": {
         "name": "文字列"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringSubstring": {
@@ -10507,11 +10168,6 @@
       "string": {
         "name": "文字列"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringTrim": {
@@ -10522,11 +10178,6 @@
       },
       "string": {
         "name": "文字列"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10570,11 +10221,6 @@
       "min_padding": {
         "name": "最小パディング"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "TCFG": {
@@ -10605,11 +10251,6 @@
       },
       "tags": {
         "name": "タグ"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10790,6 +10431,23 @@
       }
     }
   },
+  "TrimAudioDuration": {
+    "description": "オーディオテンソルを指定した時間範囲でトリミングします。",
+    "display_name": "オーディオ長さトリミング",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "長さ（秒）"
+      },
+      "start_index": {
+        "name": "開始位置",
+        "tooltip": "開始時間（秒）。負の値で末尾からカウント（小数点以下も可）。"
+      }
+    }
+  },
   "TrimVideoLatent": {
     "display_name": "TrimVideoLatent",
     "inputs": {
@@ -10798,11 +10456,6 @@
       },
       "trim_amount": {
         "name": "トリム量"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10857,8 +10510,7 @@
         "name": "モデルシード"
       },
       "model_version": {
-        "name": "モデルバージョン",
-        "tooltip": "生成に使用するモデルバージョン"
+        "name": "モデルバージョン"
       },
       "orientation": {
         "name": "向き"
@@ -10916,8 +10568,7 @@
         "name": "モデルシード"
       },
       "model_version": {
-        "name": "モデルバージョン",
-        "tooltip": "生成に使用するモデルバージョン"
+        "name": "モデルバージョン"
       },
       "orientation": {
         "name": "向き"
@@ -11112,11 +10763,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetSelfAttentionMultiply": {
@@ -11137,11 +10783,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetTemporalAttentionMultiply": {
@@ -11161,11 +10802,6 @@
       },
       "self_temporal": {
         "name": "自己時間"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11202,11 +10838,6 @@
       "vae": {
         "name": "vae",
         "tooltip": "潜在のデコードに使用されるVAEモデル。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "デコードされた画像。"
       }
     }
   },
@@ -11375,45 +11006,33 @@
         "name": "control after generate"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "出力ビデオの長さ（秒）。Veo 3 は8秒のみ対応"
+        "name": "duration_seconds"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "AIアシストでプロンプトを強化するかどうか"
+        "name": "enhance_prompt"
       },
       "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "ビデオ用の音声を生成します。すべての Veo 3 モデルで対応。"
+        "name": "generate_audio"
       },
       "image": {
         "name": "image",
         "tooltip": "ビデオ生成の参考となる画像（任意）"
       },
       "model": {
-        "name": "model",
-        "tooltip": "ビデオ生成に使用する Veo 3 モデル"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "ビデオで避けたい内容を指定するネガティブプロンプト"
+        "name": "negative_prompt"
       },
       "person_generation": {
-        "name": "person_generation",
-        "tooltip": "ビデオ内で人物生成を許可するかどうか"
+        "name": "person_generation"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "ビデオのテキスト説明"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "ビデオ生成用のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11429,41 +11048,30 @@
         "name": "control after generate"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "出力ビデオの長さ（秒）"
+        "name": "duration_seconds"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "AIアシストでプロンプトを強化するかどうか"
+        "name": "enhance_prompt"
       },
       "image": {
         "name": "image",
         "tooltip": "ビデオ生成の参考となる画像（オプション）"
       },
       "model": {
-        "name": "model",
-        "tooltip": "ビデオ生成に使用する Veo 2 モデル"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "ビデオで避けたい内容を指定するネガティブプロンプト"
+        "name": "negative_prompt"
       },
       "person_generation": {
-        "name": "person_generation",
-        "tooltip": "ビデオ内で人物生成を許可するかどうか"
+        "name": "person_generation"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "ビデオのテキスト説明"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "ビデオ生成用のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11497,8 +11105,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "出力ビデオの長さ（秒）"
+        "name": "duration"
       },
       "image": {
         "name": "image",
@@ -11509,25 +11116,16 @@
         "tooltip": "モデル名"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "フレーム内のオブジェクトの動きの大きさ"
+        "name": "movement_amplitude"
       },
       "prompt": {
-        "name": "prompt",
-        "tooltip": "ビデオ生成用のテキスト説明"
+        "name": "prompt"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "対応値はモデルや長さによって異なります"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "ビデオ生成用のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11536,15 +11134,13 @@
     "display_name": "Vidu 参照画像から動画生成",
     "inputs": {
       "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比"
+        "name": "アスペクト比"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
       },
       "duration": {
-        "name": "長さ",
-        "tooltip": "出力動画の長さ（秒）"
+        "name": "長さ"
       },
       "images": {
         "name": "画像",
@@ -11555,25 +11151,17 @@
         "tooltip": "モデル名"
       },
       "movement_amplitude": {
-        "name": "動きの振幅",
-        "tooltip": "フレーム内のオブジェクトの動きの振幅"
+        "name": "動きの振幅"
       },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "動画生成のためのテキスト説明"
       },
       "resolution": {
-        "name": "解像度",
-        "tooltip": "対応する値はモデルや長さによって異なります"
+        "name": "解像度"
       },
       "seed": {
-        "name": "シード値",
-        "tooltip": "動画生成用のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "シード値"
       }
     }
   },
@@ -11585,8 +11173,7 @@
         "name": "生成後のコントロール"
       },
       "duration": {
-        "name": "長さ",
-        "tooltip": "出力動画の長さ（秒）"
+        "name": "長さ"
       },
       "end_frame": {
         "name": "終了フレーム",
@@ -11601,25 +11188,16 @@
         "tooltip": "モデル名"
       },
       "movement_amplitude": {
-        "name": "動きの振幅",
-        "tooltip": "フレーム内のオブジェクトの動きの振幅"
+        "name": "動きの振幅"
       },
       "prompt": {
-        "name": "プロンプト",
-        "tooltip": "動画生成のためのテキスト説明"
+        "name": "プロンプト"
       },
       "resolution": {
-        "name": "解像度",
-        "tooltip": "対応する値はモデルや長さによって異なります"
+        "name": "解像度"
       },
       "seed": {
-        "name": "シード値",
-        "tooltip": "動画生成用のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "シード値"
       }
     }
   },
@@ -11628,40 +11206,30 @@
     "display_name": "Vidu テキストから動画生成",
     "inputs": {
       "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比"
+        "name": "アスペクト比"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
       },
       "duration": {
-        "name": "長さ",
-        "tooltip": "出力動画の長さ（秒）"
+        "name": "長さ"
       },
       "model": {
         "name": "モデル",
         "tooltip": "モデル名"
       },
       "movement_amplitude": {
-        "name": "動きの振幅",
-        "tooltip": "フレーム内のオブジェクトの動きの振幅"
+        "name": "動きの振幅"
       },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "動画生成のためのテキスト説明"
       },
       "resolution": {
-        "name": "解像度",
-        "tooltip": "対応する値はモデルや長さによって異なります"
+        "name": "解像度"
       },
       "seed": {
-        "name": "シード値",
-        "tooltip": "動画生成用のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "シード値"
       }
     }
   },
@@ -11723,16 +11291,13 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブ",
-        "tooltip": null
+        "name": "ネガティブ"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -11756,11 +11321,6 @@
       },
       "width": {
         "name": "幅"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11819,28 +11379,22 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブ",
-        "tooltip": null
+        "name": "ネガティブ"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       },
       "3": {
-        "name": "トリムlatent",
-        "tooltip": null
+        "name": "トリムlatent"
       },
       "4": {
-        "name": "トリム画像",
-        "tooltip": null
+        "name": "トリム画像"
       },
       "5": {
-        "name": "ビデオフレームオフセット",
-        "tooltip": null
+        "name": "ビデオフレームオフセット"
       }
     }
   },
@@ -11877,20 +11431,16 @@
     },
     "outputs": {
       "0": {
-        "name": "カメラ埋め込み",
-        "tooltip": null
+        "name": "カメラ埋め込み"
       },
       "1": {
-        "name": "幅",
-        "tooltip": null
+        "name": "幅"
       },
       "2": {
-        "name": "高さ",
-        "tooltip": null
+        "name": "高さ"
       },
       "3": {
-        "name": "長さ",
-        "tooltip": null
+        "name": "長さ"
       }
     }
   },
@@ -11930,16 +11480,13 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブ",
-        "tooltip": null
+        "name": "ネガティブ"
       },
       "2": {
-        "name": "潜在",
-        "tooltip": null
+        "name": "潜在"
       }
     }
   },
@@ -11974,11 +11521,6 @@
       "model": {
         "name": "モデル",
         "tooltip": "サンプリング中にコンテキストウィンドウを適用するモデル。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "サンプリング中にコンテキストウィンドウが適用されたモデル。"
       }
     }
   },
@@ -12156,16 +11698,13 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブ",
-        "tooltip": null
+        "name": "ネガティブ"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12224,12 +11763,10 @@
         "name": "生成後のコントロール"
       },
       "duration": {
-        "name": "継続時間",
-        "tooltip": "利用可能な継続時間：5秒と10秒"
+        "name": "継続時間"
       },
       "generate_audio": {
-        "name": "オーディオ自動生成",
-        "tooltip": "オーディオ入力がない場合、自動的にオーディオを生成します。"
+        "name": "オーディオ自動生成"
       },
       "image": {
         "name": "画像"
@@ -12239,32 +11776,23 @@
         "tooltip": "使用するモデル。"
       },
       "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "避けたい内容をガイドするネガティブテキストプロンプト。"
+        "name": "ネガティブプロンプト"
       },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "要素や視覚的特徴を説明するためのプロンプト。英語/中国語に対応。"
       },
       "prompt_extend": {
-        "name": "プロンプト拡張",
-        "tooltip": "AI支援でプロンプトを強化するかどうか。"
+        "name": "プロンプト拡張"
       },
       "resolution": {
         "name": "解像度"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード。"
+        "name": "シード"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "結果に「AI生成」のウォーターマークを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ウォーターマーク"
       }
     }
   },
@@ -12298,20 +11826,16 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブテキスト",
-        "tooltip": null
+        "name": "ネガティブテキスト"
       },
       "2": {
-        "name": "ネガティブ画像テキスト",
-        "tooltip": null
+        "name": "ネガティブ画像テキスト"
       },
       "3": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12354,16 +11878,13 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブ",
-        "tooltip": null
+        "name": "ネガティブ"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12397,16 +11918,13 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブ",
-        "tooltip": null
+        "name": "ネガティブ"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12425,32 +11943,23 @@
         "tooltip": "使用するモデル。"
       },
       "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "避けたい内容をガイドするネガティブテキストプロンプト。"
+        "name": "ネガティブプロンプト"
       },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "要素や視覚的特徴を説明するプロンプト。英語/中国語に対応。"
       },
       "prompt_extend": {
-        "name": "プロンプト拡張",
-        "tooltip": "AIアシストでプロンプトを強化するかどうか。"
+        "name": "プロンプト拡張"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値。"
+        "name": "シード"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "結果に「AI生成」のウォーターマークを追加するかどうか。"
+        "name": "ウォーターマーク"
       },
       "width": {
         "name": "幅"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -12466,44 +11975,33 @@
         "name": "生成後のコントロール"
       },
       "duration": {
-        "name": "長さ",
-        "tooltip": "利用可能な長さ：5秒、10秒"
+        "name": "長さ"
       },
       "generate_audio": {
-        "name": "音声自動生成",
-        "tooltip": "音声入力がない場合、自動的に音声を生成します。"
+        "name": "音声自動生成"
       },
       "model": {
         "name": "モデル",
         "tooltip": "使用するモデル。"
       },
       "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "避けたい内容を指定するネガティブテキストプロンプト。"
+        "name": "ネガティブプロンプト"
       },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "要素や視覚的特徴を説明するためのプロンプト。英語/中国語に対応。"
       },
       "prompt_extend": {
-        "name": "プロンプト拡張",
-        "tooltip": "AIアシストでプロンプトを強化するかどうか。"
+        "name": "プロンプト拡張"
       },
       "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値。"
+        "name": "シード"
       },
       "size": {
         "name": "サイズ"
       },
       "watermark": {
-        "name": "ウォーターマーク",
-        "tooltip": "結果に「AI生成」のウォーターマークを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ウォーターマーク"
       }
     }
   },
@@ -12549,16 +12047,13 @@
     },
     "outputs": {
       "0": {
-        "name": "ポジティブ",
-        "tooltip": null
+        "name": "ポジティブ"
       },
       "1": {
-        "name": "ネガティブ",
-        "tooltip": null
+        "name": "ネガティブ"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },

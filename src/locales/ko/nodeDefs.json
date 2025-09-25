@@ -17,11 +17,6 @@
         "name": "norm_threshold",
         "tooltip": "가이던스 벡터를 이 값으로 정규화합니다. 0으로 설정하면 정규화가 비활성화됩니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "AddNoise": {
@@ -53,10 +48,33 @@
       "steps": {
         "name": "스텝 수"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "AudioAdjustVolume": {
+    "display_name": "오디오 볼륨 조절",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "volume": {
+        "name": "volume",
+        "tooltip": "데시벨(dB) 단위의 볼륨 조절. 0 = 변경 없음, +6 = 두 배, -6 = 절반 등"
+      }
+    }
+  },
+  "AudioConcat": {
+    "description": "지정한 방향으로 audio1과 audio2를 이어 붙입니다.",
+    "display_name": "오디오 연결",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "audio2를 audio1 앞 또는 뒤에 추가할지 선택합니다."
       }
     }
   },
@@ -76,6 +94,22 @@
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
+      }
+    }
+  },
+  "AudioMerge": {
+    "description": "두 오디오 트랙을 파형을 겹쳐서 결합합니다.",
+    "display_name": "오디오 병합",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "merge_method": {
+        "name": "merge_method",
+        "tooltip": "오디오 파형을 결합하는 데 사용되는 방법입니다."
       }
     }
   },
@@ -133,8 +167,7 @@
         "tooltip": "출력 동영상의 가로세로 비율입니다."
       },
       "camera_fixed": {
-        "name": "camera_fixed",
-        "tooltip": "카메라 고정 여부를 지정합니다. 플랫폼이 프롬프트에 카메라 고정 지시를 추가하지만 실제 효과는 보장하지 않습니다."
+        "name": "camera_fixed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -164,17 +197,10 @@
         "tooltip": "출력 동영상의 해상도입니다."
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용할 시드 값입니다."
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "동영상에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -186,8 +212,7 @@
         "name": "control after generate"
       },
       "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "값이 높을수록 프롬프트를 더 엄격하게 따릅니다."
+        "name": "guidance_scale"
       },
       "image": {
         "name": "image",
@@ -202,17 +227,10 @@
         "tooltip": "이미지 편집 지시사항"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용할 시드 값"
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "이미지에 \"AI 생성\" 워터마크를 추가할지 여부"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -224,8 +242,7 @@
         "name": "control after generate"
       },
       "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "값이 높을수록 프롬프트를 더 엄격하게 따릅니다."
+        "name": "guidance_scale"
       },
       "height": {
         "name": "height",
@@ -240,25 +257,18 @@
         "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용할 시드"
+        "name": "seed"
       },
       "size_preset": {
         "name": "size_preset",
         "tooltip": "추천 크기를 선택하세요. 아래의 너비와 높이를 사용하려면 사용자 정의를 선택하세요."
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "이미지에 \"AI 생성됨\" 워터마크를 추가할지 여부"
+        "name": "watermark"
       },
       "width": {
         "name": "width",
         "tooltip": "이미지의 사용자 정의 너비. 값은 `size_preset`이 `Custom`으로 설정된 경우에만 적용됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -294,17 +304,10 @@
         "tooltip": "출력 비디오의 해상도."
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용할 시드."
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "비디오에 \"AI 생성됨\" 워터마크를 추가할지 여부."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -317,8 +320,7 @@
         "tooltip": "출력 비디오의 화면 비율입니다."
       },
       "camera_fixed": {
-        "name": "카메라 고정",
-        "tooltip": "카메라를 고정할지 여부를 지정합니다. 플랫폼이 프롬프트에 카메라 고정 지시를 추가하지만 실제 효과는 보장하지 않습니다."
+        "name": "카메라 고정"
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -344,17 +346,10 @@
         "tooltip": "출력 비디오의 해상도입니다."
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "생성에 사용할 시드 값입니다."
+        "name": "시드"
       },
       "watermark": {
-        "name": "워터마크",
-        "tooltip": "비디오에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "워터마크"
       }
     }
   },
@@ -366,20 +361,17 @@
         "name": "생성 후 제어"
       },
       "fail_on_partial": {
-        "name": "부분 실패 시 중단",
-        "tooltip": "활성화 시, 요청한 이미지 중 일부가 누락되거나 오류가 발생하면 실행을 중단합니다."
+        "name": "부분 실패 시 중단"
       },
       "height": {
-        "name": "높이",
-        "tooltip": "이미지의 사용자 지정 높이입니다. 이 값은 `size_preset`이 `사용자 지정`일 때만 적용됩니다."
+        "name": "높이"
       },
       "image": {
         "name": "이미지",
         "tooltip": "이미지-투-이미지 생성을 위한 입력 이미지입니다. 1~10개의 이미지 리스트로 단일 또는 다중 참조 생성을 지원합니다."
       },
       "max_images": {
-        "name": "최대 이미지 수",
-        "tooltip": "sequential_image_generation='auto'일 때 생성할 최대 이미지 수입니다. 전체 이미지(입력 + 생성)는 15장을 초과할 수 없습니다."
+        "name": "최대 이미지 수"
       },
       "model": {
         "name": "모델",
@@ -390,29 +382,20 @@
         "tooltip": "이미지 생성 또는 편집을 위한 텍스트 프롬프트입니다."
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "생성에 사용할 시드 값입니다."
+        "name": "시드"
       },
       "sequential_image_generation": {
-        "name": "순차 이미지 생성",
-        "tooltip": "그룹 이미지 생성 모드입니다. '비활성화'는 단일 이미지를 생성합니다. '자동'은 모델이 여러 관련 이미지(예: 스토리 장면, 캐릭터 변형) 생성 여부를 결정합니다."
+        "name": "순차 이미지 생성"
       },
       "size_preset": {
         "name": "사이즈 프리셋",
         "tooltip": "추천 사이즈를 선택하세요. '사용자 지정'을 선택하면 아래의 너비와 높이를 사용할 수 있습니다."
       },
       "watermark": {
-        "name": "워터마크",
-        "tooltip": "이미지에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
+        "name": "워터마크"
       },
       "width": {
-        "name": "너비",
-        "tooltip": "이미지의 사용자 지정 너비입니다. 이 값은 `size_preset`이 `사용자 지정`일 때만 적용됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "너비"
       }
     }
   },
@@ -425,8 +408,7 @@
         "tooltip": "출력 영상의 가로세로 비율입니다."
       },
       "camera_fixed": {
-        "name": "camera_fixed",
-        "tooltip": "카메라 고정 여부를 지정합니다. 플랫폼이 프롬프트에 카메라 고정 지시를 추가하지만 실제 효과는 보장하지 않습니다."
+        "name": "camera_fixed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -448,17 +430,10 @@
         "tooltip": "출력 영상의 해상도입니다."
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용할 시드 값입니다."
+        "name": "seed"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "영상에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -491,8 +466,7 @@
     },
     "outputs": {
       "0": {
-        "name": "patched_model",
-        "tooltip": null
+        "name": "patched_model"
       }
     }
   },
@@ -526,11 +500,6 @@
       },
       "v": {
         "name": "v"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -622,11 +591,6 @@
         "name": "프롬프트 텍스트",
         "tooltip": "인코딩할 텍스트입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "확산 모델을 유도하는 데 사용되는 텍스트 임베딩을 포함하는 조건입니다."
-      }
     }
   },
   "CLIPTextEncodeControlnet": {
@@ -640,11 +604,6 @@
       },
       "text": {
         "name": "프롬프트 텍스트"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -714,11 +673,6 @@
       "user_prompt": {
         "name": "user_prompt",
         "tooltip": "인코딩할 텍스트입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "확산 모델을 유도하는 데 사용되는 텍스트 임베딩을 포함하는 조건입니다."
       }
     }
   },
@@ -846,11 +800,6 @@
       "low_threshold": {
         "name": "낮은 임계값"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CaseConverter": {
@@ -861,11 +810,6 @@
       },
       "string": {
         "name": "string"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -887,17 +831,6 @@
       "ckpt_name": {
         "name": "체크포인트 파일명",
         "tooltip": "로드할 체크포인트(모델)의 이름입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "노이즈 제거를 위한 잠재 모델입니다."
-      },
-      "1": {
-        "tooltip": "텍스트 프롬프트를 인코딩하는 데 사용되는 CLIP 모델입니다."
-      },
-      "2": {
-        "tooltip": "이미지를 잠재 공간으로 인코딩하고 디코딩하는 데 사용되는 VAE 모델입니다."
       }
     }
   },
@@ -940,11 +873,6 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "이 옵션이 적용될 첫 번째 시그마 값입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1309,11 +1237,6 @@
         "name": "model",
         "tooltip": "샘플링 중 컨텍스트 윈도우를 적용할 모델입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "샘플링 중 컨텍스트 윈도우가 적용된 모델입니다."
-      }
     }
   },
   "ControlNetApply": {
@@ -1479,11 +1402,6 @@
       "width": {
         "name": "너비"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CosmosPredict2ImageToVideoLatent": {
@@ -1509,11 +1427,6 @@
       },
       "width": {
         "name": "width"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1672,11 +1585,6 @@
         "name": "이미지",
         "tooltip": "비디오를 생성할 이미지입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CropMask": {
@@ -1800,11 +1708,6 @@
         "name": "verbose",
         "tooltip": "상세 정보를 로그로 남길지 여부입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "EasyCache가 적용된 모델입니다."
-      }
     }
   },
   "EmptyAceStepLatentAudio": {
@@ -1817,10 +1720,22 @@
       "seconds": {
         "name": "seconds"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "EmptyAudio": {
+    "display_name": "빈 오디오",
+    "inputs": {
+      "channels": {
+        "name": "channels",
+        "tooltip": "오디오 채널 수 (1: 모노, 2: 스테레오)"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "빈 오디오 클립의 길이(초)"
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "빈 오디오 클립의 샘플레이트"
       }
     }
   },
@@ -1835,11 +1750,6 @@
       },
       "width": {
         "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1857,11 +1767,6 @@
       },
       "width": {
         "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1969,11 +1874,6 @@
       "width": {
         "name": "너비",
         "tooltip": "잠재 이미지의 너비(픽셀)입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "빈 잠재 이미지 배치입니다."
       }
     }
   },
@@ -2360,8 +2260,7 @@
         "name": "이미지 프롬프트"
       },
       "image_prompt_strength": {
-        "name": "이미지 프롬프트 강도",
-        "tooltip": "프롬프트와 이미지 프롬프트 간의 혼합 비율입니다."
+        "name": "이미지 프롬프트 강도"
       },
       "prompt": {
         "name": "프롬프트",
@@ -2773,19 +2672,16 @@
     "display_name": "Ideogram V1",
     "inputs": {
       "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "이미지 생성에 사용할 종횡비"
+        "name": "종횡비"
       },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
       "magic_prompt_option": {
-        "name": "매직 프롬프트 옵션",
-        "tooltip": "생성 시 MagicPrompt 사용 여부 결정"
+        "name": "매직 프롬프트 옵션"
       },
       "negative_prompt": {
-        "name": "부정 프롬프트",
-        "tooltip": "이미지에서 제외할 내용을 설명"
+        "name": "부정 프롬프트"
       },
       "num_images": {
         "name": "이미지 수"
@@ -2801,11 +2697,6 @@
         "name": "터보",
         "tooltip": "터보 모드 사용 여부 (더 빠른 생성, 품질 저하 가능성 있음)"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "IdeogramV2": {
@@ -2813,19 +2704,16 @@
     "display_name": "Ideogram V2",
     "inputs": {
       "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "이미지 생성에 사용할 종횡비. 해상도가 AUTO로 설정되지 않은 경우 무시됩니다."
+        "name": "종횡비"
       },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
       "magic_prompt_option": {
-        "name": "매직 프롬프트 옵션",
-        "tooltip": "생성 시 MagicPrompt 사용 여부 결정"
+        "name": "매직 프롬프트 옵션"
       },
       "negative_prompt": {
-        "name": "부정 프롬프트",
-        "tooltip": "이미지에서 제외할 내용을 설명"
+        "name": "부정 프롬프트"
       },
       "num_images": {
         "name": "이미지 수"
@@ -2835,24 +2723,17 @@
         "tooltip": "이미지 생성을 위한 프롬프트"
       },
       "resolution": {
-        "name": "해상도",
-        "tooltip": "이미지 생성에 사용할 해상도. AUTO로 설정되지 않은 경우, aspect_ratio 설정을 덮어씁니다."
+        "name": "해상도"
       },
       "seed": {
         "name": "시드"
       },
       "style_type": {
-        "name": "스타일 타입",
-        "tooltip": "생성에 사용할 스타일 타입 (V2 전용)"
+        "name": "스타일 타입"
       },
       "turbo": {
         "name": "터보",
         "tooltip": "터보 모드 사용 여부 (더 빠른 생성, 품질 저하 가능성 있음)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2861,8 +2742,7 @@
     "display_name": "Ideogram V3",
     "inputs": {
       "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "이미지 생성을 위한 종횡비입니다. 해상도가 자동이 아닐 경우 무시됩니다."
+        "name": "종횡비"
       },
       "character_image": {
         "name": "character_image",
@@ -2880,8 +2760,7 @@
         "tooltip": "이미지 편집을 위한 선택적 참조 이미지입니다."
       },
       "magic_prompt_option": {
-        "name": "매직 프롬프트 옵션",
-        "tooltip": "생성 시 MagicPrompt 사용 여부를 결정합니다"
+        "name": "매직 프롬프트 옵션"
       },
       "mask": {
         "name": "마스크",
@@ -2895,20 +2774,13 @@
         "tooltip": "이미지 생성 또는 편집을 위한 프롬프트"
       },
       "rendering_speed": {
-        "name": "렌더링 속도",
-        "tooltip": "생성 속도와 품질 간의 균형을 조절합니다"
+        "name": "렌더링 속도"
       },
       "resolution": {
-        "name": "해상도",
-        "tooltip": "이미지 생성을 위한 해상도입니다. 자동이 아닐 경우 종횡비 설정을 덮어씁니다."
+        "name": "해상도"
       },
       "seed": {
         "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -3418,11 +3290,6 @@
       "steps": {
         "name": "스텝 수",
         "tooltip": "노이즈 제거 과정에서 사용되는 단계 수입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "노이즈가 제거된 잠재 데이터입니다."
       }
     }
   },
@@ -4414,11 +4281,6 @@
         "name": "verbose",
         "tooltip": "자세한 정보를 로그로 남길지 여부입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "LazyCache가 적용된 모델입니다."
-      }
     }
   },
   "Load3D": {
@@ -4569,15 +4431,13 @@
         "tooltip": "이미지를 불러올 폴더입니다."
       },
       "height": {
-        "name": "height",
-        "tooltip": "이미지의 리사이즈할 높이입니다. -1은 원본 높이를 사용합니다."
+        "name": "height"
       },
       "resize_method": {
         "name": "resize_method"
       },
       "width": {
-        "name": "width",
-        "tooltip": "이미지의 리사이즈할 너비입니다. -1은 원본 너비를 사용합니다."
+        "name": "width"
       }
     }
   },
@@ -4597,11 +4457,6 @@
       },
       "upload": {
         "name": "업로드할 파일 선택"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -4629,14 +4484,6 @@
         "name": "모델 강도",
         "tooltip": "확산 모델을 적용하는 강도입니다. 이 값은 음수가 될 수 있습니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "수정된 확산 모델입니다."
-      },
-      "1": {
-        "tooltip": "수정된 CLIP 모델입니다."
-      }
     }
   },
   "LoraLoaderModelOnly": {
@@ -4651,11 +4498,6 @@
       },
       "strength_model": {
         "name": "모델 강도"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "수정된 확산 모델입니다."
       }
     }
   },
@@ -4674,11 +4516,6 @@
       "strength_model": {
         "name": "strength_model",
         "tooltip": "확산 모델을 얼마나 강하게 수정할지 설정합니다. 이 값은 음수도 가능합니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "수정된 확산 모델입니다."
       }
     }
   },
@@ -4978,33 +4815,24 @@
         "name": "생성 후 제어"
       },
       "duration": {
-        "name": "길이",
-        "tooltip": "출력 비디오의 길이(초)입니다."
+        "name": "길이"
       },
       "first_frame_image": {
         "name": "첫 프레임 이미지",
         "tooltip": "비디오 생성을 위한 첫 프레임으로 사용할 선택적 이미지입니다."
       },
       "prompt_optimizer": {
-        "name": "프롬프트 최적화",
-        "tooltip": "필요할 때 생성 품질을 향상시키기 위해 프롬프트를 최적화합니다."
+        "name": "프롬프트 최적화"
       },
       "prompt_text": {
         "name": "프롬프트 텍스트",
         "tooltip": "비디오 생성을 안내하는 텍스트 프롬프트입니다."
       },
       "resolution": {
-        "name": "해상도",
-        "tooltip": "비디오 디스플레이의 크기입니다. 1080p는 1920x1080, 768p는 1366x768입니다."
+        "name": "해상도"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "시드"
       }
     }
   },
@@ -5028,13 +4856,7 @@
         "tooltip": "비디오 생성을 안내할 텍스트 프롬프트"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "시드"
       }
     }
   },
@@ -5054,13 +4876,7 @@
         "tooltip": "비디오 생성을 안내할 텍스트 프롬프트"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "시드"
       }
     }
   },
@@ -7307,11 +7123,6 @@
         "name": "steps",
         "tooltip": "디노이즈 단계 수"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyTxt2VideoNode": {
@@ -7343,11 +7154,6 @@
         "name": "steps",
         "tooltip": "추론 단계"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyVideo2VideoNode": {
@@ -7357,8 +7163,7 @@
         "name": "control_type"
       },
       "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "control_type이 'Motion Transfer'일 때만 사용됩니다"
+        "name": "motion_intensity"
       },
       "negative_prompt": {
         "name": "negative_prompt",
@@ -7375,11 +7180,6 @@
       "video": {
         "name": "video",
         "tooltip": "출력 비디오 생성을 위해 사용되는 참조 비디오. 최소 5초 이상이어야 합니다. 5초를 초과하는 비디오는 자동으로 잘립니다. MP4 형식만 지원됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -7402,12 +7202,10 @@
     "display_name": "OpenAI ChatGPT 고급 옵션",
     "inputs": {
       "instructions": {
-        "name": "instructions",
-        "tooltip": "모델이 응답을 생성하는 방법에 대한 지침"
+        "name": "instructions"
       },
       "max_output_tokens": {
-        "name": "max_output_tokens",
-        "tooltip": "응답에 대해 생성될 수 있는 토큰의 최대 개수(출력 토큰 포함)"
+        "name": "max_output_tokens"
       },
       "truncation": {
         "name": "truncation",
@@ -7461,20 +7259,17 @@
         "tooltip": "인페인팅을 위한 선택적 마스크 (흰색 영역이 대체됨)"
       },
       "n": {
-        "name": "개수",
-        "tooltip": "생성할 이미지 수"
+        "name": "개수"
       },
       "prompt": {
         "name": "프롬프트",
         "tooltip": "DALL·E를 위한 텍스트 프롬프트"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "백엔드에 아직 구현되지 않음"
+        "name": "시드"
       },
       "size": {
-        "name": "크기",
-        "tooltip": "이미지 크기"
+        "name": "크기"
       }
     }
   },
@@ -7490,20 +7285,16 @@
         "tooltip": "DALL·E를 위한 텍스트 프롬프트"
       },
       "quality": {
-        "name": "품질",
-        "tooltip": "이미지 품질"
+        "name": "품질"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "백엔드에 아직 구현되지 않음"
+        "name": "시드"
       },
       "size": {
-        "name": "크기",
-        "tooltip": "이미지 크기"
+        "name": "크기"
       },
       "style": {
-        "name": "스타일",
-        "tooltip": "Vivid는 모델이 하이퍼리얼하고 극적인 이미지를 생성하도록 유도합니다. Natural은 모델이 더 자연스럽고 덜 하이퍼리얼한 이미지를 생성하도록 합니다."
+        "name": "스타일"
       }
     }
   },
@@ -7512,8 +7303,7 @@
     "display_name": "OpenAI GPT Image 1",
     "inputs": {
       "background": {
-        "name": "배경",
-        "tooltip": "배경이 있는 이미지 또는 없는 이미지를 반환"
+        "name": "배경"
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -7527,24 +7317,20 @@
         "tooltip": "인페인팅을 위한 선택적 마스크 (흰색 영역이 대체됨)"
       },
       "n": {
-        "name": "개수",
-        "tooltip": "생성할 이미지의 수"
+        "name": "개수"
       },
       "prompt": {
         "name": "프롬프트",
         "tooltip": "GPT Image 1을 위한 텍스트 프롬프트"
       },
       "quality": {
-        "name": "품질",
-        "tooltip": "이미지 품질, 비용과 생성 시간에 영향을 줍니다."
+        "name": "품질"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "백엔드에 아직 구현되지 않음"
+        "name": "시드"
       },
       "size": {
-        "name": "크기",
-        "tooltip": "이미지 크기"
+        "name": "크기"
       }
     }
   },
@@ -8249,11 +8035,6 @@
       "value": {
         "name": "값"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveFloat": {
@@ -8261,11 +8042,6 @@
     "inputs": {
       "value": {
         "name": "값"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8278,11 +8054,6 @@
       "value": {
         "name": "값"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveString": {
@@ -8291,11 +8062,6 @@
       "value": {
         "name": "값"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveStringMultiline": {
@@ -8303,11 +8069,6 @@
     "inputs": {
       "value": {
         "name": "값"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8741,11 +8502,6 @@
       "string": {
         "name": "문자열"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RegexMatch": {
@@ -8769,8 +8525,7 @@
     },
     "outputs": {
       "0": {
-        "name": "일치_결과",
-        "tooltip": null
+        "name": "일치_결과"
       }
     }
   },
@@ -8782,12 +8537,10 @@
         "name": "대소문자_무시"
       },
       "count": {
-        "name": "횟수",
-        "tooltip": "최대 치환 횟수입니다. 0으로 설정하면 모든 항목을 치환합니다(기본값). 1로 설정하면 첫 번째 일치만, 2로 설정하면 처음 두 개만 치환합니다."
+        "name": "횟수"
       },
       "dotall": {
-        "name": "dotall",
-        "tooltip": "활성화하면 점(.) 문자가 줄바꿈 문자를 포함한 모든 문자를 일치시킵니다. 비활성화하면 점은 줄바꿈과 일치하지 않습니다."
+        "name": "dotall"
       },
       "multiline": {
         "name": "여러_줄"
@@ -8800,11 +8553,6 @@
       },
       "string": {
         "name": "문자열"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9016,11 +8764,6 @@
         "name": "시작 프레임",
         "tooltip": "비디오에 사용할 시작 프레임"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayImageToVideoNodeGen3a": {
@@ -9047,11 +8790,6 @@
       "start_frame": {
         "name": "시작 프레임",
         "tooltip": "비디오에 사용할 시작 프레임"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9080,11 +8818,6 @@
         "name": "시작 프레임",
         "tooltip": "비디오에 사용할 시작 프레임"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayTextToImageNode": {
@@ -9101,11 +8834,6 @@
       "reference_image": {
         "name": "참조 이미지",
         "tooltip": "생성 가이드를 위한 선택적 참조 이미지"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9445,11 +9173,6 @@
       "version": {
         "name": "버전"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerLCMUpscale": {
@@ -9463,11 +9186,6 @@
       },
       "upscale_method": {
         "name": "업스케일 방법"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9897,6 +9615,23 @@
       }
     }
   },
+  "SplitAudioChannels": {
+    "description": "오디오를 좌/우 채널로 분리합니다.",
+    "display_name": "오디오 채널 분리",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "left"
+      },
+      "1": {
+        "name": "right"
+      }
+    }
+  },
   "SplitImageWithAlpha": {
     "display_name": "이미지와 알파채널 분리",
     "inputs": {
@@ -9955,8 +9690,7 @@
         "name": "생성 후 제어"
       },
       "duration": {
-        "name": "길이",
-        "tooltip": "생성되는 오디오의 길이(초)를 조절합니다."
+        "name": "길이"
       },
       "mask_end": {
         "name": "마스크 종료"
@@ -9971,17 +9705,10 @@
         "name": "프롬프트"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "생성에 사용되는 랜덤 시드입니다."
+        "name": "시드"
       },
       "steps": {
-        "name": "스텝 수",
-        "tooltip": "샘플링 스텝 수를 조절합니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "스텝 수"
       }
     }
   },
@@ -9997,8 +9724,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "생성된 오디오의 길이(초)를 제어합니다."
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10007,21 +9733,13 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용되는 랜덤 시드입니다."
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "샘플링 스텝 수를 제어합니다."
+        "name": "steps"
       },
       "strength": {
-        "name": "strength",
-        "tooltip": "이 파라미터는 오디오 파라미터가 생성된 오디오에 미치는 영향을 제어합니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "strength"
       }
     }
   },
@@ -10044,8 +9762,7 @@
         "name": "이미지"
       },
       "image_denoise": {
-        "name": "노이즈 제거양",
-        "tooltip": "입력 이미지의 노이즈 제거 정도; 0.0은 입력 이미지와 동일, 1.0은 이미지가 전혀 제공되지 않은 것과 같습니다."
+        "name": "노이즈 제거양"
       },
       "model": {
         "name": "모델"
@@ -10066,11 +9783,6 @@
         "name": "스타일 프리셋",
         "tooltip": "생성된 이미지에 원하는 스타일(선택 사항)입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityStableImageUltraNode": {
@@ -10088,8 +9800,7 @@
         "name": "이미지"
       },
       "image_denoise": {
-        "name": "노이즈 제거양",
-        "tooltip": "입력 이미지의 노이즈 제거 정도입니다. 0.0은 입력 이미지와 동일하며, 1.0은 이미지가 전혀 제공되지 않은 것과 같습니다."
+        "name": "노이즈 제거양"
       },
       "negative_prompt": {
         "name": "부정 프롬프트",
@@ -10107,11 +9818,6 @@
         "name": "스타일 프리셋",
         "tooltip": "생성된 이미지에 적용할 선택적 스타일입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityTextToAudio": {
@@ -10122,8 +9828,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "생성된 오디오의 길이(초)를 제어합니다."
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10132,17 +9837,10 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용되는 랜덤 시드입니다."
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "샘플링 스텝 수를 제어합니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "steps"
       }
     }
   },
@@ -10171,11 +9869,6 @@
       "seed": {
         "name": "시드",
         "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10209,11 +9902,6 @@
         "name": "스타일 프리셋",
         "tooltip": "생성된 이미지에 원하는 스타일(선택 사항)을 지정합니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityUpscaleFastNode": {
@@ -10222,11 +9910,6 @@
     "inputs": {
       "image": {
         "name": "이미지"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10263,11 +9946,6 @@
       },
       "stage_c": {
         "name": "StageC 잠재 이미지"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10416,11 +10094,6 @@
       "string_b": {
         "name": "string_b"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringConcatenate": {
@@ -10434,11 +10107,6 @@
       },
       "string_b": {
         "name": "string_b"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10457,8 +10125,7 @@
     },
     "outputs": {
       "0": {
-        "name": "포함 여부",
-        "tooltip": null
+        "name": "포함 여부"
       }
     }
   },
@@ -10471,8 +10138,7 @@
     },
     "outputs": {
       "0": {
-        "name": "길이",
-        "tooltip": null
+        "name": "길이"
       }
     }
   },
@@ -10488,11 +10154,6 @@
       "string": {
         "name": "문자열"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringSubstring": {
@@ -10507,11 +10168,6 @@
       "string": {
         "name": "문자열"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringTrim": {
@@ -10522,11 +10178,6 @@
       },
       "string": {
         "name": "문자열"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10570,11 +10221,6 @@
       "min_padding": {
         "name": "최소 패딩"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "TCFG": {
@@ -10605,11 +10251,6 @@
       },
       "tags": {
         "name": "태그"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10790,6 +10431,23 @@
       }
     }
   },
+  "TrimAudioDuration": {
+    "description": "오디오 텐서를 선택한 시간 범위로 자릅니다.",
+    "display_name": "오디오 길이 자르기",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "길이(초)"
+      },
+      "start_index": {
+        "name": "start_index",
+        "tooltip": "시작 시간(초). 음수로 입력하면 끝에서부터 계산합니다. (소수점 이하 지원)"
+      }
+    }
+  },
   "TrimVideoLatent": {
     "display_name": "잠재 비디오 자르기",
     "inputs": {
@@ -10798,11 +10456,6 @@
       },
       "trim_amount": {
         "name": "자르기 양"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10857,8 +10510,7 @@
         "name": "모델 시드"
       },
       "model_version": {
-        "name": "모델 버전",
-        "tooltip": "생성에 사용할 모델 버전"
+        "name": "모델 버전"
       },
       "orientation": {
         "name": "방향"
@@ -10916,8 +10568,7 @@
         "name": "모델 시드"
       },
       "model_version": {
-        "name": "모델 버전",
-        "tooltip": "생성에 사용할 모델 버전"
+        "name": "모델 버전"
       },
       "orientation": {
         "name": "방향"
@@ -11112,11 +10763,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetSelfAttentionMultiply": {
@@ -11137,11 +10783,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetTemporalAttentionMultiply": {
@@ -11161,11 +10802,6 @@
       },
       "self_temporal": {
         "name": "시간적 셀프"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11202,11 +10838,6 @@
       "vae": {
         "name": "vae",
         "tooltip": "잠재 디코딩에 사용되는 VAE 모델입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "디코딩된 이미지입니다."
       }
     }
   },
@@ -11375,45 +11006,33 @@
         "name": "control after generate"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "출력 비디오의 길이(초 단위, Veo 3은 8초만 지원)"
+        "name": "duration_seconds"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "AI 보조로 프롬프트를 향상시킬지 여부"
+        "name": "enhance_prompt"
       },
       "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "비디오용 오디오 생성. 모든 Veo 3 모델에서 지원됨."
+        "name": "generate_audio"
       },
       "image": {
         "name": "image",
         "tooltip": "비디오 생성을 안내할 참고 이미지(선택 사항)"
       },
       "model": {
-        "name": "model",
-        "tooltip": "비디오 생성을 위한 Veo 3 모델"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "비디오에서 피하고 싶은 내용을 안내하는 네거티브 텍스트 프롬프트"
+        "name": "negative_prompt"
       },
       "person_generation": {
-        "name": "person_generation",
-        "tooltip": "비디오에서 사람 생성을 허용할지 여부"
+        "name": "person_generation"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "비디오에 대한 텍스트 설명"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "비디오 생성용 시드(0은 랜덤)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11429,41 +11048,30 @@
         "name": "생성 후 제어"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "출력 비디오의 길이(초)"
+        "name": "duration_seconds"
       },
       "enhance_prompt": {
-        "name": "프롬프트 개선",
-        "tooltip": "AI 지원으로 프롬프트를 향상시킬지 여부"
+        "name": "프롬프트 개선"
       },
       "image": {
         "name": "이미지",
         "tooltip": "비디오 생성을 안내할 선택적 참조 이미지"
       },
       "model": {
-        "name": "model",
-        "tooltip": "비디오 생성을 위한 Veo 2 모델"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "부정 프롬프트",
-        "tooltip": "비디오에서 피해야 할 내용을 안내하는 네거티브 텍스트 프롬프트"
+        "name": "부정 프롬프트"
       },
       "person_generation": {
-        "name": "사람 생성",
-        "tooltip": "비디오에서 사람 생성을 허용할지 여부"
+        "name": "사람 생성"
       },
       "prompt": {
         "name": "프롬프트",
         "tooltip": "비디오에 대한 텍스트 설명"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "비디오 생성용 시드 (0은 무작위)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "시드"
       }
     }
   },
@@ -11497,8 +11105,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "출력 비디오의 길이(초 단위)"
+        "name": "duration"
       },
       "image": {
         "name": "image",
@@ -11509,25 +11116,16 @@
         "tooltip": "모델 이름"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "프레임 내 오브젝트의 움직임 크기"
+        "name": "movement_amplitude"
       },
       "prompt": {
-        "name": "prompt",
-        "tooltip": "비디오 생성을 위한 텍스트 설명"
+        "name": "prompt"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "지원되는 값은 모델 및 길이에 따라 다를 수 있음"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "비디오 생성용 시드(0은 랜덤)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11536,15 +11134,13 @@
     "display_name": "Vidu 참조 이미지로 비디오 생성",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "출력 비디오의 가로세로 비율"
+        "name": "aspect_ratio"
       },
       "control_after_generate": {
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "출력 비디오의 길이(초)"
+        "name": "duration"
       },
       "images": {
         "name": "images",
@@ -11555,25 +11151,17 @@
         "tooltip": "모델 이름"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "프레임 내 오브젝트의 움직임 강도"
+        "name": "movement_amplitude"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "비디오 생성을 위한 텍스트 설명"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "지원되는 값은 모델 및 길이에 따라 다를 수 있음"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "비디오 생성 시드 (0은 랜덤)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11585,8 +11173,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "출력 비디오의 길이(초)"
+        "name": "duration"
       },
       "end_frame": {
         "name": "end_frame",
@@ -11601,25 +11188,16 @@
         "tooltip": "모델 이름"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "프레임 내 오브젝트의 움직임 강도"
+        "name": "movement_amplitude"
       },
       "prompt": {
-        "name": "prompt",
-        "tooltip": "비디오 생성을 위한 텍스트 설명"
+        "name": "prompt"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "지원되는 값은 모델 및 길이에 따라 다를 수 있음"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "비디오 생성 시드 (0은 랜덤)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11628,40 +11206,30 @@
     "display_name": "Vidu 텍스트로 비디오 생성",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "출력 비디오의 가로세로 비율"
+        "name": "aspect_ratio"
       },
       "control_after_generate": {
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "출력 비디오의 길이(초)"
+        "name": "duration"
       },
       "model": {
         "name": "model",
         "tooltip": "모델 이름"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "프레임 내 오브젝트의 움직임 강도"
+        "name": "movement_amplitude"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "비디오 생성을 위한 텍스트 설명"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "지원되는 값은 모델 및 길이에 따라 다를 수 있음"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "비디오 생성 시드 (0은 랜덤)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11723,16 +11291,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -11756,11 +11321,6 @@
       },
       "width": {
         "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11819,28 +11379,22 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       },
       "3": {
-        "name": "trim_latent",
-        "tooltip": null
+        "name": "trim_latent"
       },
       "4": {
-        "name": "trim_image",
-        "tooltip": null
+        "name": "trim_image"
       },
       "5": {
-        "name": "video_frame_offset",
-        "tooltip": null
+        "name": "video_frame_offset"
       }
     }
   },
@@ -11877,20 +11431,16 @@
     },
     "outputs": {
       "0": {
-        "name": "camera_embedding",
-        "tooltip": null
+        "name": "camera_embedding"
       },
       "1": {
-        "name": "너비",
-        "tooltip": null
+        "name": "너비"
       },
       "2": {
-        "name": "높이",
-        "tooltip": null
+        "name": "높이"
       },
       "3": {
-        "name": "길이",
-        "tooltip": null
+        "name": "길이"
       }
     }
   },
@@ -11930,16 +11480,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -11974,11 +11521,6 @@
       "model": {
         "name": "모델",
         "tooltip": "샘플링 중 컨텍스트 윈도우를 적용할 모델입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "샘플링 중 컨텍스트 윈도우가 적용된 모델입니다."
       }
     }
   },
@@ -12156,16 +11698,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12224,12 +11763,10 @@
         "name": "생성 후 제어"
       },
       "duration": {
-        "name": "길이",
-        "tooltip": "사용 가능한 길이: 5초, 10초"
+        "name": "길이"
       },
       "generate_audio": {
-        "name": "오디오 자동 생성",
-        "tooltip": "오디오 입력이 없을 경우 자동으로 오디오를 생성합니다."
+        "name": "오디오 자동 생성"
       },
       "image": {
         "name": "이미지"
@@ -12239,32 +11776,23 @@
         "tooltip": "사용할 모델입니다."
       },
       "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "피해야 할 내용을 안내하는 네거티브 텍스트 프롬프트입니다."
+        "name": "네거티브 프롬프트"
       },
       "prompt": {
         "name": "프롬프트",
         "tooltip": "요소와 시각적 특징을 설명하는 프롬프트입니다. 영어/중국어를 지원합니다."
       },
       "prompt_extend": {
-        "name": "프롬프트 확장",
-        "tooltip": "AI의 도움으로 프롬프트를 강화할지 여부입니다."
+        "name": "프롬프트 확장"
       },
       "resolution": {
         "name": "해상도"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "생성에 사용할 시드입니다."
+        "name": "시드"
       },
       "watermark": {
-        "name": "워터마크",
-        "tooltip": "결과에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "워터마크"
       }
     }
   },
@@ -12298,20 +11826,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative_text",
-        "tooltip": null
+        "name": "negative_text"
       },
       "2": {
-        "name": "negative_img_text",
-        "tooltip": null
+        "name": "negative_img_text"
       },
       "3": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12354,16 +11878,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12397,16 +11918,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },
@@ -12425,32 +11943,23 @@
         "tooltip": "사용할 모델입니다."
       },
       "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "피해야 할 내용을 안내하는 네거티브 텍스트 프롬프트입니다."
+        "name": "네거티브 프롬프트"
       },
       "prompt": {
         "name": "프롬프트",
         "tooltip": "요소와 시각적 특징을 설명하는 프롬프트입니다. 영어/중국어를 지원합니다."
       },
       "prompt_extend": {
-        "name": "프롬프트 확장",
-        "tooltip": "AI의 도움으로 프롬프트를 향상시킬지 여부입니다."
+        "name": "프롬프트 확장"
       },
       "seed": {
-        "name": "시드",
-        "tooltip": "생성에 사용할 시드입니다."
+        "name": "시드"
       },
       "watermark": {
-        "name": "워터마크",
-        "tooltip": "결과에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
+        "name": "워터마크"
       },
       "width": {
         "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -12466,44 +11975,33 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "사용 가능한 길이: 5초, 10초"
+        "name": "duration"
       },
       "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "오디오 입력이 없을 경우 자동으로 오디오를 생성합니다."
+        "name": "generate_audio"
       },
       "model": {
         "name": "model",
         "tooltip": "사용할 모델."
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "피해야 할 내용을 안내하는 네거티브 텍스트 프롬프트."
+        "name": "negative_prompt"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "요소와 시각적 특징을 설명하는 프롬프트, 영어/중국어 지원."
       },
       "prompt_extend": {
-        "name": "prompt_extend",
-        "tooltip": "AI의 도움으로 프롬프트를 확장할지 여부."
+        "name": "prompt_extend"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "생성에 사용할 시드."
+        "name": "seed"
       },
       "size": {
         "name": "size"
       },
       "watermark": {
-        "name": "watermark",
-        "tooltip": "결과에 \"AI 생성\" 워터마크를 추가할지 여부."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "watermark"
       }
     }
   },
@@ -12549,16 +12047,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positive",
-        "tooltip": null
+        "name": "positive"
       },
       "1": {
-        "name": "negative",
-        "tooltip": null
+        "name": "negative"
       },
       "2": {
-        "name": "latent",
-        "tooltip": null
+        "name": "latent"
       }
     }
   },

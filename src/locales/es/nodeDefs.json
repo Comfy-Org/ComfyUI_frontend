@@ -17,11 +17,6 @@
         "name": "umbral_de_normalización",
         "tooltip": "Normaliza el vector de guía a este valor, la normalización se desactiva con un valor de 0."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "AddNoise": {
@@ -53,10 +48,33 @@
       "steps": {
         "name": "pasos"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "AudioAdjustVolume": {
+    "display_name": "Ajustar Volumen de Audio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "volume": {
+        "name": "volumen",
+        "tooltip": "Ajuste de volumen en decibelios (dB). 0 = sin cambio, +6 = doble, -6 = la mitad, etc."
+      }
+    }
+  },
+  "AudioConcat": {
+    "description": "Concatena audio1 con audio2 en la dirección especificada.",
+    "display_name": "Concatenar Audio",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "direction": {
+        "name": "dirección",
+        "tooltip": "Indica si audio2 se añade después o antes de audio1."
       }
     }
   },
@@ -76,6 +94,22 @@
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
+      }
+    }
+  },
+  "AudioMerge": {
+    "description": "Combina dos pistas de audio superponiendo sus formas de onda.",
+    "display_name": "Mezclar Audio",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "merge_method": {
+        "name": "método de mezcla",
+        "tooltip": "El método utilizado para combinar las formas de onda de audio."
       }
     }
   },
@@ -133,8 +167,7 @@
         "tooltip": "La relación de aspecto del video de salida."
       },
       "camera_fixed": {
-        "name": "cámara_fija",
-        "tooltip": "Especifica si se debe fijar la cámara. La plataforma añade una instrucción para fijar la cámara a tu prompt, pero no garantiza el efecto real."
+        "name": "cámara_fija"
       },
       "control_after_generate": {
         "name": "controlar después de generar"
@@ -164,17 +197,10 @@
         "tooltip": "La resolución del video de salida."
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación."
+        "name": "semilla"
       },
       "watermark": {
-        "name": "marca_de_agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" al video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "marca_de_agua"
       }
     }
   },
@@ -186,8 +212,7 @@
         "name": "controlar después de generar"
       },
       "guidance_scale": {
-        "name": "escala_de_guía",
-        "tooltip": "Un valor más alto hace que la imagen siga el prompt más de cerca"
+        "name": "escala_de_guía"
       },
       "image": {
         "name": "imagen",
@@ -202,17 +227,10 @@
         "tooltip": "Instrucción para editar la imagen"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación"
+        "name": "semilla"
       },
       "watermark": {
-        "name": "marca_de_agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" a la imagen"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "marca_de_agua"
       }
     }
   },
@@ -224,8 +242,7 @@
         "name": "controlar después de generar"
       },
       "guidance_scale": {
-        "name": "escala de guía",
-        "tooltip": "Un valor más alto hace que la imagen siga el prompt más de cerca"
+        "name": "escala de guía"
       },
       "height": {
         "name": "alto",
@@ -240,25 +257,18 @@
         "tooltip": "El texto prompt utilizado para generar la imagen"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación"
+        "name": "semilla"
       },
       "size_preset": {
         "name": "preajuste de tamaño",
         "tooltip": "Elige un tamaño recomendado. Selecciona Personalizado para usar el ancho y alto abajo"
       },
       "watermark": {
-        "name": "marca de agua",
-        "tooltip": "Si se añade una marca de agua de \"Generado por IA\" a la imagen"
+        "name": "marca de agua"
       },
       "width": {
         "name": "ancho",
         "tooltip": "Ancho personalizado para la imagen. El valor solo funciona si `size_preset` está en `Personalizado`"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -294,17 +304,10 @@
         "tooltip": "La resolución del video de salida."
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación."
+        "name": "semilla"
       },
       "watermark": {
-        "name": "marca de agua",
-        "tooltip": "Si se añade una marca de agua de \"Generado por IA\" al video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "marca de agua"
       }
     }
   },
@@ -317,8 +320,7 @@
         "tooltip": "La relación de aspecto del video de salida."
       },
       "camera_fixed": {
-        "name": "cámara fija",
-        "tooltip": "Especifica si se debe fijar la cámara. La plataforma añade una instrucción para fijar la cámara a tu prompt, pero no garantiza el efecto real."
+        "name": "cámara fija"
       },
       "control_after_generate": {
         "name": "controlar después de generar"
@@ -344,17 +346,10 @@
         "tooltip": "La resolución del video de salida."
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación."
+        "name": "semilla"
       },
       "watermark": {
-        "name": "marca de agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" al video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "marca de agua"
       }
     }
   },
@@ -366,20 +361,17 @@
         "name": "controlar después de generar"
       },
       "fail_on_partial": {
-        "name": "fallar si es parcial",
-        "tooltip": "Si está habilitado, aborta la ejecución si falta alguna imagen solicitada o devuelve un error."
+        "name": "fallar si es parcial"
       },
       "height": {
-        "name": "alto",
-        "tooltip": "Alto personalizado para la imagen. El valor solo funciona si `preajuste de tamaño` está en `Personalizado`."
+        "name": "alto"
       },
       "image": {
         "name": "imagen",
         "tooltip": "Imagen(es) de entrada para la generación de imagen a imagen. Lista de 1 a 10 imágenes para generación de referencia única o múltiple."
       },
       "max_images": {
-        "name": "máximo de imágenes",
-        "tooltip": "Número máximo de imágenes a generar cuando generación secuencial de imágenes='auto'. El total de imágenes (entrada + generadas) no puede exceder 15."
+        "name": "máximo de imágenes"
       },
       "model": {
         "name": "modelo",
@@ -390,29 +382,20 @@
         "tooltip": "Prompt de texto para crear o editar una imagen."
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación."
+        "name": "semilla"
       },
       "sequential_image_generation": {
-        "name": "generación secuencial de imágenes",
-        "tooltip": "Modo de generación de imágenes en grupo. 'deshabilitado' genera una sola imagen. 'auto' permite que el modelo decida si generar varias imágenes relacionadas (por ejemplo, escenas de historias, variaciones de personajes)."
+        "name": "generación secuencial de imágenes"
       },
       "size_preset": {
         "name": "preajuste de tamaño",
         "tooltip": "Elige un tamaño recomendado. Selecciona Personalizado para usar el ancho y alto abajo."
       },
       "watermark": {
-        "name": "marca de agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" a la imagen."
+        "name": "marca de agua"
       },
       "width": {
-        "name": "ancho",
-        "tooltip": "Ancho personalizado para la imagen. El valor solo funciona si `preajuste de tamaño` está en `Personalizado`."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "ancho"
       }
     }
   },
@@ -425,8 +408,7 @@
         "tooltip": "La relación de aspecto del video de salida."
       },
       "camera_fixed": {
-        "name": "cámara fija",
-        "tooltip": "Especifica si se debe fijar la cámara. La plataforma añade una instrucción para fijar la cámara a tu prompt, pero no garantiza el efecto real."
+        "name": "cámara fija"
       },
       "control_after_generate": {
         "name": "controlar después de generar"
@@ -448,17 +430,10 @@
         "tooltip": "La resolución del video de salida."
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación."
+        "name": "semilla"
       },
       "watermark": {
-        "name": "marca de agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" al video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "marca de agua"
       }
     }
   },
@@ -491,8 +466,7 @@
     },
     "outputs": {
       "0": {
-        "name": "modelo_modificado",
-        "tooltip": null
+        "name": "modelo_modificado"
       }
     }
   },
@@ -526,11 +500,6 @@
       },
       "v": {
         "name": "v"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -622,11 +591,6 @@
         "name": "texto",
         "tooltip": "El texto a codificar."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "Una condición que contiene el texto incrustado utilizado para guiar el modelo de difusión."
-      }
     }
   },
   "CLIPTextEncodeControlnet": {
@@ -640,11 +604,6 @@
       },
       "text": {
         "name": "texto"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -714,11 +673,6 @@
       "user_prompt": {
         "name": "user_prompt",
         "tooltip": "El texto a codificar."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "Una condición que contiene el texto incrustado utilizado para guiar el modelo de difusión."
       }
     }
   },
@@ -846,11 +800,6 @@
       "low_threshold": {
         "name": "umbral_bajo"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CaseConverter": {
@@ -861,11 +810,6 @@
       },
       "string": {
         "name": "cadena"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -887,17 +831,6 @@
       "ckpt_name": {
         "name": "nombre_ckpt",
         "tooltip": "El nombre del punto de control (modelo) a cargar."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo utilizado para desruidar latentes."
-      },
-      "1": {
-        "tooltip": "El modelo CLIP utilizado para codificar textos de prompts."
-      },
-      "2": {
-        "tooltip": "El modelo VAE utilizado para codificar y decodificar imágenes a y desde el espacio latente."
       }
     }
   },
@@ -940,11 +873,6 @@
       "start_sigma": {
         "name": "sigma_inicial",
         "tooltip": "Primer sigma en el que estas opciones estarán en efecto."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1309,11 +1237,6 @@
         "name": "modelo",
         "tooltip": "El modelo al que se aplicarán las ventanas de contexto durante el muestreo."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo con ventanas de contexto aplicadas durante el muestreo."
-      }
     }
   },
   "ControlNetApply": {
@@ -1479,11 +1402,6 @@
       "width": {
         "name": "ancho"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CosmosPredict2ImageToVideoLatent": {
@@ -1509,11 +1427,6 @@
       },
       "width": {
         "name": "ancho"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1672,11 +1585,6 @@
         "name": "imágenes",
         "tooltip": "Las imágenes de las que se creará el video."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CropMask": {
@@ -1800,11 +1708,6 @@
         "name": "detallado",
         "tooltip": "Si se debe registrar información detallada."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo con EasyCache."
-      }
     }
   },
   "EmptyAceStepLatentAudio": {
@@ -1817,10 +1720,22 @@
       "seconds": {
         "name": "segundos"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+    }
+  },
+  "EmptyAudio": {
+    "display_name": "Audio Vacío",
+    "inputs": {
+      "channels": {
+        "name": "canales",
+        "tooltip": "Número de canales de audio (1 para mono, 2 para estéreo)."
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "Duración del clip de audio vacío en segundos"
+      },
+      "sample_rate": {
+        "name": "frecuencia de muestreo",
+        "tooltip": "Frecuencia de muestreo del clip de audio vacío."
       }
     }
   },
@@ -1835,11 +1750,6 @@
       },
       "width": {
         "name": "ancho"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1857,11 +1767,6 @@
       },
       "width": {
         "name": "ancho"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -1969,11 +1874,6 @@
       "width": {
         "name": "ancho",
         "tooltip": "El ancho de las imágenes latentes en píxeles."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El lote de imágenes latentes vacías."
       }
     }
   },
@@ -2360,8 +2260,7 @@
         "name": "image_prompt"
       },
       "image_prompt_strength": {
-        "name": "image_prompt_strength",
-        "tooltip": "Mezcla entre el prompt y el image prompt."
+        "name": "image_prompt_strength"
       },
       "prompt": {
         "name": "prompt",
@@ -2773,19 +2672,16 @@
     "display_name": "Ideogram V1",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "La relación de aspecto para la generación de la imagen."
+        "name": "aspect_ratio"
       },
       "control_after_generate": {
         "name": "control after generate"
       },
       "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Determina si se debe usar MagicPrompt en la generación"
+        "name": "magic_prompt_option"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Descripción de lo que se debe excluir de la imagen"
+        "name": "negative_prompt"
       },
       "num_images": {
         "name": "num_images"
@@ -2801,11 +2697,6 @@
         "name": "turbo",
         "tooltip": "Indica si se debe usar el modo turbo (generación más rápida, potencialmente menor calidad)"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "IdeogramV2": {
@@ -2813,19 +2704,16 @@
     "display_name": "Ideogram V2",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "La relación de aspecto para la generación de la imagen. Se ignora si la resolución no está configurada en AUTO."
+        "name": "aspect_ratio"
       },
       "control_after_generate": {
         "name": "control after generate"
       },
       "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Determina si se debe usar MagicPrompt en la generación"
+        "name": "magic_prompt_option"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Descripción de lo que se debe excluir de la imagen"
+        "name": "negative_prompt"
       },
       "num_images": {
         "name": "num_images"
@@ -2835,24 +2723,17 @@
         "tooltip": "Prompt para la generación de la imagen"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "La resolución para la generación de la imagen. Si no está configurada en AUTO, esto sobrescribe el ajuste de aspect_ratio."
+        "name": "resolution"
       },
       "seed": {
         "name": "seed"
       },
       "style_type": {
-        "name": "style_type",
-        "tooltip": "Tipo de estilo para la generación (solo V2)"
+        "name": "style_type"
       },
       "turbo": {
         "name": "turbo",
         "tooltip": "Indica si se debe usar el modo turbo (generación más rápida, potencialmente menor calidad)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2861,8 +2742,7 @@
     "display_name": "Ideogram V3",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "La relación de aspecto para la generación de imagen. Se ignora si la resolución no está en Automático."
+        "name": "aspect_ratio"
       },
       "character_image": {
         "name": "imagen_de_personaje",
@@ -2880,8 +2760,7 @@
         "tooltip": "Imagen de referencia opcional para la edición de imagen."
       },
       "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Determina si MagicPrompt debe usarse en la generación"
+        "name": "magic_prompt_option"
       },
       "mask": {
         "name": "mask",
@@ -2895,20 +2774,13 @@
         "tooltip": "Indicación para la generación o edición de la imagen"
       },
       "rendering_speed": {
-        "name": "rendering_speed",
-        "tooltip": "Controla el equilibrio entre la velocidad de generación y la calidad"
+        "name": "rendering_speed"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "La resolución para la generación de imagen. Si no está en Automático, esto sobrescribe la configuración de aspect_ratio."
+        "name": "resolution"
       },
       "seed": {
         "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -3418,11 +3290,6 @@
       "steps": {
         "name": "pasos",
         "tooltip": "El número de pasos utilizados en el proceso de eliminación de ruido."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El latente deshacer el ruido."
       }
     }
   },
@@ -4414,11 +4281,6 @@
         "name": "detallado",
         "tooltip": "Si se debe registrar información detallada."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo con LazyCache."
-      }
     }
   },
   "Load3D": {
@@ -4569,15 +4431,13 @@
         "tooltip": "La carpeta desde la que cargar las imágenes."
       },
       "height": {
-        "name": "alto",
-        "tooltip": "La altura a la que redimensionar las imágenes. -1 significa usar la altura original."
+        "name": "alto"
       },
       "resize_method": {
         "name": "método_de_redimensionado"
       },
       "width": {
-        "name": "ancho",
-        "tooltip": "El ancho al que redimensionar las imágenes. -1 significa usar el ancho original."
+        "name": "ancho"
       }
     }
   },
@@ -4597,11 +4457,6 @@
       },
       "upload": {
         "name": "elegir archivo para subir"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -4629,14 +4484,6 @@
         "name": "fuerza_modelo",
         "tooltip": "Cuánto modificar el modelo de difusión. Este valor puede ser negativo."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo de difusión modificado."
-      },
-      "1": {
-        "tooltip": "El modelo CLIP modificado."
-      }
     }
   },
   "LoraLoaderModelOnly": {
@@ -4651,11 +4498,6 @@
       },
       "strength_model": {
         "name": "fuerza_modelo"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo de difusión modificado."
       }
     }
   },
@@ -4674,11 +4516,6 @@
       "strength_model": {
         "name": "fuerza_modelo",
         "tooltip": "Qué tan fuerte modificar el modelo de difusión. Este valor puede ser negativo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo de difusión modificado."
       }
     }
   },
@@ -4978,33 +4815,24 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "La duración del video de salida en segundos."
+        "name": "duration"
       },
       "first_frame_image": {
         "name": "first_frame_image",
         "tooltip": "Imagen opcional para usar como primer fotograma al generar un video."
       },
       "prompt_optimizer": {
-        "name": "prompt_optimizer",
-        "tooltip": "Optimiza el prompt para mejorar la calidad de la generación cuando sea necesario."
+        "name": "prompt_optimizer"
       },
       "prompt_text": {
         "name": "prompt_text",
         "tooltip": "Texto de prompt para guiar la generación del video."
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "Las dimensiones de la visualización del video. 1080p es 1920x1080, 768p es 1366x768."
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "La semilla aleatoria utilizada para crear el ruido."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -5028,13 +4856,7 @@
         "tooltip": "Prompt de texto para guiar la generación de video"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "La semilla aleatoria utilizada para crear el ruido."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "semilla"
       }
     }
   },
@@ -5054,13 +4876,7 @@
         "tooltip": "Texto de indicación para guiar la generación del video"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "La semilla aleatoria utilizada para crear el ruido."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "semilla"
       }
     }
   },
@@ -7307,11 +7123,6 @@
         "name": "pasos",
         "tooltip": "Número de pasos de desruido"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyTxt2VideoNode": {
@@ -7343,11 +7154,6 @@
         "name": "pasos",
         "tooltip": "Pasos de inferencia"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MoonvalleyVideo2VideoNode": {
@@ -7357,8 +7163,7 @@
         "name": "tipo_de_control"
       },
       "motion_intensity": {
-        "name": "intensidad_de_movimiento",
-        "tooltip": "Solo se usa si el tipo_de_control es 'Motion Transfer'"
+        "name": "intensidad_de_movimiento"
       },
       "negative_prompt": {
         "name": "negative_prompt",
@@ -7375,11 +7180,6 @@
       "video": {
         "name": "video",
         "tooltip": "El video de referencia utilizado para generar el video de salida. Debe tener al menos 5 segundos de duración. Los videos de más de 5s se recortarán automáticamente. Solo se admite el formato MP4."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -7402,12 +7202,10 @@
     "display_name": "Opciones Avanzadas de OpenAI ChatGPT",
     "inputs": {
       "instructions": {
-        "name": "instrucciones",
-        "tooltip": "Instrucciones para el modelo sobre cómo generar la respuesta"
+        "name": "instrucciones"
       },
       "max_output_tokens": {
-        "name": "máximo_de_tokens_de_salida",
-        "tooltip": "Un límite superior para la cantidad de tokens que se pueden generar para una respuesta, incluidos los tokens de salida visibles"
+        "name": "máximo_de_tokens_de_salida"
       },
       "truncation": {
         "name": "truncamiento",
@@ -7461,20 +7259,17 @@
         "tooltip": "Máscara opcional para inpainting (las áreas blancas serán reemplazadas)"
       },
       "n": {
-        "name": "n",
-        "tooltip": "Cuántas imágenes generar"
+        "name": "n"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Texto de entrada para DALL·E"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "aún no implementado en el backend"
+        "name": "seed"
       },
       "size": {
-        "name": "tamaño",
-        "tooltip": "Tamaño de la imagen"
+        "name": "tamaño"
       }
     }
   },
@@ -7490,20 +7285,16 @@
         "tooltip": "Texto de entrada para DALL·E"
       },
       "quality": {
-        "name": "calidad",
-        "tooltip": "Calidad de la imagen"
+        "name": "calidad"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "aún no implementado en el backend"
+        "name": "seed"
       },
       "size": {
-        "name": "tamaño",
-        "tooltip": "Tamaño de la imagen"
+        "name": "tamaño"
       },
       "style": {
-        "name": "estilo",
-        "tooltip": "Vívido hace que el modelo tienda a generar imágenes hiperrealistas y dramáticas. Natural hace que el modelo produzca imágenes más naturales y menos hiperrealistas."
+        "name": "estilo"
       }
     }
   },
@@ -7512,8 +7303,7 @@
     "display_name": "OpenAI GPT Image 1",
     "inputs": {
       "background": {
-        "name": "background",
-        "tooltip": "Devolver imagen con o sin fondo"
+        "name": "background"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7527,24 +7317,20 @@
         "tooltip": "Máscara opcional para inpainting (las áreas blancas serán reemplazadas)"
       },
       "n": {
-        "name": "n",
-        "tooltip": "Cuántas imágenes generar"
+        "name": "n"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Texto de entrada para GPT Image 1"
       },
       "quality": {
-        "name": "quality",
-        "tooltip": "Calidad de la imagen, afecta el costo y el tiempo de generación."
+        "name": "quality"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "aún no implementado en el backend"
+        "name": "seed"
       },
       "size": {
-        "name": "size",
-        "tooltip": "Tamaño de la imagen"
+        "name": "size"
       }
     }
   },
@@ -8249,11 +8035,6 @@
       "value": {
         "name": "valor"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveFloat": {
@@ -8261,11 +8042,6 @@
     "inputs": {
       "value": {
         "name": "valor"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8278,11 +8054,6 @@
       "value": {
         "name": "valor"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveString": {
@@ -8291,11 +8062,6 @@
       "value": {
         "name": "valor"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PrimitiveStringMultiline": {
@@ -8303,11 +8069,6 @@
     "inputs": {
       "value": {
         "name": "valor"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -8741,11 +8502,6 @@
       "string": {
         "name": "cadena"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RegexMatch": {
@@ -8769,8 +8525,7 @@
     },
     "outputs": {
       "0": {
-        "name": "coincidencias",
-        "tooltip": null
+        "name": "coincidencias"
       }
     }
   },
@@ -8782,12 +8537,10 @@
         "name": "ignorar_mayúsculas"
       },
       "count": {
-        "name": "conteo",
-        "tooltip": "Número máximo de reemplazos a realizar. Establezca en 0 para reemplazar todas las ocurrencias (por defecto). Establezca en 1 para reemplazar solo la primera coincidencia, 2 para las dos primeras, etc."
+        "name": "conteo"
       },
       "dotall": {
-        "name": "dotall",
-        "tooltip": "Cuando está activado, el carácter punto (.) coincidirá con cualquier carácter, incluidos los saltos de línea. Cuando está desactivado, los puntos no coincidirán con saltos de línea."
+        "name": "dotall"
       },
       "multiline": {
         "name": "multilínea"
@@ -8800,11 +8553,6 @@
       },
       "string": {
         "name": "cadena"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9016,11 +8764,6 @@
         "name": "fotograma_inicial",
         "tooltip": "Fotograma inicial que se usará para el video"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayImageToVideoNodeGen3a": {
@@ -9047,11 +8790,6 @@
       "start_frame": {
         "name": "fotograma_inicial",
         "tooltip": "Fotograma inicial que se usará para el video"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9080,11 +8818,6 @@
         "name": "start_frame",
         "tooltip": "Fotograma inicial que se usará para el video"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RunwayTextToImageNode": {
@@ -9101,11 +8834,6 @@
       "reference_image": {
         "name": "reference_image",
         "tooltip": "Imagen de referencia opcional para guiar la generación"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9445,11 +9173,6 @@
       "version": {
         "name": "versión"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerLCMUpscale": {
@@ -9463,11 +9186,6 @@
       },
       "upscale_method": {
         "name": "método_aumento_escala"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -9897,6 +9615,23 @@
       }
     }
   },
+  "SplitAudioChannels": {
+    "description": "Separa el audio en canales izquierdo y derecho.",
+    "display_name": "Dividir Canales de Audio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "izquierdo"
+      },
+      "1": {
+        "name": "derecho"
+      }
+    }
+  },
   "SplitImageWithAlpha": {
     "display_name": "Dividir Imagen con Alfa",
     "inputs": {
@@ -9955,8 +9690,7 @@
         "name": "controlar después de generar"
       },
       "duration": {
-        "name": "duración",
-        "tooltip": "Controla la duración en segundos del audio generado."
+        "name": "duración"
       },
       "mask_end": {
         "name": "fin_mascara"
@@ -9971,17 +9705,10 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "La semilla aleatoria utilizada para la generación."
+        "name": "semilla"
       },
       "steps": {
-        "name": "pasos",
-        "tooltip": "Controla el número de pasos de muestreo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "pasos"
       }
     }
   },
@@ -9997,8 +9724,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "Controla la duración en segundos del audio generado."
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10007,21 +9733,13 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "La semilla aleatoria utilizada para la generación."
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "Controla el número de pasos de muestreo."
+        "name": "steps"
       },
       "strength": {
-        "name": "strength",
-        "tooltip": "El parámetro controla cuánto influye el parámetro de audio en el audio generado."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "strength"
       }
     }
   },
@@ -10044,8 +9762,7 @@
         "name": "image"
       },
       "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Reducción de ruido de la imagen de entrada; 0.0 produce una imagen idéntica a la entrada, 1.0 es como si no se hubiera proporcionado ninguna imagen."
+        "name": "image_denoise"
       },
       "model": {
         "name": "model"
@@ -10066,11 +9783,6 @@
         "name": "style_preset",
         "tooltip": "Estilo opcional deseado para la imagen generada."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityStableImageUltraNode": {
@@ -10088,8 +9800,7 @@
         "name": "image"
       },
       "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Nivel de eliminación de ruido de la imagen de entrada; 0.0 produce una imagen idéntica a la entrada, 1.0 es como si no se hubiera proporcionado ninguna imagen."
+        "name": "image_denoise"
       },
       "negative_prompt": {
         "name": "negative_prompt",
@@ -10107,11 +9818,6 @@
         "name": "style_preset",
         "tooltip": "Estilo opcional deseado para la imagen generada."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityTextToAudio": {
@@ -10122,8 +9828,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "Controla la duración en segundos del audio generado."
+        "name": "duration"
       },
       "model": {
         "name": "model"
@@ -10132,17 +9837,10 @@
         "name": "prompt"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "La semilla aleatoria utilizada para la generación."
+        "name": "seed"
       },
       "steps": {
-        "name": "steps",
-        "tooltip": "Controla el número de pasos de muestreo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "steps"
       }
     }
   },
@@ -10171,11 +9869,6 @@
       "seed": {
         "name": "semilla",
         "tooltip": "La semilla aleatoria utilizada para crear el ruido."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10209,11 +9902,6 @@
         "name": "estilo predefinido",
         "tooltip": "Estilo opcional deseado para la imagen generada."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StabilityUpscaleFastNode": {
@@ -10222,11 +9910,6 @@
     "inputs": {
       "image": {
         "name": "imagen"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10263,11 +9946,6 @@
       },
       "stage_c": {
         "name": "etapa_c"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10416,11 +10094,6 @@
       "string_b": {
         "name": "string_b"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringConcatenate": {
@@ -10434,11 +10107,6 @@
       },
       "string_b": {
         "name": "string_b"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10457,8 +10125,7 @@
     },
     "outputs": {
       "0": {
-        "name": "contiene",
-        "tooltip": null
+        "name": "contiene"
       }
     }
   },
@@ -10471,8 +10138,7 @@
     },
     "outputs": {
       "0": {
-        "name": "longitud",
-        "tooltip": null
+        "name": "longitud"
       }
     }
   },
@@ -10488,11 +10154,6 @@
       "string": {
         "name": "cadena"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringSubstring": {
@@ -10507,11 +10168,6 @@
       "string": {
         "name": "cadena"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "StringTrim": {
@@ -10522,11 +10178,6 @@
       },
       "string": {
         "name": "cadena"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10570,11 +10221,6 @@
       "min_padding": {
         "name": "mín_relleno"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "TCFG": {
@@ -10605,11 +10251,6 @@
       },
       "tags": {
         "name": "etiquetas"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10790,6 +10431,23 @@
       }
     }
   },
+  "TrimAudioDuration": {
+    "description": "Recorta el tensor de audio en el rango de tiempo elegido.",
+    "display_name": "Recortar Duración de Audio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "Duración en segundos"
+      },
+      "start_index": {
+        "name": "índice de inicio",
+        "tooltip": "Hora de inicio en segundos, puede ser negativo para contar desde el final (soporta sub-segundos)."
+      }
+    }
+  },
   "TrimVideoLatent": {
     "display_name": "TrimVideoLatent",
     "inputs": {
@@ -10798,11 +10456,6 @@
       },
       "trim_amount": {
         "name": "cantidad_de_recorte"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10857,8 +10510,7 @@
         "name": "semilla_del_modelo"
       },
       "model_version": {
-        "name": "versión_del_modelo",
-        "tooltip": "La versión del modelo a usar para la generación"
+        "name": "versión_del_modelo"
       },
       "orientation": {
         "name": "orientación"
@@ -10916,8 +10568,7 @@
         "name": "semilla_del_modelo"
       },
       "model_version": {
-        "name": "versión_del_modelo",
-        "tooltip": "La versión del modelo a usar para la generación"
+        "name": "versión_del_modelo"
       },
       "orientation": {
         "name": "orientación"
@@ -11112,11 +10763,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetSelfAttentionMultiply": {
@@ -11137,11 +10783,6 @@
       "v": {
         "name": "v"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "UNetTemporalAttentionMultiply": {
@@ -11161,11 +10802,6 @@
       },
       "self_temporal": {
         "name": "auto_temporal"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11202,11 +10838,6 @@
       "vae": {
         "name": "vae",
         "tooltip": "El modelo VAE utilizado para decodificar el latente."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "La imagen decodificada."
       }
     }
   },
@@ -11375,45 +11006,33 @@
         "name": "control after generate"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Duración del video de salida en segundos (Veo 3 solo soporta 8 segundos)"
+        "name": "duration_seconds"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Si se debe mejorar la indicación con asistencia de IA"
+        "name": "enhance_prompt"
       },
       "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "Generar audio para el video. Compatible con todos los modelos Veo 3."
+        "name": "generate_audio"
       },
       "image": {
         "name": "image",
         "tooltip": "Imagen de referencia opcional para guiar la generación del video"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Modelo Veo 3 a utilizar para la generación de video"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Indicaciones negativas para guiar lo que se debe evitar en el video"
+        "name": "negative_prompt"
       },
       "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Permitir la generación de personas en el video"
+        "name": "person_generation"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Descripción de texto del video"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11429,41 +11048,30 @@
         "name": "control after generate"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Duración del video de salida en segundos"
+        "name": "duration_seconds"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Si se debe mejorar la indicación con asistencia de IA"
+        "name": "enhance_prompt"
       },
       "image": {
         "name": "image",
         "tooltip": "Imagen de referencia opcional para guiar la generación del video"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Modelo Veo 2 a utilizar para la generación de video"
+        "name": "model"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Indicaciones negativas para guiar lo que se debe evitar en el video"
+        "name": "negative_prompt"
       },
       "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Si se permite generar personas en el video"
+        "name": "person_generation"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Descripción de texto del video"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11497,8 +11105,7 @@
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "Duración del video de salida en segundos"
+        "name": "duration"
       },
       "image": {
         "name": "image",
@@ -11509,25 +11116,16 @@
         "tooltip": "Nombre del modelo"
       },
       "movement_amplitude": {
-        "name": "movement_amplitude",
-        "tooltip": "La amplitud de movimiento de los objetos en el fotograma"
+        "name": "movement_amplitude"
       },
       "prompt": {
-        "name": "prompt",
-        "tooltip": "Descripción textual para la generación de video"
+        "name": "prompt"
       },
       "resolution": {
-        "name": "resolution",
-        "tooltip": "Los valores compatibles pueden variar según el modelo y la duración"
+        "name": "resolution"
       },
       "seed": {
-        "name": "seed",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "seed"
       }
     }
   },
@@ -11536,15 +11134,13 @@
     "display_name": "Generación de Video de Referencia Vidu",
     "inputs": {
       "aspect_ratio": {
-        "name": "relación de aspecto",
-        "tooltip": "La relación de aspecto del video de salida"
+        "name": "relación de aspecto"
       },
       "control_after_generate": {
         "name": "controlar después de generar"
       },
       "duration": {
-        "name": "duración",
-        "tooltip": "Duración del video de salida en segundos"
+        "name": "duración"
       },
       "images": {
         "name": "imágenes",
@@ -11555,25 +11151,17 @@
         "tooltip": "Nombre del modelo"
       },
       "movement_amplitude": {
-        "name": "amplitud de movimiento",
-        "tooltip": "La amplitud de movimiento de los objetos en el cuadro"
+        "name": "amplitud de movimiento"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Una descripción textual para la generación de video"
       },
       "resolution": {
-        "name": "resolución",
-        "tooltip": "Los valores soportados pueden variar según el modelo y la duración"
+        "name": "resolución"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "semilla"
       }
     }
   },
@@ -11585,8 +11173,7 @@
         "name": "controlar después de generar"
       },
       "duration": {
-        "name": "duración",
-        "tooltip": "Duración del video de salida en segundos"
+        "name": "duración"
       },
       "end_frame": {
         "name": "cuadro final",
@@ -11601,25 +11188,16 @@
         "tooltip": "Nombre del modelo"
       },
       "movement_amplitude": {
-        "name": "amplitud de movimiento",
-        "tooltip": "La amplitud de movimiento de los objetos en el cuadro"
+        "name": "amplitud de movimiento"
       },
       "prompt": {
-        "name": "prompt",
-        "tooltip": "Una descripción textual para la generación de video"
+        "name": "prompt"
       },
       "resolution": {
-        "name": "resolución",
-        "tooltip": "Los valores soportados pueden variar según el modelo y la duración"
+        "name": "resolución"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "semilla"
       }
     }
   },
@@ -11628,40 +11206,30 @@
     "display_name": "Generación de Video desde Texto Vidu",
     "inputs": {
       "aspect_ratio": {
-        "name": "relación de aspecto",
-        "tooltip": "La relación de aspecto del video de salida"
+        "name": "relación de aspecto"
       },
       "control_after_generate": {
         "name": "controlar después de generar"
       },
       "duration": {
-        "name": "duración",
-        "tooltip": "Duración del video de salida en segundos"
+        "name": "duración"
       },
       "model": {
         "name": "modelo",
         "tooltip": "Nombre del modelo"
       },
       "movement_amplitude": {
-        "name": "amplitud de movimiento",
-        "tooltip": "La amplitud de movimiento de los objetos en el cuadro"
+        "name": "amplitud de movimiento"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Una descripción textual para la generación de video"
       },
       "resolution": {
-        "name": "resolución",
-        "tooltip": "Los valores soportados pueden variar según el modelo y la duración"
+        "name": "resolución"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "semilla"
       }
     }
   },
@@ -11723,16 +11291,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "negativo",
-        "tooltip": null
+        "name": "negativo"
       },
       "2": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       }
     }
   },
@@ -11756,11 +11321,6 @@
       },
       "width": {
         "name": "ancho"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11819,28 +11379,22 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "negativo",
-        "tooltip": null
+        "name": "negativo"
       },
       "2": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       },
       "3": {
-        "name": "recortar_latente",
-        "tooltip": null
+        "name": "recortar_latente"
       },
       "4": {
-        "name": "recortar_imagen",
-        "tooltip": null
+        "name": "recortar_imagen"
       },
       "5": {
-        "name": "desplazamiento_cuadro_video",
-        "tooltip": null
+        "name": "desplazamiento_cuadro_video"
       }
     }
   },
@@ -11877,20 +11431,16 @@
     },
     "outputs": {
       "0": {
-        "name": "camera_embedding",
-        "tooltip": null
+        "name": "camera_embedding"
       },
       "1": {
-        "name": "ancho",
-        "tooltip": null
+        "name": "ancho"
       },
       "2": {
-        "name": "alto",
-        "tooltip": null
+        "name": "alto"
       },
       "3": {
-        "name": "longitud",
-        "tooltip": null
+        "name": "longitud"
       }
     }
   },
@@ -11930,16 +11480,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "negativo",
-        "tooltip": null
+        "name": "negativo"
       },
       "2": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       }
     }
   },
@@ -11974,11 +11521,6 @@
       "model": {
         "name": "modelo",
         "tooltip": "El modelo al que se aplicarán las ventanas de contexto durante el muestreo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": "El modelo con ventanas de contexto aplicadas durante el muestreo."
       }
     }
   },
@@ -12156,16 +11698,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "negativo",
-        "tooltip": null
+        "name": "negativo"
       },
       "2": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       }
     }
   },
@@ -12224,12 +11763,10 @@
         "name": "controlar_despues_generar"
       },
       "duration": {
-        "name": "duración",
-        "tooltip": "Duraciones disponibles: 5 y 10 segundos"
+        "name": "duración"
       },
       "generate_audio": {
-        "name": "generar_audio",
-        "tooltip": "Si no hay entrada de audio, generar audio automáticamente."
+        "name": "generar_audio"
       },
       "image": {
         "name": "imagen"
@@ -12239,32 +11776,23 @@
         "tooltip": "Modelo a utilizar."
       },
       "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Prompt de texto negativo para guiar lo que se debe evitar."
+        "name": "prompt_negativo"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt utilizado para describir los elementos y características visuales, soporta inglés/chino."
       },
       "prompt_extend": {
-        "name": "extender_prompt",
-        "tooltip": "Si se debe mejorar el prompt con ayuda de IA."
+        "name": "extender_prompt"
       },
       "resolution": {
         "name": "resolución"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a utilizar para la generación."
+        "name": "semilla"
       },
       "watermark": {
-        "name": "marca_agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" al resultado."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "marca_agua"
       }
     }
   },
@@ -12298,20 +11826,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "texto_negativo",
-        "tooltip": null
+        "name": "texto_negativo"
       },
       "2": {
-        "name": "texto_img_negativo",
-        "tooltip": null
+        "name": "texto_img_negativo"
       },
       "3": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       }
     }
   },
@@ -12354,16 +11878,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "negativo",
-        "tooltip": null
+        "name": "negativo"
       },
       "2": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       }
     }
   },
@@ -12397,16 +11918,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "negativo",
-        "tooltip": null
+        "name": "negativo"
       },
       "2": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       }
     }
   },
@@ -12425,32 +11943,23 @@
         "tooltip": "Modelo a utilizar."
       },
       "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Prompt negativo para guiar lo que se debe evitar."
+        "name": "prompt_negativo"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt utilizado para describir los elementos y características visuales, soporta inglés/chino."
       },
       "prompt_extend": {
-        "name": "extender_prompt",
-        "tooltip": "Si se debe mejorar el prompt con asistencia de IA."
+        "name": "extender_prompt"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a utilizar para la generación."
+        "name": "semilla"
       },
       "watermark": {
-        "name": "marca_agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" al resultado."
+        "name": "marca_agua"
       },
       "width": {
         "name": "ancho"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -12466,44 +11975,33 @@
         "name": "controlar después de generar"
       },
       "duration": {
-        "name": "duración",
-        "tooltip": "Duraciones disponibles: 5 y 10 segundos"
+        "name": "duración"
       },
       "generate_audio": {
-        "name": "generar_audio",
-        "tooltip": "Si no hay entrada de audio, generar audio automáticamente."
+        "name": "generar_audio"
       },
       "model": {
         "name": "modelo",
         "tooltip": "Modelo a utilizar."
       },
       "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Prompt negativo para guiar lo que se debe evitar."
+        "name": "prompt_negativo"
       },
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt utilizado para describir los elementos y características visuales, soporta inglés/chino."
       },
       "prompt_extend": {
-        "name": "extender_prompt",
-        "tooltip": "Si se debe mejorar el prompt con asistencia de IA."
+        "name": "extender_prompt"
       },
       "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a utilizar para la generación."
+        "name": "semilla"
       },
       "size": {
         "name": "tamaño"
       },
       "watermark": {
-        "name": "marca_de_agua",
-        "tooltip": "Si se debe añadir una marca de agua de \"Generado por IA\" al resultado."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
+        "name": "marca_de_agua"
       }
     }
   },
@@ -12549,16 +12047,13 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo",
-        "tooltip": null
+        "name": "positivo"
       },
       "1": {
-        "name": "negativo",
-        "tooltip": null
+        "name": "negativo"
       },
       "2": {
-        "name": "latente",
-        "tooltip": null
+        "name": "latente"
       }
     }
   },

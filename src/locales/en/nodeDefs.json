@@ -50,6 +50,34 @@
       }
     }
   },
+  "AudioAdjustVolume": {
+    "display_name": "Audio Adjust Volume",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "volume": {
+        "name": "volume",
+        "tooltip": "Volume adjustment in decibels (dB). 0 = no change, +6 = double, -6 = half, etc"
+      }
+    }
+  },
+  "AudioConcat": {
+    "display_name": "Audio Concat",
+    "description": "Concatenates the audio1 to audio2 in the specified direction.",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Whether to append audio2 after or before audio1."
+      }
+    }
+  },
   "AudioEncoderEncode": {
     "display_name": "AudioEncoderEncode",
     "inputs": {
@@ -66,6 +94,22 @@
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
+      }
+    }
+  },
+  "AudioMerge": {
+    "display_name": "Audio Merge",
+    "description": "Combine two audio tracks by overlaying their waveforms.",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "merge_method": {
+        "name": "merge_method",
+        "tooltip": "The method used to combine the audio waveforms."
       }
     }
   },
@@ -1675,6 +1719,23 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "The number of latent images in the batch."
+      }
+    }
+  },
+  "EmptyAudio": {
+    "display_name": "Empty Audio",
+    "inputs": {
+      "duration": {
+        "name": "duration",
+        "tooltip": "Duration of the empty audio clip in seconds"
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "Sample rate of the empty audio clip."
+      },
+      "channels": {
+        "name": "channels",
+        "tooltip": "Number of audio channels (1 for mono, 2 for stereo)."
       }
     }
   },
@@ -9487,6 +9548,23 @@
       }
     }
   },
+  "SplitAudioChannels": {
+    "display_name": "Split Audio Channels",
+    "description": "Separates the audio into left and right channels.",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "left"
+      },
+      "1": {
+        "name": "right"
+      }
+    }
+  },
   "SplitImageWithAlpha": {
     "display_name": "Split Image with Alpha",
     "inputs": {
@@ -10363,6 +10441,23 @@
       },
       "3": {
         "name": "steps"
+      }
+    }
+  },
+  "TrimAudioDuration": {
+    "display_name": "Trim Audio Duration",
+    "description": "Trim audio tensor into chosen time range.",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "start_index": {
+        "name": "start_index",
+        "tooltip": "Start time in seconds, can be negative to count from the end (supports sub-seconds)."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Duration in seconds"
       }
     }
   },
