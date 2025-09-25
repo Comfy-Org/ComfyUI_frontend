@@ -6,7 +6,7 @@
  * 2. Set display none on element to avoid cascade resolution overhead
  * 3. Only run when transform changes (event driven)
  */
-import { useThrottleFn } from '@vueuse/core'
+import { createSharedComposable, useThrottleFn } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
@@ -50,10 +50,10 @@ function boundsIntersect(boxA: Bounds, boxB: Bounds): boolean {
   const rightOf = aLeft > bRight
   const above = aBottom < bTop
   const below = aTop > bBottom
-  return leftOf || rightOf || above || below
+  return !(leftOf || rightOf || above || below)
 }
 
-export function useViewportCulling() {
+function useViewportCullingIndividual() {
   const canvasStore = useCanvasStore()
   const { vueNodeData, nodeManager } = useVueNodeLifecycle()
 
@@ -63,15 +63,22 @@ export function useViewportCulling() {
 
   const viewport = computed(() => viewportEdges(canvasStore.canvas))
 
+  function inViewport(node: LGraphNode | undefined): boolean {
+    if (!viewport.value || !node) {
+      return true
+    }
+    const nodeBounds = getNodeBounds(node)
+    return boundsIntersect(nodeBounds, viewport.value)
+  }
+
   /**
    * Update visibility of all nodes based on viewport
    * Queries DOM directly - no cache maintenance needed
    */
   function updateVisibility() {
-    if (!nodeManager.value || !viewport.value) return
+    if (!nodeManager.value) return
 
     const manager = nodeManager.value
-    const viewportBounds = viewport.value
 
     // Get all node elements at once
     const nodeElements = document.querySelectorAll('[data-node-id]')
@@ -84,9 +91,7 @@ export function useViewportCulling() {
       const node = manager.getNode(nodeId)
       if (!node) continue
 
-      const nodeBounds = getNodeBounds(node)
-      const isNodeOutsideViewport = !boundsIntersect(nodeBounds, viewportBounds)
-      const displayValue = isNodeOutsideViewport ? 'none' : ''
+      const displayValue = inViewport(node) ? '' : 'none'
       if (
         element instanceof HTMLElement &&
         element.style.display !== displayValue
@@ -99,6 +104,11 @@ export function useViewportCulling() {
 
   return {
     allNodes,
-    handleTransformUpdate
+    handleTransformUpdate,
+    inViewport
   }
 }
+
+export const useViewportCulling = createSharedComposable(
+  useViewportCullingIndividual
+)
