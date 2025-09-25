@@ -14,7 +14,9 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app as comfyApp } from '@/scripts/app'
 
-function nodeBounds(node: LGraphNode): [number, number, number, number] {
+type Bounds = [left: number, right: number, top: number, bottom: number]
+
+function getNodeBounds(node: LGraphNode): Bounds {
   const [nodeLeft, nodeTop] = node.pos
   const nodeRight = nodeLeft + node.size[0]
   const nodeBottom = nodeTop + node.size[1]
@@ -23,7 +25,7 @@ function nodeBounds(node: LGraphNode): [number, number, number, number] {
 
 function viewportEdges(
   canvas: NonNullable<ReturnType<typeof useCanvasStore>['canvas']>
-) {
+): Bounds {
   const ds = canvas.ds
   const viewport_width = canvas.canvas.width
   const viewport_height = canvas.canvas.height
@@ -36,6 +38,17 @@ function viewportEdges(
   const topEdge = -margin / ds.scale - yOffset
   const bottomEdge = (viewport_height + margin) / ds.scale - yOffset
   return [leftEdge, rightEdge, topEdge, bottomEdge]
+}
+
+function boundsIntersect(boxA: Bounds, boxB: Bounds): boolean {
+  const [aLeft, aRight, aTop, aBottom] = boxA
+  const [bLeft, bRight, bTop, bBottom] = boxB
+
+  const leftOf = aRight < bLeft
+  const rightOf = aLeft > bRight
+  const above = aBottom < bTop
+  const below = aTop > bBottom
+  return leftOf || rightOf || above || below
 }
 
 export function useViewportCulling() {
@@ -57,7 +70,7 @@ export function useViewportCulling() {
     const manager = nodeManager.value
 
     // Viewport bounds
-    const [leftEdge, rightEdge, topEdge, bottomEdge] = viewportEdges(canvas)
+    const viewportBounds = viewportEdges(canvas)
 
     // Get all node elements at once
     const nodeElements = document.querySelectorAll('[data-node-id]')
@@ -70,22 +83,10 @@ export function useViewportCulling() {
       const node = manager.getNode(nodeId)
       if (!node) continue
 
-      const [nodeLeft, nodeRight, nodeTop, nodeBottom] = nodeBounds(node)
+      const nodeBounds = getNodeBounds(node)
 
       // Calculate if node is outside viewport
-      const leftOfViewport = nodeRight < leftEdge
-      const rightOfViewport = nodeLeft > rightEdge
-      const aboveViewport = nodeBottom < topEdge
-      const belowViewport = nodeTop > bottomEdge
-      const isNodeOutsideViewport =
-        leftOfViewport || rightOfViewport || aboveViewport || belowViewport
-
-      console.log({
-        leftOfViewport,
-        rightOfViewport,
-        aboveViewport,
-        belowViewport
-      })
+      const isNodeOutsideViewport = !boundsIntersect(nodeBounds, viewportBounds)
 
       const displayValue = isNodeOutsideViewport ? 'none' : ''
 
@@ -94,15 +95,14 @@ export function useViewportCulling() {
         element instanceof HTMLElement &&
         element.style.display !== displayValue
       ) {
-        console.log('Flipping', element, displayValue)
         element.style.display = displayValue
       }
     }
   }
-  const updateVisibilityDebounced = useThrottleFn(updateVisibility, 100, true)
+  const handleTransformUpdate = useThrottleFn(updateVisibility, 100, true)
 
   return {
     allNodes,
-    handleTransformUpdate: updateVisibilityDebounced
+    handleTransformUpdate
   }
 }
