@@ -136,11 +136,7 @@ import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import {
-  type INodeInputSlot,
-  type INodeOutputSlot,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -205,18 +201,14 @@ const hasExecutionError = computed(
 
 // Computed error states for styling
 const hasAnyError = computed((): boolean => {
-  return (
-    !!hasExecutionError.value ||
-    !!nodeData.hasErrors ||
-    !!error ||
+  return !!(
+    hasExecutionError.value ||
+    nodeData.hasErrors ||
+    error ||
     // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
     // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
-    !!nodeData.inputs?.some(
-      (slot) => (slot as INodeInputSlot)?.hasErrors ?? false
-    ) ||
-    !!nodeData.outputs?.some(
-      (slot) => (slot as INodeOutputSlot)?.hasErrors ?? false
-    )
+    nodeData.inputs?.some((slot) => slot?.hasErrors) ||
+    nodeData.outputs?.some((slot) => slot?.hasErrors)
   )
 })
 
@@ -279,7 +271,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   if (hasAnyError.value) {
-    return 'border-red-500 dark-theme:border-red-500'
+    return 'border-error dark-theme:border-error'
   }
   if (executing.value) {
     return 'border-blue-500'
@@ -292,10 +284,10 @@ const outlineClass = computed(() => {
     return undefined
   }
   if (hasAnyError.value) {
-    return 'outline-red-500'
+    return 'outline-error dark-theme:outline-error'
   }
   if (executing.value) {
-    return 'outline-blue-500'
+    return 'outline-blue-500 dark-theme:outline-blue-500'
   }
   return 'outline-black dark-theme:outline-white'
 })

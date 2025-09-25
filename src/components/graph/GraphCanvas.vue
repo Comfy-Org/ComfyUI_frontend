@@ -308,16 +308,20 @@ watch(
       const nodeErrors = lastNodeErrors?.[node.id]
       if (!nodeErrors) continue
 
-      let slotErrorsChanged = false
-      for (const error of nodeErrors.errors) {
-        if (!error.extra_info?.input_name) continue
-
-        const inputIndex = node.findInputSlot(error.extra_info.input_name)
-        if (inputIndex === -1) continue
-
-        node.inputs[inputIndex].hasErrors = true
-        slotErrorsChanged = true
-      }
+      const validErrors = nodeErrors.errors.filter(
+        (error) => error.extra_info?.input_name !== undefined
+      )
+      const slotErrorsChanged =
+        validErrors.length > 0 &&
+        validErrors.some((error) => {
+          const inputName = error.extra_info!.input_name!
+          const inputIndex = node.findInputSlot(inputName)
+          if (inputIndex !== -1) {
+            node.inputs[inputIndex].hasErrors = true
+            return true
+          }
+          return false
+        })
 
       // Trigger Vue node data update if slot errors changed
       if (slotErrorsChanged && comfyApp.graph.onTrigger) {
