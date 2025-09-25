@@ -65,7 +65,7 @@ const baseModels = ref<SelectOption[]>([])
 const sortBy = ref('name-asc')
 
 const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
-  props.assets
+  assets
 )
 
 // TODO: Make sortOptions configurable via props
