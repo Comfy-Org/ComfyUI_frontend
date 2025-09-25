@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@/utils/tailwindUtil'
+
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
@@ -16,9 +18,7 @@ const emit = defineEmits<{
 
 // Define models for two-way binding
 const filterIndex = defineModel<number>('filterIndex', { default: 0 })
-const layoutMode = defineModel<'list' | 'grid'>('layoutMode', {
-  default: 'grid'
-})
+const layoutMode = defineModel<'list' | 'grid' | 'list-small'>('layoutMode')
 
 // Handle item selection
 </script>
@@ -36,7 +36,16 @@ const layoutMode = defineModel<'list' | 'grid'>('layoutMode', {
     <!-- List -->
     <div class="flex overflow-hidden relative">
       <div
-        class="h-full max-h-full grid grid-cols-4 gap-x-2 gap-y-4 overflow-y-auto px-4 pt-4 pb-4"
+        :class="
+          cn(
+            'h-full max-h-full grid gap-x-2 gap-y-4 overflow-y-auto px-4 pt-4 pb-4 w-full',
+            {
+              'grid-cols-4': layoutMode === 'grid',
+              'grid-cols-1 gap-y-2': layoutMode === 'list',
+              'grid-cols-1 gap-y-1': layoutMode === 'list-small'
+            }
+          )
+        "
       >
         <div
           class="absolute top-0 inset-x-3 h-5 bg-gradient-to-b from-white dark-theme:from-neutral-900 to-transparent pointer-events-none z-10"
@@ -50,6 +59,7 @@ const layoutMode = defineModel<'list' | 'grid'>('layoutMode', {
           :image-src="item.imageSrc"
           :name="item.name"
           :metadata="item.metadata"
+          :layout="layoutMode"
           @click="emit('item-click', item, index)"
         />
       </div>

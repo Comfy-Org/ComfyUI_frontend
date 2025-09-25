@@ -9,6 +9,7 @@ interface Props {
   imageSrc: string
   name: string
   metadata?: string
+  layout?: 'grid' | 'list' | 'list-small'
 }
 
 const props = defineProps<Props>()
@@ -36,20 +37,38 @@ function handleImageLoad(event: Event) {
 
 <template>
   <div
-    class="flex flex-col gap-1 text-center select-none group/item cursor-pointer"
+    :class="
+      cn(
+        'flex gap-1 select-none group/item cursor-pointer',
+        'transition-all duration-150',
+        {
+          'flex-col text-center': layout === 'grid',
+          'flex-row text-left bg-zinc-500/20 rounded-lg hover:scale-102 active:scale-98':
+            layout === 'list',
+          'flex-row text-left hover:bg-zinc-500/20 rounded-lg':
+            layout === 'list-small',
+          // selection
+          'ring-2 ring-blue-500': layout === 'list' && selected
+        }
+      )
+    "
     @click="handleClick"
   >
     <!-- Image -->
     <div
+      v-if="layout !== 'list-small'"
       :class="
         cn(
           'relative',
-          'aspect-square w-full overflow-hidden rounded-sm outline-1 outline-offset-[-1px] outline-zinc-300/10',
+          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-zinc-300/10',
           'transition-all duration-150',
-          'group-hover/item:scale-108',
-          'group-active/item:scale-95',
-          // selection
-          !!selected && 'ring-2 ring-blue-500'
+          {
+            'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
+            'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
+              layout === 'grid',
+            // selection
+            'ring-2 ring-blue-500': layout === 'grid' && selected
+          }
         )
       "
     >
@@ -72,21 +91,33 @@ function handleImageLoad(event: Event) {
       />
     </div>
     <!-- Name -->
-    <span
+    <div
       :class="
-        cn(
-          'block text-[15px] line-clamp-2 wrap-break-word',
-          'transition-colors duration-150',
-          // selection
-          !!selected && 'text-blue-500'
-        )
+        cn('flex gap-1', {
+          // layout === 'list' ? 'p-4' : ''
+          'flex-col': layout === 'grid',
+          'flex-col p-4 w-full': layout === 'list',
+          'flex-row p-2 items-center justify-between w-full':
+            layout === 'list-small'
+        })
       "
     >
-      {{ name }}
-    </span>
-    <!-- Meta Data -->
-    <span class="block text-xs text-slate-400">{{
-      metadata || actualDimensions
-    }}</span>
+      <span
+        :class="
+          cn(
+            'block text-[15px] line-clamp-2 wrap-break-word',
+            'transition-colors duration-150',
+            // selection
+            !!selected && 'text-blue-500'
+          )
+        "
+      >
+        {{ name }}
+      </span>
+      <!-- Meta Data -->
+      <span class="block text-xs text-slate-400">{{
+        metadata || actualDimensions
+      }}</span>
+    </div>
   </div>
 </template>

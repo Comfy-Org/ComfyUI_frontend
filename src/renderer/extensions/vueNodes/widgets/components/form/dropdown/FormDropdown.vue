@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
 // Define models for two-way binding
 const selected = defineModel<Set<number>>('selected', { default: new Set() })
 const filterIndex = defineModel<number>('filterIndex', { default: 0 })
-const layoutMode = defineModel<'list' | 'grid'>('layoutMode', {
+const layoutMode = defineModel<'list' | 'grid' | 'list-small'>('layoutMode', {
   default: 'grid'
 })
 const files = defineModel<File[]>('files', { default: [] })
