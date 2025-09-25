@@ -12,6 +12,7 @@ import { computed } from 'vue'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 
 type Bounds = [left: number, right: number, top: number, bottom: number]
 
@@ -72,7 +73,7 @@ function useViewportCullingIndividual() {
    * Queries DOM directly - no cache maintenance needed
    */
   function updateVisibility() {
-    if (!nodeManager.value) return
+    if (!nodeManager.value || !app.canvas) return // load bearing app.canvas check for workflows being loaded.
 
     const nodeElements = document.querySelectorAll('[data-node-id]')
     for (const element of nodeElements) {
@@ -92,7 +93,7 @@ function useViewportCullingIndividual() {
     }
   }
 
-  const handleTransformUpdate = useThrottleFn(updateVisibility, 100, true)
+  const handleTransformUpdate = useThrottleFn(() => updateVisibility, 100, true)
 
   return { handleTransformUpdate }
 }
