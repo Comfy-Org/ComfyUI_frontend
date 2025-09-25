@@ -1,5 +1,5 @@
 /**
- * Simple compatibility type definitions
+ * System compatibility type definitions
  * Registry supports exactly these values, null/undefined means compatible with all
  */
 
