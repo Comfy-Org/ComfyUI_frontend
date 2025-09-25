@@ -168,11 +168,11 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import type {
   ConflictDetail,
   ConflictDetectionResult
-} from '@/types/conflictDetectionTypes'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/workbench/extensions/manager/utils/conflictMessageUtil'
 
 const { showAfterWhatsNew = false, conflictedPackages } = defineProps<{

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   RegistryAccelerator,
   RegistryOS
-} from '@/types/compatibility.types'
+} from '@/workbench/extensions/manager/types/compatibility.types'
 import {
   checkAcceleratorCompatibility,
   checkOSCompatibility,

@@ -1,4 +1,4 @@
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 /**
  * Generates a localized conflict message for a given conflict detail.

@@ -5,7 +5,7 @@ import config from '@/config'
 import type {
   ConflictDetail,
   ConflictType
-} from '@/types/conflictDetectionTypes'
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 /**
  * Cleans a version string by removing common prefixes and normalizing format

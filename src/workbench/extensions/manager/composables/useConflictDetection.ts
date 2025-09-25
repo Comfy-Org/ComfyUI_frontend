@@ -5,10 +5,15 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type {
   RegistryAccelerator,
   RegistryOS
-} from '@/types/compatibility.types'
+} from '@/workbench/extensions/manager/types/compatibility.types'
 import type {
   ConflictDetail,
   ConflictDetectionResponse,
@@ -16,12 +21,7 @@ import type {
   Node,
   NodeRequirements,
   SystemEnvironment
-} from '@/types/conflictDetectionTypes'
-import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import {
   consolidateConflictsByPackage,
   createBannedConflict,

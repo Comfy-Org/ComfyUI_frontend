@@ -1,10 +1,10 @@
 import { groupBy, uniqBy } from 'es-toolkit/compat'
 
+import { normalizePackId } from '@/utils/packUtils'
 import type {
   ConflictDetail,
   ConflictDetectionResult
-} from '@/types/conflictDetectionTypes'
-import { normalizePackId } from '@/utils/packUtils'
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 /**
  * Checks for banned package status conflicts.

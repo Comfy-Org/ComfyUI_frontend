@@ -3,8 +3,8 @@ import { isEmpty, isNil } from 'es-toolkit/compat'
 import type {
   RegistryAccelerator,
   RegistryOS
-} from '@/types/compatibility.types'
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+} from '@/workbench/extensions/manager/types/compatibility.types'
+import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 /**
  * Maps system OS string to Registry OS format

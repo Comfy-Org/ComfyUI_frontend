@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 export const useConflictDetectionStore = defineStore(
   'conflictDetection',

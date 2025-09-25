@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   ConflictDetail,
   ConflictDetectionResult
-} from '@/types/conflictDetectionTypes'
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import {
   consolidateConflictsByPackage,
   createBannedConflict,
