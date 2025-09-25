@@ -4,7 +4,7 @@ import { cn } from '@/utils/tailwindUtil'
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type { DropdownItem } from './types'
+import type { DropdownItem, LayoutMode, SortOptionLabel } from './types'
 
 interface Props {
   items: DropdownItem[]
@@ -18,7 +18,8 @@ const emit = defineEmits<{
 
 // Define models for two-way binding
 const filterIndex = defineModel<number>('filterIndex', { default: 0 })
-const layoutMode = defineModel<'list' | 'grid' | 'list-small'>('layoutMode')
+const layoutMode = defineModel<LayoutMode>('layoutMode')
+const sortSelected = defineModel<SortOptionLabel>('sortSelected')
 
 // Handle item selection
 </script>
@@ -32,7 +33,10 @@ const layoutMode = defineModel<'list' | 'grid' | 'list-small'>('layoutMode')
     <!-- Filter -->
     <FormDropdownMenuFilter v-model:filter-index="filterIndex" />
     <!-- Actions -->
-    <FormDropdownMenuActions v-model:layout-mode="layoutMode" />
+    <FormDropdownMenuActions
+      v-model:layout-mode="layoutMode"
+      v-model:sort-selected="sortSelected"
+    />
     <!-- List -->
     <div class="flex overflow-hidden relative">
       <div

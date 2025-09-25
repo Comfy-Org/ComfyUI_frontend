@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Code
+// TODO: Code for drop area
 </script>
 
 <template>

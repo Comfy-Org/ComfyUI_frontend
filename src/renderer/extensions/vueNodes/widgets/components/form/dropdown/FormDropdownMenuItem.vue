@@ -3,13 +3,15 @@ import { ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
+import type { LayoutMode } from './types'
+
 interface Props {
   index: number
   selected: boolean
   imageSrc: string
   name: string
   metadata?: string
-  layout?: 'grid' | 'list' | 'list-small'
+  layout?: LayoutMode
 }
 
 const props = defineProps<Props>()
