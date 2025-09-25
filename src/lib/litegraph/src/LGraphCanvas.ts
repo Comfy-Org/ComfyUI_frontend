@@ -2567,8 +2567,7 @@ export class LGraphCanvas
           }
           pointer.finally = () => (this.resizingGroup = null)
         } else {
-          const f = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
-          const headerHeight = f * 1.4
+          const headerHeight = LiteGraph.GROUP_TEXT_SIZE * 1.4
           if (
             isInRectangle(
               x,
