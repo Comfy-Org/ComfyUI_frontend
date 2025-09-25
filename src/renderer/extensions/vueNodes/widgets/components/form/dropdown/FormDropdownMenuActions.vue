@@ -4,14 +4,16 @@ import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-import type { LayoutMode, SortOption, SortOptionLabel } from './types'
+import type { LayoutMode, OptionId, SortOption } from './types'
 
 defineProps<{
   isQuerying: boolean
+  sortOptions: SortOption[]
 }>()
 
 const layoutMode = defineModel<LayoutMode>('layoutMode')
 const searchQuery = defineModel<string>('searchQuery')
+const sortSelected = defineModel<OptionId>('sortSelected')
 
 const actionButtonStyle =
   'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-sand-100 dark-theme:outline-neutral-700 transition-all duration-150'
@@ -30,18 +32,15 @@ function toggleSortPopover(event: Event) {
   isSortPopoverOpen.value = !isSortPopoverOpen.value
   sortPopoverRef.value.toggle(event, sortTriggerRef.value)
 }
-// TODO Sorting function, How to get the time info of the items needed for sorting?
-const sortOptions = ref<SortOption[]>([
-  {
-    name: 'Default',
-    value: 'default'
-  },
-  {
-    name: 'A-Z',
-    value: 'a-z'
-  }
-])
-const sortSelected = defineModel<SortOptionLabel>('sortSelected')
+function closeSortPopover() {
+  isSortPopoverOpen.value = false
+  sortPopoverRef.value?.hide()
+}
+
+function handleSortSelected(item: SortOption) {
+  sortSelected.value = item.id
+  closeSortPopover()
+}
 </script>
 
 <template>
@@ -79,13 +78,17 @@ const sortSelected = defineModel<SortOptionLabel>('sortSelected')
         cn(
           resetInputStyle,
           actionButtonStyle,
-          'w-8 flex justify-center items-center cursor-pointer',
+          'relative w-8 flex justify-center items-center cursor-pointer',
           'hover:!outline-blue-500/80',
           'active:!scale-95'
         )
       "
       @click="toggleSortPopover"
     >
+      <div
+        v-if="sortSelected !== 'default'"
+        class="size-2 absolute top-[-2px] left-[-2px] bg-blue-500 rounded-full"
+      />
       <i-lucide:arrow-up-down class="size-4" />
     </button>
     <!-- Sort Popover -->
@@ -123,10 +126,10 @@ const sortSelected = defineModel<SortOptionLabel>('sortSelected')
               'hover:!text-blue-500'
             )
           "
-          @click="sortSelected = item.value"
+          @click="handleSortSelected(item)"
         >
           <span>{{ item.name }}</span>
-          <i-lucide:check v-if="sortSelected === item.value" class="size-4" />
+          <i-lucide:check v-if="sortSelected === item.id" class="size-4" />
         </button>
       </div>
     </Popover>

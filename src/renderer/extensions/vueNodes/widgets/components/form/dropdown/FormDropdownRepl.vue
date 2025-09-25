@@ -12,7 +12,7 @@ const imageItems = ref<DropdownItem[]>(
     imageSrc: `https://picsum.photos/120/100?random=${index + 1}`,
     name: `Image_${String(index + 1).padStart(3, '0')}.png`,
     metadata: `${Math.floor(Math.random() * 512 + 512)} x ${Math.floor(Math.random() * 512 + 512)}`
-  }))
+  })).sort(() => Math.random() - 0.5)
 )
 
 // Reactive state for dropdown controls
