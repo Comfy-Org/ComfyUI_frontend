@@ -17,6 +17,9 @@ importers:
       '@comfyorg/comfyui-electron-types':
         specifier: 0.4.73-0
         version: 0.4.73-0
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:packages/tailwind-utils
       '@iconify/json':
         specifier: ^2.2.380
         version: 2.2.380
@@ -354,6 +357,19 @@ importers:
       zod-to-json-schema:
         specifier: ^3.24.1
         version: 3.24.1(zod@3.24.1)
+
+  packages/tailwind-utils:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      tailwind-merge:
+        specifier: ^2.2.0
+        version: 2.6.0
+    devDependencies:
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.2
 
 packages:
 
@@ -5887,6 +5903,9 @@ packages:
   synckit@0.11.11:
     resolution: {integrity: sha512-MeQTA1r0litLUf0Rp/iisCaL8761lKAZHaimlbGK4j0HysC4PLfqygQj9srcs0m2RdtDYnF8UuYyKpbjHYp7Jw==}
     engines: {node: ^14.18.0 || >=16.0.0}
+
+  tailwind-merge@2.6.0:
+    resolution: {integrity: sha512-P+Vu1qXfzediirmHOC3xKGAYeZtPcV9g76X+xg2FD4tYgR71ewMA35Y3sCz3zhiN/dwefRpJX0yBcgwi1fXNQA==}
 
   tailwind-merge@3.3.1:
     resolution: {integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==}
@@ -13074,6 +13093,8 @@ snapshots:
   synckit@0.11.11:
     dependencies:
       '@pkgr/core': 0.2.9
+
+  tailwind-merge@2.6.0: {}
 
   tailwind-merge@3.3.1: {}
 
