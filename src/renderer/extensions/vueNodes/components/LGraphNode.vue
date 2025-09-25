@@ -41,7 +41,7 @@
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
-    @wheel="handleWheel"
+    @wheel="handleNodeWheel"
   >
     <div class="flex items-center">
       <template v-if="isCollapsed">
@@ -302,6 +302,19 @@ const handleCollapse = () => {
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
   handleNodeTitleUpdate(nodeData.id, newTitle)
+}
+
+const handleNodeWheel = (event: WheelEvent) => {
+  // Check if the wheel event is from a Load3D component
+  const target = event.target as HTMLElement
+  const isInLoad3D = target?.closest('.comfy-load-3d')
+
+  // Don't handle wheel events that originate from Load3D components
+  if (isInLoad3D) {
+    return
+  }
+
+  handleWheel(event)
 }
 
 const handleEnterSubgraph = () => {

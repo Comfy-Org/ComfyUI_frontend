@@ -3,6 +3,8 @@
  */
 import type { Component } from 'vue'
 
+import Load3D from '@/components/load3d/Load3D.vue'
+
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
 import WidgetColorPicker from '../components/WidgetColorPicker.vue'
@@ -108,7 +110,8 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
-  ]
+  ],
+  ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }]
 ]
 
 // Build lookup maps
