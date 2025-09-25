@@ -27,18 +27,18 @@ vi.mock('@/stores/systemStatsStore', () => ({
   useSystemStatsStore: vi.fn()
 }))
 
-vi.mock('@/utils/versionUtil', () => ({
-  getFrontendVersion: vi.fn(() => '1.24.0-1'),
+vi.mock('@/workbench/extensions/manager/utils/versionUtil', () => ({
+  getFrontendVersion: vi.fn(() => '1.24.0'),
   checkVersionCompatibility: vi.fn()
 }))
 
-vi.mock('@/utils/systemCompatibility', () => ({
+vi.mock('@/workbench/extensions/manager/utils/systemCompatibility', () => ({
   checkOSCompatibility: vi.fn(),
   checkAcceleratorCompatibility: vi.fn(),
   normalizeOSList: vi.fn((list) => list)
 }))
 
-vi.mock('@/utils/conflictUtils', () => ({
+vi.mock('@/workbench/extensions/manager/utils/conflictUtils', () => ({
   consolidateConflictsByPackage: vi.fn((results) => results),
   createBannedConflict: vi.fn((isBanned) =>
     isBanned
@@ -250,7 +250,7 @@ describe('useConflictDetection', () => {
 
       expect(environment).toEqual({
         comfyui_version: '0.3.41',
-        frontend_version: '1.24.0-1',
+        frontend_version: '1.24.0',
         os: 'darwin',
         accelerator: 'mps'
       })
@@ -265,7 +265,7 @@ describe('useConflictDetection', () => {
       // When systemStats is null, empty strings are used as fallback
       expect(environment).toEqual({
         comfyui_version: '',
-        frontend_version: '1.24.0-1',
+        frontend_version: '1.24.0',
         os: '',
         accelerator: ''
       })
