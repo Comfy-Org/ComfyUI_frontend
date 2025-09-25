@@ -15,26 +15,19 @@ import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
+import {
+  vueWidgetSerializationStore,
+  registerVueWidgetSerialization,
+  unregisterVueWidgetSerialization
+} from '@/stores/vueWidgetSerializationStore'
 import { type NodeLocatorId } from '@/types'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 
-// Global registry to bridge Vue components with LiteGraph widgets
-const vueWidgetSerializationRegistry = new Map<string, () => Promise<string>>()
-
-// Export functions to allow Vue components to register/unregister serialization
-export function registerVueWidgetSerialization(
-  key: string,
-  serializeFn: () => Promise<string>
-) {
-  vueWidgetSerializationRegistry.set(key, serializeFn)
-}
-
-export function unregisterVueWidgetSerialization(key: string) {
-  vueWidgetSerializationRegistry.delete(key)
-}
+// Re-export for backward compatibility
+export { registerVueWidgetSerialization, unregisterVueWidgetSerialization }
 
 function splitFilePath(path: string): [string, string] {
   const folder_separator = path.lastIndexOf('/')
@@ -108,438 +101,556 @@ async function uploadFile(
 
 // AudioWidget MUST be registered first, as AUDIOUPLOAD depends on AUDIO_UI to be
 // present.
-app.registerExtension({
-  name: 'Comfy.AudioWidget',
-  async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (
-      [
-        'LoadAudio',
-        'SaveAudio',
-        'PreviewAudio',
-        'SaveAudioMP3',
-        'SaveAudioOpus',
-        'RecordAudio'
-      ].includes(
-        // @ts-expect-error fixme ts strict error
-        nodeType.prototype.comfyClass
-      )
-    ) {
-      // @ts-expect-error fixme ts strict error
-      nodeData.input.required.audioUI = ['AUDIO_UI', {}]
-    }
-  },
-  getCustomWidgets() {
-    return {
-      AUDIO_UI(node: LGraphNode, inputName: string) {
-        const audio = document.createElement('audio')
-        audio.controls = true
-        audio.classList.add('comfy-audio')
-        audio.setAttribute('name', 'media')
-
-        const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
-        audioUIWidget.serialize = false
-
-        const { nodeData } = node.constructor
-        if (nodeData == null) throw new TypeError('nodeData is null')
-
-        const isOutputNode = nodeData.output_node
-        if (isOutputNode) {
-          // Hide the audio widget when there is no audio initially.
-          audioUIWidget.element.classList.add('empty-audio-widget')
-          // Populate the audio widget UI on node execution.
-          const onExecuted = node.onExecuted
-          node.onExecuted = function (message: any) {
-            // @ts-expect-error fixme ts strict error
-            onExecuted?.apply(this, arguments)
-            const audios = message.audio
-            if (!audios) return
-            const audio = audios[0]
-            audioUIWidget.element.src = api.apiURL(
-              getResourceURL(audio.subfolder, audio.filename, audio.type)
-            )
-            audioUIWidget.element.classList.remove('empty-audio-widget')
-          }
-        }
-
-        audioUIWidget.onRemove = useChainCallback(
-          audioUIWidget.onRemove,
-          () => {
-            if (!audioUIWidget.element) return
-            audioUIWidget.element.pause()
-            audioUIWidget.element.src = ''
-            audioUIWidget.element.remove()
-          }
-        )
-
-        // Add serialization support for RecordAudio nodes when Vue nodes are enabled
-        if (
-          (node.constructor as any).comfyClass === 'RecordAudio' &&
-          LiteGraph.vueNodesMode
-        ) {
-          const nodeId = node.id
-          audioUIWidget.serializeValue = async () => {
-            // Use the global registry to find the Vue component's serialization function
-            let serializationFn = vueWidgetSerializationRegistry.get(
-              `${nodeId}-audioUI`
-            )
-
-            // Fallback: try with current node.id in case it changed
-            if (!serializationFn && node.id !== nodeId) {
-              serializationFn = vueWidgetSerializationRegistry.get(
-                `${node.id}-audioUI`
-              )
-            }
-
-            if (serializationFn) {
-              const result = await serializationFn()
-
-              // Update both LiteGraph widgets for consistency
-              const audioWidget = node.widgets?.find((w) => w.name === 'audio')
-              const audioUIWidget = node.widgets?.find(
-                (w) => w.name === 'audioUI'
-              )
-
-              if (audioWidget && result) {
-                audioWidget.value = result
-              }
-              if (audioUIWidget && result) {
-                audioUIWidget.value = result
-              }
-
-              return result
-            }
-
-            return ''
-          }
-        }
-
-        return { widget: audioUIWidget }
-      }
-    }
-  },
-  onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
-    for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
-      if ('audio' in output) {
-        const node = getNodeByLocatorId(app.graph, nodeLocatorId)
-        if (!node) continue
-
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
-          (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
-        const audio = output.audio[0]
-        audioUIWidget.element.src = api.apiURL(
-          getResourceURL(audio.subfolder, audio.filename, audio.type)
-        )
-        audioUIWidget.element.classList.remove('empty-audio-widget')
-      }
-    }
-  }
-})
-
-app.registerExtension({
-  name: 'Comfy.UploadAudio',
-  async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
-    // Only add the upload widget if Vue nodes are disabled
-    if (
-      nodeData?.input?.required?.audio?.[1]?.audio_upload === true &&
-      !LiteGraph.vueNodesMode
-    ) {
-      nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
-    }
-  },
-  getCustomWidgets() {
-    return {
-      AUDIOUPLOAD(node, inputName: string) {
-        // Skip companion widget creation when Vue nodes are enabled
-        // Vue components will handle all audio functionality
-        if (LiteGraph.vueNodesMode) {
-          // Create a simple placeholder widget for backend compatibility
-          // It will be hidden by the Vue component
-          const placeholderWidget = node.addWidget(
-            'button',
-            inputName,
-            '',
-            () => {}
-          )
-          return { widget: placeholderWidget }
-        }
-
-        // The widget that allows user to select file.
-        // @ts-expect-error fixme ts strict error
-        const audioWidget = node.widgets.find(
-          (w) => w.name === 'audio'
-        ) as IStringWidget
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
-          (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
-
-        const onAudioWidgetUpdate = () => {
-          audioUIWidget.element.src = api.apiURL(
-            getResourceURL(...splitFilePath(audioWidget.value as string))
-          )
-        }
-        // Initially load default audio file to audioUIWidget.
-        if (audioWidget.value) {
-          onAudioWidgetUpdate()
-        }
-        audioWidget.callback = onAudioWidgetUpdate
-
-        // Load saved audio file widget values if restoring from workflow
-        const onGraphConfigured = node.onGraphConfigured
-        node.onGraphConfigured = function () {
+if (!LiteGraph.vueNodesMode) {
+  app.registerExtension({
+    name: 'Comfy.AudioWidget',
+    async beforeRegisterNodeDef(nodeType, nodeData) {
+      if (
+        [
+          'LoadAudio',
+          'SaveAudio',
+          'PreviewAudio',
+          'SaveAudioMP3',
+          'SaveAudioOpus',
+          'RecordAudio'
+        ].includes(
           // @ts-expect-error fixme ts strict error
-          onGraphConfigured?.apply(this, arguments)
+          nodeType.prototype.comfyClass
+        )
+      ) {
+        // @ts-expect-error fixme ts strict error
+        nodeData.input.required.audioUI = ['AUDIO_UI', {}]
+      }
+    },
+    getCustomWidgets() {
+      return {
+        AUDIO_UI(node: LGraphNode, inputName: string) {
+          const audio = document.createElement('audio')
+          audio.controls = true
+          audio.classList.add('comfy-audio')
+          audio.setAttribute('name', 'media')
+
+          const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
+            node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          audioUIWidget.serialize = false
+
+          const { nodeData } = node.constructor
+          if (nodeData == null) throw new TypeError('nodeData is null')
+
+          const isOutputNode = nodeData.output_node
+          if (isOutputNode) {
+            // Hide the audio widget when there is no audio initially.
+            audioUIWidget.element.classList.add('empty-audio-widget')
+            // Populate the audio widget UI on node execution.
+            const onExecuted = node.onExecuted
+            node.onExecuted = function (message: any) {
+              // @ts-expect-error fixme ts strict error
+              onExecuted?.apply(this, arguments)
+              const audios = message.audio
+              if (!audios) return
+              const audio = audios[0]
+              audioUIWidget.element.src = api.apiURL(
+                getResourceURL(audio.subfolder, audio.filename, audio.type)
+              )
+              audioUIWidget.element.classList.remove('empty-audio-widget')
+            }
+          }
+
+          audioUIWidget.onRemove = useChainCallback(
+            audioUIWidget.onRemove,
+            () => {
+              if (!audioUIWidget.element) return
+              audioUIWidget.element.pause()
+              audioUIWidget.element.src = ''
+              audioUIWidget.element.remove()
+            }
+          )
+
+          // Add serialization support for RecordAudio nodes when Vue nodes are enabled
+          if (
+            (node.constructor as any).comfyClass === 'RecordAudio' &&
+            LiteGraph.vueNodesMode
+          ) {
+            const nodeId = node.id
+            audioUIWidget.serializeValue = async () => {
+              // Use the store to find the Vue component's serialization function
+              let serializationFn = vueWidgetSerializationStore.get(
+                `${nodeId}-audioUI`
+              )
+
+              // Fallback: try with current node.id in case it changed
+              if (!serializationFn && node.id !== nodeId) {
+                serializationFn = vueWidgetSerializationStore.get(
+                  `${node.id}-audioUI`
+                )
+              }
+
+              if (serializationFn) {
+                const result = await serializationFn()
+
+                // Update both LiteGraph widgets for consistency
+                const audioWidget = node.widgets?.find((w) => w.name === 'audio')
+                const audioUIWidget = node.widgets?.find(
+                  (w) => w.name === 'audioUI'
+                )
+
+                if (audioWidget && result) {
+                  audioWidget.value = result
+                }
+                if (audioUIWidget && result) {
+                  audioUIWidget.value = result
+                }
+
+                return result
+              }
+
+              return ''
+            }
+          }
+
+          return { widget: audioUIWidget }
+        }
+      }
+    },
+    onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
+      for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
+        if ('audio' in output) {
+          const node = getNodeByLocatorId(app.graph, nodeLocatorId)
+          if (!node) continue
+
+          // @ts-expect-error fixme ts strict error
+          const audioUIWidget = node.widgets.find(
+            (w) => w.name === 'audioUI'
+          ) as IBaseWidget
+          const audio = output.audio[0]
+          // Store URL in widget value for Vue component
+          audioUIWidget.value = api.apiURL(
+            getResourceURL(audio.subfolder, audio.filename, audio.type)
+          )
+        }
+      }
+    }
+  })
+
+  app.registerExtension({
+    name: 'Comfy.UploadAudio',
+    async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
+      // Only add the upload widget if Vue nodes are disabled
+      if (
+        nodeData?.input?.required?.audio?.[1]?.audio_upload === true &&
+        !LiteGraph.vueNodesMode
+      ) {
+        nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
+      }
+    },
+    getCustomWidgets() {
+      return {
+        AUDIOUPLOAD(node, inputName: string) {
+          // Skip companion widget creation when Vue nodes are enabled
+          // Vue components will handle all audio functionality
+          if (LiteGraph.vueNodesMode) {
+            // Create a simple placeholder widget for backend compatibility
+            // It will be hidden by the Vue component
+            const placeholderWidget = node.addWidget(
+              'button',
+              inputName,
+              '',
+              () => { }
+            )
+            return { widget: placeholderWidget }
+          }
+
+          // The widget that allows user to select file.
+          // @ts-expect-error fixme ts strict error
+          const audioWidget = node.widgets.find(
+            (w) => w.name === 'audio'
+          ) as IStringWidget
+          // @ts-expect-error fixme ts strict error
+          const audioUIWidget = node.widgets.find(
+            (w) => w.name === 'audioUI'
+          ) as unknown as DOMWidget<HTMLAudioElement, string>
+
+          const onAudioWidgetUpdate = () => {
+            audioUIWidget.element.src = api.apiURL(
+              getResourceURL(...splitFilePath(audioWidget.value as string))
+            )
+          }
+          // Initially load default audio file to audioUIWidget.
           if (audioWidget.value) {
             onAudioWidgetUpdate()
           }
-        }
+          audioWidget.callback = onAudioWidgetUpdate
 
-        const handleUpload = async (files: File[]) => {
-          if (files?.length) {
-            uploadFile(audioWidget, audioUIWidget, files[0], true)
+          // Load saved audio file widget values if restoring from workflow
+          const onGraphConfigured = node.onGraphConfigured
+          node.onGraphConfigured = function () {
+            // @ts-expect-error fixme ts strict error
+            onGraphConfigured?.apply(this, arguments)
+            if (audioWidget.value) {
+              onAudioWidgetUpdate()
+            }
           }
-          return files
-        }
 
-        const isAudioFile = (file: File) => file.type.startsWith('audio/')
+          const handleUpload = async (files: File[]) => {
+            if (files?.length) {
+              uploadFile(audioWidget, audioUIWidget, files[0], true)
+            }
+            return files
+          }
 
-        const { openFileSelection } = useNodeFileInput(node, {
-          accept: 'audio/*',
-          onSelect: handleUpload
-        })
+          const isAudioFile = (file: File) => file.type.startsWith('audio/')
 
-        // The widget to pop up the upload dialog.
-        const uploadWidget = node.addWidget(
-          'button',
-          inputName,
-          '',
-          openFileSelection,
-          { serialize: false }
-        )
-        uploadWidget.label = t('g.choose_file_to_upload')
+          const { openFileSelection } = useNodeFileInput(node, {
+            accept: 'audio/*',
+            onSelect: handleUpload
+          })
 
-        useNodeDragAndDrop(node, {
-          fileFilter: isAudioFile,
-          onDrop: handleUpload
-        })
-
-        useNodePaste(node, {
-          fileFilter: isAudioFile,
-          onPaste: handleUpload
-        })
-
-        node.previewMediaType = 'audio'
-
-        return { widget: uploadWidget }
-      }
-    }
-  }
-})
-
-app.registerExtension({
-  name: 'Comfy.RecordAudio',
-
-  getCustomWidgets() {
-    return {
-      AUDIO_RECORD(node, inputName: string) {
-        // Skip companion widget creation when Vue nodes are enabled
-        // Vue components will handle all audio functionality
-        if (LiteGraph.vueNodesMode) {
-          // Create a simple placeholder widget for backend compatibility
-          // It will be hidden by the Vue component
-          const placeholderWidget = node.addWidget(
-            'text',
+          // The widget to pop up the upload dialog.
+          const uploadWidget = node.addWidget(
+            'button',
             inputName,
             '',
-            () => {},
-            { serialize: true }
+            openFileSelection,
+            { serialize: false }
           )
+          uploadWidget.label = t('g.choose_file_to_upload')
 
-          // Set up the serialization bridge for RecordAudio
-          const nodeId = node.id
-          placeholderWidget.serializeValue = async () => {
-            // Use the global registry to find the Vue component's serialization function
-            let serializationFn = vueWidgetSerializationRegistry.get(
-              `${nodeId}-audioUI`
-            )
+          useNodeDragAndDrop(node, {
+            fileFilter: isAudioFile,
+            onDrop: handleUpload
+          })
 
-            // Fallback: try with current node.id in case it changed
-            if (!serializationFn && node.id !== nodeId) {
-              serializationFn = vueWidgetSerializationRegistry.get(
-                `${node.id}-audioUI`
-              )
-            }
+          useNodePaste(node, {
+            fileFilter: isAudioFile,
+            onPaste: handleUpload
+          })
 
-            if (serializationFn) {
-              const result = await serializationFn()
-              // Update the widget value for the backend
-              placeholderWidget.value = result
-              return result
-            }
+          node.previewMediaType = 'audio'
 
-            return placeholderWidget.value || ''
-          }
-
-          return { widget: placeholderWidget }
+          return { widget: uploadWidget }
         }
-
-        const audio = document.createElement('audio')
-        audio.controls = true
-        audio.classList.add('comfy-audio')
-        audio.setAttribute('name', 'media')
-
-        const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
-
-        let mediaRecorder: MediaRecorder | null = null
-        let isRecording = false
-        let audioChunks: Blob[] = []
-        let currentStream: MediaStream | null = null
-        let recordWidget: IBaseWidget | null = null
-
-        let stopPromise: Promise<void> | null = null
-        let stopResolve: (() => void) | null = null
-
-        audioUIWidget.serializeValue = async () => {
-          if (isRecording && mediaRecorder) {
-            stopPromise = new Promise((resolve) => {
-              stopResolve = resolve
-            })
-
-            mediaRecorder.stop()
-
-            await stopPromise
-          }
-
-          const audioSrc = audioUIWidget.element.src
-
-          if (!audioSrc) {
-            useToastStore().addAlert(t('g.noAudioRecorded'))
-            return ''
-          }
-
-          const blob = await fetch(audioSrc).then((r) => r.blob())
-
-          return await useAudioService().convertBlobToFileAndSubmit(blob)
-        }
-
-        recordWidget = node.addWidget(
-          'button',
-          inputName,
-          '',
-          async () => {
-            if (!isRecording) {
-              try {
-                currentStream = await navigator.mediaDevices.getUserMedia({
-                  audio: true
-                })
-
-                mediaRecorder = new ExtendableMediaRecorder(currentStream, {
-                  mimeType: 'audio/wav'
-                }) as unknown as MediaRecorder
-
-                audioChunks = []
-
-                mediaRecorder.ondataavailable = (event) => {
-                  audioChunks.push(event.data)
-                }
-
-                mediaRecorder.onstop = async () => {
-                  const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
-
-                  useAudioService().stopAllTracks(currentStream)
-
-                  if (
-                    audioUIWidget.element.src &&
-                    audioUIWidget.element.src.startsWith('blob:')
-                  ) {
-                    URL.revokeObjectURL(audioUIWidget.element.src)
-                  }
-
-                  audioUIWidget.element.src = URL.createObjectURL(audioBlob)
-
-                  isRecording = false
-
-                  if (recordWidget) {
-                    recordWidget.label = t('g.startRecording')
-                  }
-
-                  if (stopResolve) {
-                    stopResolve()
-                    stopResolve = null
-                    stopPromise = null
-                  }
-                }
-
-                mediaRecorder.onerror = (event) => {
-                  console.error('MediaRecorder error:', event)
-                  useAudioService().stopAllTracks(currentStream)
-                  isRecording = false
-
-                  if (recordWidget) {
-                    recordWidget.label = t('g.startRecording')
-                  }
-
-                  if (stopResolve) {
-                    stopResolve()
-                    stopResolve = null
-                    stopPromise = null
-                  }
-                }
-
-                mediaRecorder.start()
-                isRecording = true
-                if (recordWidget) {
-                  recordWidget.label = t('g.stopRecording')
-                }
-              } catch (err) {
-                console.error('Error accessing microphone:', err)
-                useToastStore().addAlert(t('g.micPermissionDenied'))
-
-                if (mediaRecorder) {
-                  try {
-                    mediaRecorder.stop()
-                  } catch {}
-                }
-                useAudioService().stopAllTracks(currentStream)
-                currentStream = null
-                isRecording = false
-                if (recordWidget) {
-                  recordWidget.label = t('g.startRecording')
-                }
-              }
-            } else if (mediaRecorder && isRecording) {
-              mediaRecorder.stop()
-            }
-          },
-          { serialize: false }
-        )
-
-        recordWidget.label = t('g.startRecording')
-
-        const originalOnRemoved = node.onRemoved
-        node.onRemoved = function () {
-          if (isRecording && mediaRecorder) {
-            mediaRecorder.stop()
-          }
-          useAudioService().stopAllTracks(currentStream)
-          if (audioUIWidget.element.src?.startsWith('blob:')) {
-            URL.revokeObjectURL(audioUIWidget.element.src)
-          }
-          originalOnRemoved?.call(this)
-        }
-
-        return { widget: recordWidget }
       }
     }
-  },
+  })
 
-  async nodeCreated(node) {
-    if (node.constructor.comfyClass !== 'RecordAudio') return
+  app.registerExtension({
+    name: 'Comfy.RecordAudio',
 
-    await useAudioService().registerWavEncoder()
-  }
-})
+    getCustomWidgets() {
+      return {
+        AUDIO_RECORD(node, inputName: string) {
+          // Skip companion widget creation when Vue nodes are enabled
+          // Vue components will handle all audio functionality
+          if (LiteGraph.vueNodesMode) {
+            // Create a simple placeholder widget for backend compatibility
+            // It will be hidden by the Vue component
+            const placeholderWidget = node.addWidget(
+              'text',
+              inputName,
+              '',
+              () => { },
+              { serialize: true }
+            )
+
+            // Set up the serialization bridge for RecordAudio
+            const nodeId = node.id
+            placeholderWidget.serializeValue = async () => {
+              // Use the store to find the Vue component's serialization function
+              let serializationFn = vueWidgetSerializationStore.get(
+                `${nodeId}-audioUI`
+              )
+
+              // Fallback: try with current node.id in case it changed
+              if (!serializationFn && node.id !== nodeId) {
+                serializationFn = vueWidgetSerializationStore.get(
+                  `${node.id}-audioUI`
+                )
+              }
+
+              if (serializationFn) {
+                const result = await serializationFn()
+                // Update the widget value for the backend
+                placeholderWidget.value = result
+                return result
+              }
+
+              return placeholderWidget.value || ''
+            }
+
+            return { widget: placeholderWidget }
+          }
+
+          const audio = document.createElement('audio')
+          audio.controls = true
+          audio.classList.add('comfy-audio')
+          audio.setAttribute('name', 'media')
+
+          const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
+            node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+
+          let mediaRecorder: MediaRecorder | null = null
+          let isRecording = false
+          let audioChunks: Blob[] = []
+          let currentStream: MediaStream | null = null
+          let recordWidget: IBaseWidget | null = null
+
+          let stopPromise: Promise<void> | null = null
+          let stopResolve: (() => void) | null = null
+
+          audioUIWidget.serializeValue = async () => {
+            if (isRecording && mediaRecorder) {
+              stopPromise = new Promise((resolve) => {
+                stopResolve = resolve
+              })
+
+              mediaRecorder.stop()
+
+              await stopPromise
+            }
+
+            const audioSrc = audioUIWidget.element.src
+
+            if (!audioSrc) {
+              useToastStore().addAlert(t('g.noAudioRecorded'))
+              return ''
+            }
+
+            const blob = await fetch(audioSrc).then((r) => r.blob())
+
+            return await useAudioService().convertBlobToFileAndSubmit(blob)
+          }
+
+          recordWidget = node.addWidget(
+            'button',
+            inputName,
+            '',
+            async () => {
+              if (!isRecording) {
+                try {
+                  currentStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true
+                  })
+
+                  mediaRecorder = new ExtendableMediaRecorder(currentStream, {
+                    mimeType: 'audio/wav'
+                  }) as unknown as MediaRecorder
+
+                  audioChunks = []
+
+                  mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data)
+                  }
+
+                  mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
+
+                    useAudioService().stopAllTracks(currentStream)
+
+                    if (
+                      audioUIWidget.element.src &&
+                      audioUIWidget.element.src.startsWith('blob:')
+                    ) {
+                      URL.revokeObjectURL(audioUIWidget.element.src)
+                    }
+
+                    audioUIWidget.element.src = URL.createObjectURL(audioBlob)
+
+                    isRecording = false
+
+                    if (recordWidget) {
+                      recordWidget.label = t('g.startRecording')
+                    }
+
+                    if (stopResolve) {
+                      stopResolve()
+                      stopResolve = null
+                      stopPromise = null
+                    }
+                  }
+
+                  mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error:', event)
+                    useAudioService().stopAllTracks(currentStream)
+                    isRecording = false
+
+                    if (recordWidget) {
+                      recordWidget.label = t('g.startRecording')
+                    }
+
+                    if (stopResolve) {
+                      stopResolve()
+                      stopResolve = null
+                      stopPromise = null
+                    }
+                  }
+
+                  mediaRecorder.start()
+                  isRecording = true
+                  if (recordWidget) {
+                    recordWidget.label = t('g.stopRecording')
+                  }
+                } catch (err) {
+                  console.error('Error accessing microphone:', err)
+                  useToastStore().addAlert(t('g.micPermissionDenied'))
+
+                  if (mediaRecorder) {
+                    try {
+                      mediaRecorder.stop()
+                    } catch { }
+                  }
+                  useAudioService().stopAllTracks(currentStream)
+                  currentStream = null
+                  isRecording = false
+                  if (recordWidget) {
+                    recordWidget.label = t('g.startRecording')
+                  }
+                }
+              } else if (mediaRecorder && isRecording) {
+                mediaRecorder.stop()
+              }
+            },
+            { serialize: false }
+          )
+
+          recordWidget.label = t('g.startRecording')
+
+          const originalOnRemoved = node.onRemoved
+          node.onRemoved = function () {
+            if (isRecording && mediaRecorder) {
+              mediaRecorder.stop()
+            }
+            useAudioService().stopAllTracks(currentStream)
+            if (audioUIWidget.element.src?.startsWith('blob:')) {
+              URL.revokeObjectURL(audioUIWidget.element.src)
+            }
+            originalOnRemoved?.call(this)
+          }
+
+          return { widget: recordWidget }
+        }
+      }
+    },
+
+    async nodeCreated(node) {
+      if (node.constructor.comfyClass !== 'RecordAudio') return
+
+      await useAudioService().registerWavEncoder()
+    }
+  })
+} else {
+  // Vue nodes mode - create simple placeholder widgets for Vue components
+
+  app.registerExtension({
+    name: 'Comfy.AudioWidget',
+    async beforeRegisterNodeDef(nodeType, nodeData) {
+      if (
+        [
+          'LoadAudio',
+          'SaveAudio',
+          'PreviewAudio',
+          'SaveAudioMP3',
+          'SaveAudioOpus',
+          'RecordAudio'
+        ].includes(
+          // @ts-expect-error fixme ts strict error
+          nodeType.prototype.comfyClass
+        )
+      ) {
+        // @ts-expect-error fixme ts strict error
+        nodeData.input.required.audioUI = ['AUDIO_UI', {}]
+      }
+    },
+    getCustomWidgets() {
+      return {
+        AUDIO_UI(node: LGraphNode, inputName: string) {
+          // Create simple placeholder widget for Vue
+
+          // Create simple placeholder widget for Vue
+          const audioUIWidget = node.addWidget('custom', inputName, '', () => {}, { serialize: false }) as IBaseWidget
+          audioUIWidget.type = 'AUDIO_UI' // Vue components expect this type
+
+          // Add serialization support for RecordAudio nodes
+          if ((node.constructor as any).comfyClass === 'RecordAudio') {
+            audioUIWidget.serializeValue = async () => {
+              const serializationFn = vueWidgetSerializationStore.get(`${node.id}-audioUI`)
+              if (serializationFn) {
+                const result = await serializationFn()
+                audioUIWidget.value = result
+                return result
+              }
+              return audioUIWidget.value || ''
+            }
+          }
+
+          return { widget: audioUIWidget }
+        }
+      }
+    },
+    onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
+      for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
+        if ('audio' in output) {
+          const node = getNodeByLocatorId(app.graph, nodeLocatorId)
+          if (!node) continue
+
+          // @ts-expect-error fixme ts strict error
+          const audioUIWidget = node.widgets.find((w) => w.name === 'audioUI') as IBaseWidget
+          if (audioUIWidget) {
+            const audio = output.audio[0]
+            audioUIWidget.value = api.apiURL(getResourceURL(audio.subfolder, audio.filename, audio.type))
+          }
+        }
+      }
+    }
+  })
+
+  app.registerExtension({
+    name: 'Comfy.UploadAudio',
+    async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
+      if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
+        nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
+      }
+    },
+    getCustomWidgets() {
+      return {
+        AUDIOUPLOAD(node, inputName: string) {
+          // Create simple placeholder widget for Vue
+          const uploadWidget = node.addWidget('button', inputName, '', () => {}, { serialize: false }) as IBaseWidget
+          uploadWidget.type = 'AUDIOUPLOAD' // Vue components expect this type
+          uploadWidget.label = t('g.choose_file_to_upload')
+
+          return { widget: uploadWidget }
+        }
+      }
+    }
+  })
+
+  app.registerExtension({
+    name: 'Comfy.RecordAudio',
+    getCustomWidgets() {
+      return {
+        AUDIO_RECORD(node, inputName: string) {
+          // Create simple placeholder widget for Vue
+          const recordWidget = node.addWidget('custom', inputName, '', () => {}, { serialize: true }) as IBaseWidget
+          recordWidget.type = 'AUDIO_RECORD' // Vue components expect this type
+
+          // Set up serialization bridge
+          recordWidget.serializeValue = async () => {
+            const serializationFn = vueWidgetSerializationStore.get(`${node.id}-audioUI`)
+            if (serializationFn) {
+              const result = await serializationFn()
+              recordWidget.value = result
+              return result
+            }
+            return recordWidget.value || ''
+          }
+
+          return { widget: recordWidget }
+        }
+      }
+    },
+    async nodeCreated(node) {
+      if (node.constructor.comfyClass !== 'RecordAudio') return
+      await useAudioService().registerWavEncoder()
+    }
+  })
+}

@@ -169,10 +169,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import {
-  registerVueWidgetSerialization,
-  unregisterVueWidgetSerialization
-} from '@/extensions/core/uploadAudio'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -180,6 +176,10 @@ import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import {
+  registerVueWidgetSerialization,
+  unregisterVueWidgetSerialization
+} from '@/stores/vueWidgetSerializationStore'
 import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
