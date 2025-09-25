@@ -225,7 +225,6 @@ watch(
     for (const n of comfyApp.graph.nodes) {
       if (!n.widgets) continue
       for (const w of n.widgets) {
-        // @ts-expect-error fixme ts strict error
         if (w[IS_CONTROL_WIDGET]) {
           updateControlWidgetLabel(w)
           if (w.linkedWidgets) {
@@ -364,7 +363,6 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
-// @ts-expect-error fixme ts strict error
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
