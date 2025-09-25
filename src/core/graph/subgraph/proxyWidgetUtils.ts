@@ -28,4 +28,5 @@ export function promoteWidget(widget: IBaseWidget, node: LGraphNode) {
       pushWidgets(onode, [`${node.id}`, widget.name])
     }
   }
+  widget.promoted = true
 }

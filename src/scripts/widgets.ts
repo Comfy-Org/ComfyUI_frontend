@@ -29,7 +29,6 @@ import { useSettingStore } from '@/stores/settingStore'
 import type { ComfyApp } from './app'
 import './domWidget'
 import './errorNodeWidgets'
-import './proxyWidget'
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,

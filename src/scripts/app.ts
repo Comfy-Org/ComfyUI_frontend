@@ -38,6 +38,7 @@ import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
 import { getMp3Metadata } from '@/scripts/metadata/mp3'
 import { getOggMetadata } from '@/scripts/metadata/ogg'
 import { getSvgMetadata } from '@/scripts/metadata/svg'
+import { registerProxyWidgets } from '@/scripts/proxyWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -862,6 +863,7 @@ export class ComfyApp {
         }
       }
     )
+    registerProxyWidgets(this.canvas)
 
     this.graph.start()
 

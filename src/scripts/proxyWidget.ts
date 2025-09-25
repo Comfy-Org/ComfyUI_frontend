@@ -1,5 +1,9 @@
 import { useNodeImage } from '@/composables/node/useNodeImage'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
@@ -10,54 +14,67 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
-const originalOnConfigure = SubgraphNode.prototype.onConfigure
-SubgraphNode.prototype.onConfigure = function (serialisedNode) {
-  if (!this.isSubgraphNode())
-    throw new Error("Can't add proxyWidgets to non-subgraphNode")
-
-  const canvasStore = useCanvasStore()
-  const subgraphNode = this
-  //Must give value to proxyWidgets prior to defining or it won't serialize
-  subgraphNode.properties.proxyWidgets ??= '[]'
-  let proxyWidgets = subgraphNode.properties.proxyWidgets
-
-  originalOnConfigure?.bind(this)?.(serialisedNode)
-
-  Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
-    get: () => {
-      return proxyWidgets
-    },
-    set: (property: string) => {
-      const parsed = parseProxyWidgets(property)
-      const { widgetStates } = useDomWidgetStore()
-      for (const w of subgraphNode.widgets.filter((w) => isProxyWidget(w))) {
-        if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
-          const widgetState = widgetStates.get(w.id)
-          if (!widgetState) continue
-          widgetState.active = false
-        }
+export function registerProxyWidgets(canvas: LGraphCanvas) {
+  //NOTE: canvasStore hasn't been initialized yet
+  canvas.canvas.addEventListener<'subgraph-opened'>('subgraph-opened', (e) => {
+    const { subgraph, fromNode } = e.detail
+    const pw = parseProxyWidgets(fromNode.properties.proxyWidgets)
+    for (const node of subgraph.nodes) {
+      for (const widget of node.widgets ?? []) {
+        widget.promoted = pw.some(([n, w]) => node.id == n && widget.name == w)
       }
-      //NOTE: This does not apply to pushed entries, only initial load
-      subgraphNode.widgets = subgraphNode.widgets.filter(
-        (w) => !isProxyWidget(w)
-      )
-      for (const [nodeId, widgetName] of parsed) {
-        const w = addProxyWidget(subgraphNode, `${nodeId}`, widgetName)
-        if (w instanceof DOMWidgetImpl) {
-          const widgetState = widgetStates.get(w.id)
-          if (!widgetState) continue
-          widgetState.active = true
-          widgetState.widget = w
-        }
-      }
-      proxyWidgets = property
-      canvasStore.canvas?.setDirty(true, true)
-      subgraphNode._setConcreteSlots()
-      subgraphNode.arrange()
     }
   })
-  subgraphNode.properties.proxyWidgets = proxyWidgets
+  const originalOnConfigure = SubgraphNode.prototype.onConfigure
+  SubgraphNode.prototype.onConfigure = function onConfigure(serialisedNode) {
+    if (!this.isSubgraphNode())
+      throw new Error("Can't add proxyWidgets to non-subgraphNode")
+
+    const canvasStore = useCanvasStore()
+    const subgraphNode = this
+    //Must give value to proxyWidgets prior to defining or it won't serialize
+    subgraphNode.properties.proxyWidgets ??= '[]'
+    let proxyWidgets = subgraphNode.properties.proxyWidgets
+
+    originalOnConfigure?.bind(this)?.(serialisedNode)
+
+    Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
+      get: () => {
+        return proxyWidgets
+      },
+      set: (property: string) => {
+        const parsed = parseProxyWidgets(property)
+        const { widgetStates } = useDomWidgetStore()
+        for (const w of subgraphNode.widgets.filter((w) => isProxyWidget(w))) {
+          if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
+            const widgetState = widgetStates.get(w.id)
+            if (!widgetState) continue
+            widgetState.active = false
+          }
+        }
+        //NOTE: This does not apply to pushed entries, only initial load
+        subgraphNode.widgets = subgraphNode.widgets.filter(
+          (w) => !isProxyWidget(w)
+        )
+        for (const [nodeId, widgetName] of parsed) {
+          const w = addProxyWidget(subgraphNode, `${nodeId}`, widgetName)
+          if (w instanceof DOMWidgetImpl) {
+            const widgetState = widgetStates.get(w.id)
+            if (!widgetState) continue
+            widgetState.active = true
+            widgetState.widget = w
+          }
+        }
+        proxyWidgets = property
+        canvasStore.canvas?.setDirty(true, true)
+        subgraphNode._setConcreteSlots()
+        subgraphNode.arrange()
+      }
+    })
+    subgraphNode.properties.proxyWidgets = proxyWidgets
+  }
 }
+
 type Overlay = Partial<IBaseWidget> & {
   graph: LGraph
   nodeId: string
@@ -89,7 +106,8 @@ function addProxyWidget(
     computedHeight: undefined,
     afterQueued: undefined,
     onRemove: undefined,
-    node: subgraphNode
+    node: subgraphNode,
+    promoted: undefined
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
