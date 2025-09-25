@@ -45,11 +45,17 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
       set: (property: string) => {
         const parsed = parseProxyWidgets(property)
         const { widgetStates } = useDomWidgetStore()
-        for (const w of subgraphNode.widgets.filter((w) => isProxyWidget(w))) {
-          if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
-            const widgetState = widgetStates.get(w.id)
-            if (!widgetState) continue
-            widgetState.active = false
+        const isActiveGraph =
+          useCanvasStore().canvas?.graph === subgraphNode.graph
+        if (isActiveGraph) {
+          for (const w of subgraphNode.widgets.filter((w) =>
+            isProxyWidget(w)
+          )) {
+            if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
+              const widgetState = widgetStates.get(w.id)
+              if (!widgetState) continue
+              widgetState.active = false
+            }
           }
         }
         //NOTE: This does not apply to pushed entries, only initial load
@@ -58,7 +64,7 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
         )
         for (const [nodeId, widgetName] of parsed) {
           const w = addProxyWidget(subgraphNode, `${nodeId}`, widgetName)
-          if (w instanceof DOMWidgetImpl) {
+          if (isActiveGraph && w instanceof DOMWidgetImpl) {
             const widgetState = widgetStates.get(w.id)
             if (!widgetState) continue
             widgetState.active = true
