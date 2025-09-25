@@ -41,7 +41,7 @@ function mountComponent(
 }
 
 function getNumberInput(wrapper: ReturnType<typeof mount>) {
-  const input = wrapper.find('input[inputmode="numeric"]')
+  const input = wrapper.get('input[inputmode="numeric"]')
   if (!(input.element instanceof HTMLInputElement)) {
     throw new Error(
       'Number input element not found or is not an HTMLInputElement'
