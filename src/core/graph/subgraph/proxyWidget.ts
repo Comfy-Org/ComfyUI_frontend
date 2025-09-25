@@ -116,31 +116,27 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
   if (overlay.widgetName == '$$canvas-image-preview')
     overlay.node = new Proxy(subgraphNode, {
       get(_t, p) {
-        if (p == 'imgs') {
-          if (linkedNode) {
-            const images =
-              useNodeOutputStore().getNodeOutputs(linkedNode)?.images ?? []
-            if (images !== linkedNode.images) {
-              linkedNode.images = images
-              useNodeImage(linkedNode).showPreview()
-            }
-            return linkedNode.imgs
-          }
-          return []
+        if (p !== 'imgs') return Reflect.get(subgraphNode, p)
+        if (!linkedNode) return []
+        const images =
+          useNodeOutputStore().getNodeOutputs(linkedNode)?.images ?? []
+        if (images !== linkedNode.images) {
+          linkedNode.images = images
+          useNodeImage(linkedNode).showPreview()
         }
-        return Reflect.get(subgraphNode, p)
+        return linkedNode.imgs
       }
     })
   /**
    * A set of handlers which define widget interaction
    * Many arguments are shared between function calls
-   * @param {{IBaseWidget} _t - The "target" the call is originally made on.
+   * @param {IBaseWidget} _t - The "target" the call is originally made on.
    *   This argument is never used, but must be defined for typechecking
-   * @param {{string}} property - The name of the accessed value.
+   * @param {string} property - The name of the accessed value.
    *   Checked for conditional logic, but never changed
-   * @param {{object}} receiver - The object the result is set to
+   * @param {object} receiver - The object the result is set to
    *   and the vlaue used as 'this' if property is a get/set method
-   * @param {{unknown}} value - only used on set calls. The thing being assigned
+   * @param {unknown} value - only used on set calls. The thing being assigned
    */
   const handler = {
     get(_t: IBaseWidget, property: string, receiver: object) {
