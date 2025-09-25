@@ -98,7 +98,7 @@ function handleImageLoad(event: Event) {
         cn('flex gap-1', {
           // layout === 'list' ? 'p-4' : ''
           'flex-col': layout === 'grid',
-          'flex-col p-4 w-full': layout === 'list',
+          'flex-col px-4 py-1 w-full justify-center': layout === 'list',
           'flex-row p-2 items-center justify-between w-full':
             layout === 'list-small'
         })
