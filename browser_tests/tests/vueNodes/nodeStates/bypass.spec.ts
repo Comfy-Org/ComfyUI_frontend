@@ -15,11 +15,10 @@ test.describe('Vue Node Bypass', () => {
   test('should allow toggling bypass on a selected node with hotkey', async ({
     comfyPage
   }) => {
-    const checkpointNode = comfyPage.page.locator('[data-node-id]').filter({
-      hasText: 'Load Checkpoint'
-    })
-    await checkpointNode.getByText('Load Checkpoint').click()
+    await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
+
+    const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
     await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
 
     await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
@@ -29,15 +28,12 @@ test.describe('Vue Node Bypass', () => {
   test('should allow toggling bypass on multiple selected nodes with hotkey', async ({
     comfyPage
   }) => {
-    const checkpointNode = comfyPage.page.locator('[data-node-id]').filter({
-      hasText: 'Load Checkpoint'
-    })
-    const ksamplerNode = comfyPage.page.locator('[data-node-id]').filter({
-      hasText: 'KSampler'
-    })
+    await comfyPage.page.getByText('Load Checkpoint').click()
+    await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
 
-    await checkpointNode.getByText('Load Checkpoint').click()
-    await ksamplerNode.getByText('KSampler').click({ modifiers: ['Control'] })
+    const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+
     await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
     await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
     await expect(ksamplerNode).toHaveClass(BYPASS_CLASS)

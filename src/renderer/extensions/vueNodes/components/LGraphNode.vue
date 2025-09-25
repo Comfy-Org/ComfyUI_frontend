@@ -21,6 +21,8 @@
           'animate-pulse': executing,
           'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
+          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
+            muted,
           'will-change-transform': isDragging
         },
 
@@ -213,6 +215,7 @@ const hasAnyError = computed((): boolean => {
 })
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
+const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
