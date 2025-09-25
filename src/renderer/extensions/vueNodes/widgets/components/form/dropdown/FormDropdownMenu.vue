@@ -9,6 +9,7 @@ import type { DropdownItem, LayoutMode, SortOptionLabel } from './types'
 interface Props {
   items: DropdownItem[]
   isSelected: (item: DropdownItem, index: number) => boolean
+  isQuerying: boolean
 }
 
 defineProps<Props>()
@@ -20,6 +21,7 @@ const emit = defineEmits<{
 const filterIndex = defineModel<number>('filterIndex', { default: 0 })
 const layoutMode = defineModel<LayoutMode>('layoutMode')
 const sortSelected = defineModel<SortOptionLabel>('sortSelected')
+const searchQuery = defineModel<string>('searchQuery')
 
 // Handle item selection
 </script>
@@ -36,9 +38,11 @@ const sortSelected = defineModel<SortOptionLabel>('sortSelected')
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"
       v-model:sort-selected="sortSelected"
+      v-model:search-query="searchQuery"
+      :is-querying="isQuerying"
     />
     <!-- List -->
-    <div class="flex overflow-hidden relative">
+    <div class="flex overflow-hidden relative h-full">
       <div
         :class="
           cn(
@@ -54,6 +58,15 @@ const sortSelected = defineModel<SortOptionLabel>('sortSelected')
         <div
           class="absolute top-0 inset-x-3 h-5 bg-gradient-to-b from-white dark-theme:from-neutral-900 to-transparent pointer-events-none z-10"
         />
+        <div
+          v-if="items.length === 0"
+          class="flex justify-center items-center absolute inset-0"
+        >
+          <i-lucide:circle-off
+            title="No items"
+            class="size-30 text-zinc-500/20"
+          />
+        </div>
         <!-- Item -->
         <FormDropdownMenuItem
           v-for="(item, index) in items"

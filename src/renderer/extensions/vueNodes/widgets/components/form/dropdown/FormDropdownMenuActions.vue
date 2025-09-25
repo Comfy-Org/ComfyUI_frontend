@@ -6,7 +6,12 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type { LayoutMode, SortOption, SortOptionLabel } from './types'
 
+defineProps<{
+  isQuerying: boolean
+}>()
+
 const layoutMode = defineModel<LayoutMode>('layoutMode')
+const searchQuery = defineModel<string>('searchQuery')
 
 const actionButtonStyle =
   'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-sand-100 dark-theme:outline-neutral-700 transition-all duration-150'
@@ -48,13 +53,23 @@ const sortSelected = defineModel<SortOptionLabel>('sortSelected')
         cn(
           actionButtonStyle,
           'flex-1 flex px-2 items-center text-base leading-none cursor-text',
+          searchQuery?.trim() !== '' ? 'text-black dark-theme:text-white' : '',
           'hover:!outline-blue-500/80',
           'focus-within:!outline-blue-500/80'
         )
       "
     >
-      <i-lucide:search class="mr-2 size-4" />
-      <input type="text" :class="resetInputStyle" placeholder="Search" />
+      <i-lucide:loader-circle
+        v-if="isQuerying"
+        class="mr-2 size-4 animate-spin"
+      />
+      <i-lucide:search v-else class="mr-2 size-4" />
+      <input
+        v-model="searchQuery"
+        type="text"
+        :class="resetInputStyle"
+        placeholder="Search"
+      />
     </label>
 
     <!-- Sort Select -->
