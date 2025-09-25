@@ -47,7 +47,7 @@ export class MovingInputLink extends MovingLinkBase {
     return this.node.canConnectTo(inputNode, input, this.outputSlot)
   }
 
-  canConnectToOutput(): boolean {
+  canConnectToOutput(): false {
     return false
   }
 
