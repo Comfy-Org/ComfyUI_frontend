@@ -14,6 +14,7 @@ interface Props {
   selected: Set<SelectedKey>
   maxSelectable: number
   uploadable: boolean
+  disabled: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,14 +37,24 @@ const chevronClass = computed(() =>
   })
 )
 
-const theButtonStyle = [
-  'bg-transparent border-0 outline-none cursor-pointer text-zinc-400',
-  'hover:bg-zinc-500/30 hover:text-black hover:dark-theme:text-white'
-]
+const theButtonStyle = computed(() => [
+  'bg-transparent border-0 outline-none text-zinc-400',
+  {
+    'hover:bg-zinc-500/30 hover:text-black hover:dark-theme:text-white cursor-pointer':
+      !props.disabled,
+    'cursor-not-allowed': props.disabled
+  }
+])
 </script>
 
 <template>
-  <div :class="cn(WidgetInputBaseClass, 'flex text-base leading-none')">
+  <div
+    :class="
+      cn(WidgetInputBaseClass, 'flex text-base leading-none', {
+        'opacity-50 cursor-not-allowed !outline-zinc-300/10': disabled
+      })
+    "
+  >
     <!-- Dropdown -->
     <button
       :class="
@@ -80,6 +91,7 @@ const theButtonStyle = [
         type="file"
         class="opacity-0 absolute inset-0 -z-1"
         :multiple="maxSelectable > 1"
+        :disabled="disabled"
         @change="emit('file-change', $event)"
       />
     </label>

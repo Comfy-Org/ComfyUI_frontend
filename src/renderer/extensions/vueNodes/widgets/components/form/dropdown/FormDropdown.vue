@@ -26,6 +26,7 @@ interface Props {
   multiple?: boolean | number
 
   uploadable?: boolean
+  disabled?: boolean
   sortOptions?: SortOption[]
   isSelected?: (
     selected: Set<SelectedKey>,
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Select...',
   multiple: false,
   uploadable: false,
+  disabled: false,
   sortOptions: () => getDefaultSortOptions(),
   isSelected: (selected, item, _index) => selected.has(item.id),
   searcher: defaultSearcher
@@ -131,6 +133,7 @@ function internalIsSelected(item: DropdownItem, index: number): boolean {
 }
 
 const toggleDropdown = (event: Event) => {
+  if (props.disabled) return
   if (popoverRef.value && triggerRef.value) {
     popoverRef.value.toggle(event, triggerRef.value)
     isOpen.value = !isOpen.value
@@ -145,6 +148,7 @@ const closeDropdown = () => {
 }
 
 function handleFileChange(event: Event) {
+  if (props.disabled) return
   const input = event.target as HTMLInputElement
   if (input.files) {
     files.value = Array.from(input.files)
@@ -154,6 +158,7 @@ function handleFileChange(event: Event) {
 }
 
 function handleSelection(item: DropdownItem, index: number) {
+  if (props.disabled) return
   const sel = selected.value
   if (internalIsSelected(item, index)) {
     sel.delete(item.id)
@@ -186,6 +191,7 @@ function handleSelection(item: DropdownItem, index: number) {
       :max-selectable="maxSelectable"
       :selected="selected"
       :uploadable="uploadable"
+      :disabled="disabled"
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
@@ -210,6 +216,7 @@ function handleSelection(item: DropdownItem, index: number) {
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
         :sort-options="sortOptions"
+        :disabled="disabled"
         :is-querying="isQuerying"
         :items="sortedItems"
         :is-selected="internalIsSelected"
