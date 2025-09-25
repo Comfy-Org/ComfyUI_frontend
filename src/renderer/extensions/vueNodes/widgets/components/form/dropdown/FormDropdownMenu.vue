@@ -4,12 +4,19 @@ import { cn } from '@/utils/tailwindUtil'
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type { DropdownItem, LayoutMode, OptionId, SortOption } from './types'
+import type {
+  DropdownItem,
+  FilterOption,
+  LayoutMode,
+  OptionId,
+  SortOption
+} from './types'
 
 interface Props {
   items: DropdownItem[]
   isSelected: (item: DropdownItem, index: number) => boolean
   isQuerying: boolean
+  filterOptions: FilterOption[]
   sortOptions: SortOption[]
 }
 
@@ -19,7 +26,7 @@ const emit = defineEmits<{
 }>()
 
 // Define models for two-way binding
-const filterIndex = defineModel<number>('filterIndex', { default: 0 })
+const filterSelected = defineModel<OptionId>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
 const sortSelected = defineModel<OptionId>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
@@ -28,13 +35,15 @@ const searchQuery = defineModel<string>('searchQuery')
 </script>
 
 <template>
-  <!-- TODO: remove this ⬇️ -->
-  <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
   <div
     class="w-103 h-[640px] pt-4 bg-white dark-theme:bg-charcoal-800 rounded-lg outline outline-offset-[-1px] outline-sand-100 dark-theme:outline-zinc-800 flex flex-col"
   >
     <!-- Filter -->
-    <FormDropdownMenuFilter v-model:filter-index="filterIndex" />
+    <FormDropdownMenuFilter
+      v-if="filterOptions.length > 0"
+      v-model:filter-selected="filterSelected"
+      :filter-options="filterOptions"
+    />
     <!-- Actions -->
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"

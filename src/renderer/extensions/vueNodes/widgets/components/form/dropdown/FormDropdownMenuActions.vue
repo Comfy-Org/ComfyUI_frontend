@@ -44,8 +44,6 @@ function handleSortSelected(item: SortOption) {
 </script>
 
 <template>
-  <!-- TODO: remove this ⬇️ -->
-  <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
   <div class="flex gap-2 text-zinc-400 px-4">
     <label
       :class="

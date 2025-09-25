@@ -13,7 +13,11 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import FormDropdown from './form/dropdown/FormDropdown.vue'
-import type { DropdownItem, SelectedKey } from './form/dropdown/types'
+import type {
+  DropdownItem,
+  FilterOption,
+  SelectedKey
+} from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
@@ -196,17 +200,27 @@ function getMediaUrl(filename: string): string {
   // TODO: This needs to be adapted based on actual ComfyUI API structure
   return `/api/view?filename=${encodeURIComponent(filename)}&type=input`
 }
+
+// TODO handle filter logic
+const filterSelected = ref('all')
+const filterOptions = ref<FilterOption[]>([
+  { id: 'all', name: 'All' },
+  { id: 'image', name: 'Inputs' },
+  { id: 'video', name: 'Outputs' }
+])
 </script>
 
 <template>
   <WidgetLayoutField :widget>
     <FormDropdown
       v-model:selected="selectedSet"
+      v-model:filter-selected="filterSelected"
       :items="dropdownItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable="uploadable"
       :disabled="readonly"
+      :filter-options="filterOptions"
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"

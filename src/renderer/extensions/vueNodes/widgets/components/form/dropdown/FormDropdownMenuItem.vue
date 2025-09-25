@@ -96,7 +96,6 @@ function handleImageLoad(event: Event) {
     <div
       :class="
         cn('flex gap-1', {
-          // layout === 'list' ? 'p-4' : ''
           'flex-col': layout === 'grid',
           'flex-col px-4 py-1 w-full justify-center': layout === 'list',
           'flex-row p-2 items-center justify-between w-full':

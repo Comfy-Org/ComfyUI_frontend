@@ -1,53 +1,34 @@
 <script setup lang="ts">
 import { cn } from '@/utils/tailwindUtil'
 
-interface Props {
-  filterIndex: number
-}
+import type { FilterOption, OptionId } from './types'
 
-defineProps<Props>()
-
-const emit = defineEmits<{
-  'update:filterIndex': [index: number]
+defineProps<{
+  filterOptions: FilterOption[]
 }>()
 
-const filterButtonStyle =
-  'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer hover:text-black hover:dark-theme:text-white hover:bg-zinc-500/10 transition-all duration-150 active:scale-95 select-none'
-
-const handleFilterClick = (index: number) => {
-  emit('update:filterIndex', index)
-}
+const filterSelected = defineModel<OptionId>('filterSelected')
 </script>
 
 <template>
-  <!-- TODO: remove this ⬇️ -->
-  <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
   <div class="flex gap-1 text-zinc-400 px-4 mb-4">
     <div
+      v-for="option in filterOptions"
+      :key="option.id"
       :class="
         cn(
-          filterButtonStyle,
-          filterIndex === 0
+          'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer select-none',
+          'transition-all duration-150',
+          'hover:text-black hover:dark-theme:text-white hover:bg-zinc-500/10',
+          'active:scale-95',
+          filterSelected === option.id
             ? '!bg-zinc-500/20 text-black dark-theme:text-white'
             : 'bg-transparent'
         )
       "
-      @click="handleFilterClick(0)"
+      @click="filterSelected = option.id"
     >
-      Inputs
-    </div>
-    <div
-      :class="
-        cn(
-          filterButtonStyle,
-          filterIndex === 1
-            ? '!bg-zinc-500/20 text-black dark-theme:text-white'
-            : 'bg-transparent'
-        )
-      "
-      @click="handleFilterClick(1)"
-    >
-      Outputs
+      {{ option.name }}
     </div>
   </div>
 </template>
