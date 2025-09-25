@@ -133,6 +133,7 @@
 
         <!-- Template Cards Grid -->
         <div
+          :key="templateListKey"
           class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4 py-4"
           data-testid="template-workflows-content"
         >
@@ -544,6 +545,9 @@ const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 
+// Force re-render key for templates when sorting changes
+const templateListKey = ref(0)
+
 // Navigation
 const selectedNavItem = ref<string | null>('all')
 
@@ -678,6 +682,9 @@ watch(
   ],
   () => {
     resetPagination()
+    // Clear loading state and force re-render of template list
+    loadingTemplate.value = null
+    templateListKey.value++
   }
 )
 
