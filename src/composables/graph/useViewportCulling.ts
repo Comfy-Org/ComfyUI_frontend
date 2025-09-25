@@ -55,11 +55,7 @@ function boundsIntersect(boxA: Bounds, boxB: Bounds): boolean {
 
 function useViewportCullingIndividual() {
   const canvasStore = useCanvasStore()
-  const { vueNodeData, nodeManager } = useVueNodeLifecycle()
-
-  const allNodes = computed(() => {
-    return Array.from(vueNodeData.value.values())
-  })
+  const { nodeManager } = useVueNodeLifecycle()
 
   const viewport = computed(() => viewportEdges(canvasStore.canvas))
 
@@ -78,17 +74,12 @@ function useViewportCullingIndividual() {
   function updateVisibility() {
     if (!nodeManager.value) return
 
-    const manager = nodeManager.value
-
-    // Get all node elements at once
     const nodeElements = document.querySelectorAll('[data-node-id]')
-
-    // Update each element's visibility
     for (const element of nodeElements) {
       const nodeId = element.getAttribute('data-node-id')
       if (!nodeId) continue
 
-      const node = manager.getNode(nodeId)
+      const node = nodeManager.value.getNode(nodeId)
       if (!node) continue
 
       const displayValue = inViewport(node) ? '' : 'none'
@@ -100,13 +91,10 @@ function useViewportCullingIndividual() {
       }
     }
   }
+
   const handleTransformUpdate = useThrottleFn(updateVisibility, 100, true)
 
-  return {
-    allNodes,
-    handleTransformUpdate,
-    inViewport
-  }
+  return { handleTransformUpdate }
 }
 
 export const useViewportCulling = createSharedComposable(
