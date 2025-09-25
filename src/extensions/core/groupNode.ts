@@ -169,8 +169,7 @@ class GroupNodeBuilder {
 
     // Use the built in copyToClipboard function to generate the node data we need
     try {
-      // @ts-expect-error fixme ts strict error
-      const serialised = serialise(this.nodes, app.canvas.graph)
+      const serialised = serialise(this.nodes, app.graph)
       const config = JSON.parse(serialised)
 
       storeLinkTypes(config)
