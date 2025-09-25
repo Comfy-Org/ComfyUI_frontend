@@ -6,7 +6,12 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import type { DropdownItem, LayoutMode, SortOptionLabel } from './types'
+import type {
+  DropdownItem,
+  LayoutMode,
+  SelectedKey,
+  SortOptionLabel
+} from './types'
 
 interface Props {
   items: DropdownItem[]
@@ -18,16 +23,28 @@ interface Props {
   multiple?: boolean | number
 
   uploadable?: boolean
+  isSelected?: (
+    selected: Set<SelectedKey>,
+    item: DropdownItem,
+    index: number
+  ) => boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Select...',
   multiple: false,
-  uploadable: false
+  uploadable: false,
+  isSelected: (
+    selected: Set<SelectedKey>,
+    item: DropdownItem,
+    _index: number
+  ) => selected.has(item.id)
 })
 
 // Define models for two-way binding
-const selected = defineModel<Set<number>>('selected', { default: new Set() })
+const selected = defineModel<Set<SelectedKey>>('selected', {
+  default: new Set()
+})
 const filterIndex = defineModel<number>('filterIndex', { default: 0 })
 const layoutMode = defineModel<LayoutMode>('layoutMode', {
   default: 'grid'
@@ -48,8 +65,20 @@ const maxSelectable = computed(() => {
   return 1
 })
 
-function isSelected(_item: DropdownItem, index: number): boolean {
-  return selected.value.has(index)
+const sortedItems = computed(() => {
+  switch (sortSelected.value) {
+    case 'a-z':
+      return props.items.slice().sort((a, b) => {
+        return a.name.localeCompare(b.name)
+      })
+    case 'default':
+    default:
+      return props.items.slice()
+  }
+})
+
+function internalIsSelected(item: DropdownItem, index: number): boolean {
+  return props.isSelected?.(selected.value, item, index) ?? false
 }
 
 const toggleDropdown = (event: Event) => {
@@ -77,14 +106,14 @@ function handleFileChange(event: Event) {
 
 function handleSelection(item: DropdownItem, index: number) {
   const sel = selected.value
-  if (isSelected(item, index)) {
-    sel.delete(index)
+  if (internalIsSelected(item, index)) {
+    sel.delete(item.id)
   } else {
     if (sel.size < maxSelectable.value) {
-      sel.add(index)
+      sel.add(item.id)
     } else if (maxSelectable.value === 1) {
       sel.clear()
-      sel.add(index)
+      sel.add(item.id)
     } else {
       toastStore.addAlert(`Maximum selection limit reached`)
       return
@@ -130,8 +159,8 @@ function handleSelection(item: DropdownItem, index: number) {
         v-model:filter-index="filterIndex"
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
-        :items="items"
-        :is-selected="isSelected"
+        :items="sortedItems"
+        :is-selected="internalIsSelected"
         :max-selectable="maxSelectable"
         @close="closeDropdown"
         @item-click="handleSelection"

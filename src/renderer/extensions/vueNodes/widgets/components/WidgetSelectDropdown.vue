@@ -13,7 +13,7 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import FormDropdown from './form/dropdown/FormDropdown.vue'
-import type { DropdownItem } from './form/dropdown/types'
+import type { DropdownItem, SelectedKey } from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
@@ -43,7 +43,7 @@ const combinedProps = computed(() => ({
   ...transformCompatProps.value
 }))
 
-const selectedSet = ref<Set<number>>(new Set())
+const selectedSet = ref<Set<SelectedKey>>(new Set())
 const dropdownItems = computed<DropdownItem[]>(() => {
   const values = props.widget.options?.values || []
 
@@ -90,12 +90,12 @@ watch(
   localValue,
   (currentValue) => {
     if (currentValue !== undefined) {
-      const index = dropdownItems.value.findIndex(
+      const item = dropdownItems.value.find(
         (item) => item.name === currentValue
       )
-      if (index >= 0) {
+      if (item) {
         selectedSet.value.clear()
-        selectedSet.value.add(index)
+        selectedSet.value.add(item.id)
       }
     } else {
       selectedSet.value.clear()
@@ -104,16 +104,21 @@ watch(
   { immediate: true }
 )
 
-function updateSelectedItems(selectedItems: Set<number>) {
-  let index: number | undefined = undefined
+function updateSelectedItems(selectedItems: Set<SelectedKey>) {
+  let id: SelectedKey | undefined = undefined
   if (selectedItems.size > 0) {
-    index = selectedItems.values().next().value!
+    id = selectedItems.values().next().value!
   }
-  if (index != null) {
-    onChange(dropdownItems.value[index].name)
-  } else {
+  if (id == null) {
     onChange(undefined)
+    return
   }
+  const name = dropdownItems.value.find((item) => item.id === id)?.name
+  if (!name) {
+    onChange(undefined)
+    return
+  }
+  onChange(name)
 }
 
 // Upload file function (copied from useNodeImageUpload.ts)
