@@ -49,7 +49,7 @@
       </template>
       <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, isCollapsed]"
+        v-memo="[nodeData.title, isCollapsed, nodeData.flags?.pinned]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
