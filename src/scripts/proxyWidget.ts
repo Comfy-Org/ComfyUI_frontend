@@ -103,17 +103,18 @@ function addProxyWidget(
     nodeId,
     widgetName,
     graph: subgraphNode.subgraph,
-    name,
-    label: name,
-    isProxyWidget: true,
-    y: 0,
-    last_y: undefined,
-    width: undefined,
-    computedHeight: undefined,
     afterQueued: undefined,
-    onRemove: undefined,
+    computedHeight: undefined,
+    isProxyWidget: true,
+    label: name,
+    last_y: undefined,
+    name,
     node: subgraphNode,
-    promoted: undefined
+    onRemove: undefined,
+    promoted: undefined,
+    serialize: false,
+    width: undefined,
+    y: 0
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
