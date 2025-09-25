@@ -40,7 +40,7 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     if (canvas.linkConnector?.isConnecting) return
     if (!state.active || !state.source) return
 
-    const { pointer } = state
+    const { pointer, candidate } = state
 
     const linkRenderer = canvas.linkRenderer
     if (!linkRenderer) return
@@ -50,7 +50,9 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     const renderLinks = adapter?.renderLinks
     if (!adapter || !renderLinks || renderLinks.length === 0) return
 
-    const to: ReadOnlyPoint = [pointer.canvas.x, pointer.canvas.y]
+    const to: ReadOnlyPoint = candidate?.compatible
+      ? [candidate.layout.position.x, candidate.layout.position.y]
+      : [pointer.canvas.x, pointer.canvas.y]
     ctx.save()
     for (const link of renderLinks) {
       const startDir = link.fromDirection ?? LinkDirection.RIGHT

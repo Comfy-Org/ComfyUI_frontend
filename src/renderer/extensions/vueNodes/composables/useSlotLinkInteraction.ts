@@ -87,14 +87,15 @@ export function useSlotLinkInteraction({
     }
   }
 
-  const { state, beginDrag, endDrag, updatePointerPosition } =
+  const { state, beginDrag, endDrag, updatePointerPosition, setCandidate } =
     useSlotLinkDragState()
 
   function candidateFromTarget(
     target: EventTarget | null
   ): SlotDropCandidate | null {
     if (!(target instanceof HTMLElement)) return null
-    const key = target.dataset['slotKey']
+    const elWithKey = target.closest<HTMLElement>('[data-slot-key]')
+    const key = elWithKey?.dataset['slotKey']
     if (!key) return null
 
     const layout = layoutStore.getSlotLayout(key)
@@ -102,26 +103,68 @@ export function useSlotLinkInteraction({
 
     const candidate: SlotDropCandidate = { layout, compatible: false }
 
-    if (state.source) {
-      const canvas = app.canvas
-      const graph = canvas?.graph
-      const adapter = ensureActiveAdapter()
-      if (graph && adapter) {
-        if (layout.type === 'input') {
-          candidate.compatible = adapter.isInputValidDrop(
-            layout.nodeId,
-            layout.index
-          )
-        } else if (layout.type === 'output') {
-          candidate.compatible = adapter.isOutputValidDrop(
-            layout.nodeId,
-            layout.index
-          )
-        }
+    const graph = app.canvas?.graph
+    const adapter = ensureActiveAdapter()
+    if (graph && adapter) {
+      if (layout.type === 'input') {
+        candidate.compatible = adapter.isInputValidDrop(
+          layout.nodeId,
+          layout.index
+        )
+      } else if (layout.type === 'output') {
+        candidate.compatible = adapter.isOutputValidDrop(
+          layout.nodeId,
+          layout.index
+        )
       }
     }
 
     return candidate
+  }
+
+  function candidateFromNodeTarget(
+    target: EventTarget | null
+  ): SlotDropCandidate | null {
+    if (!(target instanceof HTMLElement)) return null
+    const elWithNode = target.closest<HTMLElement>('[data-node-id]')
+    const nodeIdStr = elWithNode?.dataset['nodeId']
+    if (!nodeIdStr) return null
+
+    const adapter = ensureActiveAdapter()
+    const graph = app.canvas?.graph
+    if (!adapter || !graph) return null
+
+    const nodeId = Number(nodeIdStr)
+    const node = graph.getNodeById(nodeId)
+    if (!node) return null
+
+    const firstLink = adapter.renderLinks[0]
+    if (!firstLink) return null
+    const connectingTo = adapter.linkConnector.state.connectingTo
+
+    if (connectingTo === 'input') {
+      const res = node.findInputByType(firstLink.fromSlot.type)
+      const index = res?.index
+      if (index == null) return null
+      const key = getSlotKey(String(nodeId), index, true)
+      const layout = layoutStore.getSlotLayout(key)
+      if (!layout) return null
+      const compatible = adapter.isInputValidDrop(nodeId, index)
+      if (!compatible) return null
+      return { layout, compatible: true }
+    } else if (connectingTo === 'output') {
+      const res = node.findOutputByType(firstLink.fromSlot.type)
+      const index = res?.index
+      if (index == null) return null
+      const key = getSlotKey(String(nodeId), index, false)
+      const layout = layoutStore.getSlotLayout(key)
+      if (!layout) return null
+      const compatible = adapter.isOutputValidDrop(nodeId, index)
+      if (!compatible) return null
+      return { layout, compatible: true }
+    }
+
+    return null
   }
 
   const conversion = useSharedCanvasPositionConversion()
@@ -359,6 +402,22 @@ export function useSlotLinkInteraction({
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     updatePointerState(event)
+
+    const adapter = ensureActiveAdapter()
+    // Resolve a candidate from slot under cursor, else from node
+    const slotCandidate = candidateFromTarget(event.target)
+    const nodeCandidate = slotCandidate
+      ? null
+      : candidateFromNodeTarget(event.target)
+    const candidate = slotCandidate ?? nodeCandidate
+
+    // Update drag-state candidate; Vue preview renderer reads this
+    if (candidate?.compatible && adapter) {
+      setCandidate(candidate)
+    } else {
+      setCandidate(null)
+    }
+
     app.canvas?.setDirty(true)
 
     // Debug: Log hovered slot/node IDs using event.target.dataset for review
