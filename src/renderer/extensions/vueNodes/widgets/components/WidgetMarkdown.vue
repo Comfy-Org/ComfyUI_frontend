@@ -5,22 +5,21 @@
   >
     <!-- Display mode: Rendered markdown -->
     <div
-      v-if="!isEditing"
-      class="comfy-markdown-content text-xs min-h-[60px] rounded-lg px-4 py-2 overflow-y-auto lod-toggle"
+      class="comfy-markdown-content text-sm min-h-[60px] w-full rounded-lg px-4 py-2 overflow-y-auto lod-toggle"
+      :class="isEditing === false ? 'visible' : 'invisible'"
       v-html="renderedHtml"
     />
 
     <!-- Edit mode: Textarea -->
     <Textarea
-      v-else
+      v-show="isEditing"
       ref="textareaRef"
       v-model="localValue"
       :disabled="readonly"
-      class="w-full text-xs"
-      size="small"
-      :rows="6"
+      class="w-full min-h-[60px] absolute inset-0"
       :pt="{
         root: {
+          class: 'text-sm w-full h-full',
           onBlur: handleBlur
         }
       }"
