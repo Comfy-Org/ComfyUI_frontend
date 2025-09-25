@@ -7,11 +7,13 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
+import { defaultSearcher, getDefaultSortOptions } from './shared'
 import type {
   DropdownItem,
   LayoutMode,
+  OptionId,
   SelectedKey,
-  SortOptionLabel
+  SortOption
 } from './types'
 
 interface Props {
@@ -24,6 +26,7 @@ interface Props {
   multiple?: boolean | number
 
   uploadable?: boolean
+  sortOptions?: SortOption[]
   isSelected?: (
     selected: Set<SelectedKey>,
     item: DropdownItem,
@@ -40,15 +43,9 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Select...',
   multiple: false,
   uploadable: false,
+  sortOptions: () => getDefaultSortOptions(),
   isSelected: (selected, item, _index) => selected.has(item.id),
-  searcher: async (query, items, _onCleanup) => {
-    if (query.trim() === '') return items
-    const words = query.trim().toLowerCase().split(' ')
-    return items.filter((item) => {
-      const name = item.name.toLowerCase()
-      return words.every((word) => name.includes(word))
-    })
-  }
+  searcher: defaultSearcher
 })
 
 // Define models for two-way binding
@@ -60,7 +57,7 @@ const layoutMode = defineModel<LayoutMode>('layoutMode', {
   default: 'grid'
 })
 const files = defineModel<File[]>('files', { default: [] })
-const sortSelected = defineModel<SortOptionLabel>('sortSelected', {
+const sortSelected = defineModel<OptionId>('sortSelected', {
   default: 'default'
 })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
@@ -112,16 +109,21 @@ watch(
   { immediate: true }
 )
 
+const defaultSorter = computed<SortOption['sorter']>(() => {
+  const sorter = props.sortOptions.find(
+    (option) => option.id === 'default'
+  )?.sorter
+  return sorter || (({ items }) => items.slice())
+})
+const SelectedSorter = computed<SortOption['sorter']>(() => {
+  if (sortSelected.value === 'default') return defaultSorter.value
+  const sorter = props.sortOptions.find(
+    (option) => option.id === sortSelected.value
+  )?.sorter
+  return sorter || defaultSorter.value
+})
 const sortedItems = computed(() => {
-  switch (sortSelected.value) {
-    case 'a-z':
-      return filteredItems.value.slice().sort((a, b) => {
-        return a.name.localeCompare(b.name)
-      })
-    case 'default':
-    default:
-      return filteredItems.value.slice()
-  }
+  return SelectedSorter.value({ items: filteredItems.value }) || []
 })
 
 function internalIsSelected(item: DropdownItem, index: number): boolean {
@@ -207,6 +209,7 @@ function handleSelection(item: DropdownItem, index: number) {
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
+        :sort-options="sortOptions"
         :is-querying="isQuerying"
         :items="sortedItems"
         :is-selected="internalIsSelected"

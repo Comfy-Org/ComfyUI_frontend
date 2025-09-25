@@ -1,16 +1,16 @@
+export type OptionId = string | number | symbol
+export type SelectedKey = OptionId
+
 export interface DropdownItem {
-  id: string | number | symbol
+  id: SelectedKey
   imageSrc: string
   name: string
   metadata: string
 }
-
-export type SelectedKey = DropdownItem['id']
-
-export type SortOptionLabel = 'default' | 'a-z'
 export interface SortOption {
+  id: OptionId
   name: string
-  value: SortOptionLabel
+  sorter: (ctx: { items: readonly DropdownItem[] }) => DropdownItem[]
 }
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'

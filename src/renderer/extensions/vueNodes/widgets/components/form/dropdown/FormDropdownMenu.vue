@@ -4,12 +4,13 @@ import { cn } from '@/utils/tailwindUtil'
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type { DropdownItem, LayoutMode, SortOptionLabel } from './types'
+import type { DropdownItem, LayoutMode, OptionId, SortOption } from './types'
 
 interface Props {
   items: DropdownItem[]
   isSelected: (item: DropdownItem, index: number) => boolean
   isQuerying: boolean
+  sortOptions: SortOption[]
 }
 
 defineProps<Props>()
@@ -20,7 +21,7 @@ const emit = defineEmits<{
 // Define models for two-way binding
 const filterIndex = defineModel<number>('filterIndex', { default: 0 })
 const layoutMode = defineModel<LayoutMode>('layoutMode')
-const sortSelected = defineModel<SortOptionLabel>('sortSelected')
+const sortSelected = defineModel<OptionId>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 
 // Handle item selection
@@ -39,6 +40,7 @@ const searchQuery = defineModel<string>('searchQuery')
       v-model:layout-mode="layoutMode"
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
+      :sort-options="sortOptions"
       :is-querying="isQuerying"
     />
     <!-- List -->
