@@ -16,7 +16,7 @@
       ref="textareaRef"
       v-model="localValue"
       :disabled="readonly"
-      class="w-full min-h-[60px] absolute inset-0"
+      class="w-full min-h-[60px] absolute inset-0 resize-none"
       :pt="{
         root: {
           class: 'text-sm w-full h-full',
