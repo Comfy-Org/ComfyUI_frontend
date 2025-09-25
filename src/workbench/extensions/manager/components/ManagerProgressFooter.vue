@@ -154,8 +154,8 @@ const handleRestart = async () => {
 
         await useWorkflowService().reloadCurrentWorkflow()
 
-        // Run conflict detection after restart completion
-        await runFullConflictAnalysis()
+        // Run conflict detection in background after restart completion
+        void runFullConflictAnalysis()
       } finally {
         await settingStore.set(
           'Comfy.Toast.DisableReconnectingToast',
