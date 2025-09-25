@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 function listenForEvent(): Promise<Event> {
   return new Promise<Event>((resolve) => {
     document.addEventListener('litegraph:canvas', (e) => resolve(e), {
