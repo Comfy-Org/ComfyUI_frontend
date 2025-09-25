@@ -13,13 +13,6 @@
     </div>
   </div>
 
-  <!-- TODO: remove this ⬇️ -->
-  <div
-    class="fixed top-20 left-20 bg-white dark-theme:bg-black p-20 rounded-xl shadow"
-  >
-    <FormDropdownRepl />
-  </div>
-
   <GlobalToast />
   <RerouteMigrationToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
@@ -56,7 +49,6 @@ import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import FormDropdownRepl from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownRepl.vue'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

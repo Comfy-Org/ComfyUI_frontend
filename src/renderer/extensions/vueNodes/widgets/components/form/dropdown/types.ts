@@ -13,4 +13,9 @@ export interface SortOption {
   sorter: (ctx: { items: readonly DropdownItem[] }) => DropdownItem[]
 }
 
+export interface FilterOption {
+  id: OptionId
+  name: string
+}
+
 export type LayoutMode = 'list' | 'grid' | 'list-small'
