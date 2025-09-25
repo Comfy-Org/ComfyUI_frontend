@@ -116,7 +116,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   get titleHeight() {
-    return this.font_size * 1.4
+    return LiteGraph.NODE_TITLE_HEIGHT
   }
 
   get children(): ReadonlySet<Positionable> {
@@ -179,7 +179,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     ctx.fillStyle = color
     ctx.strokeStyle = color
     ctx.beginPath()
-    ctx.rect(x + 0.5, y + 0.5, width, font_size * 1.4)
+    ctx.rect(x + 0.5, y + 0.5, width, LiteGraph.NODE_TITLE_HEIGHT)
     ctx.fill()
 
     // Group background, border
@@ -201,11 +201,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     // Title
     ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
     ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
     ctx.fillText(
       this.title + (this.pinned ? '📌' : ''),
-      x + padding,
-      y + font_size
+      x + font_size / 2,
+      y + LiteGraph.NODE_TITLE_HEIGHT / 2 + 1
     )
+    ctx.textBaseline = 'alphabetic'
 
     if (LiteGraph.highlight_selected_group && this.selected) {
       strokeShape(ctx, this._bounding, {
