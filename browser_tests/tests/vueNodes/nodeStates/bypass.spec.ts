@@ -3,10 +3,6 @@ import {
   comfyPageFixture as test
 } from '../../../fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 const BYPASS_HOTKEY = 'Control+b'
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
