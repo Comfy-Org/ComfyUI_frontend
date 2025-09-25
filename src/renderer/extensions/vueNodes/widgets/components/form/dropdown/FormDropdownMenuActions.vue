@@ -1,25 +1,13 @@
 <script setup lang="ts">
 import { cn } from '@/utils/tailwindUtil'
 
-interface Props {
-  layoutMode: 'list' | 'grid'
-}
-
-defineProps<Props>()
-
-const emit = defineEmits<{
-  'update:layoutMode': [mode: 'list' | 'grid']
-}>()
+const layoutMode = defineModel<'list' | 'grid' | 'list-small'>('layoutMode')
 
 const actionButtonStyle =
   'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-sand-100 dark-theme:outline-neutral-700'
 
 const layoutSwitchItemStyle =
   'size-6 flex justify-center items-center rounded-sm cursor-pointer hover:scale-108 hover:text-black hover:dark-theme:text-white'
-
-const handleLayoutChange = (mode: 'list' | 'grid') => {
-  emit('update:layoutMode', mode)
-}
 </script>
 
 <template>
@@ -55,7 +43,7 @@ const handleLayoutChange = (mode: 'list' | 'grid') => {
               : ''
           )
         "
-        @click="handleLayoutChange('list')"
+        @click="layoutMode = 'list'"
       >
         <i-lucide:list class="size-4" />
       </div>
@@ -68,7 +56,7 @@ const handleLayoutChange = (mode: 'list' | 'grid') => {
               : ''
           )
         "
-        @click="handleLayoutChange('grid')"
+        @click="layoutMode = 'grid'"
       >
         <i-lucide:layout-grid class="size-4" />
       </div>
