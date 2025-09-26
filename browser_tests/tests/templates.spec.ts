@@ -181,45 +181,32 @@ test.describe('Templates', () => {
   }) => {
     // Open templates dialog
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
-    await expect(comfyPage.templates.content).toBeVisible()
 
-    const firstCard = comfyPage.page
-      .locator('[data-testid^="template-workflow-"]')
-      .first()
-    await expect(firstCard).toBeVisible({ timeout: 5000 })
-
-    // Get the template grid
     const templateGrid = comfyPage.page.locator(
       '[data-testid="template-workflows-content"]'
     )
-    await expect(templateGrid).toBeVisible()
+    const nav = comfyPage.page
+      .locator('header')
+      .filter({ hasText: 'Templates' })
 
-    // Check grid layout at desktop size (default)
-    const desktopGridClass = await templateGrid.getAttribute('class')
-    expect(desktopGridClass).toContain('grid')
-    expect(desktopGridClass).toContain(
-      'grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]'
-    )
-
-    // Count visible cards at desktop size
-    const desktopCardCount = await comfyPage.page
+    const cardCount = await comfyPage.page
       .locator('[data-testid^="template-workflow-"]')
       .count()
-    expect(desktopCardCount).toBeGreaterThan(0)
-
-    // Check cards at mobile viewport size
-    await comfyPage.page.setViewportSize({ width: 640, height: 800 })
+    expect(cardCount).toBeGreaterThan(0)
     await expect(templateGrid).toBeVisible()
-    // Grid should still be responsive at mobile size
-    const mobileGridClass = await templateGrid.getAttribute('class')
-    expect(mobileGridClass).toContain('grid')
+    await expect(nav).toBeVisible() // Nav should be visible at desktop size
 
-    // Check cards at tablet size
-    await comfyPage.page.setViewportSize({ width: 1024, height: 800 })
+    const mobileSize = { width: 640, height: 800 }
+    await comfyPage.page.setViewportSize(mobileSize)
+    expect(cardCount).toBeGreaterThan(0)
     await expect(templateGrid).toBeVisible()
-    // Grid should still be responsive at tablet size
-    const tabletGridClass = await templateGrid.getAttribute('class')
-    expect(tabletGridClass).toContain('grid')
+    await expect(nav).not.toBeVisible() // Nav should collapse at mobile size
+
+    const tabletSize = { width: 1024, height: 800 }
+    await comfyPage.page.setViewportSize(tabletSize)
+    expect(cardCount).toBeGreaterThan(0)
+    await expect(templateGrid).toBeVisible()
+    await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })
 
   test('hover effects work on template cards', async ({ comfyPage }) => {
