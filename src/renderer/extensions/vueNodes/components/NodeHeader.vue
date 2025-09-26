@@ -122,12 +122,9 @@ const resolveTitle = (info: VueNodeData | undefined) => {
   const title = (info?.title ?? '').trim()
   if (title.length > 0) return title
 
-  const nodeType = (info?.type ?? '').trim()
-  if (nodeType.length > 0) {
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-    return st(key, nodeType)
-  }
-  return 'Untitled'
+  const nodeType = (info?.type ?? '').trim() || 'Untitled'
+  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
+  return st(key, nodeType)
 }
 
 // Local state for title to provide immediate feedback
