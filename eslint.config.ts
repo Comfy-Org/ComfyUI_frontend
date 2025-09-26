@@ -33,7 +33,16 @@ export default defineConfig([
       },
       parserOptions: {
         parser: tseslint.parser,
-        projectService: true,
+        projectService: {
+          allowDefaultProject: [
+            'vite.config.mts',
+            'vite.electron.config.mts',
+            'vite.types.config.mts',
+            'playwright.config.ts',
+            'playwright.i18n.config.ts',
+            'scripts/collect-i18n-node-defs.ts'
+          ]
+        },
         tsConfigRootDir: import.meta.dirname,
         ecmaVersion: 2020,
         sourceType: 'module',
