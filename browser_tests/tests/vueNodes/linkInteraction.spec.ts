@@ -687,4 +687,99 @@ test.describe('Vue Node Link Interaction', () => {
       if (shiftHeld) await comfyPage.page.keyboard.up('Shift').catch(() => {})
     }
   })
+
+  test('should snap to node center while dragging and link on drop', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
+    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    expect(clipNode && samplerNode).toBeTruthy()
+
+    // Start drag from CLIP output[0]
+    const clipOutputCenter = await getSlotCenter(
+      comfyPage.page,
+      clipNode.id,
+      0,
+      false
+    )
+
+    // Drag to the visual center of the KSampler Vue node (not a slot)
+    const samplerVue = comfyPage.vueNodes.getNodeLocator(String(samplerNode.id))
+    await expect(samplerVue).toBeVisible()
+    const samplerCenter = await getCenter(samplerVue)
+
+    await comfyMouse.move(clipOutputCenter)
+    await comfyMouse.drag(samplerCenter)
+
+    // During drag, the preview should snap/highlight a compatible input on KSampler
+    await expect(comfyPage.canvas).toHaveScreenshot('vue-node-snap-to-node.png')
+
+    // Drop to create the link
+    await comfyMouse.drop()
+    await comfyPage.nextFrame()
+
+    // Validate a link was created to one of KSampler's compatible inputs (1 or 2)
+    const linkOnInput1 = await getInputLinkDetails(
+      comfyPage.page,
+      samplerNode.id,
+      1
+    )
+    const linkOnInput2 = await getInputLinkDetails(
+      comfyPage.page,
+      samplerNode.id,
+      2
+    )
+
+    const linked = linkOnInput1 ?? linkOnInput2
+    expect(linked).not.toBeNull()
+    expect(linked?.originId).toBe(clipNode.id)
+    expect(linked?.targetId).toBe(samplerNode.id)
+  })
+
+  test('should snap to a specific compatible slot when targeting it', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
+    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    expect(clipNode && samplerNode).toBeTruthy()
+
+    // Drag from CLIP output[0] to KSampler input[2] (third slot) which is the
+    // second compatible input for CLIP
+    const clipOutputCenter = await getSlotCenter(
+      comfyPage.page,
+      clipNode.id,
+      0,
+      false
+    )
+    const samplerInput3Center = await getSlotCenter(
+      comfyPage.page,
+      samplerNode.id,
+      2,
+      true
+    )
+
+    await comfyMouse.move(clipOutputCenter)
+    await comfyMouse.drag(samplerInput3Center)
+
+    // Expect the preview to show snapping to the targeted slot
+    await expect(comfyPage.canvas).toHaveScreenshot('vue-node-snap-to-slot.png')
+
+    // Finish the connection
+    await comfyMouse.drop()
+    await comfyPage.nextFrame()
+
+    const linkDetails = await getInputLinkDetails(
+      comfyPage.page,
+      samplerNode.id,
+      2
+    )
+    expect(linkDetails).not.toBeNull()
+    expect(linkDetails).toMatchObject({
+      originId: clipNode.id,
+      targetId: samplerNode.id,
+      targetSlot: 2
+    })
+  })
 })
