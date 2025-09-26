@@ -16,6 +16,7 @@ import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
+import { usePreserveWidgetScroll } from '@/renderer/extensions/vueNodes/composables/usePreserveWidgetScroll'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
@@ -24,6 +25,9 @@ import { electronAPI, isElectron } from './utils/envUtil'
 const workspaceStore = useWorkspaceStore()
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+
+// Preserve native scrolling in Vue widgets
+usePreserveWidgetScroll()
 const handleKey = (e: KeyboardEvent) => {
   workspaceStore.shiftDown = e.shiftKey
 }
