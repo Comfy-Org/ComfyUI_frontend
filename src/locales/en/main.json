@@ -6,9 +6,21 @@
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
     "download": "Download",
+    "downloadImage": "Download image",
+    "editOrMaskImage": "Edit or mask image",
+    "removeImage": "Remove image",
+    "viewImageOfTotal": "View image {index} of {total}",
+    "imagePreview": "Image preview - Use arrow keys to navigate between images",
+    "galleryImage": "Gallery image",
+    "galleryThumbnail": "Gallery thumbnail",
+    "errorLoadingImage": "Error loading image",
+    "failedToDownloadImage": "Failed to download image",
+    "calculatingDimensions": "Calculating dimensions",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
+    "logoAlt": "ComfyUI Logo",
     "refresh": "Refresh",
+    "refreshNode": "Refresh Node",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -30,7 +42,9 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
-    "help": "Help",
+    "info": "Node Info",
+    "bookmark": "Save to Library",
+    "moreOptions": "More Options",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -144,6 +158,8 @@
     "releaseTitle": "{package} {version} Release",
     "itemSelected": "{selectedCount} item selected",
     "itemsSelected": "{selectedCount} items selected",
+    "multiSelectDropdown": "Multi-select dropdown",
+    "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
@@ -158,7 +174,8 @@
     "nodeContentError": "Node Content Error",
     "nodeHeaderError": "Node Header Error",
     "nodeSlotsError": "Node Slots Error",
-    "nodeWidgetsError": "Node Widgets Error"
+    "nodeWidgetsError": "Node Widgets Error",
+    "frameNodes": "Frame Nodes"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -312,7 +329,37 @@
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
     "Manage": "Manage",
-    "Search": "Search"
+    "Search": "Search",
+    "Open in Mask Editor": "Open in Mask Editor",
+    "Open Image": "Open Image",
+    "Copy Image": "Copy Image",
+    "Save Image": "Save Image",
+    "Rename": "Rename",
+    "Copy": "Copy",
+    "Duplicate": "Duplicate",
+    "Paste": "Paste",
+    "Node Info": "Node Info",
+    "Adjust Size": "Adjust Size",
+    "Minimize Node": "Minimize Node",
+    "Expand Node": "Expand Node",
+    "Shape": "Shape",
+    "Color": "Color",
+    "Add Subgraph to Library": "Add Subgraph to Library",
+    "Unpack Subgraph": "Unpack Subgraph",
+    "Convert to Subgraph": "Convert to Subgraph",
+    "Align Selected To": "Align Selected To",
+    "Distribute Nodes": "Distribute Nodes",
+    "Remove Bypass": "Remove Bypass",
+    "Run Branch": "Run Branch",
+    "Delete": "Delete",
+    "Top": "Top",
+    "Bottom": "Bottom",
+    "Left": "Left",
+    "Right": "Right",
+    "Horizontal": "Horizontal",
+    "Vertical": "Vertical",
+    "new": "new",
+    "deprecated": "deprecated"
   },
   "icon": {
     "bookmark": "Bookmark",
@@ -361,6 +408,27 @@
     "migration": "Migration",
     "desktopSettings": "Desktop Settings",
     "chooseInstallationLocation": "Choose Installation Location",
+    "gpuPicker": {
+      "title": "Choose your hardware setup",
+      "recommended": "RECOMMENDED",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "CPU Mode",
+      "manualSubtitle": "Manual Setup",
+      "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",
+      "nvidiaDescription": "Use your NVIDIA GPU with CUDA acceleration for the best performance.",
+      "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
+      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
+    },
+    "locationPicker": {
+      "title": "Choose where to install ComfyUI",
+      "subtitle": "Pick a folder for ComfyUI's files. We'll also set up Python there automatically.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "Select existing ComfyUI installation (optional)",
+      "migrateFromExisting": "Migrate from existing installation",
+      "migrateDescription": "Copy or link your existing models, custom nodes, and configurations from a previous ComfyUI installation.",
+      "chooseDownloadServers": "Choose download servers manually",
+      "downloadServersDescription": "Select specific mirror servers for downloading Python, PyPI packages, and PyTorch based on your location."
+    },
     "systemLocations": "System Locations",
     "failedToSelectDirectory": "Failed to select directory",
     "pathValidationFailed": "Failed to validate path",
@@ -445,16 +513,26 @@
     "metricsDisabled": "Metrics Disabled",
     "updateConsent": "You previously opted in to reporting crashes. We are now tracking event-based metrics to help identify bugs and improve the app. No personal identifiable information is collected."
   },
+  "desktopStart": {
+    "initialising": "Initialising..."
+  },
   "serverStart": {
+    "title": "Starting ComfyUI",
     "troubleshoot": "Troubleshoot",
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
     "showTerminal": "Show Terminal",
+    "copySelectionTooltip": "Copy selection",
+    "copyAllTooltip": "Copy all",
+    "errorMessage": "Unable to start ComfyUI Desktop",
+    "installation": {
+      "title": "Installing ComfyUI"
+    },
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",
       "starting-server": "Starting ComfyUI server...",
-      "ready": "Finishing...",
+      "ready": "Loading Human Interface",
       "error": "Unable to start ComfyUI Desktop"
     }
   },
@@ -462,6 +540,14 @@
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
     "restart": "Restart"
+  },
+  "shape": {
+    "default": "Default",
+    "round": "Round",
+    "CARD": "Card",
+    "circle": "Circle",
+    "arrow": "Arrow",
+    "box": "Box"
   },
   "sideToolbar": {
     "themeToggle": "Toggle Theme",
@@ -1025,7 +1111,6 @@
     "Workflow": "Workflow",
     "Edit": "Edit",
     "View": "View",
-    "Manager": "Manager",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
@@ -1758,7 +1843,10 @@
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
-    }
+    },
+    "Set Group Nodes to Never": "Set Group Nodes to Never",
+    "Bypass Group Nodes": "Bypass Group Nodes",
+    "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "chatHistory": {
     "cancelEdit": "Cancel",
@@ -1809,5 +1897,24 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "assetBrowser": {
+    "assets": "Assets",
+    "browseAssets": "Browse Assets",
+    "noAssetsFound": "No assets found",
+    "tryAdjustingFilters": "Try adjusting your search or filters",
+    "loadingModels": "Loading {type}...",
+    "connectionError": "Please check your connection and try again",
+    "noModelsInFolder": "No {type} available in this folder",
+    "searchAssetsPlaceholder": "Search assets...",
+    "allModels": "All Models",
+    "unknown": "Unknown",
+    "fileFormats": "File formats",
+    "baseModels": "Base models",
+    "sortBy": "Sort by",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "Recent",
+    "sortPopular": "Popular"
   }
 }

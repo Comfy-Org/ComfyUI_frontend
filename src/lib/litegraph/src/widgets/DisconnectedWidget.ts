@@ -1,11 +1,11 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { BaseWidget, type DrawWidgetOptions } from './BaseWidget'
 
 class DisconnectedWidget extends BaseWidget<IButtonWidget> {
-  constructor(widget: IButtonWidget, node: LGraphNode) {
-    super(widget, node)
+  constructor(widget: IButtonWidget) {
+    super(widget, new LGraphNode('DisconnectedPlaceholder'))
     this.disabled = true
   }
 
@@ -35,4 +35,4 @@ const conf: IButtonWidget = {
   y: 0,
   clicked: false
 }
-export const disconnectedWidget = new DisconnectedWidget(conf, {} as LGraphNode)
+export const disconnectedWidget = new DisconnectedWidget(conf)

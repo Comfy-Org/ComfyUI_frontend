@@ -22,6 +22,8 @@ dist-ssr
 *.local
 # Claude configuration
 .claude/*.local.json
+.claude/*.local.md
+.claude/*.local.txt
 CLAUDE.local.md
 
 # Editor directories and files
@@ -44,6 +46,7 @@ components.d.ts
 tests-ui/data/*
 tests-ui/ComfyUI_examples
 tests-ui/workflows/examples
+coverage/
 
 # Browser tests
 /test-results/
@@ -51,7 +54,7 @@ tests-ui/workflows/examples
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
-browser-tests/local/
+browser_tests/local/
 
 .env
 
@@ -78,8 +81,8 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
-
-
+# MCP Servers
+.playwright-mcp/*
 
 .nx/cache
 .nx/workspace-data

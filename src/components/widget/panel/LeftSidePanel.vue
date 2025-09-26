@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800">
+  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-charcoal-600">
     <PanelHeader>
       <template #icon>
         <slot name="header-icon"></slot>
@@ -40,7 +40,7 @@ import { computed } from 'vue'
 
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { NavGroupData, NavItemData } from '@/types/navTypes'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
 import PanelHeader from './PanelHeader.vue'
 

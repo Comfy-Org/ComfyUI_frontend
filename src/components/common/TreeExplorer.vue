@@ -1,7 +1,7 @@
 <template>
   <Tree
-    v-model:expandedKeys="expandedKeys"
-    v-model:selectionKeys="selectionKeys"
+    v-model:expanded-keys="expandedKeys"
+    v-model:selection-keys="selectionKeys"
     class="tree-explorer py-0 px-2 2xl:px-4"
     :class="props.class"
     :value="renderedRoot.children"

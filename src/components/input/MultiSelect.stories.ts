@@ -3,6 +3,7 @@ import type { MultiSelectProps } from 'primevue/multiselect'
 import { ref } from 'vue'
 
 import MultiSelect from './MultiSelect.vue'
+import type { SelectOption } from './types'
 
 // Combine our component props with PrimeVue MultiSelect props
 // Since we use v-bind="$attrs", all PrimeVue props are available
@@ -17,7 +18,7 @@ interface ExtendedProps extends Partial<MultiSelectProps> {
   popoverMinWidth?: string
   popoverMaxWidth?: string
   // Override modelValue type to match our Option type
-  modelValue?: Array<{ name: string; value: string }>
+  modelValue?: SelectOption[]
 }
 
 const meta: Meta<ExtendedProps> = {

@@ -27,12 +27,10 @@ jobs:
           repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
 
-      - name: Checkout ComfyUI_devtools
-        uses: actions/checkout@v4
-        with:
-          repository: 'Comfy-Org/ComfyUI_devtools'
-          path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
-          ref: 'd05fd48dd787a4192e16802d4244cfcc0e2f9684'
+      - name: Copy ComfyUI_devtools from frontend repo
+        run: |
+          mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
+          cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -229,7 +227,13 @@ jobs:
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: npx playwright test --project=${{ matrix.browser }} --reporter=html
+        run: |
+          # Run tests with both HTML and JSON reporters
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          npx playwright test --project=${{ matrix.browser }} \
+            --reporter=list \
+            --reporter=html \
+            --reporter=json
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
@@ -275,7 +279,12 @@ jobs:
           merge-multiple: true
 
       - name: Merge into HTML Report
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        run: |
+          # Generate HTML report
+          npx playwright merge-reports --reporter=html ./all-blob-reports
+          # Generate JSON report separately with explicit output path
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          npx playwright merge-reports --reporter=json ./all-blob-reports
         working-directory: ComfyUI_frontend
 
       - name: Upload HTML report

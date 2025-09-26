@@ -3,7 +3,6 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
 import {
   LGraph,
@@ -14,18 +13,23 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
+import {
+  type ComfyApiWorkflow,
+  type ComfyWorkflowJSON,
+  type ModelFile,
+  type NodeId,
+  isSubgraphDefinition
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
   ResultItem
 } from '@/schemas/apiSchema'
-import {
-  ComfyApiWorkflow,
-  type ComfyWorkflowJSON,
-  type ModelFile,
-  type NodeId,
-  isSubgraphDefinition
-} from '@/schemas/comfyWorkflowSchema'
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
@@ -43,7 +47,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -54,17 +57,14 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { ExtensionManager } from '@/types/extensionTypes'
+import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -597,7 +597,10 @@ export class ComfyApp {
         const keybindingStore = useKeybindingStore()
         const keybinding = keybindingStore.getKeybinding(keyCombo)
 
-        if (keybinding && keybinding.targetElementId === 'graph-canvas') {
+        if (
+          keybinding &&
+          keybinding.targetElementId === 'graph-canvas-container'
+        ) {
           useCommandStore().execute(keybinding.commandId)
 
           this.graph.change()
@@ -652,7 +655,7 @@ export class ComfyApp {
       if (opacity) adjustments.opacity = opacity
 
       if (useColorPaletteStore().completedActivePalette.light_theme) {
-        adjustments.lightness = 0.5
+        if (old_bgcolor) adjustments.lightness = 0.5
 
         // Lighten title bar of colored nodes on light theme
         if (old_color) {
@@ -839,24 +842,27 @@ export class ComfyApp {
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
-        // Assertion: Not yet defined in litegraph.
         const { newGraph } = e.detail
 
-        const widgetIds: Record<string, BaseDOMWidget<object | string>> = {}
         const widgetStore = useDomWidgetStore()
 
-        for (const node of newGraph.nodes)
-          for (const w of node.widgets ?? [])
-            if (w instanceof DOMWidgetImpl && w.id) widgetIds[w.id] = w
+        const activeWidgets: Record<
+          string,
+          BaseDOMWidget<object | string>
+        > = Object.fromEntries(
+          newGraph.nodes
+            .flatMap((node) => node.widgets ?? [])
+            .filter((w) => w instanceof DOMWidgetImpl)
+            .map((w) => [w.id, w])
+        )
 
-        // Assertions: UnwrapRef
-        for (const widgetId of widgetStore.widgetStates.keys()) {
-          const widgetState = widgetStore.widgetStates.get(widgetId)
-          //Unreachable, but required for type safety
-          if (!widgetState) continue
-          if (widgetId in widgetIds) {
+        for (const [
+          widgetId,
+          widgetState
+        ] of widgetStore.widgetStates.entries()) {
+          if (widgetId in activeWidgets) {
             widgetState.active = true
-            widgetState.widget = widgetIds[widgetId]
+            widgetState.widget = activeWidgets[widgetId]
           } else {
             widgetState.active = false
           }
@@ -1120,6 +1126,13 @@ export class ComfyApp {
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
     ) => {
+      if (!Array.isArray(nodes)) {
+        console.warn(
+          'Workflow nodes data is missing or invalid, skipping node processing',
+          { nodes, path }
+        )
+        return
+      }
       for (let n of nodes) {
         // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
         if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
@@ -1767,9 +1780,8 @@ export class ComfyApp {
    * Clean current state
    */
   clean() {
-    this.nodeOutputs = {}
-    const { revokeAllPreviews } = useNodeOutputStore()
-    revokeAllPreviews()
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.resetAllOutputsAndPreviews()
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null

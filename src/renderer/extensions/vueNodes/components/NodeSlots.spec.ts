@@ -5,7 +5,9 @@ import { type PropType, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import enMessages from '@/locales/en/main.json'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import NodeSlots from './NodeSlots.vue'
 
@@ -94,15 +96,17 @@ describe('NodeSlots.vue', () => {
     const inputObjNoWidget = {
       name: 'objNoWidget',
       type: 'number',
-      boundingRect: [0, 0, 0, 0]
+      boundingRect: new Float32Array([0, 0, 0, 0]),
+      link: null
     }
     const inputObjWithWidget = {
       name: 'objWithWidget',
       type: 'number',
-      boundingRect: [0, 0, 0, 0],
-      widget: { name: 'objWithWidget' }
+      boundingRect: new Float32Array([0, 0, 0, 0]),
+      widget: { name: 'objWithWidget' },
+      link: null
     }
-    const inputs = [inputObjNoWidget, inputObjWithWidget, 'stringInput']
+    const inputs: INodeInputSlot[] = [inputObjNoWidget, inputObjWithWidget]
 
     const wrapper = mountSlots(makeNodeData({ inputs }))
 
@@ -143,8 +147,19 @@ describe('NodeSlots.vue', () => {
   })
 
   it('maps outputs and passes correct indexes', () => {
-    const outputObj = { name: 'outA', type: 'any', boundingRect: [0, 0, 0, 0] }
-    const outputs = [outputObj, 'outB']
+    const outputObj = {
+      name: 'outA',
+      type: 'any',
+      boundingRect: new Float32Array([0, 0, 0, 0]),
+      links: []
+    }
+    const outputObjB = {
+      name: 'outB',
+      type: 'any',
+      boundingRect: new Float32Array([0, 0, 0, 0]),
+      links: []
+    }
+    const outputs: INodeOutputSlot[] = [outputObj, outputObjB]
 
     const wrapper = mountSlots(makeNodeData({ outputs }))
     const outputEls = wrapper
@@ -174,7 +189,7 @@ describe('NodeSlots.vue', () => {
 
   it('passes readonly to child slots', () => {
     const wrapper = mountSlots(
-      makeNodeData({ inputs: ['a'], outputs: ['b'] }),
+      makeNodeData({ inputs: [], outputs: [] }),
       /* readonly */ true
     )
     const all = [

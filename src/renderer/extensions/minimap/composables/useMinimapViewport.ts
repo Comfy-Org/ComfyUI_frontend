@@ -1,13 +1,13 @@
+import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   calculateMinimapScale,
-  calculateNodeBounds,
   enforceMinimumBounds
 } from '@/renderer/core/spatial/boundsCalculator'
+import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 
 import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
 
@@ -53,17 +53,15 @@ export function useMinimapViewport(
   }
 
   const calculateGraphBounds = (): MinimapBounds => {
-    const g = graph.value
-    if (!g || !g._nodes || g._nodes.length === 0) {
+    // Use unified data source
+    const dataSource = MinimapDataSourceFactory.create(graph.value)
+
+    if (!dataSource.hasData()) {
       return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }
     }
 
-    const bounds = calculateNodeBounds(g._nodes)
-    if (!bounds) {
-      return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }
-    }
-
-    return enforceMinimumBounds(bounds)
+    const sourceBounds = dataSource.getBounds()
+    return enforceMinimumBounds(sourceBounds)
   }
 
   const calculateScale = () => {
@@ -126,9 +124,8 @@ export function useMinimapViewport(
 
     c.setDirty(true, true)
   }
-
-  const { startSync: startViewportSync, stopSync: stopViewportSync } =
-    useCanvasTransformSync(updateViewport, { autoStart: false })
+  const { resume: startViewportSync, pause: stopViewportSync } =
+    useRafFn(updateViewport)
 
   return {
     bounds: computed(() => bounds.value),

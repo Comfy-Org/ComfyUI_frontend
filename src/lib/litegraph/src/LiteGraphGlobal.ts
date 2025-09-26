@@ -305,9 +305,14 @@ export class LiteGraphGlobal {
   /**
    * "standard": change the dragging on left mouse button click to select, enable middle-click or spacebar+left-click dragging
    * "legacy": Enable dragging on left-click (original behavior)
+   * "custom": Use leftMouseClickBehavior and mouseWheelScroll settings
    * @default "legacy"
    */
-  canvasNavigationMode: 'standard' | 'legacy' = 'legacy'
+  canvasNavigationMode: 'standard' | 'legacy' | 'custom' = 'legacy'
+
+  leftMouseClickBehavior: 'panning' | 'select' = 'panning'
+
+  mouseWheelScroll: 'panning' | 'zoom' = 'panning'
 
   /**
    * If `true`, widget labels and values will both be truncated (proportionally to size),

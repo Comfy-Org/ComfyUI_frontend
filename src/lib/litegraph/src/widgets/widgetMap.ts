@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
+  IAssetWidget,
   IBaseWidget,
   IComboWidget,
   IWidget,
@@ -7,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { toClass } from '@/lib/litegraph/src/utils/type'
 
+import { AssetWidget } from './AssetWidget'
 import { BaseWidget } from './BaseWidget'
 import { BooleanWidget } from './BooleanWidget'
 import { ButtonWidget } from './ButtonWidget'
@@ -47,6 +49,7 @@ export type WidgetTypeMap = {
   imagecompare: ImageCompareWidget
   selectbutton: SelectButtonWidget
   textarea: TextareaWidget
+  asset: AssetWidget
   [key: string]: BaseWidget
 }
 
@@ -115,6 +118,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(SelectButtonWidget, narrowedWidget, node)
     case 'textarea':
       return toClass(TextareaWidget, narrowedWidget, node)
+    case 'asset':
+      return toClass(AssetWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }
@@ -126,6 +131,11 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
 /** Type guard: Narrow **from {@link IBaseWidget}** to {@link IComboWidget}. */
 export function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
+}
+
+/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IAssetWidget}. */
+export function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
+  return widget.type === 'asset'
 }
 
 // #endregion Type Guards

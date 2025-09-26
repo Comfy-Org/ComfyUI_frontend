@@ -2,7 +2,7 @@
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
   INPUT_EXCLUDED_PROPS,
@@ -48,6 +48,11 @@ const stepValue = computed(() => {
   // Default to 'any' for unrestricted stepping
   return 0
 })
+
+// Disable grouping separators by default unless explicitly enabled by the node author
+const useGrouping = computed(() => {
+  return props.widget.options?.useGrouping === true
+})
 </script>
 
 <template>
@@ -60,6 +65,7 @@ const stepValue = computed(() => {
       size="small"
       :disabled="readonly"
       :step="stepValue"
+      :use-grouping="useGrouping"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       :pt="{
         incrementButton:

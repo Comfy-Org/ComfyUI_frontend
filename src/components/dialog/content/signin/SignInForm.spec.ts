@@ -1,5 +1,6 @@
 import { Form } from '@primevue/forms'
-import { VueWrapper, mount } from '@vue/test-utils'
+import type { VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
@@ -10,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import SignInForm from './SignInForm.vue'
 

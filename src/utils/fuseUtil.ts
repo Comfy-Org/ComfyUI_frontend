@@ -1,4 +1,5 @@
-import Fuse, { FuseOptionKey, FuseSearchOptions, IFuseOptions } from 'fuse.js'
+import type { FuseOptionKey, FuseSearchOptions, IFuseOptions } from 'fuse.js'
+import Fuse from 'fuse.js'
 
 export type SearchAuxScore = number[]
 

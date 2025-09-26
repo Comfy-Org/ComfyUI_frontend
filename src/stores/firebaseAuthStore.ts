@@ -25,8 +25,8 @@ import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { type AuthHeader } from '@/types/authTypes'
-import { operations } from '@/types/comfyRegistryTypes'
+import type { AuthHeader } from '@/types/authTypes'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -62,10 +62,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
+  googleProvider.addScope('email')
   googleProvider.setCustomParameters({
     prompt: 'select_account'
   })
   const githubProvider = new GithubAuthProvider()
+  githubProvider.addScope('user:email')
   githubProvider.setCustomParameters({
     prompt: 'select_account'
   })

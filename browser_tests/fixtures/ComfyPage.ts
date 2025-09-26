@@ -5,13 +5,14 @@ import dotenv from 'dotenv'
 import * as fs from 'fs'
 
 import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../src/schemas/comfyWorkflowSchema'
+import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
+import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
@@ -144,6 +145,7 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly vueNodes: VueNodeHelpers
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -172,6 +174,7 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
+    this.vueNodes = new VueNodeHelpers(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -1421,7 +1424,7 @@ export class ComfyPage {
   }
 
   async closeDialog() {
-    await this.page.locator('.p-dialog-close-button').click()
+    await this.page.locator('.p-dialog-close-button').click({ force: true })
     await expect(this.page.locator('.p-dialog')).toBeHidden()
   }
 
@@ -1640,7 +1643,7 @@ export const comfyPageFixture = base.extend<{
 
     try {
       await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.UseNewMenu': 'Top',
         // Hide canvas menu/info/selection toolbox by default.
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.Graph.CanvasMenu': false,

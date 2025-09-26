@@ -2,7 +2,7 @@ import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
-import { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 
 vi.mock('axios', () => {
   return {
@@ -20,7 +20,7 @@ vi.mock('@/i18n', () => ({
   }
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     settings: {}
   })

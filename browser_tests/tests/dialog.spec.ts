@@ -1,7 +1,12 @@
-import { Locator, expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { Keybinding } from '../../src/schemas/keyBindingSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
 
 test.describe('Load workflow warning', () => {
   test('Should display a warning when loading a workflow with missing nodes', async ({

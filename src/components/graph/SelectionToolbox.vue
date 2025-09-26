@@ -8,28 +8,37 @@
       <Panel
         v-if="visible"
         class="rounded-lg selection-toolbox pointer-events-auto"
+        :style="`backgroundColor: ${containerStyles.backgroundColor};`"
         :pt="{
           header: 'hidden',
-          content: 'p-0 flex flex-row'
+          content: 'p-1 h-10 flex flex-row gap-1'
         }"
-        @wheel="canvasInteractions.handleWheel"
+        @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <ExecuteButton />
-        <ColorPickerButton />
-        <BypassButton />
-        <PinButton />
-        <Load3DViewerButton />
-        <MaskEditorButton />
-        <ConvertToSubgraphButton />
-        <PublishSubgraphButton />
-        <DeleteButton />
-        <RefreshSelectionButton />
+        <DeleteButton v-if="showDelete" />
+        <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
+        <InfoButton v-if="showInfoButton" />
+
+        <ColorPickerButton v-if="showColorPicker" />
+        <FrameNodes v-if="showFrameNodes" />
+        <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
+        <PublishSubgraphButton v-if="showPublishSubgraph" />
+        <MaskEditorButton v-if="showMaskEditor" />
+        <VerticalDivider
+          v-if="showAnyPrimaryActions && showAnyControlActions"
+        />
+
+        <BypassButton v-if="showBypass" />
+        <RefreshSelectionButton v-if="showRefresh" />
+        <Load3DViewerButton v-if="showLoad3DViewer" />
+
         <ExtensionCommandButton
           v-for="command in extensionToolboxCommands"
           :key="command.id"
           :command="command"
         />
-        <HelpButton />
+        <ExecuteButton v-if="showExecute" />
+        <MoreOptions />
       </Panel>
     </Transition>
   </div>
@@ -45,22 +54,29 @@ import ConvertToSubgraphButton from '@/components/graph/selectionToolbox/Convert
 import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
-import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
+import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
-import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
-import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
+
+import FrameNodes from './selectionToolbox/FrameNodes.vue'
+import MoreOptions from './selectionToolbox/MoreOptions.vue'
+import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
+const minimap = useMinimap()
+const containerStyles = minimap.containerStyles
 
 const toolboxRef = ref<HTMLElement | undefined>()
 const { visible } = useSelectionToolboxPosition(toolboxRef)
@@ -80,6 +96,44 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     .map((commandId) => commandStore.getCommand(commandId))
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })
+
+const {
+  hasAnySelection,
+  hasMultipleSelection,
+  isSingleNode,
+  isSingleSubgraph,
+  isSingleImageNode,
+  hasAny3DNodeSelected,
+  hasOutputNodesSelected,
+  nodeDef
+} = useSelectionState()
+const showInfoButton = computed(() => !!nodeDef.value)
+
+const showColorPicker = computed(() => hasAnySelection.value)
+const showConvertToSubgraph = computed(() => hasAnySelection.value)
+const showFrameNodes = computed(() => hasMultipleSelection.value)
+const showPublishSubgraph = computed(() => isSingleSubgraph.value)
+
+const showBypass = computed(
+  () =>
+    isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
+)
+const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
+const showMaskEditor = computed(() => isSingleImageNode.value)
+
+const showDelete = computed(() => hasAnySelection.value)
+const showRefresh = computed(() => hasAnySelection.value)
+const showExecute = computed(() => hasOutputNodesSelected.value)
+
+const showAnyPrimaryActions = computed(
+  () =>
+    showColorPicker.value ||
+    showConvertToSubgraph.value ||
+    showFrameNodes.value ||
+    showPublishSubgraph.value
+)
+
+const showAnyControlActions = computed(() => showBypass.value)
 </script>
 
 <style scoped>

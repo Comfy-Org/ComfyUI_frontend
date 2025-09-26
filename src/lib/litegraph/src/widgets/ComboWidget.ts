@@ -45,7 +45,7 @@ export class ComboWidget
     return typeof this.value === 'number' ? String(this.value) : this.value
   }
 
-  getValues(node: LGraphNode): Values {
+  private getValues(node: LGraphNode): Values {
     const { values } = this.options
     if (values == null) throw new Error('[ComboWidget]: values is required')
 
@@ -57,7 +57,7 @@ export class ComboWidget
    * @param increment `true` if checking the use of the increment button, `false` for decrement
    * @returns `true` if the value is at the given index, otherwise `false`.
    */
-  canUseButton(increment: boolean): boolean {
+  private canUseButton(increment: boolean): boolean {
     const { values } = this.options
     // If using legacy duck-typed method, false is the most permissive return value
     if (typeof values === 'function') return false
@@ -93,7 +93,7 @@ export class ComboWidget
     this.tryChangeValue(-1, options)
   }
 
-  tryChangeValue(delta: number, options: WidgetEventOptions): void {
+  private tryChangeValue(delta: number, options: WidgetEventOptions): void {
     const values = this.getValues(options.node)
     const indexedValues = toArray(values)
 

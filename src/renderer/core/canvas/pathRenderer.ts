@@ -12,7 +12,7 @@ export interface Point {
   y: number
 }
 
-export type Direction = 'left' | 'right' | 'up' | 'down'
+export type Direction = 'left' | 'right' | 'up' | 'down' | 'none'
 export type RenderMode = 'spline' | 'straight' | 'linear'
 export type ArrowShape = 'triangle' | 'circle' | 'square'
 
@@ -70,7 +70,7 @@ export interface RenderContext {
   highlightedIds?: Set<string>
 }
 
-export interface DragLinkData {
+interface DragLinkData {
   /** Fixed end - the slot being dragged from */
   fixedPoint: Point
   fixedDirection: Direction
@@ -255,6 +255,8 @@ export class CanvasPathRenderer {
       case 'down':
         innerA.y += l
         break
+      case 'none':
+        break
     }
 
     switch (endDir) {
@@ -269,6 +271,8 @@ export class CanvasPathRenderer {
         break
       case 'down':
         innerB.y += l
+        break
+      case 'none':
         break
     }
 
@@ -306,6 +310,8 @@ export class CanvasPathRenderer {
       case 'down':
         innerA.y += l
         break
+      case 'none':
+        break
     }
 
     switch (endDir) {
@@ -320,6 +326,8 @@ export class CanvasPathRenderer {
         break
       case 'down':
         innerB.y += l
+        break
+      case 'none':
         break
     }
 
@@ -399,6 +407,9 @@ export class CanvasPathRenderer {
         return { x: 0, y: -distance }
       case 'down':
         return { x: 0, y: distance }
+      case 'none':
+      default:
+        return { x: 0, y: 0 }
     }
   }
 
@@ -473,6 +484,8 @@ export class CanvasPathRenderer {
       case 'down':
         pa.y += dist * factor
         break
+      case 'none':
+        break
     }
 
     switch (endDirection) {
@@ -487,6 +500,8 @@ export class CanvasPathRenderer {
         break
       case 'down':
         pb.y += dist * factor
+        break
+      case 'none':
         break
     }
 
@@ -608,6 +623,9 @@ export class CanvasPathRenderer {
         return 'down'
       case 'down':
         return 'up'
+      case 'none':
+      default:
+        return 'none'
     }
   }
 

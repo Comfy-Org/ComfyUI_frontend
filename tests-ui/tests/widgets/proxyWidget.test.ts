@@ -1,16 +1,16 @@
 import { describe, expect, test, vi } from 'vitest'
 
+import '@/core/graph/subgraph/proxyWidget'
 //import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
 import { LGraphNode, type SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import '@/scripts/proxyWidget'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '../litegraph/subgraph/fixtures/subgraphHelpers'
 
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
 }))
 vi.mock('@/stores/domWidgetStore', () => ({

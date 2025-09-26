@@ -76,6 +76,7 @@ export type IWidget =
   | IImageCompareWidget
   | ISelectButtonWidget
   | ITextareaWidget
+  | IAssetWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -221,6 +222,12 @@ export interface ISelectButtonWidget
 /** Textarea widget for multi-line text input */
 export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
   type: 'textarea'
+  value: string
+}
+
+export interface IAssetWidget
+  extends IBaseWidget<string, 'asset', IWidgetOptions<string[]>> {
+  type: 'asset'
   value: string
 }
 

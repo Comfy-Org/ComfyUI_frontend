@@ -21,7 +21,7 @@
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
-        v-model:modelValue="formValue"
+        v-model:model-value="formValue"
         :aria-labelledby="`${props.id}-label`"
         v-bind="getFormAttrs(props.item)"
       />
@@ -40,10 +40,11 @@ import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
+import FormRadioGroup from '@/components/common/FormRadioGroup.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
-import { FormItem } from '@/types/settingTypes'
+import type { FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<any>('formValue')
 const props = defineProps<{
@@ -66,6 +67,7 @@ function getFormAttrs(item: FormItem) {
   }
   switch (item.type) {
     case 'combo':
+    case 'radio':
       attrs['options'] =
         typeof item.options === 'function'
           ? // @ts-expect-error: Audit and deprecate usage of legacy options type:
@@ -97,6 +99,8 @@ function getFormComponent(item: FormItem): Component {
       return InputKnob
     case 'combo':
       return Select
+    case 'radio':
+      return FormRadioGroup
     case 'image':
       return FormImageUpload
     case 'color':

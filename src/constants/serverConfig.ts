@@ -1,3 +1,4 @@
+import type { FormItem } from '@/platform/settings/types'
 import {
   CrossAttentionMethod,
   CudaMalloc,
@@ -7,7 +8,6 @@ import {
   LogLevel,
   VramManagement
 } from '@/types/serverArgs'
-import { FormItem } from '@/types/settingTypes'
 
 export type ServerConfigValue = string | number | true | null | undefined
 
