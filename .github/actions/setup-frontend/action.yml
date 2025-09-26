@@ -9,84 +9,49 @@ inputs:
     description: 'Reference to use for ComfyUI_devtools'
     required: false
     default: 'main'
-  comfyui_ref:
-    description: 'Reference to use for ComfyUI repository'
-    required: false
-    default: 'master'
-  frontend_path:
-    description: 'Path to the frontend repository (if already checked out)'
-    required: false
-    default: 'ComfyUI_frontend'
-  comfyui_path:
-    description: 'Path to ComfyUI repository'
-    required: false
-    default: 'ComfyUI'
-  node_version:
-    description: 'Node.js version to use'
-    required: false
-    default: 'lts/*'
-  python_version:
-    description: 'Python version to use'
-    required: false
-    default: '3.10'
-  pnpm_version:
-    description: 'pnpm version to use'
-    required: false
-    default: '10'
-  skip_checkout:
-    description: 'Skip repository checkouts (useful if repos are already present)'
-    required: false
-    default: 'false'
-  skip_server_start:
-    description: 'Skip starting the ComfyUI server'
-    required: false
-    default: 'false'
 runs:
   using: 'composite'
   steps:
     - name: Checkout ComfyUI
-      if: inputs.skip_checkout != 'true'
       uses: actions/checkout@v4
       with:
         repository: 'comfyanonymous/ComfyUI'
-        path: ${{ inputs.comfyui_path }}
-        ref: ${{ inputs.comfyui_ref }}
+        path: 'ComfyUI'
+        ref: 'master'
 
     - name: Checkout ComfyUI_frontend
-      if: inputs.skip_checkout != 'true'
       uses: actions/checkout@v4
       with:
         repository: 'Comfy-Org/ComfyUI_frontend'
-        path: ${{ inputs.frontend_path }}
+        path: 'ComfyUI_frontend'
 
     - name: Checkout ComfyUI_devtools
-      if: inputs.skip_checkout != 'true'
       uses: actions/checkout@v4
       with:
         repository: 'Comfy-Org/ComfyUI_devtools'
-        path: ${{ inputs.comfyui_path }}/custom_nodes/ComfyUI_devtools
+        path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
         ref: ${{ inputs.devtools_ref }}
 
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: ${{ inputs.pnpm_version }}
+        version: 10
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ inputs.node_version }}
+        node-version: 'lts/*'
         cache: 'pnpm'
-        cache-dependency-path: '${{ inputs.frontend_path }}/pnpm-lock.yaml'
+        cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
 
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ inputs.python_version }}
+        python-version: '3.10'
 
     - name: Install Python requirements
       shell: bash
-      working-directory: ${{ inputs.comfyui_path }}
+      working-directory: ComfyUI
       run: |
         python -m pip install --upgrade pip
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
@@ -95,15 +60,14 @@ runs:
 
     - name: Build & Install ComfyUI_frontend
       shell: bash
-      working-directory: ${{ inputs.frontend_path }}
+      working-directory: ComfyUI_frontend
       run: |
         pnpm install --frozen-lockfile
         pnpm build
 
     - name: Start ComfyUI server
-      if: inputs.skip_server_start != 'true'
       shell: bash
-      working-directory: ${{ inputs.comfyui_path }}
+      working-directory: ComfyUI
       run: |
-        python main.py --cpu --multi-user --front-end-root ../${{ inputs.frontend_path }}/dist ${{ inputs.extra_server_params }} &
+        python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist ${{ inputs.extra_server_params }} &
         wait-for-it --service 127.0.0.1:8188 -t 600
