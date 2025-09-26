@@ -53,12 +53,9 @@ export interface LinkRenderContext {
 }
 
 export class LitegraphLinkAdapter {
-  private readonly pathRenderer: CanvasPathRenderer
-  public enableLayoutStoreWrites = true
+  private readonly pathRenderer = new CanvasPathRenderer()
 
-  constructor() {
-    this.pathRenderer = new CanvasPathRenderer()
-  }
+  constructor(public readonly enableLayoutStoreWrites = true) {}
 
   /**
    * Convert LinkDirection enum to Direction string
