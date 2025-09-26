@@ -206,3 +206,148 @@ describe('WidgetInputNumberInput Grouping Behavior', () => {
     expect(input.value).not.toContain(',')
   })
 })
+
+describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
+  const SAFE_INTEGER_MAX = Number.MAX_SAFE_INTEGER // 9,007,199,254,740,991
+  const UNSAFE_LARGE_INTEGER = 18446744073709552000 // Example seed value that exceeds safe range
+
+  it('shows buttons for safe integer values', () => {
+    const widget = createMockWidget(1000, 'int')
+    const wrapper = mountComponent(widget, 1000)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
+  })
+
+  it('shows buttons for values at safe integer limit', () => {
+    const widget = createMockWidget(SAFE_INTEGER_MAX, 'int')
+    const wrapper = mountComponent(widget, SAFE_INTEGER_MAX)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
+  })
+
+  it('hides buttons for unsafe large integer values', () => {
+    const widget = createMockWidget(UNSAFE_LARGE_INTEGER, 'int')
+    const wrapper = mountComponent(widget, UNSAFE_LARGE_INTEGER)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
+  })
+
+  it('hides buttons for unsafe negative integer values', () => {
+    const unsafeNegative = -UNSAFE_LARGE_INTEGER
+    const widget = createMockWidget(unsafeNegative, 'int')
+    const wrapper = mountComponent(widget, unsafeNegative)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
+  })
+
+  it('shows tooltip for disabled buttons due to precision limits', () => {
+    const widget = createMockWidget(UNSAFE_LARGE_INTEGER, 'int')
+    const wrapper = mountComponent(widget, UNSAFE_LARGE_INTEGER)
+
+    // Check that tooltip wrapper div exists
+    const tooltipDiv = wrapper.find('div[v-tooltip]')
+    expect(tooltipDiv.exists()).toBe(true)
+  })
+
+  it('does not show tooltip for safe integer values', () => {
+    const widget = createMockWidget(1000, 'int')
+    const wrapper = mountComponent(widget, 1000)
+
+    // For safe values, tooltip should not be set (computed returns null)
+    const tooltipDiv = wrapper.find('div')
+    expect(tooltipDiv.attributes('v-tooltip')).toBeUndefined()
+  })
+
+  it('handles edge case of zero value', () => {
+    const widget = createMockWidget(0, 'int')
+    const wrapper = mountComponent(widget, 0)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
+  })
+
+  it('correctly identifies safe vs unsafe integers using Number.isSafeInteger', () => {
+    // Test the JavaScript behavior our component relies on
+    expect(Number.isSafeInteger(SAFE_INTEGER_MAX)).toBe(true)
+    expect(Number.isSafeInteger(SAFE_INTEGER_MAX + 1)).toBe(false)
+    expect(Number.isSafeInteger(UNSAFE_LARGE_INTEGER)).toBe(false)
+    expect(Number.isSafeInteger(-SAFE_INTEGER_MAX)).toBe(true)
+    expect(Number.isSafeInteger(-SAFE_INTEGER_MAX - 1)).toBe(false)
+  })
+
+  it('maintains readonly behavior even for unsafe values', () => {
+    const widget = createMockWidget(UNSAFE_LARGE_INTEGER, 'int')
+    const wrapper = mountComponent(widget, UNSAFE_LARGE_INTEGER, true)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('disabled')).toBe(true)
+    expect(inputNumber.props('showButtons')).toBe(false) // Still hidden due to unsafe value
+  })
+
+  it('handles floating point values correctly', () => {
+    const safeFloat = 1000.5
+    const widget = createMockWidget(safeFloat, 'float')
+    const wrapper = mountComponent(widget, safeFloat)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
+  })
+
+  it('hides buttons for unsafe floating point values', () => {
+    const unsafeFloat = UNSAFE_LARGE_INTEGER + 0.5
+    const widget = createMockWidget(unsafeFloat, 'float')
+    const wrapper = mountComponent(widget, unsafeFloat)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
+  })
+})
+
+describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
+  it('handles null/undefined model values gracefully', () => {
+    const widget = createMockWidget(0, 'int')
+    // Mount with undefined as modelValue
+    const wrapper = mount(WidgetInputNumberInput, {
+      global: {
+        plugins: [PrimeVue],
+        components: { InputNumber }
+      },
+      props: {
+        widget,
+        modelValue: undefined as any
+      }
+    })
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true) // Should default to safe behavior
+  })
+
+  it('handles NaN values gracefully', () => {
+    const widget = createMockWidget(NaN, 'int')
+    const wrapper = mountComponent(widget, NaN)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    // NaN is not a safe integer, so buttons should be hidden
+    expect(inputNumber.props('showButtons')).toBe(false)
+  })
+
+  it('handles Infinity values', () => {
+    const widget = createMockWidget(Infinity, 'int')
+    const wrapper = mountComponent(widget, Infinity)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
+  })
+
+  it('handles negative Infinity values', () => {
+    const widget = createMockWidget(-Infinity, 'int')
+    const wrapper = mountComponent(widget, -Infinity)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
+  })
+})
