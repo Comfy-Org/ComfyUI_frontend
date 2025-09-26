@@ -1,13 +1,13 @@
+import {
+  type ProxyWidgetsProperty,
+  parseProxyWidgets
+} from '@/core/schemas/proxyWidget'
 import type {
   IContextMenuValue,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/schemas/proxyWidget'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 function pushWidgets(node: SubgraphNode, ...widgets: [string, string][]) {

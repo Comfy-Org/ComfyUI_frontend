@@ -6,14 +6,14 @@ import draggable from 'vuedraggable'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/components/selectionbar/SubgraphNodeWidget.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import {
+  type ProxyWidgetsProperty,
+  parseProxyWidgets
+} from '@/core/schemas/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/schemas/proxyWidget'
 
 type WidgetItem = [LGraphNode, IBaseWidget]
 
