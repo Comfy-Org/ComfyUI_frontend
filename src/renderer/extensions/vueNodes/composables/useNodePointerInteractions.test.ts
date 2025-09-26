@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -16,7 +16,8 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   useNodeLayout: () => ({
     startDrag: vi.fn(),
     endDrag: vi.fn().mockResolvedValue(undefined),
-    handleDrag: vi.fn().mockResolvedValue(undefined)
+    handleDrag: vi.fn().mockResolvedValue(undefined),
+    isDragging: ref(false)
   })
 }))
 
@@ -73,6 +74,126 @@ describe('useNodePointerInteractions', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  // BDD-style tests for the new Vue-native coordination system
+  describe('when user interacts with node', () => {
+    describe('using left mouse button', () => {
+      it('should coordinate all drag states synchronously', () => {
+        const mockNodeData = createMockVueNodeData()
+        const mockOnPointerUp = vi.fn()
+
+        const {
+          pointerHandlers,
+          dragCoordination,
+          isActivelyDragging,
+          shouldHideSelectionUI
+        } = useNodePointerInteractions(ref(mockNodeData), mockOnPointerUp)
+
+        // Verify initial state coordination
+        expect(dragCoordination.hasPointerDown).toBe(false)
+        expect(dragCoordination.layoutEngaged).toBe(false)
+        expect(isActivelyDragging.value).toBe(false)
+        expect(shouldHideSelectionUI.value).toBe(false)
+
+        // Start drag interaction
+        const leftClick = createPointerEvent('pointerdown', { button: 0 })
+        pointerHandlers.onPointerdown(leftClick)
+
+        // Verify coordinated state changes are synchronized
+        expect(dragCoordination.hasPointerDown).toBe(true)
+        expect(dragCoordination.layoutEngaged).toBe(true)
+        expect(dragCoordination.startPosition).toEqual({ x: 100, y: 100 })
+        expect(isActivelyDragging.value).toBe(true)
+        expect(shouldHideSelectionUI.value).toBe(true)
+      })
+    })
+
+    describe('during context menu interrupt', () => {
+      it('should cleanly coordinate cleanup across all systems', () => {
+        const mockNodeData = createMockVueNodeData()
+        const mockOnPointerUp = vi.fn()
+
+        const {
+          pointerHandlers,
+          dragCoordination,
+          isActivelyDragging,
+          shouldHideSelectionUI
+        } = useNodePointerInteractions(ref(mockNodeData), mockOnPointerUp)
+
+        // Start drag state
+        pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
+
+        // Verify drag is active
+        expect(isActivelyDragging.value).toBe(true)
+        expect(shouldHideSelectionUI.value).toBe(true)
+
+        // Context menu should clean up all coordinated state
+        const contextMenu = createMouseEvent('contextmenu')
+        pointerHandlers.onContextmenu(contextMenu)
+
+        // Verify all state is cleanly reset without race conditions
+        expect(dragCoordination.hasPointerDown).toBe(false)
+        expect(dragCoordination.layoutEngaged).toBe(false)
+        expect(isActivelyDragging.value).toBe(false)
+        expect(shouldHideSelectionUI.value).toBe(false)
+      })
+    })
+  })
+
+  describe('reactive state coordination', () => {
+    it('should derive UI states from single coordination source', () => {
+      const mockNodeData = createMockVueNodeData()
+      const mockOnPointerUp = vi.fn()
+
+      const {
+        pointerHandlers,
+        dragCoordination,
+        isActivelyDragging,
+        shouldHideSelectionUI,
+        dragStyle
+      } = useNodePointerInteractions(ref(mockNodeData), mockOnPointerUp)
+
+      // Initially all derived states should be false/default
+      expect(isActivelyDragging.value).toBe(false)
+      expect(shouldHideSelectionUI.value).toBe(false)
+      expect(dragStyle.value.cursor).toBe('grab')
+
+      // Trigger coordination through actual pointer event to test derivation
+      pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
+
+      // All derived states should update reactively from single coordination source
+      expect(dragCoordination.hasPointerDown).toBe(true)
+      expect(dragCoordination.layoutEngaged).toBe(true)
+      expect(isActivelyDragging.value).toBe(true)
+      expect(shouldHideSelectionUI.value).toBe(true)
+      expect(dragStyle.value.cursor).toBe('grabbing')
+    })
+
+    it('should prevent state desynchronization between systems', async () => {
+      const mockNodeData = createMockVueNodeData()
+      const mockOnPointerUp = vi.fn()
+      const { layoutStore } = await import(
+        '@/renderer/core/layout/store/layoutStore'
+      )
+
+      const { pointerHandlers, shouldHideSelectionUI } =
+        useNodePointerInteractions(ref(mockNodeData), mockOnPointerUp)
+
+      // Start drag to trigger coordination
+      pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
+
+      // Verify both systems are synchronized through coordination
+      expect(shouldHideSelectionUI.value).toBe(true)
+      expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+      // End drag via context menu
+      pointerHandlers.onContextmenu(createMouseEvent('contextmenu'))
+
+      // Verify both systems remain synchronized after cleanup
+      expect(shouldHideSelectionUI.value).toBe(false)
+      expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    })
   })
 
   it('should only start drag on left-click', async () => {
@@ -200,19 +321,18 @@ describe('useNodePointerInteractions', () => {
       '@/renderer/core/layout/store/layoutStore'
     )
 
-    const { pointerHandlers } = useNodePointerInteractions(
-      ref(mockNodeData),
-      mockOnPointerUp
-    )
+    const { pointerHandlers, shouldHideSelectionUI } =
+      useNodePointerInteractions(ref(mockNodeData), mockOnPointerUp)
 
-    // Start drag
+    // Start drag - Vue-native coordination should sync all states
     pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
-    await nextTick()
     expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+    expect(shouldHideSelectionUI.value).toBe(true)
 
-    // End drag
-    pointerHandlers.onPointercancel(createPointerEvent('pointercancel'))
-    await nextTick()
+    // Context menu during drag should clean up via coordination
+    const contextMenu = createMouseEvent('contextmenu')
+    pointerHandlers.onContextmenu(contextMenu)
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    expect(shouldHideSelectionUI.value).toBe(false)
   })
 })

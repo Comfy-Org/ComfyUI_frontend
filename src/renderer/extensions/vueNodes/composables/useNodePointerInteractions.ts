@@ -1,12 +1,26 @@
-import { type MaybeRefOrGetter, computed, onUnmounted, ref, toValue } from 'vue'
+import {
+  type MaybeRefOrGetter,
+  computed,
+  onUnmounted,
+  reactive,
+  readonly,
+  toValue
+} from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 
+// Position type for better type safety and consistency
+interface Position {
+  x: number
+  y: number
+}
+
 // Treat tiny pointer jitter as a click, not a drag
 const DRAG_THRESHOLD_PX = 4
+const DRAG_THRESHOLD_SQUARED = DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX
 
 export function useNodePointerInteractions(
   nodeDataMaybe: MaybeRefOrGetter<VueNodeData | null>,
@@ -34,46 +48,62 @@ export function useNodePointerInteractions(
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
 
-  // Drag state for styling
-  const isDragging = ref(false)
+  // Vue-native reactive coordination object (single source of truth)
+  const dragCoordination = reactive({
+    hasPointerDown: false,
+    startPosition: { x: 0, y: 0 } as Position,
+    layoutEngaged: false
+  })
+
+  // Derived states for different consumers (Vue-native "state machine")
+  const isActivelyDragging = computed(
+    () => dragCoordination.hasPointerDown && dragCoordination.layoutEngaged
+  )
+  const shouldHideSelectionUI = computed(() => isActivelyDragging.value)
   const dragStyle = computed(() => ({
-    cursor: isDragging.value ? 'grabbing' : 'grab'
+    cursor: isActivelyDragging.value ? 'grabbing' : 'grab'
   }))
-  const startPosition = ref({ x: 0, y: 0 })
+
+  // Single coordination function replaces three separate state updates
+  const coordinateStateChange = (changes: Partial<typeof dragCoordination>) => {
+    Object.assign(dragCoordination, changes)
+
+    // Sync to layout store for UI consumers (computed reactivity handles timing)
+    layoutStore.isDraggingVueNodes.value = shouldHideSelectionUI.value
+  }
 
   const handlePointerDown = (event: PointerEvent) => {
     if (!nodeData.value) {
       console.warn(
-        'LGraphNode: nodeData is null/undefined in handlePointerDown'
+        'useNodePointerInteractions: nodeData is null in handlePointerDown'
       )
       return
     }
 
-    // Only start drag on left-click (button 0)
-    if (event.button !== 0) {
-      return
-    }
+    if (event.button !== 0) return
 
-    // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     if (!shouldHandleNodePointerEvents.value) {
       forwardEventToCanvas(event)
       return
     }
 
-    // Start drag using layout system
-    isDragging.value = true
-
-    // Set Vue node dragging state for selection toolbox
-    layoutStore.isDraggingVueNodes.value = true
+    // Coordinate state change across all systems
+    coordinateStateChange({
+      hasPointerDown: true,
+      startPosition: { x: event.clientX, y: event.clientY },
+      layoutEngaged: false // Will be set to true when startDrag succeeds
+    })
 
     startDrag(event)
-    startPosition.value = { x: event.clientX, y: event.clientY }
+
+    // Mark layout as engaged after successful start
+    coordinateStateChange({ layoutEngaged: true })
   }
 
   const handlePointerMove = (event: PointerEvent) => {
-    if (isDragging.value) {
-      void handleDrag(event)
-    }
+    if (!isActivelyDragging.value) return
+
+    handleDrag(event)
   }
 
   /**
@@ -81,8 +111,10 @@ export function useNodePointerInteractions(
    * Ensures consistent cleanup across all drag termination scenarios
    */
   const cleanupDragState = () => {
-    isDragging.value = false
-    layoutStore.isDraggingVueNodes.value = false
+    coordinateStateChange({
+      hasPointerDown: false,
+      layoutEngaged: false
+    })
   }
 
   /**
@@ -93,7 +125,7 @@ export function useNodePointerInteractions(
     try {
       await endDrag(event)
     } catch (error) {
-      console.error('Error during endDrag:', error)
+      console.error('useNodePointerInteractions: Error during endDrag -', error)
     } finally {
       cleanupDragState()
     }
@@ -104,28 +136,31 @@ export function useNodePointerInteractions(
    */
   const handleDragTermination = (event: PointerEvent, errorContext: string) => {
     safeDragEnd(event).catch((error) => {
-      console.error(`Failed to complete ${errorContext}:`, error)
+      console.error(
+        `useNodePointerInteractions: Failed to complete ${errorContext} -`,
+        error
+      )
       cleanupDragState() // Fallback cleanup
     })
   }
 
   const handlePointerUp = (event: PointerEvent) => {
-    if (isDragging.value) {
+    if (isActivelyDragging.value) {
       handleDragTermination(event, 'drag end')
     }
 
-    // Don't emit node-click when canvas is in panning mode - forward to canvas instead
     if (!shouldHandleNodePointerEvents.value) {
       forwardEventToCanvas(event)
       return
     }
 
-    // Emit node-click for selection handling in GraphCanvas
-    const dx = event.clientX - startPosition.value.x
-    const dy = event.clientY - startPosition.value.y
-    const wasDragging = Math.hypot(dx, dy) > DRAG_THRESHOLD_PX
-
     if (!nodeData?.value) return
+
+    // Emit node-click for selection handling in GraphCanvas
+    const dx = event.clientX - dragCoordination.startPosition.x
+    const dy = event.clientY - dragCoordination.startPosition.y
+    const wasDragging = dx * dx + dy * dy > DRAG_THRESHOLD_SQUARED
+
     onPointerUp(event, nodeData.value, wasDragging)
   }
 
@@ -134,7 +169,8 @@ export function useNodePointerInteractions(
    * Ensures drag state is properly cleaned up when pointer interaction is interrupted
    */
   const handlePointerCancel = (event: PointerEvent) => {
-    if (!isDragging.value) return
+    if (!isActivelyDragging.value) return
+
     handleDragTermination(event, 'drag cancellation')
   }
 
@@ -143,7 +179,7 @@ export function useNodePointerInteractions(
    * Cancels the current drag to prevent context menu from appearing while dragging
    */
   const handleContextMenu = (event: MouseEvent) => {
-    if (!isDragging.value) return
+    if (!isActivelyDragging.value) return
 
     event.preventDefault()
     // Simply cleanup state without calling endDrag to avoid synthetic event creation
@@ -152,7 +188,8 @@ export function useNodePointerInteractions(
 
   // Cleanup on unmount to prevent resource leaks
   onUnmounted(() => {
-    if (!isDragging.value) return
+    if (!isActivelyDragging.value) return
+
     cleanupDragState()
   })
 
@@ -165,8 +202,12 @@ export function useNodePointerInteractions(
   }
 
   return {
-    isDragging,
+    isDragging: isActivelyDragging, // For backwards compatibility
     dragStyle,
-    pointerHandlers
+    pointerHandlers,
+    // New Vue-native reactive coordination
+    dragCoordination: readonly(dragCoordination),
+    isActivelyDragging,
+    shouldHideSelectionUI
   }
 }
