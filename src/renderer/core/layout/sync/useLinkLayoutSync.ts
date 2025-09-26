@@ -1,5 +1,4 @@
 import { tryOnScopeDispose } from '@vueuse/core'
-import log from 'loglevel'
 import { computed, onWatcherCleanup, ref, toValue, watchEffect } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -13,14 +12,11 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 
-const logger = log.getLogger('useLinkLayoutSync')
-
 export function useLinkLayoutSync() {
   const canvasRef = ref<LGraphCanvas>()
   const graphRef = computed(() => canvasRef.value?.graph)
-  const offscreenCtxRef = ref<CanvasRenderingContext2D>()
-  const adapterRef = ref<LitegraphLinkAdapter>()
   const unsubscribeLayoutChange = ref<() => void>()
+  const adapter = new LitegraphLinkAdapter()
 
   /**
    * Build link render context from canvas properties
@@ -63,10 +59,9 @@ export function useLinkLayoutSync() {
    * - No dragging state handling (pure geometry computation)
    */
   function recomputeLinkById(linkId: number): void {
+    const canvas = toValue(canvasRef)
     const graph = toValue(graphRef)
-    const adapter = toValue(adapterRef)
-    const offscreenCtx = toValue(offscreenCtxRef)
-    if (!graph || !adapter || !offscreenCtx) return
+    if (!graph || !canvas) return
 
     const link = graph.links.get(linkId)
     if (!link || link.id === -1) return // Skip floating/temp links
@@ -124,7 +119,7 @@ export function useLinkLayoutSync() {
 
         // Render segment to this reroute
         adapter.renderLinkDirect(
-          offscreenCtx,
+          canvas.ctx,
           segmentStartPos,
           reroute.pos,
           link,
@@ -160,7 +155,7 @@ export function useLinkLayoutSync() {
       ]
 
       adapter.renderLinkDirect(
-        offscreenCtx,
+        canvas.ctx,
         lastReroute.pos,
         endPos,
         link,
@@ -178,7 +173,7 @@ export function useLinkLayoutSync() {
     } else {
       // No reroutes - render direct link
       adapter.renderLinkDirect(
-        offscreenCtx,
+        canvas.ctx,
         startPos,
         endPos,
         link,
@@ -256,17 +251,6 @@ export function useLinkLayoutSync() {
     canvasRef.value = canvasInstance
     if (!canvasInstance.graph) return
 
-    // Create offscreen canvas context
-    const offscreenCanvas = document.createElement('canvas')
-    offscreenCtxRef.value = offscreenCanvas.getContext('2d') ?? undefined
-    if (!offscreenCtxRef.value) {
-      logger.error('Failed to create offscreen canvas context')
-      return
-    }
-
-    // Create dedicated adapter with layout writes enabled
-    adapterRef.value = new LitegraphLinkAdapter()
-
     // Initial computation for all existing links
     for (const link of canvasInstance.graph._links.values()) {
       if (link.id !== -1) {
@@ -340,8 +324,6 @@ export function useLinkLayoutSync() {
     unsubscribeLayoutChange.value?.()
     unsubscribeLayoutChange.value = undefined
     canvasRef.value = undefined
-    offscreenCtxRef.value = undefined
-    adapterRef.value = undefined
   }
 
   tryOnScopeDispose(stop)
