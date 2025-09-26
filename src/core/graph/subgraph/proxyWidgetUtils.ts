@@ -4,7 +4,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
-import { parseProxyWidgets } from '@/schemas/proxyWidget'
+import {
+  type ProxyWidgetsProperty,
+  parseProxyWidgets
+} from '@/schemas/proxyWidget'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 function pushWidgets(node: SubgraphNode, ...widgets: [string, string][]) {
@@ -89,4 +92,35 @@ export function addWidgetPromotionOptions(
       }
     })
   }
+}
+//FIXME: This currently has ugly duplication with the sidebar pane
+//Refactor all the computed widget logic into a separate file (composable?)
+type WidgetItem = [LGraphNode, IBaseWidget]
+const recommendedNodes = [
+  'CLIPTextEncode',
+  'LoadImage',
+  'SaveImage',
+  'PreviewImage'
+]
+const recommendedWidgetNames = ['seed']
+function nodeWidgets(n: LGraphNode): WidgetItem[] {
+  if (!n.widgets) return []
+  return n.widgets.map((w: IBaseWidget) => [n, w])
+}
+export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
+  const interiorNodes = subgraphNode.subgraph.nodes
+  const filteredWidgets: WidgetItem[] = interiorNodes
+    .flatMap(nodeWidgets)
+    //widget has connected link. Should not be eligible for promotion
+    .filter(([_, w]: WidgetItem) => !w.computedDisabled)
+    .filter(
+      ([node, widget]: WidgetItem) =>
+        recommendedNodes.includes(node.type) ||
+        recommendedWidgetNames.includes(widget.name)
+    )
+  const pw: ProxyWidgetsProperty = filteredWidgets.map(([n, w]: WidgetItem) => [
+    `${n.id}`,
+    w.name
+  ])
+  subgraphNode.properties.proxyWidgets = JSON.stringify(pw)
 }
