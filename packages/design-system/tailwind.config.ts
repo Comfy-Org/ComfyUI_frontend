@@ -1,7 +1,7 @@
 import lucide from '@iconify-json/lucide/icons.json' with { type: 'json' }
 import { addDynamicIconSelectors } from '@iconify/tailwind'
 
-import { iconCollection } from './iconCollection'
+import { iconCollection } from './src/iconCollection'
 
 export default {
   content: [],

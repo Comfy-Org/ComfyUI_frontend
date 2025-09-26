@@ -3,16 +3,10 @@
   "version": "1.0.0",
   "description": "Shared design system for ComfyUI Frontend",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
   "exports": {
-    ".": {
-      "import": "./src/index.ts",
-      "types": "./src/index.ts"
-    },
     "./tailwind-config": {
-      "import": "./src/tailwind.config.ts",
-      "types": "./src/tailwind.config.ts"
+      "import": "./tailwind.config.ts",
+      "types": "./tailwind.config.ts"
     },
     "./css/*": "./src/css/*"
   },

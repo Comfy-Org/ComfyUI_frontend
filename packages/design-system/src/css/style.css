@@ -7,7 +7,7 @@
 
 @plugin 'tailwindcss-primeui';
 
-@config '../tailwind.config.ts';
+@config '../../tailwind.config.ts';
 
 :root {
   --fg-color: #000;
