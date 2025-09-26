@@ -25,9 +25,12 @@
 
       <!-- Node Title -->
       <div
+        ref="titleRef"
         v-tooltip.top="tooltipConfig"
         class="text-sm font-bold truncate flex-1 lod-toggle"
+        :class="isDragging ? 'pointer-events-none' : 'pointer-events-auto'"
         data-testid="node-title"
+        @pointerdown="onTitlePointerDown"
       >
         <EditableText
           :model-value="displayTitle"
@@ -78,9 +81,11 @@ interface NodeHeaderProps {
   nodeData?: VueNodeData
   readonly?: boolean
   collapsed?: boolean
+  isDragging?: boolean
 }
 
-const { nodeData, readonly, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, readonly, collapsed, isDragging } =
+  defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -100,6 +105,7 @@ onErrorCaptured((error) => {
 
 // Editing state
 const isEditing = ref(false)
+const titleRef = ref<HTMLElement>()
 
 const tooltipContainer =
   inject<Ref<HTMLElement | undefined>>('tooltipContainer')
@@ -109,12 +115,39 @@ const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
 )
 
 const tooltipConfig = computed(() => {
-  if (readonly || isEditing.value) {
+  // Disable tooltip during editing or dragging
+  if (readonly || isEditing.value || isDragging) {
     return { value: '', disabled: true }
   }
+
   const description = getNodeDescription.value
   return createTooltipConfig(description)
 })
+
+// Helper to hide tooltip immediately
+const hideTooltip = () => {
+  // Find and remove the tooltip element that PrimeVue creates
+  // PrimeVue tooltips have class 'p-tooltip'
+  const tooltip = document.querySelector('.p-tooltip')
+  if (tooltip) {
+    tooltip.remove()
+  }
+}
+
+// Watch isDragging to force tooltip hide
+watch(
+  () => isDragging,
+  (newVal) => {
+    if (newVal) {
+      hideTooltip()
+    }
+  }
+)
+
+const onTitlePointerDown = () => {
+  // Immediately hide tooltip on pointer down
+  hideTooltip()
+}
 
 const resolveTitle = (info: VueNodeData | undefined) => {
   const title = (info?.title ?? '').trim()

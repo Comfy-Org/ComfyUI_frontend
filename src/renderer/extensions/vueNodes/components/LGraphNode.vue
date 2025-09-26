@@ -54,6 +54,7 @@
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
+        :is-dragging="isDragging"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
         @enter-subgraph="handleEnterSubgraph"
