@@ -38,9 +38,7 @@
       },
       dragStyle
     ]"
-    @pointerdown="handlePointerDown"
-    @pointermove="handlePointerMove"
-    @pointerup="handlePointerUp"
+    v-bind="pointerHandlers"
     @wheel="handleWheel"
   >
     <div class="flex items-center">
@@ -232,13 +230,10 @@ onErrorCaptured((error) => {
 
 // Use layout system for node position and dragging
 const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
-const {
-  handlePointerDown,
-  handlePointerUp,
-  handlePointerMove,
-  isDragging,
-  dragStyle
-} = useNodePointerInteractions(() => nodeData, handleNodeSelect)
+const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
+  () => nodeData,
+  handleNodeSelect
+)
 
 onMounted(() => {
   if (size.value && transformState?.camera) {
