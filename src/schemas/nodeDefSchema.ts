@@ -77,6 +77,7 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   image_folder: resultItemType.optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
+  audio_upload: z.boolean().optional(),
   animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),

@@ -1,0 +1,124 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
+
+import type { LayoutMode } from './types'
+
+interface Props {
+  index: number
+  selected: boolean
+  imageSrc: string
+  name: string
+  metadata?: string
+  layout?: LayoutMode
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  click: [index: number]
+  imageLoad: [event: Event]
+}>()
+
+const actualDimensions = ref<string | null>(null)
+
+function handleClick() {
+  emit('click', props.index)
+}
+
+function handleImageLoad(event: Event) {
+  emit('imageLoad', event)
+  if (!event.target || !(event.target instanceof HTMLImageElement)) return
+  const img = event.target
+  if (img.naturalWidth && img.naturalHeight) {
+    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+  }
+}
+</script>
+
+<template>
+  <div
+    :class="
+      cn(
+        'flex gap-1 select-none group/item cursor-pointer',
+        'transition-all duration-150',
+        {
+          'flex-col text-center': layout === 'grid',
+          'flex-row text-left max-h-16 bg-zinc-500/20 rounded-lg hover:scale-102 active:scale-98':
+            layout === 'list',
+          'flex-row text-left hover:bg-zinc-500/20 rounded-lg':
+            layout === 'list-small',
+          // selection
+          'ring-2 ring-blue-500': layout === 'list' && selected
+        }
+      )
+    "
+    @click="handleClick"
+  >
+    <!-- Image -->
+    <div
+      v-if="layout !== 'list-small'"
+      :class="
+        cn(
+          'relative',
+          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-zinc-300/10',
+          'transition-all duration-150',
+          {
+            'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
+            'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
+              layout === 'grid',
+            // selection
+            'ring-2 ring-blue-500': layout === 'grid' && selected
+          }
+        )
+      "
+    >
+      <!-- Selected Icon -->
+      <div
+        v-if="selected"
+        class="rounded-full bg-blue-500 border-1 border-white size-4 absolute top-1 left-1"
+      >
+        <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
+      </div>
+      <img
+        v-if="imageSrc"
+        :src="imageSrc"
+        class="size-full object-cover"
+        @load="handleImageLoad"
+      />
+      <div
+        v-else
+        class="size-full bg-gradient-to-tr from-blue-400 via-teal-500 to-green-400"
+      />
+    </div>
+    <!-- Name -->
+    <div
+      :class="
+        cn('flex gap-1', {
+          'flex-col': layout === 'grid',
+          'flex-col px-4 py-1 w-full justify-center': layout === 'list',
+          'flex-row p-2 items-center justify-between w-full':
+            layout === 'list-small'
+        })
+      "
+    >
+      <span
+        :class="
+          cn(
+            'block text-[15px] line-clamp-2 wrap-break-word',
+            'transition-colors duration-150',
+            // selection
+            !!selected && 'text-blue-500'
+          )
+        "
+      >
+        {{ name }}
+      </span>
+      <!-- Meta Data -->
+      <span class="block text-xs text-slate-400">{{
+        metadata || actualDimensions
+      }}</span>
+    </div>
+  </div>
+</template>
