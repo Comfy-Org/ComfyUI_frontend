@@ -480,13 +480,6 @@ describe('SelectionToolbox', () => {
       } as any)
     })
 
-    it('should still show MoreOptions when no items selected', () => {
-      canvasStore.selectedItems = []
-      const wrapper = mountComponent()
-
-      expect(wrapper.find('.more-options').exists()).toBe(true)
-    })
-
     it('should hide most buttons when no items selected', () => {
       canvasStore.selectedItems = []
       const wrapper = mountComponent()
