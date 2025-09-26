@@ -38,7 +38,7 @@
         backgroundColor: nodeBodyBackgroundColor,
         opacity: nodeOpacity
       },
-      dragStyle
+      { cursor: nodeStyle.cursor }
     ]"
     v-bind="pointerHandlers"
     @wheel="handleWheel"
@@ -262,8 +262,10 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
-const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
+const { position, size, zIndex, resize, nodeStyle } = useNodeLayout(
+  () => nodeData.id
+)
+const { pointerHandlers, isDragging } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
 )
