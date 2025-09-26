@@ -207,10 +207,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         return {
           name: widget.name || 'unknown',
           type: widget.type || 'text',
-          value: undefined, // Already a valid WidgetValue
-          options: undefined,
-          callback: undefined,
-          spec: undefined
+          value: undefined
         }
       }
     })
