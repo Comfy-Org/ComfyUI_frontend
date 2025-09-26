@@ -25,7 +25,10 @@
       "type:design"
     ]
   },
-  "dependencies": {},
+  "dependencies": {
+    "@iconify-json/lucide": "^1.1.178",
+    "@iconify/tailwind": "^1.1.3"
+  },
   "devDependencies": {
     "tailwindcss": "^3.4.17",
     "typescript": "^5.4.5"

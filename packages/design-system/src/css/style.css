@@ -931,7 +931,6 @@ audio.comfy-audio.empty-audio-widget {
 }
 /* End of [Desktop] Electron window specific styles */
 
-
 .lg-node {
   /* Disable text selection on all nodes */
   user-select: none;
@@ -986,7 +985,6 @@ audio.comfy-audio.empty-audio-widget {
   visibility: hidden;
 }
 
-
 .lod-fallback {
   display: none;
 }
@@ -998,7 +996,6 @@ audio.comfy-audio.empty-audio-widget {
 .isLOD .image-preview img {
   image-rendering: pixelated;
 }
-
 
 .isLOD .slot-dot {
   border-radius: 0;
