@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 
 const fileName = fileURLToPath(import.meta.url)
 const dirName = dirname(fileName)
-const customIconsPath = join(dirName, '..', 'src', 'assets', 'icons', 'custom')
+const customIconsPath = join(dirName, 'icons')
 
 // Iconify collection structure
 interface IconifyIcon {
