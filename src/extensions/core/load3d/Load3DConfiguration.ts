@@ -1,5 +1,11 @@
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type {
+  CameraConfig,
+  LightConfig,
+  ModelConfig,
+  SceneConfig
+} from '@/extensions/core/load3d/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -65,57 +71,114 @@ class Load3DConfiguration {
       onModelWidgetUpdate(modelWidget.value)
     }
 
+    const originalCallback = modelWidget.callback
+
+    let currentValue = modelWidget.value
+    Object.defineProperty(modelWidget, 'value', {
+      get() {
+        return currentValue
+      },
+      set(newValue) {
+        currentValue = newValue
+        if (modelWidget.callback && newValue !== undefined && newValue !== '') {
+          modelWidget.callback(newValue)
+        }
+      },
+      enumerable: true,
+      configurable: true
+    })
+
     modelWidget.callback = (value: string | number | boolean | object) => {
       this.load3d.node.properties['Texture'] = undefined
 
       onModelWidgetUpdate(value)
+
+      if (originalCallback) {
+        originalCallback(value)
+      }
     }
   }
 
   private setupDefaultProperties() {
-    const cameraType = this.load3d.loadNodeProperty(
-      'Camera Type',
-      useSettingStore().get('Comfy.Load3D.CameraType')
-    )
-    this.load3d.toggleCamera(cameraType)
+    const sceneConfig = this.loadSceneConfig()
+    this.applySceneConfig(sceneConfig)
 
-    const showGrid = this.load3d.loadNodeProperty(
-      'Show Grid',
-      useSettingStore().get('Comfy.Load3D.ShowGrid')
-    )
+    const cameraConfig = this.loadCameraConfig()
+    this.applyCameraConfig(cameraConfig)
 
-    this.load3d.toggleGrid(showGrid)
+    const lightConfig = this.loadLightConfig()
+    this.applyLightConfig(lightConfig)
+  }
 
-    const showPreview = this.load3d.loadNodeProperty(
-      'Show Preview',
-      useSettingStore().get('Comfy.Load3D.ShowPreview')
-    )
+  private loadSceneConfig(): SceneConfig {
+    const defaultConfig: SceneConfig = {
+      showGrid: useSettingStore().get('Comfy.Load3D.ShowGrid'),
+      backgroundColor:
+        '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor'),
+      backgroundImage: ''
+    }
 
-    this.load3d.togglePreview(showPreview)
+    const config = this.load3d.loadNodeProperty('Scene Config', defaultConfig)
+    this.load3d.node.properties['Scene Config'] = config
+    return config
+  }
 
-    const bgColor = this.load3d.loadNodeProperty(
-      'Background Color',
-      '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
-    )
+  private loadCameraConfig(): CameraConfig {
+    const defaultConfig: CameraConfig = {
+      cameraType: useSettingStore().get('Comfy.Load3D.CameraType'),
+      fov: 35
+    }
 
-    this.load3d.setBackgroundColor(bgColor)
+    const config = this.load3d.loadNodeProperty('Camera Config', defaultConfig)
+    this.load3d.node.properties['Camera Config'] = config
+    return config
+  }
 
-    const lightIntensity: number = Number(
-      this.load3d.loadNodeProperty(
-        'Light Intensity',
-        useSettingStore().get('Comfy.Load3D.LightIntensity')
-      )
-    )
+  private loadLightConfig(): LightConfig {
+    const defaultConfig: LightConfig = {
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity')
+    }
 
-    this.load3d.setLightIntensity(lightIntensity)
+    const config = this.load3d.loadNodeProperty('Light Config', defaultConfig)
+    this.load3d.node.properties['Light Config'] = config
+    return config
+  }
 
-    const fov: number = Number(this.load3d.loadNodeProperty('FOV', 35))
+  private loadModelConfig(): ModelConfig {
+    const defaultConfig: ModelConfig = {
+      upDirection: 'original',
+      materialMode: 'original'
+    }
 
-    this.load3d.setFOV(fov)
+    const config = this.load3d.loadNodeProperty('Model Config', defaultConfig)
+    this.load3d.node.properties['Model Config'] = config
+    return config
+  }
 
-    const backgroundImage = this.load3d.loadNodeProperty('Background Image', '')
+  private applySceneConfig(config: SceneConfig) {
+    this.load3d.toggleGrid(config.showGrid)
+    this.load3d.setBackgroundColor(config.backgroundColor)
+    if (config.backgroundImage) {
+      this.load3d.setBackgroundImage(config.backgroundImage)
+    }
+  }
 
-    this.load3d.setBackgroundImage(backgroundImage)
+  private applyCameraConfig(config: CameraConfig) {
+    this.load3d.toggleCamera(config.cameraType)
+    this.load3d.setFOV(config.fov)
+
+    if (config.state) {
+      this.load3d.setCameraState(config.state)
+    }
+  }
+
+  private applyLightConfig(config: LightConfig) {
+    this.load3d.setLightIntensity(config.intensity)
+  }
+
+  private applyModelConfig(config: ModelConfig) {
+    this.load3d.setUpDirection(config.upDirection)
+    this.load3d.setMaterialMode(config.materialMode)
   }
 
   private createModelUpdateHandler(
@@ -139,25 +202,8 @@ class Load3DConfiguration {
 
       await this.load3d.loadModel(modelUrl, filename)
 
-      const upDirection = this.load3d.loadNodeProperty(
-        'Up Direction',
-        'original'
-      )
-
-      this.load3d.setUpDirection(upDirection)
-
-      const materialMode = this.load3d.loadNodeProperty(
-        'Material Mode',
-        'original'
-      )
-
-      this.load3d.setMaterialMode(materialMode)
-
-      const edgeThreshold: number = Number(
-        this.load3d.loadNodeProperty('Edge Threshold', 85)
-      )
-
-      this.load3d.setEdgeThreshold(edgeThreshold)
+      const modelConfig = this.loadModelConfig()
+      this.applyModelConfig(modelConfig)
 
       if (isFirstLoad && cameraState && typeof cameraState === 'object') {
         try {

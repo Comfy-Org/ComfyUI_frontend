@@ -36,7 +36,7 @@
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
-    @wheel.capture="canvasInteractions.forwardEventToCanvas"
+    @wheel.capture="handleTransformPaneWheel"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <VueGraphNode
@@ -173,6 +173,17 @@ const handleVueNodeLifecycleReset = async () => {
     await nextTick()
     vueNodeLifecycle.initializeNodeManager()
   }
+}
+
+const handleTransformPaneWheel = (event: WheelEvent) => {
+  // Check if the event target is inside a Load3D component
+  const target = event.target as HTMLElement
+  if (target?.closest('.comfy-load-3d')) {
+    // Don't forward to canvas if it's inside Load3D
+    return
+  }
+
+  canvasInteractions.forwardEventToCanvas(event)
 }
 
 watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
