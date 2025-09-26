@@ -7,7 +7,7 @@
         v-if="!dotOnly"
         class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
       >
-        {{ slotData.name || `Output ${index}` }}
+        {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
       <LODFallback />
     </div>
