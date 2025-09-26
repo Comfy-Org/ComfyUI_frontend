@@ -26,7 +26,7 @@ function useVueNodeLifecycleIndividual() {
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
-    const activeGraph = comfyApp.canvas?.graph || comfyApp.graph
+    const activeGraph = comfyApp.graph
     if (!activeGraph || nodeManager.value) return
 
     // Initialize the core node manager
@@ -83,9 +83,7 @@ function useVueNodeLifecycleIndividual() {
 
   // Watch for Vue nodes enabled state changes
   watch(
-    () =>
-      shouldRenderVueNodes.value &&
-      Boolean(comfyApp.canvas?.graph || comfyApp.graph),
+    () => shouldRenderVueNodes.value && Boolean(comfyApp.graph),
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
