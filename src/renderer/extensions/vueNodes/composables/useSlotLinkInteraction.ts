@@ -455,12 +455,28 @@ export function useSlotLinkInteraction({
       return
     }
 
-    const candidate = candidateFromTarget(event.target)
-    let connected = tryConnectToCandidate(candidate)
+    // Prefer using the snapped candidate captured during hover for perf + consistency
+    const snappedCandidate = state.candidate?.compatible
+      ? state.candidate
+      : null
+
+    let connected = tryConnectToCandidate(snappedCandidate)
+
+    // Fallback to DOM slot under pointer (if any), then node fallback, then reroute
+    if (!connected) {
+      const domCandidate = candidateFromTarget(event.target)
+      connected = tryConnectToCandidate(domCandidate)
+    }
+
+    if (!connected) {
+      const nodeCandidate = candidateFromNodeTarget(event.target)
+      connected = tryConnectToCandidate(nodeCandidate)
+    }
+
     if (!connected) connected = tryConnectViaRerouteAtPointer() || connected
 
     // Drop on canvas: disconnect moving input link(s)
-    if (!connected && !candidate && state.source.type === 'input') {
+    if (!connected && !snappedCandidate && state.source.type === 'input') {
       ensureActiveAdapter()?.disconnectMovingLinks()
     }
 
