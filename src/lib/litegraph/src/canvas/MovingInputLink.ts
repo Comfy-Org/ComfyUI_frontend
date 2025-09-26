@@ -73,30 +73,8 @@ export class MovingInputLink extends MovingLinkBase {
     return link
   }
 
-  connectToOutput(
-    outputNode: LGraphNode,
-    output: INodeOutputSlot,
-    events: CustomEventTarget<LinkConnectorEventMap>
-  ): LLink | null | undefined {
-    if (
-      outputNode === this.outputNode &&
-      output === this.outputSlot &&
-      this.inputSlot === this.inputNode.inputs[this.inputIndex]
-    ) {
-      return
-    }
-
-    const afterRerouteId = this.fromReroute?.id ?? this.link.parentId
-
-    this.inputNode.disconnectInput(this.inputIndex, true)
-    const newLink = outputNode.connectSlots(
-      output,
-      this.inputNode,
-      this.inputSlot,
-      afterRerouteId
-    )
-    if (newLink) events.dispatch('input-moved', this)
-    return newLink
+  connectToOutput(): never {
+    throw new Error('MovingInputLink cannot connect to an output.')
   }
 
   connectToSubgraphInput(): void {
