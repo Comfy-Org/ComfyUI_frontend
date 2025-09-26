@@ -343,14 +343,6 @@
   "Comfy_Validation_Workflows": {
     "name": "Valider les flux de travail"
   },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Activer le rendu des nœuds Vue",
-    "tooltip": "Rendre les nœuds comme composants Vue au lieu d’éléments canvas. Fonctionnalité expérimentale."
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "Activer les widgets Vue",
-    "tooltip": "Rendre les widgets comme composants Vue à l'intérieur des nœuds Vue."
-  },
   "Comfy_WidgetControlMode": {
     "name": "Mode de contrôle du widget",
     "options": {
@@ -395,10 +387,6 @@
       "Topbar": "Barre supérieure",
       "Topbar (2nd-row)": "Barre supérieure (2ème rangée)"
     }
-  },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "Seuil de zoom pour le rendu de faible qualité",
-    "tooltip": "Rendre des formes de faible qualité lorsqu'on est dézoomé"
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "FPS maximum",
