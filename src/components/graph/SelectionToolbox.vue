@@ -13,7 +13,7 @@
           header: 'hidden',
           content: 'p-1 h-10 flex flex-row gap-1'
         }"
-        @wheel="canvasInteractions.handleWheel"
+        @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <DeleteButton v-if="showDelete" />
         <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
