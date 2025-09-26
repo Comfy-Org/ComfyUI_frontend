@@ -27,7 +27,7 @@ const handleClick = (event: Event) => {
   const el = (buttonRef.value as any)?.$el || buttonRef.value
   const buttonEl = el instanceof HTMLElement ? el : null
   if (buttonEl) {
-    toggleNodeOptions(event, buttonEl)
+    toggleNodeOptions(event, buttonEl, true)
   }
 }
 </script>

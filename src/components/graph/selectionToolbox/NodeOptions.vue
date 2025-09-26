@@ -58,6 +58,7 @@ import SubmenuPopover from './SubmenuPopover.vue'
 
 const popover = ref<InstanceType<typeof Popover>>()
 const targetElement = ref<HTMLElement | null>(null)
+const isTriggeredByToolbox = ref<boolean>(true)
 // Track open state ourselves so we can restore after drag/move
 const isOpen = ref(false)
 const wasOpenBeforeHide = ref(false)
@@ -115,8 +116,12 @@ const repositionPopover = () => {
   if (!btn || !overlayEl) return
   const rect = btn.getBoundingClientRect()
   const marginY = 8 // tailwind mt-2 ~ 0.5rem = 8px
-  const left = rect.left + rect.width / 2
-  const top = rect.bottom + marginY
+  const left = isTriggeredByToolbox.value
+    ? rect.left + rect.width / 2
+    : rect.right - rect.width / 4
+  const top = isTriggeredByToolbox.value
+    ? rect.bottom + marginY
+    : rect.top - marginY - 6
   try {
     overlayEl.style.position = 'fixed'
     overlayEl.style.left = `${left}px`
@@ -134,10 +139,16 @@ const repositionPopover = () => {
 
 const { resume: startSync, pause: stopSync } = useRafFn(repositionPopover)
 
-function openPopover(triggerEvent?: Event, element?: HTMLElement): boolean {
+function openPopover(
+  triggerEvent?: Event,
+  element?: HTMLElement,
+  clickedFromToolbox?: boolean
+): boolean {
   const el = element || targetElement.value
   if (!el || !el.isConnected) return false
   targetElement.value = el
+  if (clickedFromToolbox !== undefined)
+    isTriggeredByToolbox.value = clickedFromToolbox
   bump()
   popover.value?.show(triggerEvent ?? new Event('reopen'), el)
   isOpen.value = true
@@ -181,9 +192,13 @@ function attemptRestore() {
   requestAnimationFrame(() => attemptRestore())
 }
 
-const toggle = (event: Event, element?: HTMLElement) => {
+const toggle = (
+  event: Event,
+  element?: HTMLElement,
+  clickedFromToolbox?: boolean
+) => {
   if (isOpen.value) closePopover('manual')
-  else openPopover(event, element)
+  else openPopover(event, element, clickedFromToolbox)
 }
 
 const hide = (reason: HideReason = 'manual') => closePopover(reason)
