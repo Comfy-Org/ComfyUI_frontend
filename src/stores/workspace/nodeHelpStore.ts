@@ -29,25 +29,32 @@ export const useNodeHelpStore = defineStore('nodeHelp', () => {
     return getNodeHelpBaseUrl(node)
   })
 
-  // Watch for help node changes and fetch its docs markdown
-  watch(
-    () => currentHelpNode.value,
-    async (node) => {
-      helpContent.value = ''
-      errorMsg.value = null
+  let lastRequestId = 0
+  async function refreshHelp(node: ComfyNodeDefImpl | null, locale: string) {
+    helpContent.value = ''
+    errorMsg.value = null
 
-      if (node) {
-        isLoading.value = true
-        try {
-          const locale = i18n.global.locale.value || 'en'
-          helpContent.value = await nodeHelpService.fetchNodeHelp(node, locale)
-        } catch (e: any) {
-          errorMsg.value = e.message
-          helpContent.value = node.description || ''
-        } finally {
-          isLoading.value = false
-        }
-      }
+    if (!node) return
+
+    const requestId = ++lastRequestId
+    isLoading.value = true
+    try {
+      const text = await nodeHelpService.fetchNodeHelp(node, locale)
+      if (requestId !== lastRequestId) return
+      helpContent.value = text
+    } catch (e: any) {
+      if (requestId !== lastRequestId) return
+      errorMsg.value = e.message
+      helpContent.value = node.description || ''
+    } finally {
+      if (requestId === lastRequestId) isLoading.value = false
+    }
+  }
+
+  watch(
+    () => [currentHelpNode.value, i18n.global.locale.value] as const,
+    async ([node, locale]) => {
+      await refreshHelp(node, locale || 'en')
     },
     { immediate: true }
   )
