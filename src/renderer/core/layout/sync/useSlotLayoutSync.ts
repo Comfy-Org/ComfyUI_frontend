@@ -1,10 +1,5 @@
-/**
- * Composable for managing slot layout registration
- *
- * Implements event-driven slot registration decoupled from the draw cycle.
- * Registers slots once on initial load and keeps them updated when necessary.
- */
-import { onUnmounted } from 'vue'
+import { tryOnScopeDispose } from '@vueuse/core'
+import { ref } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -13,10 +8,6 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { registerNodeSlots } from '@/renderer/core/layout/slots/register'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-/**
- * Compute and register slot layouts for a node
- * @param node LiteGraph node to process
- */
 function computeAndRegisterSlots(node: LGraphNode): void {
   const nodeId = String(node.id)
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
@@ -50,12 +41,9 @@ function computeAndRegisterSlots(node: LGraphNode): void {
   registerNodeSlots(nodeId, context)
 }
 
-/**
- * Composable for managing slot layout registration
- */
 export function useSlotLayoutSync() {
-  let unsubscribeLayoutChange: (() => void) | null = null
-  let restoreHandlers: (() => void) | null = null
+  const unsubscribeLayoutChange = ref<() => void>()
+  const restoreHandlers = ref<() => void>()
 
   /**
    * Attempt to start slot layout sync with full event-driven functionality
@@ -77,7 +65,8 @@ export function useSlotLayoutSync() {
     }
 
     // Layout changes → recompute slots for changed nodes
-    unsubscribeLayoutChange = layoutStore.onChange((change) => {
+    unsubscribeLayoutChange.value?.()
+    unsubscribeLayoutChange.value = layoutStore.onChange((change) => {
       for (const nodeId of change.nodeIds) {
         const node = graph.getNodeById(parseInt(nodeId))
         if (node) {
@@ -131,7 +120,7 @@ export function useSlotLayoutSync() {
     }
 
     // Store cleanup function
-    restoreHandlers = () => {
+    restoreHandlers.value = () => {
       graph.onNodeAdded = origNodeAdded || undefined
       graph.onNodeRemoved = origNodeRemoved || undefined
       // Only restore onTrigger if Vue nodes are not active
@@ -145,24 +134,14 @@ export function useSlotLayoutSync() {
     return true
   }
 
-  /**
-   * Stop slot layout sync and cleanup all subscriptions
-   */
   function stop(): void {
-    if (unsubscribeLayoutChange) {
-      unsubscribeLayoutChange()
-      unsubscribeLayoutChange = null
-    }
-    if (restoreHandlers) {
-      restoreHandlers()
-      restoreHandlers = null
-    }
+    unsubscribeLayoutChange.value?.()
+    unsubscribeLayoutChange.value = undefined
+    restoreHandlers.value?.()
+    restoreHandlers.value = undefined
   }
 
-  // Auto-cleanup on unmount
-  onUnmounted(() => {
-    stop()
-  })
+  tryOnScopeDispose(stop)
 
   return {
     attemptStart,
