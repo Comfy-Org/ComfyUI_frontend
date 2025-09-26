@@ -4,7 +4,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { promoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { st, t } from '@/i18n'
 import {
   type IContextMenuValue,
@@ -837,12 +837,7 @@ export const useLitegraphService = () => {
         const [x, y] = canvas.canvas_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
-          options.unshift({
-            content: `Promote Widget: ${overWidget.label ?? overWidget.name}`,
-            callback: () => {
-              promoteWidget(overWidget, this)
-            }
-          })
+          addWidgetPromotionOptions(options, overWidget, this)
         }
       }
 
