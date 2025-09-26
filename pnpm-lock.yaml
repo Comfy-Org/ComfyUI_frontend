@@ -71,6 +71,9 @@ importers:
       '@vueuse/core':
         specifier: ^11.0.0
         version: 11.0.0(vue@3.5.13(typescript@5.9.2))
+      '@vueuse/integrations':
+        specifier: ^13.9.0
+        version: 13.9.0(axios@1.11.0)(fuse.js@7.0.0)(vue@3.5.13(typescript@5.9.2))
       '@xterm/addon-fit':
         specifier: ^0.10.0
         version: 0.10.0(@xterm/xterm@5.5.0)
@@ -2905,17 +2908,72 @@ packages:
   '@vueuse/core@12.8.2':
     resolution: {integrity: sha512-HbvCmZdzAu3VGi/pWYm5Ut+Kd9mn1ZHnn4L5G8kOQTPs/IwIAmJoBrmYk2ckLArgMXZj0AW3n5CAejLUO+PhdQ==}
 
+  '@vueuse/core@13.9.0':
+    resolution: {integrity: sha512-ts3regBQyURfCE2BcytLqzm8+MmLlo5Ln/KLoxDVcsZ2gzIwVNnQpQOL/UKV8alUqjSZOlpFZcRNsLRqj+OzyA==}
+    peerDependencies:
+      vue: ^3.5.0
+
+  '@vueuse/integrations@13.9.0':
+    resolution: {integrity: sha512-SDobKBbPIOe0cVL7QxMzGkuUGHvWTdihi9zOrrWaWUgFKe15cwEcwfWmgrcNzjT6kHnNmWuTajPHoIzUjYNYYQ==}
+    peerDependencies:
+      async-validator: ^4
+      axios: ^1
+      change-case: ^5
+      drauu: ^0.4
+      focus-trap: ^7
+      fuse.js: ^7
+      idb-keyval: ^6
+      jwt-decode: ^4
+      nprogress: ^0.2
+      qrcode: ^1.5
+      sortablejs: ^1
+      universal-cookie: ^7 || ^8
+      vue: ^3.5.0
+    peerDependenciesMeta:
+      async-validator:
+        optional: true
+      axios:
+        optional: true
+      change-case:
+        optional: true
+      drauu:
+        optional: true
+      focus-trap:
+        optional: true
+      fuse.js:
+        optional: true
+      idb-keyval:
+        optional: true
+      jwt-decode:
+        optional: true
+      nprogress:
+        optional: true
+      qrcode:
+        optional: true
+      sortablejs:
+        optional: true
+      universal-cookie:
+        optional: true
+
   '@vueuse/metadata@11.0.0':
     resolution: {integrity: sha512-0TKsAVT0iUOAPWyc9N79xWYfovJVPATiOPVKByG6jmAYdDiwvMVm9xXJ5hp4I8nZDxpCcYlLq/Rg9w1Z/jrGcg==}
 
   '@vueuse/metadata@12.8.2':
     resolution: {integrity: sha512-rAyLGEuoBJ/Il5AmFHiziCPdQzRt88VxR+Y/A/QhJ1EWtWqPBBAxTAFaSkviwEuOEZNtW8pvkPgoCZQ+HxqW1A==}
 
+  '@vueuse/metadata@13.9.0':
+    resolution: {integrity: sha512-1AFRvuiGphfF7yWixZa0KwjYH8ulyjDCC0aFgrGRz8+P4kvDFSdXLVfTk5xAN9wEuD1J6z4/myMoYbnHoX07zg==}
+
   '@vueuse/shared@11.0.0':
     resolution: {integrity: sha512-i4ZmOrIEjSsL94uAEt3hz88UCz93fMyP/fba9S+vypX90fKg3uYX9cThqvWc9aXxuTzR0UGhOKOTQd//Goh1nQ==}
 
   '@vueuse/shared@12.8.2':
     resolution: {integrity: sha512-dznP38YzxZoNloI0qpEfpkms8knDtaoQ6Y/sfS0L7Yki4zh40LFHEhur0odJC6xTHG5dxWVPiUWBXn+wCG2s5w==}
+
+  '@vueuse/shared@13.9.0':
+    resolution: {integrity: sha512-e89uuTLMh0U5cZ9iDpEI2senqPGfbPRTHM/0AaQkcxnpqjkZqDYP8rpfm7edOz8s+pOCOROEy1PIveSW8+fL5g==}
+    peerDependencies:
+      vue: ^3.5.0
 
   '@webgpu/types@0.1.51':
     resolution: {integrity: sha512-ktR3u64NPjwIViNCck+z9QeyN0iPkQCUOQ07ZCV1RzlkfP+olLTeEZ95O1QHS+v4w9vJeY9xj/uJuSphsHy5rQ==}
@@ -9675,9 +9733,27 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
+  '@vueuse/core@13.9.0(vue@3.5.13(typescript@5.9.2))':
+    dependencies:
+      '@types/web-bluetooth': 0.0.21
+      '@vueuse/metadata': 13.9.0
+      '@vueuse/shared': 13.9.0(vue@3.5.13(typescript@5.9.2))
+      vue: 3.5.13(typescript@5.9.2)
+
+  '@vueuse/integrations@13.9.0(axios@1.11.0)(fuse.js@7.0.0)(vue@3.5.13(typescript@5.9.2))':
+    dependencies:
+      '@vueuse/core': 13.9.0(vue@3.5.13(typescript@5.9.2))
+      '@vueuse/shared': 13.9.0(vue@3.5.13(typescript@5.9.2))
+      vue: 3.5.13(typescript@5.9.2)
+    optionalDependencies:
+      axios: 1.11.0
+      fuse.js: 7.0.0
+
   '@vueuse/metadata@11.0.0': {}
 
   '@vueuse/metadata@12.8.2': {}
+
+  '@vueuse/metadata@13.9.0': {}
 
   '@vueuse/shared@11.0.0(vue@3.5.13(typescript@5.9.2))':
     dependencies:
@@ -9691,6 +9767,10 @@ snapshots:
       vue: 3.5.13(typescript@5.9.2)
     transitivePeerDependencies:
       - typescript
+
+  '@vueuse/shared@13.9.0(vue@3.5.13(typescript@5.9.2))':
+    dependencies:
+      vue: 3.5.13(typescript@5.9.2)
 
   '@webgpu/types@0.1.51': {}
 

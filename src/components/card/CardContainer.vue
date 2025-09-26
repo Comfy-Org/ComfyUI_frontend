@@ -8,15 +8,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const { ratio = 'square' } = defineProps<{
-  ratio?: 'square' | 'portrait' | 'tallPortrait'
+const { ratio = 'square', type } = defineProps<{
+  ratio?: 'smallSquare' | 'square' | 'portrait' | 'tallPortrait'
+  type?: string
 }>()
 
 const containerClasses = computed(() => {
   const baseClasses =
-    'flex flex-col bg-white dark-theme:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden'
+    'cursor-pointer flex flex-col bg-white dark-theme:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden'
+
+  if (type === 'workflow-template-card') {
+    return `cursor-pointer p-2 flex flex-col hover:bg-white dark-theme:hover:bg-zinc-800 rounded-lg transition-background duration-200 ease-in-out`
+  }
 
   const ratioClasses = {
+    smallSquare: 'aspect-240/311',
     square: 'aspect-256/308',
     portrait: 'aspect-256/325',
     tallPortrait: 'aspect-256/353'

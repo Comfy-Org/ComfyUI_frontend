@@ -125,6 +125,7 @@
     "@tiptap/extension-table-row": "^2.10.4",
     "@tiptap/starter-kit": "^2.10.4",
     "@vueuse/core": "^11.0.0",
+    "@vueuse/integrations": "^13.9.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/xterm": "^5.5.0",
