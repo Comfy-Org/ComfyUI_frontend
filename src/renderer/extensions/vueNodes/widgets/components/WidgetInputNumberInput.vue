@@ -23,7 +23,6 @@ const emit = defineEmits<{
   'update:modelValue': [value: number]
 }>()
 
-// Use the composable for consistent widget value handling
 const { localValue, onChange } = useNumberWidgetValue(
   props.widget,
   props.modelValue,
