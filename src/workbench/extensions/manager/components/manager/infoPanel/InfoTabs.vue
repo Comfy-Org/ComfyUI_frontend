@@ -46,11 +46,11 @@ import Tabs from 'primevue/tabs'
 import { computed, inject, ref, watchEffect } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import { ImportFailedKey } from '@/types/importFailedTypes'
 import DescriptionTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue'
 import NodesTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/NodesTabPanel.vue'
 import WarningTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/WarningTabPanel.vue'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
 const { nodePack, hasCompatibilityIssues, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']

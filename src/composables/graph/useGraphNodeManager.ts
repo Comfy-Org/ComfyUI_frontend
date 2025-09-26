@@ -17,6 +17,7 @@ export interface SafeWidgetData {
   name: string
   type: string
   value: WidgetValue
+  label?: string
   options?: Record<string, unknown>
   callback?: ((value: unknown) => void) | undefined
 }
@@ -86,6 +87,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           name: widget.name,
           type: widget.type,
           value: value,
+          label: widget.label,
           options: widget.options ? { ...widget.options } : undefined,
           callback: widget.callback
         }

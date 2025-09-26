@@ -20,7 +20,12 @@ export const usePackUpdateStatus = (
   )
 
   const isUpdateAvailable = computed(() => {
-    if (!isInstalled.value || isNightlyPack.value || !latestVersion.value) {
+    if (
+      !isInstalled.value ||
+      isNightlyPack.value ||
+      !latestVersion.value ||
+      !installedVersion.value
+    ) {
       return false
     }
     return compare(latestVersion.value, installedVersion.value) > 0

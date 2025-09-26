@@ -27,7 +27,7 @@ vi.mock(
   () => ({
     useConflictDetection: vi.fn(() => ({
       conflictedPackages: { value: [] },
-      performConflictDetection: vi.fn().mockResolvedValue(undefined)
+      runFullConflictAnalysis: vi.fn().mockResolvedValue(undefined)
     }))
   })
 )

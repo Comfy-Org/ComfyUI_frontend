@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { usePacksStatus } from '@/workbench/extensions/manager/composables/nodePack/usePacksStatus'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 type NodePack = components['schemas']['Node']
 type NodeStatus = components['schemas']['NodeStatus']

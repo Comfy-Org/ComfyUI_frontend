@@ -106,6 +106,11 @@ test.describe('Version Mismatch Warnings', () => {
     const dismissButton = warningToast.getByRole('button', { name: 'Close' })
     await dismissButton.click()
 
+    // Wait for the dismissed state to be persisted
+    await comfyPage.page.waitForFunction(
+      () => !!localStorage.getItem('comfy.versionMismatch.dismissals')
+    )
+
     // Reload the page, keeping local storage
     await comfyPage.setup({ clearStorage: false })
 

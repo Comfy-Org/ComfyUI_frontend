@@ -26,6 +26,7 @@
       :pt="pt"
       @show="onPopoverShow"
       @hide="onPopoverHide"
+      @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <div class="flex flex-col p-2 min-w-48">
         <MenuOptionItem
@@ -66,6 +67,7 @@ import {
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 import MenuOptionItem from './MenuOptionItem.vue'
@@ -84,7 +86,7 @@ const currentSubmenu = ref<string | null>(null)
 
 const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
-
+const canvasInteractions = useCanvasInteractions()
 const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
 
