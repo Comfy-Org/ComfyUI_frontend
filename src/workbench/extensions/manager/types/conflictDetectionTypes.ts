@@ -5,7 +5,7 @@
  * This file extends and uses types from comfyRegistryTypes.ts to maintain consistency
  * with the Registry API schema.
  */
-import type { components } from './comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 // Re-export core types from Registry API
 export type Node = components['schemas']['Node']
@@ -18,7 +18,6 @@ export type ConflictType =
   | 'comfyui_version' // ComfyUI version mismatch
   | 'frontend_version' // Frontend version mismatch
   | 'import_failed'
-  // | 'python_version' // Python version mismatch
   | 'os' // Operating system incompatibility
   | 'accelerator' // GPU/accelerator incompatibility
   | 'banned' // Banned package
@@ -28,7 +27,7 @@ export type ConflictType =
  * Node Pack requirements from Registry API
  * Extends Node type with additional installation and compatibility metadata
  */
-export interface NodePackRequirements extends Node {
+export interface NodeRequirements extends Node {
   installed_version: string
   is_enabled: boolean
   is_banned: boolean
@@ -42,23 +41,12 @@ export interface NodePackRequirements extends Node {
  */
 export interface SystemEnvironment {
   // Version information
-  comfyui_version: string
-  frontend_version: string
-  // python_version: string
-
+  comfyui_version?: string
+  frontend_version?: string
   // Platform information
-  os: string
-  platform_details: string
-  architecture: string
-
+  os?: string
   // GPU/accelerator information
-  available_accelerators: Node['supported_accelerators']
-  primary_accelerator: string
-  gpu_memory_mb?: number
-
-  // Runtime information
-  node_env: 'development' | 'production'
-  user_agent: string
+  accelerator?: string
 }
 
 /**
@@ -82,26 +70,11 @@ export interface ConflictDetail {
 }
 
 /**
- * Overall conflict detection summary
- */
-export interface ConflictDetectionSummary {
-  total_packages: number
-  compatible_packages: number
-  conflicted_packages: number
-  banned_packages: number
-  pending_packages: number
-  conflicts_by_type_details: Record<ConflictType, string[]>
-  last_check_timestamp: string
-  check_duration_ms: number
-}
-
-/**
  * Response payload from conflict detection API
  */
 export interface ConflictDetectionResponse {
   success: boolean
   error_message?: string
-  summary: ConflictDetectionSummary
   results: ConflictDetectionResult[]
   detected_system_environment?: Partial<SystemEnvironment>
 }

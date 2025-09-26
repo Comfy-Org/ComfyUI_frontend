@@ -6,7 +6,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import LODFallback from '../../../components/LODFallback.vue'
 
 defineProps<{
-  widget: Pick<SimplifiedWidget<string | number | undefined>, 'name'>
+  widget: Pick<SimplifiedWidget<string | number | undefined>, 'name' | 'label'>
 }>()
 </script>
 
@@ -19,7 +19,7 @@ defineProps<{
         v-if="widget.name"
         class="text-sm text-stone-200 dark-theme:text-slate-200 font-normal flex-1 truncate w-20 lod-toggle"
       >
-        {{ widget.name }}
+        {{ widget.label || widget.name }}
       </p>
       <LODFallback />
     </div>

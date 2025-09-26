@@ -27,7 +27,7 @@ export const useUpdateAvailableNodes = () => {
 
     const isNightlyPack = !!installedVersion && !valid(installedVersion)
 
-    if (isNightlyPack || !latestVersion) {
+    if (isNightlyPack || !latestVersion || !installedVersion) {
       return false
     }
 

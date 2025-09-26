@@ -31,10 +31,10 @@ import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import type { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']

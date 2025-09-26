@@ -1,9 +1,9 @@
 import * as fs from 'fs'
 
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
-import type { ComfyApi } from '../src/scripts/api'
-import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
@@ -26,18 +26,23 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     })
   })
 
-  const nodeDefs: ComfyNodeDefImpl[] = (
-    Object.values(
-      await comfyPage.page.evaluate(async () => {
-        // @ts-expect-error - app is dynamically added to window
-        const api = window['app'].api as ComfyApi
-        return await api.getNodeDefs()
-      })
-    ) as ComfyNodeDef[]
+  // Note: Don't mock the object_info API endpoint - let it hit the actual backend
+
+  const nodeDefs: ComfyNodeDefImpl[] = await comfyPage.page.evaluate(
+    async () => {
+      // @ts-expect-error - app is dynamically added to window
+      const api = window['app'].api
+      const rawNodeDefs = await api.getNodeDefs()
+      const { ComfyNodeDefImpl } = await import('../src/stores/nodeDefStore')
+
+      return (
+        Object.values(rawNodeDefs)
+          // Ignore DevTools nodes (used for internal testing)
+          .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
+          .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
+      )
+    }
   )
-    // Ignore DevTools nodes (used for internal testing)
-    .filter((def) => !def.name.startsWith('DevTools'))
-    .map((def) => new ComfyNodeDefImpl(def))
 
   console.log(`Collected ${nodeDefs.length} node definitions`)
 

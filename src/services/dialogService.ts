@@ -22,7 +22,6 @@ import {
   type ShowDialogOptions,
   useDialogStore
 } from '@/stores/dialogStore'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
 import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
 import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
@@ -31,6 +30,7 @@ import ManagerHeader from '@/workbench/extensions/manager/components/manager/Man
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =
   | 'default'

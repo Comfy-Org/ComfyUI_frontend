@@ -40,7 +40,9 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
     installedPacks: mockInstalledPacks,
     isPackInstalled: (id: string) =>
       !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
-    isPackEnabled: mockIsPackEnabled
+    isPackEnabled: mockIsPackEnabled,
+    getInstalledPackVersion: (id: string) =>
+      mockInstalledPacks[id as keyof typeof mockInstalledPacks]?.ver
   }))
 }))
 
