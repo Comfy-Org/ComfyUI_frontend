@@ -338,67 +338,6 @@ export function useSlotLinkInteraction({
     updatePointerPosition(clientX, clientY, canvasX, canvasY)
   }
 
-  let lastHoverSlotKey: string | null = null
-  let lastHoverNodeId: string | null = null
-
-  function getSlotKeyFromTarget(target: EventTarget | null): string | null {
-    if (!(target instanceof HTMLElement)) return null
-    const elWithKey = target.closest<HTMLElement>('[data-slot-key]')
-    return elWithKey?.dataset.slotKey ?? null
-  }
-
-  function getNodeIdFromTarget(target: EventTarget | null): string | null {
-    if (!(target instanceof HTMLElement)) return null
-    const elWithNode = target.closest<HTMLElement>('[data-node-id]')
-    return elWithNode?.dataset.nodeId ?? null
-  }
-
-  function debugLogHoverTarget(event: PointerEvent) {
-    // Only log while a pointer-drag session is active
-    if (!pointerSession.isActive()) return
-    const adapter = ensureActiveAdapter()
-    if (!adapter) return
-
-    const slotKey = getSlotKeyFromTarget(event.target)
-    const nodeId = getNodeIdFromTarget(event.target)
-
-    if (slotKey && slotKey !== lastHoverSlotKey) {
-      lastHoverSlotKey = slotKey
-      const candidate = candidateFromTarget(event.target)
-      console.log('[link-hover] slot', {
-        slotKey,
-        compatible: candidate?.compatible ?? false,
-        layout: candidate?.layout
-          ? {
-              nodeId: candidate.layout.nodeId,
-              index: candidate.layout.index,
-              type: candidate.layout.type
-            }
-          : null,
-        connectingTo: adapter.linkConnector.state.connectingTo,
-        fromType: adapter.renderLinks[0]?.fromSlot?.type
-      })
-      return
-    }
-    if (!slotKey) lastHoverSlotKey = null
-
-    if (nodeId && nodeId !== lastHoverNodeId) {
-      lastHoverNodeId = nodeId
-      const numericId = Number(nodeId)
-      const compatible = Number.isFinite(numericId)
-        ? adapter.isNodeValidDrop(numericId)
-        : false
-      console.log('[link-hover] node', {
-        nodeId,
-        compatible,
-        connectingTo: adapter.linkConnector.state.connectingTo,
-        fromType: adapter.renderLinks[0]?.fromSlot?.type
-      })
-      return
-    }
-    if (!nodeId) lastHoverNodeId = null
-  }
-
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     updatePointerState(event)
@@ -419,9 +358,6 @@ export function useSlotLinkInteraction({
     }
 
     app.canvas?.setDirty(true)
-
-    // Debug: Log hovered slot/node IDs using event.target.dataset for review
-    debugLogHoverTarget(event)
   }
 
   // Attempt to finalize by connecting to a DOM slot candidate
