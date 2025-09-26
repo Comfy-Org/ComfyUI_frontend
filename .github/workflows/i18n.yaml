@@ -33,7 +33,7 @@ jobs:
         restore-keys: |
           playwright-browsers-${{ runner.os }}-
     - name: Install Playwright Browsers
-      run: pnpx playwright install chromium --with-deps
+      run: pnpm exec playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
