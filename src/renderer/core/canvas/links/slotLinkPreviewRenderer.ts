@@ -46,9 +46,8 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     if (!linkRenderer) return
     const context = buildContext(canvas)
 
-    const adapter = createLinkConnectorAdapter()
-    const renderLinks = adapter?.renderLinks
-    if (!adapter || !renderLinks || renderLinks.length === 0) return
+    const renderLinks = createLinkConnectorAdapter()?.renderLinks
+    if (!renderLinks || renderLinks.length === 0) return
 
     const to: ReadOnlyPoint = candidate?.compatible
       ? [candidate.layout.position.x, candidate.layout.position.y]
