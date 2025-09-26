@@ -51,7 +51,7 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ```vue
 <template>
-  <!-- Your custom SVG icons from src/assets/icons/custom/ -->
+  <!-- Your custom SVG icons from packages/design-system/src/icons/ -->
   <i-comfy:workflow />
   <i-comfy:node-tree />
   <i-comfy:my-custom-icon class="text-xl" />
@@ -128,10 +128,10 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ### 1. Add Your SVG
 
-Place your SVG file in `src/assets/icons/custom/`:
+Place your SVG file in `packages/design-system/src/icons/`:
 
 ```
-src/assets/icons/custom/
+packages/design-system/src/icons/
 ├── workflow-duplicate.svg
 ├── node-preview.svg
 └── your-icon.svg
@@ -250,7 +250,7 @@ Icons are automatically imported using `unplugin-icons` - no manual imports need
 The icon system has two layers:
 
 1. **Build-time Processing** (`build/customIconCollection.ts`):
-   - Scans `src/assets/icons/custom/` for SVG files
+   - Scans `packages/design-system/src/icons/` for SVG files
    - Validates SVG content and structure
    - Creates Iconify collection for Tailwind CSS
    - Provides error handling for malformed files
