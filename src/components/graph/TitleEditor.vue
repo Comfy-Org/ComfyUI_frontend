@@ -83,7 +83,9 @@ watch(
         pos: group.pos,
         size: [group.size[0], group.titleHeight]
       })
-      inputFontStyle.value = { fontSize: `${group.font_size * scale}px` }
+      inputFontStyle.value = {
+        fontSize: `${LiteGraph.GROUP_TEXT_SIZE * scale}px`
+      }
     } else if (target instanceof LGraphNode) {
       const node = target
       const [x, y] = node.getBounding()

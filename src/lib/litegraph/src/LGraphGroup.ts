@@ -39,7 +39,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   color?: string
   title: string
   font?: string
-  font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
+  font_size: number = LiteGraph.GROUP_TEXT_SIZE
   _bounding: Float32Array = new Float32Array([
     10,
     10,
@@ -116,7 +116,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   get titleHeight() {
-    return this.font_size * 1.4
+    return LiteGraph.NODE_TITLE_HEIGHT
   }
 
   get children(): ReadonlySet<Positionable> {
@@ -148,7 +148,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this._bounding.set(o.bounding)
     this.color = o.color
     this.flags = o.flags || this.flags
-    if (o.font_size) this.font_size = o.font_size
   }
 
   serialize(): ISerialisedGroup {
@@ -158,7 +157,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       title: this.title,
       bounding: [...b],
       color: this.color,
-      font_size: this.font_size,
       flags: this.flags
     }
   }
@@ -170,7 +168,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    */
   draw(graphCanvas: LGraphCanvas, ctx: CanvasRenderingContext2D): void {
     const { padding, resizeLength, defaultColour } = LGraphGroup
-    const font_size = this.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
+    const font_size = LiteGraph.GROUP_TEXT_SIZE
 
     const [x, y] = this._pos
     const [width, height] = this._size
@@ -181,7 +179,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     ctx.fillStyle = color
     ctx.strokeStyle = color
     ctx.beginPath()
-    ctx.rect(x + 0.5, y + 0.5, width, font_size * 1.4)
+    ctx.rect(x + 0.5, y + 0.5, width, LiteGraph.NODE_TITLE_HEIGHT)
     ctx.fill()
 
     // Group background, border
@@ -203,11 +201,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     // Title
     ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
     ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
     ctx.fillText(
       this.title + (this.pinned ? '📌' : ''),
-      x + padding,
-      y + font_size
+      x + font_size / 2,
+      y + LiteGraph.NODE_TITLE_HEIGHT / 2 + 1
     )
+    ctx.textBaseline = 'alphabetic'
 
     if (LiteGraph.highlight_selected_group && this.selected) {
       strokeShape(ctx, this._bounding, {

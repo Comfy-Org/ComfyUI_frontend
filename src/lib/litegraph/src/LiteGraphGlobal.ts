@@ -64,8 +64,7 @@ export class LiteGraphGlobal {
   DEFAULT_FONT = 'Arial'
   DEFAULT_SHADOW_COLOR = 'rgba(0,0,0,0.5)'
 
-  DEFAULT_GROUP_FONT = 24
-  DEFAULT_GROUP_FONT_SIZE?: any
+  GROUP_TEXT_SIZE = 20
   GROUP_FONT = 'Arial'
 
   WIDGET_BGCOLOR = '#222'
