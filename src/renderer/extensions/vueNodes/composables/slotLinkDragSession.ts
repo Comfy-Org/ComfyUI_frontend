@@ -1,12 +1,12 @@
 import type { SlotLayout } from '@/renderer/core/layout/types'
 
-export interface PendingMoveData {
+interface PendingMoveData {
   clientX: number
   clientY: number
   target: EventTarget | null
 }
 
-export interface SlotLinkDragSession {
+interface SlotLinkDragSession {
   compatCache: Map<string, boolean>
   nodePreferred: Map<
     number,
