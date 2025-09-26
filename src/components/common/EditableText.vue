@@ -7,17 +7,19 @@
     <InputText
       v-else
       ref="inputRef"
-      v-model:modelValue="inputValue"
+      v-model:model-value="inputValue"
       v-focus
       type="text"
       size="small"
       fluid
       :pt="{
         root: {
-          onBlur: finishEditing
+          onBlur: finishEditing,
+          ...inputAttrs
         }
       }"
       @keyup.enter="blurInputElement"
+      @keyup.escape="cancelEditing"
       @click.stop
     />
   </div>
@@ -27,21 +29,41 @@
 import InputText from 'primevue/inputtext'
 import { nextTick, ref, watch } from 'vue'
 
-const { modelValue, isEditing = false } = defineProps<{
+const {
+  modelValue,
+  isEditing = false,
+  inputAttrs = {}
+} = defineProps<{
   modelValue: string
   isEditing?: boolean
+  inputAttrs?: Record<string, any>
 }>()
 
-const emit = defineEmits(['update:modelValue', 'edit'])
+const emit = defineEmits(['update:modelValue', 'edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
 const inputRef = ref<InstanceType<typeof InputText> | undefined>()
+const isCanceling = ref(false)
 
 const blurInputElement = () => {
   // @ts-expect-error - $el is an internal property of the InputText component
   inputRef.value?.$el.blur()
 }
 const finishEditing = () => {
-  emit('edit', inputValue.value)
+  // Don't save if we're canceling
+  if (!isCanceling.value) {
+    emit('edit', inputValue.value)
+  }
+  isCanceling.value = false
+}
+const cancelEditing = () => {
+  // Set canceling flag to prevent blur from saving
+  isCanceling.value = true
+  // Reset to original value
+  inputValue.value = modelValue
+  // Emit cancel event
+  emit('cancel')
+  // Blur the input to exit edit mode
+  blurInputElement()
 }
 watch(
   () => isEditing,

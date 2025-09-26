@@ -3,13 +3,13 @@ export default {
 
   './**/*.{ts,tsx,vue,mts}': (stagedFiles) => [
     ...formatAndEslint(stagedFiles),
-    'vue-tsc --noEmit'
+    'pnpm typecheck'
   ]
 }
 
 function formatAndEslint(fileNames) {
   return [
-    `eslint --fix ${fileNames.join(' ')}`,
-    `prettier --write ${fileNames.join(' ')}`
+    `pnpm exec eslint --cache --fix ${fileNames.join(' ')}`,
+    `pnpm exec prettier --cache --write ${fileNames.join(' ')}`
   ]
 }

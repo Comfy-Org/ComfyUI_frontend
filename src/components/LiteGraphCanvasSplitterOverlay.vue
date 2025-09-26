@@ -50,7 +50,7 @@ import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 

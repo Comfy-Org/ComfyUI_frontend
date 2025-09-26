@@ -81,11 +81,12 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useWorkflowService } from '@/services/workflowService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -355,14 +356,6 @@ onUpdated(() => {
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
   @apply visible;
-}
-
-:deep(.p-togglebutton:hover) .status-indicator {
-  @apply hidden;
-}
-
-:deep(.p-togglebutton) .close-button {
-  @apply invisible;
 }
 
 :deep(.p-scrollpanel-content) {

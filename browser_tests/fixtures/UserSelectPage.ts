@@ -1,5 +1,5 @@
+import type { Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
-import { Page } from 'playwright'
 
 export class UserSelectPage {
   constructor(

@@ -42,13 +42,12 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import Message from 'primevue/message'
-import { computed, ref } from 'vue'
+import { compare } from 'semver'
+import { computed } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { compareVersions } from '@/utils/formatUtil'
 
 const props = defineProps<{
   missingCoreNodes: Record<string, LGraphNode[]>
@@ -60,25 +59,16 @@ const hasMissingCoreNodes = computed(() => {
   return Object.keys(props.missingCoreNodes).length > 0
 })
 
-const currentComfyUIVersion = ref<string | null>(null)
-whenever(
-  hasMissingCoreNodes,
-  async () => {
-    if (!systemStatsStore.systemStats) {
-      await systemStatsStore.fetchSystemStats()
-    }
-    currentComfyUIVersion.value =
-      systemStatsStore.systemStats?.system?.comfyui_version ?? null
-  },
-  {
-    immediate: true
-  }
-)
+// Use computed for reactive version tracking
+const currentComfyUIVersion = computed<string | null>(() => {
+  if (!hasMissingCoreNodes.value) return null
+  return systemStatsStore.systemStats?.system?.comfyui_version ?? null
+})
 
 const sortedMissingCoreNodes = computed(() => {
   return Object.entries(props.missingCoreNodes).sort(([a], [b]) => {
     // Sort by version in descending order (newest first)
-    return compareVersions(b, a) // Reversed for descending order
+    return compare(b, a) // Reversed for descending order
   })
 })
 

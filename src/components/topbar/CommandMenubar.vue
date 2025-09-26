@@ -28,29 +28,7 @@
     @show="onMenuShow"
   >
     <template #item="{ item, props }">
-      <div
-        v-if="item.key === 'theme'"
-        class="flex items-center gap-4 px-4 py-5"
-        @click.stop.prevent
-      >
-        {{ item.label }}
-        <SelectButton
-          :options="[darkLabel, lightLabel]"
-          :model-value="activeTheme"
-          @click.stop.prevent
-          @update:model-value="onThemeChange"
-        >
-          <template #option="{ option }">
-            <div class="flex items-center gap-2">
-              <i v-if="option === lightLabel" class="pi pi-sun" />
-              <i v-if="option === darkLabel" class="pi pi-moon" />
-              <span>{{ option }}</span>
-            </div>
-          </template>
-        </SelectButton>
-      </div>
       <a
-        v-else
         class="p-menubar-item-link px-4 py-2"
         v-bind="props.action"
         :href="item.url"
@@ -95,7 +73,6 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import SelectButton from 'primevue/selectbutton'
 import TieredMenu, {
   type TieredMenuMethods,
   type TieredMenuState
@@ -104,28 +81,29 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
-import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import { useDialogService } from '@/services/dialogService'
+import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const colorPaletteStore = useColorPaletteStore()
+const colorPaletteService = useColorPaletteService()
 const menuItemsStore = useMenuItemStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+
+const managerState = useManagerState()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
@@ -159,36 +137,33 @@ const showSettings = (defaultPanel?: string) => {
   })
 }
 
-const managerStateStore = useManagerStateStore()
-
 const showManageExtensions = async () => {
-  const state = managerStateStore.managerUIState
-
-  switch (state) {
-    case ManagerUIState.DISABLED:
-      showSettings('extension')
-      break
-
-    case ManagerUIState.LEGACY_UI:
-      try {
-        await commandStore.execute('Comfy.Manager.Menu.ToggleVisibility')
-      } catch {
-        // If legacy command doesn't exist, fall back to extensions panel
-        showSettings('extension')
-      }
-      break
-
-    case ManagerUIState.NEW_UI:
-      useDialogService().showManagerDialog()
-      break
-  }
+  await managerState.openManager({
+    initialTab: ManagerTab.All,
+    showToastOnLegacyError: false
+  })
 }
 
-const extraMenuItems = computed<MenuItem[]>(() => [
+const themeMenuItems = computed(() => {
+  return colorPaletteStore.palettes.map((palette) => ({
+    key: `theme-${palette.id}`,
+    label: palette.name,
+    parentPath: 'theme',
+    comfyCommand: {
+      active: () => colorPaletteStore.activePaletteId === palette.id
+    },
+    command: async () => {
+      await colorPaletteService.loadColorPalette(palette.id)
+    }
+  }))
+})
+
+const extraMenuItems = computed(() => [
   { separator: true },
   {
     key: 'theme',
-    label: t('menu.theme')
+    label: t('menu.theme'),
+    items: themeMenuItems.value
   },
   { separator: true },
   {
@@ -210,19 +185,6 @@ const extraMenuItems = computed<MenuItem[]>(() => [
     command: showManageExtensions
   }
 ])
-
-const lightLabel = computed(() => t('menu.light'))
-const darkLabel = computed(() => t('menu.dark'))
-
-const activeTheme = computed(() => {
-  return colorPaletteStore.completedActivePalette.light_theme
-    ? lightLabel.value
-    : darkLabel.value
-})
-
-const onThemeChange = async () => {
-  await commandStore.execute('Comfy.ToggleTheme')
-}
 
 const translatedItems = computed(() => {
   const items = menuItemsStore.menuItems.map(translateMenuItem)
@@ -308,7 +270,12 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
 }
 
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
-  return menuItemsStore.menuItemHasActiveStateChildren[item.parentPath]
+  // Check if this item has siblings with active state (either from store or theme items)
+  return (
+    item.parentPath &&
+    (item.parentPath === 'theme' ||
+      menuItemsStore.menuItemHasActiveStateChildren[item.parentPath])
+  )
 }
 </script>
 
@@ -332,6 +299,18 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
 </style>
 
 <style>
+.comfy-command-menu {
+  --p-tieredmenu-item-focus-background: color-mix(
+    in srgb,
+    var(--fg-color) 15%,
+    transparent
+  );
+  --p-tieredmenu-item-active-background: color-mix(
+    in srgb,
+    var(--fg-color) 10%,
+    transparent
+  );
+}
 .comfy-command-menu ul {
   background-color: var(--comfy-menu-secondary-bg) !important;
 }

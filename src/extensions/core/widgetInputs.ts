@@ -8,7 +8,7 @@ import type {
   INodeOutputSlot,
   ISlotType,
   LLink,
-  Vector2
+  Point
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -422,6 +422,7 @@ function getConfig(this: LGraphNode, widgetName: string) {
  * @param node The node to convert the widget to an input slot for.
  * @param widget The widget to convert to an input slot.
  * @returns The input slot that was converted from the widget or undefined if the widget is not found.
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export function convertToInput(
   node: LGraphNode,
@@ -556,7 +557,7 @@ app.registerExtension({
       }
     )
 
-    function isNodeAtPos(pos: Vector2) {
+    function isNodeAtPos(pos: Point) {
       for (const n of app.graph.nodes) {
         if (n.pos[0] === pos[0] && n.pos[1] === pos[1]) {
           return true
@@ -592,7 +593,7 @@ app.registerExtension({
       const node = LiteGraph.createNode('PrimitiveNode')
       if (!node) return r
 
-      app.graph.add(node)
+      this.graph?.add(node)
 
       // Calculate a position that wont directly overlap another node
       const pos: [number, number] = [

@@ -15,9 +15,9 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 import { electronAPI, isElectron } from './utils/envUtil'
 

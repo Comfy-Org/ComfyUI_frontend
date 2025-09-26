@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
+      playwright-version: ${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
     steps:
       - name: Checkout ComfyUI
         uses: actions/checkout@v4
@@ -26,12 +27,10 @@ jobs:
           repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
 
-      - name: Checkout ComfyUI_devtools
-        uses: actions/checkout@v4
-        with:
-          repository: 'Comfy-Org/ComfyUI_devtools'
-          path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
-          ref: 'd05fd48dd787a4192e16802d4244cfcc0e2f9684'
+      - name: Copy ComfyUI_devtools from frontend repo
+        run: |
+          mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
+          cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -65,6 +64,13 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Playwright Version
+        id: playwright-version
+        run:  |
+          PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
+          echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+        working-directory: ComfyUI_frontend
 
       - name: Save cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
@@ -116,15 +122,29 @@ jobs:
           pip install wait-for-it
         working-directory: ComfyUI
 
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: cache-playwright-browsers
+        with:
+          path: '~/.cache/ms-playwright'
+          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
+
+      - name: Install Playwright Browsers
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Install Playwright Browsers (operating system dependencies)
+        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps
+        working-directory: ComfyUI_frontend
+
       - name: Start ComfyUI server
         run: |
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
-
-      - name: Install Playwright Browsers
-        run: pnpm exec playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
 
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
@@ -141,7 +161,7 @@ jobs:
           retention-days: 1
 
   playwright-tests:
-  # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
+    # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
     timeout-minutes: 15
     needs: setup
     runs-on: ubuntu-latest
@@ -182,19 +202,38 @@ jobs:
           pip install wait-for-it
         working-directory: ComfyUI
 
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: cache-playwright-browsers
+        with:
+          path: '~/.cache/ms-playwright'
+          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
+
+      - name: Install Playwright Browsers
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Install Playwright Browsers (operating system dependencies)
+        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps
+        working-directory: ComfyUI_frontend
+
       - name: Start ComfyUI server
         run: |
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
-      - name: Install Playwright Browsers
-        run: pnpm exec playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
-
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=html
+        run: |
+          # Run tests with both HTML and JSON reporters
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          pnpm exec playwright test --project=${{ matrix.browser }} \
+            --reporter=list \
+            --reporter=html \
+            --reporter=json
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
@@ -240,7 +279,12 @@ jobs:
           merge-multiple: true
 
       - name: Merge into HTML Report
-        run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
+        run: |
+          # Generate HTML report
+          pnpm exec playwright merge-reports --reporter=html ./all-blob-reports
+          # Generate JSON report separately with explicit output path
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          pnpm exec playwright merge-reports --reporter=json ./all-blob-reports
         working-directory: ComfyUI_frontend
 
       - name: Upload HTML report
@@ -249,3 +293,65 @@ jobs:
           name: playwright-report-chromium
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
+
+  #### BEGIN Deployment and commenting (non-forked PRs only)
+  # when using pull_request event, we have permission to comment directly
+  # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
+
+  # Post starting comment for non-forked PRs
+  comment-on-pr-start:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Get start time
+        id: start-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        
+      - name: Post starting comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
+          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "starting" \
+            "${{ steps.start-time.outputs.time }}"
+          
+  # Deploy and comment for non-forked PRs only
+  deploy-and-comment:
+    needs: [playwright-tests, merge-reports]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download all playwright reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          path: reports
+          
+      - name: Make deployment script executable
+        run: chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
+        
+      - name: Deploy reports and comment on PR
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "completed"
+  #### END Deployment and commenting (non-forked PRs only)

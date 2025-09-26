@@ -2,8 +2,8 @@
   <NoResultsPlaceholder
     class="pb-0"
     icon="pi pi-exclamation-circle"
-    title="Some Nodes Are Missing"
-    message="When loading the graph, the following node types were not found"
+    :title="$t('loadWorkflowWarning.missingNodesTitle')"
+    :message="$t('loadWorkflowWarning.missingNodesDescription')"
   />
   <MissingCoreNodesMessage :missing-core-nodes="missingCoreNodes" />
   <ListBox
@@ -53,24 +53,19 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
-import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useDialogService } from '@/services/dialogService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useCommandStore } from '@/stores/commandStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import type { MissingNodeType } from '@/types/comfy'
-import { ManagerTab } from '@/types/comfyManagerTypes'
-
-import PackInstallButton from './manager/button/PackInstallButton.vue'
+import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
@@ -81,6 +76,7 @@ const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
 const comfyManagerStore = useComfyManagerStore()
+const managerState = useManagerState()
 
 // Check if any of the missing packs are currently being installed
 const isInstalling = computed(() => {
@@ -111,48 +107,51 @@ const uniqueNodes = computed(() => {
     })
 })
 
-const managerStateStore = useManagerStateStore()
-
 // Show manager buttons unless manager is disabled
 const showManagerButtons = computed(() => {
-  return managerStateStore.managerUIState !== ManagerUIState.DISABLED
+  return managerState.shouldShowManagerButtons.value
 })
 
 // Only show Install All button for NEW_UI (new manager with v4 support)
 const showInstallAllButton = computed(() => {
-  return managerStateStore.managerUIState === ManagerUIState.NEW_UI
+  return managerState.shouldShowInstallButton.value
 })
 
 const openManager = async () => {
-  const state = managerStateStore.managerUIState
-
-  switch (state) {
-    case ManagerUIState.DISABLED:
-      useDialogService().showSettingsDialog('extension')
-      break
-
-    case ManagerUIState.LEGACY_UI:
-      try {
-        await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
-      } catch {
-        // If legacy command doesn't exist, show toast
-        const { t } = useI18n()
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('manager.legacyMenuNotAvailable'),
-          life: 3000
-        })
-      }
-      break
-
-    case ManagerUIState.NEW_UI:
-      useDialogService().showManagerDialog({
-        initialTab: ManagerTab.Missing
-      })
-      break
-  }
+  await managerState.openManager({
+    initialTab: ManagerTab.Missing,
+    showToastOnLegacyError: true
+  })
 }
+
+const { t } = useI18n()
+const dialogStore = useDialogStore()
+
+// Computed to check if all missing nodes have been installed
+const allMissingNodesInstalled = computed(() => {
+  return (
+    !isLoading.value &&
+    !isInstalling.value &&
+    missingNodePacks.value?.length === 0
+  )
+})
+// Watch for completion and close dialog
+watch(allMissingNodesInstalled, async (allInstalled) => {
+  if (allInstalled && showInstallAllButton.value) {
+    // Use nextTick to ensure state updates are complete
+    await nextTick()
+
+    dialogStore.closeDialog({ key: 'global-load-workflow-warning' })
+
+    // Show success toast
+    useToastStore().add({
+      severity: 'success',
+      summary: t('g.success'),
+      detail: t('manager.allMissingNodesInstalled'),
+      life: 3000
+    })
+  }
+})
 </script>
 
 <style scoped>

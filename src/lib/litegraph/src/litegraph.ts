@@ -2,7 +2,7 @@ import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
 import { LiteGraphGlobal } from './LiteGraphGlobal'
 import type { ConnectingLink, Point } from './interfaces'
-import type { IContextMenuOptions, INodeSlot, Size } from './interfaces'
+import type { IContextMenuOptions, Size } from './interfaces'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
 import type { RenderShape, TitleMode } from './types/globalEnums'
@@ -22,10 +22,8 @@ loadPolyfills()
 // Definitions by: NateScarlet <https://github.com/NateScarlet>
 /** @deprecated Use {@link Point} instead. */
 export type Vector2 = Point
-/** @deprecated Use {@link Rect} instead. */
-export type Vector4 = [number, number, number, number]
 
-export interface IContextMenuItem {
+interface IContextMenuItem {
   content: string
   callback?: ContextMenuEventListener
   /** Used as innerHTML for extra child element */
@@ -38,7 +36,7 @@ export interface IContextMenuItem {
   className?: string
 }
 
-export type ContextMenuEventListener = (
+type ContextMenuEventListener = (
   value: IContextMenuItem,
   options: IContextMenuOptions,
   event: MouseEvent,
@@ -46,19 +44,10 @@ export type ContextMenuEventListener = (
   node: LGraphNode
 ) => boolean | void
 
-export interface LinkReleaseContext {
-  node_to?: LGraphNode
-  node_from?: LGraphNode
-  slot_from: INodeSlot
-  type_filter_in?: string
-  type_filter_out?: string
-}
-
 export interface LinkReleaseContextExtended {
   links: ConnectingLink[]
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
@@ -84,58 +73,37 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 
 // End backwards compat
 
-export { InputIndicators } from './canvas/InputIndicators'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'
 export * as Constants from './constants'
-export { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from './constants'
+export { SUBGRAPH_INPUT_ID } from './constants'
 export { ContextMenu } from './ContextMenu'
-export { CurveEditor } from './CurveEditor'
+
 export { DragAndScale } from './DragAndScale'
-export { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
-export { strokeShape } from './draw'
+
 export { Rectangle } from './infrastructure/Rectangle'
 export { RecursionError } from './infrastructure/RecursionError'
 export type {
   CanvasColour,
   ColorOption,
-  ConnectingLink,
-  Direction,
-  IBoundaryNodes,
-  IColorable,
   IContextMenuOptions,
   IContextMenuValue,
-  IFoundSlot,
-  IInputOrOutput,
-  INodeFlags,
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot,
   ISlotType,
-  KeysOfType,
   LinkNetwork,
-  LinkSegment,
-  MethodNames,
-  PickByType,
   Point,
   Positionable,
-  ReadonlyLinkNetwork,
-  ReadOnlyPoint,
-  ReadOnlyRect,
-  Rect,
   Size
 } from './interfaces'
 export { LGraph } from './LGraph'
-export {
-  BadgePosition,
-  LGraphBadge,
-  type LGraphBadgeOptions
-} from './LGraphBadge'
-export { LGraphCanvas, type LGraphCanvasState } from './LGraphCanvas'
+export { BadgePosition, LGraphBadge } from './LGraphBadge'
+export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'
 export { LGraphNode, type NodeId } from './LGraphNode'
-export { type LinkId, LLink } from './LLink'
+export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'
 export {
@@ -146,23 +114,18 @@ export {
 export { SubgraphNode } from './subgraph/SubgraphNode'
 export type { CanvasPointerEvent } from './types/events'
 export {
-  CanvasItem,
   EaseFunction,
   LGraphEventMode,
   LinkDirection,
   LinkMarkerShape,
-  RenderShape,
-  TitleMode
+  RenderShape
 } from './types/globalEnums'
 export type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
-  ExportedSubgraphIONode,
   ISerialisedGraph,
   ISerialisedNode,
-  SerialisableGraph,
-  SerialisableLLink,
-  SubgraphIO
+  SerialisableGraph
 } from './types/serialisation'
 export type { IWidget } from './types/widgets'
 export { isColorable } from './utils/type'
@@ -171,19 +134,14 @@ export type { UUID } from './utils/uuid'
 export { truncateText } from './utils/textUtils'
 export { getWidgetStep } from './utils/widget'
 export { distributeSpace, type SpaceRequest } from './utils/spaceDistribution'
-export { BaseSteppedWidget } from './widgets/BaseSteppedWidget'
+
 export { BaseWidget } from './widgets/BaseWidget'
-export { BooleanWidget } from './widgets/BooleanWidget'
-export { ButtonWidget } from './widgets/ButtonWidget'
-export { ComboWidget } from './widgets/ComboWidget'
-export { KnobWidget } from './widgets/KnobWidget'
+
 export { LegacyWidget } from './widgets/LegacyWidget'
-export { NumberWidget } from './widgets/NumberWidget'
-export { SliderWidget } from './widgets/SliderWidget'
-export { TextWidget } from './widgets/TextWidget'
-export { isComboWidget } from './widgets/widgetMap'
+
+export { isComboWidget, isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
-export { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
+export { LGraphButton } from './LGraphButton'
 export { MovingOutputLink } from './canvas/MovingOutputLink'
 export { ToOutputRenderLink } from './canvas/ToOutputRenderLink'
 export { ToInputFromIoNodeLink } from './canvas/ToInputFromIoNodeLink'

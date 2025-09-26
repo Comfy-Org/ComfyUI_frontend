@@ -1,4 +1,3 @@
-<!-- Prompt user that the workflow contains API nodes that needs login to run -->
 <template>
   <div class="flex flex-col gap-4 max-w-96 h-110 p-2">
     <div class="text-2xl font-medium mb-2">

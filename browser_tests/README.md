@@ -16,8 +16,13 @@ Without this flag, parallel tests will conflict and fail randomly.
 
 ### ComfyUI devtools
 
-Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` directory.  
+ComfyUI_devtools is now included in this repository under `tools/devtools/`. During CI/CD, these files are automatically copied to the `custom_nodes` directory.  
 _ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
+
+For local development, copy the devtools files to your ComfyUI installation:
+```bash
+cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
+```
 
 ### Node.js & Playwright Prerequisites
 
@@ -50,14 +55,6 @@ TEST_COMFYUI_DIR=/path/to/your/ComfyUI
 ```
 
 ### Common Setup Issues
-
-**Most tests require the new menu system** - Add to your test:
-
-```typescript
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-})
-```
 
 ### Release API Mocking
 

@@ -1,4 +1,4 @@
-import { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 export function formatCamelCase(str: string): string {
@@ -31,10 +31,6 @@ export function appendJsonExt(path: string) {
     path += '.json'
   }
   return path
-}
-
-export function trimJsonExt(path?: string) {
-  return path?.replace(/\.json$/, '')
 }
 
 export function highlightQuery(text: string, query: string) {
@@ -81,35 +77,13 @@ export function formatSize(value?: number) {
 }
 
 /**
- * Finds the common directory prefix between two paths
- * @example
- * findCommonPrefix('a/b/c', 'a/b/d') // returns 'a/b'
- * findCommonPrefix('x/y/z', 'a/b/c') // returns ''
- * findCommonPrefix('a/b/c', 'a/b/c/d') // returns 'a/b/c'
- */
-export function findCommonPrefix(path1: string, path2: string): string {
-  const parts1 = path1.split('/')
-  const parts2 = path2.split('/')
-
-  const commonParts: string[] = []
-  for (let i = 0; i < Math.min(parts1.length, parts2.length); i++) {
-    if (parts1[i] === parts2[i]) {
-      commonParts.push(parts1[i])
-    } else {
-      break
-    }
-  }
-  return commonParts.join('/')
-}
-
-/**
  * Returns various filename components.
  * Example:
  * - fullFilename: 'file.txt'
  * - filename: 'file'
  * - suffix: 'txt'
  */
-export function getFilenameDetails(fullFilename: string) {
+function getFilenameDetails(fullFilename: string) {
   if (fullFilename.includes('.')) {
     return {
       filename: fullFilename.split('.').slice(0, -1).join('.'),
@@ -390,59 +364,6 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
   }
 }
 
-export const isSemVer = (
-  version: string
-): version is `${number}.${number}.${number}` => {
-  const regex = /^\d+\.\d+\.\d+$/
-  return regex.test(version)
-}
-
-const normalizeVersion = (version: string) =>
-  version
-    .split(/[+.-]/)
-    .map(Number)
-    .filter((part) => !Number.isNaN(part))
-
-export function compareVersions(
-  versionA: string | undefined,
-  versionB: string | undefined
-): number {
-  versionA ??= '0.0.0'
-  versionB ??= '0.0.0'
-
-  const aParts = normalizeVersion(versionA)
-  const bParts = normalizeVersion(versionB)
-
-  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-    const aPart = aParts[i] ?? 0
-    const bPart = bParts[i] ?? 0
-    if (aPart < bPart) return -1
-    if (aPart > bPart) return 1
-  }
-
-  return 0
-}
-
-/**
- * Converts a currency amount to Metronome's integer representation.
- * For USD, converts to cents (multiplied by 100).
- * For all other currencies (including custom pricing units), returns the amount as is.
- * This is specific to Metronome's API requirements.
- *
- * @param amount - The amount in currency to convert
- * @param currency - The currency to convert
- * @returns The amount in Metronome's integer format (cents for USD, base units for others)
- * @example
- * toMetronomeCurrency(1.23, 'usd') // returns 123 (cents)
- * toMetronomeCurrency(1000, 'jpy') // returns 1000 (yen)
- */
-export function toMetronomeCurrency(amount: number, currency: string): number {
-  if (currency === 'usd') {
-    return Math.round(amount * 100)
-  }
-  return amount
-}
-
 /**
  * Converts Metronome's integer amount back to a formatted currency string.
  * For USD, converts from cents to dollars.
@@ -525,7 +446,7 @@ export function formatVersionAnchor(version: string): string {
 /**
  * Supported locale types for the application (from OpenAPI schema)
  */
-export type SupportedLocale = NonNullable<
+type SupportedLocale = NonNullable<
   operations['getReleaseNotes']['parameters']['query']['locale']
 >
 

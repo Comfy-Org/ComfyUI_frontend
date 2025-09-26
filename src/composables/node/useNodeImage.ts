@@ -1,5 +1,5 @@
-import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
@@ -35,7 +35,7 @@ const createContainer = () => {
 const createTimeout = (ms: number) =>
   new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
 
-export const useNodePreview = <T extends MediaElement>(
+const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
 ) => {

@@ -1,10 +1,3 @@
-import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
-import { useComboWidget } from '@/composables/widgets/useComboWidget'
-import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
-import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
-import { useIntWidget } from '@/composables/widgets/useIntWidget'
-import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
-import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -12,10 +5,26 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
+import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
+import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
+import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
+import { useFileUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFileUploadWidget'
+import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
+import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
+import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
+import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
+import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
+import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
+import { useMultiSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMultiSelectWidget'
+import { useSelectButtonWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useSelectButtonWidget'
+import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
+import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
+import { useTreeSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTreeSelectWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'
 import './domWidget'
@@ -288,5 +297,14 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
-  IMAGEUPLOAD: useImageUploadWidget()
+  IMAGEUPLOAD: useImageUploadWidget(),
+  FILEUPLOAD: transformWidgetConstructorV2ToV1(useFileUploadWidget()),
+  COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
+  IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
+  TREESELECT: transformWidgetConstructorV2ToV1(useTreeSelectWidget()),
+  MULTISELECT: transformWidgetConstructorV2ToV1(useMultiSelectWidget()),
+  CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
+  GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
+  SELECTBUTTON: transformWidgetConstructorV2ToV1(useSelectButtonWidget()),
+  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget())
 }

@@ -310,6 +310,8 @@
     "disabling": "Désactivation",
     "dismiss": "Fermer",
     "download": "Télécharger",
+    "dropYourFileOr": "Déposez votre fichier ou",
+    "duplicate": "Dupliquer",
     "edit": "Modifier",
     "empty": "Vide",
     "enableAll": "Activer tout",
@@ -806,6 +808,8 @@
     "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
     "Sign Out": "Se déconnecter",
     "Toggle Essential Bottom Panel": "Basculer le panneau inférieur essentiel",
+    "Toggle Bottom Panel": "Basculer le panneau inférieur",
+    "Toggle Focus Mode": "Basculer le mode focus",
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
     "Toggle Model Library Sidebar": "Afficher/Masquer la barre latérale de la bibliothèque de modèles",
     "Toggle Node Library Sidebar": "Afficher/Masquer la barre latérale de la bibliothèque de nœuds",
@@ -814,15 +818,33 @@
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
     "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
+    "Toggle Workflows Sidebar": "Afficher/Masquer la barre latérale des workflows",
     "Toggle the Custom Nodes Manager": "Basculer le gestionnaire de nœuds personnalisés",
     "Toggle the Custom Nodes Manager Progress Bar": "Basculer la barre de progression du gestionnaire de nœuds personnalisés",
     "Undo": "Annuler",
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
     "Unload Models": "Décharger les modèles",
     "Unload Models and Execution Cache": "Décharger les modèles et le cache d'exécution",
+    "Unlock Canvas": "Déverrouiller le canevas",
+    "Unpack the selected Subgraph": "Décompresser le Subgraph sélectionné",
+    "View": "Afficher",
     "Workflow": "Flux de travail",
+    "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
-    "Zoom Out": "Zoom arrière"
+    "Zoom Out": "Zoom arrière",
+    "Zoom to fit": "Ajuster à l'écran"
+  },
+  "minimap": {
+    "nodeColors": "Couleurs des nœuds",
+    "renderBypassState": "Afficher l'état de contournement",
+    "renderErrorState": "Afficher l'état d'erreur",
+    "showGroups": "Afficher les cadres/groupes",
+    "showLinks": "Afficher les liens",
+    "Zoom Out": "Zoom arrière",
+    "sideToolbar_modelLibrary": "Bibliothèque de modèles",
+    "sideToolbar_nodeLibrary": "Bibliothèque de nœuds",
+    "sideToolbar_queue": "File d'attente",
+    "sideToolbar_workflows": "Flux de travail"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
@@ -1138,6 +1160,7 @@
     "UV": "UV",
     "User": "Utilisateur",
     "Validation": "Validation",
+    "Vue Nodes": "Nœuds Vue",
     "Window": "Fenêtre",
     "Workflow": "Flux de Travail"
   },
@@ -1200,6 +1223,10 @@
       }
     },
     "workflows": "Flux de travail"
+  },
+  "subgraphStore": {
+    "blueprintName": "Nom du sous-graphe",
+    "saveBlueprint": "Enregistrer le sous-graphe dans la bibliothèque"
   },
   "tabMenu": {
     "addToBookmarks": "Ajouter aux Favoris",

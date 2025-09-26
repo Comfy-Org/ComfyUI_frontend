@@ -215,6 +215,9 @@
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "发布子图"
+  },
   "Comfy_QueuePrompt": {
     "label": "执行提示词"
   },
@@ -279,13 +282,13 @@
     "label": "切换日志底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "切换基础底部面板"
+    "label": "切換基本下方面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "切换视图控制底部面板"
+    "label": "切換檢視控制底部面板"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "显示快捷键对话框"
+    "label": "顯示快捷鍵對話框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

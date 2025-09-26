@@ -28,7 +28,7 @@ vi.mock('@/scripts/api', () => ({
   api: mockApi
 }))
 
-vi.mock('@/stores/toastStore', () => ({
+vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => mockToastStore)
 }))
 

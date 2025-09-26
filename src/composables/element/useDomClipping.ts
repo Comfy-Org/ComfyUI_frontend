@@ -1,4 +1,5 @@
-import { CSSProperties, ref } from 'vue'
+import type { CSSProperties } from 'vue'
+import { ref } from 'vue'
 
 interface Rect {
   x: number
@@ -23,7 +24,7 @@ function intersect(a: Rect, b: Rect): [number, number, number, number] | null {
   return [x1, y1, x2 - x1, y2 - y1]
 }
 
-export interface ClippingOptions {
+interface ClippingOptions {
   margin?: number
 }
 

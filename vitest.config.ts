@@ -20,11 +20,20 @@ export default defineConfig({
     retry: process.env.CI ? 2 : 0,
     include: [
       'tests-ui/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'src/components/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       reporter: ['text', 'json', 'html']
-    }
+    },
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
+      'src/lib/litegraph/test/**'
+    ],
+    silent: 'passed-only'
   },
   resolve: {
     alias: {

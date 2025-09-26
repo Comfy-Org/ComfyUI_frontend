@@ -141,14 +141,15 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useDialogService } from '@/services/dialogService'
-import { type ReleaseNote } from '@/services/releaseService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Types
 interface MenuItem {
@@ -167,7 +168,8 @@ const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
+  DESKTOP_GUIDE_WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
+  DESKTOP_GUIDE_MACOS: 'https://docs.comfy.org/installation/desktop/macos',
   UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
@@ -191,7 +193,6 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
 
 // Emits
 const emit = defineEmits<{
@@ -222,7 +223,11 @@ const moreItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.desktopUserGuide'),
       visible: isElectron(),
       action: () => {
-        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+        const docsUrl =
+          electronAPI().getPlatform() === 'darwin'
+            ? EXTERNAL_LINKS.DESKTOP_GUIDE_MACOS
+            : EXTERNAL_LINKS.DESKTOP_GUIDE_WINDOWS
+        openExternalLink(docsUrl)
         emit('close')
       }
     },
@@ -313,8 +318,11 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: PuzzleIcon,
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
-      action: () => {
-        dialogService.showManagerDialog()
+      action: async () => {
+        await useManagerState().openManager({
+          initialTab: ManagerTab.All,
+          showToastOnLegacyError: false
+        })
         emit('close')
       }
     },

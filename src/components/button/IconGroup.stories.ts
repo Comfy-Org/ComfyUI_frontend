@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { Download, ExternalLink, Heart } from 'lucide-vue-next'
 
 import IconButton from './IconButton.vue'
 import IconGroup from './IconGroup.vue'
@@ -17,17 +16,17 @@ type Story = StoryObj<typeof IconGroup>
 
 export const Basic: Story = {
   render: () => ({
-    components: { IconGroup, IconButton, Download, ExternalLink, Heart },
+    components: { IconGroup, IconButton },
     template: `
       <IconGroup>
         <IconButton @click="console.log('Hello World!!')">
-          <Heart :size="16" />
+          <i class="icon-[lucide--heart] size-4" />
         </IconButton>
         <IconButton @click="console.log('Hello World!!')">
-          <Download :size="16" />
+          <i class="icon-[lucide--download] size-4" />
         </IconButton>
         <IconButton @click="console.log('Hello World!!')">
-          <ExternalLink :size="16" />
+          <i class="icon-[lucide--external-link] size-4" />
         </IconButton>
       </IconGroup>
     `

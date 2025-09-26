@@ -304,9 +304,14 @@ export class LiteGraphGlobal {
   /**
    * "standard": change the dragging on left mouse button click to select, enable middle-click or spacebar+left-click dragging
    * "legacy": Enable dragging on left-click (original behavior)
+   * "custom": Use leftMouseClickBehavior and mouseWheelScroll settings
    * @default "legacy"
    */
-  canvasNavigationMode: 'standard' | 'legacy' = 'legacy'
+  canvasNavigationMode: 'standard' | 'legacy' | 'custom' = 'legacy'
+
+  leftMouseClickBehavior: 'panning' | 'select' = 'panning'
+
+  mouseWheelScroll: 'panning' | 'zoom' = 'panning'
 
   /**
    * If `true`, widget labels and values will both be truncated (proportionally to size),
@@ -329,6 +334,18 @@ export class LiteGraphGlobal {
    * @default true
    */
   saveViewportWithGraph: boolean = true
+
+  /**
+   * Enable Vue nodes mode for rendering and positioning.
+   * When true:
+   * - Nodes will calculate slot positions using Vue component dimensions
+   * - LiteGraph will skip rendering node bodies entirely
+   * - Vue components will handle all node rendering
+   * - LiteGraph continues to render connections, links, and graph background
+   * This should be set by the frontend when the Vue nodes feature is enabled.
+   * @default false
+   */
+  vueNodesMode: boolean = false
 
   // TODO: Remove legacy accessors
   LGraph = LGraph
