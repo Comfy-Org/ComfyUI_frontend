@@ -267,7 +267,7 @@ The project supports three types of icons, all with automatic imports (no manual
 
 Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Custom icons are stored in `packages/design-system/src/icons/` and processed by `packages/design-system/src/iconCollection.ts` with automatic validation.
 
-For detailed instructions and code examples, see [src/assets/icons/README.md](src/assets/icons/README.md).
+For detailed instructions and code examples, see [packages/design-system/src/icons/README.md](packages/design-system/src/icons/README.md).
 
 ## Working with litegraph.js
 
