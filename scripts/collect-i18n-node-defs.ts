@@ -1,5 +1,7 @@
 import * as fs from 'fs'
 
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
@@ -36,8 +38,8 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
       return (
         Object.values(rawNodeDefs)
           // Ignore DevTools nodes (used for internal testing)
-          .filter((def: any) => !def.name.startsWith('DevTools'))
-          .map((def: any) => new ComfyNodeDefImpl(def))
+          .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
+          .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
       )
     }
   )
