@@ -215,7 +215,7 @@ describe('WidgetSelect Value Binding', () => {
       const dropdown = wrapper.findComponent(WidgetSelectDropdown)
 
       expect(dropdown.exists()).toBe(true)
-      expect(dropdown.props('mediaKind')).toBe('audio')
+      expect(dropdown.props('assetKind')).toBe('audio')
       expect(dropdown.props('allowUpload')).toBe(false)
     })
 

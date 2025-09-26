@@ -2,7 +2,7 @@
   <WidgetSelectDropdown
     v-if="isDropdownUIWidget"
     v-bind="props"
-    :media-kind="mediaKind"
+    :asset-kind="assetKind"
     :allow-upload="allowUpload"
     :upload-folder="uploadFolder"
     @update:model-value="handleUpdateModelValue"
@@ -23,7 +23,7 @@ import {
   isComboInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { MediaKind } from '@/types/widgetTypes'
+import type { AssetKind } from '@/types/widgetTypes'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
@@ -51,7 +51,7 @@ const specDescriptor = computed(() => {
   const spec = comboSpec.value
   if (!spec) {
     return {
-      kind: 'unknown' as MediaKind,
+      kind: 'unknown' as AssetKind,
       allowUpload: false,
       folder: undefined as ResultItemType | undefined
     }
@@ -68,7 +68,7 @@ const specDescriptor = computed(() => {
     (spec as Partial<Record<'audio_upload', boolean>>).audio_upload
   )
 
-  let kind: MediaKind = 'unknown'
+  let kind: AssetKind = 'unknown'
   if (video_upload) {
     kind = 'video'
   } else if (image_upload || animated_image_upload) {
@@ -95,8 +95,8 @@ const specDescriptor = computed(() => {
   }
 })
 
-const mediaKind = computed(() => specDescriptor.value.kind)
-const isDropdownUIWidget = computed(() => mediaKind.value !== 'unknown')
+const assetKind = computed(() => specDescriptor.value.kind)
+const isDropdownUIWidget = computed(() => assetKind.value !== 'unknown')
 const allowUpload = computed(() => specDescriptor.value.allowUpload)
 const uploadFolder = computed<ResultItemType>(() => {
   return specDescriptor.value.folder ?? 'input'

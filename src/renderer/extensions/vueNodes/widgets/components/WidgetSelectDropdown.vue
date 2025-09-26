@@ -3,11 +3,12 @@ import { computed, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { MediaKind } from '@/types/widgetTypes'
+import type { AssetKind } from '@/types/widgetTypes'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -25,7 +26,7 @@ const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
   readonly?: boolean
-  mediaKind?: MediaKind
+  assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
 }>()
@@ -73,20 +74,20 @@ const mediaPlaceholder = computed(() => {
     return options.placeholder
   }
 
-  switch (props.mediaKind) {
+  switch (props.assetKind) {
     case 'image':
-      return 'Select image...'
+      return t('widgets.uploadSelect.placeholderImage')
     case 'video':
-      return 'Select video...'
+      return t('widgets.uploadSelect.placeholderVideo')
     case 'audio':
-      return 'Select audio...'
+      return t('widgets.uploadSelect.placeholderAudio')
     case 'model':
-      return 'Select model...'
+      return t('widgets.uploadSelect.placeholderModel')
     case 'unknown':
-      return 'Select media...'
+      return t('widgets.uploadSelect.placeholderUnknown')
   }
 
-  return 'Select media...'
+  return t('widgets.uploadSelect.placeholder')
 })
 
 const uploadable = computed(() => props.allowUpload === true)
@@ -198,7 +199,7 @@ async function handleFilesUpdate(files: File[]) {
 }
 
 function getMediaUrl(filename: string): string {
-  if (props.mediaKind !== 'image') return ''
+  if (props.assetKind !== 'image') return ''
   // TODO: This needs to be adapted based on actual ComfyUI API structure
   return `/api/view?filename=${encodeURIComponent(filename)}&type=input`
 }

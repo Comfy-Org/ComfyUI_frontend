@@ -1823,7 +1823,12 @@
   "widgets": {
     "selectModel": "Select model",
     "uploadSelect": {
-      "placeholder": "Select..."
+      "placeholder": "Select...",
+      "placeholderImage": "Select image...",
+      "placeholderAudio": "Select audio...",
+      "placeholderVideo": "Select video...",
+      "placeholderModel": "Select model...",
+      "placeholderUnknown": "Select media..."
     }
   },
   "nodeHelpPage": {
