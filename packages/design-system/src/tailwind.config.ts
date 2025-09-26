@@ -1,6 +1,8 @@
 import lucide from '@iconify-json/lucide/icons.json' with { type: 'json' }
 import { addDynamicIconSelectors } from '@iconify/tailwind'
 
+import { iconCollection } from './iconCollection'
+
 export default {
   content: [],
   safelist: [
@@ -15,6 +17,7 @@ export default {
   plugins: [
     addDynamicIconSelectors({
       iconSets: {
+        comfy: iconCollection,
         lucide
       },
       prefix: 'icon'
