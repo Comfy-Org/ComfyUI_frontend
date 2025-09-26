@@ -1,4 +1,4 @@
-import { default as baseConfig } from '@comfyorg/design-system/tailwind-config'
+import baseConfig from '@comfyorg/design-system/tailwind-config'
 
 export default {
   ...baseConfig,
