@@ -1,26 +1,17 @@
-import lucide from '@iconify-json/lucide/icons.json' with { type: 'json' }
+import { default as baseConfig } from '@comfyorg/design-system/tailwind-config'
 import { addDynamicIconSelectors } from '@iconify/tailwind'
 
 import { iconCollection } from './build/customIconCollection'
 
 export default {
+  ...baseConfig,
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
-
-  safelist: [
-    'icon-[lucide--folder]',
-    'icon-[lucide--package]',
-    'icon-[lucide--image]',
-    'icon-[lucide--video]',
-    'icon-[lucide--box]',
-    'icon-[lucide--audio-waveform]',
-    'icon-[lucide--message-circle]'
-  ],
-
   plugins: [
+    ...(baseConfig.plugins || []),
+    // Add app-specific comfy icons on top of the base config (which has lucide)
     addDynamicIconSelectors({
       iconSets: {
-        comfy: iconCollection,
-        lucide
+        comfy: iconCollection
       },
       prefix: 'icon'
     })
