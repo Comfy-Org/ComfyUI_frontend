@@ -53,7 +53,7 @@ export function toggleNodeOptions(
 /**
  * Hide the node options popover
  */
-export interface NodeOptionsInstance {
+interface NodeOptionsInstance {
   toggle: (
     event: Event,
     element: HTMLElement,
