@@ -49,13 +49,17 @@ const comboSpec = computed<ComboInputSpec | undefined>(() => {
   return undefined
 })
 
-const specDescriptor = computed(() => {
+const specDescriptor = computed<{
+  kind: AssetKind
+  allowUpload: boolean
+  folder: ResultItemType | undefined
+}>(() => {
   const spec = comboSpec.value
   if (!spec) {
     return {
-      kind: 'unknown' as AssetKind,
+      kind: 'unknown',
       allowUpload: false,
-      folder: undefined as ResultItemType | undefined
+      folder: undefined
     }
   }
 
@@ -63,36 +67,26 @@ const specDescriptor = computed(() => {
     image_upload,
     animated_image_upload,
     video_upload,
-    widgetType,
-    image_folder
+    image_folder,
+    audio_upload
   } = spec
-  const audioUpload = Boolean(
-    (spec as Partial<Record<'audio_upload', boolean>>).audio_upload
-  )
 
   let kind: AssetKind = 'unknown'
   if (video_upload) {
     kind = 'video'
   } else if (image_upload || animated_image_upload) {
     kind = 'image'
-  } else if (audioUpload) {
+  } else if (audio_upload) {
     kind = 'audio'
-  } else if (widgetType) {
-    const normalized = widgetType.toLowerCase()
-    if (normalized.includes('model')) {
-      kind = 'model'
-    } else if (normalized.includes('audio')) {
-      kind = 'audio'
-    } else if (normalized.includes('image')) {
-      kind = 'image'
-    } else if (normalized.includes('video')) {
-      kind = 'video'
-    }
   }
+  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
 
   return {
     kind,
-    allowUpload: image_upload === true || animated_image_upload === true,
+    allowUpload:
+      image_upload === true ||
+      animated_image_upload === true ||
+      audio_upload === true,
     folder: image_folder
   }
 })
