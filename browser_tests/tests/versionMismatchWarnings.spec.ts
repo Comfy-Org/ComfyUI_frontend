@@ -108,9 +108,7 @@ test.describe('Version Mismatch Warnings', () => {
 
     // Wait for the dismissed state to be persisted
     await comfyPage.page.waitForFunction(
-      () =>
-        localStorage.getItem('comfyui_version_mismatch_warning_dismissed') ===
-        'true'
+      () => !!localStorage.getItem('comfy.versionMismatch.dismissals')
     )
 
     // Reload the page, keeping local storage
