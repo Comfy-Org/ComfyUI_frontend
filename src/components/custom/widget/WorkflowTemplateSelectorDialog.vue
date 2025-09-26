@@ -134,16 +134,15 @@
         <!-- Template Cards Grid -->
         <div
           :key="templateListKey"
-          class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4 py-4"
+          :style="gridStyle"
           data-testid="template-workflows-content"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
           <CardContainer
             v-for="n in isLoading ? 12 : 0"
             :key="`initial-skeleton-${n}`"
-            ratio="square"
-            :max-width="300"
-            :min-width="200"
+            ratio="smallSquare"
+            type="workflow-template-card"
           >
             <template #top>
               <CardTop ratio="landscape">
@@ -174,20 +173,20 @@
             :key="template.name"
             ref="cardRefs"
             v-memo="[template.name, hoveredTemplate === template.name]"
-            ratio="none"
-            :max-width="300"
-            :min-width="200"
-            class="cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+            ratio="smallSquare"
+            type="workflow-template-card"
             :data-testid="`template-workflow-${template.name}`"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
           >
             <template #top>
-              <CardTop ratio="landscape">
+              <CardTop ratio="square">
                 <template #default>
                   <!-- Template Thumbnail -->
-                  <div class="w-full h-full relative">
+                  <div
+                    class="w-full h-full relative rounded-lg overflow-hidden"
+                  >
                     <template v-if="template.mediaType === 'audio'">
                       <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
                     </template>
@@ -266,49 +265,47 @@
               </CardTop>
             </template>
             <template #bottom>
-              <CardBottom :full-height="false">
-                <div class="flex flex-col px-4 flex-1">
-                  <div class="flex-1">
-                    <h3
-                      class="line-clamp-2 text-lg font-normal mb-1"
-                      :title="
-                        getTemplateTitle(
-                          template,
-                          getEffectiveSourceModule(template)
-                        )
-                      "
-                    >
-                      {{
-                        getTemplateTitle(
-                          template,
-                          getEffectiveSourceModule(template)
-                        )
-                      }}
-                    </h3>
-                    <div class="flex justify-between gap-2">
+              <CardBottom>
+                <div class="flex flex-col gap-2 pt-3">
+                  <h3
+                    class="line-clamp-1 text-sm m-0"
+                    :title="
+                      getTemplateTitle(
+                        template,
+                        getEffectiveSourceModule(template)
+                      )
+                    "
+                  >
+                    {{
+                      getTemplateTitle(
+                        template,
+                        getEffectiveSourceModule(template)
+                      )
+                    }}
+                  </h3>
+                  <div class="flex justify-between gap-2">
+                    <div class="flex-1">
                       <p
-                        class="line-clamp-2 text-sm text-muted mb-3"
+                        class="line-clamp-2 text-sm text-muted m-0"
                         :title="getTemplateDescription(template)"
                       >
                         {{ getTemplateDescription(template) }}
                       </p>
-                      <div
-                        v-if="template.tutorialUrl"
-                        class="flex flex-col-reverse justify-center"
+                    </div>
+                    <div
+                      v-if="template.tutorialUrl"
+                      class="flex flex-col-reverse justify-center"
+                    >
+                      <IconButton
+                        v-if="hoveredTemplate === template.name"
+                        v-tooltip.bottom="$t('g.seeTutorial')"
+                        v-bind="$attrs"
+                        type="primary"
+                        size="sm"
+                        @click.stop="openTutorial(template)"
                       >
-                        <button
-                          v-tooltip.bottom="$t('g.seeTutorial')"
-                          :class="[
-                            'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
-                            hoveredTemplate === template.name
-                              ? 'opacity-100'
-                              : 'opacity-0 pointer-events-none'
-                          ]"
-                          @click.stop="openTutorial(template)"
-                        >
-                          <i class="icon-[comfy--dark-info] w-4 h-4" />
-                        </button>
-                      </div>
+                        <i class="icon-[lucide--info] size-4" />
+                      </IconButton>
                     </div>
                   </div>
                 </div>
@@ -320,12 +317,11 @@
           <CardContainer
             v-for="n in isLoadingMore ? 6 : 0"
             :key="`skeleton-${n}`"
-            ratio="square"
-            :max-width="300"
-            :min-width="200"
+            ratio="smallSquare"
+            type="workflow-template-card"
           >
             <template #top>
-              <CardTop ratio="landscape">
+              <CardTop ratio="square">
                 <template #default>
                   <div
                     class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
@@ -382,6 +378,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -404,6 +401,7 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
@@ -475,6 +473,8 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
   }
   return workflowTemplatesStore.navGroupedTemplates
 })
+
+const gridStyle = computed(() => createGridStyle())
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => {

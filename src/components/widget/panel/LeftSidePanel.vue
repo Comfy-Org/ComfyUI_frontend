@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800 overflow-y-scroll"
-  >
+  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800">
     <PanelHeader>
       <template #icon>
         <slot name="header-icon"></slot>
@@ -9,7 +7,9 @@
       <slot name="header-title"></slot>
     </PanelHeader>
 
-    <nav class="flex-1 px-3 py-4 flex flex-col gap-1">
+    <nav
+      class="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto scrollbar-hide"
+    >
       <template v-for="(item, index) in navItems" :key="index">
         <div v-if="'items' in item" class="flex flex-col gap-2">
           <NavTitle
