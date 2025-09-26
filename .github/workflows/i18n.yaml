@@ -11,7 +11,7 @@ on:
 jobs:
   update-locales:
     # Branch detection: Only run for manual dispatch or version-bump-* branches from main repo
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-'))
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-')) || startsWith(github.head_ref, 'sno-fix-locale')
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
