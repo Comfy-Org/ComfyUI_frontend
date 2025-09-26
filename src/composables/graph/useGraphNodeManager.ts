@@ -8,6 +8,8 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
@@ -44,6 +46,7 @@ export interface SafeWidgetData {
   value: WidgetValue
   options?: Record<string, unknown>
   callback?: ((value: unknown) => void) | undefined
+  spec?: InputSpecV2
 }
 
 export interface VueNodeData {
@@ -105,6 +108,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   // Get layout mutations composable
   const { moveNode, resizeNode, createNode, deleteNode, setSource } =
     useLayoutMutations()
+  const nodeDefStore = useNodeDefStore()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
   const nodeState = reactive(new Map<string, NodeState>())
@@ -189,13 +193,15 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         ) {
           value = widget.options.values[0]
         }
+        const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
 
         return {
           name: widget.name,
           type: widget.type,
           value: value,
           options: widget.options ? { ...widget.options } : undefined,
-          callback: widget.callback
+          callback: widget.callback,
+          spec
         }
       } catch (error) {
         return {
@@ -203,7 +209,8 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
           type: widget.type || 'text',
           value: undefined, // Already a valid WidgetValue
           options: undefined,
-          callback: undefined
+          callback: undefined,
+          spec: undefined
         }
       }
     })

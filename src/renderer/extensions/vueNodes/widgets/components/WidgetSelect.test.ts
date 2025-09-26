@@ -4,9 +4,12 @@ import Select from 'primevue/select'
 import type { SelectProps } from 'primevue/select'
 import { describe, expect, it } from 'vitest'
 
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelect from './WidgetSelect.vue'
+import WidgetSelectDefault from './WidgetSelectDefault.vue'
+import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
 
 describe('WidgetSelect Value Binding', () => {
   const createMockWidget = (
@@ -14,7 +17,8 @@ describe('WidgetSelect Value Binding', () => {
     options: Partial<
       SelectProps & { values?: string[]; return_index?: boolean }
     > = {},
-    callback?: (value: string | number | undefined) => void
+    callback?: (value: string | number | undefined) => void,
+    spec?: ComboInputSpec
   ): SimplifiedWidget<string | number | undefined> => ({
     name: 'test_select',
     type: 'combo',
@@ -23,7 +27,8 @@ describe('WidgetSelect Value Binding', () => {
       values: ['option1', 'option2', 'option3'],
       ...options
     },
-    callback
+    callback,
+    spec
   })
 
   const mountComponent = (
@@ -182,6 +187,46 @@ describe('WidgetSelect Value Binding', () => {
       // Should maintain string type in emitted event
       expect(emitted).toBeDefined()
       expect(emitted![0]).toContain('100')
+    })
+  })
+
+  describe('Spec-aware rendering', () => {
+    it('uses dropdown variant when combo spec enables image uploads', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'test_select',
+        image_upload: true
+      }
+      const widget = createMockWidget('option1', {}, undefined, spec)
+      const wrapper = mountComponent(widget, 'option1')
+
+      expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(true)
+      expect(wrapper.findComponent(WidgetSelectDefault).exists()).toBe(false)
+    })
+
+    it('uses dropdown variant for audio uploads', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'test_select',
+        audio_upload: true
+      }
+      const widget = createMockWidget('clip.wav', {}, undefined, spec)
+      const wrapper = mountComponent(widget, 'clip.wav')
+      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+
+      expect(dropdown.exists()).toBe(true)
+      expect(dropdown.props('mediaKind')).toBe('audio')
+      expect(dropdown.props('allowUpload')).toBe(false)
+    })
+
+    it('keeps default select when no spec or media hints are present', () => {
+      const widget = createMockWidget('plain', {
+        values: ['plain', 'text']
+      })
+      const wrapper = mountComponent(widget, 'plain')
+
+      expect(wrapper.findComponent(WidgetSelectDefault).exists()).toBe(true)
+      expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(false)
     })
   })
 })

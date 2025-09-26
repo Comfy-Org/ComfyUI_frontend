@@ -1,8 +1,10 @@
 <template>
   <WidgetSelectDropdown
     v-if="isDropdownUIWidget"
-    :file-type="fileType"
     v-bind="props"
+    :media-kind="mediaKind"
+    :allow-upload="allowUpload"
+    :upload-folder="uploadFolder"
     @update:model-value="handleUpdateModelValue"
   />
   <WidgetSelectDefault
@@ -15,7 +17,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import type { ResultItemType } from '@/schemas/apiSchema'
+import {
+  type ComboInputSpec,
+  isComboInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { MediaKind } from '@/types/widgetTypes'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
@@ -34,61 +42,63 @@ function handleUpdateModelValue(value: string | number | undefined) {
   emit('update:modelValue', value)
 }
 
-const isImageWidget = computed(() =>
-  hasFilesWithExtensions(
-    props.widget.options?.values || [],
-    /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|ico)$/i
-  )
-)
-
-const isVideoWidget = computed(() =>
-  hasFilesWithExtensions(
-    props.widget.options?.values || [],
-    /\.(mp4|webm|ogg|mov)$/i
-  )
-)
-
-const isAudioWidget = computed(() =>
-  hasFilesWithExtensions(
-    props.widget.options?.values || [],
-    /\.(mp3|wav|ogg|flac|aac|m4a)$/i
-  )
-)
-
-const isModelWidget = computed(() =>
-  hasFilesWithExtensions(
-    props.widget.options?.values || [],
-    /\.(safetensors)$/i
-  )
-)
-
-const isDropdownUIWidget = computed(
-  () =>
-    isImageWidget.value ||
-    isVideoWidget.value ||
-    isAudioWidget.value ||
-    isModelWidget.value
-)
-
-const fileType = computed(() => {
-  if (isImageWidget.value) return 'image'
-  if (isVideoWidget.value) return 'video'
-  if (isAudioWidget.value) return 'audio'
-  if (isModelWidget.value) return 'model'
-  return 'unknown'
+const comboSpec = computed<ComboInputSpec | undefined>(() => {
+  if (!props.widget.spec) return undefined
+  return isComboInputSpec(props.widget.spec) ? props.widget.spec : undefined
 })
 
-function hasFilesWithExtensions(
-  values: any[],
-  extensionPattern: RegExp
-): boolean {
-  if (!Array.isArray(values) || values.length === 0) {
-    return false
+const specDescriptor = computed(() => {
+  const spec = comboSpec.value
+  if (!spec) {
+    return {
+      kind: 'unknown' as MediaKind,
+      allowUpload: false,
+      folder: undefined as ResultItemType | undefined
+    }
   }
 
-  return values.some((value) => {
-    if (typeof value !== 'string') return false
-    return extensionPattern.test(value)
-  })
-}
+  const {
+    image_upload,
+    animated_image_upload,
+    video_upload,
+    widgetType,
+    image_folder
+  } = spec
+  const audioUpload = Boolean(
+    (spec as Partial<Record<'audio_upload', boolean>>).audio_upload
+  )
+
+  let kind: MediaKind = 'unknown'
+  if (video_upload) {
+    kind = 'video'
+  } else if (image_upload || animated_image_upload) {
+    kind = 'image'
+  } else if (audioUpload) {
+    kind = 'audio'
+  } else if (widgetType) {
+    const normalized = widgetType.toLowerCase()
+    if (normalized.includes('model')) {
+      kind = 'model'
+    } else if (normalized.includes('audio')) {
+      kind = 'audio'
+    } else if (normalized.includes('image')) {
+      kind = 'image'
+    } else if (normalized.includes('video')) {
+      kind = 'video'
+    }
+  }
+
+  return {
+    kind,
+    allowUpload: image_upload === true || animated_image_upload === true,
+    folder: image_folder
+  }
+})
+
+const mediaKind = computed(() => specDescriptor.value.kind)
+const isDropdownUIWidget = computed(() => mediaKind.value !== 'unknown')
+const allowUpload = computed(() => specDescriptor.value.allowUpload)
+const uploadFolder = computed<ResultItemType>(() => {
+  return specDescriptor.value.folder ?? 'input'
+})
 </script>

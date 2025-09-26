@@ -1821,7 +1821,10 @@
     "copyTooltip": "Copy message to clipboard"
   },
   "widgets": {
-    "selectModel": "Select model"
+    "selectModel": "Select model",
+    "uploadSelect": {
+      "placeholder": "Select..."
+    }
   },
   "nodeHelpPage": {
     "inputs": "Inputs",

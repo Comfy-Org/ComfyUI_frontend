@@ -7,6 +7,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { MediaKind } from '@/types/widgetTypes'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -24,7 +25,9 @@ const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
   readonly?: boolean
-  fileType?: 'image' | 'video' | 'audio' | 'model' | 'unknown'
+  mediaKind?: MediaKind
+  allowUpload?: boolean
+  uploadFolder?: ResultItemType
 }>()
 
 const emit = defineEmits<{
@@ -70,7 +73,7 @@ const mediaPlaceholder = computed(() => {
     return options.placeholder
   }
 
-  switch (props.fileType) {
+  switch (props.mediaKind) {
     case 'image':
       return 'Select image...'
     case 'video':
@@ -86,9 +89,7 @@ const mediaPlaceholder = computed(() => {
   return 'Select media...'
 })
 
-const uploadable = computed(() => {
-  return props.fileType === 'image'
-})
+const uploadable = computed(() => props.allowUpload === true)
 
 watch(
   localValue,
@@ -152,8 +153,9 @@ const uploadFile = async (
 
 // Handle multiple file uploads
 const uploadFiles = async (files: File[]): Promise<string[]> => {
+  const folder = props.uploadFolder ?? 'input'
   const uploadPromises = files.map((file) =>
-    uploadFile(file, false, { type: 'input' })
+    uploadFile(file, false, { type: folder })
   )
   const results = await Promise.all(uploadPromises)
   return results.filter((path): path is string => path !== null)
@@ -196,7 +198,7 @@ async function handleFilesUpdate(files: File[]) {
 }
 
 function getMediaUrl(filename: string): string {
-  if (props.fileType !== 'image') return ''
+  if (props.mediaKind !== 'image') return ''
   // TODO: This needs to be adapted based on actual ComfyUI API structure
   return `/api/view?filename=${encodeURIComponent(filename)}&type=input`
 }

@@ -116,7 +116,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       type: widget.type,
       value: widget.value,
       options: widget.options,
-      callback: widget.callback
+      callback: widget.callback,
+      spec: widget.spec
     }
 
     const updateHandler = (value: unknown) => {
