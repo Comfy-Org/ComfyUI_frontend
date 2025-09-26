@@ -22,7 +22,9 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
+import { createSlotLinkDragSession } from '@/renderer/extensions/vueNodes/composables/slotLinkDragSession'
 import { app } from '@/scripts/app'
+import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {
   nodeId: string
@@ -89,6 +91,12 @@ export function useSlotLinkInteraction({
 
   const { state, beginDrag, endDrag, updatePointerPosition, setCandidate } =
     useSlotLinkDragState()
+  const conversion = useSharedCanvasPositionConversion()
+  const pointerSession = createPointerSession()
+  let activeAdapter: LinkConnectorAdapter | null = null
+
+  // Per-drag drag-state cache
+  const dragSession = createSlotLinkDragSession()
 
   function candidateFromTarget(
     target: EventTarget | null
@@ -106,16 +114,16 @@ export function useSlotLinkInteraction({
     const graph = app.canvas?.graph
     const adapter = ensureActiveAdapter()
     if (graph && adapter) {
-      if (layout.type === 'input') {
-        candidate.compatible = adapter.isInputValidDrop(
-          layout.nodeId,
-          layout.index
-        )
-      } else if (layout.type === 'output') {
-        candidate.compatible = adapter.isOutputValidDrop(
-          layout.nodeId,
-          layout.index
-        )
+      const cached = dragSession.compatCache.get(key)
+      if (cached != null) {
+        candidate.compatible = cached
+      } else {
+        const compatible =
+          layout.type === 'input'
+            ? adapter.isInputValidDrop(layout.nodeId, layout.index)
+            : adapter.isOutputValidDrop(layout.nodeId, layout.index)
+        dragSession.compatCache.set(key, compatible)
+        candidate.compatible = compatible
       }
     }
 
@@ -135,6 +143,15 @@ export function useSlotLinkInteraction({
     if (!adapter || !graph) return null
 
     const nodeId = Number(nodeIdStr)
+
+    // Cached preferred slot for this node within this drag
+    const cachedPreferred = dragSession.nodePreferred.get(nodeId)
+    if (cachedPreferred !== undefined) {
+      return cachedPreferred
+        ? { layout: cachedPreferred.layout, compatible: true }
+        : null
+    }
+
     const node = graph.getNodeById(nodeId)
     if (!node) return null
 
@@ -162,15 +179,17 @@ export function useSlotLinkInteraction({
       ? adapter.isInputValidDrop(nodeId, index)
       : adapter.isOutputValidDrop(nodeId, index)
 
-    return compatible ? { layout, compatible: true } : null
-
-    return null
+    if (compatible) {
+      dragSession.compatCache.set(key, true)
+      const preferred = { index, key, layout }
+      dragSession.nodePreferred.set(nodeId, preferred)
+      return { layout, compatible: true }
+    } else {
+      dragSession.compatCache.set(key, false)
+      dragSession.nodePreferred.set(nodeId, null)
+      return null
+    }
   }
-
-  const conversion = useSharedCanvasPositionConversion()
-
-  const pointerSession = createPointerSession()
-  let activeAdapter: LinkConnectorAdapter | null = null
 
   const ensureActiveAdapter = (): LinkConnectorAdapter | null => {
     if (!activeAdapter) activeAdapter = createLinkConnectorAdapter()
@@ -302,6 +321,8 @@ export function useSlotLinkInteraction({
     pointerSession.clear()
     endDrag()
     activeAdapter = null
+    raf.cancel()
+    dragSession.dispose()
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -315,26 +336,73 @@ export function useSlotLinkInteraction({
     updatePointerPosition(clientX, clientY, canvasX, canvasY)
   }
 
-  const handlePointerMove = (event: PointerEvent) => {
-    if (!pointerSession.matches(event)) return
-    updatePointerState(event)
+  const processPointerMoveFrame = () => {
+    const data = dragSession.pendingMove
+    if (!data) return
+    dragSession.pendingMove = null
 
-    const adapter = ensureActiveAdapter()
-    // Resolve a candidate from slot under cursor, else from node
-    const slotCandidate = candidateFromTarget(event.target)
-    const nodeCandidate = slotCandidate
-      ? null
-      : candidateFromNodeTarget(event.target)
-    const candidate = slotCandidate ?? nodeCandidate
+    const [canvasX, canvasY] = conversion.clientPosToCanvasPos([
+      data.clientX,
+      data.clientY
+    ])
+    updatePointerPosition(data.clientX, data.clientY, canvasX, canvasY)
 
-    // Update drag-state candidate; Vue preview renderer reads this
-    if (candidate?.compatible && adapter) {
-      setCandidate(candidate)
-    } else {
-      setCandidate(null)
+    let hoveredSlotKey: string | null = null
+    let hoveredNodeId: number | null = null
+    const target = data.target
+    if (target instanceof HTMLElement) {
+      hoveredSlotKey =
+        target.closest<HTMLElement>('[data-slot-key]')?.dataset['slotKey'] ??
+        null
+      if (!hoveredSlotKey) {
+        const nodeIdStr =
+          target.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId']
+        hoveredNodeId = nodeIdStr != null ? Number(nodeIdStr) : null
+      }
+    }
+
+    const hoverChanged =
+      hoveredSlotKey !== dragSession.lastHoverSlotKey ||
+      hoveredNodeId !== dragSession.lastHoverNodeId
+
+    let candidate: SlotDropCandidate | null = state.candidate
+
+    if (hoverChanged) {
+      const slotCandidate = candidateFromTarget(target)
+      const nodeCandidate = slotCandidate
+        ? null
+        : candidateFromNodeTarget(target)
+      candidate = slotCandidate ?? nodeCandidate
+      dragSession.lastHoverSlotKey = hoveredSlotKey
+      dragSession.lastHoverNodeId = hoveredNodeId
+    }
+
+    const newCandidate = candidate?.compatible ? candidate : null
+    const newCandidateKey = newCandidate
+      ? getSlotKey(
+          newCandidate.layout.nodeId,
+          newCandidate.layout.index,
+          newCandidate.layout.type === 'input'
+        )
+      : null
+
+    if (newCandidateKey !== dragSession.lastCandidateKey) {
+      setCandidate(newCandidate)
+      dragSession.lastCandidateKey = newCandidateKey
     }
 
     app.canvas?.setDirty(true)
+  }
+  const raf = createRafBatch(processPointerMoveFrame)
+
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!pointerSession.matches(event)) return
+    dragSession.pendingMove = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      target: event.target
+    }
+    raf.schedule()
   }
 
   // Attempt to finalize by connecting to a DOM slot candidate
@@ -426,6 +494,8 @@ export function useSlotLinkInteraction({
     if (!pointerSession.matches(event)) return
     event.preventDefault()
 
+    raf.flush()
+
     if (!state.source) {
       cleanupInteraction()
       app.canvas?.setDirty(true)
@@ -467,6 +537,8 @@ export function useSlotLinkInteraction({
 
   const handlePointerCancel = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
+
+    raf.flush()
     cleanupInteraction()
     app.canvas?.setDirty(true)
   }
@@ -481,6 +553,8 @@ export function useSlotLinkInteraction({
     if (!canvas || !graph) return
 
     ensureActiveAdapter()
+    raf.cancel()
+    dragSession.reset()
 
     const layout = layoutStore.getSlotLayout(
       getSlotKey(nodeId, index, type === 'input')
