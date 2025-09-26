@@ -57,6 +57,13 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     if (state) state.active = false
   }
 
+  const setWidget = (widget: BaseDOMWidget) => {
+    const state = widgetStates.value.get(widget.id)
+    if (!state) return
+    state.active = true
+    state.widget = widget
+  }
+
   const clear = () => {
     widgetStates.value.clear()
   }
@@ -69,6 +76,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     unregisterWidget,
     activateWidget,
     deactivateWidget,
+    setWidget,
     clear
   }
 })

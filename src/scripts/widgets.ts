@@ -1,3 +1,4 @@
+import '@/core/graph/subgraph/proxyWidget'
 import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
