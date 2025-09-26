@@ -93,6 +93,7 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -189,8 +190,8 @@ watch(
   }
 )
 
-const allNodes = computed(() =>
-  Array.from(vueNodeLifecycle.vueNodeData.value.values())
+const allNodes = computed((): VueNodeData[] =>
+  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
 
 watchEffect(() => {
