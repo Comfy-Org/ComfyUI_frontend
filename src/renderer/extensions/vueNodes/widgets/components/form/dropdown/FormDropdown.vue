@@ -3,6 +3,7 @@ import { refDebounced } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
+import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import FormDropdownInput from './FormDropdownInput.vue'
@@ -43,7 +44,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Select...',
+  placeholder: t('widgets.uploadSelect.placeholder'),
   multiple: false,
   uploadable: false,
   disabled: false,
@@ -119,7 +120,7 @@ const defaultSorter = computed<SortOption['sorter']>(() => {
   )?.sorter
   return sorter || (({ items }) => items.slice())
 })
-const SelectedSorter = computed<SortOption['sorter']>(() => {
+const selectedSorter = computed<SortOption['sorter']>(() => {
   if (sortSelected.value === 'default') return defaultSorter.value
   const sorter = props.sortOptions.find(
     (option) => option.id === sortSelected.value
@@ -127,7 +128,7 @@ const SelectedSorter = computed<SortOption['sorter']>(() => {
   return sorter || defaultSorter.value
 })
 const sortedItems = computed(() => {
-  return SelectedSorter.value({ items: filteredItems.value }) || []
+  return selectedSorter.value({ items: filteredItems.value }) || []
 })
 
 function internalIsSelected(item: DropdownItem, index: number): boolean {

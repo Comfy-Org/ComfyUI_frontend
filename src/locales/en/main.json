@@ -1851,7 +1851,15 @@
     "copyTooltip": "Copy message to clipboard"
   },
   "widgets": {
-    "selectModel": "Select model"
+    "selectModel": "Select model",
+    "uploadSelect": {
+      "placeholder": "Select...",
+      "placeholderImage": "Select image...",
+      "placeholderAudio": "Select audio...",
+      "placeholderVideo": "Select video...",
+      "placeholderModel": "Select model...",
+      "placeholderUnknown": "Select media..."
+    }
   },
   "nodeHelpPage": {
     "inputs": "Inputs",
