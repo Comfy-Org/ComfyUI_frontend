@@ -40,6 +40,7 @@
     ]"
     v-bind="pointerHandlers"
     @wheel="handleWheel"
+    @contextmenu="handleContextMenu"
   >
     <div class="flex items-center">
       <template v-if="isCollapsed">
@@ -135,6 +136,7 @@ import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -175,8 +177,12 @@ const {
   readonly = false
 } = defineProps<LGraphNodeProps>()
 
-const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
-  useNodeEventHandlers()
+const {
+  handleNodeCollapse,
+  handleNodeTitleUpdate,
+  handleNodeSelect,
+  handleNodeRightClick
+} = useNodeEventHandlers()
 
 useVueElementTracking(() => nodeData.id, 'node')
 
@@ -234,6 +240,21 @@ const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
 )
+
+// Handle right-click context menu
+const handleContextMenu = (event: MouseEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  // First handle the standard right-click behavior (selection)
+  handleNodeRightClick(event as PointerEvent, nodeData)
+
+  // Show the node options menu at the cursor position
+  const targetElement = event.currentTarget as HTMLElement
+  if (targetElement) {
+    toggleNodeOptions(event, targetElement, false)
+  }
+}
 
 onMounted(() => {
   if (size.value && transformState?.camera) {
