@@ -8,7 +8,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
@@ -46,7 +46,7 @@ export interface SafeWidgetData {
   value: WidgetValue
   options?: Record<string, unknown>
   callback?: ((value: unknown) => void) | undefined
-  spec?: InputSpecV2
+  spec?: InputSpec
 }
 
 export interface VueNodeData {
