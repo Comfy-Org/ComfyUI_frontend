@@ -328,6 +328,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return hadOutputs
   }
 
+  function restoreOutputs(
+    outputs: Record<string, ExecutedWsMessage['output']>
+  ) {
+    app.nodeOutputs = outputs
+    nodeOutputs.value = outputs
+  }
+
+  function resetAllOutputsAndPreviews() {
+    app.nodeOutputs = {}
+    nodeOutputs.value = {}
+    revokeAllPreviews()
+  }
+
   return {
     // Getters
     getNodeOutputs,
@@ -346,6 +359,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews,
     revokeSubgraphPreviews,
     removeNodeOutputs,
+    restoreOutputs,
+    resetAllOutputsAndPreviews,
 
     // State
     nodeOutputs,
