@@ -257,7 +257,7 @@ const handleContextMenu = (event: MouseEvent) => {
   // Show the node options menu at the cursor position
   const targetElement = event.currentTarget as HTMLElement
   if (targetElement) {
-    toggleNodeOptions(event, targetElement)
+    toggleNodeOptions(event, targetElement, false)
   }
 }
 

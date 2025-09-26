@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { type Ref, computed, ref } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -33,33 +33,43 @@ export enum BadgeVariant {
 }
 
 // Global singleton for NodeOptions component reference
-let nodeOptionsInstance: any = null
+let nodeOptionsInstance: null | NodeOptionsInstance = null
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  * @param element - The target element (button) that triggered the popover
  */
-export function toggleNodeOptions(event: Event, element: HTMLElement) {
+export function toggleNodeOptions(
+  event: Event,
+  element: HTMLElement,
+  clickedFromToolbox: boolean = false
+) {
   if (nodeOptionsInstance?.toggle) {
-    nodeOptionsInstance.toggle(event, element)
+    nodeOptionsInstance.toggle(event, element, clickedFromToolbox)
   }
 }
 
 /**
  * Hide the node options popover
  */
-//export function hideNodeOptions() {
-//if (nodeOptionsInstance?.hide) {
-//nodeOptionsInstance.hide()
-//}
-//}
+export interface NodeOptionsInstance {
+  toggle: (
+    event: Event,
+    element: HTMLElement,
+    clickedFromToolbox: boolean
+  ) => void
+  hide: () => void
+  isOpen: Ref<boolean>
+}
 
 /**
  * Register the NodeOptions component instance
  * @param instance - The NodeOptions component instance
  */
-export function registerNodeOptionsInstance(instance: any) {
+export function registerNodeOptionsInstance(
+  instance: null | NodeOptionsInstance
+) {
   nodeOptionsInstance = instance
 }
 
