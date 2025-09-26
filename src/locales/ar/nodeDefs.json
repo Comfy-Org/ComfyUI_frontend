@@ -7366,6 +7366,19 @@
       }
     }
   },
+  "SaveSVG": {
+    "description": "يحفظ ملفات SVG على القرص.",
+    "display_name": "حفظ SVG",
+    "inputs": {
+      "filename_prefix": {
+        "name": "بادئة اسم الملف",
+        "tooltip": "بادئة اسم الملف للحفظ. يمكن أن تتضمن معلومات تنسيق مثل %date:yyyy-MM-dd% أو %Empty Latent Image.width% لاستخدام قيم من العقد."
+      },
+      "svg": {
+        "name": "ملف SVG"
+      }
+    }
+  },
   "SaveVideo": {
     "description": "يحفظ الصور المدخلة في مجلد مخرجات ComfyUI الخاص بك.",
     "display_name": "حفظ الفيديو",

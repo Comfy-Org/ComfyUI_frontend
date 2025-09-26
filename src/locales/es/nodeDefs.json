@@ -7366,6 +7366,19 @@
       }
     }
   },
+  "SaveSVG": {
+    "description": "Guardar archivos SVG en el disco.",
+    "display_name": "Guardar SVG",
+    "inputs": {
+      "filename_prefix": {
+        "name": "prefijo_de_archivo",
+        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como %date:yyyy-MM-dd% o %Empty Latent Image.width% para incluir valores de los nodos."
+      },
+      "svg": {
+        "name": "svg"
+      }
+    }
+  },
   "SaveVideo": {
     "description": "Guarda las imágenes de entrada en tu directorio de salida de ComfyUI.",
     "display_name": "Guardar video",

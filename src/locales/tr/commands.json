@@ -77,6 +77,9 @@
   "Comfy_Canvas_ToggleMinimap": {
     "label": "Mini Haritayı Aç/Kapat"
   },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "Seçili Öğeleri Sabitle/Sabitlemeyi Kaldır"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Seçili Düğümleri Atla/Geri Al"
   },
@@ -88,9 +91,6 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "Seçili Düğümleri Sabitle/Sabitlemeyi Kaldır"
-  },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "Seçili Öğeleri Sabitle/Sabitlemeyi Kaldır"
   },
   "Comfy_Canvas_Unlock": {
     "label": "Tuvalin Kilidini Aç"
@@ -121,6 +121,9 @@
   },
   "Comfy_ExportWorkflowAPI": {
     "label": "İş Akışını Dışa Aktar (API Formatı)"
+  },
+  "Comfy_Feedback": {
+    "label": "Geri Bildirim Ver"
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Seçimi Alt Grafiğe Dönüştür"
@@ -272,6 +275,9 @@
   "Workspace_ToggleBottomPanel": {
     "label": "Alt Paneli Aç/Kapat"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Tuş Atamaları İletişim Kutusunu Göster"
+  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "Terminal Alt Panelini Aç/Kapat"
   },
@@ -283,9 +289,6 @@
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
     "label": "Görünüm Kontrolleri Alt Panelini Aç/Kapat"
-  },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "Tuş Atamaları İletişim Kutusunu Göster"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Odak Modunu Aç/Kapat"

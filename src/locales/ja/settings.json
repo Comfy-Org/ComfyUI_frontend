@@ -343,6 +343,14 @@
   "Comfy_Validation_Workflows": {
     "name": "ワークフローを検証"
   },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Vueノードレンダリングを有効化",
+    "tooltip": "ノードをキャンバス要素の代わりにVueコンポーネントとしてレンダリングします。実験的な機能です。"
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "Vueウィジェットを有効化",
+    "tooltip": "ウィジェットをVueノード内のVueコンポーネントとしてレンダリングします。"
+  },
   "Comfy_WidgetControlMode": {
     "name": "ウィジェット制御モード",
     "options": {
@@ -387,6 +395,10 @@
       "Topbar": "トップバー",
       "Topbar (2nd-row)": "トップバー（2行目）"
     }
+  },
+  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
+    "name": "低品質レンダリングズーム閾値",
+    "tooltip": "ズームアウト時に低品質の形状をレンダリングする"
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
