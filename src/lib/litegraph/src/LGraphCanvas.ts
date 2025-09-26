@@ -757,9 +757,7 @@ export class LGraphCanvas
 
     // Initialize link renderer if graph is available
     if (graph) {
-      this.linkRenderer = new LitegraphLinkAdapter()
-      // Disable layout writes during render
-      this.linkRenderer.enableLayoutStoreWrites = false
+      this.linkRenderer = new LitegraphLinkAdapter(false)
     }
 
     this.linkConnector.events.addEventListener('link-created', () =>
@@ -1858,9 +1856,7 @@ export class LGraphCanvas
     newGraph.attachCanvas(this)
 
     // Re-initialize link renderer with new graph
-    this.linkRenderer = new LitegraphLinkAdapter()
-    // Disable layout writes during render
-    this.linkRenderer.enableLayoutStoreWrites = false
+    this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
     this.#dirty()
