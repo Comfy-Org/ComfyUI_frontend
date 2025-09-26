@@ -43,8 +43,10 @@ function handleUpdateModelValue(value: string | number | undefined) {
 }
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
-  if (!props.widget.spec) return undefined
-  return isComboInputSpec(props.widget.spec) ? props.widget.spec : undefined
+  if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
+    return props.widget.spec
+  }
+  return undefined
 })
 
 const specDescriptor = computed(() => {
