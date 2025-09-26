@@ -5,7 +5,7 @@
       :options="selectOptions"
       v-bind="combinedProps"
       :disabled="readonly"
-      class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       size="small"
       :pt="{
         option: 'text-xs'
@@ -22,11 +22,13 @@ import { computed } from 'vue'
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
