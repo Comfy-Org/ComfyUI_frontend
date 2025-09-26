@@ -25,7 +25,6 @@
 
       <!-- Node Title -->
       <div
-        ref="titleRef"
         v-tooltip.top="tooltipConfig"
         class="text-sm font-bold truncate flex-1 lod-toggle"
         :class="isDragging ? 'pointer-events-none' : 'pointer-events-auto'"
@@ -105,7 +104,6 @@ onErrorCaptured((error) => {
 
 // Editing state
 const isEditing = ref(false)
-const titleRef = ref<HTMLElement>()
 
 const tooltipContainer =
   inject<Ref<HTMLElement | undefined>>('tooltipContainer')
