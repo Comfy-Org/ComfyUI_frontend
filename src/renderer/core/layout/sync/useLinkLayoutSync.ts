@@ -265,7 +265,7 @@ export function useLinkLayoutSync() {
     }
 
     // Create dedicated adapter with layout writes enabled
-    adapterRef.value = new LitegraphLinkAdapter(canvasInstance.graph)
+    adapterRef.value = new LitegraphLinkAdapter()
     adapterRef.value.enableLayoutStoreWrites = true
 
     // Initial computation for all existing links
