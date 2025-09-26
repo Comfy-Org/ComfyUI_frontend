@@ -450,9 +450,9 @@ describe('SelectionToolbox', () => {
   describe('Event Handling', () => {
     it('should handle wheel events', async () => {
       const mockCanvasInteractions = vi.mocked(useCanvasInteractions)
-      const handleWheelSpy = vi.fn()
+      const forwardEventToCanvasSpy = vi.fn()
       mockCanvasInteractions.mockReturnValue({
-        handleWheel: handleWheelSpy
+        forwardEventToCanvas: forwardEventToCanvasSpy
       } as any)
 
       const mockExtensionService = vi.mocked(useExtensionService)
@@ -467,7 +467,7 @@ describe('SelectionToolbox', () => {
       const panel = wrapper.find('.panel')
       await panel.trigger('wheel')
 
-      expect(handleWheelSpy).toHaveBeenCalled()
+      expect(forwardEventToCanvasSpy).toHaveBeenCalled()
     })
   })
 
