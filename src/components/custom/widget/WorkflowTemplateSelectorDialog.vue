@@ -184,9 +184,7 @@
               <CardTop ratio="square">
                 <template #default>
                   <!-- Template Thumbnail -->
-                  <div
-                    class="w-full h-full relative rounded-lg overflow-hidden"
-                  >
+                  <div class="w-full h-full relative overflow-hidden">
                     <template v-if="template.mediaType === 'audio'">
                       <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
                     </template>
@@ -251,6 +249,19 @@
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 w-12 h-12 m-auto"
                     />
+                    <button
+                      v-if="template.tutorialUrl"
+                      v-tooltip.bottom="{
+                        value: $t('g.seeTutorial'),
+                        pt: {
+                          text: { class: 'text-sm' }
+                        }
+                      }"
+                      class="absolute top-2 right-2 z-20 inline-flex items-center justify-center rounded-lg bg-black/20 w-8 h-8 cursor-pointer border-0"
+                      @click.stop="openTutorial(template)"
+                    >
+                      <i class="pi pi-question-circle text-white/80 text-lg" />
+                    </button>
                   </div>
                 </template>
                 <template #bottom-right>
@@ -266,9 +277,9 @@
             </template>
             <template #bottom>
               <CardBottom>
-                <div class="flex flex-col gap-2 pt-3">
+                <div class="flex flex-col gap-2 p-4">
                   <h3
-                    class="line-clamp-1 text-sm m-0"
+                    class="line-clamp-2 text-lg font-medium m-0"
                     :title="
                       getTemplateTitle(
                         template,
@@ -283,31 +294,12 @@
                       )
                     }}
                   </h3>
-                  <div class="flex justify-between gap-2">
-                    <div class="flex-1">
-                      <p
-                        class="line-clamp-2 text-sm text-muted m-0"
-                        :title="getTemplateDescription(template)"
-                      >
-                        {{ getTemplateDescription(template) }}
-                      </p>
-                    </div>
-                    <div
-                      v-if="template.tutorialUrl"
-                      class="flex flex-col-reverse justify-center"
-                    >
-                      <IconButton
-                        v-if="hoveredTemplate === template.name"
-                        v-tooltip.bottom="$t('g.seeTutorial')"
-                        v-bind="$attrs"
-                        type="primary"
-                        size="sm"
-                        @click.stop="openTutorial(template)"
-                      >
-                        <i class="icon-[lucide--info] size-4" />
-                      </IconButton>
-                    </div>
-                  </div>
+                  <p
+                    class="line-clamp-5 text-sm text-muted m-0"
+                    :title="getTemplateDescription(template)"
+                  >
+                    {{ getTemplateDescription(template) }}
+                  </p>
                 </div>
               </CardBottom>
             </template>
@@ -378,7 +370,6 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
