@@ -140,35 +140,12 @@ export function useSlotLinkInteraction({
     return 'canConnectToReroute' in link
   }
 
-  type InputConnectableLink = RenderLink & {
-    toType: 'input'
-    canConnectToInput: (node: LGraphNode, input: INodeInputSlot) => boolean
-  }
-
-  type OutputConnectableLink = RenderLink & {
-    toType: 'output'
-    canConnectToOutput: (node: LGraphNode, output: INodeOutputSlot) => boolean
-  }
-
-  function isInputConnectableLink(
-    link: RenderLink
-  ): link is InputConnectableLink {
-    return (
-      link.toType === 'input' &&
-      typeof (link as { canConnectToInput?: unknown }).canConnectToInput ===
-        'function'
-    )
-  }
-
-  function isOutputConnectableLink(
-    link: RenderLink
-  ): link is OutputConnectableLink {
-    return (
-      link.toType === 'output' &&
-      typeof (link as { canConnectToOutput?: unknown }).canConnectToOutput ===
-        'function'
-    )
-  }
+  type ToInputLink = RenderLink & { toType: 'input' }
+  type ToOutputLink = RenderLink & { toType: 'output' }
+  const isToInputLink = (link: RenderLink): link is ToInputLink =>
+    link.toType === 'input'
+  const isToOutputLink = (link: RenderLink): link is ToOutputLink =>
+    link.toType === 'output'
 
   function connectLinksToInput(
     links: ReadonlyArray<RenderLink>,
@@ -176,7 +153,7 @@ export function useSlotLinkInteraction({
     inputSlot: INodeInputSlot
   ): boolean {
     const validCandidates = links
-      .filter(isInputConnectableLink)
+      .filter(isToInputLink)
       .filter((link) => link.canConnectToInput(node, inputSlot))
 
     for (const link of validCandidates) {
@@ -192,7 +169,7 @@ export function useSlotLinkInteraction({
     outputSlot: INodeOutputSlot
   ): boolean {
     const validCandidates = links
-      .filter(isOutputConnectableLink)
+      .filter(isToOutputLink)
       .filter((link) => link.canConnectToOutput(node, outputSlot))
 
     for (const link of validCandidates) {
@@ -353,7 +330,7 @@ export function useSlotLinkInteraction({
     if (results.length && maybeReroutes !== null) {
       const originalReroutes = maybeReroutes.slice(0, -1).reverse()
       for (const link of adapter.renderLinks) {
-        if (!isInputConnectableLink(link)) continue
+        if (!isToInputLink(link)) continue
         for (const result of results) {
           link.connectToRerouteInput(
             reroute,
@@ -370,7 +347,7 @@ export function useSlotLinkInteraction({
     if (sourceOutput) {
       const { node, output } = sourceOutput
       for (const link of adapter.renderLinks) {
-        if (!isOutputConnectableLink(link)) continue
+        if (!isToOutputLink(link)) continue
         if (hasCanConnectToReroute(link) && !link.canConnectToReroute(reroute))
           continue
         link.connectToRerouteOutput(
