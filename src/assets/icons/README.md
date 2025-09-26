@@ -249,7 +249,7 @@ Icons are automatically imported using `unplugin-icons` - no manual imports need
 
 The icon system has two layers:
 
-1. **Build-time Processing** (`build/customIconCollection.ts`):
+1. **Build-time Processing** (`packages/design-system/src/iconCollection.ts`):
    - Scans `packages/design-system/src/icons/` for SVG files
    - Validates SVG content and structure
    - Creates Iconify collection for Tailwind CSS
