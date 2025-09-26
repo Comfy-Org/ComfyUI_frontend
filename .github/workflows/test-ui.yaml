@@ -123,12 +123,12 @@ jobs:
         working-directory: ComfyUI
 
       - name: Install Playwright Browsers
-        run: npx playwright install chromium --with-deps
+        run: pnpx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
 
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: npx playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        run: pnpx playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
         working-directory: ComfyUI_frontend
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ../blob-report
@@ -189,12 +189,12 @@ jobs:
         working-directory: ComfyUI
 
       - name: Install Playwright Browsers
-        run: npx playwright install chromium --with-deps
+        run: pnpx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: npx playwright test --project=${{ matrix.browser }} --reporter=html
+        run: pnpx playwright test --project=${{ matrix.browser }} --reporter=html
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
@@ -240,7 +240,7 @@ jobs:
           merge-multiple: true
 
       - name: Merge into HTML Report
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        run: pnpx playwright merge-reports --reporter html ./all-blob-reports
         working-directory: ComfyUI_frontend
 
       - name: Upload HTML report

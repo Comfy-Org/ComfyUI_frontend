@@ -19,11 +19,11 @@ jobs:
         restore-keys: |
           playwright-browsers-${{ runner.os }}-
     - name: Install Playwright Browsers
-      run: npx playwright install chromium --with-deps
+      run: pnpx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests and update snapshots
       id: playwright-tests
-      run: npx playwright test --update-snapshots
+      run: pnpx playwright test --update-snapshots
       continue-on-error: true
       working-directory: ComfyUI_frontend
     - uses: actions/upload-artifact@v4

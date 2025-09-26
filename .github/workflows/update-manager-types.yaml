@@ -68,7 +68,7 @@ jobs:
       - name: Generate Manager API types
         run: |
           echo "Generating TypeScript types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}..."
-          npx openapi-typescript ./ComfyUI-Manager/openapi.yaml --output ./src/types/generatedManagerTypes.ts
+          pnpx openapi-typescript ./ComfyUI-Manager/openapi.yaml --output ./src/types/generatedManagerTypes.ts
 
       - name: Validate generated types
         run: |
