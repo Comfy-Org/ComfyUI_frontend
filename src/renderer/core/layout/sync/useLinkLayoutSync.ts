@@ -1,5 +1,5 @@
 import { tryOnScopeDispose } from '@vueuse/core'
-import { computed, onWatcherCleanup, ref, toValue, watchEffect } from 'vue'
+import { computed, ref, toValue } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -288,38 +288,8 @@ export function useLinkLayoutSync() {
         }
       }
     )
-
-    watchEffect(() => {
-      const graph = toValue(graphRef)
-      if (!graph) {
-        return
-      }
-      // Hook collapse events
-      const origTrigger = graph.onTrigger
-
-      graph.onTrigger = (action: string, param: any) => {
-        if (
-          action === 'node:property:changed' &&
-          param?.property === 'flags.collapsed'
-        ) {
-          const nodeId = parseInt(String(param.nodeId))
-          if (!isNaN(nodeId)) {
-            recomputeLinksForNode(nodeId)
-          }
-        }
-        if (origTrigger) {
-          origTrigger.call(graph, action, param)
-        }
-      }
-      onWatcherCleanup(() => {
-        graph.onTrigger = origTrigger
-      })
-    })
   }
 
-  /**
-   * Stop link layout sync and cleanup all resources
-   */
   function stop(): void {
     unsubscribeLayoutChange.value?.()
     unsubscribeLayoutChange.value = undefined
