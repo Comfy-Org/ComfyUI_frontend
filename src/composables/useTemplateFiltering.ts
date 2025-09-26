@@ -12,11 +12,7 @@ export function useTemplateFiltering(
   const selectedUseCases = ref<string[]>([])
   const selectedLicenses = ref<string[]>([])
   const sortBy = ref<
-    | 'default'
-    | 'alphabetical'
-    | 'newest'
-    | 'vram-low-to-high'
-    | 'model-size-low-to-high'
+    'default' | 'alphabetical' | 'newest' | 'model-size-low-to-high'
   >('newest')
 
   const templatesArray = computed(() => {
@@ -143,10 +139,6 @@ export function useTemplateFiltering(
           const dateB = new Date(b.date || '1970-01-01')
           return dateB.getTime() - dateA.getTime()
         })
-      case 'vram-low-to-high':
-        // TODO: Implement VRAM sorting when VRAM data is available
-        // For now, keep original order
-        return templates
       case 'model-size-low-to-high':
         return templates.sort((a: any, b: any) => {
           const sizeA =

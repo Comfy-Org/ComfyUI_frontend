@@ -622,13 +622,6 @@ const sortOptions = computed(() => [
   },
   {
     name: t(
-      'templateWorkflows.sort.vramLowToHigh',
-      'VRAM Utilization (Low to High)'
-    ),
-    value: 'vram-low-to-high'
-  },
-  {
-    name: t(
       'templateWorkflows.sort.modelSizeLowToHigh',
       'Model Size (Low to High)'
     ),
