@@ -142,27 +142,27 @@ export function useSlotLinkInteraction({
     if (!firstLink) return null
     const connectingTo = adapter.linkConnector.state.connectingTo
 
-    if (connectingTo === 'input') {
-      const res = node.findInputByType(firstLink.fromSlot.type)
-      const index = res?.index
-      if (index == null) return null
-      const key = getSlotKey(String(nodeId), index, true)
-      const layout = layoutStore.getSlotLayout(key)
-      if (!layout) return null
-      const compatible = adapter.isInputValidDrop(nodeId, index)
-      if (!compatible) return null
-      return { layout, compatible: true }
-    } else if (connectingTo === 'output') {
-      const res = node.findOutputByType(firstLink.fromSlot.type)
-      const index = res?.index
-      if (index == null) return null
-      const key = getSlotKey(String(nodeId), index, false)
-      const layout = layoutStore.getSlotLayout(key)
-      if (!layout) return null
-      const compatible = adapter.isOutputValidDrop(nodeId, index)
-      if (!compatible) return null
-      return { layout, compatible: true }
-    }
+    if (connectingTo !== 'input' && connectingTo !== 'output') return null
+
+    const isInput = connectingTo === 'input'
+    const slotType = firstLink.fromSlot.type
+
+    const res = isInput
+      ? node.findInputByType(slotType)
+      : node.findOutputByType(slotType)
+
+    const index = res?.index
+    if (index == null) return null
+
+    const key = getSlotKey(String(nodeId), index, isInput)
+    const layout = layoutStore.getSlotLayout(key)
+    if (!layout) return null
+
+    const compatible = isInput
+      ? adapter.isInputValidDrop(nodeId, index)
+      : adapter.isOutputValidDrop(nodeId, index)
+
+    return compatible ? { layout, compatible: true } : null
 
     return null
   }
