@@ -61,6 +61,19 @@ test.describe('NodeHeader', () => {
     expect(titleAfterCancel).toBe('My Custom Sampler')
   })
 
+  test('Double click node body does not trigger edit', async ({
+    comfyPage
+  }) => {
+    const loadCheckpointNode =
+      comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const nodeBbox = await loadCheckpointNode.boundingBox()
+    if (!nodeBbox) throw new Error('Node not found')
+    await loadCheckpointNode.dblclick()
+
+    const editingTitleInput = comfyPage.page.getByTestId('node-title-input')
+    await expect(editingTitleInput).not.toBeVisible()
+  })
+
   test('handles node collapsing', async ({ comfyPage }) => {
     // Get the KSampler node from the default workflow
     const nodes = await comfyPage.getNodeRefsByType('KSampler')
