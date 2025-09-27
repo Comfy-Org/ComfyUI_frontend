@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "zod": "^3.23.8",
-    "zod-to-json-schema": "^3.24.1",
     "zod-validation-error": "^3.3.0"
   },
   "devDependencies": {
