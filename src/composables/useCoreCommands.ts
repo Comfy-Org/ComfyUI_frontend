@@ -329,9 +329,7 @@ export function useCoreCommands(): ComfyCommand[] {
             selectedNodeIds.size > 0
               ? Array.from(selectedNodeIds)
                   .map((id) => allNodes.get(id))
-                  .filter(
-                    (node): node is NonNullable<typeof node> => node != null
-                  )
+                  .filter((node) => node != null)
               : Array.from(allNodes.values())
 
           // Use Vue nodes bounds calculation
