@@ -10,7 +10,7 @@
       cn(
         'bg-white dark-theme:bg-charcoal-800',
         'lg-node absolute rounded-2xl',
-        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
+        'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
@@ -133,7 +133,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
+import {
+  computed,
+  inject,
+  onErrorCaptured,
+  onMounted,
+  provide,
+  ref,
+  readonly as vueReadonly
+} from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -148,6 +156,7 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import type { NodeErrorContext } from '@/renderer/extensions/vueNodes/types/errorContext'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -205,14 +214,22 @@ const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
 )
 
-// Computed error states for styling
+const hasInputSlotError = (inputName: string): boolean => {
+  const nodeValidationErrors = executionStore.lastNodeErrors?.[nodeData.id]
+  if (!nodeValidationErrors?.errors) return false
+
+  return nodeValidationErrors.errors.some(
+    (err) =>
+      err.type === 'required_input_missing' &&
+      err.extra_info?.input_name === inputName
+  )
+}
+
 const hasAnyError = computed((): boolean => {
   return !!(
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
-    // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
     nodeData.inputs?.some((slot) => slot?.hasErrors) ||
     nodeData.outputs?.some((slot) => slot?.hasErrors)
   )
@@ -374,4 +391,9 @@ const nodeImageUrls = computed(() => {
 
 const nodeContainerRef = ref()
 provide('tooltipContainer', nodeContainerRef)
+
+const nodeErrorContext: NodeErrorContext = {
+  hasInputSlotError
+}
+provide('nodeErrorContext', vueReadonly(nodeErrorContext))
 </script>
