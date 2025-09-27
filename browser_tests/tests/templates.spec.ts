@@ -181,6 +181,7 @@ test.describe('Templates', () => {
   }) => {
     // Open templates dialog
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.templates.content.waitFor({ state: 'visible' })
 
     const templateGrid = comfyPage.page.locator(
       '[data-testid="template-workflows-content"]'
