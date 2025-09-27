@@ -35,7 +35,8 @@
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
-        backgroundColor: nodeBodyBackgroundColor
+        backgroundColor: nodeBodyBackgroundColor,
+        opacity: nodeOpacity
       },
       dragStyle
     ]"
@@ -233,32 +234,27 @@ const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 // Node body background color that exactly replicates LiteGraph's drawNode logic
 const nodeBodyBackgroundColor = computed(() => {
   const colorPaletteStore = useColorPaletteStore()
-  const settingStore = useSettingStore()
 
   // This replicates the drawNode logic for bgColor
   let bgColor = nodeData.bgcolor || '' // matches: old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
 
-  if (!bgColor) return '' // No color to adjust
-
-  // Apply the exact same adjustments as the drawNode monkey patch
-  const adjustments: { lightness?: number; opacity?: number } = {}
-
-  // 1. Apply opacity setting (same as drawNode)
-  const opacity = settingStore.get('Comfy.Node.Opacity')
-  if (opacity) adjustments.opacity = opacity
-
-  // 2. Apply light theme background lightening (same as drawNode)
-  if (colorPaletteStore.completedActivePalette.light_theme) {
+  // Apply light theme background lightening (same as drawNode)
+  if (
+    colorPaletteStore.completedActivePalette.light_theme &&
+    nodeData.bgcolor
+  ) {
     // This matches: "if (old_bgcolor) adjustments.lightness = 0.5"
-    adjustments.lightness = 0.5
-  }
-
-  // Apply all adjustments at once: node.bgcolor = adjustColor(bgColor, adjustments)
-  if (Object.keys(adjustments).length > 0) {
-    bgColor = adjustColor(bgColor, adjustments)
+    bgColor = adjustColor(bgColor, { lightness: 0.5 })
   }
 
   return bgColor
+})
+
+// Node opacity applied to ALL nodes (colored and non-colored) to match LiteGraph
+const nodeOpacity = computed(() => {
+  const settingStore = useSettingStore()
+  const opacity = settingStore.get('Comfy.Node.Opacity')
+  return opacity || 1 // Default to fully opaque if no setting
 })
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control

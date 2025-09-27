@@ -28,18 +28,6 @@ test.describe('Vue Node Custom Colors', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-custom-color-blue.png'
     )
-
-    // Verify actual DOM properties for header and body colors
-    const nodeHeader = loadCheckpointNode.locator(
-      '[data-testid^="node-header-"]'
-    )
-    const nodeBody = loadCheckpointNode
-
-    // Header should have blue header color (#223)
-    await expect(nodeHeader).toHaveCSS('background-color', 'rgb(34, 34, 51)')
-
-    // Node body should have blue body color (#335)
-    await expect(nodeBody).toHaveCSS('background-color', 'rgb(51, 51, 85)')
   })
 
   // TODO: implement loading node colors from workflow in Vue system

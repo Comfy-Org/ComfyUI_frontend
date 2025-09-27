@@ -129,35 +129,27 @@ const tooltipConfig = computed(() => {
 
 // Header style that exactly replicates LiteGraph's drawNode monkey patch logic
 const headerStyle = computed(() => {
-  if (!nodeData?.color) {
-    return { backgroundColor: '' } // Explicitly clear background color
-  }
-
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
+
+  // Get opacity setting - applies to ALL nodes (colored and non-colored)
+  const opacity = settingStore.get('Comfy.Node.Opacity') || 1
+
+  if (!nodeData?.color) {
+    // Non-colored nodes: only apply opacity
+    return { backgroundColor: '', opacity }
+  }
 
   // Start with the original color (same as old_color in drawNode)
   let headerColor = nodeData.color
 
-  // Apply the exact same adjustments as the drawNode monkey patch
-  const adjustments: { lightness?: number; opacity?: number } = {}
-
-  // 1. Apply opacity setting (same as drawNode)
-  const opacity = settingStore.get('Comfy.Node.Opacity')
-  if (opacity) adjustments.opacity = opacity
-
-  // 2. Apply light theme adjustments (same as drawNode)
+  // Apply light theme adjustments for colored nodes
   if (colorPaletteStore.completedActivePalette.light_theme) {
     // This matches: "if (old_color) { node.color = adjustColor(old_color, { lightness: 0.5 }) }"
-    adjustments.lightness = 0.5
+    headerColor = adjustColor(headerColor, { lightness: 0.5 })
   }
 
-  // Apply all adjustments at once (matching drawNode's approach)
-  if (Object.keys(adjustments).length > 0) {
-    headerColor = adjustColor(headerColor, adjustments)
-  }
-
-  return { backgroundColor: headerColor }
+  return { backgroundColor: headerColor, opacity }
 })
 
 const resolveTitle = (info: VueNodeData | undefined) => {
