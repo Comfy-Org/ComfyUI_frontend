@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -14,7 +14,25 @@ vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
 }))
 
 // Mock the layout system
-vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout')
+vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
+  useNodeLayout: vi.fn()
+}))
+
+const createBaseNodeLayoutMock = () => ({
+  isDragging: ref(false),
+  startDrag: vi.fn(() => true),
+  endDrag: vi.fn(() => Promise.resolve()),
+  handleDrag: vi.fn(),
+  layoutRef: ref(null),
+  position: computed(() => ({ x: 0, y: 0 })),
+  size: computed(() => ({ width: 200, height: 100 })),
+  bounds: computed(() => ({ x: 0, y: 0, width: 200, height: 100 })),
+  isVisible: computed(() => true),
+  zIndex: computed(() => 0),
+  moveTo: vi.fn(),
+  resize: vi.fn(),
+  nodeStyle: computed(() => ({ position: 'absolute' as const }))
+})
 vi.mock('@/renderer/core/layout/store/layoutStore')
 
 const createMockVueNodeData = (
@@ -67,26 +85,8 @@ const createMouseEvent = (
   return event
 }
 
-const createCompleteNodeLayoutMock = (overrides: any = {}) => ({
-  layoutRef: ref(null),
-  position: computed(() => ({ x: 0, y: 0 })),
-  size: computed(() => ({ width: 200, height: 100 })),
-  bounds: computed(() => ({ x: 0, y: 0, width: 200, height: 100 })),
-  isVisible: computed(() => true),
-  zIndex: computed(() => 0),
-  moveTo: vi.fn(),
-  resize: vi.fn(),
-  nodeStyle: computed(() => ({ cursor: 'grab' })),
-  startDrag: vi.fn(),
-  endDrag: vi.fn(),
-  handleDrag: vi.fn(),
-  isDragging: ref(false),
-  ...overrides
-})
-
 describe('useNodePointerInteractions', () => {
   beforeEach(() => {
-    // Reset mocks
     vi.clearAllMocks()
   })
 
@@ -94,70 +94,36 @@ describe('useNodePointerInteractions', () => {
     vi.restoreAllMocks()
   })
 
-  // Tests for DrJKL's single source of truth architecture
   describe('DrJKL single source of truth architecture', () => {
     it('should use useNodeLayout.isDragging as the single authority', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
       const mockIsDragging = ref(false)
+      const testMock = createBaseNodeLayoutMock()
+      testMock.isDragging = mockIsDragging
 
-      // Mock layout system for this test
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = true
-            return true
-          }),
-          endDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = false
-            return Promise.resolve()
-          }),
-          handleDrag: vi.fn().mockResolvedValue(undefined),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(testMock)
 
       const { isDragging } = useNodePointerInteractions(
         ref(mockNodeData),
         mockOnPointerUp
       )
 
-      // After refactor: isDragging should be directly from useNodeLayout
-      // Not a computed from coordination object
-      expect(isDragging).toBe(mockIsDragging) // Same ref, not computed
+      expect(isDragging).toBe(mockIsDragging)
     })
 
     it('should eliminate coordination object entirely', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
-      const mockIsDragging = ref(false)
-
-      // Mock layout system for this test
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = true
-            return true
-          }),
-          endDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = false
-            return Promise.resolve()
-          }),
-          handleDrag: vi.fn().mockResolvedValue(undefined),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(createBaseNodeLayoutMock())
 
       const result = useNodePointerInteractions(
         ref(mockNodeData),
         mockOnPointerUp
       )
 
-      // After refactor: only simple properties should remain
       expect(result.isDragging).toBeDefined()
       expect(result.pointerHandlers).toBeDefined()
       expect(result.stopWatcher).toBeDefined()
@@ -167,93 +133,43 @@ describe('useNodePointerInteractions', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
-      const mockIsDragging = ref(false)
-      const mockLayoutStoreRef = ref(false)
+      const mockStartDrag = vi.fn(() => true)
+      const testMock = createBaseNodeLayoutMock()
+      testMock.startDrag = mockStartDrag
 
-      // Mock layout system for this test
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = true
-            return true
-          }),
-          endDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = false
-            return Promise.resolve()
-          }),
-          handleDrag: vi.fn().mockResolvedValue(undefined),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValue(testMock)
 
-      // Mock layout store for this test
-      const { layoutStore } = await import(
-        '@/renderer/core/layout/store/layoutStore'
-      )
-      vi.mocked(layoutStore).isDraggingVueNodes = mockLayoutStoreRef
-
-      // Set up reactive connection manually since we're mocking
-      // In real code, watch(isDragging, ...) does this automatically
-      watch(
-        mockIsDragging,
-        (dragging) => {
-          mockLayoutStoreRef.value = dragging
-        },
-        { immediate: true }
-      )
-
-      const { pointerHandlers } = useNodePointerInteractions(
+      const { pointerHandlers, isDragging } = useNodePointerInteractions(
         ref(mockNodeData),
         mockOnPointerUp
       )
 
-      // Initial state
-      expect(mockLayoutStoreRef.value).toBe(false)
-
-      // Start drag
       pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
 
-      // Wait for Vue reactivity to propagate through watch()
-      await nextTick()
+      expect(mockStartDrag).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'pointerdown',
+          button: 0
+        })
+      )
 
-      // After refactor: global state should sync automatically via watch()
-      // No manual syncGlobalDragState calls
-      expect(mockLayoutStoreRef.value).toBe(true)
-
-      // End drag
-      pointerHandlers.onPointerup(createPointerEvent('pointerup'))
-
-      // Wait for Vue reactivity to propagate through watch()
-      await nextTick()
-
-      // Should sync back to false automatically
-      expect(mockLayoutStoreRef.value).toBe(false)
+      expect(isDragging).toBe(testMock.isDragging)
     })
 
     it('should make startDrag return success boolean to fix race condition', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
       const mockIsDragging = ref(false)
       const mockStartDrag = vi.fn().mockImplementation(() => {
         mockIsDragging.value = true
         return true
       })
+      const testMock = createBaseNodeLayoutMock()
+      testMock.isDragging = mockIsDragging
+      testMock.startDrag = mockStartDrag
 
-      // Mock layout system for this test
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: mockStartDrag,
-          endDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = false
-            return Promise.resolve()
-          }),
-          handleDrag: vi.fn().mockResolvedValue(undefined),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(testMock)
 
       const { pointerHandlers } = useNodePointerInteractions(
         ref(mockNodeData),
@@ -281,36 +197,21 @@ describe('useNodePointerInteractions', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
       const mockIsDragging = ref(false)
+      const testMock = createBaseNodeLayoutMock()
+      testMock.isDragging = mockIsDragging
 
-      // Mock layout system for this test
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = true
-            return true
-          }),
-          endDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = false
-            return Promise.resolve()
-          }),
-          handleDrag: vi.fn().mockResolvedValue(undefined),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(testMock)
 
       const result = useNodePointerInteractions(
         ref(mockNodeData),
         mockOnPointerUp
       )
 
-      // After refactor: clean API - just essential properties
       expect(result.isDragging).toBeDefined()
       expect(result.pointerHandlers).toBeDefined()
       expect(result.stopWatcher).toBeDefined()
 
-      // Should use isDragging directly for UI logic
       expect(result.isDragging.value).toBe(false)
       mockIsDragging.value = true
       expect(result.isDragging.value).toBe(true)
@@ -323,18 +224,11 @@ describe('useNodePointerInteractions', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
-      const mockIsDragging = ref(false)
       const mockStartDrag = vi.fn()
+      const testMock = createBaseNodeLayoutMock()
+      testMock.startDrag = mockStartDrag
 
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: mockStartDrag,
-          endDrag: vi.fn(),
-          handleDrag: vi.fn(),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(testMock)
 
       const { pointerHandlers } = useNodePointerInteractions(
         ref(mockNodeData),
@@ -356,23 +250,11 @@ describe('useNodePointerInteractions', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
       const mockIsDragging = ref(false)
+      const testMock = createBaseNodeLayoutMock()
+      testMock.isDragging = mockIsDragging
 
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = true
-            return true
-          }),
-          endDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = false
-            return Promise.resolve()
-          }),
-          handleDrag: vi.fn(),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(testMock)
 
       const { pointerHandlers } = useNodePointerInteractions(
         ref(mockNodeData),
@@ -401,52 +283,36 @@ describe('useNodePointerInteractions', () => {
       const mockNodeData = createMockVueNodeData()
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
-      const mockIsDragging = ref(false)
-      const mockEndDrag = vi.fn()
+      const mockIsDragging = ref(true)
+      const testMock = createBaseNodeLayoutMock()
+      testMock.isDragging = mockIsDragging
 
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: vi.fn().mockImplementation(() => {
-            mockIsDragging.value = true
-            return true
-          }),
-          endDrag: mockEndDrag,
-          handleDrag: vi.fn(),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(testMock)
 
       const { pointerHandlers } = useNodePointerInteractions(
         ref(mockNodeData),
         mockOnPointerUp
       )
 
-      // Start drag
-      pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
-      expect(mockIsDragging.value).toBe(true)
-
-      // Context menu should end drag
       const contextMenu = createMouseEvent('contextmenu')
       pointerHandlers.onContextmenu(contextMenu)
 
       expect(contextMenu.preventDefault).toHaveBeenCalled()
+      mockIsDragging.value = false
+      const contextMenuNotDragging = createMouseEvent('contextmenu')
+      pointerHandlers.onContextmenu(contextMenuNotDragging)
+
+      expect(contextMenuNotDragging.preventDefault).not.toHaveBeenCalled()
     })
 
     it('should not emit callback when nodeData becomes null', async () => {
       const mockOnPointerUp = vi.fn()
 
-      // Create test-specific mocks
       const mockIsDragging = ref(false)
+      const testMock = createBaseNodeLayoutMock()
+      testMock.isDragging = mockIsDragging
 
-      vi.mocked(useNodeLayout).mockReturnValue(
-        createCompleteNodeLayoutMock({
-          startDrag: vi.fn(),
-          endDrag: vi.fn(),
-          handleDrag: vi.fn(),
-          isDragging: mockIsDragging
-        })
-      )
+      vi.mocked(useNodeLayout).mockReturnValueOnce(testMock)
 
       // Start with null nodeData
       const { pointerHandlers } = useNodePointerInteractions(

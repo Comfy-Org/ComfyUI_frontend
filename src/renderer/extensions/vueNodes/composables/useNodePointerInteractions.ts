@@ -5,7 +5,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 
-// Position type for better type safety and consistency
 interface Position {
   x: number
   y: number
@@ -42,10 +41,8 @@ export function useNodePointerInteractions(
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
 
-  // Simple tracking for click vs drag detection (not part of coordination)
   const startPosition = ref<Position>({ x: 0, y: 0 })
 
-  // Automatic global state sync via Vue reactivity
   const stopWatcher = watch(
     isDragging,
     (dragging) => {
@@ -53,8 +50,6 @@ export function useNodePointerInteractions(
     },
     { immediate: true }
   )
-
-  // No longer needed - Vue reactivity handles sync automatically via watch()
 
   const handlePointerDown = (event: PointerEvent) => {
     if (!nodeData.value) {
@@ -71,14 +66,10 @@ export function useNodePointerInteractions(
       return
     }
 
-    // Store start position for click vs drag detection
     startPosition.value = { x: event.clientX, y: event.clientY }
 
-    // Single source of truth: only call layout system
-    // Check return value to handle race conditions
     const dragStarted = startDrag(event)
     if (!dragStarted) {
-      // startDrag failed - clear start position since no drag began
       startPosition.value = { x: 0, y: 0 }
       return
     }
@@ -89,11 +80,6 @@ export function useNodePointerInteractions(
 
     handleDrag(event)
   }
-
-  /**
-   * No longer needed - cleanup happens automatically via useNodeLayout
-   * and Vue reactivity watch()
-   */
 
   /**
    * Safely ends drag operation with proper error handling
@@ -110,7 +96,6 @@ export function useNodePointerInteractions(
         errorMessage
       )
     }
-    // Cleanup happens automatically via Vue reactivity when isDragging changes
   }
 
   /**
@@ -124,7 +109,6 @@ export function useNodePointerInteractions(
         `useNodePointerInteractions: Failed to complete ${errorContext} -`,
         errorMessage
       )
-      // No manual cleanup needed - Vue reactivity handles it automatically
     })
   }
 
@@ -166,7 +150,6 @@ export function useNodePointerInteractions(
     if (!isDragging.value) return
 
     event.preventDefault()
-    // No manual cleanup needed - Vue reactivity handles it automatically
   }
 
   const pointerHandlers = {
@@ -178,8 +161,8 @@ export function useNodePointerInteractions(
   }
 
   return {
-    isDragging, // Single source of truth from useNodeLayout
+    isDragging,
     pointerHandlers,
-    stopWatcher // Cleanup watcher to prevent memory leaks
+    stopWatcher
   }
 }
