@@ -34,7 +34,9 @@
     :style="[
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
+        zIndex: zIndex,
+        backgroundColor: nodeBodyBackgroundColor,
+        opacity: nodeOpacity
       },
       dragStyle
     ]"
@@ -47,9 +49,14 @@
         <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
-      <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, isCollapsed, nodeData.flags?.pinned]"
+        v-memo="[
+          nodeData.title,
+          nodeData.color,
+          nodeData.bgcolor,
+          isCollapsed,
+          nodeData.flags?.pinned
+        ]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
@@ -139,6 +146,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -148,9 +156,11 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -220,6 +230,23 @@ const hasAnyError = computed((): boolean => {
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
 const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
+
+const nodeBodyBackgroundColor = computed(() => {
+  const colorPaletteStore = useColorPaletteStore()
+
+  if (!nodeData.bgcolor) {
+    return ''
+  }
+
+  return applyLightThemeColor(
+    nodeData.bgcolor,
+    Boolean(colorPaletteStore.completedActivePalette.light_theme)
+  )
+})
+
+const nodeOpacity = computed(
+  () => useSettingStore().get('Comfy.Node.Opacity') ?? 1
+)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()

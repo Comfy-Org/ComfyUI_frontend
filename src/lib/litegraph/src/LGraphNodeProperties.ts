@@ -7,7 +7,9 @@ const DEFAULT_TRACKED_PROPERTIES: string[] = [
   'title',
   'flags.collapsed',
   'flags.pinned',
-  'mode'
+  'mode',
+  'color',
+  'bgcolor'
 ]
 
 /**
