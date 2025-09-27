@@ -5,6 +5,7 @@
   <div
     v-else
     class="lg-node-header p-4 rounded-t-2xl cursor-move"
+    :style="headerStyle"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
