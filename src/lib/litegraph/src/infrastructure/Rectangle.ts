@@ -1,45 +1,48 @@
 import type {
   CompassCorners,
   Point,
-  ReadOnlyPoint,
-  ReadOnlyRect,
-  ReadOnlySize,
-  ReadOnlyTypedArray,
+  Rect,
   Size
 } from '@/lib/litegraph/src/interfaces'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**
- * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
+ * A rectangle, represented as an array of 4 numbers: [x, y, width, height].
  *
- * This class is a subclass of Float64Array, and so has all the methods of that class.  Notably,
- * {@link Rectangle.from} can be used to convert a {@link ReadOnlyRect}. Typing of this however,
- * is broken due to the base TS lib returning Float64Array rather than `this`.
- *
- * Sub-array properties ({@link Float64Array.subarray}):
- * - {@link pos}: The position of the top-left corner of the rectangle.
- * - {@link size}: The size of the rectangle.
+ * This class extends Array and provides both array access (rect[0], rect[1], etc.)
+ * and convenient property access (rect.x, rect.y, rect.width, rect.height).
  */
-export class Rectangle extends Float64Array {
-  #pos: Point | undefined
-  #size: Size | undefined
-
+export class Rectangle extends Array<number> {
   constructor(
     x: number = 0,
     y: number = 0,
     width: number = 0,
     height: number = 0
   ) {
-    super(4)
-
+    super()
     this[0] = x
     this[1] = y
     this[2] = width
     this[3] = height
+    this.length = 4
   }
 
-  static override from([x, y, width, height]: ReadOnlyRect): Rectangle {
+  static override from([x, y, width, height]: Rect): Rectangle {
     return new Rectangle(x, y, width, height)
+  }
+
+  /** Set all values from an array (for TypedArray compatibility) */
+  set(values: ArrayLike<number>): void {
+    this[0] = values[0] ?? 0
+    this[1] = values[1] ?? 0
+    this[2] = values[2] ?? 0
+    this[3] = values[3] ?? 0
+  }
+
+  /** Create a subarray (for TypedArray compatibility) */
+  subarray(begin: number = 0, end?: number): number[] {
+    const endIndex = end ?? this.length
+    return this.slice(begin, endIndex)
   }
 
   /**
@@ -49,57 +52,38 @@ export class Rectangle extends Float64Array {
    * @param height The height of the rectangle.  Default: {@link width}
    * @returns A new rectangle whose centre is at {@link x}
    */
-  static fromCentre(
-    [x, y]: ReadOnlyPoint,
-    width: number,
-    height = width
-  ): Rectangle {
+  static fromCentre([x, y]: Point, width: number, height = width): Rectangle {
     const left = x - width * 0.5
     const top = y - height * 0.5
     return new Rectangle(left, top, width, height)
   }
 
-  static ensureRect(rect: ReadOnlyRect): Rectangle {
+  static ensureRect(rect: Rect | Rectangle): Rectangle {
     return rect instanceof Rectangle
       ? rect
       : new Rectangle(rect[0], rect[1], rect[2], rect[3])
   }
 
-  override subarray(
-    begin: number = 0,
-    end?: number
-  ): Float64Array<ArrayBuffer> {
-    const byteOffset = begin << 3
-    const length = end === undefined ? end : end - begin
-    return new Float64Array(this.buffer, byteOffset, length)
-  }
-
   /**
-   * A reference to the position of the top-left corner of this rectangle.
-   *
-   * Updating the values of the returned object will update this rectangle.
+   * The position of the top-left corner of this rectangle.
    */
   get pos(): Point {
-    this.#pos ??= this.subarray(0, 2)
-    return this.#pos!
+    return [this[0], this[1]]
   }
 
-  set pos(value: ReadOnlyPoint) {
+  set pos(value: Point) {
     this[0] = value[0]
     this[1] = value[1]
   }
 
   /**
-   * A reference to the size of this rectangle.
-   *
-   * Updating the values of the returned object will update this rectangle.
+   * The size of this rectangle.
    */
   get size(): Size {
-    this.#size ??= this.subarray(2, 4)
-    return this.#size!
+    return [this[2], this[3]]
   }
 
-  set size(value: ReadOnlySize) {
+  set size(value: Size) {
     this[2] = value[0]
     this[3] = value[1]
   }
@@ -192,7 +176,7 @@ export class Rectangle extends Float64Array {
    * Updates the rectangle to the values of {@link rect}.
    * @param rect The rectangle to update to.
    */
-  updateTo(rect: ReadOnlyRect) {
+  updateTo(rect: Rect) {
     this[0] = rect[0]
     this[1] = rect[1]
     this[2] = rect[2]
@@ -215,7 +199,7 @@ export class Rectangle extends Float64Array {
    * @param point The point to check
    * @returns `true` if {@link point} is inside this rectangle, otherwise `false`.
    */
-  containsPoint([x, y]: ReadOnlyPoint): boolean {
+  containsPoint([x, y]: Point): boolean {
     const [left, top, width, height] = this
     return x >= left && x < left + width && y >= top && y < top + height
   }
@@ -226,7 +210,7 @@ export class Rectangle extends Float64Array {
    * @param other The rectangle to check
    * @returns `true` if {@link other} is inside this rectangle, otherwise `false`.
    */
-  containsRect(other: ReadOnlyRect): boolean {
+  containsRect(other: Rect | Rectangle): boolean {
     const { right, bottom } = this
     const otherRight = other[0] + other[2]
     const otherBottom = other[1] + other[3]
@@ -251,7 +235,7 @@ export class Rectangle extends Float64Array {
    * @param rect The rectangle to check
    * @returns `true` if {@link rect} overlaps with this rectangle, otherwise `false`.
    */
-  overlaps(rect: ReadOnlyRect): boolean {
+  overlaps(rect: Rect | Rectangle): boolean {
     return (
       this.x < rect[0] + rect[2] &&
       this.y < rect[1] + rect[3] &&
@@ -384,12 +368,12 @@ export class Rectangle extends Float64Array {
   }
 
   /** @returns The offset from the top-left of this rectangle to the point [{@link x}, {@link y}], as a new {@link Point}. */
-  getOffsetTo([x, y]: ReadOnlyPoint): Point {
+  getOffsetTo([x, y]: Point): Point {
     return [x - this[0], y - this[1]]
   }
 
   /** @returns The offset from the point [{@link x}, {@link y}] to the top-left of this rectangle, as a new {@link Point}. */
-  getOffsetFrom([x, y]: ReadOnlyPoint): Point {
+  getOffsetFrom([x, y]: Point): Point {
     return [this[0] - x, this[1] - y]
   }
 
@@ -470,14 +454,4 @@ export class Rectangle extends Float64Array {
   }
 }
 
-export type ReadOnlyRectangle = Omit<
-  ReadOnlyTypedArray<Rectangle>,
-  | 'setHeightBottomAnchored'
-  | 'setWidthRightAnchored'
-  | 'resizeTopLeft'
-  | 'resizeBottomLeft'
-  | 'resizeTopRight'
-  | 'resizeBottomRight'
-  | 'resizeBottomRight'
-  | 'updateTo'
->
+// ReadOnlyRectangle is now just Rectangle since we unified the types
