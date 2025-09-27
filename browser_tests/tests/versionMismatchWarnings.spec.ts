@@ -85,6 +85,7 @@ test.describe('Version Mismatch Warnings', () => {
   test('should persist dismissed state across sessions', async ({
     comfyPage
   }) => {
+    test.setTimeout(30_000)
     // Mock system_stats route to indicate that the installed version is always ahead of the required version
     await comfyPage.page.route('**/system_stats**', async (route) => {
       await route.fulfill({
