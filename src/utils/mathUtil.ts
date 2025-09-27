@@ -1,4 +1,4 @@
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
 /**
@@ -33,9 +33,7 @@ export const lcm = (a: number, b: number): number => {
  * @param rectangles - Array of rectangle tuples in [x, y, width, height] format
  * @returns Bounds object with union rectangle, or null if no rectangles provided
  */
-export function computeUnionBounds(
-  rectangles: readonly ReadOnlyRect[]
-): Bounds | null {
+export function computeUnionBounds(rectangles: readonly Rect[]): Bounds | null {
   const n = rectangles.length
   if (n === 0) {
     return null

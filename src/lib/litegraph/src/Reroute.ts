@@ -1,3 +1,4 @@
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -12,8 +13,8 @@ import type {
   LinkSegment,
   Point,
   Positionable,
-  ReadOnlyRect,
-  ReadonlyLinkNetwork
+  ReadonlyLinkNetwork,
+  Rect
 } from './interfaces'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
@@ -49,8 +50,6 @@ export class Reroute
     return Reroute.radius + gap + Reroute.slotRadius
   }
 
-  #malloc = new Float32Array(8)
-
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   #network: WeakRef<LinkNetwork>
 
@@ -73,7 +72,7 @@ export class Reroute
   /** This property is only defined on the last reroute of a floating reroute chain (closest to input end). */
   floating?: FloatingRerouteSlot
 
-  #pos = this.#malloc.subarray(0, 2)
+  #pos: [number, number] = [0, 0]
   /** @inheritdoc */
   get pos(): Point {
     return this.#pos
@@ -89,17 +88,17 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  get boundingRect(): ReadOnlyRect {
+  get boundingRect(): Rectangle {
     const { radius } = Reroute
     const [x, y] = this.#pos
-    return [x - radius, y - radius, 2 * radius, 2 * radius]
+    return Rectangle.from([x - radius, y - radius, 2 * radius, 2 * radius])
   }
 
   /**
    * Slightly over-sized rectangle, guaranteed to contain the entire surface area for hover detection.
    * Eliminates most hover positions using an extremely cheap check.
    */
-  get #hoverArea(): ReadOnlyRect {
+  get #hoverArea(): Rect {
     const xOffset = 2 * Reroute.slotOffset
     const yOffset = 2 * Math.max(Reroute.radius, Reroute.slotRadius)
 
@@ -126,14 +125,14 @@ export class Reroute
   sin: number = 0
 
   /** Bezier curve control point for the "target" (input) side of the link */
-  controlPoint: Point = this.#malloc.subarray(4, 6)
+  controlPoint: [number, number] = [0, 0]
 
   /** @inheritdoc */
   path?: Path2D
   /** @inheritdoc */
   _centreAngle?: number
   /** @inheritdoc */
-  _pos: Float32Array = this.#malloc.subarray(6, 8)
+  _pos: [number, number] = [0, 0]
 
   /** @inheritdoc */
   _dragging?: boolean
