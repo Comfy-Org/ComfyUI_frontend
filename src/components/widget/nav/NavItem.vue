@@ -3,8 +3,8 @@
     class="flex items-center gap-2 px-4 py-3 text-sm rounded-md transition-colors cursor-pointer"
     :class="
       active
-        ? 'bg-neutral-100 dark-theme:bg-zinc-700 text-neutral'
-        : 'text-neutral hover:bg-zinc-100 dark-theme:hover:bg-zinc-700/50'
+        ? 'bg-white dark-theme:bg-charcoal-600 text-neutral'
+        : 'text-neutral hover:bg-gray-100 dark-theme:hover:bg-charcoal-300'
     "
     role="button"
     @click="onClick"

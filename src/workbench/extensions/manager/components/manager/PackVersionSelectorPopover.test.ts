@@ -76,11 +76,14 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
 }))
 
 // Mock the conflict detection composable
-vi.mock('@/composables/useConflictDetection', () => ({
-  useConflictDetection: vi.fn(() => ({
-    checkNodeCompatibility: mockCheckNodeCompatibility
-  }))
-}))
+vi.mock(
+  '@/workbench/extensions/manager/composables/useConflictDetection',
+  () => ({
+    useConflictDetection: vi.fn(() => ({
+      checkNodeCompatibility: mockCheckNodeCompatibility
+    }))
+  })
+)
 
 const waitForPromises = async () => {
   await new Promise((resolve) => setTimeout(resolve, 16))

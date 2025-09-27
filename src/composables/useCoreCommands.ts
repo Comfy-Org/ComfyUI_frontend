@@ -25,6 +25,8 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { selectionBounds } from '@/renderer/core/layout/utils/layoutMath'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -50,6 +52,8 @@ import {
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+
+import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -264,7 +268,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: () => {
-        dialogService.showTemplateWorkflowsDialog()
+        useWorkflowTemplateSelectorDialog().show()
       }
     },
     {
@@ -314,15 +318,53 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Zoom to fit',
       category: 'view-controls' as const,
       function: () => {
-        if (app.canvas.empty) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.emptyCanvas'),
-            life: 3000
-          })
-          return
+        const vueNodesEnabled = useSettingStore().get('Comfy.VueNodes.Enabled')
+
+        if (vueNodesEnabled) {
+          // Get nodes from Vue stores
+          const canvasStore = useCanvasStore()
+          const selectedNodeIds = canvasStore.selectedNodeIds
+          const allNodes = layoutStore.getAllNodes().value
+
+          // Get nodes to fit - selected if any, otherwise all
+          const nodesToFit =
+            selectedNodeIds.size > 0
+              ? Array.from(selectedNodeIds)
+                  .map((id) => allNodes.get(id))
+                  .filter((node) => node != null)
+              : Array.from(allNodes.values())
+
+          // Use Vue nodes bounds calculation
+          const bounds = selectionBounds(nodesToFit)
+          if (!bounds) {
+            toastStore.add({
+              severity: 'error',
+              summary: t('toastMessages.emptyCanvas'),
+              life: 3000
+            })
+            return
+          }
+
+          // Convert to LiteGraph format and animate
+          const lgBounds = [
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height
+          ] as const
+          const setDirty = () => app.canvas.setDirty(true, true)
+          app.canvas.ds.animateToBounds(lgBounds, setDirty)
+        } else {
+          if (app.canvas.empty) {
+            toastStore.add({
+              severity: 'error',
+              summary: t('toastMessages.emptyCanvas'),
+              life: 3000
+            })
+            return
+          }
+          app.canvas.fitViewToSelectionAnimated()
         }
-        app.canvas.fitViewToSelectionAnimated()
       }
     },
     {

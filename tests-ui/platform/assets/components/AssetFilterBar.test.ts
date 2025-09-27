@@ -4,6 +4,17 @@ import { nextTick } from 'vue'
 
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
+import {
+  createAssetWithSpecificBaseModel,
+  createAssetWithSpecificExtension,
+  createAssetWithoutBaseModel
+} from '@/platform/assets/fixtures/ui-mock-assets'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+
+// Mock @/i18n directly since component imports { t } from '@/i18n'
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key
+}))
 
 // Mock components with minimal functionality for business logic testing
 vi.mock('@/components/input/MultiSelect.vue', () => ({
@@ -51,11 +62,26 @@ vi.mock('@/components/input/SingleSelect.vue', () => ({
 }))
 
 // Test factory functions
+function mountAssetFilterBar(props = {}) {
+  return mount(AssetFilterBar, {
+    props,
+    global: {
+      mocks: {
+        $t: (key: string) => key
+      }
+    }
+  })
+}
 
 describe('AssetFilterBar', () => {
   describe('Filter State Management', () => {
     it('maintains correct initial state', () => {
-      const wrapper = mount(AssetFilterBar)
+      // Provide assets with options so filters are visible
+      const assets = [
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificBaseModel('sd15')
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
 
       // Test initial state through component props
       const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
@@ -67,7 +93,12 @@ describe('AssetFilterBar', () => {
     })
 
     it('handles multiple simultaneous filter changes correctly', async () => {
-      const wrapper = mount(AssetFilterBar)
+      // Provide assets with options so filters are visible
+      const assets = [
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificBaseModel('sd15')
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
 
       // Update file formats
       const fileFormatSelect = wrapper.findAllComponents({
@@ -107,7 +138,12 @@ describe('AssetFilterBar', () => {
     })
 
     it('ensures FilterState interface compliance', async () => {
-      const wrapper = mount(AssetFilterBar)
+      // Provide assets with options so filters are visible
+      const assets = [
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificBaseModel('sd15')
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
 
       const fileFormatSelect = wrapper.findAllComponents({
         name: 'MultiSelect'
@@ -133,6 +169,100 @@ describe('AssetFilterBar', () => {
       expect(filterState.baseModels.every((m) => typeof m === 'string')).toBe(
         true
       )
+    })
+  })
+
+  describe('Dynamic Filter Options', () => {
+    it('should use dynamic file format options based on actual assets', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificExtension('ckpt'),
+        createAssetWithSpecificExtension('pt')
+      ]
+
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const fileFormatSelect = wrapper.findAllComponents({
+        name: 'MultiSelect'
+      })[0]
+      expect(fileFormatSelect.props('options')).toEqual([
+        { name: '.ckpt', value: 'ckpt' },
+        { name: '.pt', value: 'pt' },
+        { name: '.safetensors', value: 'safetensors' }
+      ])
+    })
+
+    it('should use dynamic base model options based on actual assets', () => {
+      const assets = [
+        createAssetWithSpecificBaseModel('sd15'),
+        createAssetWithSpecificBaseModel('sdxl'),
+        createAssetWithSpecificBaseModel('sd35')
+      ]
+
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const baseModelSelect = wrapper.findAllComponents({
+        name: 'MultiSelect'
+      })[1]
+      expect(baseModelSelect.props('options')).toEqual([
+        { name: 'sd15', value: 'sd15' },
+        { name: 'sd35', value: 'sd35' },
+        { name: 'sdxl', value: 'sdxl' }
+      ])
+    })
+  })
+
+  describe('Conditional Filter Visibility', () => {
+    it('hides file format filter when no options available', () => {
+      const assets: AssetItem[] = [] // No assets = no file format options
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const fileFormatSelects = wrapper
+        .findAllComponents({ name: 'MultiSelect' })
+        .filter(
+          (component) => component.props('label') === 'assetBrowser.fileFormats'
+        )
+
+      expect(fileFormatSelects).toHaveLength(0)
+    })
+
+    it('hides base model filter when no options available', () => {
+      const assets = [createAssetWithoutBaseModel()] // Asset without base model = no base model options
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const baseModelSelects = wrapper
+        .findAllComponents({ name: 'MultiSelect' })
+        .filter(
+          (component) => component.props('label') === 'assetBrowser.baseModels'
+        )
+
+      expect(baseModelSelects).toHaveLength(0)
+    })
+
+    it('shows both filters when options are available', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors'),
+        createAssetWithSpecificBaseModel('sd15')
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
+      const fileFormatSelect = multiSelects.find(
+        (component) => component.props('label') === 'assetBrowser.fileFormats'
+      )
+      const baseModelSelect = multiSelects.find(
+        (component) => component.props('label') === 'assetBrowser.baseModels'
+      )
+
+      expect(fileFormatSelect).toBeDefined()
+      expect(baseModelSelect).toBeDefined()
+    })
+
+    it('hides both filters when no assets provided', () => {
+      const wrapper = mountAssetFilterBar()
+
+      const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
+      expect(multiSelects).toHaveLength(0)
     })
   })
 })

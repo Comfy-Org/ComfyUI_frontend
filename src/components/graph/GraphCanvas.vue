@@ -62,6 +62,7 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
+    <NodeOptions />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -87,6 +88,7 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
+import NodeOptions from '@/components/graph/selectionToolbox/NodeOptions.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
@@ -165,7 +167,7 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
-const viewportCulling = useViewportCulling()
+const { handleTransformUpdate } = useViewportCulling()
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
@@ -187,8 +189,9 @@ watch(
   }
 )
 
-const allNodes = viewportCulling.allNodes
-const handleTransformUpdate = viewportCulling.handleTransformUpdate
+const allNodes = computed(() =>
+  Array.from(vueNodeLifecycle.vueNodeData.value.values())
+)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -307,13 +310,27 @@ watch(
       removeSlotError(node)
       const nodeErrors = lastNodeErrors?.[node.id]
       if (!nodeErrors) continue
-      for (const error of nodeErrors.errors) {
-        if (error.extra_info && error.extra_info.input_name) {
-          const inputIndex = node.findInputSlot(error.extra_info.input_name)
+
+      const validErrors = nodeErrors.errors.filter(
+        (error) => error.extra_info?.input_name !== undefined
+      )
+      const slotErrorsChanged =
+        validErrors.length > 0 &&
+        validErrors.some((error) => {
+          const inputName = error.extra_info!.input_name!
+          const inputIndex = node.findInputSlot(inputName)
           if (inputIndex !== -1) {
             node.inputs[inputIndex].hasErrors = true
+            return true
           }
-        }
+          return false
+        })
+
+      // Trigger Vue node data update if slot errors changed
+      if (slotErrorsChanged && comfyApp.graph.onTrigger) {
+        comfyApp.graph.onTrigger('node:slot-errors:changed', {
+          nodeId: node.id
+        })
       }
     }
 

@@ -22,12 +22,15 @@ vi.mock('@/stores/dialogStore')
 vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/commandStore')
 vi.mock('@/workbench/extensions/manager/services/comfyManagerService')
-vi.mock('@/composables/useConflictDetection', () => ({
-  useConflictDetection: vi.fn(() => ({
-    conflictedPackages: { value: [] },
-    performConflictDetection: vi.fn().mockResolvedValue(undefined)
-  }))
-}))
+vi.mock(
+  '@/workbench/extensions/manager/composables/useConflictDetection',
+  () => ({
+    useConflictDetection: vi.fn(() => ({
+      conflictedPackages: { value: [] },
+      runFullConflictAnalysis: vi.fn().mockResolvedValue(undefined)
+    }))
+  })
+)
 
 // Mock useEventListener to capture the event handler
 let reconnectHandler: (() => void) | null = null

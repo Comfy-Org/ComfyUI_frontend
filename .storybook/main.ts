@@ -45,7 +45,7 @@ const config: StorybookConfig = {
           compiler: 'vue3',
           customCollections: {
             comfy: FileSystemIconLoader(
-              process.cwd() + '/src/assets/icons/custom'
+              process.cwd() + '/packages/design-system/src/icons'
             )
           }
         }),

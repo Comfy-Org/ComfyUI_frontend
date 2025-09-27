@@ -12,8 +12,6 @@ import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsD
 import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
-import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
@@ -22,7 +20,6 @@ import {
   type ShowDialogOptions,
   useDialogStore
 } from '@/stores/dialogStore'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
 import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
 import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
@@ -31,6 +28,7 @@ import ManagerHeader from '@/workbench/extensions/manager/components/manager/Man
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -111,23 +109,6 @@ export const useDialogService = () => {
     })
   }
 
-  function showTemplateWorkflowsDialog(
-    props: InstanceType<typeof TemplateWorkflowsContent>['$props'] = {}
-  ) {
-    dialogStore.showDialog({
-      key: 'global-template-workflows',
-      title: t('templateWorkflows.title'),
-      component: TemplateWorkflowsContent,
-      headerComponent: TemplateWorkflowsDialogHeader,
-      dialogComponentProps: {
-        pt: {
-          content: { class: 'px-0! overflow-y-hidden' }
-        }
-      },
-      props
-    })
-  }
-
   function showManagerDialog(
     props: InstanceType<typeof ManagerDialogContent>['$props'] = {}
   ) {
@@ -152,30 +133,6 @@ export const useDialogService = () => {
         }
       },
       props
-    })
-  }
-
-  function showManagerProgressDialog(options?: {
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
-  }) {
-    return dialogStore.showDialog({
-      key: 'global-manager-progress-dialog',
-      component: ManagerProgressDialogContent,
-      headerComponent: ManagerProgressHeader,
-      footerComponent: ManagerProgressFooter,
-      props: options?.props,
-      priority: 2,
-      dialogComponentProps: {
-        closable: false,
-        modal: false,
-        position: 'bottom',
-        pt: {
-          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: 'p-0!' },
-          header: { class: 'p-0! border-none' },
-          footer: { class: 'p-0! border-none' }
-        }
-      }
     })
   }
 
@@ -232,6 +189,30 @@ export const useDialogService = () => {
       key: 'global-error',
       component: ErrorDialogContent,
       props
+    })
+  }
+
+  function showManagerProgressDialog(options?: {
+    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
+  }) {
+    return dialogStore.showDialog({
+      key: 'global-manager-progress-dialog',
+      component: ManagerProgressDialogContent,
+      headerComponent: ManagerProgressHeader,
+      footerComponent: ManagerProgressFooter,
+      props: options?.props,
+      priority: 2,
+      dialogComponentProps: {
+        closable: false,
+        modal: false,
+        position: 'bottom',
+        pt: {
+          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
+          content: { class: 'p-0!' },
+          header: { class: 'p-0! border-none' },
+          footer: { class: 'p-0! border-none' }
+        }
+      }
     })
   }
 
@@ -511,16 +492,15 @@ export const useDialogService = () => {
     showSettingsDialog,
     showAboutDialog,
     showExecutionErrorDialog,
-    showTemplateWorkflowsDialog,
     showManagerDialog,
     showManagerProgressDialog,
-    showErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
     prompt,
+    showErrorDialog,
     confirm,
     toggleManagerDialog,
     toggleManagerProgressDialog,

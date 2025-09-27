@@ -4,6 +4,10 @@ import type { ComfyApp } from '../../src/scripts/app'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Node Badge', () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {

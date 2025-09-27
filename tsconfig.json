@@ -37,5 +37,6 @@
     "src/**/*",
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
+    "tailwind.config.ts"
   ]
 }

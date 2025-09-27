@@ -1,33 +1,32 @@
 <template>
-  <WidgetLayoutField :widget>
-    <Select
-      v-model="localValue"
-      :options="selectOptions"
-      v-bind="combinedProps"
-      :disabled="readonly"
-      class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
-      size="small"
-      :pt="{
-        option: 'text-xs'
-      }"
-      @update:model-value="onChange"
-    />
-  </WidgetLayoutField>
+  <WidgetSelectDropdown
+    v-if="isDropdownUIWidget"
+    v-bind="props"
+    :asset-kind="assetKind"
+    :allow-upload="allowUpload"
+    :upload-folder="uploadFolder"
+    @update:model-value="handleUpdateModelValue"
+  />
+  <WidgetSelectDefault
+    v-else
+    v-bind="props"
+    @update:model-value="handleUpdateModelValue"
+  />
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
 import { computed } from 'vue'
 
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { ResultItemType } from '@/schemas/apiSchema'
 import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+  type ComboInputSpec,
+  isComboInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { AssetKind } from '@/types/widgetTypes'
 
-import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+import WidgetSelectDefault from './WidgetSelectDefault.vue'
+import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
@@ -39,30 +38,64 @@ const emit = defineEmits<{
   'update:modelValue': [value: string | number | undefined]
 }>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
-  defaultValue: props.widget.options?.values?.[0] || '',
-  emit
+function handleUpdateModelValue(value: string | number | undefined) {
+  emit('update:modelValue', value)
+}
+
+const comboSpec = computed<ComboInputSpec | undefined>(() => {
+  if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
+    return props.widget.spec
+  }
+  return undefined
 })
 
-// Transform compatibility props for overlay positioning
-const transformCompatProps = useTransformCompatOverlayProps()
-
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
-
-// Extract select options from widget options
-const selectOptions = computed(() => {
-  const options = props.widget.options
-
-  if (options?.values && Array.isArray(options.values)) {
-    return options.values
+const specDescriptor = computed<{
+  kind: AssetKind
+  allowUpload: boolean
+  folder: ResultItemType | undefined
+}>(() => {
+  const spec = comboSpec.value
+  if (!spec) {
+    return {
+      kind: 'unknown',
+      allowUpload: false,
+      folder: undefined
+    }
   }
 
-  return []
+  const {
+    image_upload,
+    animated_image_upload,
+    video_upload,
+    image_folder,
+    audio_upload
+  } = spec
+
+  let kind: AssetKind = 'unknown'
+  if (video_upload) {
+    kind = 'video'
+  } else if (image_upload || animated_image_upload) {
+    kind = 'image'
+  } else if (audio_upload) {
+    kind = 'audio'
+  }
+  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
+
+  const allowUpload =
+    image_upload === true ||
+    animated_image_upload === true ||
+    audio_upload === true
+  return {
+    kind,
+    allowUpload,
+    folder: image_folder
+  }
+})
+
+const assetKind = computed(() => specDescriptor.value.kind)
+const isDropdownUIWidget = computed(() => assetKind.value !== 'unknown')
+const allowUpload = computed(() => specDescriptor.value.allowUpload)
+const uploadFolder = computed<ResultItemType>(() => {
+  return specDescriptor.value.folder ?? 'input'
 })
 </script>

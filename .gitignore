@@ -22,6 +22,8 @@ dist-ssr
 *.local
 # Claude configuration
 .claude/*.local.json
+.claude/*.local.md
+.claude/*.local.txt
 CLAUDE.local.md
 
 # Editor directories and files

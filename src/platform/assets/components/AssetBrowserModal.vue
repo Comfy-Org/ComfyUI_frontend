@@ -27,6 +27,10 @@
       />
     </template>
 
+    <template #contentFilter>
+      <AssetFilterBar :assets="assets" @filter-change="updateFilters" />
+    </template>
+
     <template #content>
       <AssetGrid
         :assets="filteredAssets"
@@ -42,6 +46,7 @@ import { computed, provide } from 'vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
@@ -70,19 +75,20 @@ const {
   availableCategories,
   contentTitle,
   filteredAssets,
-  selectAssetWithCallback
+  selectAssetWithCallback,
+  updateFilters
 } = useAssetBrowser(props.assets)
 
 const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true
 })
 
-const handleClose = () => {
+function handleClose() {
   props.onClose?.()
   emit('close')
 }
 
-const handleAssetSelectAndEmit = async (asset: AssetDisplayItem) => {
+async function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   emit('asset-select', asset)
   await selectAssetWithCallback(asset.id, props.onSelect)
 }

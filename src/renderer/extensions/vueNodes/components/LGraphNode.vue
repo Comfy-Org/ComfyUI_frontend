@@ -21,6 +21,8 @@
           'animate-pulse': executing,
           'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
+          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
+            muted,
           'will-change-transform': isDragging
         },
 
@@ -36,10 +38,9 @@
       },
       dragStyle
     ]"
-    @pointerdown="handlePointerDown"
-    @pointermove="handlePointerMove"
-    @pointerup="handlePointerUp"
+    v-bind="pointerHandlers"
     @wheel="handleWheel"
+    @contextmenu="handleContextMenu"
   >
     <div class="flex items-center">
       <template v-if="isCollapsed">
@@ -48,7 +49,7 @@
       </template>
       <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, isCollapsed]"
+        v-memo="[nodeData.title, isCollapsed, nodeData.flags?.pinned]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
@@ -135,6 +136,7 @@ import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -175,8 +177,12 @@ const {
   readonly = false
 } = defineProps<LGraphNodeProps>()
 
-const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
-  useNodeEventHandlers()
+const {
+  handleNodeCollapse,
+  handleNodeTitleUpdate,
+  handleNodeSelect,
+  handleNodeRightClick
+} = useNodeEventHandlers()
 
 useVueElementTracking(() => nodeData.id, 'node')
 
@@ -200,11 +206,20 @@ const hasExecutionError = computed(
 )
 
 // Computed error states for styling
-const hasAnyError = computed(
-  (): boolean => !!(hasExecutionError.value || nodeData.hasErrors || error)
-)
+const hasAnyError = computed((): boolean => {
+  return !!(
+    hasExecutionError.value ||
+    nodeData.hasErrors ||
+    error ||
+    // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
+    // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
+    nodeData.inputs?.some((slot) => slot?.hasErrors) ||
+    nodeData.outputs?.some((slot) => slot?.hasErrors)
+  )
+})
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
+const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -221,13 +236,25 @@ onErrorCaptured((error) => {
 
 // Use layout system for node position and dragging
 const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
-const {
-  handlePointerDown,
-  handlePointerUp,
-  handlePointerMove,
-  isDragging,
-  dragStyle
-} = useNodePointerInteractions(() => nodeData, handleNodeSelect)
+const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
+  () => nodeData,
+  handleNodeSelect
+)
+
+// Handle right-click context menu
+const handleContextMenu = (event: MouseEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  // First handle the standard right-click behavior (selection)
+  handleNodeRightClick(event as PointerEvent, nodeData)
+
+  // Show the node options menu at the cursor position
+  const targetElement = event.currentTarget as HTMLElement
+  if (targetElement) {
+    toggleNodeOptions(event, targetElement, false)
+  }
+}
 
 onMounted(() => {
   if (size.value && transformState?.camera) {
@@ -263,7 +290,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   if (hasAnyError.value) {
-    return 'border-error'
+    return 'border-error dark-theme:border-error'
   }
   if (executing.value) {
     return 'border-blue-500'
@@ -276,10 +303,10 @@ const outlineClass = computed(() => {
     return undefined
   }
   if (hasAnyError.value) {
-    return 'outline-error'
+    return 'outline-error dark-theme:outline-error'
   }
   if (executing.value) {
-    return 'outline-blue-500'
+    return 'outline-blue-500 dark-theme:outline-blue-500'
   }
   return 'outline-black dark-theme:outline-white'
 })

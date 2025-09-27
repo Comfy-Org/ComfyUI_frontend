@@ -224,9 +224,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ name: 'beta.safetensors' })
       ]
 
-      const { sortBy, filteredAssets } = useAssetBrowser(assets)
+      const { updateFilters, filteredAssets } = useAssetBrowser(assets)
 
-      sortBy.value = 'name'
+      updateFilters({ sortBy: 'name', fileFormats: [], baseModels: [] })
       await nextTick()
 
       const names = filteredAssets.value.map((asset) => asset.name)
@@ -244,9 +244,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ created_at: '2024-02-01T00:00:00Z' })
       ]
 
-      const { sortBy, filteredAssets } = useAssetBrowser(assets)
+      const { updateFilters, filteredAssets } = useAssetBrowser(assets)
 
-      sortBy.value = 'date'
+      updateFilters({ sortBy: 'recent', fileFormats: [], baseModels: [] })
       await nextTick()
 
       const dates = filteredAssets.value.map((asset) => asset.created_at)
