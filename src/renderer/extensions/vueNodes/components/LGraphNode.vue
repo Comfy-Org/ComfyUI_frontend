@@ -316,26 +316,19 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  if (hasAnyError.value) {
-    return 'border-error dark-theme:border-error'
-  }
-  if (executing.value) {
-    return 'border-blue-500'
-  }
-  return undefined
+  return (
+    (hasAnyError.value && 'border-error dark-theme:border-error') ||
+    (executing.value && 'border-blue-500')
+  )
 })
 
 const outlineClass = computed(() => {
-  if (!isSelected.value) {
-    return undefined
-  }
-  if (hasAnyError.value) {
-    return 'outline-error dark-theme:outline-error'
-  }
-  if (executing.value) {
-    return 'outline-blue-500 dark-theme:outline-blue-500'
-  }
-  return 'outline-black dark-theme:outline-white'
+  return (
+    isSelected.value &&
+    ((hasAnyError.value && 'outline-error dark-theme:outline-error') ||
+      (executing.value && 'outline-blue-500 dark-theme:outline-blue-500') ||
+      'outline-black dark-theme:outline-white')
+  )
 })
 
 // Event handlers
