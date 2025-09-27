@@ -26,7 +26,7 @@ function useVueNodeLifecycleIndividual() {
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
-    const activeGraph = comfyApp.graph
+    const activeGraph = comfyApp.canvas?.graph
     if (!activeGraph || nodeManager.value) return
 
     // Initialize the core node manager
@@ -83,7 +83,7 @@ function useVueNodeLifecycleIndividual() {
 
   // Watch for Vue nodes enabled state changes
   watch(
-    () => shouldRenderVueNodes.value && Boolean(comfyApp.graph),
+    () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
@@ -121,33 +121,33 @@ function useVueNodeLifecycleIndividual() {
 
   // Handle case where Vue nodes are enabled but graph starts empty
   const setupEmptyGraphListener = () => {
+    const activeGraph = comfyApp.canvas?.graph
     if (
-      shouldRenderVueNodes.value &&
-      comfyApp.graph &&
-      !nodeManager.value &&
-      comfyApp.graph._nodes.length === 0
+      !shouldRenderVueNodes.value ||
+      nodeManager.value ||
+      activeGraph?._nodes.length !== 0
     ) {
-      const originalOnNodeAdded = comfyApp.graph.onNodeAdded
-      comfyApp.graph.onNodeAdded = function (node: LGraphNode) {
-        // Restore original handler
-        comfyApp.graph.onNodeAdded = originalOnNodeAdded
+      return
+    }
+    const originalOnNodeAdded = activeGraph.onNodeAdded
+    activeGraph.onNodeAdded = function (node: LGraphNode) {
+      // Restore original handler
+      activeGraph.onNodeAdded = originalOnNodeAdded
 
-        // Initialize node manager if needed
-        if (shouldRenderVueNodes.value && !nodeManager.value) {
-          initializeNodeManager()
-        }
+      // Initialize node manager if needed
+      if (shouldRenderVueNodes.value && !nodeManager.value) {
+        initializeNodeManager()
+      }
 
-        // Call original handler
-        if (originalOnNodeAdded) {
-          originalOnNodeAdded.call(this, node)
-        }
+      // Call original handler
+      if (originalOnNodeAdded) {
+        originalOnNodeAdded.call(this, node)
       }
     }
   }
 
   // Cleanup function for component unmounting
   const cleanup = () => {
-    console.log('cleanup')
     if (nodeManager.value) {
       nodeManager.value.cleanup()
       nodeManager.value = null

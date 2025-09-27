@@ -100,7 +100,7 @@ test.describe('Vue Node Link Interaction', () => {
 
     const linkDetails = await comfyPage.page.evaluate((sourceId) => {
       const app = window['app']
-      const graph = app?.graph
+      const graph = app?.canvas?.graph
       if (!graph) return null
 
       const source = graph.getNodeById(sourceId)
@@ -164,7 +164,7 @@ test.describe('Vue Node Link Interaction', () => {
 
     const graphLinkCount = await comfyPage.page.evaluate((sourceId) => {
       const app = window['app']
-      const graph = app?.graph
+      const graph = app?.canvas?.graph
       if (!graph) return 0
 
       const source = graph.getNodeById(sourceId)
@@ -207,7 +207,7 @@ test.describe('Vue Node Link Interaction', () => {
 
     const graphLinkCount = await comfyPage.page.evaluate((sourceId) => {
       const app = window['app']
-      const graph = app?.graph
+      const graph = app?.canvas?.graph
       if (!graph) return 0
 
       const source = graph.getNodeById(sourceId)
