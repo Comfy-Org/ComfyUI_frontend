@@ -8,10 +8,12 @@
   "description": "Official front-end implementation of ComfyUI",
   "license": "GPL-3.0-only",
   "scripts": {
+    "build:desktop": "nx build @comfyorg/desktop-ui",
     "build-storybook": "storybook build",
     "build:types": "nx build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build": "pnpm typecheck && nx build",
     "collect-i18n": "pnpm exec playwright test --config=playwright.i18n.config.ts",
+    "dev:desktop": "nx dev @comfyorg/desktop-ui",
     "dev:electron": "nx serve --config vite.electron.config.mts",
     "dev": "nx serve",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
