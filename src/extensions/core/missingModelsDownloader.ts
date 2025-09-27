@@ -352,12 +352,9 @@ app.registerExtension({
 
       if (downloadUrl) {
         btn.style.background = '#2196F3'
-        btn.title = url
-          ? 'Download from provided URL'
-          : 'Download from known source'
       } else {
         btn.style.background = '#FFC107'
-        btn.title = 'URL not found - click to enter manually'
+        btn.title = 'Click to enter URL'
       }
 
       btn.onclick = () =>
