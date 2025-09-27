@@ -58,9 +58,10 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
 
   /**
    * Start dragging the node
+   * @returns {boolean} True if drag started successfully, false otherwise
    */
-  function startDrag(event: PointerEvent) {
-    if (!layoutRef.value || !transformState) return
+  function startDrag(event: PointerEvent): boolean {
+    if (!layoutRef.value || !transformState) return false
 
     isDragging.value = true
     dragStartPos = { ...position.value }
@@ -88,8 +89,10 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     mutations.setSource(LayoutSource.Vue)
 
     // Capture pointer
-    if (!(event.target instanceof HTMLElement)) return
+    if (!(event.target instanceof HTMLElement)) return false
     event.target.setPointerCapture(event.pointerId)
+
+    return true
   }
 
   /**

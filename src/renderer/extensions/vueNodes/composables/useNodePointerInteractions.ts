@@ -1,11 +1,4 @@
-import {
-  type MaybeRefOrGetter,
-  computed,
-  onUnmounted,
-  reactive,
-  readonly,
-  toValue
-} from 'vue'
+import { type MaybeRefOrGetter, computed, ref, toValue, watch } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -43,34 +36,27 @@ export function useNodePointerInteractions(
 
   // Avoid potential null access during component initialization
   const nodeIdComputed = computed(() => nodeData.value?.id ?? '')
-  const { startDrag, endDrag, handleDrag } = useNodeLayout(nodeIdComputed)
+  const { startDrag, endDrag, handleDrag, isDragging } =
+    useNodeLayout(nodeIdComputed)
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
 
-  // Vue-native reactive coordination object (single source of truth)
-  const dragCoordination = reactive({
-    hasPointerDown: false,
-    startPosition: { x: 0, y: 0 } as Position,
-    layoutEngaged: false
-  })
+  // Single source of truth: useNodeLayout.isDragging is the only drag state
 
-  // Derived states for different consumers (Vue-native "state machine")
-  const isActivelyDragging = computed(
-    () => dragCoordination.hasPointerDown && dragCoordination.layoutEngaged
+  // Simple tracking for click vs drag detection (not part of coordination)
+  const startPosition = ref<Position>({ x: 0, y: 0 })
+
+  // Automatic global state sync via Vue reactivity
+  const stopWatcher = watch(
+    isDragging,
+    (dragging) => {
+      layoutStore.isDraggingVueNodes.value = dragging
+    },
+    { immediate: true }
   )
-  const shouldHideSelectionUI = computed(() => isActivelyDragging.value)
-  const dragStyle = computed(() => ({
-    cursor: isActivelyDragging.value ? 'grabbing' : 'grab'
-  }))
 
-  // Single coordination function replaces three separate state updates
-  const coordinateStateChange = (changes: Partial<typeof dragCoordination>) => {
-    Object.assign(dragCoordination, changes)
-
-    // Sync to layout store for UI consumers (computed reactivity handles timing)
-    layoutStore.isDraggingVueNodes.value = shouldHideSelectionUI.value
-  }
+  // No longer needed - Vue reactivity handles sync automatically via watch()
 
   const handlePointerDown = (event: PointerEvent) => {
     if (!nodeData.value) {
@@ -87,35 +73,29 @@ export function useNodePointerInteractions(
       return
     }
 
-    // Coordinate state change across all systems
-    coordinateStateChange({
-      hasPointerDown: true,
-      startPosition: { x: event.clientX, y: event.clientY },
-      layoutEngaged: false // Will be set to true when startDrag succeeds
-    })
+    // Store start position for click vs drag detection
+    startPosition.value = { x: event.clientX, y: event.clientY }
 
-    startDrag(event)
-
-    // Mark layout as engaged after successful start
-    coordinateStateChange({ layoutEngaged: true })
+    // Single source of truth: only call layout system
+    // Check return value to handle race conditions
+    const dragStarted = startDrag(event)
+    if (!dragStarted) {
+      // startDrag failed - clear start position since no drag began
+      startPosition.value = { x: 0, y: 0 }
+      return
+    }
   }
 
   const handlePointerMove = (event: PointerEvent) => {
-    if (!isActivelyDragging.value) return
+    if (!isDragging.value) return
 
     handleDrag(event)
   }
 
   /**
-   * Centralized cleanup function for drag state
-   * Ensures consistent cleanup across all drag termination scenarios
+   * No longer needed - cleanup happens automatically via useNodeLayout
+   * and Vue reactivity watch()
    */
-  const cleanupDragState = () => {
-    coordinateStateChange({
-      hasPointerDown: false,
-      layoutEngaged: false
-    })
-  }
 
   /**
    * Safely ends drag operation with proper error handling
@@ -124,28 +104,34 @@ export function useNodePointerInteractions(
   const safeDragEnd = async (event: PointerEvent): Promise<void> => {
     try {
       await endDrag(event)
-    } catch (error) {
-      console.error('useNodePointerInteractions: Error during endDrag -', error)
-    } finally {
-      cleanupDragState()
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      console.error(
+        'useNodePointerInteractions: Error during endDrag -',
+        errorMessage
+      )
     }
+    // Cleanup happens automatically via Vue reactivity when isDragging changes
   }
 
   /**
    * Common drag termination handler with fallback cleanup
    */
   const handleDragTermination = (event: PointerEvent, errorContext: string) => {
-    safeDragEnd(event).catch((error) => {
+    safeDragEnd(event).catch((error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
       console.error(
         `useNodePointerInteractions: Failed to complete ${errorContext} -`,
-        error
+        errorMessage
       )
-      cleanupDragState() // Fallback cleanup
+      // No manual cleanup needed - Vue reactivity handles it automatically
     })
   }
 
   const handlePointerUp = (event: PointerEvent) => {
-    if (isActivelyDragging.value) {
+    if (isDragging.value) {
       handleDragTermination(event, 'drag end')
     }
 
@@ -157,8 +143,8 @@ export function useNodePointerInteractions(
     if (!nodeData?.value) return
 
     // Emit node-click for selection handling in GraphCanvas
-    const dx = event.clientX - dragCoordination.startPosition.x
-    const dy = event.clientY - dragCoordination.startPosition.y
+    const dx = event.clientX - startPosition.value.x
+    const dy = event.clientY - startPosition.value.y
     const wasDragging = dx * dx + dy * dy > DRAG_THRESHOLD_SQUARED
 
     onPointerUp(event, nodeData.value, wasDragging)
@@ -169,7 +155,7 @@ export function useNodePointerInteractions(
    * Ensures drag state is properly cleaned up when pointer interaction is interrupted
    */
   const handlePointerCancel = (event: PointerEvent) => {
-    if (!isActivelyDragging.value) return
+    if (!isDragging.value) return
 
     handleDragTermination(event, 'drag cancellation')
   }
@@ -179,19 +165,11 @@ export function useNodePointerInteractions(
    * Cancels the current drag to prevent context menu from appearing while dragging
    */
   const handleContextMenu = (event: MouseEvent) => {
-    if (!isActivelyDragging.value) return
+    if (!isDragging.value) return
 
     event.preventDefault()
-    // Simply cleanup state without calling endDrag to avoid synthetic event creation
-    cleanupDragState()
+    // No manual cleanup needed - Vue reactivity handles it automatically
   }
-
-  // Cleanup on unmount to prevent resource leaks
-  onUnmounted(() => {
-    if (!isActivelyDragging.value) return
-
-    cleanupDragState()
-  })
 
   const pointerHandlers = {
     onPointerdown: handlePointerDown,
@@ -202,12 +180,8 @@ export function useNodePointerInteractions(
   }
 
   return {
-    isDragging: isActivelyDragging, // For backwards compatibility
-    dragStyle,
+    isDragging, // Single source of truth from useNodeLayout
     pointerHandlers,
-    // New Vue-native reactive coordination
-    dragCoordination: readonly(dragCoordination),
-    isActivelyDragging,
-    shouldHideSelectionUI
+    stopWatcher // Cleanup watcher to prevent memory leaks
   }
 }

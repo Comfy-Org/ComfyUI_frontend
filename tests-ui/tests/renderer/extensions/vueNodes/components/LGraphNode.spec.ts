@@ -49,13 +49,46 @@ vi.mock('@/composables/useErrorHandling', () => ({
 
 vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   useNodeLayout: () => ({
-    position: { x: 100, y: 50 },
-    size: { width: 200, height: 100 },
+    layoutRef: computed(() => null),
+    position: computed(() => ({ x: 100, y: 50 })),
+    size: computed(() => ({ width: 200, height: 100 })),
+    bounds: computed(() => ({ x: 100, y: 50, width: 200, height: 100 })),
+    isVisible: computed(() => true),
+    zIndex: computed(() => 0),
+    moveTo: vi.fn(),
+    resize: vi.fn(),
     startDrag: vi.fn(),
     handleDrag: vi.fn(),
-    endDrag: vi.fn()
+    endDrag: vi.fn(),
+    isDragging: computed(() => false),
+    nodeStyle: computed(() => ({ cursor: 'grab' }))
   })
 }))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions',
+  () => ({
+    useNodePointerInteractions: (nodeDataMaybe: any, onPointerUp: any) => ({
+      isDragging: computed(() => false),
+      pointerHandlers: {
+        onPointerdown: vi.fn(),
+        onPointermove: vi.fn(),
+        onPointerup: (event: PointerEvent) => {
+          const nodeData =
+            typeof nodeDataMaybe === 'function'
+              ? nodeDataMaybe()
+              : nodeDataMaybe
+          if (nodeData && onPointerUp) {
+            onPointerUp(event, nodeData, false) // false = wasDragging
+          }
+        },
+        onPointercancel: vi.fn(),
+        onContextmenu: vi.fn()
+      },
+      stopWatcher: vi.fn()
+    })
+  })
+)
 
 vi.mock(
   '@/renderer/extensions/vueNodes/execution/useNodeExecutionState',
