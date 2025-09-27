@@ -10,11 +10,11 @@ test.describe('Vue Multiline String Widget', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  const getMultilineStringWidget = (comfyPage: ComfyPage) =>
+  const getFirstClipNode = (comfyPage: ComfyPage) =>
     comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode (Prompt)').first()
 
   const getFirstMultilineStringWidget = (comfyPage: ComfyPage) =>
-    getMultilineStringWidget(comfyPage).getByRole('textbox', { name: 'text' })
+    getFirstClipNode(comfyPage).getByRole('textbox', { name: 'text' })
 
   test('should allow entering text', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
@@ -38,7 +38,7 @@ test.describe('Vue Multiline String Widget', () => {
 
     await textarea.fill('Keep me around')
     await comfyPage.canvas.click()
-    await getMultilineStringWidget(comfyPage).click()
+    await getFirstClipNode(comfyPage).click()
 
     await expect(textarea).toHaveValue('Keep me around')
   })
