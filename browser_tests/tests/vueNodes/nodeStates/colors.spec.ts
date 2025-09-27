@@ -30,23 +30,20 @@ test.describe('Vue Node Custom Colors', () => {
     )
   })
 
-  // TODO: implement loading node colors from workflow in Vue system
-  test.fail('should load node colors from workflow', async ({ comfyPage }) => {
+  test('should load node colors from workflow', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('nodes/every_node_color')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-custom-colors-dark-all-colors.png'
     )
   })
 
-  // TODO: implement loading node colors from workflow in Vue system
-  test.fail(
-    'should show brightened node colors on light theme',
-    async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-      await comfyPage.loadWorkflow('nodes/every_node_color')
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-custom-colors-light-all-colors.png'
-      )
-    }
-  )
+  test('should show brightened node colors on light theme', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setSetting('Comfy.ColorPalette', 'light')
+    await comfyPage.loadWorkflow('nodes/every_node_color')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'vue-node-custom-colors-light-all-colors.png'
+    )
+  })
 })
