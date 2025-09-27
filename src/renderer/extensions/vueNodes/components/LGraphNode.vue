@@ -48,7 +48,6 @@
         <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
-      <!-- Header only updates on title/color changes -->
       <NodeHeader
         v-memo="[
           nodeData.title,
