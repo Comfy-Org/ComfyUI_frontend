@@ -3398,9 +3398,7 @@ export class LGraphNode
     this.graph._version++
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
-    // Delete the flag if unpinned, so that we don't get unnecessary
-    // flags.pinned = false in serialized object.
-    if (!this.pinned) delete this.flags.pinned
+    if (!this.pinned) this.flags.pinned = undefined
   }
 
   unpin(): void {

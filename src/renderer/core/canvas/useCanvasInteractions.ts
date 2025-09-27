@@ -6,8 +6,7 @@ import { app } from '@/scripts/app'
 
 /**
  * Composable for handling canvas interactions from Vue components.
- * This provides a unified way to forward events to the LiteGraph canvas
- * and will be the foundation for migrating canvas interactions to Vue.
+ * This provides a unified way to forward events to the LiteGraph canvas.
  */
 export function useCanvasInteractions() {
   const settingStore = useSettingStore()
