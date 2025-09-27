@@ -143,7 +143,7 @@ const pt = computed(() => ({
   label: {
     class:
       // Align with MultiSelect labelContainer spacing
-      'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 outline-hidden'
+      'flex-1 flex items-center whitespace-nowrap pl-4 py-2 outline-hidden'
   },
   dropdown: {
     class:

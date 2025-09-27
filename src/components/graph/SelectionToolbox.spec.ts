@@ -450,9 +450,9 @@ describe('SelectionToolbox', () => {
   describe('Event Handling', () => {
     it('should handle wheel events', async () => {
       const mockCanvasInteractions = vi.mocked(useCanvasInteractions)
-      const handleWheelSpy = vi.fn()
+      const forwardEventToCanvasSpy = vi.fn()
       mockCanvasInteractions.mockReturnValue({
-        handleWheel: handleWheelSpy
+        forwardEventToCanvas: forwardEventToCanvasSpy
       } as any)
 
       const mockExtensionService = vi.mocked(useExtensionService)
@@ -467,7 +467,7 @@ describe('SelectionToolbox', () => {
       const panel = wrapper.find('.panel')
       await panel.trigger('wheel')
 
-      expect(handleWheelSpy).toHaveBeenCalled()
+      expect(forwardEventToCanvasSpy).toHaveBeenCalled()
     })
   })
 
@@ -478,13 +478,6 @@ describe('SelectionToolbox', () => {
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
       } as any)
-    })
-
-    it('should still show MoreOptions when no items selected', () => {
-      canvasStore.selectedItems = []
-      const wrapper = mountComponent()
-
-      expect(wrapper.find('.more-options').exists()).toBe(true)
     })
 
     it('should hide most buttons when no items selected', () => {

@@ -13,6 +13,7 @@
         class="search-box-input w-full"
         :model-value="modelValue"
         :placeholder="placeholder"
+        :autofocus="autofocus"
         @input="handleInput"
       />
       <InputIcon v-if="!modelValue" :class="icon" />
@@ -57,7 +58,8 @@ const {
   icon = 'pi pi-search',
   debounceTime = 300,
   filterIcon,
-  filters = []
+  filters = [],
+  autofocus = false
 } = defineProps<{
   modelValue: string
   placeholder?: string
@@ -65,6 +67,7 @@ const {
   debounceTime?: number
   filterIcon?: string
   filters?: TFilter[]
+  autofocus?: boolean
 }>()
 
 const emit = defineEmits<{

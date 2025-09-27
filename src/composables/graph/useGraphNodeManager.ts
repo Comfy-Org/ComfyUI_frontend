@@ -9,6 +9,8 @@ import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
@@ -17,8 +19,10 @@ export interface SafeWidgetData {
   name: string
   type: string
   value: WidgetValue
+  label?: string
   options?: Record<string, unknown>
   callback?: ((value: unknown) => void) | undefined
+  spec?: InputSpec
 }
 
 export interface VueNodeData {
@@ -52,6 +56,7 @@ export interface GraphNodeManager {
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()
+  const nodeDefStore = useNodeDefStore()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
 
@@ -81,21 +86,22 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         ) {
           value = widget.options.values[0]
         }
+        const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
 
         return {
           name: widget.name,
           type: widget.type,
           value: value,
+          label: widget.label,
           options: widget.options ? { ...widget.options } : undefined,
-          callback: widget.callback
+          callback: widget.callback,
+          spec
         }
       } catch (error) {
         return {
           name: widget.name || 'unknown',
           type: widget.type || 'text',
-          value: undefined, // Already a valid WidgetValue
-          options: undefined,
-          callback: undefined
+          value: undefined
         }
       }
     })
@@ -434,6 +440,28 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 mode: typeof event.newValue === 'number' ? event.newValue : 0
               })
           }
+        }
+      } else if (
+        action === 'node:slot-errors:changed' &&
+        param &&
+        typeof param === 'object'
+      ) {
+        const event = param as { nodeId: string | number }
+        const nodeId = String(event.nodeId)
+        const litegraphNode = nodeRefs.get(nodeId)
+        const currentData = vueNodeData.get(nodeId)
+
+        if (litegraphNode && currentData) {
+          // Re-extract slot data with updated hasErrors properties
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            inputs: litegraphNode.inputs
+              ? [...litegraphNode.inputs]
+              : undefined,
+            outputs: litegraphNode.outputs
+              ? [...litegraphNode.outputs]
+              : undefined
+          })
         }
       }
 

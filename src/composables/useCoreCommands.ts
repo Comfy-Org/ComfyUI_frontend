@@ -51,6 +51,8 @@ import {
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
+import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
+
 const moveSelectedNodesVersionAdded = '1.22.2'
 
 export function useCoreCommands(): ComfyCommand[] {
@@ -264,7 +266,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: () => {
-        dialogService.showTemplateWorkflowsDialog()
+        useWorkflowTemplateSelectorDialog().show()
       }
     },
     {

@@ -65,8 +65,10 @@ import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { app } from '@/scripts/app'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -119,8 +121,10 @@ const tooltipConfig = computed(() => {
 const resolveTitle = (info: VueNodeData | undefined) => {
   const title = (info?.title ?? '').trim()
   if (title.length > 0) return title
-  const type = (info?.type ?? '').trim()
-  return type.length > 0 ? type : 'Untitled'
+
+  const nodeType = (info?.type ?? '').trim() || 'Untitled'
+  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
+  return st(key, nodeType)
 }
 
 // Local state for title to provide immediate feedback
