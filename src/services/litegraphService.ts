@@ -5,6 +5,7 @@ import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
   type IContextMenuValue,
@@ -825,13 +826,21 @@ export const useLitegraphService = () => {
         }
       }
       if (this instanceof SubgraphNode) {
-        options.unshift({
-          content: 'Unpack Subgraph',
-          callback: () => {
-            useNodeOutputStore().revokeSubgraphPreviews(this)
-            this.graph.unpackSubgraph(this)
+        options.unshift(
+          {
+            content: 'Edit Subgraph Widgets',
+            callback: () => {
+              showSubgraphNodeDialog()
+            }
+          },
+          {
+            content: 'Unpack Subgraph',
+            callback: () => {
+              useNodeOutputStore().revokeSubgraphPreviews(this)
+              this.graph.unpackSubgraph(this)
+            }
           }
-        })
+        )
       }
       if (this.graph && !this.graph.isRootGraph) {
         const [x, y] = canvas.canvas_mouse

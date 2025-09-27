@@ -5,7 +5,6 @@ import draggable from 'vuedraggable'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/components/selectionbar/SubgraphNodeWidget.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import {
   type ProxyWidgetsProperty,
   parseProxyWidgets
@@ -14,6 +13,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 type WidgetItem = [LGraphNode, IBaseWidget]
 
@@ -32,6 +32,7 @@ function toKey(item: WidgetItem) {
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
   if (node instanceof SubgraphNode) return node
+  useDialogStore().closeDialog()
   return undefined
 })
 
@@ -184,85 +185,76 @@ const filteredActive = computed<WidgetItem[]>(() => {
 })
 </script>
 <template>
-  <SidebarTabTemplate
-    :title="'Parameters'"
-    class="workflows-sidebar-tab bg-[var(--p-tree-background)]"
-  >
-    <template #header>
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="model-lib-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.search') + '...'"
+  <SearchBox
+    v-model:model-value="searchQuery"
+    class="model-lib-search-box p-2 2xl:p-4"
+    :placeholder="$t('g.search') + '...'"
+  />
+  <div v-if="filteredActive.length" class="widgets-section">
+    <div class="widgets-section-header">
+      <div>{{ t('subgraphStore.shown') }}</div>
+      <a @click.stop="hideAll"> {{ t('subgraphStore.hideAll') }}</a>
+    </div>
+    <div v-if="searchQuery" class="w-full">
+      <div
+        v-for="element in filteredActive"
+        :key="toKey(element)"
+        class="w-full"
+      >
+        <SubgraphNodeWidget
+          :node-id="`${element[0].id}`"
+          :node-title="element[0].title"
+          :widget-name="element[1].name"
+          :toggle-visibility="toggleVisibility"
+          :is-shown="true"
+        />
+      </div>
+    </div>
+    <draggable
+      v-else
+      v-model="activeWidgets"
+      group="enabledWidgets"
+      class="w-full cursor-grab"
+      chosen-class="cursor-grabbing"
+      drag-class="cursor-grabbing"
+      :animation="100"
+      item-key="id"
+    >
+      <template #item="{ element }">
+        <SubgraphNodeWidget
+          :node-id="`${element[0].id}`"
+          :node-title="element[0].title"
+          :widget-name="element[1].name"
+          :is-shown="true"
+          :toggle-visibility="toggleVisibility"
+          :is-draggable="true"
+        />
+      </template>
+    </draggable>
+  </div>
+  <div v-if="filteredCandidates.length" class="widgets-section">
+    <div class="widgets-section-header">
+      <div>{{ t('subgraphStore.hidden') }}</div>
+      <a @click.stop="showAll"> {{ t('subgraphStore.showAll') }}</a>
+    </div>
+    <div
+      v-for="element in filteredCandidates"
+      :key="toKey(element)"
+      class="w-full"
+    >
+      <SubgraphNodeWidget
+        :node-id="`${element[0].id}`"
+        :node-title="element[0].title"
+        :widget-name="element[1].name"
+        :toggle-visibility="toggleVisibility"
       />
-    </template>
-    <template #body>
-      <div v-if="filteredActive.length" class="widgets-section">
-        <div class="widgets-section-header">
-          <div>{{ t('subgraphStore.shown') }}</div>
-          <a @click.stop="hideAll"> {{ t('subgraphStore.hideAll') }}</a>
-        </div>
-        <div v-if="searchQuery" class="w-full">
-          <div
-            v-for="element in filteredActive"
-            :key="toKey(element)"
-            class="w-full"
-          >
-            <SubgraphNodeWidget
-              :node-id="`${element[0].id}`"
-              :node-title="element[0].title"
-              :widget-name="element[1].name"
-              :toggle-visibility="toggleVisibility"
-              :is-shown="true"
-            />
-          </div>
-        </div>
-        <draggable
-          v-else
-          v-model="activeWidgets"
-          group="enabledWidgets"
-          class="w-full cursor-grab"
-          chosen-class="cursor-grabbing"
-          drag-class="cursor-grabbing"
-          :animation="100"
-          item-key="id"
-        >
-          <template #item="{ element }">
-            <SubgraphNodeWidget
-              :node-id="`${element[0].id}`"
-              :node-title="element[0].title"
-              :widget-name="element[1].name"
-              :is-shown="true"
-              :toggle-visibility="toggleVisibility"
-              :is-draggable="true"
-            />
-          </template>
-        </draggable>
-      </div>
-      <div v-if="filteredCandidates.length" class="widgets-section">
-        <div class="widgets-section-header">
-          <div>{{ t('subgraphStore.hidden') }}</div>
-          <a @click.stop="showAll"> {{ t('subgraphStore.showAll') }}</a>
-        </div>
-        <div
-          v-for="element in filteredCandidates"
-          :key="toKey(element)"
-          class="w-full"
-        >
-          <SubgraphNodeWidget
-            :node-id="`${element[0].id}`"
-            :node-title="element[0].title"
-            :widget-name="element[1].name"
-            :toggle-visibility="toggleVisibility"
-          />
-        </div>
-      </div>
-      <div v-if="recommendedWidgets.length" class="justify-center flex py-4">
-        <Button size="small" @click.stop="showRecommended">
-          {{ t('subgraphStore.showRecommended') }}
-        </Button>
-      </div>
-    </template>
-  </SidebarTabTemplate>
+    </div>
+  </div>
+  <div v-if="recommendedWidgets.length" class="justify-center flex py-4">
+    <Button size="small" @click.stop="showRecommended">
+      {{ t('subgraphStore.showRecommended') }}
+    </Button>
+  </div>
 </template>
 <style scoped>
 .widgets-section-header {
