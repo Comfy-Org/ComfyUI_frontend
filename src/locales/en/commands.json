@@ -122,9 +122,6 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Export Workflow (API Format)"
   },
-  "Comfy_Feedback": {
-    "label": "Give Feedback"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"
   },
@@ -259,6 +256,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "Sign Out"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Experimental: Enable Vue Nodes"
   },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"

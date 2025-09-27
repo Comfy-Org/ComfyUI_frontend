@@ -343,14 +343,6 @@
   "Comfy_Validation_Workflows": {
     "name": "Проверка рабочих процессов"
   },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Включить рендеринг узлов через Vue",
-    "tooltip": "Отображать узлы как компоненты Vue вместо элементов canvas. Экспериментальная функция."
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "Включить виджеты Vue",
-    "tooltip": "Отображать виджеты как компоненты Vue внутри узлов Vue."
-  },
   "Comfy_WidgetControlMode": {
     "name": "Режим управления виджетом",
     "options": {
@@ -395,10 +387,6 @@
       "Topbar": "Верхняя панель",
       "Topbar (2nd-row)": "Топбар (2-й ряд)"
     }
-  },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "Порог масштабирования для рендеринга низкого качества",
-    "tooltip": "Рендеринг фигур низкого качества при уменьшении масштаба"
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Максимум FPS",
