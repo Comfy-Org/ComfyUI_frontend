@@ -20,6 +20,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/schemas':
+        specifier: workspace:*
+        version: link:packages/schemas
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
@@ -364,6 +367,22 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.17
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.2
+
+  packages/schemas:
+    dependencies:
+      zod:
+        specifier: ^3.23.8
+        version: 3.24.1
+      zod-to-json-schema:
+        specifier: ^3.24.1
+        version: 3.24.1(zod@3.24.1)
+      zod-validation-error:
+        specifier: ^3.3.0
+        version: 3.3.0(zod@3.24.1)
+    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.9.2
