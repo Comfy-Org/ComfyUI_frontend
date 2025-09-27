@@ -45,37 +45,39 @@
         <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
       </Divider>
 
-      <!-- Social Login Buttons -->
+      <!-- Social Login Buttons (hidden if host not whitelisted) -->
       <div class="flex flex-col gap-6">
-        <Button
-          type="button"
-          class="h-10"
-          severity="secondary"
-          outlined
-          @click="signInWithGoogle"
-        >
-          <i class="pi pi-google mr-2"></i>
-          {{
-            isSignIn
-              ? t('auth.login.loginWithGoogle')
-              : t('auth.signup.signUpWithGoogle')
-          }}
-        </Button>
+        <template v-if="ssoAllowed">
+          <Button
+            type="button"
+            class="h-10"
+            severity="secondary"
+            outlined
+            @click="signInWithGoogle"
+          >
+            <i class="pi pi-google mr-2"></i>
+            {{
+              isSignIn
+                ? t('auth.login.loginWithGoogle')
+                : t('auth.signup.signUpWithGoogle')
+            }}
+          </Button>
 
-        <Button
-          type="button"
-          class="h-10"
-          severity="secondary"
-          outlined
-          @click="signInWithGithub"
-        >
-          <i class="pi pi-github mr-2"></i>
-          {{
-            isSignIn
-              ? t('auth.login.loginWithGithub')
-              : t('auth.signup.signUpWithGithub')
-          }}
-        </Button>
+          <Button
+            type="button"
+            class="h-10"
+            severity="secondary"
+            outlined
+            @click="signInWithGithub"
+          >
+            <i class="pi pi-github mr-2"></i>
+            {{
+              isSignIn
+                ? t('auth.login.loginWithGithub')
+                : t('auth.signup.signUpWithGithub')
+            }}
+          </Button>
+        </template>
 
         <Button
           type="button"
@@ -143,12 +145,13 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -164,6 +167,9 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
+const ssoAllowed = computed(() =>
+  isHostWhitelisted(normalizeHost(window.location.hostname))
+)
 
 const toggleState = () => {
   isSignIn.value = !isSignIn.value
