@@ -101,7 +101,11 @@
       >
         <!-- Slots only rendered at full detail -->
         <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
+          v-memo="[
+            nodeData.inputs?.length,
+            nodeData.outputs?.length,
+            slotErrorState
+          ]"
           :node-data="nodeData"
           :readonly="readonly"
         />
@@ -140,15 +144,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  inject,
-  onErrorCaptured,
-  onMounted,
-  provide,
-  ref,
-  readonly as vueReadonly
-} from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -160,12 +156,12 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useSlotErrorState } from '@/renderer/extensions/vueNodes/composables/useSlotErrorState'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import type { NodeErrorContext } from '@/renderer/extensions/vueNodes/types/errorContext'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -218,22 +214,14 @@ const isSelected = computed(() => {
 // Use execution state composable
 const { executing, progress } = useNodeExecutionState(() => nodeData.id)
 
+// Get slot error state for v-memo dependency
+const { slotErrorState } = useSlotErrorState()
+
 // Direct access to execution store for error state
 const executionStore = useExecutionStore()
 const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
 )
-
-const hasInputSlotError = (inputName: string): boolean => {
-  const nodeValidationErrors = executionStore.lastNodeErrors?.[nodeData.id]
-  if (!nodeValidationErrors?.errors) return false
-
-  return nodeValidationErrors.errors.some(
-    (err) =>
-      err.type === 'required_input_missing' &&
-      err.extra_info?.input_name === inputName
-  )
-}
 
 const hasAnyError = computed((): boolean => {
   return !!(
@@ -418,9 +406,4 @@ const nodeImageUrls = computed(() => {
 
 const nodeContainerRef = ref()
 provide('tooltipContainer', nodeContainerRef)
-
-const nodeErrorContext: NodeErrorContext = {
-  hasInputSlotError
-}
-provide('nodeErrorContext', vueReadonly(nodeErrorContext))
 </script>

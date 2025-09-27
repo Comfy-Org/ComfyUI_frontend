@@ -5,7 +5,7 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      :class="errorClassesDot"
+      :class="cn('-translate-x-1/2', errorClassesDot)"
       v-on="readonly ? {} : { pointerdown: onPointerDown }"
     />
 
@@ -40,8 +40,8 @@ import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useSlotErrorState } from '@/renderer/extensions/vueNodes/composables/useSlotErrorState'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import type { NodeErrorContext } from '@/renderer/extensions/vueNodes/types/errorContext'
 import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
@@ -60,19 +60,17 @@ interface InputSlotProps {
 
 const props = defineProps<InputSlotProps>()
 
-const nodeErrorContext = inject<NodeErrorContext>('nodeErrorContext')
+const { hasSlotError: hasSlotErrorFromState } = useSlotErrorState()
 
 const hasSlotError = computed(() => {
-  const slotName = props.slotData?.name
-  if (!slotName || !nodeErrorContext) return false
-  return nodeErrorContext.hasInputSlotError(slotName)
+  // Use reactive state instead of direct LiteGraph property
+  return hasSlotErrorFromState(props.nodeId ?? '', props.index, 'input')
 })
 
 const errorClassesDot = computed(() => {
-  return cn('-translate-x-1/2', {
-    'ring-2 ring-error dark-theme:ring-error ring-offset-0 rounded-full':
-      hasSlotError.value
-  })
+  return hasSlotError.value
+    ? 'ring-2 ring-error dark-theme:ring-error ring-offset-0 rounded-full'
+    : ''
 })
 
 const labelClasses = computed(() =>

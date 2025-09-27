@@ -119,6 +119,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useSlotErrorState } from '@/renderer/extensions/vueNodes/composables/useSlotErrorState'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -144,6 +145,7 @@ const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
+const { setSlotError, clearNodeErrors } = useSlotErrorState()
 const toastStore = useToastStore()
 const canvasInteractions = useCanvasInteractions()
 
@@ -298,6 +300,9 @@ watch(
   () => executionStore.lastNodeErrors,
   (lastNodeErrors) => {
     const removeSlotError = (node: LGraphNode) => {
+      // Clear reactive state
+      clearNodeErrors(String(node.id))
+      // Clear LiteGraph object properties
       for (const slot of node.inputs) {
         delete slot.hasErrors
       }
@@ -314,17 +319,20 @@ watch(
       const validErrors = nodeErrors.errors.filter(
         (error) => error.extra_info?.input_name !== undefined
       )
-      const slotErrorsChanged =
-        validErrors.length > 0 &&
-        validErrors.some((error) => {
+      const slotErrorsChanged = validErrors
+        .map((error) => {
           const inputName = error.extra_info!.input_name!
           const inputIndex = node.findInputSlot(inputName)
           if (inputIndex !== -1) {
+            // Update LiteGraph object
             node.inputs[inputIndex].hasErrors = true
+            // Update reactive state (coupled update)
+            setSlotError(String(node.id), inputIndex, 'input', true)
             return true
           }
           return false
         })
+        .some(Boolean)
 
       // Trigger Vue node data update if slot errors changed
       if (slotErrorsChanged && comfyApp.graph.onTrigger) {
