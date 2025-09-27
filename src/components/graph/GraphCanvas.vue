@@ -292,6 +292,42 @@ watch(
   { deep: true }
 )
 
+// Update node slot errors for LiteGraph nodes
+// (Vue nodes read from store directly)
+watch(
+  () => executionStore.lastNodeErrors,
+  (lastNodeErrors) => {
+    if (!comfyApp.graph) return
+
+    for (const node of comfyApp.graph.nodes) {
+      // Clear existing errors
+      for (const slot of node.inputs) {
+        delete slot.hasErrors
+      }
+      for (const slot of node.outputs) {
+        delete slot.hasErrors
+      }
+
+      const nodeErrors = lastNodeErrors?.[node.id]
+      if (!nodeErrors) continue
+
+      const validErrors = nodeErrors.errors.filter(
+        (error) => error.extra_info?.input_name !== undefined
+      )
+
+      validErrors.forEach((error) => {
+        const inputName = error.extra_info!.input_name!
+        const inputIndex = node.findInputSlot(inputName)
+        if (inputIndex !== -1) {
+          node.inputs[inputIndex].hasErrors = true
+        }
+      })
+    }
+
+    comfyApp.canvas.draw(true, true)
+  }
+)
+
 useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
