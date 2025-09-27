@@ -104,7 +104,6 @@ import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { i18n, t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -119,7 +118,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useSlotErrorState } from '@/renderer/extensions/vueNodes/composables/useSlotErrorState'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -145,7 +143,6 @@ const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
-const { setSlotError, clearNodeErrors } = useSlotErrorState()
 const toastStore = useToastStore()
 const canvasInteractions = useCanvasInteractions()
 
@@ -293,57 +290,6 @@ watch(
     canvas.graph.setDirtyCanvas(true, false)
   },
   { deep: true }
-)
-
-// Update node slot errors
-watch(
-  () => executionStore.lastNodeErrors,
-  (lastNodeErrors) => {
-    const removeSlotError = (node: LGraphNode) => {
-      // Clear reactive state
-      clearNodeErrors(String(node.id))
-      // Clear LiteGraph object properties
-      for (const slot of node.inputs) {
-        delete slot.hasErrors
-      }
-      for (const slot of node.outputs) {
-        delete slot.hasErrors
-      }
-    }
-
-    for (const node of comfyApp.graph.nodes) {
-      removeSlotError(node)
-      const nodeErrors = lastNodeErrors?.[node.id]
-      if (!nodeErrors) continue
-
-      const validErrors = nodeErrors.errors.filter(
-        (error) => error.extra_info?.input_name !== undefined
-      )
-      const slotErrorsChanged = validErrors
-        .map((error) => {
-          const inputName = error.extra_info!.input_name!
-          const inputIndex = node.findInputSlot(inputName)
-          if (inputIndex !== -1) {
-            // Update LiteGraph object
-            node.inputs[inputIndex].hasErrors = true
-            // Update reactive state (coupled update)
-            setSlotError(String(node.id), inputIndex, 'input', true)
-            return true
-          }
-          return false
-        })
-        .some(Boolean)
-
-      // Trigger Vue node data update if slot errors changed
-      if (slotErrorsChanged && comfyApp.graph.onTrigger) {
-        comfyApp.graph.onTrigger('node:slot-errors:changed', {
-          nodeId: node.id
-        })
-      }
-    }
-
-    comfyApp.canvas.draw(true, true)
-  }
 )
 
 useEventListener(

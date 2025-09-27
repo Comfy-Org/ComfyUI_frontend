@@ -104,7 +104,7 @@
           v-memo="[
             nodeData.inputs?.length,
             nodeData.outputs?.length,
-            slotErrorState
+            executionStore.lastNodeErrors
           ]"
           :node-data="nodeData"
           :readonly="readonly"
@@ -156,7 +156,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useSlotErrorState } from '@/renderer/extensions/vueNodes/composables/useSlotErrorState'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -214,9 +213,6 @@ const isSelected = computed(() => {
 // Use execution state composable
 const { executing, progress } = useNodeExecutionState(() => nodeData.id)
 
-// Get slot error state for v-memo dependency
-const { slotErrorState } = useSlotErrorState()
-
 // Direct access to execution store for error state
 const executionStore = useExecutionStore()
 const hasExecutionError = computed(
@@ -228,8 +224,7 @@ const hasAnyError = computed((): boolean => {
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    nodeData.inputs?.some((slot) => slot?.hasErrors) ||
-    nodeData.outputs?.some((slot) => slot?.hasErrors)
+    (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
 

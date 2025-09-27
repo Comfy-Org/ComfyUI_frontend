@@ -40,8 +40,8 @@ import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
-import { useSlotErrorState } from '@/renderer/extensions/vueNodes/composables/useSlotErrorState'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
@@ -60,11 +60,16 @@ interface InputSlotProps {
 
 const props = defineProps<InputSlotProps>()
 
-const { hasSlotError: hasSlotErrorFromState } = useSlotErrorState()
+const executionStore = useExecutionStore()
 
 const hasSlotError = computed(() => {
-  // Use reactive state instead of direct LiteGraph property
-  return hasSlotErrorFromState(props.nodeId ?? '', props.index, 'input')
+  const nodeErrors = executionStore.lastNodeErrors?.[props.nodeId ?? '']
+  if (!nodeErrors) return false
+
+  const slotName = props.slotData.name
+  return nodeErrors.errors.some(
+    (error) => error.extra_info?.input_name === slotName
+  )
 })
 
 const errorClassesDot = computed(() => {
