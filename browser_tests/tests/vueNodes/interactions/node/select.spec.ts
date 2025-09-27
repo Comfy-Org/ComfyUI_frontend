@@ -15,7 +15,8 @@ test.describe('Vue Node Selection', () => {
 
   const modifiers = [
     { key: 'Control', name: 'ctrl' },
-    { key: 'Shift', name: 'shift' }
+    { key: 'Shift', name: 'shift' },
+    { key: 'Meta', name: 'meta' }
   ] as const
 
   for (const { key: modifier, name } of modifiers) {
