@@ -1,0 +1,62 @@
+{
+  "name": "@comfyorg/desktop-ui",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "nx": {
+    "tags": ["scope:desktop", "type:app"],
+    "targets": {
+      "dev": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "vite --config vite.config.mts"
+        }
+      },
+      "serve": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "vite --config vite.config.mts"
+        }
+      },
+      "build": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "dependsOn": ["^build"],
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "vite build --config vite.config.mts"
+        },
+        "outputs": ["{projectRoot}/dist"]
+      },
+      "preview": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "dependsOn": ["build"],
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "vite preview --config vite.config.mts"
+        }
+      },
+      "lint": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "eslint src --cache"
+        }
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "vue-tsc --noEmit -p tsconfig.json"
+        }
+      }
+    }
+  }
+}

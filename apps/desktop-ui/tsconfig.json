@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@desktop/*": [
+        "src/*"
+      ],
+      "@/*": [
+        "src/*"
+      ],
+      "@frontend-locales/*": [
+        "../../src/locales/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.mts",
+    "src/**/*.cts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src/**/*.json",
+    "src/**/*.d.ts"
+  ],
+  "references": []
+}
