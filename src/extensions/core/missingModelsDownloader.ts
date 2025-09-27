@@ -496,7 +496,7 @@ app.registerExtension({
         status.style.color = '#FF9800'
 
         try {
-          const response = await api.fetchApi('/api/models/download', {
+          const response = await api.fetchApi('/models/download', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -551,7 +551,7 @@ app.registerExtension({
     ) {
       const checkStatus = async () => {
         try {
-          const response = await api.fetchApi(`/api/models/download/${taskId}`)
+          const response = await api.fetchApi(`/models/download/${taskId}`)
           const status: DownloadTask = await response.json()
 
           if (!response.ok) {
@@ -663,7 +663,7 @@ app.registerExtension({
     const cleanup = () => {
       activeDownloads.forEach((_state, taskId) => {
         // Cancel any active downloads
-        api.fetchApi(`/api/models/download/${taskId}/cancel`, {
+        api.fetchApi(`/models/download/${taskId}/cancel`, {
           method: 'POST'
         })
       })
