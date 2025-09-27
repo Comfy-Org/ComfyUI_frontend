@@ -418,16 +418,12 @@ const zSettings = z.object({
   'Comfy.SnapToGrid.GridSize': z.number(),
   'Comfy.TextareaWidget.FontSize': z.number(),
   'Comfy.TextareaWidget.Spellcheck': z.boolean(),
-  'Comfy.UseNewMenu': z.enum(['Disabled', 'Top', 'Bottom']),
+  'Comfy.UseNewMenu': z.enum(['Disabled', 'Top']),
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
   'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
-  'Comfy.Workflow.WorkflowTabsPosition': z.enum([
-    'Sidebar',
-    'Topbar',
-    'Topbar (2nd-row)'
-  ]),
+  'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),
   'Comfy.Window.UnloadConfirmation': z.boolean(),

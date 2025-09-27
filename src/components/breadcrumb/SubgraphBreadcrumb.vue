@@ -14,7 +14,7 @@
   >
     <Breadcrumb
       ref="breadcrumbRef"
-      class="bg-transparent p-0"
+      class="p-0 w-fit rounded-lg"
       :model="items"
       aria-label="Graph navigation"
     >
@@ -172,6 +172,12 @@ onUpdated(() => {
 .subgraph-breadcrumb,
 :deep(.p-breadcrumb) {
   @apply overflow-hidden;
+}
+
+:deep(.p-breadcrumb) {
+  background-color: var(--comfy-menu-secondary-bg);
+  border: 1px solid var(--p-panel-border-color);
+  @apply h-12;
 }
 
 :deep(.p-breadcrumb-item) {

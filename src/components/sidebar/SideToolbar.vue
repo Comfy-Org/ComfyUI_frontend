@@ -1,6 +1,14 @@
 <template>
-  <teleport :to="teleportTarget">
-    <nav class="side-tool-bar-container" :class="{ 'small-sidebar': isSmall }">
+  <nav
+    class="side-tool-bar-container"
+    :class="{
+      'small-sidebar': isSmall,
+      'connected-sidebar': selectedTab,
+      'floating-sidebar': !selectedTab
+    }"
+  >
+    <div class="sidebar-item-group">
+      <ComfyMenuButton :is-small="isSmall" />
       <SidebarIcon
         v-for="tab in tabs"
         :key="tab.id"
@@ -15,26 +23,24 @@
         @click="onTabClick(tab)"
       />
       <SidebarTemplatesButton />
-      <div class="side-tool-bar-end">
-        <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
-        <SidebarHelpCenterIcon />
-        <SidebarBottomPanelToggleButton />
-        <SidebarShortcutsToggleButton />
-      </div>
-    </nav>
-  </teleport>
-  <div
-    v-if="selectedTab"
-    class="sidebar-content-container h-full overflow-y-auto overflow-x-hidden"
-  >
-    <ExtensionSlot :extension="selectedTab" />
-  </div>
+    </div>
+
+    <div class="sidebar-item-group">
+      <SidebarLogoutIcon
+        v-if="userStore.isMultiUserServer"
+        :is-small="isSmall"
+      />
+      <SidebarHelpCenterIcon :is-small="isSmall" />
+      <SidebarBottomPanelToggleButton :is-small="isSmall" />
+      <SidebarShortcutsToggleButton :is-small="isSmall" />
+    </div>
+  </nav>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -53,12 +59,6 @@ const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
-
-const teleportTarget = computed(() =>
-  settingStore.get('Comfy.Sidebar.Location') === 'left'
-    ? '.comfyui-body-left'
-    : '.comfyui-body-right'
-)
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
@@ -88,36 +88,63 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
  * but need to reference sidebar dimensions for proper positioning.
  */
 :root {
-  --sidebar-width: 4rem;
+  --sidebar-padding: 8px;
   --sidebar-icon-size: 1rem;
+
+  --sidebar-default-floating-width: 56px;
+  --sidebar-default-connected-width: calc(
+    var(--sidebar-default-floating-width) + var(--sidebar-padding) * 2
+  );
+  --sidebar-default-item-height: 56px;
+
+  --sidebar-small-floating-width: 48px;
+  --sidebar-small-connected-width: calc(
+    var(--sidebar-small-floating-width) + var(--sidebar-padding) * 2
+  );
+  --sidebar-small-item-height: 48px;
+
+  --sidebar-width: var(--sidebar-default-floating-width);
+  --sidebar-item-height: var(--sidebar-default-item-height);
 }
 
 :root:has(.side-tool-bar-container.small-sidebar) {
-  --sidebar-width: 2.5rem;
+  --sidebar-width: var(--sidebar-small-floating-width);
+  --sidebar-item-height: var(--sidebar-small-item-height);
+}
+
+:root:has(.side-tool-bar-container.connected-sidebar) {
+  --sidebar-width: var(--sidebar-default-connected-width);
+}
+
+:root:has(.side-tool-bar-container.small-sidebar.connected-sidebar) {
+  --sidebar-width: var(--sidebar-small-connected-width);
 }
 </style>
 
 <style scoped>
+@reference "tailwindcss";
+
 .side-tool-bar-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  @apply flex flex-col justify-between items-center h-full bg-transparent;
+}
 
-  width: var(--sidebar-width);
-  height: 100%;
+.floating-sidebar {
+  padding: var(--sidebar-padding);
 
+  .sidebar-item-group {
+    @apply rounded-lg;
+    border-color: var(--p-panel-border-color);
+  }
+}
+
+.connected-sidebar {
+  padding: var(--sidebar-padding) 0;
   background-color: var(--comfy-menu-secondary-bg);
-  color: var(--fg-color);
-  box-shadow: var(--bar-shadow);
 }
 
-.side-tool-bar-container.small-sidebar {
-  --sidebar-width: 2.5rem;
-  --sidebar-icon-size: 1rem;
-}
-
-.side-tool-bar-end {
-  align-self: flex-end;
-  margin-top: auto;
+.sidebar-item-group {
+  @apply flex flex-col items-center overflow-hidden;
+  background-color: var(--comfy-menu-secondary-bg);
+  border: 1px solid transparent;
 }
 </style>

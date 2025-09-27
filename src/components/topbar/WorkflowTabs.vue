@@ -63,10 +63,7 @@
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     />
     <ContextMenu ref="menu" :model="contextMenuItems" />
-    <div
-      v-if="menuSetting !== 'Bottom' && isDesktop"
-      class="window-actions-spacer shrink-0 app-drag"
-    />
+    <div v-if="isDesktop" class="window-actions-spacer shrink-0 app-drag" />
   </div>
 </template>
 
@@ -81,7 +78,6 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -108,7 +104,6 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
-const settingStore = useSettingStore()
 const workflowService = useWorkflowService()
 
 const rightClickedTab = ref<WorkflowOption | undefined>()
@@ -119,7 +114,6 @@ const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
 
 const isDesktop = isElectron()
-const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,

@@ -98,7 +98,7 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 
 .side-bar-button {
   width: var(--sidebar-width);
-  height: calc(var(--sidebar-width) + 0.5rem);
+  height: var(--sidebar-item-height);
   border-radius: 0;
 }
 
