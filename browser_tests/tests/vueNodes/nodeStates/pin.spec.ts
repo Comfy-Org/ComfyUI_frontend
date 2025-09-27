@@ -46,4 +46,40 @@ test.describe('Vue Node Pin', () => {
     await expect(pinIndicator1).not.toBeVisible()
     await expect(pinIndicator2).not.toBeVisible()
   })
+
+  test('should not allow dragging pinned nodes', async ({ comfyPage }) => {
+    const checkpointNodeHeader = comfyPage.page.getByText('Load Checkpoint')
+    await checkpointNodeHeader.click()
+    await comfyPage.page.keyboard.press(PIN_HOTKEY)
+
+    // Try to drag the node
+    const headerPos = await checkpointNodeHeader.boundingBox()
+    if (!headerPos) throw new Error('Failed to get header position')
+    await comfyPage.dragAndDrop(
+      { x: headerPos.x, y: headerPos.y },
+      { x: headerPos.x + 256, y: headerPos.y + 256 }
+    )
+
+    // Verify the node is not dragged (same position before and after click-and-drag)
+    const headerPosAfterDrag = await checkpointNodeHeader.boundingBox()
+    if (!headerPosAfterDrag)
+      throw new Error('Failed to get header position after drag')
+    expect(headerPosAfterDrag).toEqual(headerPos)
+
+    // Unpin the node with the hotkey
+    await checkpointNodeHeader.click()
+    await comfyPage.page.keyboard.press(PIN_HOTKEY)
+
+    // Try to drag the node again
+    await comfyPage.dragAndDrop(
+      { x: headerPos.x, y: headerPos.y },
+      { x: headerPos.x + 256, y: headerPos.y + 256 }
+    )
+
+    // Verify the node is dragged
+    const headerPosAfterDrag2 = await checkpointNodeHeader.boundingBox()
+    if (!headerPosAfterDrag2)
+      throw new Error('Failed to get header position after drag')
+    expect(headerPosAfterDrag2).not.toEqual(headerPos)
+  })
 })
