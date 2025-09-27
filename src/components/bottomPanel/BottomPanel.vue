@@ -3,17 +3,31 @@
     <Tabs
       :key="$i18n.locale"
       v-model:value="bottomPanelStore.activeBottomPanelTabId"
+      style="--p-tabs-tablist-background: var(--comfy-menu-secondary-bg)"
     >
-      <TabList pt:tab-list="border-none">
+      <TabList
+        pt:tab-list="border-none h-full flex items-center py-2 border-b-1 border-solid"
+        class="bg-transparent"
+      >
         <div class="w-full flex justify-between">
           <div class="tabs-container">
             <Tab
               v-for="tab in bottomPanelStore.bottomPanelTabs"
               :key="tab.id"
               :value="tab.id"
-              class="p-3 border-none"
+              class="border-none m-1 mx-2"
+              :pt:root="
+                (x: TabPassThroughMethodOptions) => ({
+                  class: 'p-3 rounded-lg',
+                  style:
+                    'color: var(--fg-color);' +
+                    (x.context.active
+                      ? 'background-color: var(--bg-color)'
+                      : '')
+                })
+              "
             >
-              <span class="font-bold">
+              <span class="font-normal">
                 {{ getTabDisplayTitle(tab) }}
               </span>
             </Tab>
@@ -55,7 +69,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Tab from 'primevue/tab'
+import Tab, { type TabPassThroughMethodOptions } from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import Tabs from 'primevue/tabs'
 import { computed } from 'vue'
@@ -95,3 +109,9 @@ const closeBottomPanel = () => {
   bottomPanelStore.activePanel = null
 }
 </script>
+
+<style scoped>
+:deep(.p-tablist-active-bar) {
+  display: none;
+}
+</style>

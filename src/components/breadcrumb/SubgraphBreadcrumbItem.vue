@@ -6,7 +6,7 @@
       showDelay: 512
     }"
     href="#"
-    class="cursor-pointer p-breadcrumb-item-link"
+    class="cursor-pointer p-breadcrumb-item-link h-12 px-2"
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
@@ -240,11 +240,10 @@ const inputBlur = async (doRename: boolean) => {
 
 .p-breadcrumb-item-link {
   @apply overflow-hidden;
-  padding: var(--p-breadcrumb-item-padding);
 }
 
 .p-breadcrumb-item-label {
-  @apply whitespace-nowrap text-ellipsis overflow-hidden;
+  @apply whitespace-nowrap text-ellipsis overflow-hidden px-2;
 }
 
 .active-breadcrumb-item {

@@ -1,9 +1,5 @@
 <template>
-  <div
-    v-show="workspaceState.focusMode"
-    class="comfy-menu-hamburger no-drag"
-    :style="positionCSS"
-  >
+  <div v-show="workspaceState.focusMode" class="comfy-menu-hamburger no-drag">
     <Button
       v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
       icon="pi pi-bars"
@@ -15,14 +11,13 @@
       @click="exitFocusMode"
       @contextmenu="showNativeSystemMenu"
     />
-    <div v-show="menuSetting !== 'Bottom'" class="window-actions-spacer" />
+    <div class="window-actions-spacer" />
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import type { CSSProperties } from 'vue'
-import { computed, watchEffect } from 'vue'
+import { watchEffect } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
@@ -45,21 +40,12 @@ watchEffect(() => {
     app.ui.menuContainer.style.display = 'block'
   }
 })
-
-const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
-const positionCSS = computed<CSSProperties>(() =>
-  // 'Bottom' menuSetting shows the hamburger button in the bottom right corner
-  // 'Disabled', 'Top' menuSetting shows the hamburger button in the top right corner
-  menuSetting.value === 'Bottom'
-    ? { bottom: '0px', right: '0px' }
-    : { top: '0px', right: '0px' }
-)
 </script>
 
 <style scoped>
 @reference '../assets/css/style.css';
 
 .comfy-menu-hamburger {
-  @apply fixed z-9999 flex flex-row;
+  @apply fixed z-9999 flex flex-row top-0 right-0;
 }
 </style>

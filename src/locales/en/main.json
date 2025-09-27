@@ -562,7 +562,8 @@
       "nodes": "Nodes",
       "models": "Models",
       "workflows": "Workflows",
-      "templates": "Templates"
+      "templates": "Templates",
+      "console": "Console"
     },
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -1799,6 +1800,10 @@
       "cancel": "Cancel",
       "success": "Account Deleted",
       "successDetail": "Your account has been successfully deleted."
+    },
+    "loginButton": {
+      "tooltipHelp": "Login to be able to use \"API Nodes\"",
+      "tooltipLearnMore": "Learn more..."
     }
   },
   "validation": {
@@ -1902,6 +1907,7 @@
     "enterNewName": "Enter new name"
   },
   "shortcuts": {
+    "shortcuts": "Shortcuts",
     "essentials": "Essential",
     "viewControls": "View Controls",
     "manageShortcuts": "Manage Shortcuts",
@@ -1940,5 +1946,8 @@
     "sortZA": "Z-A",
     "sortRecent": "Recent",
     "sortPopular": "Popular"
+  },
+  "actionbar": {
+    "dockToTop": "Dock to top"
   }
 }

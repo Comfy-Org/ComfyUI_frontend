@@ -1,19 +1,15 @@
 <template>
   <div
     ref="positionRef"
-    class="absolute left-1/2 -translate-x-1/2"
-    :class="positions.positioner"
+    class="absolute left-1/2 -translate-x-1/2 bottom-0"
   ></div>
   <Popover
     ref="popoverRef"
     append-to="body"
     :pt="{
       root: {
-        class: 'workflow-popover-fade fit-content ' + positions.root,
-        'data-popover-id': id,
-        style: {
-          transform: positions.active
-        }
+        class: 'workflow-popover-fade fit-content',
+        'data-popover-id': id
       }
     }"
     @mouseenter="cancelHidePopover"
@@ -39,9 +35,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, nextTick, ref, toRefs, useId } from 'vue'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { nextTick, ref, toRefs, useId } from 'vue'
 
 const POPOVER_WIDTH = 250
 
@@ -53,29 +47,6 @@ interface Props {
 
 const props = defineProps<Props>()
 const { thumbnailUrl, isActiveTab } = toRefs(props)
-
-const settingStore = useSettingStore()
-const positions = computed<{
-  positioner: string
-  root?: string
-  active?: string
-}>(() => {
-  if (
-    settingStore.get('Comfy.Workflow.WorkflowTabsPosition') === 'Topbar' &&
-    settingStore.get('Comfy.UseNewMenu') === 'Bottom'
-  ) {
-    return {
-      positioner: 'top-0',
-      root: 'p-popover-flipped',
-      active: isActiveTab.value ? 'translateY(-100%)' : undefined
-    }
-  }
-
-  return {
-    positioner: 'bottom-0'
-  }
-})
-
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const positionRef = ref<HTMLElement | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
