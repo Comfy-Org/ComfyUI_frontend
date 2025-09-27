@@ -11,14 +11,12 @@ export function showSubgraphNodeDialog() {
     position: 'right'
   }
   //FIXME: the vuedraggable import has unknown sideffects that break tests.
-  void import('@/components/selectionbar/SubgraphNode.vue').then(
-    (SubgraphNode) => {
-      dialogStore.showDialog({
-        title: 'Parameters',
-        key,
-        component: SubgraphNode,
-        dialogComponentProps
-      })
-    }
-  )
+  void import('@/core/graph/subgraph/SubgraphNode.vue').then((SubgraphNode) => {
+    dialogStore.showDialog({
+      title: 'Parameters',
+      key,
+      component: SubgraphNode.default,
+      dialogComponentProps
+    })
+  })
 }

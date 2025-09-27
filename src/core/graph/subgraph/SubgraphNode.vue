@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import SubgraphNodeWidget from '@/components/selectionbar/SubgraphNodeWidget.vue'
+import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
 import {
   type ProxyWidgetsProperty,
   parseProxyWidgets
