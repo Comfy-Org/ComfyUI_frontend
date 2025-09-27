@@ -1,11 +1,11 @@
 import type { Locator } from '@playwright/test'
 
-import { getSlotKey } from '../../../src/renderer/core/layout/slots/slotIdentifier'
+import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../fixtures/ComfyPage'
-import { fitToViewInstant } from '../../helpers/fitToView'
+} from '../../../../fixtures/ComfyPage'
+import { fitToViewInstant } from '../../../../helpers/fitToView'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
