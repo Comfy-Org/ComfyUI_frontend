@@ -1,7 +1,8 @@
 import { describe } from 'vitest'
 
-import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 
+import { LiteGraphInternal } from '../src/LiteGraphInternal'
 import { test } from './testExtensions'
 
 describe('LGraph', () => {
@@ -17,8 +18,8 @@ describe('LGraph', () => {
     const directImport = await import('@/lib/litegraph/src/LGraph')
     const entryPointImport = await import('@/lib/litegraph/src/litegraph')
 
-    expect(LiteGraph.LGraph).toBe(directImport.LGraph)
-    expect(LiteGraph.LGraph).toBe(entryPointImport.LGraph)
+    expect(LiteGraphInternal.LGraph).toBe(directImport.LGraph)
+    expect(LiteGraphInternal.LGraph).toBe(entryPointImport.LGraph)
   })
 
   test('populates optional values', ({ expect, minimalSerialisableGraph }) => {
@@ -139,6 +140,6 @@ describe('Legacy LGraph Compatibility Layer', () => {
   })
 
   test('is correctly assigned to LiteGraph', ({ expect }) => {
-    expect(LiteGraph.LGraph).toBe(LGraph)
+    expect(LiteGraphInternal.LGraph).toBe(LGraph)
   })
 })

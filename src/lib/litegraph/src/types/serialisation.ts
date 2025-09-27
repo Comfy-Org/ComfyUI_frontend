@@ -4,6 +4,7 @@ import type { LGraphConfig, LGraphExtra, LGraphState } from '../LGraph'
 import type { IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeId, NodeProperty } from '../LGraphNode'
 import type { LinkId, SerialisedLLinkArray } from '../LLink'
+import type { LiteGraphInternal } from '../LiteGraphInternal'
 import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
 import type {
   Dictionary,
@@ -15,7 +16,6 @@ import type {
   Point,
   Size
 } from '../interfaces'
-import type { LiteGraph } from '../litegraph'
 import type { TWidgetValue } from '../types/widgets'
 import type { RenderShape } from './globalEnums'
 
@@ -124,7 +124,7 @@ export interface ISerialisedGraph extends BaseExportedGraph {
   links: SerialisedLLinkArray[]
   floatingLinks?: SerialisableLLink[]
   groups: ISerialisedGroup[]
-  version: typeof LiteGraph.VERSION
+  version: typeof LiteGraphInternal.VERSION
   extra?: LGraphExtra
 }
 

@@ -14,6 +14,7 @@ import { BadgePosition, LGraphBadge } from './LGraphBadge'
 import { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink } from './LLink'
+import { LiteGraphInternal } from './LiteGraphInternal'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
@@ -42,12 +43,7 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import {
-  type LGraphNodeConstructor,
-  LiteGraph,
-  type Subgraph,
-  type SubgraphNode
-} from './litegraph'
+import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
 import {
   createBounds,
   isInRect,
@@ -244,11 +240,11 @@ export class LGraphNode
    * The font style used to render the node's title text.
    */
   get titleFontStyle(): string {
-    return `${LiteGraph.NODE_TEXT_SIZE}px ${LiteGraph.NODE_FONT}`
+    return `${LiteGraphInternal.NODE_TEXT_SIZE}px ${LiteGraphInternal.NODE_FONT}`
   }
 
   get innerFontStyle(): string {
-    return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px ${LiteGraph.NODE_FONT}`
+    return `normal ${LiteGraphInternal.NODE_SUBTEXT_SIZE}px ${LiteGraphInternal.NODE_FONT}`
   }
 
   get displayType(): string {
@@ -303,13 +299,19 @@ export class LGraphNode
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
-    return this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+    return (
+      this.color ||
+      this.constructor.color ||
+      LiteGraphInternal.NODE_DEFAULT_COLOR
+    )
   }
 
   /** The bg color used to render the node. */
   get renderingBgColor(): string {
     return (
-      this.bgcolor || this.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+      this.bgcolor ||
+      this.constructor.bgcolor ||
+      LiteGraphInternal.NODE_DEFAULT_BGCOLOR
     )
   }
 
@@ -317,17 +319,17 @@ export class LGraphNode
   get renderingBoxColor(): string {
     if (this.boxcolor) return this.boxcolor
 
-    if (LiteGraph.node_box_coloured_when_on) {
+    if (LiteGraphInternal.node_box_coloured_when_on) {
       if (this.action_triggered) return '#FFF'
       if (this.execute_triggered) return '#AAA'
     }
 
-    if (LiteGraph.node_box_coloured_by_mode) {
+    if (LiteGraphInternal.node_box_coloured_by_mode) {
       const modeColour =
-        LiteGraph.NODE_MODES_COLORS[this.mode ?? LGraphEventMode.ALWAYS]
+        LiteGraphInternal.NODE_MODES_COLORS[this.mode ?? LGraphEventMode.ALWAYS]
       if (modeColour) return modeColour
     }
-    return LiteGraph.NODE_DEFAULT_BOXCOLOR
+    return LiteGraphInternal.NODE_DEFAULT_BOXCOLOR
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
@@ -507,7 +509,11 @@ export class LGraphNode
    * The shape of the node used for rendering. @see {@link RenderShape}
    */
   get renderingShape(): RenderShape {
-    return this._shape || this.constructor.shape || LiteGraph.NODE_DEFAULT_SHAPE
+    return (
+      this._shape ||
+      this.constructor.shape ||
+      LiteGraphInternal.NODE_DEFAULT_SHAPE
+    )
   }
 
   public get is_selected(): boolean | undefined {
@@ -720,7 +726,7 @@ export class LGraphNode
       return {
         padding: 12,
         lineWidth: 10,
-        color: LiteGraph.NODE_ERROR_COLOUR
+        color: LiteGraphInternal.NODE_ERROR_COLOUR
       }
     }
   }
@@ -734,10 +740,10 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
+    this.id = LiteGraphInternal.use_uuids ? LiteGraphInternal.uuidv4() : -1
     this.title = title || 'Unnamed'
     this.type = type ?? ''
-    this.size = [LiteGraph.NODE_WIDTH, 60]
+    this.size = [LiteGraphInternal.NODE_WIDTH, 60]
     this.pos = [10, 10]
     this.strokeStyles = {
       error: this.#getErrorStrokeStyle,
@@ -778,7 +784,7 @@ export class LGraphNode
           this[j]?.configure(info[j])
         } else {
           // @ts-expect-error #594
-          this[j] = LiteGraph.cloneObject(info[j], this[j])
+          this[j] = LiteGraphInternal.cloneObject(info[j], this[j])
         }
       } else {
         // value
@@ -863,7 +869,7 @@ export class LGraphNode
       type: this.type,
       pos: [this.pos[0], this.pos[1]],
       size: [this.size[0], this.size[1]],
-      flags: LiteGraph.cloneObject(this.flags),
+      flags: LiteGraphInternal.cloneObject(this.flags),
       order: this.order,
       mode: this.mode,
       showAdvanced: this.showAdvanced
@@ -881,7 +887,8 @@ export class LGraphNode
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
 
-    if (this.properties) o.properties = LiteGraph.cloneObject(this.properties)
+    if (this.properties)
+      o.properties = LiteGraphInternal.cloneObject(this.properties)
 
     const { widgets } = this
     if (widgets && this.serialize_widgets) {
@@ -911,11 +918,11 @@ export class LGraphNode
   /* Creates a clone of this node */
   clone(): LGraphNode | null {
     if (this.type == null) return null
-    const node = LiteGraph.createNode(this.type)
+    const node = LiteGraphInternal.createNode(this.type)
     if (!node) return null
 
     // we clone it because serialize returns shared containers
-    const data = LiteGraph.cloneObject(this.serialize())
+    const data = LiteGraphInternal.cloneObject(this.serialize())
     const { inputs, outputs } = data
 
     // remove links
@@ -934,7 +941,7 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     delete data.id
 
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
+    if (LiteGraphInternal.use_uuids) data.id = LiteGraphInternal.uuidv4()
 
     node.configure(data)
 
@@ -1255,7 +1262,7 @@ export class LGraphNode
   addOnTriggerInput(): number {
     const trigS = this.findInputSlot('onTrigger')
     if (trigS == -1) {
-      this.addInput('onTrigger', LiteGraph.EVENT, {
+      this.addInput('onTrigger', LiteGraphInternal.EVENT, {
         nameLocked: true
       })
       return this.findInputSlot('onTrigger')
@@ -1266,7 +1273,7 @@ export class LGraphNode
   addOnExecutedOutput(): number {
     const trigS = this.findOutputSlot('onExecuted')
     if (trigS == -1) {
-      this.addOutput('onExecuted', LiteGraph.ACTION, {
+      this.addOutput('onExecuted', LiteGraphInternal.ACTION, {
         nameLocked: true
       })
       return this.findOutputSlot('onExecuted')
@@ -1298,7 +1305,7 @@ export class LGraphNode
         break
 
       // @ts-expect-error Not impl.
-      case LiteGraph.ON_REQUEST:
+      case LiteGraphInternal.ON_REQUEST:
         break
 
       default:
@@ -1385,12 +1392,12 @@ export class LGraphNode
       return
     }
 
-    if (this.graph) this.graph._last_trigger_time = LiteGraph.getTime()
+    if (this.graph) this.graph._last_trigger_time = LiteGraphInternal.getTime()
 
     for (const [i, output] of outputs.entries()) {
       if (
         !output ||
-        output.type !== LiteGraph.EVENT ||
+        output.type !== LiteGraphInternal.EVENT ||
         (action && output.name != action)
       ) {
         continue
@@ -1430,7 +1437,7 @@ export class LGraphNode
     if (!links || !links.length) return
 
     if (!this.graph) throw new NullGraphError()
-    this.graph._last_trigger_time = LiteGraph.getTime()
+    this.graph._last_trigger_time = LiteGraphInternal.getTime()
 
     // for every link attached here
     for (const id of links) {
@@ -1441,7 +1448,7 @@ export class LGraphNode
       // not connected
       if (!link_info) continue
 
-      link_info._last_time = LiteGraph.getTime()
+      link_info._last_time = LiteGraphInternal.getTime()
       const node = this.graph.getNodeById(link_info.target_id)
       // node not found?
       if (!node) continue
@@ -1551,8 +1558,8 @@ export class LGraphNode
     this.outputs.push(output)
     this.onOutputAdded?.(output)
 
-    if (LiteGraph.auto_load_slot_types)
-      LiteGraph.registerNodeAndSlotType(this, type, true)
+    if (LiteGraphInternal.auto_load_slot_types)
+      LiteGraphInternal.registerNodeAndSlotType(this, type, true)
 
     this.expandToFitContent()
     this.setDirtyCanvas(true, true)
@@ -1609,7 +1616,7 @@ export class LGraphNode
     this.expandToFitContent()
 
     this.onInputAdded?.(input)
-    LiteGraph.registerNodeAndSlotType(this, type)
+    LiteGraphInternal.registerNodeAndSlotType(this, type)
 
     this.setDirtyCanvas(true, true)
     return input
@@ -1656,9 +1663,9 @@ export class LGraphNode
     const size = out || new Float32Array([0, 0])
     rows = Math.max(rows, 1)
     // although it should be graphcanvas.inner_text_font size
-    const font_size = LiteGraph.NODE_TEXT_SIZE
+    const font_size = LiteGraphInternal.NODE_TEXT_SIZE
 
-    const padLeft = LiteGraph.NODE_TITLE_HEIGHT
+    const padLeft = LiteGraphInternal.NODE_TITLE_HEIGHT
     const padRight = padLeft * 0.33
     const title_width =
       padLeft + compute_text_size(this.title, this.titleFontStyle) + padRight
@@ -1689,13 +1696,13 @@ export class LGraphNode
       }
     }
 
-    const minWidth = LiteGraph.NODE_WIDTH * (widgets?.length ? 1.5 : 1)
+    const minWidth = LiteGraphInternal.NODE_WIDTH * (widgets?.length ? 1.5 : 1)
     // Text + slot width + centre padding
     const centrePadding = input_width && output_width ? 5 : 0
     const slotsWidth =
       input_width +
       output_width +
-      2 * LiteGraph.NODE_SLOT_HEIGHT +
+      2 * LiteGraphInternal.NODE_SLOT_HEIGHT +
       centrePadding
 
     // Total distance from edge of node to the inner edge of the widget 'previous' arrow button
@@ -1706,7 +1713,8 @@ export class LGraphNode
 
     size[0] = Math.max(slotsWidth, widgetWidth, title_width, minWidth)
     size[1] =
-      (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
+      (this.constructor.slot_start_y || 0) +
+      rows * LiteGraphInternal.NODE_SLOT_HEIGHT
 
     // Get widget height & expand size if necessary
     let widgets_height = 0
@@ -1725,7 +1733,7 @@ export class LGraphNode
 
           widget_height += minHeight
         } else {
-          widget_height += LiteGraph.NODE_WIDGET_HEIGHT
+          widget_height += LiteGraphInternal.NODE_WIDGET_HEIGHT
         }
         widgets_height += widget_height + 4
       }
@@ -1758,7 +1766,8 @@ export class LGraphNode
   inResizeCorner(canvasX: number, canvasY: number): boolean {
     const rows = this.outputs ? this.outputs.length : 1
     const outputs_offset =
-      (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
+      (this.constructor.slot_start_y || 0) +
+      rows * LiteGraphInternal.NODE_SLOT_HEIGHT
     return isInRectangle(
       canvasX,
       canvasY,
@@ -1959,7 +1968,7 @@ export class LGraphNode
 
     // If Vue nodes mode is enabled, skip LiteGraph's direct position update
     // The layout store will handle the movement and sync back to LiteGraph
-    if (LiteGraph.vueNodesMode) {
+    if (LiteGraphInternal.vueNodesMode) {
       // Vue nodes handle their own dragging through the layout store
       // This prevents the snap-back issue from conflicting position updates
       return
@@ -1983,7 +1992,7 @@ export class LGraphNode
     const renderTitle =
       titleMode != TitleMode.TRANSPARENT_TITLE &&
       titleMode != TitleMode.NO_TITLE
-    const titleHeight = renderTitle ? LiteGraph.NODE_TITLE_HEIGHT : 0
+    const titleHeight = renderTitle ? LiteGraphInternal.NODE_TITLE_HEIGHT : 0
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
@@ -1995,10 +2004,10 @@ export class LGraphNode
       this._collapsed_width = Math.min(
         this.size[0],
         ctx.measureText(this.getTitle() ?? '').width +
-          LiteGraph.NODE_TITLE_HEIGHT * 2
+          LiteGraphInternal.NODE_TITLE_HEIGHT * 2
       )
-      out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      out[3] = LiteGraph.NODE_TITLE_HEIGHT
+      out[2] = this._collapsed_width || LiteGraphInternal.NODE_COLLAPSED_WIDTH
+      out[3] = LiteGraphInternal.NODE_TITLE_HEIGHT
     }
   }
 
@@ -2055,7 +2064,7 @@ export class LGraphNode
    * @returns true if the x,y point is in the collapse button area, otherwise false
    */
   isPointInCollapse(x: number, y: number): boolean {
-    const squareLength = LiteGraph.NODE_TITLE_HEIGHT
+    const squareLength = LiteGraphInternal.NODE_TITLE_HEIGHT
     return isInRectangle(
       x,
       y,
@@ -2158,7 +2167,7 @@ export class LGraphNode
       const h =
         widget.computedHeight ??
         widget.computeSize?.(nodeWidth)[1] ??
-        LiteGraph.NODE_WIDGET_HEIGHT
+        LiteGraphInternal.NODE_WIDGET_HEIGHT
 
       const maybeDOMWidget = widget as { margin?: number }
       const mtop = maybeDOMWidget.margin ?? -2
@@ -2439,10 +2448,12 @@ export class LGraphNode
 
       for (const sourceType of sourceTypes) {
         // TODO: Remove _event_ entirely.
-        const source = sourceType == '_event_' ? LiteGraph.EVENT : sourceType
+        const source =
+          sourceType == '_event_' ? LiteGraphInternal.EVENT : sourceType
 
         for (const destType of destTypes) {
-          const dest = destType == '_event_' ? LiteGraph.EVENT : destType
+          const dest =
+            destType == '_event_' ? LiteGraphInternal.EVENT : destType
 
           if (source == dest || source === '*' || dest === '*') {
             if (preferFreeSlot && (slot.links?.length || slot.link != null)) {
@@ -2502,9 +2513,10 @@ export class LGraphNode
     if (slot >= 0 && slot !== null) return slot
 
     // TODO: Remove or reimpl. events.  WILL CREATE THE onTrigger IN SLOT
-    if (opts.createEventInCase && slotType == LiteGraph.EVENT) {
+    if (opts.createEventInCase && slotType == LiteGraphInternal.EVENT) {
       if (findInputs) return -1
-      if (LiteGraph.do_add_triggers_slots) return node.addOnExecutedOutput()
+      if (LiteGraphInternal.do_add_triggers_slots)
+        return node.addOnExecutedOutput()
     }
 
     // connect to the first general output slot if not found a specific type and
@@ -2517,7 +2529,7 @@ export class LGraphNode
       opts.wildcardToTyped &&
       (slotType == 0 || slotType == '*' || slotType == '')
     ) {
-      const opt = { typesNotAccepted: [LiteGraph.EVENT] }
+      const opt = { typesNotAccepted: [LiteGraphInternal.EVENT] }
       const nonEventSlot = findInputs
         ? node.findInputSlotFree(opt)
         : node.findOutputSlotFree(opt)
@@ -2637,7 +2649,7 @@ export class LGraphNode
   ) {
     return (
       this.id !== node.id &&
-      LiteGraph.isValidConnection(fromSlot.type, toSlot.type)
+      LiteGraphInternal.isValidConnection(fromSlot.type, toSlot.type)
     )
   }
 
@@ -2671,12 +2683,13 @@ export class LGraphNode
     if (typeof slot === 'string') {
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug)
+        if (LiteGraphInternal.debug)
           console.log(`Connect: Error, no slot of name ${slot}`)
         return null
       }
     } else if (!outputs || slot >= outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraphInternal.debug)
+        console.log('Connect: Error, slot number not found')
       return null
     }
 
@@ -2695,13 +2708,13 @@ export class LGraphNode
     if (typeof target_slot === 'string') {
       targetIndex = target_node.findInputSlot(target_slot)
       if (targetIndex == -1) {
-        if (LiteGraph.debug)
+        if (LiteGraphInternal.debug)
           console.log(`Connect: Error, no slot of name ${targetIndex}`)
         return null
       }
-    } else if (target_slot === LiteGraph.EVENT) {
+    } else if (target_slot === LiteGraphInternal.EVENT) {
       // TODO: Events
-      if (LiteGraph.do_add_triggers_slots) {
+      if (LiteGraphInternal.do_add_triggers_slots) {
         target_node.changeMode(LGraphEventMode.ON_TRIGGER)
         targetIndex = target_node.findInputSlot('onTrigger')
       } else {
@@ -2728,7 +2741,8 @@ export class LGraphNode
       !target_node.inputs ||
       targetIndex >= target_node.inputs.length
     ) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraphInternal.debug)
+        console.log('Connect: Error, slot number not found')
       return null
     }
 
@@ -2739,8 +2753,8 @@ export class LGraphNode
 
     if (output.links?.length) {
       if (
-        output.type === LiteGraph.EVENT &&
-        !LiteGraph.allow_multi_output_for_events
+        output.type === LiteGraphInternal.EVENT &&
+        !LiteGraphInternal.allow_multi_output_for_events
       ) {
         graph.beforeChange()
         // @ts-expect-error Unused param
@@ -2783,7 +2797,7 @@ export class LGraphNode
     }
 
     // check targetSlot and check connection types
-    if (!LiteGraph.isValidConnection(output.type, input.type)) {
+    if (!LiteGraphInternal.isValidConnection(output.type, input.type)) {
       this.setDirtyCanvas(false, true)
       return null
     }
@@ -2954,12 +2968,13 @@ export class LGraphNode
     if (typeof slot === 'string') {
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug)
+        if (LiteGraphInternal.debug)
           console.log(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.outputs || slot >= this.outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraphInternal.debug)
+        console.log('Connect: Error, slot number not found')
       return false
     }
 
@@ -3074,12 +3089,12 @@ export class LGraphNode
     if (typeof slot === 'string') {
       slot = this.findInputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug)
+        if (LiteGraphInternal.debug)
           console.log(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.inputs || slot >= this.inputs.length) {
-      if (LiteGraph.debug) {
+      if (LiteGraphInternal.debug) {
         console.log('Connect: Error, slot number not found')
       }
       return false
@@ -3183,16 +3198,16 @@ export class LGraphNode
     } = this
 
     if (this.flags.collapsed) {
-      const w = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
+      const w = this._collapsed_width || LiteGraphInternal.NODE_COLLAPSED_WIDTH
       out[0] = is_input ? nodeX : nodeX + w
-      out[1] = nodeY - LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      out[1] = nodeY - LiteGraphInternal.NODE_TITLE_HEIGHT * 0.5
       return out
     }
 
     // weird feature that never got finished
     if (is_input && slot_number == -1) {
-      out[0] = nodeX + LiteGraph.NODE_TITLE_HEIGHT * 0.5
-      out[1] = nodeY + LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      out[0] = nodeX + LiteGraphInternal.NODE_TITLE_HEIGHT * 0.5
+      out[1] = nodeY + LiteGraphInternal.NODE_TITLE_HEIGHT * 0.5
       return out
     }
 
@@ -3211,7 +3226,7 @@ export class LGraphNode
     }
 
     // default vertical slots
-    const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    const offset = LiteGraphInternal.NODE_SLOT_HEIGHT * 0.5
     const slotIndex = is_input
       ? this.#defaultVerticalInputs.indexOf(this.inputs[slot_number])
       : this.#defaultVerticalOutputs.indexOf(this.outputs[slot_number])
@@ -3219,7 +3234,7 @@ export class LGraphNode
     out[0] = is_input ? nodeX + offset : nodeX + this.size[0] + 1 - offset
     out[1] =
       nodeY +
-      (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
+      (slotIndex + 0.7) * LiteGraphInternal.NODE_SLOT_HEIGHT +
       (this.constructor.slot_start_y || 0)
     return out
   }
@@ -3297,7 +3312,7 @@ export class LGraphNode
 
   /** @see {@link snapToGrid} */
   alignToGrid(): void {
-    this.snapToGrid(LiteGraph.CANVAS_GRID_SIZE)
+    this.snapToGrid(LiteGraphInternal.CANVAS_GRID_SIZE)
   }
 
   /* Console output */
@@ -3321,7 +3336,7 @@ export class LGraphNode
     }
 
     const img: AsyncImageElement = new Image()
-    img.src = LiteGraph.node_images_path + url
+    img.src = LiteGraphInternal.node_images_path + url
     img.ready = false
 
     const dirty = () => this.setDirtyCanvas(true)
@@ -3416,7 +3431,7 @@ export class LGraphNode
 
   get width() {
     return this.collapsed
-      ? this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
+      ? this._collapsed_width || LiteGraphInternal.NODE_COLLAPSED_WIDTH
       : this.size[0]
   }
 
@@ -3424,7 +3439,7 @@ export class LGraphNode
    * Returns the height of the node, including the title bar.
    */
   get height() {
-    return LiteGraph.NODE_TITLE_HEIGHT + this.bodyHeight
+    return LiteGraphInternal.NODE_TITLE_HEIGHT + this.bodyHeight
   }
 
   /**
@@ -3447,7 +3462,7 @@ export class LGraphNode
           (acc, badge) => acc + badge.getWidth(ctx) + gap,
           0
         )
-    const y = -(LiteGraph.NODE_TITLE_HEIGHT + gap)
+    const y = -(LiteGraphInternal.NODE_TITLE_HEIGHT + gap)
 
     for (const badge of badgeInstances) {
       badge.draw(ctx, currentX, y - badge.height)
@@ -3462,7 +3477,7 @@ export class LGraphNode
     ctx: CanvasRenderingContext2D,
     {
       scale,
-      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      title_height = LiteGraphInternal.NODE_TITLE_HEIGHT,
       low_quality = false
     }: DrawTitleOptions
   ): void {
@@ -3480,7 +3495,7 @@ export class LGraphNode
     }
 
     if (this.collapsed) {
-      ctx.shadowColor = LiteGraph.DEFAULT_SHADOW_COLOR
+      ctx.shadowColor = LiteGraphInternal.DEFAULT_SHADOW_COLOR
     }
 
     ctx.fillStyle = this.constructor.title_color || fgcolor
@@ -3495,8 +3510,13 @@ export class LGraphNode
         size[0],
         title_height,
         this.collapsed
-          ? [LiteGraph.ROUND_RADIUS]
-          : [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0]
+          ? [LiteGraphInternal.ROUND_RADIUS]
+          : [
+              LiteGraphInternal.ROUND_RADIUS,
+              LiteGraphInternal.ROUND_RADIUS,
+              0,
+              0
+            ]
       )
     }
     ctx.fill()
@@ -3513,7 +3533,7 @@ export class LGraphNode
     {
       scale,
       low_quality = false,
-      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      title_height = LiteGraphInternal.NODE_TITLE_HEIGHT,
       box_size = 10
     }: DrawTitleBoxOptions
   ): void {
@@ -3589,7 +3609,7 @@ export class LGraphNode
       scale,
       default_title_color,
       low_quality = false,
-      title_height = LiteGraph.NODE_TITLE_HEIGHT
+      title_height = LiteGraphInternal.NODE_TITLE_HEIGHT
     }: DrawTitleTextOptions
   ): void {
     const size = this.renderingSize
@@ -3617,7 +3637,7 @@ export class LGraphNode
     const title = String(rawTitle) + (this.pinned ? '📌' : '')
     if (title) {
       if (selected) {
-        ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR
+        ctx.fillStyle = LiteGraphInternal.NODE_SELECTED_TITLE_COLOR
       } else {
         ctx.fillStyle = this.constructor.title_text_color || default_title_color
       }
@@ -3656,7 +3676,7 @@ export class LGraphNode
       ctx.fillText(
         displayTitle,
         title_height,
-        LiteGraph.NODE_TITLE_TEXT_Y - title_height
+        LiteGraphInternal.NODE_TITLE_TEXT_Y - title_height
       )
     }
   }
@@ -3689,7 +3709,10 @@ export class LGraphNode
       if (input.link == null) continue
 
       const output = outputs[index]
-      if (!output || !LiteGraph.isValidConnection(input.type, output.type))
+      if (
+        !output ||
+        !LiteGraphInternal.isValidConnection(input.type, output.type)
+      )
         continue
 
       const inLink = _links.get(input.link)
@@ -3713,7 +3736,8 @@ export class LGraphNode
       if (!inNode) continue
 
       for (const output of outputs) {
-        if (!LiteGraph.isValidConnection(input.type, output.type)) continue
+        if (!LiteGraphInternal.isValidConnection(input.type, output.type))
+          continue
 
         bypassAllLinks(output, inNode, inLink, graph)
         break
@@ -3764,7 +3788,7 @@ export class LGraphNode
 
     const nodeWidth = this.size[0]
     const { widgets } = this
-    const H = LiteGraph.NODE_WIDGET_HEIGHT
+    const H = LiteGraphInternal.NODE_WIDGET_HEIGHT
     const showText = !lowQuality
     ctx.save()
     ctx.globalAlpha = editorAlpha
@@ -3774,8 +3798,8 @@ export class LGraphNode
 
       const { y } = widget
       const outlineColour = widget.advanced
-        ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
-        : LiteGraph.WIDGET_OUTLINE_COLOR
+        ? LiteGraphInternal.WIDGET_ADVANCED_OUTLINE_COLOR
+        : LiteGraphInternal.WIDGET_OUTLINE_COLOR
 
       widget.last_y = y
       // Disable widget if it is disabled or if the value is passed from socket connection.
@@ -3833,12 +3857,12 @@ export class LGraphNode
       ? this.getInputPos(slotIndex)
       : this.getOutputPos(slotIndex)
 
-    slot.boundingRect[0] = pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
-    slot.boundingRect[1] = pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[0] = pos[0] - LiteGraphInternal.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[1] = pos[1] - LiteGraphInternal.NODE_SLOT_HEIGHT * 0.5
     slot.boundingRect[2] = slot.isWidgetInputSlot
       ? BaseWidget.margin
-      : LiteGraph.NODE_SLOT_HEIGHT
-    slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
+      : LiteGraphInternal.NODE_SLOT_HEIGHT
+    slot.boundingRect[3] = LiteGraphInternal.NODE_SLOT_HEIGHT
   }
 
   #measureSlots(): ReadOnlyRect | null {
@@ -3973,7 +3997,7 @@ export class LGraphNode
           w
         })
       } else {
-        const height = LiteGraph.NODE_WIDGET_HEIGHT + 4
+        const height = LiteGraphInternal.NODE_WIDGET_HEIGHT + 4
         w.computedHeight = height
         fixedWidgetHeight += height
       }
@@ -4036,13 +4060,13 @@ export class LGraphNode
 
     // Only set custom pos if not using Vue positioning
     // Vue positioning calculates widget slot positions dynamically
-    if (!LiteGraph.vueNodesMode) {
+    if (!LiteGraphInternal.vueNodesMode) {
       for (const widget of this.widgets) {
         const slot = slotByWidgetName.get(widget.name)
         if (!slot) continue
 
         const actualSlot = this.#concreteInputs[slot.index]
-        const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+        const offset = LiteGraphInternal.NODE_SLOT_HEIGHT * 0.5
         actualSlot.pos = [offset, widget.y + offset]
         this.#measureSlot(actualSlot, slot.index, true)
       }
