@@ -11,6 +11,9 @@ import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { LinkDirection, RenderShape } from './types/globalEnums'
 import type { IBaseWidget } from './types/widgets'
 
+declare const __brand: unique symbol
+export type UniqueId<T, B> = T & { [__brand]?: B }
+
 export type Dictionary<T> = { [key: string]: T }
 
 /** Allows all properties to be null.  The same as `Partial<T>`, but adds null instead of undefined. */
@@ -184,8 +187,10 @@ export interface ItemLocator {
   ): SubgraphInputNode | SubgraphOutputNode | undefined
 }
 
+export type LinkSegment = Reroute | LLink
+
 /** Contains a cached 2D canvas path and a centre point, with an optional forward angle. */
-export interface LinkSegment {
+export interface ILinkSegment {
   /** Link / reroute ID */
   readonly id: LinkId | RerouteId
   /** The {@link id} of the reroute that this segment starts from (output side), otherwise `undefined`.  */

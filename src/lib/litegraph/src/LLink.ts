@@ -9,12 +9,14 @@ import type { LGraphNode, NodeId } from './LGraphNode'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
+  ILinkSegment,
   INodeInputSlot,
   INodeOutputSlot,
   ISlotType,
   LinkNetwork,
   LinkSegment,
-  ReadonlyLinkNetwork
+  ReadonlyLinkNetwork,
+  UniqueId
 } from './interfaces'
 import type {
   Serialisable,
@@ -24,7 +26,7 @@ import type {
 
 const layoutMutations = useLayoutMutations()
 
-export type LinkId = number
+export type LinkId = UniqueId<number, 'LinkId'>
 
 export type SerialisedLLinkArray = [
   id: LinkId,
@@ -90,7 +92,7 @@ type BasicReadonlyNetwork = Pick<
 >
 
 // this is the class in charge of storing link information
-export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
+export class LLink implements ILinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
 
   /** Link ID */

@@ -1,3 +1,4 @@
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   LGraph,
   LGraphNode,
@@ -9,7 +10,7 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { isSubgraphIoNode } from './typeGuardUtil'
 
 interface NodeWithId {
-  id: string | number
+  id: NodeId
   subgraphId?: string | null
 }
 
@@ -19,7 +20,7 @@ interface NodeWithId {
  * @param nodeData - Node data containing id and optional subgraphId
  * @returns The locator ID string
  */
-export function getLocatorIdFromNodeData(nodeData: NodeWithId): string {
+export function getLocatorIdFromNodeData(nodeData: NodeWithId): NodeLocatorId {
   return nodeData.subgraphId
     ? `${nodeData.subgraphId}:${String(nodeData.id)}`
     : String(nodeData.id)
@@ -31,7 +32,9 @@ export function getLocatorIdFromNodeData(nodeData: NodeWithId): string {
  * @param executionId - The execution ID (e.g., "123:456:789" or "789")
  * @returns Array of node IDs in the path, or null if invalid
  */
-export function parseExecutionId(executionId: string): string[] | null {
+export function parseExecutionId(
+  executionId: NodeExecutionId
+): string[] | null {
   if (!executionId || typeof executionId !== 'string') return null
   return executionId.split(':').filter((part) => part.length > 0)
 }
@@ -55,7 +58,9 @@ export function getLocalNodeIdFromExecutionId(
  * @param executionId - The execution ID (e.g., "123:456:789" or "789")
  * @returns Array of subgraph node IDs (excluding the final node ID), or empty array
  */
-export function getSubgraphPathFromExecutionId(executionId: string): string[] {
+export function getSubgraphPathFromExecutionId(
+  executionId: NodeExecutionId
+): string[] {
   const parts = parseExecutionId(executionId)
   return parts ? parts.slice(0, -1) : []
 }
@@ -196,7 +201,7 @@ export function collectAllNodes(
  */
 export function findNodeInHierarchy(
   graph: LGraph | Subgraph,
-  nodeId: string | number
+  nodeId: NodeId
 ): LGraphNode | null {
   // Check current graph
   const node = graph.getNodeById(nodeId)
@@ -284,7 +289,7 @@ export function findSubgraphPathById(
  */
 export function getNodeByExecutionId(
   rootGraph: LGraph,
-  executionId: string
+  executionId: NodeExecutionId
 ): LGraphNode | null {
   if (!rootGraph) return null
 
@@ -316,7 +321,7 @@ export function getNodeByExecutionId(
  */
 export function getNodeByLocatorId(
   rootGraph: LGraph,
-  locatorId: NodeLocatorId | string
+  locatorId: NodeLocatorId
 ): LGraphNode | null {
   if (!rootGraph) return null
 
