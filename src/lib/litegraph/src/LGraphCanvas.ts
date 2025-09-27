@@ -3536,9 +3536,7 @@ export class LGraphCanvas
     const { graph, pointer } = this
     if (!graph) return
 
-    if (this.#dragZoomStart) {
-      this.#finishDragZoom()
-    }
+    this.#finishDragZoom()
 
     LGraphCanvas.active_canvas = this
 
