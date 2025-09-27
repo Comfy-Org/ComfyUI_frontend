@@ -1,0 +1,34 @@
+{
+  "name": "@comfyorg/schemas",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared Zod schemas for ComfyUI Frontend",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    "./apiSchema": "./src/apiSchema.ts",
+    "./colorPaletteSchema": "./src/colorPaletteSchema.ts",
+    "./keyBindingSchema": "./src/keyBindingSchema.ts",
+    "./nodeDefSchema": "./src/nodeDefSchema.ts",
+    "./nodeDef/nodeDefSchemaV2": "./src/nodeDef/nodeDefSchemaV2.ts",
+    "./nodeDef/migration": "./src/nodeDef/migration.ts",
+    "./signInSchema": "./src/signInSchema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "type:schema"
+    ]
+  },
+  "dependencies": {
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.24.1",
+    "zod-validation-error": "^3.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
