@@ -50,13 +50,6 @@
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
       <NodeHeader
-        v-memo="[
-          nodeData.title,
-          nodeData.color,
-          nodeData.bgcolor,
-          isCollapsed,
-          nodeData.flags?.pinned
-        ]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
@@ -100,20 +93,11 @@
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
-        <NodeSlots
-          v-memo="[
-            nodeData.inputs?.length,
-            nodeData.outputs?.length,
-            executionStore.lastNodeErrors
-          ]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeSlots :node-data="nodeData" :readonly="readonly" />
 
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
           v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
           :node-data="nodeData"
           :readonly="readonly"
         />
@@ -126,11 +110,7 @@
           :image-urls="nodeImageUrls"
         />
         <!-- Live preview image -->
-        <div
-          v-if="shouldShowPreviewImg"
-          v-memo="[latestPreviewUrl]"
-          class="px-4"
-        >
+        <div v-if="shouldShowPreviewImg" class="px-4">
           <img
             :src="latestPreviewUrl"
             alt="preview"
