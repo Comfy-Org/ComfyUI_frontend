@@ -5,7 +5,12 @@
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+        :class="
+          cn(
+            'whitespace-nowrap text-sm font-normal lod-toggle',
+            'dark-theme:text-slate-200 text-stone-200'
+          )
+        "
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
@@ -15,7 +20,7 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      class="translate-x-1/2"
+      :class="errorClasses"
       v-on="readonly ? {} : { pointerdown: onPointerDown }"
     />
   </div>
@@ -55,6 +60,11 @@ interface OutputSlotProps {
 }
 
 const props = defineProps<OutputSlotProps>()
+
+// Apply styling classes to slot connection dot
+const errorClasses = computed(() => {
+  return cn('translate-x-1/2')
+})
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
