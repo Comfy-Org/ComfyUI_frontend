@@ -308,12 +308,22 @@ app.registerExtension({
     function addDownloadButton(entry: ModelEntry) {
       const { element, text, url } = entry
 
+      // Check if button already added
+      if (element.querySelector('[data-download-button]')) {
+        console.log(
+          '[MissingModelsDownloader] Button already exists for:',
+          text
+        )
+        return
+      }
+
       // Parse model info from text
       const modelInfo = parseModelInfo(text)
       if (!modelInfo) return
 
       // Create a container for button and status
       const container = document.createElement('span')
+      container.setAttribute('data-download-button', 'true')
       container.style.cssText =
         'margin-left: 10px; display: inline-flex; align-items: center; gap: 8px;'
 
