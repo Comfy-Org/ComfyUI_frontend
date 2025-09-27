@@ -157,11 +157,22 @@ export class ComfyApp {
   // @ts-expect-error fixme ts strict error
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
-  // @ts-expect-error fixme ts strict error
-  #graph: LGraph
+
+  private rootGraphInternal: LGraph | undefined
+
+  // TODO: Migrate internal usage to the
+  /** @deprecated Use {@link rootGraph} instead */
   get graph() {
-    return this.#graph
+    return this.rootGraphInternal!
   }
+
+  get rootGraph(): LGraph | undefined {
+    if (!this.rootGraphInternal) {
+      console.error('ComfyApp graph accessed before initialization')
+    }
+    return this.rootGraphInternal
+  }
+
   // @ts-expect-error fixme ts strict error
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null = null
@@ -765,7 +776,7 @@ export class ComfyApp {
     }
   }
 
-  #addAfterConfigureHandler(graph: LGraph) {
+  private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
@@ -825,9 +836,9 @@ export class ComfyApp {
       }
     })
 
-    this.#addAfterConfigureHandler(graph)
+    this.addAfterConfigureHandler(graph)
 
-    this.#graph = graph
+    this.rootGraphInternal = graph
     this.canvas = new LGraphCanvas(canvasEl, graph)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
