@@ -1,4 +1,3 @@
-import SubgraphNode from '@/components/selectionbar/SubgraphNode.vue'
 import { type DialogComponentProps, useDialogStore } from '@/stores/dialogStore'
 
 const key = 'global-subgraph-node-config'
@@ -11,11 +10,15 @@ export function showSubgraphNodeDialog() {
     closable: false,
     position: 'right'
   }
-
-  dialogStore.showDialog({
-    title: 'Parameters',
-    key,
-    component: SubgraphNode,
-    dialogComponentProps
-  })
+  //FIXME: the vuedraggable import has unknown sideffects that break tests.
+  void import('@/components/selectionbar/SubgraphNode.vue').then(
+    (SubgraphNode) => {
+      dialogStore.showDialog({
+        title: 'Parameters',
+        key,
+        component: SubgraphNode,
+        dialogComponentProps
+      })
+    }
+  )
 }
