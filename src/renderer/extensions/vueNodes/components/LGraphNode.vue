@@ -35,7 +35,7 @@
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
-        backgroundColor: nodeData.bgcolor || ''
+        backgroundColor: nodeBodyBackgroundColor
       },
       dragStyle
     ]"
@@ -145,6 +145,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -157,6 +158,8 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { adjustColor } from '@/utils/colorUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -226,6 +229,37 @@ const hasAnyError = computed((): boolean => {
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
 const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
+
+// Node body background color that exactly replicates LiteGraph's drawNode logic
+const nodeBodyBackgroundColor = computed(() => {
+  const colorPaletteStore = useColorPaletteStore()
+  const settingStore = useSettingStore()
+
+  // This replicates the drawNode logic for bgColor
+  let bgColor = nodeData.bgcolor || '' // matches: old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+
+  if (!bgColor) return '' // No color to adjust
+
+  // Apply the exact same adjustments as the drawNode monkey patch
+  const adjustments: { lightness?: number; opacity?: number } = {}
+
+  // 1. Apply opacity setting (same as drawNode)
+  const opacity = settingStore.get('Comfy.Node.Opacity')
+  if (opacity) adjustments.opacity = opacity
+
+  // 2. Apply light theme background lightening (same as drawNode)
+  if (colorPaletteStore.completedActivePalette.light_theme) {
+    // This matches: "if (old_bgcolor) adjustments.lightness = 0.5"
+    adjustments.lightness = 0.5
+  }
+
+  // Apply all adjustments at once: node.bgcolor = adjustColor(bgColor, adjustments)
+  if (Object.keys(adjustments).length > 0) {
+    bgColor = adjustColor(bgColor, adjustments)
+  }
+
+  return bgColor
+})
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()

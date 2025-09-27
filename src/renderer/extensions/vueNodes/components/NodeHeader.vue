@@ -72,6 +72,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { app } from '@/scripts/app'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -126,25 +127,34 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(description)
 })
 
-// Header style that replicates LiteGraph's ColorOption and drawNode logic
+// Header style that exactly replicates LiteGraph's drawNode monkey patch logic
 const headerStyle = computed(() => {
   if (!nodeData?.color) {
     return { backgroundColor: '' } // Explicitly clear background color
   }
 
   const colorPaletteStore = useColorPaletteStore()
+  const settingStore = useSettingStore()
+
+  // Start with the original color (same as old_color in drawNode)
   let headerColor = nodeData.color
 
-  // Apply base header darkening to replicate LiteGraph's ColorOption system
-  // When header and body colors are the same/similar, darken the header
-  if (nodeData.bgcolor && nodeData.color === nodeData.bgcolor) {
-    // Darken header relative to body (opposite of light theme adjustment)
-    headerColor = adjustColor(nodeData.color, { lightness: -0.15 })
+  // Apply the exact same adjustments as the drawNode monkey patch
+  const adjustments: { lightness?: number; opacity?: number } = {}
+
+  // 1. Apply opacity setting (same as drawNode)
+  const opacity = settingStore.get('Comfy.Node.Opacity')
+  if (opacity) adjustments.opacity = opacity
+
+  // 2. Apply light theme adjustments (same as drawNode)
+  if (colorPaletteStore.completedActivePalette.light_theme) {
+    // This matches: "if (old_color) { node.color = adjustColor(old_color, { lightness: 0.5 }) }"
+    adjustments.lightness = 0.5
   }
 
-  // Apply light theme lightening on top of base darkening (same as drawNode monkey patch)
-  if (colorPaletteStore.completedActivePalette.light_theme) {
-    headerColor = adjustColor(headerColor, { lightness: 0.5 })
+  // Apply all adjustments at once (matching drawNode's approach)
+  if (Object.keys(adjustments).length > 0) {
+    headerColor = adjustColor(headerColor, adjustments)
   }
 
   return { backgroundColor: headerColor }
