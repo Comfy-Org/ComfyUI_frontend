@@ -1,15 +1,25 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  entry: [
-    '{build,scripts}/**/*.{js,ts}',
-    'src/assets/css/style.css',
-    'src/main.ts',
-    'src/scripts/ui/menu/index.ts',
-    'src/types/index.ts'
-  ],
-  project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
-  ignoreBinaries: ['only-allow', 'openapi-typescript'],
+  workspaces: {
+    '.': {
+      entry: [
+        '{build,scripts}/**/*.{js,ts}',
+        'src/assets/css/style.css',
+        'src/main.ts',
+        'src/scripts/ui/menu/index.ts',
+        'src/types/index.ts'
+      ],
+      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
+    },
+    'packages/tailwind-utils': {
+      project: ['src/**/*.{js,ts}']
+    },
+    'packages/design-system': {
+      entry: ['src/**/*.ts'],
+      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
+    }
+  },
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
