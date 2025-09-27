@@ -37,7 +37,7 @@ test.describe('Vue Multiline String Widget', () => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
 
     await textarea.fill('Keep me around')
-    await comfyPage.canvas.click()
+    await comfyPage.clickEmptySpace()
     await getFirstClipNode(comfyPage).click()
 
     await expect(textarea).toHaveValue('Keep me around')
