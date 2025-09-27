@@ -4,10 +4,7 @@
   "description": "Shared design system for ComfyUI Frontend",
   "type": "module",
   "exports": {
-    "./tailwind-config": {
-      "import": "./tailwind.config.ts",
-      "types": "./tailwind.config.ts"
-    },
+    "./tailwind-config": "./tailwind.config.ts",
     "./css/*": "./src/css/*"
   },
   "scripts": {
