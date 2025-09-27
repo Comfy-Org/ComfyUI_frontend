@@ -34,7 +34,8 @@
     :style="[
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
+        zIndex: zIndex,
+        backgroundColor: nodeData.bgcolor || ''
       },
       dragStyle
     ]"
@@ -47,9 +48,8 @@
         <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
-      <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, isCollapsed]"
+        v-memo="[nodeData.title, nodeData.color, nodeData.bgcolor, isCollapsed]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
