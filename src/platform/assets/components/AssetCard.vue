@@ -8,19 +8,17 @@
       cn(
         // Base layout and container styles (always applied)
         'rounded-xl overflow-hidden transition-all duration-200',
+        interactive && 'group',
         // Button-specific styles
         interactive && [
           'appearance-none bg-transparent p-0 m-0 font-inherit text-inherit outline-none cursor-pointer text-left',
-          'bg-ivory-100 border border-gray-300 dark-theme:bg-charcoal-400 dark-theme:border-charcoal-600',
-          'hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/10 hover:border-gray-400',
-          'dark-theme:hover:shadow-lg dark-theme:hover:shadow-black/30 dark-theme:hover:border-charcoal-700',
-          'focus:outline-none focus:transform focus:-translate-y-0.5 focus:shadow-lg focus:shadow-black/10 dark-theme:focus:shadow-black/30'
+          'bg-gray-100 dark-theme:bg-charcoal-800',
+          'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
+          'border-none',
+          'focus:outline-solid outline-blue-100 outline-4'
         ],
         // Div-specific styles
-        !interactive && [
-          'bg-ivory-100 border border-gray-300',
-          'dark-theme:bg-charcoal-400 dark-theme:border-charcoal-600'
-        ]
+        !interactive && 'bg-gray-100 dark-theme:bg-charcoal-800'
       )
     "
     @click="interactive && $emit('select', asset)"
@@ -32,7 +30,7 @@
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
-    <div class="p-4 h-32 flex flex-col justify-between">
+    <div :class="cn('p-4 h-32 flex flex-col justify-between')">
       <div>
         <h3
           :class="
@@ -49,8 +47,8 @@
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-              'text-stone-300',
-              'dark-theme:text-stone-200'
+              'text-stone-100',
+              'dark-theme:text-slate-100'
             )
           "
           :title="asset.description"

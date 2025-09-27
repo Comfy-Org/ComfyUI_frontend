@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Graph Canvas Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Set link render mode to spline to make sure it's not affected by other tests'

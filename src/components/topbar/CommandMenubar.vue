@@ -314,9 +314,19 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
 .comfy-command-menu ul {
   background-color: var(--comfy-menu-secondary-bg) !important;
 }
-
 .comfy-command-menu-top .p-tieredmenu-submenu {
   left: calc(100% + 15px) !important;
   top: -4px !important;
+}
+@media (max-height: 700px) {
+  .comfy-command-menu .p-tieredmenu-submenu {
+    @apply absolute max-h-[90vh] overflow-y-auto;
+  }
+  /* Help (last) submenu upward offset in compact mode */
+  .p-tieredmenu-root-list
+    > .p-tieredmenu-item:last-of-type
+    .p-tieredmenu-submenu {
+    top: -188px !important;
+  }
 }
 </style>

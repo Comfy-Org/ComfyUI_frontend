@@ -13,7 +13,7 @@
           header: 'hidden',
           content: 'p-1 h-10 flex flex-row gap-1'
         }"
-        @wheel="canvasInteractions.handleWheel"
+        @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <DeleteButton v-if="showDelete" />
         <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
@@ -38,7 +38,7 @@
           :command="command"
         />
         <ExecuteButton v-if="showExecute" />
-        <MoreOptions />
+        <NodeOptionsButton />
       </Panel>
     </Transition>
   </div>
@@ -68,7 +68,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
-import MoreOptions from './selectionToolbox/MoreOptions.vue'
+import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
 import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 
 const commandStore = useCommandStore()

@@ -10,6 +10,7 @@ import {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { api } from './api'
@@ -86,7 +87,7 @@ export class ChangeTracker {
       app.canvas.ds.offset = this.ds.offset
     }
     if (this.nodeOutputs) {
-      app.nodeOutputs = this.nodeOutputs
+      useNodeOutputStore().restoreOutputs(this.nodeOutputs)
     }
     if (this.subgraphState) {
       const { navigation } = this.subgraphState

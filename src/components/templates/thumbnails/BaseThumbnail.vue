@@ -1,5 +1,7 @@
 <template>
-  <div class="relative w-64 h-64 rounded-t-lg overflow-hidden select-none">
+  <div
+    class="relative w-full aspect-square rounded-t-lg overflow-hidden select-none"
+  >
     <div
       v-if="!error"
       ref="contentRef"
@@ -11,7 +13,11 @@
       <slot />
     </div>
     <div v-else class="w-full h-full flex items-center justify-center">
-      <i class="pi pi-file text-4xl" />
+      <img
+        src="/assets/images/default-template.png"
+        draggable="false"
+        class="transform-gpu transition-transform duration-300 ease-out w-full h-full object-cover"
+      />
     </div>
   </div>
 </template>

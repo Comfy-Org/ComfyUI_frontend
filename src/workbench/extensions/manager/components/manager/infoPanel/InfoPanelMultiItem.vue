@@ -57,19 +57,19 @@
 import { useAsyncState } from '@vueuse/core'
 import { computed, onUnmounted, provide, toRef } from 'vue'
 
-import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
-import { usePacksStatus } from '@/composables/nodePack/usePacksStatus'
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
-import { ImportFailedKey } from '@/types/importFailedTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
 import InfoPanelHeader from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/workbench/extensions/manager/components/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/workbench/extensions/manager/components/manager/packIcon/PackIconStacked.vue'
+import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
+import { usePacksStatus } from '@/workbench/extensions/manager/composables/nodePack/usePacksStatus'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
 const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]

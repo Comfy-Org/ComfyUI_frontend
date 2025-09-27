@@ -4,6 +4,10 @@ import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Group Node', () => {
   test.describe('Node library sidebar', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'

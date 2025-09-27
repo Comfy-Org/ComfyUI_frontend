@@ -67,8 +67,6 @@ import AutoComplete from 'primevue/autocomplete'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   QuerySuggestion,
@@ -78,6 +76,8 @@ import type {
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
 import SearchFilterDropdown from '@/workbench/extensions/manager/components/manager/registrySearchBar/SearchFilterDropdown.vue'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
 import {
   type SearchOption,
   SortableAlgoliaField

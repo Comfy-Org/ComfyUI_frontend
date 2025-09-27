@@ -103,14 +103,22 @@ Utility composables for common patterns:
 | `useChainCallback` | Chains multiple callbacks together |
 
 ### Manager
-Composables for ComfyUI Manager integration:
+Composables for ComfyUI Manager integration (located in
+`@/workbench/extensions/manager/composables`):
 
 | Composable | Description |
 |------------|-------------|
 | `useManagerStatePersistence` | Persists manager UI state |
+| `useManagerState` | Determines availability of manager UI modes |
+| `useManagerQueue` | Handles manager task queue state |
+| `useConflictAcknowledgment` | Tracks conflict dismissal state |
+| `useConflictDetection` | Orchestrates conflict detection workflow |
+| `useImportFailedDetection` | Handles import-failed conflict dialogs |
+| `useRegistrySearch` | Manages registry search UI state |
 
-### Node Pack
-Composables for node package management:
+#### Node Pack
+Node package helpers live under
+`@/workbench/extensions/manager/composables/nodePack`:
 
 | Composable | Description |
 |------------|-------------|
@@ -118,6 +126,9 @@ Composables for node package management:
 | `useMissingNodes` | Detects and handles missing nodes |
 | `useNodePacks` | Core node package functionality |
 | `usePackUpdateStatus` | Tracks package update availability |
+| `usePacksSelection` | Provides selection helpers for pack lists |
+| `usePacksStatus` | Aggregates status across multiple packs |
+| `useUpdateAvailableNodes` | Detects available updates for nodes |
 | `useWorkflowPacks` | Manages packages used in workflows |
 
 ### Node

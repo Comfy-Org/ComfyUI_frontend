@@ -9,7 +9,7 @@ export default defineConfig({
     Icons({
       compiler: 'vue3',
       customCollections: {
-        comfy: FileSystemIconLoader('src/assets/icons/custom')
+        comfy: FileSystemIconLoader('packages/design-system/src/icons')
       }
     })
   ],
