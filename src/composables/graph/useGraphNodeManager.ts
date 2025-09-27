@@ -39,6 +39,7 @@ export interface VueNodeData {
   hasErrors?: boolean
   flags?: {
     collapsed?: boolean
+    pinned?: boolean
   }
 }
 
@@ -431,6 +432,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 flags: {
                   ...currentData.flags,
                   collapsed: Boolean(event.newValue)
+                }
+              })
+              break
+            case 'flags.pinned':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                flags: {
+                  ...currentData.flags,
+                  pinned: Boolean(event.newValue)
                 }
               })
               break

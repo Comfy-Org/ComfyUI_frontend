@@ -26,7 +26,7 @@
       <!-- Node Title -->
       <div
         v-tooltip.top="tooltipConfig"
-        class="text-sm font-bold truncate flex-1 lod-toggle"
+        class="text-sm font-bold truncate flex-1 lod-toggle flex items-center gap-2"
         data-testid="node-title"
       >
         <EditableText
@@ -35,6 +35,11 @@
           :input-attrs="{ 'data-testid': 'node-title-input' }"
           @edit="handleTitleEdit"
           @cancel="handleTitleCancel"
+        />
+        <i-lucide:pin
+          v-if="isPinned"
+          class="w-5 h-5 text-stone-200 dark-theme:text-slate-300"
+          data-testid="node-pin-indicator"
         />
       </div>
       <LODFallback />
@@ -140,6 +145,8 @@ watch(
     }
   }
 )
+
+const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
 
 // Subgraph detection
 const isSubgraphNode = computed(() => {
