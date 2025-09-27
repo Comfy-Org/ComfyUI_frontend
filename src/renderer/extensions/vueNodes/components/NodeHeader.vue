@@ -74,9 +74,9 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
@@ -127,27 +127,19 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(description)
 })
 
-// Header style that exactly replicates LiteGraph's drawNode monkey patch logic
 const headerStyle = computed(() => {
   const colorPaletteStore = useColorPaletteStore()
-  const settingStore = useSettingStore()
 
-  // Get opacity setting - applies to ALL nodes (colored and non-colored)
-  const opacity = settingStore.get('Comfy.Node.Opacity') || 1
+  const opacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
 
   if (!nodeData?.color) {
-    // Non-colored nodes: only apply opacity
     return { backgroundColor: '', opacity }
   }
 
-  // Start with the original color (same as old_color in drawNode)
-  let headerColor = nodeData.color
-
-  // Apply light theme adjustments for colored nodes
-  if (colorPaletteStore.completedActivePalette.light_theme) {
-    // This matches: "if (old_color) { node.color = adjustColor(old_color, { lightness: 0.5 }) }"
-    headerColor = adjustColor(headerColor, { lightness: 0.5 })
-  }
+  const headerColor = applyLightThemeColor(
+    nodeData.color,
+    Boolean(colorPaletteStore.completedActivePalette.light_theme)
+  )
 
   return { backgroundColor: headerColor, opacity }
 })

@@ -156,11 +156,11 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -231,31 +231,22 @@ const hasAnyError = computed((): boolean => {
 const bypassed = computed((): boolean => nodeData.mode === 4)
 const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 
-// Node body background color that exactly replicates LiteGraph's drawNode logic
 const nodeBodyBackgroundColor = computed(() => {
   const colorPaletteStore = useColorPaletteStore()
 
-  // This replicates the drawNode logic for bgColor
-  let bgColor = nodeData.bgcolor || '' // matches: old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
-
-  // Apply light theme background lightening (same as drawNode)
-  if (
-    colorPaletteStore.completedActivePalette.light_theme &&
-    nodeData.bgcolor
-  ) {
-    // This matches: "if (old_bgcolor) adjustments.lightness = 0.5"
-    bgColor = adjustColor(bgColor, { lightness: 0.5 })
+  if (!nodeData.bgcolor) {
+    return ''
   }
 
-  return bgColor
+  return applyLightThemeColor(
+    nodeData.bgcolor,
+    Boolean(colorPaletteStore.completedActivePalette.light_theme)
+  )
 })
 
-// Node opacity applied to ALL nodes (colored and non-colored) to match LiteGraph
-const nodeOpacity = computed(() => {
-  const settingStore = useSettingStore()
-  const opacity = settingStore.get('Comfy.Node.Opacity')
-  return opacity || 1 // Default to fully opaque if no setting
-})
+const nodeOpacity = computed(
+  () => useSettingStore().get('Comfy.Node.Opacity') ?? 1
+)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()

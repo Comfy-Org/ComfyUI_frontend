@@ -339,7 +339,6 @@ export class LGraphNode
       this.color = colorOption.color
       this.bgcolor = colorOption.bgcolor
     }
-    // Property change events are now handled automatically by LGraphNodeProperties instrumentation
   }
 
   /** @inheritdoc {@link IColorable.getColorOption} */
