@@ -116,7 +116,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         newCanvas.canvas,
         'litegraph:set-graph',
         (event: CustomEvent<{ newGraph: LGraph; oldGraph: LGraph }>) => {
-          const newGraph = event.detail?.newGraph || app.canvas?.graph
+          const newGraph = event.detail?.newGraph || app.graph
           currentGraph.value = newGraph
           isInSubgraph.value = Boolean(app.canvas?.subgraph)
         }

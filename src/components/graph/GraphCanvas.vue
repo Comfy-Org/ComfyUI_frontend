@@ -93,6 +93,7 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -189,8 +190,8 @@ watch(
   }
 )
 
-const allNodes = computed(() =>
-  Array.from(vueNodeLifecycle.vueNodeData.value.values())
+const allNodes = computed((): VueNodeData[] =>
+  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
 
 watchEffect(() => {
@@ -225,7 +226,6 @@ watch(
     for (const n of comfyApp.graph.nodes) {
       if (!n.widgets) continue
       for (const w of n.widgets) {
-        // @ts-expect-error fixme ts strict error
         if (w[IS_CONTROL_WIDGET]) {
           updateControlWidgetLabel(w)
           if (w.linkedWidgets) {
@@ -364,7 +364,6 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
-// @ts-expect-error fixme ts strict error
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
