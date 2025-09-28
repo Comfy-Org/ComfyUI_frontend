@@ -25,6 +25,8 @@ export interface IWidgetOptions<TValues = unknown[]> {
   property?: string
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
+  /** If `true`, the widget will not be rendered by the Vue renderer. */
+  canvasOnly?: boolean
 
   values?: TValues
   callback?: IWidget['callback']

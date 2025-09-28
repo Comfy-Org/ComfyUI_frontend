@@ -134,7 +134,8 @@ export function addValueControlWidgets(
     function () {},
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
-      serialize: false // Don't include this in prompt.
+      serialize: false, // Don't include this in prompt.
+      canvasOnly: true
     }
   ) as IComboWidget
 
