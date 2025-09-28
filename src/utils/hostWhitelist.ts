@@ -5,7 +5,6 @@
  *   • 'localhost' and any subdomain of '.localhost' (e.g., app.localhost)
  *   • IPv4 loopback 127.0.0.0/8 (e.g., 127.0.0.1, 127.1.2.3)
  *   • IPv6 loopback ::1 (supports compressed/expanded textual forms)
- *   • IPv6-mapped IPv4 loopback ::ffff:127.x.y.z
  *
  * No environment variables are used. To add more exact hostnames,
  * edit HOST_WHITELIST below.
