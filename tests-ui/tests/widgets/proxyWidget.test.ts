@@ -1,20 +1,29 @@
 import { describe, expect, test, vi } from 'vitest'
 
-import '@/core/graph/subgraph/proxyWidget'
-//import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
-
-import { LGraphNode, type SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+import {
+  type LGraphCanvas,
+  LGraphNode,
+  type SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '../litegraph/subgraph/fixtures/subgraphHelpers'
 
+registerProxyWidgets({
+  canvas: { addEventListener() {} }
+} as unknown as LGraphCanvas)
+
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
 }))
 vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => ({ widgetStates: new Map() })
+}))
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
 function setupSubgraph(

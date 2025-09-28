@@ -160,16 +160,24 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     widget_height: number,
     lowQuality?: boolean
   ): void {
-    if (this.options.hideOnZoom && lowQuality && this.isVisible()) {
+    if (
+      (this.promoted || (this.options.hideOnZoom && lowQuality)) &&
+      this.isVisible()
+    ) {
       // Draw a placeholder rectangle
       const originalFillStyle = ctx.fillStyle
       ctx.beginPath()
       ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
+      let margin = this.margin
+      if (this.promoted) {
+        ctx.fillStyle = LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+        margin -= 1
+      }
       ctx.rect(
-        this.margin,
-        y + this.margin,
-        widget_width - this.margin * 2,
-        (this.computedHeight ?? widget_height) - 2 * this.margin
+        margin,
+        y + margin,
+        widget_width - margin * 2,
+        (this.computedHeight ?? widget_height) - 2 * margin
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle

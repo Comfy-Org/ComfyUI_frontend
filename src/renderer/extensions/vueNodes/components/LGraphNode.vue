@@ -362,7 +362,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  canvas.openSubgraph(litegraphNode.subgraph)
+  canvas.openSubgraph(litegraphNode.subgraph, litegraphNode)
 }
 
 const nodeOutputs = useNodeOutputStore()
