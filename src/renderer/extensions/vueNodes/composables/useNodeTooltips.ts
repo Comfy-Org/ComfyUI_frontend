@@ -1,3 +1,4 @@
+import type { TooltipDirectivePassThroughOptions } from 'primevue'
 import { type MaybeRef, type Ref, computed, unref } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
@@ -85,7 +86,7 @@ export function useNodeTooltips(
       showDelay: number
       disabled: boolean
       appendTo?: HTMLElement
-      pt?: any
+      pt?: TooltipDirectivePassThroughOptions
     } = {
       value: tooltipText,
       showDelay: tooltipDelay as number,
