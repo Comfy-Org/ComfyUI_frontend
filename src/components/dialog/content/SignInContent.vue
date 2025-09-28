@@ -145,7 +145,7 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -167,9 +167,7 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
-const ssoAllowed = computed(() =>
-  isHostWhitelisted(normalizeHost(window.location.hostname))
-)
+const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
 
 const toggleState = () => {
   isSignIn.value = !isSignIn.value
