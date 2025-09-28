@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ComfyWorkflowJSON } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import type {
   HistoryResponse,
   RawHistoryItem
 } from '../../../src/schemas/apiSchema'
-import type { ComfyWorkflowJSON } from '../../../src/schemas/comfyWorkflowSchema'
 import { ComfyApi } from '../../../src/scripts/api'
 
 describe('ComfyApi getHistory', () => {

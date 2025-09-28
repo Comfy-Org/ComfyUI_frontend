@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-zinc-800">
+  <div class="flex flex-col h-full w-full bg-white dark-theme:bg-charcoal-600">
     <PanelHeader>
       <template #icon>
         <slot name="header-icon"></slot>
@@ -7,21 +7,31 @@
       <slot name="header-title"></slot>
     </PanelHeader>
 
-    <nav class="flex-1 px-3 py-4 flex flex-col gap-1">
+    <nav
+      class="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto scrollbar-hide"
+    >
       <template v-for="(item, index) in navItems" :key="index">
         <div v-if="'items' in item" class="flex flex-col gap-2">
-          <NavTitle :title="item.title" />
-          <NavItem
-            v-for="subItem in item.items"
-            :key="subItem.id"
-            :active="activeItem === subItem.id"
-            @click="activeItem = subItem.id"
-          >
-            {{ subItem.label }}
-          </NavItem>
+          <NavTitle
+            v-model="collapsedGroups[item.title]"
+            :title="item.title"
+            :collapsible="item.collapsible"
+          />
+          <template v-if="!item.collapsible || !collapsedGroups[item.title]">
+            <NavItem
+              v-for="subItem in item.items"
+              :key="subItem.id"
+              :icon="subItem.icon"
+              :active="activeItem === subItem.id"
+              @click="activeItem = subItem.id"
+            >
+              {{ subItem.label }}
+            </NavItem>
+          </template>
         </div>
         <div v-else class="flex flex-col gap-2">
           <NavItem
+            :icon="item.icon"
             :active="activeItem === item.id"
             @click="activeItem = item.id"
           >
@@ -34,11 +44,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { NavGroupData, NavItemData } from '@/types/navTypes'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
 import PanelHeader from './PanelHeader.vue'
 
@@ -50,6 +60,9 @@ const { navItems = [], modelValue } = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string | null]
 }>()
+
+// Track collapsed state for each group
+const collapsedGroups = ref<Record<string, boolean>>({})
 
 const getFirstItemId = () => {
   if (!navItems || navItems.length === 0) {

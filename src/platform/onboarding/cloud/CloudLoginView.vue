@@ -110,7 +110,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
-import { type SignInData } from '@/schemas/signInSchema'
+import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 

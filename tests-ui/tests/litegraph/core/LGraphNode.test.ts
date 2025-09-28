@@ -621,39 +621,10 @@ describe('LGraphNode', () => {
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
       delete (node.constructor as any).slot_start_y
     })
-  })
-
-  describe('getInputPos', () => {
-    test('should call getInputSlotPos with the correct input slot from inputs array', () => {
-      const input0: INodeInputSlot = {
-        name: 'in0',
-        type: 'string',
-        link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
-      }
-      const input1: INodeInputSlot = {
-        name: 'in1',
-        type: 'number',
-        link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0]),
-        pos: [5, 45]
-      }
-      node.inputs = [input0, input1]
-      const spy = vi.spyOn(node, 'getInputSlotPos')
-      node.getInputPos(1)
-      expect(spy).toHaveBeenCalledWith(input1)
-      const expectedPos: Point = [100 + 5, 200 + 45]
-      expect(node.getInputPos(1)).toEqual(expectedPos)
-      spy.mockClear()
-      node.getInputPos(0)
-      expect(spy).toHaveBeenCalledWith(input0)
-      const slotIndex = 0
-      const nodeOffsetY = (node.constructor as any).slot_start_y || 0
-      const expectedDefaultY =
-        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
-      const expectedDefaultX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      expect(node.getInputPos(0)).toEqual([expectedDefaultX, expectedDefaultY])
-      spy.mockRestore()
+    test('should not overwrite onMouseDown prototype', () => {
+      expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
+        false
+      )
     })
   })
 })

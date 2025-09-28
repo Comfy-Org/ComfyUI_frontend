@@ -44,7 +44,7 @@ import { ToOutputRenderLink } from './ToOutputRenderLink'
  * References are only held atomically within a function, never passed.
  * The concrete implementation may be replaced or proxied without side-effects.
  */
-export interface LinkConnectorState {
+interface LinkConnectorState {
   /**
    * The type of slot that links are being connected **to**.
    * - When `undefined`, no operation is being performed.
@@ -68,7 +68,7 @@ type RenderLinkUnion =
   | ToInputFromIoNodeLink
   | ToOutputFromIoNodeLink
 
-export interface LinkConnectorExport {
+interface LinkConnectorExport {
   renderLinks: RenderLink[]
   inputLinks: LLink[]
   outputLinks: LLink[]

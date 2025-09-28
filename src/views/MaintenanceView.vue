@@ -3,7 +3,7 @@
     <div
       class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme overflow-y-auto"
     >
-      <div class="max-w-screen-sm w-screen m-8 relative">
+      <div class="max-w-(--breakpoint-sm) w-screen m-8 relative">
         <!-- Header -->
         <h1 class="backspan pi-wrench text-4xl font-bold">
           {{ t('maintenance.title') }}
@@ -100,7 +100,7 @@ import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
 import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
-import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
+import type { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
@@ -178,6 +178,8 @@ onUnmounted(() => electron.Validation.dispose())
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 :deep(.p-tag) {
   --p-tag-gap: 0.375rem;
 }

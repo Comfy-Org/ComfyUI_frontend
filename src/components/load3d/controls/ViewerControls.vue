@@ -1,5 +1,5 @@
 <template>
-  <div class="relative bg-gray-700 bg-opacity-30 rounded-lg">
+  <div class="relative bg-gray-700/30 rounded-lg">
     <div class="flex flex-col gap-2">
       <Button class="p-button-rounded p-button-text" @click="openIn3DViewer">
         <i
@@ -20,7 +20,7 @@ import Button from 'primevue/button'
 
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { t } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 

@@ -1,18 +1,15 @@
 <template>
   <div
-    class="absolute top-12 left-2 flex flex-col pointer-events-auto z-20 bg-gray-700 bg-opacity-30 rounded-lg"
+    class="absolute top-12 left-2 flex flex-col pointer-events-auto z-20 bg-gray-700/30 rounded-lg"
   >
     <div class="relative show-menu">
-      <Button
-        class="p-button-rounded p-button-text bg-opacity-30"
-        @click="toggleMenu"
-      >
+      <Button class="p-button-rounded p-button-text" @click="toggleMenu">
         <i class="pi pi-bars text-white text-lg" />
       </Button>
 
       <div
         v-show="isMenuOpen"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -29,7 +26,7 @@
       </div>
     </div>
 
-    <div v-show="activeCategory" class="bg-gray-700 bg-opacity-30 rounded-lg">
+    <div v-show="activeCategory" class="bg-gray-700/30 rounded-lg">
       <SceneControls
         v-if="activeCategory === 'scene'"
         ref="sceneControlsRef"
@@ -102,7 +99,7 @@ import ExportControls from '@/components/load3d/controls/ExportControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
-import {
+import type {
   CameraType,
   MaterialMode,
   UpDirection

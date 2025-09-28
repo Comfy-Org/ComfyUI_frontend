@@ -11,12 +11,19 @@ jobs:
     if: github.event.label.name == 'New Browser Test Expectations'
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
+        restore-keys: |
+          playwright-browsers-${{ runner.os }}-
     - name: Install Playwright Browsers
-      run: npx playwright install chromium --with-deps
+      run: pnpm exec playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests and update snapshots
       id: playwright-tests
-      run: npx playwright test --update-snapshots
+      run: pnpm exec playwright test --update-snapshots
       continue-on-error: true
       working-directory: ComfyUI_frontend
     - uses: actions/upload-artifact@v4

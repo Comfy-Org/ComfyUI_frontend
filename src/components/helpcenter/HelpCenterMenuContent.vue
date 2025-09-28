@@ -14,7 +14,17 @@
         @mouseenter="onMenuItemHover(menuItem.key, $event)"
         @mouseleave="onMenuItemLeave(menuItem.key)"
       >
-        <i :class="menuItem.icon" class="help-menu-icon" />
+        <div class="help-menu-icon-container">
+          <div class="help-menu-icon">
+            <component
+              :is="menuItem.icon"
+              v-if="typeof menuItem.icon === 'object'"
+              :size="16"
+            />
+            <i v-else :class="menuItem.icon" />
+          </div>
+          <div v-if="menuItem.showRedDot" class="menu-red-dot" />
+        </div>
         <span class="menu-label">{{ menuItem.label }}</span>
         <i v-if="menuItem.key === 'more'" class="pi pi-chevron-right" />
       </button>
@@ -120,25 +130,37 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { type CSSProperties, computed, nextTick, onMounted, ref } from 'vue'
+import {
+  type CSSProperties,
+  type Component,
+  computed,
+  nextTick,
+  onMounted,
+  ref
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { type ReleaseNote } from '@/services/releaseService'
+import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Types
 interface MenuItem {
   key: string
-  icon?: string
+  icon?: string | Component
   label?: string
   action?: () => void
   visible?: boolean
   type?: 'item' | 'divider'
   items?: MenuItem[]
+  showRedDot?: boolean
 }
 
 // Constants
@@ -146,7 +168,8 @@ const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
+  DESKTOP_GUIDE_WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
+  DESKTOP_GUIDE_MACOS: 'https://docs.comfy.org/installation/desktop/macos',
   UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
@@ -188,6 +211,10 @@ const showVersionUpdates = computed(() =>
   settingStore.get('Comfy.Notification.ShowVersionUpdates')
 )
 
+// Use conflict acknowledgment state from composable
+const { shouldShowRedDot: shouldShowManagerRedDot } =
+  useConflictAcknowledgment()
+
 const moreItems = computed<MenuItem[]>(() => {
   const allMoreItems: MenuItem[] = [
     {
@@ -196,7 +223,11 @@ const moreItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.desktopUserGuide'),
       visible: isElectron(),
       action: () => {
-        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+        const docsUrl =
+          electronAPI().getPlatform() === 'darwin'
+            ? EXTERNAL_LINKS.DESKTOP_GUIDE_MACOS
+            : EXTERNAL_LINKS.DESKTOP_GUIDE_WINDOWS
+        openExternalLink(docsUrl)
         emit('close')
       }
     },
@@ -277,7 +308,21 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-question-circle',
       label: t('helpCenter.helpFeedback'),
       action: () => {
-        void commandStore.execute('Comfy.Feedback')
+        void commandStore.execute('Comfy.ContactSupport')
+        emit('close')
+      }
+    },
+    {
+      key: 'manager',
+      type: 'item',
+      icon: PuzzleIcon,
+      label: t('helpCenter.managerExtension'),
+      showRedDot: shouldShowManagerRedDot.value,
+      action: async () => {
+        await useManagerState().openManager({
+          initialTab: ManagerTab.All,
+          showToastOnLegacyError: false
+        })
         emit('close')
       }
     },
@@ -516,6 +561,13 @@ onMounted(async () => {
   box-shadow: none;
 }
 
+.help-menu-icon-container {
+  position: relative;
+  margin-right: 0.75rem;
+  width: 16px;
+  flex-shrink: 0;
+}
+
 .help-menu-icon {
   margin-right: 0.75rem;
   font-size: 1rem;
@@ -523,7 +575,24 @@ onMounted(async () => {
   width: 16px;
   display: flex;
   justify-content: center;
+  align-items: center;
   flex-shrink: 0;
+}
+
+.help-menu-icon svg {
+  color: var(--p-text-muted-color);
+}
+
+.menu-red-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ff3b30;
+  border-radius: 50%;
+  border: 1.5px solid var(--p-content-background);
+  z-index: 1;
 }
 
 .menu-label {

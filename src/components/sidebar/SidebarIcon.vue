@@ -94,6 +94,8 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 </style>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .side-bar-button {
   width: var(--sidebar-width);
   height: calc(var(--sidebar-width) + 0.5rem);

@@ -26,8 +26,8 @@
             "
             text
             rounded
-            class="!p-1 !h-4 !w-4 text-gray-400 hover:text-gray-600 dark-theme:hover:text-gray-200 transition"
-            pt:icon:class="!text-xs"
+            class="p-1! h-4! w-4! text-gray-400 hover:text-gray-600 hover:dark-theme:text-gray-200 transition"
+            pt:icon:class="text-xs!"
             :icon="editIndex === i ? 'pi pi-times' : 'pi pi-pencil'"
             :aria-label="
               editIndex === i ? $t('chatHistory.cancelEdit') : $t('g.edit')
@@ -56,10 +56,10 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import CopyButton from '@/components/graph/widgets/chatHistory/CopyButton.vue'
 import ResponseBlurb from '@/components/graph/widgets/chatHistory/ResponseBlurb.vue'
-import { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/scripts/domWidget'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
-const { widget, history = '[]' } = defineProps<{
+const { widget, history } = defineProps<{
   widget?: ComponentWidget<string>
   history: string
 }>()

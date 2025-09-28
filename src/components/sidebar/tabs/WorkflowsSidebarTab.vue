@@ -1,7 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
-    class="workflows-sidebar-tab bg-[var(--p-tree-background)]"
+    class="workflows-sidebar-tab bg-(--p-tree-background)"
   >
     <template #tool-buttons>
       <Button
@@ -14,7 +14,7 @@
     </template>
     <template #header>
       <SearchBox
-        v-model:modelValue="searchQuery"
+        v-model:model-value="searchQuery"
         class="workflows-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchWorkflows') + '...'"
         @search="handleSearch"
@@ -32,7 +32,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expandedKeys="dummyExpandedKeys"
+            v-model:expanded-keys="dummyExpandedKeys"
             :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
             :selection-keys="selectionKeys"
           >
@@ -74,7 +74,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expandedKeys="dummyExpandedKeys"
+            v-model:expanded-keys="dummyExpandedKeys"
             :root="
               renderTreeNode(
                 bookmarkedWorkflowsTree,
@@ -96,7 +96,7 @@
           />
           <TreeExplorer
             v-if="workflowStore.persistedWorkflows.length > 0"
-            v-model:expandedKeys="expandedKeys"
+            v-model:expanded-keys="expandedKeys"
             :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
             :selection-keys="selectionKeys"
           >
@@ -114,7 +114,7 @@
       </div>
       <div v-else class="comfyui-workflows-search-panel">
         <TreeExplorer
-          v-model:expandedKeys="expandedKeys"
+          v-model:expanded-keys="expandedKeys"
           :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
         >
           <template #node="{ node }">
@@ -141,16 +141,16 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
-import { useWorkflowService } from '@/services/workflowService'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
-} from '@/stores/workflowStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 

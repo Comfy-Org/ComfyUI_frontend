@@ -1,7 +1,8 @@
-import { FuseSearchOptions } from 'fuse.js'
+import type { FuseSearchOptions } from 'fuse.js'
 
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { FuseFilter, FuseFilterWithValue, FuseSearch } from '@/utils/fuseUtil'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { FuseFilter, FuseSearch } from '@/utils/fuseUtil'
 
 export class NodeSearchService {
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
@@ -34,7 +35,7 @@ export class NodeSearchService {
       name: 'Input Type',
       invokeSequence: 'i',
       getItemOptions: (node) =>
-        Object.values(node.inputs).map((input) => input.type),
+        Object.values(node.inputs ?? []).map((input) => input.type),
       fuseOptions
     })
 

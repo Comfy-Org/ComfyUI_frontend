@@ -1,3 +1,4 @@
+import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
 import _ from 'es-toolkit/compat'
 
@@ -9,6 +10,7 @@ import { ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 import { getStorageValue, setStorageValue } from '../../scripts/utils'
 import { hexToRgb } from '../../utils/colorUtil'
+import { parseToRgb } from '../../utils/colorUtil'
 import { ClipspaceDialog } from './clipspace'
 import {
   imageLayerFilenamesByTimestamp,
@@ -383,7 +385,7 @@ var styles = `
     height: var(--mask-editor-top-bar-height);
     align-items: center;
     background: var(--comfy-menu-bg);
-    flex-shrink: 0;
+    shrink: 0;
   }
   #maskEditor_topBarTitle {
     margin: 0;
@@ -811,7 +813,7 @@ interface Offset {
   y: number
 }
 
-export interface Brush {
+interface Brush {
   type: BrushShape
   size: number
   opacity: number
@@ -2049,8 +2051,15 @@ class BrushTool {
   rgbCtx: CanvasRenderingContext2D | null = null
   initialDraw: boolean = true
 
+  private static brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
+    maxSize: 8 // Reasonable limit for brush texture variations?
+  })
+
   brushStrokeCanvas: HTMLCanvasElement | null = null
   brushStrokeCtx: CanvasRenderingContext2D | null = null
+
+  private static readonly SMOOTHING_MAX_STEPS = 30
+  private static readonly SMOOTHING_MIN_STEPS = 2
 
   //brush adjustment
   isBrushAdjusting: boolean = false
@@ -2254,6 +2263,10 @@ class BrushTool {
     }
   }
 
+  private clampSmoothingPrecision(value: number): number {
+    return Math.min(Math.max(value, 1), 100)
+  }
+
   private drawWithBetterSmoothing(point: Point) {
     // Add current point to the smoothing array
     if (!this.smoothingCordsArray) {
@@ -2285,9 +2298,21 @@ class BrushTool {
       totalLength += Math.sqrt(dx * dx + dy * dy)
     }
 
-    const distanceBetweenPoints =
-      (this.brushSettings.size / this.brushSettings.smoothingPrecision) * 6
-    const stepNr = Math.ceil(totalLength / distanceBetweenPoints)
+    const maxSteps = BrushTool.SMOOTHING_MAX_STEPS
+    const minSteps = BrushTool.SMOOTHING_MIN_STEPS
+
+    const smoothing = this.clampSmoothingPrecision(
+      this.brushSettings.smoothingPrecision
+    )
+    const normalizedSmoothing = (smoothing - 1) / 99 // Convert to 0-1 range
+
+    // Optionality to use exponential curve
+    const stepNr = Math.round(
+      Math.round(minSteps + (maxSteps - minSteps) * normalizedSmoothing)
+    )
+
+    // Calculate step distance capped by brush size
+    const distanceBetweenPoints = totalLength / stepNr
 
     let interpolatedPoints = points
 
@@ -2435,101 +2460,205 @@ class BrushTool {
     const hardness = brushSettings.hardness
     const x = point.x
     const y = point.y
-    // Extend the gradient radius beyond the brush size
-    const extendedSize = size * (2 - hardness)
 
+    const brushRadius = size
     const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
     const currentTool = await this.messageBroker.pull('currentTool')
 
-    // handle paint pen
+    // Helper function to get or create cached brush texture
+    const getCachedBrushTexture = (
+      radius: number,
+      hardness: number,
+      color: string,
+      opacity: number
+    ): HTMLCanvasElement => {
+      const cacheKey = `${radius}_${hardness}_${color}_${opacity}`
+
+      if (BrushTool.brushTextureCache.has(cacheKey)) {
+        return BrushTool.brushTextureCache.get(cacheKey)!
+      }
+
+      const tempCanvas = document.createElement('canvas')
+      const tempCtx = tempCanvas.getContext('2d')!
+      const size = radius * 2
+      tempCanvas.width = size
+      tempCanvas.height = size
+
+      const centerX = size / 2
+      const centerY = size / 2
+      const hardRadius = radius * hardness
+
+      const imageData = tempCtx.createImageData(size, size)
+      const data = imageData.data
+      const { r, g, b } = parseToRgb(color)
+
+      // Pre-calculate values to avoid repeated computations
+      const fadeRange = radius - hardRadius
+
+      for (let y = 0; y < size; y++) {
+        const dy = y - centerY
+        for (let x = 0; x < size; x++) {
+          const dx = x - centerX
+          const index = (y * size + x) * 4
+
+          // Calculate square distance (Chebyshev distance)
+          const distFromEdge = Math.max(Math.abs(dx), Math.abs(dy))
+
+          let pixelOpacity = 0
+          if (distFromEdge <= hardRadius) {
+            pixelOpacity = opacity
+          } else if (distFromEdge <= radius) {
+            const fadeProgress = (distFromEdge - hardRadius) / fadeRange
+            pixelOpacity = opacity * (1 - fadeProgress)
+          }
+
+          data[index] = r
+          data[index + 1] = g
+          data[index + 2] = b
+          data[index + 3] = pixelOpacity * 255
+        }
+      }
+
+      tempCtx.putImageData(imageData, 0, 0)
+
+      // Cache the texture
+      BrushTool.brushTextureCache.set(cacheKey, tempCanvas)
+
+      return tempCanvas
+    }
+
+    // RGB brush logic
     if (
       this.activeLayer === 'rgb' &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
       const rgbaColor = this.formatRgba(this.rgbColor, opacity)
-      let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
-      if (hardness === 1) {
-        gradient.addColorStop(0, rgbaColor)
-        gradient.addColorStop(
-          1,
-          this.formatRgba(this.rgbColor, brushSettingsSliderOpacity)
+
+      if (brushType === BrushShape.Rect && hardness < 1) {
+        const brushTexture = getCachedBrushTexture(
+          brushRadius,
+          hardness,
+          rgbaColor,
+          opacity
         )
-      } else {
-        gradient.addColorStop(0, rgbaColor)
-        gradient.addColorStop(hardness, rgbaColor)
-        gradient.addColorStop(1, this.formatRgba(this.rgbColor, 0))
+        rgbCtx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
+        return
       }
+
+      // For max hardness, use solid fill to avoid anti-aliasing
+      if (hardness === 1) {
+        rgbCtx.fillStyle = rgbaColor
+        rgbCtx.beginPath()
+        if (brushType === BrushShape.Rect) {
+          rgbCtx.rect(
+            x - brushRadius,
+            y - brushRadius,
+            brushRadius * 2,
+            brushRadius * 2
+          )
+        } else {
+          rgbCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
+        }
+        rgbCtx.fill()
+        return
+      }
+
+      // For soft brushes, use gradient
+      let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
+      gradient.addColorStop(0, rgbaColor)
+      gradient.addColorStop(
+        hardness,
+        this.formatRgba(this.rgbColor, opacity * 0.5)
+      )
+      gradient.addColorStop(1, this.formatRgba(this.rgbColor, 0))
+
       rgbCtx.fillStyle = gradient
       rgbCtx.beginPath()
       if (brushType === BrushShape.Rect) {
         rgbCtx.rect(
-          x - extendedSize,
-          y - extendedSize,
-          extendedSize * 2,
-          extendedSize * 2
+          x - brushRadius,
+          y - brushRadius,
+          brushRadius * 2,
+          brushRadius * 2
         )
       } else {
-        rgbCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+        rgbCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
       }
       rgbCtx.fill()
       return
     }
 
-    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+    // Mask brush logic
+    if (brushType === BrushShape.Rect && hardness < 1) {
+      const baseColor = isErasing
+        ? `rgba(255, 255, 255, ${opacity})`
+        : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+
+      const brushTexture = getCachedBrushTexture(
+        brushRadius,
+        hardness,
+        baseColor,
+        opacity
+      )
+      maskCtx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
+      return
+    }
+
+    // For max hardness, use solid fill to avoid anti-aliasing
     if (hardness === 1) {
+      const solidColor = isErasing
+        ? `rgba(255, 255, 255, ${opacity})`
+        : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+
+      maskCtx.fillStyle = solidColor
+      maskCtx.beginPath()
+      if (brushType === BrushShape.Rect) {
+        maskCtx.rect(
+          x - brushRadius,
+          y - brushRadius,
+          brushRadius * 2,
+          brushRadius * 2
+        )
+      } else {
+        maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
+      }
+      maskCtx.fill()
+      return
+    }
+
+    // For soft brushes, use gradient
+    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
+
+    if (isErasing) {
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
+      gradient.addColorStop(hardness, `rgba(255, 255, 255, ${opacity * 0.5})`)
+      gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
+    } else {
       gradient.addColorStop(
         0,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+      )
+      gradient.addColorStop(
+        hardness,
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity * 0.5})`
       )
       gradient.addColorStop(
         1,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
       )
-    } else {
-      let softness = 1 - hardness
-      let innerStop = Math.max(0, hardness - softness)
-      let outerStop = size / extendedSize
-
-      if (isErasing) {
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
-        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
-      } else {
-        gradient.addColorStop(
-          0,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          innerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          outerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`
-        )
-        gradient.addColorStop(
-          1,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
-        )
-      }
     }
 
     maskCtx.fillStyle = gradient
     maskCtx.beginPath()
     if (brushType === BrushShape.Rect) {
       maskCtx.rect(
-        x - extendedSize,
-        y - extendedSize,
-        extendedSize * 2,
-        extendedSize * 2
+        x - brushRadius,
+        y - brushRadius,
+        brushRadius * 2,
+        brushRadius * 2
       )
     } else {
-      maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+      maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
     }
     maskCtx.fill()
   }
@@ -3772,6 +3901,19 @@ class UIManager {
         this.paintBucketSettingsHTML.style.display = 'none'
       }
     }
+    if (tool === Tools.MaskColorFill) {
+      this.brushSettingsHTML.style.display = 'none'
+      this.colorSelectSettingsHTML.style.display = 'flex'
+      this.paintBucketSettingsHTML.style.display = 'none'
+    } else if (tool === Tools.MaskBucket) {
+      this.brushSettingsHTML.style.display = 'none'
+      this.colorSelectSettingsHTML.style.display = 'none'
+      this.paintBucketSettingsHTML.style.display = 'flex'
+    } else {
+      this.brushSettingsHTML.style.display = 'flex'
+      this.colorSelectSettingsHTML.style.display = 'none'
+      this.paintBucketSettingsHTML.style.display = 'none'
+    }
     this.messageBroker.publish('setTool', tool)
     this.onToolChange()
     const newActiveLayer = this.toolSettings[tool].newActiveLayerOnSet
@@ -4185,30 +4327,35 @@ class UIManager {
     const centerY = cursorPoint.y + pan_offset.y
     const brush = this.brush
     const hardness = brushSettings.hardness
-    const extendedSize = brushSettings.size * (2 - hardness) * 2 * zoom_ratio
+
+    // Now that brush size is constant, preview is simple
+    const brushRadius = brushSettings.size * zoom_ratio
+    const previewSize = brushRadius * 2
 
     this.brushSizeSlider.value = String(brushSettings.size)
     this.brushHardnessSlider.value = String(hardness)
 
-    brush.style.width = extendedSize + 'px'
-    brush.style.height = extendedSize + 'px'
-    brush.style.left = centerX - extendedSize / 2 + 'px'
-    brush.style.top = centerY - extendedSize / 2 + 'px'
+    brush.style.width = previewSize + 'px'
+    brush.style.height = previewSize + 'px'
+    brush.style.left = centerX - brushRadius + 'px'
+    brush.style.top = centerY - brushRadius + 'px'
 
     if (hardness === 1) {
       this.brushPreviewGradient.style.background = 'rgba(255, 0, 0, 0.5)'
       return
     }
 
-    const opacityStop = hardness / 4 + 0.25
+    // Simplified gradient - hardness controls where the fade starts
+    const midStop = hardness * 100
+    const outerStop = 100
 
     this.brushPreviewGradient.style.background = `
-        radial-gradient(
-            circle,
-            rgba(255, 0, 0, 0.5) 0%,
-            rgba(255, 0, 0, ${opacityStop}) ${hardness * 100}%,
-            rgba(255, 0, 0, 0) 100%
-        )
+      radial-gradient(
+        circle,
+        rgba(255, 0, 0, 0.5) 0%,
+        rgba(255, 0, 0, 0.25) ${midStop}%,
+        rgba(255, 0, 0, 0) ${outerStop}%
+      )
     `
   }
 

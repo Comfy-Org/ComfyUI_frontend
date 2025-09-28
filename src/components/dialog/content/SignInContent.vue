@@ -152,7 +152,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
-import { SignInData, SignUpData } from '@/schemas/signInSchema'
+import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
 

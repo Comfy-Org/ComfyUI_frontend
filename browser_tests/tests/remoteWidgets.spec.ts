@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { ComfyPage, comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Remote COMBO Widget', () => {
   const mockOptions = ['d', 'c', 'b', 'a']
@@ -48,7 +49,8 @@ test.describe('Remote COMBO Widget', () => {
   const waitForWidgetUpdate = async (comfyPage: ComfyPage) => {
     // Force re-render to trigger first access of widget's options
     await comfyPage.page.mouse.click(400, 300)
-    await comfyPage.page.waitForTimeout(256)
+    // Wait for the widget to actually update instead of fixed timeout
+    await comfyPage.page.waitForTimeout(300)
   }
 
   test.beforeEach(async ({ comfyPage }) => {
@@ -189,7 +191,9 @@ test.describe('Remote COMBO Widget', () => {
       await comfyPage.page.keyboard.press('Control+A')
 
       await expect(
-        comfyPage.page.locator('.selection-toolbox .pi-refresh')
+        comfyPage.page.locator(
+          '.selection-toolbox button[data-testid="refresh-button"]'
+        )
       ).toBeVisible()
     })
 
@@ -210,9 +214,15 @@ test.describe('Remote COMBO Widget', () => {
       await waitForWidgetUpdate(comfyPage)
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
 
-      // Wait for the refresh (TTL) to expire
-      await comfyPage.page.waitForTimeout(512)
-      await comfyPage.page.mouse.click(100, 100)
+      // Wait for the refresh (TTL) to expire with extra buffer for processing
+      // TTL is 300ms, wait 600ms to ensure it has expired
+      await comfyPage.page.waitForTimeout(600)
+
+      // Click on the canvas to trigger widget refresh
+      await comfyPage.page.mouse.click(400, 300)
+
+      // Wait a bit for the refresh to complete
+      await comfyPage.page.waitForTimeout(100)
 
       const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
       expect(refreshedOptions).not.toEqual(initialOptions)

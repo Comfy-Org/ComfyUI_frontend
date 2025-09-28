@@ -1,37 +1,39 @@
 import { merge } from 'es-toolkit/compat'
-import { Component } from 'vue'
+import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
-import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
 import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsDialogContent.vue'
 import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
-import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
-import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
-import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
-import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
-import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
+import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import {
   type DialogComponentProps,
   type ShowDialogOptions,
   useDialogStore
 } from '@/stores/dialogStore'
+import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
+import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
+import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
+import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
+import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
+import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
+import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
+import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =
   | 'default'
   | 'overwrite'
+  | 'overwriteBlueprint'
   | 'delete'
   | 'dirtyClose'
   | 'reinstall'
@@ -107,33 +109,6 @@ export const useDialogService = () => {
     })
   }
 
-  function showTemplateWorkflowsDialog(
-    props: InstanceType<typeof TemplateWorkflowsContent>['$props'] = {}
-  ) {
-    dialogStore.showDialog({
-      key: 'global-template-workflows',
-      title: t('templateWorkflows.title'),
-      component: TemplateWorkflowsContent,
-      headerComponent: TemplateWorkflowsDialogHeader,
-      dialogComponentProps: {
-        pt: {
-          content: { class: '!px-0 overflow-y-hidden' }
-        }
-      },
-      props
-    })
-  }
-
-  function showIssueReportDialog(
-    props: InstanceType<typeof IssueReportDialogContent>['$props']
-  ) {
-    dialogStore.showDialog({
-      key: 'global-issue-report',
-      component: IssueReportDialogContent,
-      props
-    })
-  }
-
   function showManagerDialog(
     props: InstanceType<typeof ManagerDialogContent>['$props'] = {}
   ) {
@@ -150,38 +125,14 @@ export const useDialogService = () => {
                 'bg-gray-500 dark-theme:bg-neutral-700 w-9 h-9 p-1.5 rounded-full text-white'
             }
           },
-          header: { class: '!py-0 px-6 !m-0 h-[68px]' },
+          header: { class: 'py-0! px-6 m-0! h-[68px]' },
           content: {
-            class: '!p-0 h-full w-[90vw] max-w-full flex-1 overflow-hidden'
+            class: 'p-0! h-full w-[90vw] max-w-full flex-1 overflow-hidden'
           },
           root: { class: 'manager-dialog' }
         }
       },
       props
-    })
-  }
-
-  function showManagerProgressDialog(options?: {
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
-  }) {
-    return dialogStore.showDialog({
-      key: 'global-manager-progress-dialog',
-      component: ManagerProgressDialogContent,
-      headerComponent: ManagerProgressHeader,
-      footerComponent: ManagerProgressFooter,
-      props: options?.props,
-      priority: 2,
-      dialogComponentProps: {
-        closable: false,
-        modal: false,
-        position: 'bottom',
-        pt: {
-          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: '!p-0' },
-          header: { class: '!p-0 border-none' },
-          footer: { class: '!p-0 border-none' }
-        }
-      }
     })
   }
 
@@ -238,6 +189,30 @@ export const useDialogService = () => {
       key: 'global-error',
       component: ErrorDialogContent,
       props
+    })
+  }
+
+  function showManagerProgressDialog(options?: {
+    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
+  }) {
+    return dialogStore.showDialog({
+      key: 'global-manager-progress-dialog',
+      component: ManagerProgressDialogContent,
+      headerComponent: ManagerProgressHeader,
+      footerComponent: ManagerProgressFooter,
+      props: options?.props,
+      priority: 2,
+      dialogComponentProps: {
+        closable: false,
+        modal: false,
+        position: 'bottom',
+        pt: {
+          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
+          content: { class: 'p-0!' },
+          header: { class: 'p-0! border-none' },
+          footer: { class: 'p-0! border-none' }
+        }
+      }
     })
   }
 
@@ -372,7 +347,7 @@ export const useDialogService = () => {
       props: options,
       dialogComponentProps: {
         pt: {
-          header: { class: '!p-3' }
+          header: { class: 'p-3!' }
         }
       }
     })
@@ -446,10 +421,10 @@ export const useDialogService = () => {
           class: 'rounded-2xl overflow-hidden'
         },
         header: {
-          class: '!p-0 hidden'
+          class: 'p-0! hidden'
         },
         content: {
-          class: '!p-0 !m-0'
+          class: 'p-0! m-0!'
         }
       }
     }
@@ -463,26 +438,73 @@ export const useDialogService = () => {
     })
   }
 
+  function showNodeConflictDialog(
+    options: {
+      showAfterWhatsNew?: boolean
+      conflictedPackages?: ConflictDetectionResult[]
+      dialogComponentProps?: DialogComponentProps
+      buttonText?: string
+      onButtonClick?: () => void
+    } = {}
+  ) {
+    const {
+      dialogComponentProps,
+      buttonText,
+      onButtonClick,
+      showAfterWhatsNew,
+      conflictedPackages
+    } = options
+
+    return dialogStore.showDialog({
+      key: 'global-node-conflict',
+      headerComponent: NodeConflictHeader,
+      footerComponent: NodeConflictFooter,
+      component: NodeConflictDialogContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class:
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-gray-500 dark-theme:bg-neutral-700 text-white'
+            }
+          }
+        },
+        ...dialogComponentProps
+      },
+      props: {
+        showAfterWhatsNew,
+        conflictedPackages
+      },
+      footerProps: {
+        buttonText,
+        onButtonClick
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
     showSettingsDialog,
     showAboutDialog,
     showExecutionErrorDialog,
-    showTemplateWorkflowsDialog,
-    showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,
-    showErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
     prompt,
+    showErrorDialog,
     confirm,
     toggleManagerDialog,
     toggleManagerProgressDialog,
-    showLayoutDialog
+    showLayoutDialog,
+    showNodeConflictDialog
   }
 }

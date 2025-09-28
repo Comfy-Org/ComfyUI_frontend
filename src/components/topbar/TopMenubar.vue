@@ -2,7 +2,7 @@
   <div>
     <div
       v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
-      class="w-full flex content-end z-[1001] h-[38px]"
+      class="w-full flex content-end z-1001 h-[38px]"
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
@@ -14,19 +14,19 @@
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <CommandMenubar />
-      <div class="flex-grow min-w-0 app-drag h-full"></div>
+      <div class="grow min-w-0 app-drag h-full"></div>
       <div
         ref="menuRight"
         class="comfyui-menu-right flex-shrink-1 overflow-auto"
       />
       <Actionbar />
-      <CurrentUserButton class="flex-shrink-0" />
+      <CurrentUserButton class="shrink-0" />
     </div>
 
     <!-- Virtual top menu for native window (drag handle) -->
     <div
       v-show="isNativeWindow() && !showTopMenu"
-      class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)]"
+      class="fixed top-0 left-0 app-drag w-full h-(--comfy-topbar-height)"
     />
   </div>
 </template>
@@ -39,8 +39,8 @@ import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
 

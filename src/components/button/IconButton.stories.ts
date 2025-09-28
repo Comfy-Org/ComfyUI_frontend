@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { Bell, Download, Heart, Settings, Trophy, X } from 'lucide-vue-next'
 
 import IconButton from './IconButton.vue'
 
@@ -16,6 +15,14 @@ const meta: Meta<typeof IconButton> = {
       control: { type: 'select' },
       options: ['primary', 'secondary', 'transparent']
     },
+    border: {
+      control: 'boolean',
+      description: 'Toggle border attribute'
+    },
+    disabled: {
+      control: 'boolean',
+      description: 'Toggle disable status'
+    },
     onClick: { action: 'clicked' }
   }
 }
@@ -25,13 +32,13 @@ type Story = StoryObj<typeof meta>
 
 export const Primary: Story = {
   render: (args) => ({
-    components: { IconButton, Trophy },
+    components: { IconButton },
     setup() {
       return { args }
     },
     template: `
       <IconButton v-bind="args">
-        <Trophy :size="16" />
+        <i class="icon-[lucide--trophy] size-4" />
       </IconButton>
     `
   }),
@@ -43,13 +50,13 @@ export const Primary: Story = {
 
 export const Secondary: Story = {
   render: (args) => ({
-    components: { IconButton, Settings },
+    components: { IconButton },
     setup() {
       return { args }
     },
     template: `
       <IconButton v-bind="args">
-        <Settings :size="16" />
+        <i class="icon-[lucide--settings] size-4" />
       </IconButton>
     `
   }),
@@ -61,13 +68,13 @@ export const Secondary: Story = {
 
 export const Transparent: Story = {
   render: (args) => ({
-    components: { IconButton, X },
+    components: { IconButton },
     setup() {
       return { args }
     },
     template: `
       <IconButton v-bind="args">
-        <X :size="16" />
+        <i class="icon-[lucide--x] size-4" />
       </IconButton>
     `
   }),
@@ -79,13 +86,13 @@ export const Transparent: Story = {
 
 export const Small: Story = {
   render: (args) => ({
-    components: { IconButton, Bell },
+    components: { IconButton },
     setup() {
       return { args }
     },
     template: `
       <IconButton v-bind="args">
-        <Bell :size="12" />
+        <i class="icon-[lucide--bell] size-3" />
       </IconButton>
     `
   }),
@@ -97,42 +104,42 @@ export const Small: Story = {
 
 export const AllVariants: Story = {
   render: () => ({
-    components: { IconButton, Trophy, Settings, X, Bell, Heart, Download },
+    components: { IconButton },
     template: `
       <div class="flex flex-col gap-4">
         <div class="flex gap-2 items-center">
           <IconButton type="primary" size="sm" @click="() => {}">
-            <Trophy :size="12" />
+            <i class="icon-[lucide--trophy] size-3" />
           </IconButton>
           <IconButton type="primary" size="md" @click="() => {}">
-            <Trophy :size="16" />
+            <i class="icon-[lucide--trophy] size-4" />
           </IconButton>
         </div>
         <div class="flex gap-2 items-center">
           <IconButton type="secondary" size="sm" @click="() => {}">
-            <Settings :size="12" />
+            <i class="icon-[lucide--settings] size-3" />
           </IconButton>
           <IconButton type="secondary" size="md" @click="() => {}">
-            <Settings :size="16" />
+            <i class="icon-[lucide--settings] size-4" />
           </IconButton>
         </div>
         <div class="flex gap-2 items-center">
           <IconButton type="transparent" size="sm" @click="() => {}">
-            <X :size="12" />
+            <i class="icon-[lucide--x] size-3" />
           </IconButton>
           <IconButton type="transparent" size="md" @click="() => {}">
-            <X :size="16" />
+            <i class="icon-[lucide--x] size-4" />
           </IconButton>
         </div>
         <div class="flex gap-2 items-center">
           <IconButton type="primary" size="md" @click="() => {}">
-            <Bell :size="16" />
+            <i class="icon-[lucide--bell] size-4" />
           </IconButton>
           <IconButton type="secondary" size="md" @click="() => {}">
-            <Heart :size="16" />
+            <i class="icon-[lucide--heart] size-4" />
           </IconButton>
           <IconButton type="transparent" size="md" @click="() => {}">
-            <Download :size="16" />
+            <i class="icon-[lucide--download] size-4" />
           </IconButton>
         </div>
       </div>

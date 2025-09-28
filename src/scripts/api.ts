@@ -1,7 +1,19 @@
 import axios from 'axios'
 import { debounce } from 'es-toolkit/compat'
+import { get } from 'es-toolkit/compat'
 
-import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
+import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import type {
+  ModelFile,
+  ModelFolderInfo
+} from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   DisplayComponentWsMessage,
   EmbeddingsResponse,
@@ -33,16 +45,9 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useToastStore } from '@/stores/toastStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -788,11 +793,28 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets the index of core workflow templates.
+   * @param locale Optional locale code (e.g., 'en', 'fr', 'zh') to load localized templates
    */
-  async getCoreWorkflowTemplates(): Promise<WorkflowTemplates[]> {
-    const res = await axios.get(this.fileURL('/templates/index.json'))
-    const contentType = res.headers['content-type']
-    return contentType?.includes('application/json') ? res.data : []
+  async getCoreWorkflowTemplates(
+    locale?: string
+  ): Promise<WorkflowTemplates[]> {
+    const fileName =
+      locale && locale !== 'en' ? `index.${locale}.json` : 'index.json'
+    try {
+      const res = await axios.get(this.fileURL(`/templates/${fileName}`))
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : []
+    } catch (error) {
+      // Fallback to default English version if localized version doesn't exist
+      if (locale && locale !== 'en') {
+        console.warn(
+          `Localized templates for '${locale}' not found, falling back to English`
+        )
+        return this.getCoreWorkflowTemplates()
+      }
+      console.error('Error loading core workflow templates:', error)
+      return []
+    }
   }
 
   /**
@@ -864,14 +886,14 @@ export class ComfyApi extends EventTarget {
    * Gets a list of model folder keys (eg ['checkpoints', 'loras', ...])
    * @returns The list of model folder keys
    */
-  async getModelFolders(): Promise<{ name: string; folders: string[] }[]> {
+  async getModelFolders(): Promise<ModelFolderInfo[]> {
     const res = await this.fetchApi(`/experiment/models`)
     if (res.status === 404) {
       return []
     }
     const folderBlacklist = ['configs', 'custom_nodes']
     return (await res.json()).filter(
-      (folder: string) => !folderBlacklist.includes(folder)
+      (folder: ModelFolderInfo) => !folderBlacklist.includes(folder.name)
     )
   }
 
@@ -880,9 +902,7 @@ export class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(
-    folder: string
-  ): Promise<{ name: string; pathIndex: number }[]> {
+  async getModels(folder: string): Promise<ModelFile[]> {
     const res = await this.fetchApi(`/experiment/models/${folder}`)
     if (res.status === 404) {
       return []
@@ -1263,7 +1283,63 @@ export class ComfyApi extends EventTarget {
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
-    return (await axios.get(this.internalURL('/folder_paths'))).data
+    const response = await axios
+      .get(this.internalURL('/folder_paths'))
+      .catch(() => null)
+    if (!response) {
+      return {} // Fallback: no filesystem paths known when API unavailable
+    }
+    return response.data
+  }
+
+  /* Frees memory by unloading models and optionally freeing execution cache
+   * @param {Object} options - The options object
+   * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
+   */
+  async freeMemory(options: { freeExecutionCache: boolean }) {
+    try {
+      let mode = ''
+      if (options.freeExecutionCache) {
+        mode = '{"unload_models": true, "free_memory": true}'
+      } else {
+        mode = '{"unload_models": true}'
+      }
+
+      const res = await this.fetchApi(`/free`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: mode
+      })
+
+      if (res.status === 200) {
+        if (options.freeExecutionCache) {
+          useToastStore().add({
+            severity: 'success',
+            summary: 'Models and Execution Cache have been cleared.',
+            life: 3000
+          })
+        } else {
+          useToastStore().add({
+            severity: 'success',
+            summary: 'Models have been unloaded.',
+            life: 3000
+          })
+        }
+      } else {
+        useToastStore().add({
+          severity: 'error',
+          summary:
+            'Unloading of models failed. Installed ComfyUI may be an outdated version.',
+          life: 5000
+        })
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: 'An error occurred while trying to unload models.',
+        life: 5000
+      })
+    }
   }
 
   /**
@@ -1277,21 +1353,21 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Checks if the server supports a specific feature.
-   * @param featureName The name of the feature to check
+   * @param featureName The name of the feature to check (supports dot notation for nested values)
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
-    return this.serverFeatureFlags[featureName] === true
+    return get(this.serverFeatureFlags, featureName) === true
   }
 
   /**
    * Gets a server feature flag value.
-   * @param featureName The name of the feature to get
+   * @param featureName The name of the feature to get (supports dot notation for nested values)
    * @param defaultValue The default value if the feature is not found
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
+    return get(this.serverFeatureFlags, featureName, defaultValue) as T
   }
 
   /**

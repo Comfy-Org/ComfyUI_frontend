@@ -10,13 +10,13 @@ import type {
   IBaseWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import { fileNameMappingService } from '@/services/fileNameMappingService'
-import { useToastStore } from '@/stores/toastStore'
-import { NodeLocatorId } from '@/types'
+import { type NodeLocatorId } from '@/types'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'

@@ -21,10 +21,11 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { CSSProperties, computed, watchEffect } from 'vue'
+import type { CSSProperties } from 'vue'
+import { computed, watchEffect } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 
@@ -56,7 +57,9 @@ const positionCSS = computed<CSSProperties>(() =>
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 .comfy-menu-hamburger {
-  @apply fixed z-[9999] flex flex-row;
+  @apply fixed z-9999 flex flex-row;
 }
 </style>

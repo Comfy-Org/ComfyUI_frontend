@@ -6,9 +6,21 @@
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
     "download": "Download",
+    "downloadImage": "Download image",
+    "editOrMaskImage": "Edit or mask image",
+    "removeImage": "Remove image",
+    "viewImageOfTotal": "View image {index} of {total}",
+    "imagePreview": "Image preview - Use arrow keys to navigate between images",
+    "galleryImage": "Gallery image",
+    "galleryThumbnail": "Gallery thumbnail",
+    "errorLoadingImage": "Error loading image",
+    "failedToDownloadImage": "Failed to download image",
+    "calculatingDimensions": "Calculating dimensions",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
+    "logoAlt": "ComfyUI Logo",
     "refresh": "Refresh",
+    "refreshNode": "Refresh Node",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -30,7 +42,9 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
-    "help": "Help",
+    "info": "Node Info",
+    "bookmark": "Save to Library",
+    "moreOptions": "More Options",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -56,6 +70,7 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "dropYourFileOr": "Drop your file or",
     "back": "Back",
     "next": "Next",
     "install": "Install",
@@ -109,6 +124,7 @@
     "resultsCount": "Found {count} Results",
     "status": "Status",
     "description": "Description",
+    "warning": "Warning",
     "name": "Name",
     "category": "Category",
     "sort": "Sort",
@@ -122,9 +138,9 @@
     "inProgress": "In progress",
     "completed": "Completed",
     "interrupted": "Interrupted",
-    "enabling": "Enabling",
-    "disabling": "Disabling",
-    "updating": "Updating",
+    "enabling": "Enabling {id}",
+    "disabling": "Disabling {id}",
+    "updating": "Updating {id}",
     "migrate": "Migrate",
     "updateAvailable": "Update Available",
     "login": "Login",
@@ -145,19 +161,35 @@
     "releaseTitle": "{package} {version} Release",
     "itemSelected": "{selectedCount} item selected",
     "itemsSelected": "{selectedCount} items selected",
+    "multiSelectDropdown": "Multi-select dropdown",
+    "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
+    "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "micPermissionDenied": "Microphone permission denied",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
-    "moreWorkflows": "More workflows"
+    "moreWorkflows": "More workflows",
+    "seeTutorial": "See a tutorial",
+    "nodeRenderError": "Node Render Error",
+    "nodeContentError": "Node Content Error",
+    "nodeHeaderError": "Node Header Error",
+    "nodeSlotsError": "Node Slots Error",
+    "nodeWidgetsError": "Node Widgets Error",
+    "frameNodes": "Frame Nodes"
   },
   "manager": {
     "title": "Custom Nodes Manager",
-    "failed": "Failed ({count})",
+    "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "legacyManagerUI": "Use Legacy UI",
+    "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
+    "failed": "Failed",
+    "failedToInstall": "Failed to Install",
+    "installError": "Install Error",
+    "importFailedGenericError": "Package failed to import. Check the console for more details.",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
     "installationQueue": "Installation Queue",
@@ -165,16 +197,26 @@
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
     "infoPanelEmpty": "Click an item to see the info",
+    "applyChanges": "Apply Changes",
     "restartToApplyChanges": "To apply changes, please restart ComfyUI",
+    "clickToFinishSetup": "Click",
+    "toFinishSetup": "to finish setup",
+    "restartingBackend": "Restarting backend to apply changes...",
+    "extensionsSuccessfullyInstalled": "Extension(s) successfully installed and are ready to use!",
+    "installingDependencies": "Installing dependencies...",
     "loadingVersions": "Loading versions...",
     "selectVersion": "Select Version",
     "downloads": "Downloads",
     "repository": "Repository",
     "uninstall": "Uninstall",
-    "uninstalling": "Uninstalling",
+    "uninstalling": "Uninstalling {id}",
     "update": "Update",
     "uninstallSelected": "Uninstall Selected",
+    "updateSelected": "Update Selected",
+    "updateAll": "Update All",
     "updatingAllPacks": "Updating all packages",
+    "disabledNodesWontUpdate": "Disabled nodes will not be updated",
+    "enablePackToChangeVersion": "Enable this pack to change versions",
     "license": "License",
     "nightlyVersion": "Nightly",
     "latestVersion": "Latest",
@@ -185,6 +227,7 @@
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
     "tryAgainLater": "Please try again later.",
+    "gettingInfo": "Getting info...",
     "nodePack": "Node Pack",
     "searchPlaceholder": "Search",
     "version": "Version",
@@ -192,14 +235,19 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All Missing Nodes",
-    "packsSelected": "Packs Selected",
+    "allMissingNodesInstalled": "All missing nodes have been successfully installed",
+    "packsSelected": "packs selected",
+    "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
+    "notAvailable": "Not Available",
     "status": {
       "active": "Active",
       "pending": "Pending",
       "flagged": "Flagged",
       "deleted": "Deleted",
       "banned": "Banned",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "conflicting": "Conflicting",
+      "importFailed": "Install Error"
     },
     "sort": {
       "downloads": "Most Popular",
@@ -211,40 +259,38 @@
       "nodePack": "Node Pack",
       "enabled": "Enabled",
       "disabled": "Disabled"
+    },
+    "conflicts": {
+      "title": "Node Pack Issues Detected!",
+      "description": "We've detected conflicts between some of your extensions and the new version of ComfyUI. By updating you risk breaking workflows that rely on those extensions.",
+      "info": "If you continue with the update, the conflicting extensions will be disabled automatically. You can review and manage them anytime in the ComfyUI Manager.",
+      "extensionAtRisk": "Extension at Risk",
+      "conflicts": "Conflicts",
+      "importFailedExtensions": "Import Failed Extensions",
+      "conflictInfoTitle": "Why is this happening?",
+      "installAnyway": "Install Anyway",
+      "enableAnyway": "Enable Anyway",
+      "understood": "Understood",
+      "warningBanner": {
+        "title": "Some extensions are disabled due to incompatibility with your current setup",
+        "message": "These extensions require versions of system packages  that differ from your current setup. Installing them may override core dependencies and affect other extensions or workflows.",
+        "button": "Learn More..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "ComfyUI version mismatch (current: {current}, required: {required})",
+        "frontend_version": "Frontend version mismatch (current: {current}, required: {required})",
+        "os": "Operating system not supported (current: {current}, required: {required})",
+        "accelerator": "GPU/Accelerator not supported (available: {current}, required: {required})",
+        "generic": "Compatibility issue (current: {current}, required: {required})",
+        "banned": "This package is banned for security reasons",
+        "pending": "Security verification pending - compatibility cannot be verified",
+        "import_failed": "Import Failed"
+      },
+      "warningTooltip": "This package may have compatibility issues with your current environment"
     }
   },
   "issueReport": {
-    "submitErrorReport": "Submit Error Report (Optional)",
-    "provideEmail": "Give us your email (optional)",
-    "provideAdditionalDetails": "Provide additional details",
-    "stackTrace": "Stack Trace",
-    "systemStats": "System Stats",
-    "contactFollowUp": "Contact me for follow up",
-    "notifyResolve": "Notify me when resolved",
-    "helpFix": "Help Fix This",
-    "rating": "Rating",
-    "feedbackTitle": "Help us improve ComfyUI by providing feedback",
-    "contactSupportTitle": "Contact Support",
-    "contactSupportDescription": "Please fill in the form below with your report",
-    "selectIssue": "Select the issue",
-    "whatDoYouNeedHelpWith": "What do you need help with?",
-    "whatCanWeInclude": "Specify what to include in the report",
-    "describeTheProblem": "Describe the problem",
-    "email": "Email",
-    "helpTypes": {
-      "billingPayments": "Billing / Payments",
-      "loginAccessIssues": "Login / Access Issues",
-      "giveFeedback": "Give Feedback",
-      "bugReport": "Bug Report",
-      "somethingElse": "Something Else"
-    },
-    "validation": {
-      "maxLength": "Message too long",
-      "invalidEmail": "Please enter a valid email address",
-      "selectIssueType": "Please select an issue type",
-      "descriptionRequired": "Description is required",
-      "helpTypeRequired": "Help type is required"
-    }
+    "helpFix": "Help Fix This"
   },
   "color": {
     "noColor": "No Color",
@@ -287,7 +333,37 @@
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
     "Manage": "Manage",
-    "Search": "Search"
+    "Search": "Search",
+    "Open in Mask Editor": "Open in Mask Editor",
+    "Open Image": "Open Image",
+    "Copy Image": "Copy Image",
+    "Save Image": "Save Image",
+    "Rename": "Rename",
+    "Copy": "Copy",
+    "Duplicate": "Duplicate",
+    "Paste": "Paste",
+    "Node Info": "Node Info",
+    "Adjust Size": "Adjust Size",
+    "Minimize Node": "Minimize Node",
+    "Expand Node": "Expand Node",
+    "Shape": "Shape",
+    "Color": "Color",
+    "Add Subgraph to Library": "Add Subgraph to Library",
+    "Unpack Subgraph": "Unpack Subgraph",
+    "Convert to Subgraph": "Convert to Subgraph",
+    "Align Selected To": "Align Selected To",
+    "Distribute Nodes": "Distribute Nodes",
+    "Remove Bypass": "Remove Bypass",
+    "Run Branch": "Run Branch",
+    "Delete": "Delete",
+    "Top": "Top",
+    "Bottom": "Bottom",
+    "Left": "Left",
+    "Right": "Right",
+    "Horizontal": "Horizontal",
+    "Vertical": "Vertical",
+    "new": "new",
+    "deprecated": "deprecated"
   },
   "icon": {
     "bookmark": "Bookmark",
@@ -336,6 +412,27 @@
     "migration": "Migration",
     "desktopSettings": "Desktop Settings",
     "chooseInstallationLocation": "Choose Installation Location",
+    "gpuPicker": {
+      "title": "Choose your hardware setup",
+      "recommended": "RECOMMENDED",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "CPU Mode",
+      "manualSubtitle": "Manual Setup",
+      "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",
+      "nvidiaDescription": "Use your NVIDIA GPU with CUDA acceleration for the best performance.",
+      "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
+      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
+    },
+    "locationPicker": {
+      "title": "Choose where to install ComfyUI",
+      "subtitle": "Pick a folder for ComfyUI's files. We'll also set up Python there automatically.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "Select existing ComfyUI installation (optional)",
+      "migrateFromExisting": "Migrate from existing installation",
+      "migrateDescription": "Copy or link your existing models, custom nodes, and configurations from a previous ComfyUI installation.",
+      "chooseDownloadServers": "Choose download servers manually",
+      "downloadServersDescription": "Select specific mirror servers for downloading Python, PyPI packages, and PyTorch based on your location."
+    },
     "systemLocations": "System Locations",
     "failedToSelectDirectory": "Failed to select directory",
     "pathValidationFailed": "Failed to validate path",
@@ -420,16 +517,26 @@
     "metricsDisabled": "Metrics Disabled",
     "updateConsent": "You previously opted in to reporting crashes. We are now tracking event-based metrics to help identify bugs and improve the app. No personal identifiable information is collected."
   },
+  "desktopStart": {
+    "initialising": "Initialising..."
+  },
   "serverStart": {
+    "title": "Starting ComfyUI",
     "troubleshoot": "Troubleshoot",
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
     "showTerminal": "Show Terminal",
+    "copySelectionTooltip": "Copy selection",
+    "copyAllTooltip": "Copy all",
+    "errorMessage": "Unable to start ComfyUI Desktop",
+    "installation": {
+      "title": "Installing ComfyUI"
+    },
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",
       "starting-server": "Starting ComfyUI server...",
-      "ready": "Finishing...",
+      "ready": "Loading Human Interface",
       "error": "Unable to start ComfyUI Desktop"
     }
   },
@@ -438,7 +545,16 @@
     "revertChanges": "Revert Changes",
     "restart": "Restart"
   },
+  "shape": {
+    "default": "Default",
+    "round": "Round",
+    "CARD": "Card",
+    "circle": "Circle",
+    "arrow": "Arrow",
+    "box": "Box"
+  },
   "sideToolbar": {
+    "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
     "queue": "Queue",
@@ -510,6 +626,7 @@
     "docs": "Docs",
     "github": "Github",
     "helpFeedback": "Help & Feedback",
+    "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
     "clickToLearnMore": "Click to learn more →",
@@ -573,6 +690,7 @@
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
       "Basics": "Basics",
+      "GettingStarted": "Getting Started",
       "Flux": "Flux",
       "ControlNet": "ControlNet",
       "Upscaling": "Upscaling",
@@ -581,6 +699,7 @@
       "Area Composition": "Area Composition",
       "3D": "3D",
       "Audio": "Audio",
+      "LLMs": "LLMs",
       "Image API": "Image API",
       "Video API": "Video API",
       "LLM API": "LLM API",
@@ -889,6 +1008,24 @@
         "audio_ace_step_1_t2a_song": "ACE Step v1 Text to Song",
         "audio_ace_step_1_m2m_editing": "ACE Step v1 M2M Editing"
       }
+    },
+    "categories": "Categories",
+    "resetFilters": "Clear Filters",
+    "sorting": "Sort by",
+    "activeFilters": "Filters:",
+    "loading": "Loading templates...",
+    "noResults": "No templates found",
+    "noResultsHint": "Try adjusting your search or filters",
+    "modelFilter": "Model Filter",
+    "modelsSelected": "{count} Models",
+    "useCasesSelected": "{count} Use Cases",
+    "licensesSelected": "{count} Licenses",
+    "resultsCount": "Showing {count} of {total} templates",
+    "sort": {
+      "recommended": "Recommended",
+      "alphabetical": "A → Z",
+      "newest": "Newest",
+      "searchPlaceholder": "Search..."
     }
   },
   "graphCanvasMenu": {
@@ -904,7 +1041,8 @@
     "zoomOptions": "Zoom Options",
     "focusMode": "Focus Mode",
     "hideLinks": "Hide Links",
-    "showLinks": "Show Links"
+    "showLinks": "Show Links",
+    "toggleLinkVisibility": "Toggle Link Visibility"
   },
   "zoomControls": {
     "label": "Zoom Controls",
@@ -924,6 +1062,18 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "saveWorkflow": "Save workflow"
+  },
+  "subgraphStore": {
+    "confirmDeleteTitle": "Delete blueprint?",
+    "confirmDelete": "This action will permanently remove the blueprint from your library",
+    "saveBlueprint": "Save Subgraph to Library",
+    "overwriteBlueprintTitle": "Overwrite existing blueprint?",
+    "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
+    "blueprintName": "Subgraph name",
+    "publish": "Publish Subgraph",
+    "publishSuccess": "Saved to Nodes Library",
+    "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
+    "loadFailure": "Failed to load subgraph blueprints"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -958,9 +1108,29 @@
     "Mask Opacity": "Mask Opacity",
     "Image Layer": "Image Layer"
   },
+  "commands": {
+    "runWorkflow": "Run workflow",
+    "runWorkflowFront": "Run workflow (Queue at front)",
+    "run": "Run",
+    "execute": "Execute",
+    "interrupt": "Cancel current run",
+    "refresh": "Refresh node definitions",
+    "clipspace": "Open Clipspace",
+    "resetView": "Reset canvas view",
+    "clear": "Clear workflow",
+    "toggleBottomPanel": "Toggle Bottom Panel",
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light",
+    "manageExtensions": "Manage Extensions",
+    "settings": "Settings",
+    "help": "Help",
+    "queue": "Queue Panel"
+  },
   "menuLabels": {
-    "File": "File",
+    "Workflow": "Workflow",
     "Edit": "Edit",
+    "View": "View",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
@@ -977,6 +1147,7 @@
     "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Browse Templates": "Browse Templates",
     "Delete Selected Items": "Delete Selected Items",
+    "Fit view to selected nodes": "Fit view to selected nodes",
     "Zoom to fit": "Zoom to fit",
     "Lock Canvas": "Lock Canvas",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
@@ -985,9 +1156,8 @@
     "Move Selected Nodes Up": "Move Selected Nodes Up",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
-    "Node Links": "Node Links",
+    "Canvas Toggle Link Visibility": "Canvas Toggle Link Visibility",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
-    "Minimap": "Minimap",
     "Pin/Unpin Selected Items": "Pin/Unpin Selected Items",
     "Bypass/Unbypass Selected Nodes": "Bypass/Unbypass Selected Nodes",
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
@@ -1019,15 +1189,21 @@
     "ComfyUI Issues": "ComfyUI Issues",
     "Interrupt": "Interrupt",
     "Load Default Workflow": "Load Default Workflow",
-    "Toggle the Custom Nodes Manager": "Toggle the Custom Nodes Manager",
+    "Custom Nodes Manager": "Custom Nodes Manager",
+    "Custom Nodes (Legacy)": "Custom Nodes (Legacy)",
+    "Manager Menu (Legacy)": "Manager Menu (Legacy)",
+    "Install Missing": "Install Missing",
+    "Install Missing Custom Nodes": "Install Missing Custom Nodes",
+    "Check for Custom Node Updates": "Check for Custom Node Updates",
     "Toggle the Custom Nodes Manager Progress Bar": "Toggle the Custom Nodes Manager Progress Bar",
-    "Decrease Brush Size in MaskEditor": "Decrease Brush Size in MaskEditor",
-    "Increase Brush Size in MaskEditor": "Increase Brush Size in MaskEditor",
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
+    "Unload Models": "Unload Models",
+    "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
     "Clipspace": "Clipspace",
     "Manager": "Manager",
     "Open": "Open",
+    "Publish": "Publish",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
@@ -1047,16 +1223,26 @@
     "Previous Opened Workflow": "Previous Opened Workflow",
     "Toggle Search Box": "Toggle Search Box",
     "Bottom Panel": "Bottom Panel",
+    "Toggle Bottom Panel": "Toggle Bottom Panel",
     "Show Keybindings Dialog": "Show Keybindings Dialog",
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
+    "Toggle Focus Mode": "Toggle Focus Mode",
     "Focus Mode": "Focus Mode",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
     "Queue Panel": "Queue Panel",
-    "Workflows": "Workflows"
+    "Workflows": "Workflows",
+    "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
+    "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
+    "Toggle Queue Sidebar": "Toggle Queue Sidebar",
+    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar",
+    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
+    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
+    "sideToolbar_queue": "sideToolbar.queue",
+    "sideToolbar_workflows": "sideToolbar.workflows"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
@@ -1116,7 +1302,8 @@
     "Credits": "Credits",
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
-    "3DViewer": "3DViewer"
+    "3DViewer": "3DViewer",
+    "Vue Nodes": "Vue Nodes"
   },
   "serverConfigItems": {
     "listen": {
@@ -1396,6 +1583,8 @@
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
   "loadWorkflowWarning": {
+    "missingNodesTitle": "Some Nodes Are Missing",
+    "missingNodesDescription": "When loading the graph, the following node types were not found.\nThis may also happen if your installed version is lower and that node type can’t be found.",
     "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
     "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Requires ComfyUI {version}:"
@@ -1624,6 +1813,15 @@
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
       "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again."
+    },
+    "deleteAccount": {
+      "deleteAccount": "Delete Account",
+      "confirmTitle": "Delete Account",
+      "confirmMessage": "Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.",
+      "confirm": "Delete Account",
+      "cancel": "Cancel",
+      "success": "Account Deleted",
+      "successDetail": "Your account has been successfully deleted."
     }
   },
   "validation": {
@@ -1632,6 +1830,7 @@
     "minLength": "Must be at least {length} characters",
     "maxLength": "Must be no more than {length} characters",
     "prefix": "Must start with {prefix}",
+    "descriptionRequired": "Description is required",
     "length": "Must be {length} characters",
     "password": {
       "requirements": "Password requirements",
@@ -1683,7 +1882,10 @@
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
-    }
+    },
+    "Set Group Nodes to Never": "Set Group Nodes to Never",
+    "Bypass Group Nodes": "Bypass Group Nodes",
+    "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "chatHistory": {
     "cancelEdit": "Cancel",
@@ -1691,6 +1893,17 @@
     "cancelEditTooltip": "Cancel edit",
     "copiedTooltip": "Copied",
     "copyTooltip": "Copy message to clipboard"
+  },
+  "widgets": {
+    "selectModel": "Select model",
+    "uploadSelect": {
+      "placeholder": "Select...",
+      "placeholderImage": "Select image...",
+      "placeholderAudio": "Select audio...",
+      "placeholderVideo": "Select video...",
+      "placeholderModel": "Select model...",
+      "placeholderUnknown": "Select media..."
+    }
   },
   "nodeHelpPage": {
     "inputs": "Inputs",
@@ -1708,6 +1921,7 @@
     "duplicate": "Duplicate",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
+    "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name"
   },
   "shortcuts": {
@@ -1877,5 +2091,24 @@
   "cloudInvite_unknownEmail": "this account",
   "cloudInvite_expired": "This invite has expired.",
   "cloudInvite_contactLink": "Contact us here",
-  "cloudInvite_contactLink_suffix": "for questions."
+  "cloudInvite_contactLink_suffix": "for questions.",
+  "assetBrowser": {
+    "assets": "Assets",
+    "browseAssets": "Browse Assets",
+    "noAssetsFound": "No assets found",
+    "tryAdjustingFilters": "Try adjusting your search or filters",
+    "loadingModels": "Loading {type}...",
+    "connectionError": "Please check your connection and try again",
+    "noModelsInFolder": "No {type} available in this folder",
+    "searchAssetsPlaceholder": "Search assets...",
+    "allModels": "All Models",
+    "unknown": "Unknown",
+    "fileFormats": "File formats",
+    "baseModels": "Base models",
+    "sortBy": "Sort by",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "Recent",
+    "sortPopular": "Popular"
+  }
 }

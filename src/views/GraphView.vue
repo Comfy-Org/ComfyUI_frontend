@@ -33,6 +33,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
@@ -42,11 +43,13 @@ import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVersionMismatchWarning'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
-import { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
+import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
@@ -61,8 +64,6 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -253,33 +254,30 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
-  requestIdleCallback(
-    () => {
-      // Setting values now available after comfyApp.setup.
-      // Load keybindings.
-      wrapWithErrorHandling(useKeybindingService().registerUserKeybindings)()
+  runWhenGlobalIdle(() => {
+    // Setting values now available after comfyApp.setup.
+    // Load keybindings.
+    wrapWithErrorHandling(useKeybindingService().registerUserKeybindings)()
 
-      // Load server config
-      wrapWithErrorHandling(useServerConfigStore().loadServerConfig)(
-        SERVER_CONFIG_ITEMS,
-        settingStore.get('Comfy.Server.ServerConfigValues')
-      )
+    // Load server config
+    wrapWithErrorHandling(useServerConfigStore().loadServerConfig)(
+      SERVER_CONFIG_ITEMS,
+      settingStore.get('Comfy.Server.ServerConfigValues')
+    )
 
-      // Load model folders
-      void wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
+    // Load model folders
+    void wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
 
-      // Non-blocking load of node frequencies
-      void wrapWithErrorHandlingAsync(
-        useNodeFrequencyStore().loadNodeFrequencies
-      )()
+    // Non-blocking load of node frequencies
+    void wrapWithErrorHandlingAsync(
+      useNodeFrequencyStore().loadNodeFrequencies
+    )()
 
-      // Node defs now available after comfyApp.setup.
-      // Explicitly initialize nodeSearchService to avoid indexing delay when
-      // node search is triggered
-      useNodeDefStore().nodeSearchService.searchNode('')
-    },
-    { timeout: 1000 }
-  )
+    // Node defs now available after comfyApp.setup.
+    // Explicitly initialize nodeSearchService to avoid indexing delay when
+    // node search is triggered
+    useNodeDefStore().nodeSearchService.searchNode('')
+  }, 1000)
 }
 </script>
 
@@ -343,7 +341,7 @@ const onGraphReady = () => {
   grid-column: 2;
   grid-row: 2;
   position: relative;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .comfyui-body-right {

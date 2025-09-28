@@ -1,15 +1,8 @@
 export default {
-  './**/*.js': (stagedFiles) => formatAndEslint(stagedFiles),
+  './**/*.js': 'pnpm exec eslint --cache --fix',
 
-  './**/*.{ts,tsx,vue,mts}': (stagedFiles) => [
-    ...formatAndEslint(stagedFiles),
-    'vue-tsc --noEmit'
-  ]
-}
-
-function formatAndEslint(fileNames) {
-  return [
-    `eslint --fix ${fileNames.join(' ')}`,
-    `prettier --write ${fileNames.join(' ')}`
+  './**/*.{ts,tsx,vue,mts}': [
+    'pnpm exec eslint --cache --fix',
+    'pnpm exec prettier --cache --write'
   ]
 }

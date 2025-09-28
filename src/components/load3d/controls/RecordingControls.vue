@@ -1,5 +1,5 @@
 <template>
-  <div class="relative bg-gray-700 bg-opacity-30 rounded-lg">
+  <div class="relative bg-gray-700/30 rounded-lg">
     <div class="flex flex-col gap-2">
       <Button
         class="p-button-rounded p-button-text"
@@ -79,7 +79,7 @@ import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 
 import { t } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLoad3dService } from '@/services/load3dService'
 
 const vTooltip = Tooltip

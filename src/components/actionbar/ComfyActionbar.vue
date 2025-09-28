@@ -5,7 +5,7 @@
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
   >
     <div ref="panelRef" class="actionbar-content flex items-center select-none">
-      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2 p-0!" />
+      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
       <ComfyQueueButton />
     </div>
   </Panel>
@@ -22,9 +22,10 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
-import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import type { Ref } from 'vue'
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
@@ -37,7 +38,7 @@ const visible = computed(() => position.value !== 'Disabled')
 const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
@@ -228,6 +229,8 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .actionbar {
   pointer-events: all;
   position: fixed;

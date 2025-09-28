@@ -12,11 +12,9 @@
     <div
       v-show="isNativeWindow()"
       ref="topMenuRef"
-      class="app-drag w-full h-[var(--comfy-topbar-height)]"
+      class="app-drag w-full h-(--comfy-topbar-height)"
     />
-    <div
-      class="flex-1 flex-grow w-full flex items-center justify-center overflow-auto"
-    >
+    <div class="grow w-full flex items-center justify-center overflow-auto">
       <slot />
     </div>
     <slot name="footer"></slot>

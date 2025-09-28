@@ -12,10 +12,10 @@ import {
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
+  type Point,
   RenderShape,
   type Subgraph,
   SubgraphNode,
-  type Vector2,
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -24,7 +24,11 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -37,13 +41,10 @@ import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isImageNode,
@@ -483,7 +484,18 @@ export const useLitegraphService = () => {
         ) ?? {}
 
         if (widget) {
-          widget.label = st(nameKey, widget.label ?? inputName)
+          // Check if this is an Asset Browser button widget
+          const isAssetBrowserButton =
+            widget.type === 'button' && widget.value === 'Select model'
+
+          if (isAssetBrowserButton) {
+            // Preserve Asset Browser button label (don't translate)
+            widget.label = String(widget.value)
+          } else {
+            // Apply normal translation for other widgets
+            widget.label = st(nameKey, widget.label ?? inputName)
+          }
+
           widget.options ??= {}
           Object.assign(widget.options, {
             advanced: inputSpec.advanced,
@@ -949,6 +961,25 @@ export const useLitegraphService = () => {
   ): LGraphNode {
     options.pos ??= getCanvasCenter()
 
+    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
+      const canvas = canvasStore.getCanvas()
+      const bp = useSubgraphStore().getBlueprint(nodeDef.name)
+      const items: object = {
+        nodes: bp.nodes,
+        subgraphs: bp.definitions?.subgraphs
+      }
+      const results = canvas._deserializeItems(items, {
+        position: options.pos
+      })
+      if (!results) throw new Error('Failed to add subgraph blueprint')
+      const node = results.nodes.values().next().value
+      if (!node)
+        throw new Error(
+          'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+        )
+      return node
+    }
+
     const node = LiteGraph.createNode(
       nodeDef.name,
       nodeDef.display_name,
@@ -963,7 +994,7 @@ export const useLitegraphService = () => {
     return node
   }
 
-  function getCanvasCenter(): Vector2 {
+  function getCanvasCenter(): Point {
     const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     const [x, y, w, h] = app.canvas.ds.visible_area
     return [x + w / dpi / 2, y + h / dpi / 2]

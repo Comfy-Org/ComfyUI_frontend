@@ -1,12 +1,12 @@
 <!-- Reference:
 https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c683087a3e168db/app/js/functions/sb_fn.js#L149
 -->
-
 <template>
-  <div class="_sb_node_preview">
+  <LGraphNodePreview v-if="shouldRenderVueNodes" :node-def="nodeDef" />
+  <div v-else class="_sb_node_preview">
     <div class="_sb_table">
       <div
-        class="node_header overflow-ellipsis mr-4"
+        class="node_header text-ellipsis mr-4"
         :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
@@ -85,6 +85,8 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 import _ from 'es-toolkit/compat'
 import { computed } from 'vue'
 
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -93,6 +95,8 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefV2
 }>()
+
+const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const colorPaletteStore = useColorPaletteStore()
 const litegraphColors = computed(

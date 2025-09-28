@@ -2,12 +2,18 @@ import log from 'loglevel'
 
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/stores/toastStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 import { checkMirrorReachable } from '@/utils/networkUtil'
+
+// Desktop documentation URLs
+const DESKTOP_DOCS = {
+  WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
+  MACOS: 'https://docs.comfy.org/installation/desktop/macos'
+} as const
 
 ;(async () => {
   if (!isElectron()) return
@@ -159,7 +165,11 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         label: 'Desktop User Guide',
         icon: 'pi pi-book',
         function() {
-          window.open('https://comfyorg.notion.site/', '_blank')
+          const docsUrl =
+            electronAPI.getPlatform() === 'darwin'
+              ? DESKTOP_DOCS.MACOS
+              : DESKTOP_DOCS.WINDOWS
+          window.open(docsUrl, '_blank')
         }
       },
       {

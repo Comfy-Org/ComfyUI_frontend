@@ -16,8 +16,8 @@ import { computed } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
 const domWidgetStore = useDomWidgetStore()
 
@@ -34,7 +34,7 @@ const updateWidgets = () => {
     const widget = widgetState.widget
 
     // Early exit for non-visible widgets
-    if (!widget.isVisible()) {
+    if (!widget.isVisible() || !widgetState.active) {
       widgetState.visible = false
       continue
     }

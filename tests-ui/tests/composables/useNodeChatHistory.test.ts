@@ -1,25 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/composables/widgets/useChatHistoryWidget', () => ({
-  useChatHistoryWidget: () => {
-    return (node: any, inputSpec: any) => {
-      const widget = {
-        name: inputSpec.name,
-        type: inputSpec.type
+vi.mock(
+  '@/renderer/extensions/vueNodes/widgets/composables/useChatHistoryWidget',
+  () => ({
+    useChatHistoryWidget: () => {
+      return (node: any, inputSpec: any) => {
+        const widget = {
+          name: inputSpec.name,
+          type: inputSpec.type
+        }
+
+        if (!node.widgets) {
+          node.widgets = []
+        }
+        node.widgets.push(widget)
+
+        return widget
       }
-
-      if (!node.widgets) {
-        node.widgets = []
-      }
-      node.widgets.push(widget)
-
-      return widget
     }
-  }
-}))
+  })
+)
 
 // Mock LGraphNode type
 type MockNode = {

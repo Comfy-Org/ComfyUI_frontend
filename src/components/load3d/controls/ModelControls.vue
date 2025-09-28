@@ -12,7 +12,7 @@
       </Button>
       <div
         v-show="showUpDirection"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -43,7 +43,7 @@
       </Button>
       <div
         v-show="showMaterialMode"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -74,7 +74,7 @@
       </Button>
       <div
         v-show="showEdgeThreshold"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
         style="width: 150px"
       >
         <label class="text-white text-xs mb-1 block"
@@ -99,7 +99,10 @@ import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
+import type {
+  MaterialMode,
+  UpDirection
+} from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 

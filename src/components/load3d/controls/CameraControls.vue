@@ -18,7 +18,7 @@
       </Button>
       <div
         v-show="showFOV"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
         style="width: 150px"
       >
         <Slider
@@ -40,7 +40,7 @@ import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 
 const vTooltip = Tooltip

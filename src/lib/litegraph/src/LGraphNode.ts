@@ -1,3 +1,13 @@
+import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
+import {
+  type SlotPositionContext,
+  calculateInputSlotPos,
+  calculateInputSlotPosFromSlot,
+  calculateOutputSlotPos
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
+
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -84,19 +94,19 @@ export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object
 
-export interface INodePropertyInfo {
+interface INodePropertyInfo {
   name: string
   type?: string
   default_value: NodeProperty | undefined
 }
 
-export interface IMouseOverData {
+interface IMouseOverData {
   inputId?: number
   outputId?: number
   overWidget?: IBaseWidget
 }
 
-export interface ConnectByTypeOptions {
+interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
   /** Allow our wildcard slot to connect to typed slots on remote node. Default: true */
@@ -108,12 +118,12 @@ export interface ConnectByTypeOptions {
 }
 
 /** Internal type used for type safety when implementing generic checks for inputs & outputs */
-export interface IGenericLinkOrLinks {
+interface IGenericLinkOrLinks {
   links?: INodeOutputSlot['links']
   link?: INodeInputSlot['link']
 }
 
-export interface FindFreeSlotOptions {
+interface FindFreeSlotOptions {
   /** Slots matching these types will be ignored.  Default: [] */
   typesNotAccepted?: ISlotType[]
   /** If true, the slot itself is returned instead of the index.  Default: false */
@@ -258,6 +268,10 @@ export class LGraphNode
   properties_info: INodePropertyInfo[] = []
   flags: INodeFlags = {}
   widgets?: IBaseWidget[]
+
+  /** Property manager for this node */
+  changeTracker: LGraphNodeProperties
+
   /**
    * The amount of space available for widgets to grow into.
    * @see {@link layoutWidgets}
@@ -729,6 +743,8 @@ export class LGraphNode
       error: this.#getErrorStrokeStyle,
       selected: this.#getSelectedStrokeStyle
     }
+    // Initialize property manager with tracked properties
+    this.changeTracker = new LGraphNodeProperties(this)
   }
 
   /** Internal callback for subgraph nodes. Do not implement externally. */
@@ -1941,6 +1957,14 @@ export class LGraphNode
   move(deltaX: number, deltaY: number): void {
     if (this.pinned) return
 
+    // If Vue nodes mode is enabled, skip LiteGraph's direct position update
+    // The layout store will handle the movement and sync back to LiteGraph
+    if (LiteGraph.vueNodesMode) {
+      // Vue nodes handle their own dragging through the layout store
+      // This prevents the snap-back issue from conflicting position updates
+      return
+    }
+
     this.pos[0] += deltaX
     this.pos[1] += deltaY
   }
@@ -2136,10 +2160,22 @@ export class LGraphNode
         widget.computeSize?.(nodeWidth)[1] ??
         LiteGraph.NODE_WIDGET_HEIGHT
 
+      const maybeDOMWidget = widget as { margin?: number }
+      const mtop = maybeDOMWidget.margin ?? -2
+      const mbot = maybeDOMWidget.margin ?? 2
+      const mx = maybeDOMWidget.margin ?? 6
+
       const w = widget.width || nodeWidth
       if (
         widget.last_y !== undefined &&
-        isInRectangle(x, y, 6, widget.last_y, w - 12, h)
+        isInRectangle(
+          x,
+          y,
+          mx,
+          widget.last_y + mtop,
+          w - 2 * mx,
+          h - mtop - mbot
+        )
       ) {
         return widget
       }
@@ -2733,6 +2769,8 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
+    const layoutMutations = useLayoutMutations()
+
     const outputIndex = this.outputs.indexOf(output)
     if (outputIndex === -1) {
       console.warn('connectSlots: output not found')
@@ -2790,6 +2828,16 @@ export class LGraphNode
 
     // add to graph links list
     graph._links.set(link.id, link)
+
+    // Register link in Layout Store for spatial tracking
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createLink(
+      link.id,
+      this.id,
+      outputIndex,
+      inputNode.id,
+      inputIndex
+    )
 
     // connect in output
     output.links ??= []
@@ -3193,6 +3241,25 @@ export class LGraphNode
   }
 
   /**
+   * Get the context needed for slot position calculations
+   * @internal
+   */
+  #getSlotPositionContext(): SlotPositionContext {
+    return {
+      nodeX: this.pos[0],
+      nodeY: this.pos[1],
+      nodeWidth: this.size[0],
+      nodeHeight: this.size[1],
+      collapsed: this.flags.collapsed ?? false,
+      collapsedWidth: this._collapsed_width,
+      slotStartY: this.constructor.slot_start_y,
+      inputs: this.inputs,
+      outputs: this.outputs,
+      widgets: this.widgets
+    }
+  }
+
+  /**
    * Gets the position of an input slot, in graph co-ordinates.
    *
    * This method is preferred over the legacy {@link getConnectionPos} method.
@@ -3200,7 +3267,7 @@ export class LGraphNode
    * @returns Position of the input slot
    */
   getInputPos(slot: number): Point {
-    return this.getInputSlotPos(this.inputs[slot])
+    return calculateInputSlotPos(this.#getSlotPositionContext(), slot)
   }
 
   /**
@@ -3209,25 +3276,7 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    const {
-      pos: [nodeX, nodeY]
-    } = this
-
-    if (this.flags.collapsed) {
-      const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
-      return [nodeX, nodeY - halfTitle]
-    }
-
-    const { pos } = input
-    if (pos) return [nodeX + pos[0], nodeY + pos[1]]
-
-    // default vertical slots
-    const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-    const nodeOffsetY = this.constructor.slot_start_y || 0
-    const slotIndex = this.#defaultVerticalInputs.indexOf(input)
-    const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
-
-    return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
+    return calculateInputSlotPosFromSlot(this.#getSlotPositionContext(), input)
   }
 
   /**
@@ -3238,29 +3287,7 @@ export class LGraphNode
    * @returns Position of the output slot
    */
   getOutputPos(slot: number): Point {
-    const {
-      pos: [nodeX, nodeY],
-      outputs,
-      size: [width]
-    } = this
-
-    if (this.flags.collapsed) {
-      const width = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
-      return [nodeX + width, nodeY - halfTitle]
-    }
-
-    const outputPos = outputs?.[slot]?.pos
-    if (outputPos) return [nodeX + outputPos[0], nodeY + outputPos[1]]
-
-    // default vertical slots
-    const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-    const nodeOffsetY = this.constructor.slot_start_y || 0
-    const slotIndex = this.#defaultVerticalOutputs.indexOf(this.outputs[slot])
-    const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
-
-    // TODO: Why +1?
-    return [nodeX + width + 1 - offsetX, nodeY + slotY + nodeOffsetY]
+    return calculateOutputSlotPos(this.#getSlotPositionContext(), slot)
   }
 
   /** @inheritdoc */
@@ -3371,9 +3398,7 @@ export class LGraphNode
     this.graph._version++
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
-    // Delete the flag if unpinned, so that we don't get unnecessary
-    // flags.pinned = false in serialized object.
-    if (!this.pinned) delete this.flags.pinned
+    if (!this.pinned) this.flags.pinned = undefined
   }
 
   unpin(): void {
@@ -4007,14 +4032,26 @@ export class LGraphNode
     }
     if (!slotByWidgetName.size) return
 
-    for (const widget of this.widgets) {
-      const slot = slotByWidgetName.get(widget.name)
-      if (!slot) continue
+    // Only set custom pos if not using Vue positioning
+    // Vue positioning calculates widget slot positions dynamically
+    if (!LiteGraph.vueNodesMode) {
+      for (const widget of this.widgets) {
+        const slot = slotByWidgetName.get(widget.name)
+        if (!slot) continue
 
-      const actualSlot = this.#concreteInputs[slot.index]
-      const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      actualSlot.pos = [offset, widget.y + offset]
-      this.#measureSlot(actualSlot, slot.index, true)
+        const actualSlot = this.#concreteInputs[slot.index]
+        const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+        actualSlot.pos = [offset, widget.y + offset]
+        this.#measureSlot(actualSlot, slot.index, true)
+      }
+    } else {
+      // For Vue positioning, just measure the slots without setting pos
+      for (const widget of this.widgets) {
+        const slot = slotByWidgetName.get(widget.name)
+        if (!slot) continue
+
+        this.#measureSlot(this.#concreteInputs[slot.index], slot.index, true)
+      }
     }
   }
 

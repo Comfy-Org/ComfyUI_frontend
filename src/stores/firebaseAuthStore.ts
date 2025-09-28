@@ -8,6 +8,7 @@ import {
   type UserCredential,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -25,8 +26,8 @@ import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { type AuthHeader } from '@/types/authTypes'
-import { operations } from '@/types/comfyRegistryTypes'
+import type { AuthHeader } from '@/types/authTypes'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -41,7 +42,7 @@ type AccessBillingPortalResponse =
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
 
-export class FirebaseAuthStoreError extends Error {
+class FirebaseAuthStoreError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'FirebaseAuthStoreError'
@@ -301,6 +302,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     await sendEmailVerification(currentUser.value)
   }
 
+  /** Delete the current user account */
+  const _deleteAccount = async (): Promise<void> => {
+    if (!currentUser.value) {
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    await deleteUser(currentUser.value)
+  }
+
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
@@ -401,6 +410,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     sendPasswordReset,
     updatePassword: _updatePassword,
     getAuthHeader,
-    verifyEmail
+    verifyEmail,
+    deleteAccount: _deleteAccount
   }
 })

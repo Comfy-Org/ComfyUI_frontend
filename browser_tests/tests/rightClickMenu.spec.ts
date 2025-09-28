@@ -3,6 +3,10 @@ import { expect } from '@playwright/test'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Canvas Right Click Menu', () => {
   test('Can add node', async ({ comfyPage }) => {
     await comfyPage.rightClickCanvas()

@@ -55,7 +55,7 @@
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button flex-shrink-0 no-drag rounded-none"
+      class="new-blank-workflow-button shrink-0 no-drag rounded-none"
       icon="pi pi-plus"
       text
       severity="secondary"
@@ -65,7 +65,7 @@
     <ContextMenu ref="menu" :model="contextMenuItems" />
     <div
       v-if="menuSetting !== 'Bottom' && isDesktop"
-      class="window-actions-spacer flex-shrink-0 app-drag"
+      class="window-actions-spacer shrink-0 app-drag"
     />
   </div>
 </template>
@@ -81,11 +81,12 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useWorkflowService } from '@/services/workflowService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -302,12 +303,14 @@ onUpdated(() => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .workflow-tabs-container {
   background-color: var(--comfy-menu-secondary-bg);
 }
 
 :deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none flex-shrink relative border-0 border-r border-solid;
+  @apply p-0 bg-transparent rounded-none shrink relative border-0 border-r border-solid;
   border-right-color: var(--border-color);
   min-width: 90px;
 }
@@ -353,14 +356,6 @@ onUpdated(() => {
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
   @apply visible;
-}
-
-:deep(.p-togglebutton:hover) .status-indicator {
-  @apply hidden;
-}
-
-:deep(.p-togglebutton) .close-button {
-  @apply invisible;
 }
 
 :deep(.p-scrollpanel-content) {

@@ -3,6 +3,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, toRaw } from 'vue'
 
 import type {
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
   ResultItem,
   StatusWsMessageStatus,
   TaskItem,
@@ -11,14 +15,13 @@ import type {
   TaskStatus,
   TaskType
 } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 // Task type used in the API.
-export type APITaskType = 'queue' | 'history'
+type APITaskType = 'queue' | 'history'
 
 export enum TaskItemDisplayStatus {
   Running = 'Running',

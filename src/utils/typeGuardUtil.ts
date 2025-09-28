@@ -1,6 +1,7 @@
 import type { PrimitiveNode } from '@/extensions/core/widgetInputs'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 
 export function isPrimitiveNode(
   node: LGraphNode
@@ -38,4 +39,17 @@ export const isSubgraphIoNode = (
 } => {
   const nodeClass = node.constructor?.comfyClass
   return nodeClass === 'SubgraphInputNode' || nodeClass === 'SubgraphOutputNode'
+}
+
+/**
+ * Type guard for slot objects (inputs/outputs)
+ */
+export const isSlotObject = (obj: unknown): obj is INodeSlot => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'name' in obj &&
+    'type' in obj &&
+    'boundingRect' in obj
+  )
 }

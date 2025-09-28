@@ -1,6 +1,7 @@
-import { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { SettingParams } from '@/platform/settings/types'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
@@ -8,9 +9,8 @@ import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
-import type { SettingParams } from '@/types/settingTypes'
 
-export type Widgets = Record<string, ComfyWidgetConstructor>
+type Widgets = Record<string, ComfyWidgetConstructor>
 
 export interface AboutPageBadge {
   label: string
@@ -18,7 +18,7 @@ export interface AboutPageBadge {
   icon: string
 }
 
-export type MenuCommandGroup = {
+type MenuCommandGroup = {
   /**
    * The path to the menu group.
    */
@@ -168,8 +168,9 @@ export interface ComfyExtension {
   ): Promise<void> | void
 
   /**
-   * Fired whenever authentication resolves, providing the user id.
+   * Fired whenever authentication resolves, providing the anonymized user id..
    * Extensions can register at any time and will receive the latest value immediately.
+   * This is an experimental API and may be changed or removed in the future.
    */
   onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
 

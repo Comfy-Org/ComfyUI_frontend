@@ -1,41 +1,45 @@
 import { createI18n } from 'vue-i18n'
 
-import arCommands from './locales/ar/commands.json'
-import ar from './locales/ar/main.json'
-import arNodes from './locales/ar/nodeDefs.json'
-import arSettings from './locales/ar/settings.json'
-import enCommands from './locales/en/commands.json'
-import en from './locales/en/main.json'
-import enNodes from './locales/en/nodeDefs.json'
-import enSettings from './locales/en/settings.json'
-import esCommands from './locales/es/commands.json'
-import es from './locales/es/main.json'
-import esNodes from './locales/es/nodeDefs.json'
-import esSettings from './locales/es/settings.json'
-import frCommands from './locales/fr/commands.json'
-import fr from './locales/fr/main.json'
-import frNodes from './locales/fr/nodeDefs.json'
-import frSettings from './locales/fr/settings.json'
-import jaCommands from './locales/ja/commands.json'
-import ja from './locales/ja/main.json'
-import jaNodes from './locales/ja/nodeDefs.json'
-import jaSettings from './locales/ja/settings.json'
-import koCommands from './locales/ko/commands.json'
-import ko from './locales/ko/main.json'
-import koNodes from './locales/ko/nodeDefs.json'
-import koSettings from './locales/ko/settings.json'
-import ruCommands from './locales/ru/commands.json'
-import ru from './locales/ru/main.json'
-import ruNodes from './locales/ru/nodeDefs.json'
-import ruSettings from './locales/ru/settings.json'
-import zhTWCommands from './locales/zh-TW/commands.json'
-import zhTW from './locales/zh-TW/main.json'
-import zhTWNodes from './locales/zh-TW/nodeDefs.json'
-import zhTWSettings from './locales/zh-TW/settings.json'
-import zhCommands from './locales/zh/commands.json'
-import zh from './locales/zh/main.json'
-import zhNodes from './locales/zh/nodeDefs.json'
-import zhSettings from './locales/zh/settings.json'
+import arCommands from './locales/ar/commands.json' with { type: 'json' }
+import ar from './locales/ar/main.json' with { type: 'json' }
+import arNodes from './locales/ar/nodeDefs.json' with { type: 'json' }
+import arSettings from './locales/ar/settings.json' with { type: 'json' }
+import enCommands from './locales/en/commands.json' with { type: 'json' }
+import en from './locales/en/main.json' with { type: 'json' }
+import enNodes from './locales/en/nodeDefs.json' with { type: 'json' }
+import enSettings from './locales/en/settings.json' with { type: 'json' }
+import esCommands from './locales/es/commands.json' with { type: 'json' }
+import es from './locales/es/main.json' with { type: 'json' }
+import esNodes from './locales/es/nodeDefs.json' with { type: 'json' }
+import esSettings from './locales/es/settings.json' with { type: 'json' }
+import frCommands from './locales/fr/commands.json' with { type: 'json' }
+import fr from './locales/fr/main.json' with { type: 'json' }
+import frNodes from './locales/fr/nodeDefs.json' with { type: 'json' }
+import frSettings from './locales/fr/settings.json' with { type: 'json' }
+import jaCommands from './locales/ja/commands.json' with { type: 'json' }
+import ja from './locales/ja/main.json' with { type: 'json' }
+import jaNodes from './locales/ja/nodeDefs.json' with { type: 'json' }
+import jaSettings from './locales/ja/settings.json' with { type: 'json' }
+import koCommands from './locales/ko/commands.json' with { type: 'json' }
+import ko from './locales/ko/main.json' with { type: 'json' }
+import koNodes from './locales/ko/nodeDefs.json' with { type: 'json' }
+import koSettings from './locales/ko/settings.json' with { type: 'json' }
+import ruCommands from './locales/ru/commands.json' with { type: 'json' }
+import ru from './locales/ru/main.json' with { type: 'json' }
+import ruNodes from './locales/ru/nodeDefs.json' with { type: 'json' }
+import ruSettings from './locales/ru/settings.json' with { type: 'json' }
+import trCommands from './locales/tr/commands.json' with { type: 'json' }
+import tr from './locales/tr/main.json' with { type: 'json' }
+import trNodes from './locales/tr/nodeDefs.json' with { type: 'json' }
+import trSettings from './locales/tr/settings.json' with { type: 'json' }
+import zhTWCommands from './locales/zh-TW/commands.json' with { type: 'json' }
+import zhTW from './locales/zh-TW/main.json' with { type: 'json' }
+import zhTWNodes from './locales/zh-TW/nodeDefs.json' with { type: 'json' }
+import zhTWSettings from './locales/zh-TW/settings.json' with { type: 'json' }
+import zhCommands from './locales/zh/commands.json' with { type: 'json' }
+import zh from './locales/zh/main.json' with { type: 'json' }
+import zhNodes from './locales/zh/nodeDefs.json' with { type: 'json' }
+import zhSettings from './locales/zh/settings.json' with { type: 'json' }
 
 function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
   return {
@@ -55,7 +59,8 @@ const messages = {
   ko: buildLocale(ko, koNodes, koCommands, koSettings),
   fr: buildLocale(fr, frNodes, frCommands, frSettings),
   es: buildLocale(es, esNodes, esCommands, esSettings),
-  ar: buildLocale(ar, arNodes, arCommands, arSettings)
+  ar: buildLocale(ar, arNodes, arCommands, arSettings),
+  tr: buildLocale(tr, trNodes, trCommands, trSettings)
 }
 
 export const i18n = createI18n({
@@ -71,7 +76,7 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
-export const { t, te } = i18n.global
+export const { t, te, d } = i18n.global
 
 /**
  * Safe translation function that returns the fallback message if the key is not found.

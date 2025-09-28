@@ -39,8 +39,8 @@ import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useToastStore } from '@/stores/toastStore'
 
 const authStore = useFirebaseAuthStore()
 

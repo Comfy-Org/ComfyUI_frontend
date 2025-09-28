@@ -27,8 +27,9 @@ import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
 const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()
@@ -68,6 +69,8 @@ const submit = () => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 ._content {
   @apply flex flex-col space-y-2;
 }

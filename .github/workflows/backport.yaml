@@ -2,12 +2,27 @@ name: Auto Backport
 
 on:
   pull_request_target:
-    types: [closed]
+    types: [closed, labeled]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to backport'
+        required: true
+        type: string
+      force_rerun:
+        description: 'Force rerun even if backports exist'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   backport:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-backport')
+    if: >
+      (github.event_name == 'pull_request_target' && 
+       github.event.pull_request.merged == true && 
+       contains(github.event.pull_request.labels.*.name, 'needs-backport')) ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,6 +30,35 @@ jobs:
       issues: write
 
     steps:
+      - name: Validate inputs for manual triggers
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # Validate PR number format
+          if ! [[ "${{ inputs.pr_number }}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid PR number format. Must be a positive integer."
+            exit 1
+          fi
+          
+          # Validate PR exists and is merged
+          if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
+            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
+            exit 1
+          fi
+          
+          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json merged --jq '.merged')
+          if [ "$MERGED" != "true" ]; then
+            echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
+            exit 1
+          fi
+          
+          # Validate PR has needs-backport label
+          if ! gh pr view "${{ inputs.pr_number }}" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
+            echo "::error::PR #${{ inputs.pr_number }} does not have 'needs-backport' label."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -25,13 +69,49 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Check if backports already exist
+        id: check-existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          # Check for existing backport PRs for this PR number
+          EXISTING_BACKPORTS=$(gh pr list --state all --search "backport-${PR_NUMBER}-to" --json title,headRefName,baseRefName | jq -r '.[].headRefName')
+          
+          if [ -z "$EXISTING_BACKPORTS" ]; then
+            echo "skip=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # For manual triggers with force_rerun, proceed anyway
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force_rerun }}" = "true" ]; then
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "::warning::Force rerun requested - existing backports will be updated"
+            exit 0
+          fi
+          
+          echo "Found existing backport PRs:"
+          echo "$EXISTING_BACKPORTS"
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "::warning::Backport PRs already exist for PR #${PR_NUMBER}, skipping to avoid duplicates"
+
       - name: Extract version labels
+        if: steps.check-existing.outputs.skip != 'true'
         id: versions
         run: |
           # Extract version labels (e.g., "1.24", "1.22")
           VERSIONS=""
-          LABELS='${{ toJSON(github.event.pull_request.labels) }}'
-          for label in $(echo "$LABELS" | jq -r '.[].name'); do
+          
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # For manual triggers, get labels from the PR
+            LABELS=$(gh pr view ${{ inputs.pr_number }} --json labels | jq -r '.labels[].name')
+          else
+            # For automatic triggers, extract from PR event
+            LABELS='${{ toJSON(github.event.pull_request.labels) }}'
+            LABELS=$(echo "$LABELS" | jq -r '.[].name')
+          fi
+          
+          for label in $LABELS; do
             # Match version labels like "1.24" (major.minor only)
             if [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
               # Validate the branch exists before adding to list
@@ -52,14 +132,23 @@ jobs:
           echo "Found version labels: ${VERSIONS}"
 
       - name: Backport commits
+        if: steps.check-existing.outputs.skip != 'true'
         id: backport
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          MERGE_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         run: |
           FAILED=""
           SUCCESS=""
+          
+          # Get PR data for manual triggers
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,mergeCommit)
+            PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+            MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
+          else
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+          fi
 
           for version in ${{ steps.versions.outputs.versions }}; do
             echo "::group::Backporting to core/${version}"
@@ -109,14 +198,21 @@ jobs:
           fi
 
       - name: Create PR for each successful backport
-        if: steps.backport.outputs.success
+        if: steps.check-existing.outputs.skip != 'true' && steps.backport.outputs.success
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-
+          # Get PR data for manual triggers
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,author)
+            PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+            PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
+          else
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          fi
+          
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r version branch <<< "${backport}"
 
@@ -141,13 +237,20 @@ jobs:
           done
 
       - name: Comment on failures
-        if: failure() && steps.backport.outputs.failed
+        if: steps.check-existing.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-          MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json author,mergeCommit)
+            PR_NUMBER="${{ inputs.pr_number }}"
+            PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
+            MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
+          else
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+            MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+          fi
 
           for failure in ${{ steps.backport.outputs.failed }}; do
             IFS=':' read -r version reason conflicts <<< "${failure}"

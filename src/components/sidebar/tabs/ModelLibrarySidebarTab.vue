@@ -1,7 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="$t('sideToolbar.modelLibrary')"
-    class="bg-[var(--p-tree-background)]"
+    class="bg-(--p-tree-background)"
   >
     <template #tool-buttons>
       <Button
@@ -21,7 +21,7 @@
     </template>
     <template #header>
       <SearchBox
-        v-model:modelValue="searchQuery"
+        v-model:model-value="searchQuery"
         class="model-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchModels') + '...'"
         @search="handleSearch"
@@ -31,7 +31,7 @@
       <ElectronDownloadItems v-if="isElectron()" />
 
       <TreeExplorer
-        v-model:expandedKeys="expandedKeys"
+        v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
         :root="renderedRoot"
       >
@@ -54,15 +54,11 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import {
-  ComfyModelDef,
-  ModelFolder,
-  ResourceState,
-  useModelStore
-} from '@/stores/modelStore'
+import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
+import { ResourceState, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useSettingStore } from '@/stores/settingStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isElectron } from '@/utils/envUtil'

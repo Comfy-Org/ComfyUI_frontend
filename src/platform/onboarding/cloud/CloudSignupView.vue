@@ -100,7 +100,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { SignUpData } from '@/schemas/signInSchema'
+import type { SignUpData } from '@/schemas/signInSchema'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
 
