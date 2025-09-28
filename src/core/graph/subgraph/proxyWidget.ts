@@ -1,4 +1,4 @@
-import { useNodeImage } from '@/composables/node/useNodeImage'
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/composables/node/useNodeCanvasImagePreview'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type {
   LGraph,
@@ -11,8 +11,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 /**
@@ -137,23 +137,20 @@ function resolveLinkedWidget(
   if (!n) return [undefined, undefined]
   return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
 }
+
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
+  const { updatePreviews } = useLitegraphService()
   let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
   let backingWidget = linkedWidget ?? disconnectedWidget
-  if (overlay.widgetName == '$$canvas-image-preview')
+  if (overlay.widgetName == CANVAS_IMAGE_PREVIEW_WIDGET) {
     overlay.node = new Proxy(subgraphNode, {
       get(_t, p) {
         if (p !== 'imgs') return Reflect.get(subgraphNode, p)
         if (!linkedNode) return []
-        const images =
-          useNodeOutputStore().getNodeOutputs(linkedNode)?.images ?? []
-        if (images !== linkedNode.images) {
-          linkedNode.images = images
-          useNodeImage(linkedNode).showPreview()
-        }
         return linkedNode.imgs
       }
     })
+  }
   /**
    * A set of handlers which define widget interaction
    * Many arguments are shared between function calls
@@ -182,7 +179,9 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedReceiver = receiver
       if (property == 'value') redirectedReceiver = backingWidget
       else if (property == 'computedHeight') {
-        //update linkage regularly, but no more than once per frame
+        if (overlay.widgetName == CANVAS_IMAGE_PREVIEW_WIDGET && linkedNode)
+          updatePreviews(linkedNode)
+          //update linkage regularly, but no more than once per frame
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
         backingWidget = linkedWidget ?? disconnectedWidget
       }

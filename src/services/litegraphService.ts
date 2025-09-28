@@ -853,6 +853,61 @@ export const useLitegraphService = () => {
       return []
     }
   }
+  function updatePreviews(node: LGraphNode) {
+    try {
+      unsafeUpdatePreviews.call(node)
+    } catch (error) {
+      console.error('Error drawing node background', error)
+    }
+  }
+  function unsafeUpdatePreviews(this: LGraphNode) {
+    if (this.flags.collapsed) return
+
+    const nodeOutputStore = useNodeOutputStore()
+    const { showAnimatedPreview, removeAnimatedPreview } =
+      useNodeAnimatedImage()
+    const { showCanvasImagePreview, removeCanvasImagePreview } =
+      useNodeCanvasImagePreview()
+
+    const output = nodeOutputStore.getNodeOutputs(this)
+    const preview = nodeOutputStore.getNodePreviews(this)
+
+    const isNewOutput = output && this.images !== output.images
+    const isNewPreview = preview && this.preview !== preview
+
+    if (isNewPreview) this.preview = preview
+    if (isNewOutput) this.images = output.images
+
+    if (isNewOutput || isNewPreview) {
+      this.animatedImages = output?.animated?.find(Boolean)
+
+      const isAnimatedWebp =
+        this.animatedImages &&
+        output?.images?.some((img) => img.filename?.includes('webp'))
+      const isAnimatedPng =
+        this.animatedImages &&
+        output?.images?.some((img) => img.filename?.includes('png'))
+      const isVideo =
+        (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
+        isVideoNode(this)
+      if (isVideo) {
+        useNodeVideo(this).showPreview()
+      } else {
+        useNodeImage(this).showPreview()
+      }
+    }
+
+    // Nothing to do
+    if (!this.imgs?.length) return
+
+    if (this.animatedImages) {
+      removeCanvasImagePreview(this)
+      showAnimatedPreview(this)
+    } else {
+      removeAnimatedPreview(this)
+      showCanvasImagePreview(this)
+    }
+  }
 
   /**
    * Adds Custom drawing logic for nodes
@@ -868,62 +923,8 @@ export const useLitegraphService = () => {
         'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
       )
     }
-
-    function unsafeDrawBackground(this: LGraphNode) {
-      if (this.flags.collapsed) return
-
-      const nodeOutputStore = useNodeOutputStore()
-      const { showAnimatedPreview, removeAnimatedPreview } =
-        useNodeAnimatedImage()
-      const { showCanvasImagePreview, removeCanvasImagePreview } =
-        useNodeCanvasImagePreview()
-
-      const output = nodeOutputStore.getNodeOutputs(this)
-      const preview = nodeOutputStore.getNodePreviews(this)
-
-      const isNewOutput = output && this.images !== output.images
-      const isNewPreview = preview && this.preview !== preview
-
-      if (isNewPreview) this.preview = preview
-      if (isNewOutput) this.images = output.images
-
-      if (isNewOutput || isNewPreview) {
-        this.animatedImages = output?.animated?.find(Boolean)
-
-        const isAnimatedWebp =
-          this.animatedImages &&
-          output?.images?.some((img) => img.filename?.includes('webp'))
-        const isAnimatedPng =
-          this.animatedImages &&
-          output?.images?.some((img) => img.filename?.includes('png'))
-        const isVideo =
-          (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
-          isVideoNode(this)
-        if (isVideo) {
-          useNodeVideo(this).showPreview()
-        } else {
-          useNodeImage(this).showPreview()
-        }
-      }
-
-      // Nothing to do
-      if (!this.imgs?.length) return
-
-      if (this.animatedImages) {
-        removeCanvasImagePreview(this)
-        showAnimatedPreview(this)
-      } else {
-        removeAnimatedPreview(this)
-        showCanvasImagePreview(this)
-      }
-    }
-
     node.prototype.onDrawBackground = function () {
-      try {
-        unsafeDrawBackground.call(this)
-      } catch (error) {
-        console.error('Error drawing node background', error)
-      }
+      updatePreviews(this)
     }
   }
 
@@ -1053,6 +1054,7 @@ export const useLitegraphService = () => {
     getCanvasCenter,
     goToNode,
     resetView,
-    fitView
+    fitView,
+    updatePreviews
   }
 }
