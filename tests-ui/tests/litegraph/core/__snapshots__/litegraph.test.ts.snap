@@ -21,8 +21,6 @@ LiteGraphGlobal {
   "ContextMenu": [Function],
   "CurveEditor": [Function],
   "DEFAULT_FONT": "Arial",
-  "DEFAULT_GROUP_FONT": 24,
-  "DEFAULT_GROUP_FONT_SIZE": undefined,
   "DEFAULT_POSITION": [
     100,
     100,
@@ -34,6 +32,7 @@ LiteGraphGlobal {
   "EVENT_LINK_COLOR": "#A86",
   "GRID_SHAPE": 6,
   "GROUP_FONT": "Arial",
+  "GROUP_TEXT_SIZE": 20,
   "Globals": {},
   "HIDDEN_LINK": -1,
   "INPUT": 1,
