@@ -32,7 +32,7 @@
 
 ## Commit & Pull Request Guidelines
 - Commits: Use `[skip ci]` for locale-only updates when appropriate.
-- PRs: Include clear description, linked issues (`Fixes #123`), and screenshots/GIFs for UI changes.
+- PRs: Include clear description, linked issues (`- Fixes #123`), and screenshots/GIFs for UI changes.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, and relevant tests must pass. Keep PRs focused and small.
 
 ## Security & Configuration Tips
