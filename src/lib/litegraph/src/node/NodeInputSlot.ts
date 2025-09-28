@@ -12,10 +12,11 @@ import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
-  link: LinkId | null
+  private _link: LinkId | null
 
   get isWidgetInputSlot(): boolean {
     return !!this.widget
@@ -41,11 +42,37 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     node: LGraphNode
   ) {
     super(slot, node)
-    this.link = slot.link
+    this._link = slot.link ?? null
   }
 
   override get isConnected(): boolean {
-    return this.link != null
+    return this._link != null
+  }
+
+  get link(): LinkId | null {
+    return this._link ?? null
+  }
+
+  set link(linkId: LinkId | null) {
+    if (this._link === linkId) return
+
+    this._link = linkId ?? null
+
+    if (!this.isWidgetInputSlot) return
+
+    const graph = this.node.graph
+    if (!graph) return
+
+    const index = this.node.inputs.indexOf(this)
+    if (index === -1) return
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: this.node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: index,
+      connected: this._link != null,
+      linkId: this._link ?? null
+    })
   }
 
   override isValidTarget(

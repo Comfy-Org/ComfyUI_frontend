@@ -66,6 +66,17 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Non-reactive storage for original LiteGraph nodes
   const nodeRefs = new Map<string, LGraphNode>()
 
+  const syncNodeSlotData = (nodeId: string, node: LGraphNode) => {
+    const currentData = vueNodeData.get(nodeId)
+    if (!currentData) return
+
+    vueNodeData.set(nodeId, {
+      ...currentData,
+      inputs: node.inputs ? [...node.inputs] : undefined,
+      outputs: node.outputs ? [...node.outputs] : undefined
+    })
+  }
+
   // Extract safe data from LiteGraph node for Vue consumption
   const extractVueNodeData = (node: LGraphNode): VueNodeData => {
     // Determine subgraph ID - null for root graph, string for subgraphs
@@ -474,26 +485,16 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           }
         }
       } else if (
-        action === 'node:slot-errors:changed' &&
+        (action === 'node:slot-links:changed' ||
+          action === 'node:slot-errors:changed') &&
         param &&
         typeof param === 'object'
       ) {
         const event = param as { nodeId: string | number }
         const nodeId = String(event.nodeId)
-        const litegraphNode = nodeRefs.get(nodeId)
-        const currentData = vueNodeData.get(nodeId)
-
-        if (litegraphNode && currentData) {
-          // Re-extract slot data with updated hasErrors properties
-          vueNodeData.set(nodeId, {
-            ...currentData,
-            inputs: litegraphNode.inputs
-              ? [...litegraphNode.inputs]
-              : undefined,
-            outputs: litegraphNode.outputs
-              ? [...litegraphNode.outputs]
-              : undefined
-          })
+        const node = nodeRefs.get(nodeId)
+        if (node) {
+          syncNodeSlotData(nodeId, node)
         }
       }
 
