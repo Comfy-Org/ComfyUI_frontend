@@ -1,6 +1,6 @@
 <template>
   <div
-    class="comfy-menu-button-wrapper flex flex-row items-center justify-center p-2 cursor-pointer rounded-t-md transition-colors"
+    class="comfy-menu-button-wrapper flex flex-row shrink-0 items-center justify-center p-2 cursor-pointer rounded-t-md transition-colors"
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"

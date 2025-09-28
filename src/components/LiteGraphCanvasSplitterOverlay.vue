@@ -1,7 +1,8 @@
 <template>
   <div class="splitter-overlay-root flex flex-col">
-    <!-- Tabs full width along the top -->
-    <div class="workflow-tabs-container w-full relative pointer-events-auto">
+    <div
+      class="workflow-tabs-container w-full relative pointer-events-auto h-9"
+    >
       <!-- Native drag area for Electron -->
       <div
         v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
@@ -11,7 +12,7 @@
     </div>
 
     <div
-      class="flex flex-1 pointer-events-none"
+      class="flex flex-1 pointer-events-none h-[calc(100vh-9*var(--spacing))]"
       :class="{
         'flex-row': sidebarLocation === 'left',
         'flex-row-reverse': sidebarLocation === 'right'
