@@ -1,3 +1,4 @@
+import { useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
@@ -813,7 +814,6 @@ export class ComfyApp {
     this.canvasContainer = document.getElementById('graph-canvas-container')
 
     this.canvasElRef.value = canvasEl
-    // this.resizeCanvas()
 
     await useWorkspaceStore().workflow.syncWorkflows()
     await useSubgraphStore().fetchSubgraphs()
@@ -887,13 +887,11 @@ export class ComfyApp {
     this.graph.start()
 
     // Ensure the canvas fills the window
-    this.resizeCanvas()
-    window.addEventListener('resize', () => this.resizeCanvas())
-    const ro = new ResizeObserver(() => this.resizeCanvas())
-    ro.observe(this.bodyTop)
-    ro.observe(this.bodyLeft)
-    ro.observe(this.bodyRight)
-    ro.observe(this.bodyBottom)
+    useResizeObserver(this.canvasElRef, ([canvasEl]) => {
+      if (canvasEl.target instanceof HTMLCanvasElement) {
+        this.resizeCanvas(canvasEl.target)
+      }
+    })
 
     await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
@@ -909,18 +907,17 @@ export class ComfyApp {
     )
   }
 
-  resizeCanvas() {
-    console.log('resizeCanvas')
+  private resizeCanvas(canvas: HTMLCanvasElement) {
     // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
     const scale = Math.max(window.devicePixelRatio, 1)
 
     // Clear fixed width and height while calculating rect so it uses 100% instead
-    this.canvasEl.height = this.canvasEl.width = NaN
-    const { width, height } = this.canvasEl.getBoundingClientRect()
-    this.canvasEl.width = Math.round(width * scale)
-    this.canvasEl.height = Math.round(height * scale)
+    canvas.height = canvas.width = NaN
+    const { width, height } = canvas.getBoundingClientRect()
+    canvas.width = Math.round(width * scale)
+    canvas.height = Math.round(height * scale)
     // @ts-expect-error fixme ts strict error
-    this.canvasEl.getContext('2d').scale(scale, scale)
+    canvas.getContext('2d').scale(scale, scale)
     this.canvas?.draw(true, true)
   }
 
