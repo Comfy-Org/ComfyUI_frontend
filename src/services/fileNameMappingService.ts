@@ -1,12 +1,12 @@
 import { api } from '@/scripts/api'
 
-export type FileType = 'input' | 'output' | 'temp'
+type FileType = 'input' | 'output' | 'temp'
 
 export interface FileNameMapping {
   [assetId: string]: string // asset-id -> asset name
 }
 
-export interface CacheEntry {
+interface CacheEntry {
   data: FileNameMapping
   dedupData?: FileNameMapping // Deduplicated mapping with unique display names
   timestamp: number

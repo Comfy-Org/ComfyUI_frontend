@@ -3,7 +3,7 @@ import { isEmpty } from 'es-toolkit/compat'
 
 import { api } from '@/scripts/api'
 
-export interface UserCloudStatus {
+interface UserCloudStatus {
   status: 'active' | 'waitlisted'
 }
 
@@ -187,7 +187,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
   }
 }
 
-export async function postSurveyStatus(): Promise<void> {
+async function postSurveyStatus(): Promise<void> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
       method: 'POST',
