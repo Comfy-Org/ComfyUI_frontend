@@ -20,7 +20,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
     },
     'packages/registry-types': {
-      entry: ['src/**/*.ts'],
+      entry: ['src/comfyRegistryTypes.ts'],
       project: ['src/**/*.{js,ts}']
     }
   },
