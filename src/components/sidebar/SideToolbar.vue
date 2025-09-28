@@ -1,44 +1,59 @@
 <template>
   <nav
+    ref="sideToolbarRef"
     class="side-tool-bar-container"
     :class="{
       'small-sidebar': isSmall,
-      'connected-sidebar': selectedTab,
-      'floating-sidebar': !selectedTab
+      'connected-sidebar': selectedTab || isOverflowing,
+      'floating-sidebar': !selectedTab && !isOverflowing,
+      'overflowing-sidebar': isOverflowing
     }"
   >
-    <div class="sidebar-item-group">
-      <ComfyMenuButton :is-small="isSmall" />
-      <SidebarIcon
-        v-for="tab in tabs"
-        :key="tab.id"
-        :icon="tab.icon"
-        :icon-badge="tab.iconBadge"
-        :tooltip="tab.tooltip"
-        :tooltip-suffix="getTabTooltipSuffix(tab)"
-        :label="tab.label || tab.title"
-        :is-small="isSmall"
-        :selected="tab.id === selectedTab?.id"
-        :class="tab.id + '-tab-button'"
-        @click="onTabClick(tab)"
-      />
-      <SidebarTemplatesButton />
-    </div>
+    <ComfyMenuButton
+      v-if="isOverflowing"
+      :is-small="isSmall"
+      :class="isOverflowing ? 'sticky top-0' : ''"
+    />
+    <div
+      :class="
+        isOverflowing ? 'side-tool-bar-container overflow-y-auto' : 'contents'
+      "
+    >
+      <div class="sidebar-item-group">
+        <ComfyMenuButton v-if="!isOverflowing" :is-small="isSmall" />
+        <SidebarIcon
+          v-for="tab in tabs"
+          :key="tab.id"
+          :icon="tab.icon"
+          :icon-badge="tab.iconBadge"
+          :tooltip="tab.tooltip"
+          :tooltip-suffix="getTabTooltipSuffix(tab)"
+          :label="tab.label || tab.title"
+          :is-small="isSmall"
+          :selected="tab.id === selectedTab?.id"
+          :class="tab.id + '-tab-button'"
+          @click="onTabClick(tab)"
+        />
+        <SidebarTemplatesButton />
+      </div>
 
-    <div class="sidebar-item-group">
-      <SidebarLogoutIcon
-        v-if="userStore.isMultiUserServer"
-        :is-small="isSmall"
-      />
-      <SidebarHelpCenterIcon :is-small="isSmall" />
-      <SidebarBottomPanelToggleButton :is-small="isSmall" />
-      <SidebarShortcutsToggleButton :is-small="isSmall" />
+      <div ref="bottomToolbarRef" class="sidebar-item-group mt-auto">
+        <SidebarLogoutIcon
+          v-if="userStore.isMultiUserServer"
+          :is-small="isSmall"
+        />
+        <SidebarHelpCenterIcon :is-small="isSmall" />
+        <SidebarBottomPanelToggleButton :is-small="isSmall" />
+        <SidebarShortcutsToggleButton :is-small="isSmall" />
+      </div>
+      <div ref="overflowCheckRef"></div>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
@@ -59,6 +74,8 @@ const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
+const sideToolbarRef = ref<HTMLElement>()
+const overflowCheckRef = ref<HTMLElement>()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
@@ -79,6 +96,27 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   )
   return keybinding ? ` (${keybinding.combo.toString()})` : ''
 }
+
+const isOverflowing = ref(false)
+
+onMounted(() => {
+  if (!sideToolbarRef.value || !overflowCheckRef.value) return
+
+  const overflowObserver = useResizeObserver(sideToolbarRef.value, () => {
+    const h = window.innerHeight
+    let b = overflowCheckRef.value!.getBoundingClientRect().bottom + 7
+
+    if (isOverflowing.value) {
+      b += 20 // Prevent it from flipping back and forth due to small size changes
+    }
+
+    isOverflowing.value = h < b
+  })
+
+  onBeforeUnmount(() => {
+    overflowObserver.stop()
+  })
+})
 </script>
 
 <style>
@@ -125,7 +163,7 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 @reference "tailwindcss";
 
 .side-tool-bar-container {
-  @apply flex flex-col justify-between items-center h-full bg-transparent;
+  @apply flex flex-col items-center h-full bg-transparent;
 }
 
 .floating-sidebar {
@@ -143,8 +181,16 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 }
 
 .sidebar-item-group {
-  @apply flex flex-col items-center overflow-hidden;
+  @apply flex flex-col items-center overflow-hidden flex-shrink-0;
   background-color: var(--comfy-menu-secondary-bg);
   border: 1px solid transparent;
+}
+
+.overflowing-sidebar {
+  @apply mr-2;
+
+  .sidebar-item-group {
+    @apply contents;
+  }
 }
 </style>
