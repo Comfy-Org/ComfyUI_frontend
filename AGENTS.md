@@ -31,7 +31,7 @@
 - Playwright: place tests in `browser_tests/`; optional tags like `@mobile`, `@2x` are respected by config.
 
 ## Commit & Pull Request Guidelines
-- Commits: Prefer Conventional Commits (e.g., `feat(ui): add sidebar`), `refactor(litegraph): …`. Use `[skip ci]` for locale-only updates when appropriate.
+- Commits: Use `[skip ci]` for locale-only updates when appropriate.
 - PRs: Include clear description, linked issues (`Fixes #123`), and screenshots/GIFs for UI changes. Add/adjust tests and i18n strings when applicable.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, and relevant tests must pass. Keep PRs focused and small.
 
