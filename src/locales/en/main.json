@@ -1912,8 +1912,6 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
-<<<<<<< Updated upstream
-=======
   },
   "assetBrowser": {
     "assets": "Assets",
@@ -1942,6 +1940,5 @@
         "Close": "Close"
       }
     }
->>>>>>> Stashed changes
   }
 }
