@@ -22,6 +22,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => ({ widgetStates: new Map() })
 }))
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ updatePreviews: () => ({}) })
+}))
 
 function setupSubgraph(
   innerNodeCount: number = 0
