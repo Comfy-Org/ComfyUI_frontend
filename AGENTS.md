@@ -37,4 +37,3 @@
 
 ## Security & Configuration Tips
 - Secrets: Use `.env` (see `.env_example`); do not commit secrets.
-- Backend: Dev server expects ComfyUI backend at `localhost:8188` by default; configure via `.env`.
