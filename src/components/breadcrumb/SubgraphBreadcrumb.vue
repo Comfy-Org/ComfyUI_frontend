@@ -6,7 +6,8 @@
       'subgraph-breadcrumb-overflow': overflowingTabs
     }"
     :style="{
-      '--p-breadcrumb-gap': `${ITEM_GAP}px`,
+      '--p-breadcrumb-gap': `0px`,
+      '--p-breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
       '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
       '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
       '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
@@ -175,16 +176,32 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb) {
-  background-color: var(--comfy-menu-secondary-bg);
-  border: 1px solid var(--p-panel-border-color);
-  @apply h-12;
+  @apply w-full bg-transparent;
 }
 
 :deep(.p-breadcrumb-item) {
-  @apply flex items-center rounded-lg overflow-hidden;
+  @apply flex items-center overflow-hidden;
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
   /* Collapse middle items first */
   flex-shrink: 10000;
+}
+
+:deep(.p-breadcrumb-separator) {
+  display: flex;
+  padding: 0 var(--p-breadcrumb-item-margin);
+}
+
+:deep(.p-breadcrumb-item-link) {
+  padding: 0
+    calc(var(--p-breadcrumb-item-margin) + var(--p-breadcrumb-item-padding));
+}
+
+:deep(.p-breadcrumb-separator),
+:deep(.p-breadcrumb-item) {
+  @apply h-12;
+  border-top: 1px solid var(--p-panel-border-color);
+  border-bottom: 1px solid var(--p-panel-border-color);
+  background-color: var(--comfy-menu-secondary-bg);
 }
 
 :deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
@@ -192,18 +209,29 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item:first-child) {
+  @apply rounded-l-lg;
   /* Then collapse the root workflow */
   flex-shrink: 5000;
+  border-left: 1px solid var(--p-panel-border-color);
+  .p-breadcrumb-item-link {
+    padding-left: var(--p-breadcrumb-item-padding);
+  }
 }
 
 :deep(.p-breadcrumb-item:last-child) {
+  @apply rounded-r-lg;
   /* Then collapse the active item */
   flex-shrink: 1;
+  border-right: 1px solid var(--p-panel-border-color);
 }
 
-:deep(.p-breadcrumb-item:hover),
-:deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-menu-visible)) {
-  background-color: color-mix(in srgb, var(--fg-color) 10%, transparent);
+:deep(.p-breadcrumb-item-link:hover),
+:deep(.p-breadcrumb-item-link-menu-visible) {
+  background-color: color-mix(
+    in srgb,
+    var(--fg-color) 10%,
+    var(--comfy-menu-secondary-bg)
+  ) !important;
   color: var(--fg-color);
 }
 </style>
@@ -220,7 +248,7 @@ onUpdated(() => {
   .p-breadcrumb-item:nth-last-child(3),
   .p-breadcrumb-separator:nth-last-child(2),
   .p-breadcrumb-item:nth-last-child(1) {
-    @apply block;
+    @apply flex;
   }
 }
 </style>
