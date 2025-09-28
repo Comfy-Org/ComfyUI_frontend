@@ -10,7 +10,7 @@
       cn(
         'bg-white dark-theme:bg-charcoal-800',
         'lg-node absolute rounded-2xl',
-        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
+        'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
@@ -101,7 +101,11 @@
       >
         <!-- Slots only rendered at full detail -->
         <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
+          v-memo="[
+            nodeData.inputs?.length,
+            nodeData.outputs?.length,
+            executionStore.lastNodeErrors
+          ]"
           :node-data="nodeData"
           :readonly="readonly"
         />
@@ -215,16 +219,12 @@ const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
 )
 
-// Computed error states for styling
 const hasAnyError = computed((): boolean => {
   return !!(
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
-    // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
-    nodeData.inputs?.some((slot) => slot?.hasErrors) ||
-    nodeData.outputs?.some((slot) => slot?.hasErrors)
+    (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
 
@@ -316,26 +316,19 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  if (hasAnyError.value) {
-    return 'border-error dark-theme:border-error'
-  }
-  if (executing.value) {
-    return 'border-blue-500'
-  }
-  return undefined
+  return (
+    (hasAnyError.value && 'border-error dark-theme:border-error') ||
+    (executing.value && 'border-blue-500')
+  )
 })
 
 const outlineClass = computed(() => {
-  if (!isSelected.value) {
-    return undefined
-  }
-  if (hasAnyError.value) {
-    return 'outline-error dark-theme:outline-error'
-  }
-  if (executing.value) {
-    return 'outline-blue-500 dark-theme:outline-blue-500'
-  }
-  return 'outline-black dark-theme:outline-white'
+  return (
+    isSelected.value &&
+    ((hasAnyError.value && 'outline-error dark-theme:outline-error') ||
+      (executing.value && 'outline-blue-500 dark-theme:outline-blue-500') ||
+      'outline-black dark-theme:outline-white')
+  )
 })
 
 // Event handlers

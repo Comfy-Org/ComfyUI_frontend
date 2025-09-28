@@ -104,7 +104,6 @@ import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { i18n, t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -293,45 +292,36 @@ watch(
   { deep: true }
 )
 
-// Update node slot errors
+// Update node slot errors for LiteGraph nodes
+// (Vue nodes read from store directly)
 watch(
   () => executionStore.lastNodeErrors,
   (lastNodeErrors) => {
-    const removeSlotError = (node: LGraphNode) => {
+    if (!comfyApp.graph) return
+
+    for (const node of comfyApp.graph.nodes) {
+      // Clear existing errors
       for (const slot of node.inputs) {
         delete slot.hasErrors
       }
       for (const slot of node.outputs) {
         delete slot.hasErrors
       }
-    }
 
-    for (const node of comfyApp.graph.nodes) {
-      removeSlotError(node)
       const nodeErrors = lastNodeErrors?.[node.id]
       if (!nodeErrors) continue
 
       const validErrors = nodeErrors.errors.filter(
         (error) => error.extra_info?.input_name !== undefined
       )
-      const slotErrorsChanged =
-        validErrors.length > 0 &&
-        validErrors.some((error) => {
-          const inputName = error.extra_info!.input_name!
-          const inputIndex = node.findInputSlot(inputName)
-          if (inputIndex !== -1) {
-            node.inputs[inputIndex].hasErrors = true
-            return true
-          }
-          return false
-        })
 
-      // Trigger Vue node data update if slot errors changed
-      if (slotErrorsChanged && comfyApp.graph.onTrigger) {
-        comfyApp.graph.onTrigger('node:slot-errors:changed', {
-          nodeId: node.id
-        })
-      }
+      validErrors.forEach((error) => {
+        const inputName = error.extra_info!.input_name!
+        const inputIndex = node.findInputSlot(inputName)
+        if (inputIndex !== -1) {
+          node.inputs[inputIndex].hasErrors = true
+        }
+      })
     }
 
     comfyApp.canvas.draw(true, true)
