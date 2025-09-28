@@ -22,8 +22,8 @@ describe('hostWhitelist utils', () => {
     })
 
     it('does not strip non-numeric suffixes (not a port pattern)', () => {
-      // Only `:digits` is treated as a port; this input is preserved.
       expect(normalizeHost('example.com:abc')).toBe('example.com:abc')
+      expect(normalizeHost('127.0.0.1:abc')).toBe('127.0.0.1:abc')
     })
   })
 
@@ -58,7 +58,8 @@ describe('hostWhitelist utils', () => {
         '127.1.2.3',
         '127.255.255.255',
         '127.0.0.1:3000',
-        '127.000.000.001' // leading zeros are still digits 0-255
+        '127.000.000.001', // leading zeros are still digits 0-255
+        '127.0.0.1.' // trailing dot should be tolerated
       ])('should allow %o', (input) => {
         expect(isHostWhitelisted(input)).toBe(true)
       })
@@ -89,6 +90,7 @@ describe('hostWhitelist utils', () => {
         '0:0:0:0:0:0:0:1',
         '0000:0000:0000:0000:0000:0000:0000:0001',
         // Compressed equivalents of ::1 (with zeros compressed)
+        '0:0::1',
         '0:0:0:0:0:0::1',
         '::0:1' // compressing the initial zeros (still ::1 when expanded)
       ])('should allow %o', (input) => {
@@ -102,11 +104,19 @@ describe('hostWhitelist utils', () => {
         '0:0:0:0:0:0:0:2',
         'fe80::1', // link-local, not loopback
         '2001:db8::1',
+        '::1:5173', // bracketless "port-like" suffix must not pass
+        ':::1', // invalid (triple colon)
+        '0:0:0:0:0:0:::1', // invalid compression
         '[::1%25lo0]',
         '[::1%25lo0]:5173',
         '::1%25lo0'
       ])('should NOT allow %o', (input) => {
         expect(isHostWhitelisted(input)).toBe(false)
+      })
+
+      it('should reject empty/whitespace-only input', () => {
+        expect(isHostWhitelisted('')).toBe(false)
+        expect(isHostWhitelisted('   ')).toBe(false)
       })
     })
   })

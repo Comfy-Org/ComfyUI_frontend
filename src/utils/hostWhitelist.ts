@@ -53,46 +53,39 @@ function isLocalhostLabel(h: string): boolean {
   return h === 'localhost' || h.endsWith('.localhost')
 }
 
+const IPV4_OCTET = '(?:25[0-5]|2[0-4]\\d|1\\d\\d|0?\\d?\\d)'
+const V4_LOOPBACK_RE = new RegExp(
+  '^127\\.' + IPV4_OCTET + '\\.' + IPV4_OCTET + '\\.' + IPV4_OCTET + '$'
+)
+
 function isIPv4Loopback(h: string): boolean {
-  // 127/8: 127.x.y.z
-  const parts = h.split('.')
-  if (parts.length !== 4) return false
-  if (!parts.every((p) => /^\d{1,3}$/.test(p))) return false
-  const nums = parts.map((n) => parseInt(n, 10))
-  if (nums.some((n) => n < 0 || n > 255)) return false
-  return nums[0] === 127
+  // 127/8 with strict 0–255 octets (leading zeros allowed, e.g., 127.000.000.001)
+  return V4_LOOPBACK_RE.test(h)
 }
+
+// Fully expanded IPv6 loopback: 0:0:0:0:0:0:0:1 (allow leading zeros up to 4 chars)
+const V6_FULL_LOOPBACK_RE = /^(?:0{1,4}:){7}0{0,3}1$/i
+
+// Compressed IPv6 loopback forms around '::' with only zero groups before the final :1
+// - Left side: zero groups separated by ':' (no trailing colon required)
+// - Right side: zero groups each followed by ':' (so the final ':1' is provided by the pattern)
+// The final group is exactly value 1, with up to 3 leading zeros (e.g., '0001').
+const V6_COMPRESSED_LOOPBACK_RE =
+  /^((?:0{1,4}(?::0{1,4}){0,6})?)::((?:0{1,4}:){0,6})0{0,3}1$/i
 
 function isIPv6Loopback(h: string): boolean {
-  if (h === '::1') return true
+  // Exact full form: 0:0:0:0:0:0:0:1 (with up to 3 leading zeros on the final "1" group)
+  if (V6_FULL_LOOPBACK_RE.test(h)) return true
 
-  // Fully expanded form: 0:0:0:0:0:0:0:1 (allow leading zeros)
-  const segs = h.split(':')
-  if (segs.length === 8 && segs.every(validHexSeg)) {
-    return segs.slice(0, 7).every(zeroSeg) && isOne(segs[7])
-  }
+  // Compressed forms that still equal ::1 (e.g., ::1, ::0001, 0:0::1, ::0:1, etc.)
+  const m = h.match(V6_COMPRESSED_LOOPBACK_RE)
+  if (!m) return false
 
-  // Compressed (::) forms still equal to ::1 (e.g., ::0001, 0:0::1, etc.)
-  if (h.includes('::')) {
-    const [lhs, rhs] = h.split('::')
-    const leftSegs = lhs ? lhs.split(':').filter(Boolean) : []
-    const rightSegs = rhs ? rhs.split(':').filter(Boolean) : []
-    if (![...leftSegs, ...rightSegs].every(validHexSeg)) return false
-    const missing = 8 - (leftSegs.length + rightSegs.length)
-    if (missing < 1) return false // '::' must compress at least one zero group
-    const expanded = [...leftSegs, ...Array(missing).fill('0'), ...rightSegs]
-    return expanded.slice(0, 7).every(zeroSeg) && isOne(expanded[7])
-  }
+  // Count explicit zero groups on each side of '::' to ensure at least one group is compressed.
+  // (leftCount + rightCount) must be ≤ 6 so that the total expanded groups = 8.
+  const leftCount = m[1] ? m[1].match(/0{1,4}:/gi)?.length ?? 0 : 0
+  const rightCount = m[2] ? m[2].match(/0{1,4}:/gi)?.length ?? 0 : 0
 
-  return false
-}
-
-function validHexSeg(s: string): boolean {
-  return s.length > 0 && s.length <= 4 && /^[0-9a-f]+$/i.test(s)
-}
-function zeroSeg(s: string): boolean {
-  return parseInt(s || '0', 16) === 0
-}
-function isOne(s: string): boolean {
-  return parseInt(s || '0', 16) === 1
+  // Require that at least one group was actually compressed: i.e., leftCount + rightCount ≤ 6.
+  return leftCount + rightCount <= 6
 }
