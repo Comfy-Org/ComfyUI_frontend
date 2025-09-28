@@ -41,6 +41,8 @@ export interface VueNodeData {
     collapsed?: boolean
     pinned?: boolean
   }
+  color?: string
+  bgcolor?: string
 }
 
 export interface GraphNodeManager {
@@ -126,7 +128,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
       outputs: node.outputs ? [...node.outputs] : undefined,
-      flags: node.flags ? { ...node.flags } : undefined
+      flags: node.flags ? { ...node.flags } : undefined,
+      color: node.color || undefined,
+      bgcolor: node.bgcolor || undefined
     }
   }
 
@@ -448,6 +452,24 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               vueNodeData.set(nodeId, {
                 ...currentData,
                 mode: typeof event.newValue === 'number' ? event.newValue : 0
+              })
+              break
+            case 'color':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                color:
+                  typeof event.newValue === 'string'
+                    ? event.newValue
+                    : undefined
+              })
+              break
+            case 'bgcolor':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                bgcolor:
+                  typeof event.newValue === 'string'
+                    ? event.newValue
+                    : undefined
               })
           }
         }

@@ -1,13 +1,13 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import { getSlotKey } from '../../../src/renderer/core/layout/slots/slotIdentifier'
+import type { NodeId } from '../../../../../src/platform/workflow/validation/schemas/workflowSchema'
+import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../fixtures/ComfyPage'
-import { getMiddlePoint } from '../../fixtures/utils/litegraphUtils'
-import { fitToViewInstant } from '../../helpers/fitToView'
+} from '../../../../fixtures/ComfyPage'
+import { getMiddlePoint } from '../../../../fixtures/utils/litegraphUtils'
+import { fitToViewInstant } from '../../../../helpers/fitToView'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -189,6 +189,13 @@ test.describe('Vue Node Link Interaction', () => {
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
     expect(await clipInput.getLinkCount()).toBe(0)
+
+    const graphLinkDetails = await getInputLinkDetails(
+      comfyPage.page,
+      clipNode.id,
+      0
+    )
+    expect(graphLinkDetails).toBeNull()
   })
 
   test('should not create a link when dropping onto a slot on the same node', async ({
@@ -218,7 +225,6 @@ test.describe('Vue Node Link Interaction', () => {
     const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
     const vaeNode = (await comfyPage.getNodeRefsByType('VAEDecode'))[0]
     expect(samplerNode && vaeNode).toBeTruthy()
-
     const samplerOutputCenter = await getSlotCenter(
       comfyPage.page,
       samplerNode.id,

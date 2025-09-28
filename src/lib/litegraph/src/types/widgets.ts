@@ -251,6 +251,8 @@ export interface IBaseWidget<
   TType extends string = string,
   TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
 > {
+  [symbol: symbol]: boolean
+
   linkedWidgets?: IBaseWidget[]
 
   name: string

@@ -10,7 +10,7 @@
       cn(
         'bg-white dark-theme:bg-charcoal-800',
         'lg-node absolute rounded-2xl',
-        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
+        'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
@@ -34,7 +34,9 @@
     :style="[
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
+        zIndex: zIndex,
+        backgroundColor: nodeBodyBackgroundColor,
+        opacity: nodeOpacity
       },
       dragStyle
     ]"
@@ -47,9 +49,14 @@
         <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
-      <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, isCollapsed, nodeData.flags?.pinned]"
+        v-memo="[
+          nodeData.title,
+          nodeData.color,
+          nodeData.bgcolor,
+          isCollapsed,
+          nodeData.flags?.pinned
+        ]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
@@ -94,7 +101,11 @@
       >
         <!-- Slots only rendered at full detail -->
         <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
+          v-memo="[
+            nodeData.inputs?.length,
+            nodeData.outputs?.length,
+            executionStore.lastNodeErrors
+          ]"
           :node-data="nodeData"
           :readonly="readonly"
         />
@@ -139,6 +150,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -148,9 +160,11 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -205,21 +219,34 @@ const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
 )
 
-// Computed error states for styling
 const hasAnyError = computed((): boolean => {
   return !!(
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    // Type assertions needed because VueNodeData.inputs/outputs are typed as unknown[]
-    // but at runtime they contain INodeInputSlot/INodeOutputSlot objects
-    nodeData.inputs?.some((slot) => slot?.hasErrors) ||
-    nodeData.outputs?.some((slot) => slot?.hasErrors)
+    (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
 const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
+
+const nodeBodyBackgroundColor = computed(() => {
+  const colorPaletteStore = useColorPaletteStore()
+
+  if (!nodeData.bgcolor) {
+    return ''
+  }
+
+  return applyLightThemeColor(
+    nodeData.bgcolor,
+    Boolean(colorPaletteStore.completedActivePalette.light_theme)
+  )
+})
+
+const nodeOpacity = computed(
+  () => useSettingStore().get('Comfy.Node.Opacity') ?? 1
+)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -289,26 +316,19 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  if (hasAnyError.value) {
-    return 'border-error dark-theme:border-error'
-  }
-  if (executing.value) {
-    return 'border-blue-500'
-  }
-  return undefined
+  return (
+    (hasAnyError.value && 'border-error dark-theme:border-error') ||
+    (executing.value && 'border-blue-500')
+  )
 })
 
 const outlineClass = computed(() => {
-  if (!isSelected.value) {
-    return undefined
-  }
-  if (hasAnyError.value) {
-    return 'outline-error dark-theme:outline-error'
-  }
-  if (executing.value) {
-    return 'outline-blue-500 dark-theme:outline-blue-500'
-  }
-  return 'outline-black dark-theme:outline-white'
+  return (
+    isSelected.value &&
+    ((hasAnyError.value && 'outline-error dark-theme:outline-error') ||
+      (executing.value && 'outline-blue-500 dark-theme:outline-blue-500') ||
+      'outline-black dark-theme:outline-white')
+  )
 })
 
 // Event handlers

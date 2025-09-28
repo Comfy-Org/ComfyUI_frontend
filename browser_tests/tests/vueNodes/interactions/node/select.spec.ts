@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
+} from '../../../../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -15,7 +15,8 @@ test.describe('Vue Node Selection', () => {
 
   const modifiers = [
     { key: 'Control', name: 'ctrl' },
-    { key: 'Shift', name: 'shift' }
+    { key: 'Shift', name: 'shift' },
+    { key: 'Meta', name: 'meta' }
   ] as const
 
   for (const { key: modifier, name } of modifiers) {
