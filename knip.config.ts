@@ -20,6 +20,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
     }
   },
+  ignoreBinaries: ['python3'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
