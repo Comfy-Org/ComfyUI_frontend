@@ -6,7 +6,10 @@ import type { LGraphNode } from './LGraphNode'
 const DEFAULT_TRACKED_PROPERTIES: string[] = [
   'title',
   'flags.collapsed',
-  'mode'
+  'flags.pinned',
+  'mode',
+  'color',
+  'bgcolor'
 ]
 
 /**

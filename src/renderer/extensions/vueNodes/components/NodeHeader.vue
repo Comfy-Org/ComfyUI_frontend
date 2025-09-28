@@ -4,7 +4,8 @@
   </div>
   <div
     v-else
-    class="lg-node-header p-4 rounded-t-2xl cursor-move"
+    class="lg-node-header p-4 rounded-t-2xl w-full cursor-move"
+    :style="headerStyle"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -26,7 +27,7 @@
       <!-- Node Title -->
       <div
         v-tooltip.top="tooltipConfig"
-        class="text-sm font-bold truncate flex-1 lod-toggle"
+        class="text-sm font-bold truncate flex-1 lod-toggle flex items-center gap-2"
         data-testid="node-title"
       >
         <EditableText
@@ -35,6 +36,11 @@
           :input-attrs="{ 'data-testid': 'node-title-input' }"
           @edit="handleTitleEdit"
           @cancel="handleTitleCancel"
+        />
+        <i-lucide:pin
+          v-if="isPinned"
+          class="w-5 h-5 text-stone-200 dark-theme:text-slate-300"
+          data-testid="node-pin-indicator"
         />
       </div>
       <LODFallback />
@@ -66,8 +72,11 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
@@ -118,6 +127,23 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(description)
 })
 
+const headerStyle = computed(() => {
+  const colorPaletteStore = useColorPaletteStore()
+
+  const opacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+
+  if (!nodeData?.color) {
+    return { backgroundColor: '', opacity }
+  }
+
+  const headerColor = applyLightThemeColor(
+    nodeData.color,
+    Boolean(colorPaletteStore.completedActivePalette.light_theme)
+  )
+
+  return { backgroundColor: headerColor, opacity }
+})
+
 const resolveTitle = (info: VueNodeData | undefined) => {
   const title = (info?.title ?? '').trim()
   if (title.length > 0) return title
@@ -140,6 +166,8 @@ watch(
     }
   }
 )
+
+const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
 
 // Subgraph detection
 const isSubgraphNode = computed(() => {

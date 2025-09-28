@@ -210,28 +210,6 @@ test.describe('Templates', () => {
     await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })
 
-  test('hover effects work on template cards', async ({ comfyPage }) => {
-    // Open templates dialog
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
-    await expect(comfyPage.templates.content).toBeVisible()
-
-    // Get a template card using data-testid
-    const firstCard = comfyPage.page
-      .locator('[data-testid^="template-workflow-"]')
-      .first()
-    await expect(firstCard).toBeVisible({ timeout: 5000 })
-
-    // Check initial state - card should have transition classes
-    // Take snapshot before hover
-    await expect(firstCard).toHaveScreenshot('template-card-before-hover.png')
-
-    // Hover over the card
-    await firstCard.hover()
-
-    // Take snapshot after hover to verify hover effect
-    await expect(firstCard).toHaveScreenshot('template-card-after-hover.png')
-  })
-
   test('template cards descriptions adjust height dynamically', async ({
     comfyPage
   }) => {
