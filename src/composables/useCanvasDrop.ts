@@ -14,7 +14,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
-export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
+export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
   const workflowService = useWorkflowService()

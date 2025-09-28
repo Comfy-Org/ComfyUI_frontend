@@ -4,7 +4,8 @@
   </div>
   <div
     v-else
-    class="lg-node-header p-4 rounded-t-2xl cursor-move"
+    class="lg-node-header p-4 rounded-t-2xl w-full cursor-move"
+    :style="headerStyle"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -71,8 +72,11 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
@@ -121,6 +125,23 @@ const tooltipConfig = computed(() => {
   }
   const description = getNodeDescription.value
   return createTooltipConfig(description)
+})
+
+const headerStyle = computed(() => {
+  const colorPaletteStore = useColorPaletteStore()
+
+  const opacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+
+  if (!nodeData?.color) {
+    return { backgroundColor: '', opacity }
+  }
+
+  const headerColor = applyLightThemeColor(
+    nodeData.color,
+    Boolean(colorPaletteStore.completedActivePalette.light_theme)
+  )
+
+  return { backgroundColor: headerColor, opacity }
 })
 
 const resolveTitle = (info: VueNodeData | undefined) => {
