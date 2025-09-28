@@ -1,6 +1,7 @@
 import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
-import { reactive } from 'vue'
+import { reactive, unref } from 'vue'
+import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { st, t } from '@/i18n'
@@ -129,7 +130,7 @@ export class ComfyApp {
   /**
    * List of entries to queue
    */
-  #queueItems: {
+  private queueItems: {
     number: number
     batchCount: number
     queueNodeIds?: NodeExecutionId[]
@@ -137,7 +138,7 @@ export class ComfyApp {
   /**
    * If the queue is currently being processed
    */
-  #processingQueue: boolean = false
+  private processingQueue: boolean = false
 
   /**
    * Content Clipboard
@@ -176,12 +177,15 @@ export class ComfyApp {
   // @ts-expect-error fixme ts strict error
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null = null
-  // @ts-expect-error fixme ts strict error
-  canvasEl: HTMLCanvasElement
+  readonly canvasElRef = shallowRef<HTMLCanvasElement>()
+  get canvasEl() {
+    // TODO: Fix possibly undefined reference
+    return unref(this.canvasElRef)!
+  }
 
-  #configuringGraphLevel: number = 0
+  private configuringGraphLevel: number = 0
   get configuringGraph() {
-    return this.#configuringGraphLevel > 0
+    return this.configuringGraphLevel > 0
   }
   // @ts-expect-error fixme ts strict error
   ctx: CanvasRenderingContext2D
@@ -195,7 +199,7 @@ export class ComfyApp {
   // Set by Comfy.Clipspace extension
   openClipspace: () => void = () => {}
 
-  #positionConversion?: {
+  private positionConversion?: {
     clientPosToCanvasPos: (pos: Vector2) => Vector2
     canvasPosToClientPos: (pos: Vector2) => Vector2
   }
@@ -517,7 +521,7 @@ export class ComfyApp {
   /**
    * Adds a handler allowing drag+drop of files onto the window to load workflows
    */
-  #addDropHandler() {
+  private addDropHandler() {
     // Get prompt from dropped PNG or json
     document.addEventListener('drop', async (event) => {
       try {
@@ -593,7 +597,7 @@ export class ComfyApp {
   /**
    * Handle keypress
    */
-  #addProcessKeyHandler() {
+  private addProcessKeyHandler() {
     const origProcessKey = LGraphCanvas.prototype.processKey
     LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
       if (!this.graph) return
@@ -640,7 +644,7 @@ export class ComfyApp {
     }
   }
 
-  #addDrawNodeHandler() {
+  private addDrawNodeHandler() {
     const origDrawNode = LGraphCanvas.prototype.drawNode
     LGraphCanvas.prototype.drawNode = function (node) {
       const editor_alpha = this.editor_alpha
@@ -689,7 +693,7 @@ export class ComfyApp {
   /**
    * Handles updates from the API socket
    */
-  #addApiUpdateHandlers() {
+  private addApiUpdateHandlers() {
     api.addEventListener('status', ({ detail }) => {
       this.ui.setStatus(detail)
     })
@@ -763,15 +767,15 @@ export class ComfyApp {
   }
 
   /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
-  #addConfigureHandler() {
+  private addConfigureHandler() {
     const app = this
     const configure = LGraph.prototype.configure
     LGraph.prototype.configure = function (...args) {
-      app.#configuringGraphLevel++
+      app.configuringGraphLevel++
       try {
         return configure.apply(this, args)
       } finally {
-        app.#configuringGraphLevel--
+        app.configuringGraphLevel--
       }
     }
   }
@@ -808,16 +812,16 @@ export class ComfyApp {
     // @ts-expect-error fixme ts strict error
     this.canvasContainer = document.getElementById('graph-canvas-container')
 
-    this.canvasEl = canvasEl
-    this.resizeCanvas()
+    this.canvasElRef.value = canvasEl
+    // this.resizeCanvas()
 
     await useWorkspaceStore().workflow.syncWorkflows()
     await useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
-    this.#addProcessKeyHandler()
-    this.#addConfigureHandler()
-    this.#addApiUpdateHandlers()
+    this.addProcessKeyHandler()
+    this.addConfigureHandler()
+    this.addApiUpdateHandlers()
 
     const graph = new LGraph()
 
@@ -894,18 +898,19 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
 
-    this.#addDrawNodeHandler()
-    this.#addDropHandler()
+    this.addDrawNodeHandler()
+    this.addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
 
-    this.#positionConversion = useCanvasPositionConversion(
+    this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
       this.canvas
     )
   }
 
   resizeCanvas() {
+    console.log('resizeCanvas')
     // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
     const scale = Math.max(window.devicePixelRatio, 1)
 
@@ -963,7 +968,7 @@ export class ComfyApp {
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
-  async #getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
+  async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
       ...def,
       display_name: st(
@@ -987,7 +992,7 @@ export class ComfyApp {
    */
   async registerNodes() {
     // Load node definitions from the backend
-    const defs = await this.#getNodeDefs()
+    const defs = await this.getNodeDefs()
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
@@ -1055,14 +1060,14 @@ export class ComfyApp {
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
-  #showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
+  private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
     }
   }
 
   // @ts-expect-error fixme ts strict error
-  #showMissingModelsError(missingModels, paths) {
+  private showMissingModelsError(missingModels, paths) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       useDialogService().showMissingModelsWarning({
         missingModels,
@@ -1295,11 +1300,11 @@ export class ComfyApp {
     }
 
     if (missingNodeTypes.length && showMissingNodesDialog) {
-      this.#showMissingNodesError(missingNodeTypes)
+      this.showMissingNodesError(missingNodeTypes)
     }
     if (missingModels.length && showMissingModelsDialog) {
       const paths = await api.getFolderPaths()
-      this.#showMissingModelsError(missingModels, paths)
+      this.showMissingModelsError(missingModels, paths)
     }
     await useExtensionService().invokeExtensionsAsync(
       'afterConfigureGraph',
@@ -1325,14 +1330,14 @@ export class ComfyApp {
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
-    this.#queueItems.push({ number, batchCount, queueNodeIds })
+    this.queueItems.push({ number, batchCount, queueNodeIds })
 
     // Only have one action process the items so each one gets a unique seed correctly
-    if (this.#processingQueue) {
+    if (this.processingQueue) {
       return false
     }
 
-    this.#processingQueue = true
+    this.processingQueue = true
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
@@ -1340,8 +1345,8 @@ export class ComfyApp {
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
-      while (this.#queueItems.length) {
-        const { number, batchCount, queueNodeIds } = this.#queueItems.pop()!
+      while (this.queueItems.length) {
+        const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
@@ -1406,7 +1411,7 @@ export class ComfyApp {
         }
       }
     } finally {
-      this.#processingQueue = false
+      this.processingQueue = false
     }
     api.dispatchCustomEvent('promptQueued', { number, batchCount })
     return !executionStore.lastNodeErrors
@@ -1610,7 +1615,7 @@ export class ComfyApp {
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
     if (missingNodeTypes.length) {
-      this.#showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
+      this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
       return
     }
 
@@ -1729,7 +1734,7 @@ export class ComfyApp {
       useToastStore().add(requestToastMessage)
     }
 
-    const defs = await this.#getNodeDefs()
+    const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
@@ -1805,17 +1810,17 @@ export class ComfyApp {
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
-    if (!this.#positionConversion) {
+    if (!this.positionConversion) {
       throw new Error('clientPosToCanvasPos called before setup')
     }
-    return this.#positionConversion.clientPosToCanvasPos(pos)
+    return this.positionConversion.clientPosToCanvasPos(pos)
   }
 
   canvasPosToClientPos(pos: Vector2): Vector2 {
-    if (!this.#positionConversion) {
+    if (!this.positionConversion) {
       throw new Error('canvasPosToClientPos called before setup')
     }
-    return this.#positionConversion.canvasPosToClientPos(pos)
+    return this.positionConversion.canvasPosToClientPos(pos)
   }
 }
 
