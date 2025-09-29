@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core'
-import { computed, customRef, ref } from 'vue'
+import { computed, customRef, ref, triggerRef } from 'vue'
 import draggable from 'vuedraggable'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import {
   type ProxyWidgetsProperty,
   parseProxyWidgets
@@ -59,24 +63,6 @@ const activeWidgets = computed<WidgetItem[]>({
     proxyWidgets.value = pw
   }
 })
-function toggleVisibility(
-  nodeId: string,
-  widgetName: string,
-  isShown: boolean
-) {
-  const node = activeNode.value
-  if (!node)
-    throw new Error('Attempted to toggle widgets with no node selected')
-  if (!isShown) {
-    const pw = proxyWidgets.value
-    pw.push([nodeId, widgetName])
-    proxyWidgets.value = pw
-  } else {
-    proxyWidgets.value = proxyWidgets.value.filter(
-      (p: [string, string]) => p[1] !== widgetName || p[0] !== nodeId
-    )
-  }
-}
 
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   if (!n.widgets) return []
@@ -99,9 +85,10 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
     if (!node) return []
     return parseProxyWidgets(node.properties.proxyWidgets)
   },
-  set(value: ProxyWidgetsProperty) {
+  set(value?: ProxyWidgetsProperty) {
     trigger()
     const node = activeNode.value
+    if (!value) return
     if (!node) {
       console.error('Attempted to toggle widgets with no node selected')
       return
@@ -109,6 +96,19 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
     node.properties.proxyWidgets = JSON.stringify(value)
   }
 }))
+
+function demote([node, widget]: WidgetItem) {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return []
+  demoteWidget(node, widget, [subgraphNode])
+  triggerRef(proxyWidgets)
+}
+function promote([node, widget]: WidgetItem) {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return []
+  promoteWidget(node, widget, [subgraphNode])
+  triggerRef(proxyWidgets)
+}
 
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
@@ -220,9 +220,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
           :node-title="widgetItem[0].title"
           :widget-name="widgetItem[1].name"
           :is-shown="true"
-          @toggle-visibility="
-            toggleVisibility(`${widgetItem[0].id}`, widgetItem[1].name, true)
-          "
+          @toggle-visibility="demote(widgetItem)"
         />
       </div>
     </div>
@@ -242,9 +240,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
           :widget-name="element[1].name"
           :is-shown="true"
           :is-draggable="true"
-          @toggle-visibility="
-            toggleVisibility(`${element[0].id}`, element[1].name, true)
-          "
+          @toggle-visibility="demote(element)"
         />
       </template>
     </draggable>
@@ -269,9 +265,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
       <SubgraphNodeWidget
         :node-title="widgetItem[0].title"
         :widget-name="widgetItem[1].name"
-        @toggle-visibility="
-          toggleVisibility(`${widgetItem[0].id}`, widgetItem[1].name, false)
-        "
+        @toggle-visibility="promote(widgetItem)"
       />
     </div>
   </div>

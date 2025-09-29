@@ -24,18 +24,18 @@ function getProxyWidgets(node: SubgraphNode) {
  * @param {IBaseWidget} widget - The widget to be promoted
  * @param {LGraphNode} node - the node which owns the widget
  */
-function promoteWidget(
-  widget: IBaseWidget,
+export function promoteWidget(
   node: LGraphNode,
+  widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
   for (const parent of parents) pushWidgets(parent, [`${node.id}`, widget.name])
   widget.promoted = true
 }
 
-function demoteWidget(
-  widget: IBaseWidget,
+export function demoteWidget(
   node: LGraphNode,
+  widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
   for (const parent of parents) {
@@ -81,14 +81,14 @@ export function addWidgetPromotionOptions(
     options.unshift({
       content: `Promote Widget: ${widget.label ?? widget.name}`,
       callback: () => {
-        promoteWidget(widget, node, promotableParents)
+        promoteWidget(node, widget, promotableParents)
       }
     })
   else {
     options.unshift({
       content: `Un-Promote Widget: ${widget.label ?? widget.name}`,
       callback: () => {
-        demoteWidget(widget, node, parents)
+        demoteWidget(node, widget, parents)
       }
     })
   }
