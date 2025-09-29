@@ -61,7 +61,7 @@
         "Node name for S&R": "LoadVideo"
       },
       "widgets_values": [
-        "Dying for the right cause, is the most human thing we can do [sOBtQofXPDA].mp4",
+        null,
         "image"
       ]
     },
@@ -96,7 +96,7 @@
         "Node name for S&R": "DevToolsLoadAnimatedImageTest"
       },
       "widgets_values": [
-        "l0isitzgugt41.webp",
+        null,
         "image"
       ]
     },
@@ -131,7 +131,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "ComfyUI_00084_.png",
+        null,
         "image"
       ]
     },
@@ -161,7 +161,7 @@
         "Node name for S&R": "LoadImageMask"
       },
       "widgets_values": [
-        "01. a lot.mp3",
+        null,
         "alpha",
         "image"
       ]
@@ -197,7 +197,7 @@
         "Node name for S&R": "LoadImageOutput"
       },
       "widgets_values": [
-        "ComfyUI_00509_.png [output]",
+        null,
         false,
         "refresh",
         "image"
