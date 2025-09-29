@@ -228,6 +228,16 @@ const cursors = {
   NW: 'nwse-resize'
 } as const
 
+/** A lightweight converter for client<->canvas coordinate transforms. */
+interface PositionConverter {
+  /** Convert a client/pointer position to canvas (graph) space. */
+  clientPosToCanvasPos(pos: Point): Point
+  /** Convert a canvas (graph) position to client space. */
+  canvasPosToClientPos(pos: Point): Point
+  /** Optional hook to refresh internal caches (e.g. bounding rect). */
+  update?(): void
+}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -478,11 +488,19 @@ export class LGraphCanvas
     return this._isLowQuality
   }
 
+  /**
+   * Converts pointer/client positions to canvas positions without forcing layout reads.
+   * When present, {@link adjustMouseEvent} will use this instead of DOM queries.
+   */
+  positionConverter?: PositionConverter
+
   options: {
     skip_events?: any
     viewport?: any
     skip_render?: any
     autoresize?: any
+    /** Optional converter for client<->canvas position transforms. */
+    positionConverter?: PositionConverter
   }
 
   background_image: string
@@ -739,6 +757,8 @@ export class LGraphCanvas
   ) {
     options ||= {}
     this.options = options
+    if (options.positionConverter)
+      this.positionConverter = options.positionConverter
 
     // if(graph === undefined)
     // throw ("No graph assigned");
@@ -4453,33 +4473,54 @@ export class LGraphCanvas
   adjustMouseEvent<T extends MouseEvent>(
     e: T & Partial<CanvasPointerExtensions>
   ): asserts e is T & CanvasPointerEvent {
-    let clientX_rel = e.clientX
-    let clientY_rel = e.clientY
+    const { ds, positionConverter } = this
 
-    if (this.canvas) {
-      const b = this.canvas.getBoundingClientRect()
-      clientX_rel -= b.left
-      clientY_rel -= b.top
+    if (positionConverter) {
+      const [canvasX, canvasY] = positionConverter.clientPosToCanvasPos([
+        e.clientX,
+        e.clientY
+      ])
+
+      // safeOffset is relative to the canvas element (like offsetX/Y), not page
+      const safeX = (canvasX + ds.offset[0]) * ds.scale
+      const safeY = (canvasY + ds.offset[1]) * ds.scale
+
+      e.canvasX = canvasX
+      e.canvasY = canvasY
+      e.safeOffsetX = safeX
+      e.safeOffsetY = safeY
+
+      if (e.deltaX === undefined) e.deltaX = safeX - this.last_mouse_position[0]
+      if (e.deltaY === undefined) e.deltaY = safeY - this.last_mouse_position[1]
+
+      this.last_mouse_position[0] = safeX
+      this.last_mouse_position[1] = safeY
+    } else {
+      // Fallback to DOM rect (legacy path)
+      let clientX_rel = e.clientX
+      let clientY_rel = e.clientY
+
+      if (this.canvas) {
+        const b = this.canvas.getBoundingClientRect()
+        clientX_rel -= b.left
+        clientY_rel -= b.top
+      }
+
+      e.safeOffsetX = clientX_rel
+      e.safeOffsetY = clientY_rel
+
+      // Only set deltaX and deltaY if not already set.
+      if (e.deltaX === undefined)
+        e.deltaX = clientX_rel - this.last_mouse_position[0]
+      if (e.deltaY === undefined)
+        e.deltaY = clientY_rel - this.last_mouse_position[1]
+
+      this.last_mouse_position[0] = clientX_rel
+      this.last_mouse_position[1] = clientY_rel
+
+      e.canvasX = clientX_rel / ds.scale - ds.offset[0]
+      e.canvasY = clientY_rel / ds.scale - ds.offset[1]
     }
-
-    e.safeOffsetX = clientX_rel
-    e.safeOffsetY = clientY_rel
-
-    // TODO: Find a less brittle way to do this
-
-    // Only set deltaX and deltaY if not already set.
-    // If deltaX and deltaY are already present, they are read-only.
-    // Setting them would result browser error => zoom in/out feature broken.
-    if (e.deltaX === undefined)
-      e.deltaX = clientX_rel - this.last_mouse_position[0]
-    if (e.deltaY === undefined)
-      e.deltaY = clientY_rel - this.last_mouse_position[1]
-
-    this.last_mouse_position[0] = clientX_rel
-    this.last_mouse_position[1] = clientY_rel
-
-    e.canvasX = clientX_rel / this.ds.scale - this.ds.offset[0]
-    e.canvasY = clientY_rel / this.ds.scale - this.ds.offset[1]
   }
 
   /**

@@ -5,6 +5,7 @@ import { computed, ref, shallowRef } from 'vue'
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()
@@ -41,10 +42,17 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
     )
   }
 
+  const pendingLinkDropAction = ref<LinkReleaseTriggerAction | null>(null)
+  function setPendingLinkDropAction(action: LinkReleaseTriggerAction | null) {
+    pendingLinkDropAction.value = action
+  }
+
   return {
     newSearchBoxEnabled,
     setPopoverRef,
     toggleVisible,
-    visible
+    visible,
+    pendingLinkDropAction,
+    setPendingLinkDropAction
   }
 })

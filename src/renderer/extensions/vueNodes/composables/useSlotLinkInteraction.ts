@@ -3,6 +3,7 @@ import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
@@ -11,7 +12,9 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import {
@@ -24,6 +27,8 @@ import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragSession } from '@/renderer/extensions/vueNodes/composables/slotLinkDragSession'
 import { app } from '@/scripts/app'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {
@@ -97,6 +102,23 @@ export function useSlotLinkInteraction({
 
   // Per-drag drag-state cache
   const dragSession = createSlotLinkDragSession()
+
+  const settingStore = useSettingStore()
+  const searchBoxStore = useSearchBoxStore()
+
+  const resolveDropAction = (event: PointerEvent): LinkReleaseTriggerAction => {
+    const baseAction =
+      (settingStore.get('Comfy.LinkRelease.Action') as
+        | LinkReleaseTriggerAction
+        | null
+        | undefined) ?? LinkReleaseTriggerAction.NO_ACTION
+    const shiftAction = settingStore.get('Comfy.LinkRelease.ActionShift') as
+      | LinkReleaseTriggerAction
+      | null
+      | undefined
+
+    return event.shiftKey ? shiftAction ?? baseAction : baseAction
+  }
 
   function candidateFromTarget(
     target: EventTarget | null
@@ -502,29 +524,46 @@ export function useSlotLinkInteraction({
       return
     }
 
-    // Prefer using the snapped candidate captured during hover for perf + consistency
+    // Prefer using any snapped candidate captured during hover
     const snappedCandidate = state.candidate?.compatible
       ? state.candidate
       : null
 
     let connected = tryConnectToCandidate(snappedCandidate)
 
-    // Fallback to DOM slot under pointer (if any), then node fallback, then reroute
+    //  Then fallback to DOM slot under pointer
     if (!connected) {
       const domCandidate = candidateFromTarget(event.target)
       connected = tryConnectToCandidate(domCandidate)
     }
 
+    // Then fallback to node under pointer
     if (!connected) {
       const nodeCandidate = candidateFromNodeTarget(event.target)
       connected = tryConnectToCandidate(nodeCandidate)
     }
 
+    // Then fallback to reroute under pointer
     if (!connected) connected = tryConnectViaRerouteAtPointer() || connected
 
-    // Drop on canvas: disconnect moving input link(s)
-    if (!connected && !snappedCandidate && state.source.type === 'input') {
-      ensureActiveAdapter()?.disconnectMovingLinks()
+    // Then fallback to dropping on canvas under pointer
+    if (!connected && !snappedCandidate) {
+      const canvas: LGraphCanvas | null = app.canvas
+      const adapter = ensureActiveAdapter()
+      if (adapter && canvas) {
+        const action = resolveDropAction(event)
+        if (action === LinkReleaseTriggerAction.NO_ACTION)
+          adapter.disconnectMovingLinks()
+
+        const adjustMouseEvent: (
+          e: PointerEvent
+        ) => asserts e is PointerEvent & CanvasPointerEvent =
+          canvas.adjustMouseEvent.bind(canvas)
+        adjustMouseEvent(event)
+
+        searchBoxStore.setPendingLinkDropAction(action)
+        canvas.linkConnector?.dropOnNothing(event)
+      }
     }
 
     cleanupInteraction()

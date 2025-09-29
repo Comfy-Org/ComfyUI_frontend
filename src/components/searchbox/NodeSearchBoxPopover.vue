@@ -262,17 +262,26 @@ function cancelNextReset(e: CustomEvent<CanvasPointerEvent>) {
 }
 
 function handleDroppedOnCanvas(e: CustomEvent<CanvasPointerEvent>) {
-  disconnectOnReset = true
-  const action = e.detail.shiftKey
+  const pendingAction = searchBoxStore.pendingLinkDropAction
+  searchBoxStore.setPendingLinkDropAction(null)
+
+  const fallbackAction = e.detail.shiftKey
     ? linkReleaseActionShift.value
     : linkReleaseAction.value
+
+  const action =
+    pendingAction ?? fallbackAction ?? LinkReleaseTriggerAction.NO_ACTION
+
+  disconnectOnReset = action !== LinkReleaseTriggerAction.NO_ACTION
+  if (!disconnectOnReset) return
+
+  cancelNextReset(e)
+
   switch (action) {
     case LinkReleaseTriggerAction.SEARCH_BOX:
-      cancelNextReset(e)
       showSearchBox(e.detail)
       break
     case LinkReleaseTriggerAction.CONTEXT_MENU:
-      cancelNextReset(e)
       showContextMenu(e.detail)
       break
     case LinkReleaseTriggerAction.NO_ACTION:

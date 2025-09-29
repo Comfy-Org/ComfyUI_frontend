@@ -903,6 +903,9 @@ export class ComfyApp {
       this.canvasContainer,
       this.canvas
     )
+
+    // Provide high-performance position converter to LGraphCanvas
+    this.canvas.positionConverter = this.#positionConversion
   }
 
   resizeCanvas() {
