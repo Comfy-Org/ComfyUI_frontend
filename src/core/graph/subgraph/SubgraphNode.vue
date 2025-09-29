@@ -217,11 +217,12 @@ const filteredActive = computed<WidgetItem[]>(() => {
         class="w-full"
       >
         <SubgraphNodeWidget
-          :node-id="`${widgetItem[0].id}`"
           :node-title="widgetItem[0].title"
           :widget-name="widgetItem[1].name"
-          :toggle-visibility="toggleVisibility"
           :is-shown="true"
+          @toggle-visibility="
+            toggleVisibility(`${widgetItem[0].id}`, widgetItem[1].name, true)
+          "
         />
       </div>
     </div>
@@ -237,12 +238,13 @@ const filteredActive = computed<WidgetItem[]>(() => {
     >
       <template #item="{ element }">
         <SubgraphNodeWidget
-          :node-id="`${element[0].id}`"
           :node-title="element[0].title"
           :widget-name="element[1].name"
           :is-shown="true"
-          :toggle-visibility="toggleVisibility"
           :is-draggable="true"
+          @toggle-visibility="
+            toggleVisibility(`${element[0].id}`, element[1].name, true)
+          "
         />
       </template>
     </draggable>
@@ -260,15 +262,16 @@ const filteredActive = computed<WidgetItem[]>(() => {
       >
     </div>
     <div
-      v-for="element in filteredCandidates"
-      :key="toKey(element)"
+      v-for="widgetItem in filteredCandidates"
+      :key="toKey(widgetItem)"
       class="w-full"
     >
       <SubgraphNodeWidget
-        :node-id="`${element[0].id}`"
-        :node-title="element[0].title"
-        :widget-name="element[1].name"
-        :toggle-visibility="toggleVisibility"
+        :node-title="widgetItem[0].title"
+        :widget-name="widgetItem[1].name"
+        @toggle-visibility="
+          toggleVisibility(`${widgetItem[0].id}`, widgetItem[1].name, false)
+        "
       />
     </div>
   </div>

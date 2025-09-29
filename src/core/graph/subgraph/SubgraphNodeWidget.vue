@@ -1,22 +1,15 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
-const props = defineProps<{
-  nodeId: string
+defineProps<{
   nodeTitle: string
   widgetName: string
   isShown?: boolean
   isDraggable?: boolean
-  toggleVisibility: (
-    nodeId: string,
-    widgetName: string,
-    isShown: boolean
-  ) => void
 }>()
-
-function onClick() {
-  props.toggleVisibility(props.nodeId, props.widgetName, props.isShown ?? false)
-}
+defineEmits<{
+  (e: 'toggleVisibility'): void
+}>()
 </script>
 <template>
   <div
@@ -34,7 +27,7 @@ function onClick() {
       class="shrink-0"
       text
       severity="secondary"
-      @click.stop="onClick"
+      @click.stop="$emit('toggleVisibility')"
     >
       <i-lucide:eye v-if="isShown" />
       <i-lucide:eye-off v-else />
