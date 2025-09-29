@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { useAudioService } from '@/services/audioService'
 
-export interface AudioRecorderOptions {
+interface AudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob) => Promise<void>
   onError?: (error: Error) => void
 }

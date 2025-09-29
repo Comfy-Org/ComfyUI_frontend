@@ -1,10 +1,10 @@
 import { type Ref, onUnmounted, ref } from 'vue'
 
-export interface WaveformBar {
+interface WaveformBar {
   height: number
 }
 
-export interface AudioWaveformOptions {
+interface AudioWaveformOptions {
   barCount?: number
   minHeight?: number
   maxHeight?: number

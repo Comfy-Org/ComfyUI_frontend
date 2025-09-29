@@ -1,6 +1,6 @@
 import { type Ref, nextTick, ref } from 'vue'
 
-export interface AudioPlaybackOptions {
+interface AudioPlaybackOptions {
   onPlaybackEnded?: () => void
   onMetadataLoaded?: (duration: number) => void
 }
