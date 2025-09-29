@@ -20,7 +20,9 @@
       >
         <i-lucide:image-off class="w-12 h-12 mb-2 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="text-xs text-gray-400 mt-1">{{ currentImageUrl }}</p>
+        <p class="text-xs text-gray-400 mt-1">
+          {{ getImageFilename(currentImageUrl) }}
+        </p>
       </div>
 
       <!-- Loading State -->
@@ -259,5 +261,9 @@ const handleKeyDown = (event: KeyboardEvent) => {
       setCurrentIndex(props.imageUrls.length - 1)
       break
   }
+}
+
+const getImageFilename = (url: string): string => {
+  return new URL(url).searchParams.get('filename') || url
 }
 </script>
