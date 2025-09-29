@@ -1,11 +1,73 @@
 import type { TooltipDirectivePassThroughOptions } from 'primevue'
-import { type MaybeRef, type Ref, computed, unref } from 'vue'
+import { type MaybeRef, type Ref, computed, unref, watch } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { cn } from '@/utils/tailwindUtil'
+
+/**
+ * Hide all visible tooltips by finding them via class and dispatching mouseleave
+ * Tooltips only exist in DOM when visible, so we can query them directly
+ */
+const hideTooltipsGlobally = () => {
+  // Get all visible tooltip elements (PrimeVue uses .p-tooltip class)
+  const tooltips = document.querySelectorAll('.p-tooltip')
+
+  // Early return if no tooltips are visible - avoid unnecessary work
+  if (tooltips.length === 0) return
+
+  tooltips.forEach((tooltipEl) => {
+    const tooltipId = tooltipEl.id
+    if (!tooltipId) return
+
+    // Find the target element that owns this tooltip
+    const targetElements = document.querySelectorAll('[data-pd-tooltip="true"]')
+    for (const targetEl of targetElements) {
+      if ((targetEl as any).$_ptooltipId === tooltipId) {
+        ;(targetEl as HTMLElement).dispatchEvent(
+          new MouseEvent('mouseleave', { bubbles: true })
+        )
+        break
+      }
+    }
+  })
+}
+
+// Global tooltip hiding system
+const globalTooltipState = { watchersSetup: false }
+
+function setupGlobalTooltipHiding() {
+  if (globalTooltipState.watchersSetup) return
+
+  // Watch isDraggingVueNodes from useNodePointerInteractions
+  // This tracks when ANY node is being dragged (set by pointerHandlers in useNodePointerInteractions)
+  // When dragging starts, hide all tooltips immediately
+  watch(
+    () => layoutStore.isDraggingVueNodes.value,
+    (isDragging) => {
+      if (isDragging) {
+        hideTooltipsGlobally()
+      }
+    }
+  )
+
+  // Hide on any pointerdown (immediate click hiding)
+  // This catches clicks that don't result in drags
+  document.addEventListener('pointerdown', hideTooltipsGlobally)
+
+  // Hide on wheel/scroll (for zoom operations)
+  // Use capture phase to catch wheel events before they reach canvas/nodes
+  window.addEventListener('wheel', hideTooltipsGlobally, {
+    capture: true,
+    passive: true
+  })
+
+  globalTooltipState.watchersSetup = true
+}
 
 /**
  * Composable for managing Vue node tooltips
@@ -17,6 +79,9 @@ export function useNodeTooltips(
 ) {
   const nodeDefStore = useNodeDefStore()
   const settingsStore = useSettingStore()
+
+  // Setup global pointerdown listener once
+  setupGlobalTooltipHiding()
 
   // Check if tooltips are globally enabled
   const tooltipsEnabled = computed(() =>
@@ -76,6 +141,7 @@ export function useNodeTooltips(
 
   /**
    * Create tooltip configuration object for v-tooltip directive
+   * Includes automatic pointerdown-to-hide behavior
    */
   const createTooltipConfig = (text: string) => {
     const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
@@ -84,21 +150,32 @@ export function useNodeTooltips(
     const config: {
       value: string
       showDelay: number
+      hideDelay: number
       disabled: boolean
       appendTo?: HTMLElement
       pt?: TooltipDirectivePassThroughOptions
     } = {
       value: tooltipText,
       showDelay: tooltipDelay as number,
-      disabled: !tooltipsEnabled.value || !tooltipText,
+      hideDelay: 0, // Immediate hiding
+      disabled:
+        !tooltipsEnabled.value ||
+        !tooltipText ||
+        layoutStore.isDraggingVueNodes.value,
       pt: {
         text: {
           class:
-            'bg-pure-white dark-theme:bg-charcoal-800 border dark-theme:border-slate-300 rounded-md px-4 py-2 text-charcoal-700 dark-theme:text-pure-white text-sm font-normal leading-tight max-w-75 shadow-none'
+            'border-sand-100 bg-pure-white dark-theme:bg-charcoal-800 border dark-theme:border-slate-300 rounded-md px-4 py-2 text-charcoal-700 dark-theme:text-pure-white text-sm font-normal leading-tight max-w-75 shadow-none'
         },
-        arrow: {
-          class: 'before:border-slate-300'
-        }
+        arrow: ({ context }) => ({
+          class: cn(
+            context?.top && 'border-t-sand-100 dark-theme:border-t-slate-300',
+            context?.bottom &&
+              'border-b-sand-100 dark-theme:border-b-slate-300',
+            context?.left && 'border-l-sand-100 dark-theme:border-l-slate-300',
+            context?.right && 'border-r-sand-100 dark-theme:border-r-slate-300'
+          )
+        })
       }
     }
 
