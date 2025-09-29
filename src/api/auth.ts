@@ -187,6 +187,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
   }
 }
 
+// @ts-expect-error - Unused function kept for future use
 async function postSurveyStatus(): Promise<void> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {

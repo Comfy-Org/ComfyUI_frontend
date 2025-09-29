@@ -52,7 +52,6 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'vite.config.mts',
-            'vite.electron.config.mts',
             'vite.types.config.mts',
             'vitest.litegraph.config.ts'
           ]

@@ -1,6 +1,7 @@
 import { defineConfig, mergeConfig } from 'vite'
 import type { Plugin } from 'vite'
 
+// @ts-expect-error - TypeScript doesn't allow .mts extension in imports
 import baseConfig from './vite.config.mts'
 
 const mockElectronAPI: Plugin = {
