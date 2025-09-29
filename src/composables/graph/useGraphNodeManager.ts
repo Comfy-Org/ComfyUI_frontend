@@ -241,7 +241,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   /**
-   * Sets up widget callbacks for a node - now with reduced nesting
+   * Sets up widget callbacks for a node
    */
   const setupNodeWidgetCallbacks = (node: LGraphNode) => {
     if (!node.widgets) return
