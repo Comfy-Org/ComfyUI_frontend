@@ -23,6 +23,9 @@ importers:
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:packages/shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
@@ -372,6 +375,19 @@ importers:
         version: 5.9.2
 
   packages/registry-types: {}
+
+  packages/shared-frontend-utils:
+    dependencies:
+      axios:
+        specifier: ^1.11.0
+        version: 1.11.0
+    devDependencies:
+      '@comfyorg/comfyui-electron-types':
+        specifier: 0.4.73-0
+        version: 0.4.73-0
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
 
   packages/tailwind-utils:
     dependencies:
