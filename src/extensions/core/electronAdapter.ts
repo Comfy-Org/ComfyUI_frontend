@@ -6,8 +6,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
-import { checkMirrorReachable } from '@/utils/networkUtil'
 
 // Desktop documentation URLs
 const DESKTOP_DOCS = {
