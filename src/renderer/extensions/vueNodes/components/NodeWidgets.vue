@@ -118,18 +118,11 @@ interface ProcessedWidget {
   tooltipConfig: any
 }
 
-
-
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
   const widgets = nodeData.widgets as SafeWidgetData[]
   const result: ProcessedWidget[] = []
-
-  // Get node type/class
-  const nodeClass =
-    (nodeData as any)?.constructor?.comfyClass || (nodeData as any)?.type || ''
-
 
   for (const widget of widgets) {
     // Skip if widget is in the hidden list for this node type
