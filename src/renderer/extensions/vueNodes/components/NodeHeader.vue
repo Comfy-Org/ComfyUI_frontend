@@ -9,7 +9,7 @@
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2 relative">
+    <div class="flex items-center justify-between gap-2.5 relative">
       <!-- Collapse/Expand Button -->
       <button
         v-show="!readonly"
