@@ -114,13 +114,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'audioUI',
     {
       component: WidgetAudioUI,
-      aliases: [
-        'AUDIOUI',
-        'AUDIO_UI',
-        'AUDIOUPLOAD',
-        'AUDIO_RECORD',
-        'AUDIO_UPLOAD'
-      ],
+      aliases: ['AUDIOUI', 'AUDIO_UI'],
       essential: false
     }
   ]
