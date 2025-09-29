@@ -219,7 +219,9 @@ export function useRemoteWidget<
    * Add a refresh button to the node that, when clicked, will force the widget to refresh
    */
   function addRefreshButton() {
-    node.addWidget('button', 'refresh', 'refresh', widget.refresh)
+    node.addWidget('button', 'refresh', 'refresh', widget.refresh, {
+      canvasOnly: true
+    })
   }
 
   /**
@@ -244,7 +246,8 @@ export function useRemoteWidget<
         autoRefreshEnabled = value
       },
       {
-        serialize: false
+        serialize: false,
+        canvasOnly: true
       }
     )
 
