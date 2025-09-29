@@ -1,11 +1,11 @@
 import type { Locator } from '@playwright/test'
 
-import { getSlotKey } from '../../../src/renderer/core/layout/slots/slotIdentifier'
+import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../fixtures/ComfyPage'
-import { fitToViewInstant } from '../../helpers/fitToView'
+} from '../../../../fixtures/ComfyPage'
+import { fitToViewInstant } from '../../../../helpers/fitToView'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -100,7 +100,7 @@ test.describe('Vue Node Link Interaction', () => {
 
     const linkDetails = await comfyPage.page.evaluate((sourceId) => {
       const app = window['app']
-      const graph = app?.canvas?.graph ?? app?.graph
+      const graph = app?.canvas?.graph
       if (!graph) return null
 
       const source = graph.getNodeById(sourceId)
@@ -164,7 +164,7 @@ test.describe('Vue Node Link Interaction', () => {
 
     const graphLinkCount = await comfyPage.page.evaluate((sourceId) => {
       const app = window['app']
-      const graph = app?.canvas?.graph ?? app?.graph
+      const graph = app?.canvas?.graph
       if (!graph) return 0
 
       const source = graph.getNodeById(sourceId)
@@ -207,7 +207,7 @@ test.describe('Vue Node Link Interaction', () => {
 
     const graphLinkCount = await comfyPage.page.evaluate((sourceId) => {
       const app = window['app']
-      const graph = app?.canvas?.graph ?? app?.graph
+      const graph = app?.canvas?.graph
       if (!graph) return 0
 
       const source = graph.getNodeById(sourceId)

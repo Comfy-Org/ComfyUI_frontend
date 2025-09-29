@@ -18,7 +18,7 @@ export default defineConfig([
       'src/scripts/*',
       'src/extensions/core/*',
       'src/types/vue-shim.d.ts',
-      'src/types/comfyRegistryTypes.ts',
+      'packages/registry-types/src/comfyRegistryTypes.ts',
       'src/types/generatedManagerTypes.ts',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*'
@@ -179,6 +179,32 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': [
         'error',
         { disallowTypeAnnotations: false }
+      ]
+    }
+  },
+  {
+    files: ['**/*.spec.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message: '.spec.ts files are only allowed under browser_tests/tests/'
+        }
+      ]
+    }
+  },
+  {
+    files: ['browser_tests/tests/**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message:
+            '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
+        }
       ]
     }
   }

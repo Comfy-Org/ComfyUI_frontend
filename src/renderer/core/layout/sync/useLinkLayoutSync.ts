@@ -1,14 +1,6 @@
-/**
- * Composable for event-driven link layout synchronization
- *
- * Implements event-driven link layout updates decoupled from the render cycle.
- * Updates link geometry only when it actually changes (node move/resize, link create/delete,
- * reroute create/delete/move, collapse toggles).
- */
-import log from 'loglevel'
-import { onUnmounted } from 'vue'
+import { tryOnScopeDispose } from '@vueuse/core'
+import { computed, ref, toValue } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
@@ -20,23 +12,17 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 
-const logger = log.getLogger('useLinkLayoutSync')
-
-/**
- * Composable for managing link layout synchronization
- */
 export function useLinkLayoutSync() {
-  let canvas: LGraphCanvas | null = null
-  let graph: LGraph | null = null
-  let offscreenCtx: CanvasRenderingContext2D | null = null
-  let adapter: LitegraphLinkAdapter | null = null
-  let unsubscribeLayoutChange: (() => void) | null = null
-  let restoreHandlers: (() => void) | null = null
+  const canvasRef = ref<LGraphCanvas>()
+  const graphRef = computed(() => canvasRef.value?.graph)
+  const unsubscribeLayoutChange = ref<() => void>()
+  const adapter = new LitegraphLinkAdapter()
 
   /**
    * Build link render context from canvas properties
    */
   function buildLinkRenderContext(): LinkRenderContext {
+    const canvas = toValue(canvasRef)
     if (!canvas) {
       throw new Error('Canvas not initialized')
     }
@@ -73,7 +59,9 @@ export function useLinkLayoutSync() {
    * - No dragging state handling (pure geometry computation)
    */
   function recomputeLinkById(linkId: number): void {
-    if (!graph || !adapter || !offscreenCtx || !canvas) return
+    const canvas = toValue(canvasRef)
+    const graph = toValue(graphRef)
+    if (!graph || !canvas) return
 
     const link = graph.links.get(linkId)
     if (!link || link.id === -1) return // Skip floating/temp links
@@ -131,7 +119,7 @@ export function useLinkLayoutSync() {
 
         // Render segment to this reroute
         adapter.renderLinkDirect(
-          offscreenCtx,
+          canvas.ctx,
           segmentStartPos,
           reroute.pos,
           link,
@@ -167,7 +155,7 @@ export function useLinkLayoutSync() {
       ]
 
       adapter.renderLinkDirect(
-        offscreenCtx,
+        canvas.ctx,
         lastReroute.pos,
         endPos,
         link,
@@ -185,7 +173,7 @@ export function useLinkLayoutSync() {
     } else {
       // No reroutes - render direct link
       adapter.renderLinkDirect(
-        offscreenCtx,
+        canvas.ctx,
         startPos,
         endPos,
         link,
@@ -206,6 +194,7 @@ export function useLinkLayoutSync() {
    * Recompute all links connected to a node
    */
   function recomputeLinksForNode(nodeId: number): void {
+    const graph = toValue(graphRef)
     if (!graph) return
 
     const node = graph.getNodeById(nodeId)
@@ -243,6 +232,7 @@ export function useLinkLayoutSync() {
    * Recompute all links associated with a reroute
    */
   function recomputeLinksForReroute(rerouteId: number): void {
+    const graph = toValue(graphRef)
     if (!graph) return
 
     const reroute = graph.reroutes.get(rerouteId)
@@ -258,105 +248,55 @@ export function useLinkLayoutSync() {
    * Start link layout sync with event-driven functionality
    */
   function start(canvasInstance: LGraphCanvas): void {
-    canvas = canvasInstance
-    graph = canvas.graph
-    if (!graph) return
-
-    // Create offscreen canvas context
-    const offscreenCanvas = document.createElement('canvas')
-    offscreenCtx = offscreenCanvas.getContext('2d')
-    if (!offscreenCtx) {
-      logger.error('Failed to create offscreen canvas context')
-      return
-    }
-
-    // Create dedicated adapter with layout writes enabled
-    adapter = new LitegraphLinkAdapter(graph)
-    adapter.enableLayoutStoreWrites = true
+    canvasRef.value = canvasInstance
+    if (!canvasInstance.graph) return
 
     // Initial computation for all existing links
-    for (const link of graph._links.values()) {
+    for (const link of canvasInstance.graph._links.values()) {
       if (link.id !== -1) {
         recomputeLinkById(link.id)
       }
     }
 
     // Subscribe to layout store changes
-    unsubscribeLayoutChange = layoutStore.onChange((change: LayoutChange) => {
-      switch (change.operation.type) {
-        case 'moveNode':
-        case 'resizeNode':
-          recomputeLinksForNode(parseInt(change.operation.nodeId))
-          break
-        case 'createLink':
-          recomputeLinkById(change.operation.linkId)
-          break
-        case 'deleteLink':
-          // No-op - store already cleaned by existing code
-          break
-        case 'createReroute':
-        case 'deleteReroute':
-          // Recompute all affected links
-          if ('linkIds' in change.operation) {
-            for (const linkId of change.operation.linkIds) {
-              recomputeLinkById(linkId)
+    unsubscribeLayoutChange.value?.()
+    unsubscribeLayoutChange.value = layoutStore.onChange(
+      (change: LayoutChange) => {
+        switch (change.operation.type) {
+          case 'moveNode':
+          case 'resizeNode':
+            recomputeLinksForNode(parseInt(change.operation.nodeId))
+            break
+          case 'createLink':
+            recomputeLinkById(change.operation.linkId)
+            break
+          case 'deleteLink':
+            // No-op - store already cleaned by existing code
+            break
+          case 'createReroute':
+          case 'deleteReroute':
+            // Recompute all affected links
+            if ('linkIds' in change.operation) {
+              for (const linkId of change.operation.linkIds) {
+                recomputeLinkById(linkId)
+              }
             }
-          }
-          break
-        case 'moveReroute':
-          recomputeLinksForReroute(change.operation.rerouteId)
-          break
-      }
-    })
-
-    // Hook collapse events
-    const origTrigger = graph.onTrigger
-
-    graph.onTrigger = (action: string, param: any) => {
-      if (
-        action === 'node:property:changed' &&
-        param?.property === 'flags.collapsed'
-      ) {
-        const nodeId = parseInt(String(param.nodeId))
-        if (!isNaN(nodeId)) {
-          recomputeLinksForNode(nodeId)
+            break
+          case 'moveReroute':
+            recomputeLinksForReroute(change.operation.rerouteId)
+            break
         }
       }
-      if (origTrigger) {
-        origTrigger.call(graph, action, param)
-      }
-    }
-
-    // Store cleanup function
-    restoreHandlers = () => {
-      if (graph) {
-        graph.onTrigger = origTrigger || undefined
-      }
-    }
+    )
   }
 
-  /**
-   * Stop link layout sync and cleanup all resources
-   */
   function stop(): void {
-    if (unsubscribeLayoutChange) {
-      unsubscribeLayoutChange()
-      unsubscribeLayoutChange = null
-    }
-    if (restoreHandlers) {
-      restoreHandlers()
-      restoreHandlers = null
-    }
-    canvas = null
-    graph = null
-    offscreenCtx = null
-    adapter = null
+    unsubscribeLayoutChange.value?.()
+    unsubscribeLayoutChange.value = undefined
+    canvasRef.value = undefined
   }
 
-  // Auto-cleanup on unmount
-  onUnmounted(() => {
-    stop()
-  })
+  tryOnScopeDispose(stop)
 
   return {
     start,

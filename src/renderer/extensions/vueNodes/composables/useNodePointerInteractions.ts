@@ -36,9 +36,12 @@ export function useNodePointerInteractions(
 
   // Drag state for styling
   const isDragging = ref(false)
-  const dragStyle = computed(() => ({
-    cursor: isDragging.value ? 'grabbing' : 'grab'
-  }))
+  const dragStyle = computed(() => {
+    if (nodeData.value?.flags?.pinned) {
+      return { cursor: 'default' }
+    }
+    return { cursor: isDragging.value ? 'grabbing' : 'grab' }
+  })
   const startPosition = ref({ x: 0, y: 0 })
 
   const handlePointerDown = (event: PointerEvent) => {
@@ -60,6 +63,12 @@ export function useNodePointerInteractions(
       return
     }
 
+    // Don't allow dragging if node is pinned (but still record position for selection)
+    startPosition.value = { x: event.clientX, y: event.clientY }
+    if (nodeData.value.flags?.pinned) {
+      return
+    }
+
     // Start drag using layout system
     isDragging.value = true
 
@@ -67,7 +76,6 @@ export function useNodePointerInteractions(
     layoutStore.isDraggingVueNodes.value = true
 
     startDrag(event)
-    startPosition.value = { x: event.clientX, y: event.clientY }
   }
 
   const handlePointerMove = (event: PointerEvent) => {

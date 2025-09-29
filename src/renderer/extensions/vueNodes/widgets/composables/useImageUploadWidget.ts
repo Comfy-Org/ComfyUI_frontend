@@ -91,7 +91,8 @@ export const useImageUploadWidget = () => {
       'image',
       () => openFileSelection(),
       {
-        serialize: false
+        serialize: false,
+        canvasOnly: true
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')

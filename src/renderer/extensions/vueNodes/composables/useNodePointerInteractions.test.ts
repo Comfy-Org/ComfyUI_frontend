@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -67,20 +67,14 @@ const createMouseEvent = (
 }
 
 describe('useNodePointerInteractions', () => {
-  let mockNodeData: VueNodeData
-  let mockOnPointerUp: ReturnType<typeof vi.fn>
-
   beforeEach(() => {
-    mockNodeData = createMockVueNodeData()
-    mockOnPointerUp = vi.fn()
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('should only start drag on left-click', async () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnPointerUp = vi.fn()
+
     const { pointerHandlers } = useNodePointerInteractions(
       ref(mockNodeData),
       mockOnPointerUp
@@ -89,18 +83,15 @@ describe('useNodePointerInteractions', () => {
     // Right-click should not start drag
     const rightClickEvent = createPointerEvent('pointerdown', { button: 2 })
     pointerHandlers.onPointerdown(rightClickEvent)
-    await nextTick()
 
     expect(mockOnPointerUp).not.toHaveBeenCalled()
 
     // Left-click should start drag and emit callback
     const leftClickEvent = createPointerEvent('pointerdown', { button: 0 })
     pointerHandlers.onPointerdown(leftClickEvent)
-    await nextTick()
 
     const pointerUpEvent = createPointerEvent('pointerup')
     pointerHandlers.onPointerup(pointerUpEvent)
-    await nextTick()
 
     expect(mockOnPointerUp).toHaveBeenCalledWith(
       pointerUpEvent,
@@ -110,6 +101,9 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('should distinguish drag from click based on distance threshold', async () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnPointerUp = vi.fn()
+
     const { pointerHandlers } = useNodePointerInteractions(
       ref(mockNodeData),
       mockOnPointerUp
@@ -119,14 +113,12 @@ describe('useNodePointerInteractions', () => {
     pointerHandlers.onPointerdown(
       createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
     )
-    await nextTick()
 
     const dragUpEvent = createPointerEvent('pointerup', {
       clientX: 200,
       clientY: 200
     })
     pointerHandlers.onPointerup(dragUpEvent)
-    await nextTick()
 
     expect(mockOnPointerUp).toHaveBeenCalledWith(
       dragUpEvent,
@@ -139,11 +131,9 @@ describe('useNodePointerInteractions', () => {
     // Test click (same position)
     const samePos = { clientX: 100, clientY: 100 }
     pointerHandlers.onPointerdown(createPointerEvent('pointerdown', samePos))
-    await nextTick()
 
     const clickUpEvent = createPointerEvent('pointerup', samePos)
     pointerHandlers.onPointerup(clickUpEvent)
-    await nextTick()
 
     expect(mockOnPointerUp).toHaveBeenCalledWith(
       clickUpEvent,
@@ -153,6 +143,9 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('should handle drag termination via cancel and context menu', async () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnPointerUp = vi.fn()
+
     const { pointerHandlers } = useNodePointerInteractions(
       ref(mockNodeData),
       mockOnPointerUp
@@ -160,50 +153,49 @@ describe('useNodePointerInteractions', () => {
 
     // Test pointer cancel
     pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
-    await nextTick()
     pointerHandlers.onPointercancel(createPointerEvent('pointercancel'))
-    await nextTick()
 
     // Should not emit callback on cancel
     expect(mockOnPointerUp).not.toHaveBeenCalled()
 
     // Test context menu during drag prevents default
     pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
-    await nextTick()
 
     const contextMenuEvent = createMouseEvent('contextmenu')
     const preventDefaultSpy = vi.spyOn(contextMenuEvent, 'preventDefault')
 
     pointerHandlers.onContextmenu(contextMenuEvent)
-    await nextTick()
 
     expect(preventDefaultSpy).toHaveBeenCalled()
   })
 
   it('should not emit callback when nodeData becomes null', async () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnPointerUp = vi.fn()
     const nodeDataRef = ref<VueNodeData | null>(mockNodeData)
+
     const { pointerHandlers } = useNodePointerInteractions(
       nodeDataRef,
       mockOnPointerUp
     )
 
     pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
-    await nextTick()
 
     // Clear nodeData before pointerup
     nodeDataRef.value = null
-    await nextTick()
 
     pointerHandlers.onPointerup(createPointerEvent('pointerup'))
-    await nextTick()
 
     expect(mockOnPointerUp).not.toHaveBeenCalled()
   })
 
   it('should integrate with layout store dragging state', async () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnPointerUp = vi.fn()
     const { layoutStore } = await import(
       '@/renderer/core/layout/store/layoutStore'
     )
+
     const { pointerHandlers } = useNodePointerInteractions(
       ref(mockNodeData),
       mockOnPointerUp

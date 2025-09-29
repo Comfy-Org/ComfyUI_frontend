@@ -1,15 +1,30 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  entry: [
-    '{build,scripts}/**/*.{js,ts}',
-    'src/assets/css/style.css',
-    'src/main.ts',
-    'src/scripts/ui/menu/index.ts',
-    'src/types/index.ts'
-  ],
-  project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
-  ignoreBinaries: ['only-allow', 'openapi-typescript'],
+  workspaces: {
+    '.': {
+      entry: [
+        '{build,scripts}/**/*.{js,ts}',
+        'src/assets/css/style.css',
+        'src/main.ts',
+        'src/scripts/ui/menu/index.ts',
+        'src/types/index.ts'
+      ],
+      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
+    },
+    'packages/tailwind-utils': {
+      project: ['src/**/*.{js,ts}']
+    },
+    'packages/design-system': {
+      entry: ['src/**/*.ts'],
+      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
+    },
+    'packages/registry-types': {
+      entry: ['src/comfyRegistryTypes.ts'],
+      project: ['src/**/*.{js,ts}']
+    }
+  },
+  ignoreBinaries: ['python3'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
@@ -23,7 +38,7 @@ const config: KnipConfig = {
   ignore: [
     // Auto generated manager types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
-    'src/types/comfyRegistryTypes.ts',
+    'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts'
   ],
