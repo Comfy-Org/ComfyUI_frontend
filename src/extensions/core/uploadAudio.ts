@@ -21,7 +21,7 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 
-function splitFilePath(path: string): [string, string] {
+export function splitFilePath(path: string): [string, string] {
   const folder_separator = path.lastIndexOf('/')
   if (folder_separator === -1) {
     return ['', path]
@@ -32,7 +32,7 @@ function splitFilePath(path: string): [string, string] {
   ]
 }
 
-function getResourceURL(
+export function getResourceURL(
   subfolder: string,
   filename: string,
   type: ResultItemType = 'input'

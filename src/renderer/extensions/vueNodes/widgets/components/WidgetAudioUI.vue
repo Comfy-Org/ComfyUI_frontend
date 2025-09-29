@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { getResourceURL } from '@/extensions/core/uploadAudio'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -32,7 +33,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
 
-import { getAudioUrlFromPath, getResourceURL } from '../utils/audioUtils'
+import { getAudioUrlFromPath } from '../utils/audioUtils'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
 import AudioPreviewPlayer from './audio/AudioPreviewPlayer.vue'
 
