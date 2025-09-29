@@ -175,7 +175,12 @@
     "nodeHeaderError": "Node Header Error",
     "nodeSlotsError": "Node Slots Error",
     "nodeWidgetsError": "Node Widgets Error",
-    "frameNodes": "Frame Nodes"
+    "frameNodes": "Frame Nodes",
+    "listening": "Listening...",
+    "ready": "Ready",
+    "playRecording": "Play Recording",
+    "playing": "Playing",
+    "stopPlayback": "Stop Playback"
   },
   "manager": {
     "title": "Custom Nodes Manager",
