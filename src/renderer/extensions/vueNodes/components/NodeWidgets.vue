@@ -118,11 +118,7 @@ interface ProcessedWidget {
   tooltipConfig: any
 }
 
-// Define widgets to hide for specific node types
-const HIDDEN_WIDGETS_BY_NODE_TYPE: Record<string, string[]> = {
-  RecordAudio: ['audio'], // Hide the audio placeholder widget
-  LoadAudio: ['upload'] // Hide the upload placeholder widget
-}
+
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
@@ -134,12 +130,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const nodeClass =
     (nodeData as any)?.constructor?.comfyClass || (nodeData as any)?.type || ''
 
-  // Get list of widgets to hide for this node type
-  const hiddenWidgets = HIDDEN_WIDGETS_BY_NODE_TYPE[nodeClass] || []
 
   for (const widget of widgets) {
     // Skip if widget is in the hidden list for this node type
-    if (hiddenWidgets.includes(widget.name)) continue
     if (widget.options?.hidden) continue
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
@@ -158,6 +151,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     const updateHandler = (value: unknown) => {
+      // Update the widget value directly
+      widget.value = value as WidgetValue
+
       if (widget.callback) {
         widget.callback(value)
       }
