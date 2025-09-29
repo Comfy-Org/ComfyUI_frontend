@@ -1,0 +1,62 @@
+{
+  "version": 1.1,
+  "properties": [
+    {
+      "name": "app-region",
+      "description": "Electron-specific CSS property that defines whether an area of the window can be used to drag the window. Values: 'drag' allows dragging, 'no-drag' prevents dragging.",
+      "values": [
+        {
+          "name": "drag",
+          "description": "Makes the element draggable for moving the Electron window"
+        },
+        {
+          "name": "no-drag",
+          "description": "Prevents the element from being used to drag the Electron window"
+        }
+      ],
+      "references": [
+        {
+          "name": "Electron Documentation",
+          "url": "https://www.electronjs.org/docs/latest/api/frameless-window#draggable-region"
+        }
+      ]
+    },
+    {
+      "name": "speak",
+      "description": "Deprecated CSS property for screen readers. Consider using modern ARIA attributes instead.",
+      "values": [
+        {
+          "name": "none",
+          "description": "Prevents the element from being spoken by screen readers"
+        },
+        {
+          "name": "normal",
+          "description": "Uses language-dependent pronunciation rules for speaking the element"
+        },
+        {
+          "name": "spell-out",
+          "description": "Spells out the text character by character"
+        },
+        {
+          "name": "digits",
+          "description": "Speaks digits as individual digits"
+        },
+        {
+          "name": "literal-punctuation",
+          "description": "Speaks punctuation marks instead of pauses"
+        },
+        {
+          "name": "no-punctuation",
+          "description": "Does not speak punctuation marks"
+        }
+      ],
+      "references": [
+        {
+          "name": "MDN Documentation",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/speak"
+        }
+      ],
+      "status": "obsolete"
+    }
+  ]
+}
