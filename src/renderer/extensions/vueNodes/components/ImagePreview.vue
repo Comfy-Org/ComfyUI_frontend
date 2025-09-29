@@ -264,6 +264,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
 }
 
 const getImageFilename = (url: string): string => {
-  return new URL(url).searchParams.get('filename') || url
+  try {
+    return new URL(url).searchParams.get('filename') || 'Unknown file'
+  } catch {
+    return 'Invalid URL'
+  }
 }
 </script>
