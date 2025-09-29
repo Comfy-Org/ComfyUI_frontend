@@ -3,8 +3,8 @@ import * as fs from 'fs'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import { normalizeI18nKey } from '../packages/shared-frontend-utils/src/formatUtil'
 import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
-import { normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
