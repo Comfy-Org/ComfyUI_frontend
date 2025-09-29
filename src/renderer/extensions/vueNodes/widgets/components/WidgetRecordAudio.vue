@@ -3,7 +3,7 @@
     <Button
       class="bg-[#2D2E32] text-white border-0 w-[413px]"
       :disabled="isRecording || readonly"
-      @click="startRecording"
+      @click="handleStartRecording"
     >
       {{ t('g.startRecording', 'Start Recording') }}
       <i-lucide:mic class="ml-1" />
@@ -43,9 +43,9 @@
     <!-- Control Button -->
     <button
       v-if="isRecording"
-      :title="t('g.stopRecording') || 'Stop Recording'"
+      :title="t('g.stopRecording', 'Stop Recording')"
       class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors animate-pulse"
-      @click="stopRecording"
+      @click="handleStopRecording"
     >
       <div class="size-2.5 bg-[#C02323] rounded-sm" />
     </button>
@@ -54,7 +54,7 @@
       v-else-if="!isRecording && recordedURL && !isPlaying"
       :title="t('g.playRecording') || 'Play Recording'"
       class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-      @click="playRecording"
+      @click="handlePlayRecording"
     >
       <i class="icon-[lucide--play] size-4 text-[#00D2D3]" />
     </button>
@@ -63,7 +63,7 @@
       v-else-if="isPlaying"
       :title="t('g.stopPlayback') || 'Stop Playback'"
       class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-      @click="stopPlayback"
+      @click="handleStopPlayback"
     >
       <i class="icon-[lucide--square] size-4 text-[#00D2D3]" />
     </button>
@@ -74,23 +74,25 @@
     :key="audioElementKey"
     :src="recordedURL"
     class="hidden"
-    @ended="onPlaybackEnded"
-    @loadedmetadata="onAudioMetadataLoaded"
+    @ended="playback.onPlaybackEnded"
+    @loadedmetadata="playback.onMetadataLoaded"
   />
 </template>
 
 <script setup lang="ts">
-import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 import { Button } from 'primevue'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAudioService } from '@/services/audioService'
 
+import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
+import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
+import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
+import { useTimer } from '../composables/audio/useTimer'
 import { formatTime } from '../utils/audioUtils'
 
-const WAVEFORM_NUM_BARS = 18
 const props = defineProps<{
   widget?: any
   nodeData?: any
@@ -100,299 +102,150 @@ const props = defineProps<{
 
 const modelValue = defineModel<any>('modelValue')
 
-// State
-const isRecording = ref(false)
-const isPlaying = ref(false)
-const timer = ref(0)
-const recordedURL = ref<string | null>(null)
-const waveformBars = ref<Array<{ height: number }>>(
-  Array(WAVEFORM_NUM_BARS)
-    .fill(null)
-    .map(() => ({ height: 16 }))
-)
-
-// Recording
-const mediaRecorder = ref<MediaRecorder | null>(null)
-const audioChunks = ref<Blob[]>([])
-const stream = ref<MediaStream | null>(null)
-const timerInterval = ref<number | null>(null)
-
-// Audio visualization
-const audioContext = ref<AudioContext | null>(null)
-const analyser = ref<AnalyserNode | null>(null)
-const dataArray = ref<Uint8Array | null>(null)
-const animationId = ref<number | null>(null)
-const mediaElementSource = ref<MediaElementAudioSourceNode | null>(null)
-
-// Audio element
+// Audio element ref
 const audioRef = ref<HTMLAudioElement>()
-const audioElementKey = ref(0)
 
 // Keep track of the last uploaded path as a backup
 let lastUploadedPath = ''
 
-const initWaveform = () => {
-  waveformBars.value = Array.from({ length: WAVEFORM_NUM_BARS }, () => ({
-    height: Math.random() * 28 + 4
-  }))
-}
-
-const updateWaveform = () => {
-  if (!isRecording.value && !isPlaying.value) return
-
-  if (analyser.value && dataArray.value) {
-    updateWaveformFromAudio()
-  } else {
-    updateWaveformRandom()
-  }
-
-  animationId.value = requestAnimationFrame(updateWaveform)
-}
-
-const updateWaveformFromAudio = () => {
-  if (!analyser.value || !dataArray.value) return
-
-  analyser.value.getByteFrequencyData(
-    dataArray.value as Uint8Array<ArrayBuffer>
-  )
-  const barCount = waveformBars.value.length
-  const samplesPerBar = Math.floor(dataArray.value.length / barCount)
-
-  waveformBars.value = waveformBars.value.map((_, i) => {
-    let sum = 0
-    for (let j = 0; j < samplesPerBar; j++) {
-      sum += dataArray.value![i * samplesPerBar + j] || 0
-    }
-    const average = sum / samplesPerBar
-    const normalizedHeight = (average / 255) * 28 + 4
-    return { height: normalizedHeight }
-  })
-}
-
-const updateWaveformRandom = () => {
-  waveformBars.value = waveformBars.value.map((bar) => ({
-    height: Math.max(4, Math.min(32, bar.height + (Math.random() - 0.5) * 4))
-  }))
-}
-
-const setupAudioContext = async () => {
-  if (audioContext.value && audioContext.value.state !== 'closed') {
-    await audioContext.value.close()
-  }
-  audioContext.value = null
-  mediaElementSource.value = null
-}
-
-const setupRecordingAudio = async () => {
-  await useAudioService().registerWavEncoder()
-  stream.value = await navigator.mediaDevices.getUserMedia({ audio: true })
-
-  audioContext.value = new window.AudioContext()
-  analyser.value = audioContext.value.createAnalyser()
-  const source = audioContext.value.createMediaStreamSource(stream.value)
-  source.connect(analyser.value)
-
-  analyser.value.fftSize = 256
-  dataArray.value = new Uint8Array(analyser.value.frequencyBinCount)
-}
-
-const handleRecordingStop = async () => {
-  const blob = new Blob(audioChunks.value, { type: 'audio/wav' })
-
-  if (recordedURL.value?.startsWith('blob:')) {
-    URL.revokeObjectURL(recordedURL.value)
-  }
-  recordedURL.value = URL.createObjectURL(blob)
-
-  try {
-    const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-
-    modelValue.value = path
-    lastUploadedPath = path
-    modelValue.value = path
-  } catch (e) {
-    useToastStore().addAlert('Failed to upload recorded audio')
-  }
-
-  cleanup()
-}
-
-async function startRecording() {
-  if (props.readonly) return
-
-  try {
-    // Clean up previous recording
-    if (recordedURL.value?.startsWith('blob:')) {
-      URL.revokeObjectURL(recordedURL.value)
-    }
-
-    audioChunks.value = []
-    recordedURL.value = null
-    timer.value = 0
-
-    await setupAudioContext()
-    await setupRecordingAudio()
-
-    mediaRecorder.value = new ExtendableMediaRecorder(stream.value!, {
-      mimeType: 'audio/wav'
-    }) as unknown as MediaRecorder
-
-    mediaRecorder.value.ondataavailable = (e) => {
-      audioChunks.value.push(e.data)
-    }
-
-    mediaRecorder.value.onstop = handleRecordingStop
-    mediaRecorder.value.start(100)
-    isRecording.value = true
-
-    timerInterval.value = window.setInterval(() => {
-      timer.value += 1
-    }, 1000)
-
-    initWaveform()
-    updateWaveform()
-  } catch (err) {
+// Composables
+const recorder = useAudioRecorder({
+  onRecordingComplete: handleRecordingComplete,
+  onError: () => {
     useToastStore().addAlert(
       t('g.micPermissionDenied') || 'Microphone permission denied'
     )
   }
-}
+})
 
-function stopRecording() {
-  if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
-    mediaRecorder.value.stop()
-  } else {
-    cleanup()
+const waveform = useAudioWaveform({
+  barCount: 18,
+  minHeight: 4,
+  maxHeight: 32
+})
+
+const playback = useAudioPlayback(audioRef, {
+  onPlaybackEnded: handlePlaybackEnded,
+  onMetadataLoaded: (duration) => {
+    if (!isPlaying.value && !isRecording.value) {
+      timerControl.setTime(Math.floor(duration))
+    }
+  }
+})
+
+const timerControl = useTimer()
+
+// Destructure for template access
+const { isRecording, recordedURL } = recorder
+const { waveformBars } = waveform
+const { isPlaying, audioElementKey } = playback
+const { timer } = timerControl
+
+// Computed for waveform animation
+const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
+
+async function handleRecordingComplete(blob: Blob) {
+  try {
+    const path = await useAudioService().convertBlobToFileAndSubmit(blob)
+    modelValue.value = path
+    lastUploadedPath = path
+  } catch (e) {
+    useToastStore().addAlert('Failed to upload recorded audio')
   }
 }
 
-function cleanup() {
-  isRecording.value = false
+async function handleStartRecording() {
+  if (props.readonly) return
 
-  if (stream.value) {
-    stream.value.getTracks().forEach((track) => track.stop())
-    stream.value = null
+  try {
+    await waveform.setupAudioContext()
+    await recorder.startRecording()
+
+    // Setup waveform visualization for recording
+    if (recorder.mediaRecorder.value) {
+      const stream = (recorder.mediaRecorder.value as any).stream
+      if (stream) {
+        await waveform.setupRecordingVisualization(stream)
+      }
+    }
+
+    timerControl.start(1000)
+    waveform.initWaveform()
+    waveform.updateWaveform(isWaveformActive)
+  } catch (err) {
+    // Error already handled by recorder
   }
-
-  if (timerInterval.value) {
-    clearInterval(timerInterval.value)
-    timerInterval.value = null
-  }
-
-  if (animationId.value) {
-    cancelAnimationFrame(animationId.value)
-  }
-
-  if (audioContext.value) {
-    void audioContext.value.close()
-    audioContext.value = null
-  }
-
-  mediaElementSource.value = null
 }
 
-const setupPlaybackAudio = async () => {
-  if (audioContext.value && audioContext.value.state !== 'closed') {
-    await audioContext.value.close()
-  }
-
-  mediaElementSource.value = null
-  audioElementKey.value += 1
-  await nextTick()
-
-  if (!audioRef.value) return false
-
-  audioContext.value = new (window.AudioContext ||
-    (window as any).webkitAudioContext)()
-  analyser.value = audioContext.value.createAnalyser()
-
-  mediaElementSource.value = audioContext.value.createMediaElementSource(
-    audioRef.value
-  )
-
-  mediaElementSource.value.connect(analyser.value)
-  analyser.value.connect(audioContext.value.destination)
-
-  analyser.value.fftSize = 256
-  dataArray.value = new Uint8Array(analyser.value.frequencyBinCount)
-
-  return true
+function handleStopRecording() {
+  recorder.stopRecording()
+  timerControl.stop()
+  waveform.stopWaveform()
 }
 
-async function playRecording() {
+async function handlePlayRecording() {
   if (!recordedURL.value) return
 
-  timer.value = 0
-  isPlaying.value = true
+  timerControl.reset()
 
-  const audioSetup = await setupPlaybackAudio()
-  if (!audioSetup) return
+  // Reset and setup audio element
+  await playback.resetAudioElement()
 
-  timerInterval.value = window.setInterval(() => {
-    timer.value = Math.floor(audioRef.value?.currentTime || 0)
+  // Wait for audio element to be ready
+  await new Promise((resolve) => setTimeout(resolve, 50))
+
+  if (!audioRef.value) return
+
+  // Setup waveform visualization for playback
+  const setupSuccess = await waveform.setupPlaybackVisualization(audioRef.value)
+  if (!setupSuccess) return
+
+  // Start playback
+  await playback.play()
+
+  // Start timer
+  timerControl.start(100)
+
+  // Update waveform
+  waveform.initWaveform()
+  waveform.updateWaveform(isWaveformActive)
+
+  // Update timer from audio current time
+  const timerInterval = setInterval(() => {
+    timerControl.setTime(Math.floor(playback.getCurrentTime()))
   }, 100)
 
-  void audioRef.value?.play()
-  updateWaveform()
-
-  if (!analyser.value || !dataArray.value) {
-    initWaveform()
-  }
+  // Store interval for cleanup
+  ;(playback as any)._playbackTimerInterval = timerInterval
 }
 
-function stopPlayback() {
-  if (audioRef.value) {
-    audioRef.value.pause()
-    audioRef.value.currentTime = 0
-  }
-  void onPlaybackEnded()
+function handleStopPlayback() {
+  playback.stop()
+  handlePlaybackEnded()
 }
 
-function onAudioMetadataLoaded() {
-  if (!isPlaying.value && !isRecording.value && audioRef.value?.duration) {
-    timer.value = Math.floor(audioRef.value.duration)
-  }
-}
+function handlePlaybackEnded() {
+  timerControl.stop()
+  waveform.stopWaveform()
 
-function onPlaybackEnded() {
-  isPlaying.value = false
-
-  if (timerInterval.value) {
-    clearInterval(timerInterval.value)
-    timerInterval.value = null
+  // Clear playback timer interval
+  if ((playback as any)._playbackTimerInterval) {
+    clearInterval((playback as any)._playbackTimerInterval)
+    ;(playback as any)._playbackTimerInterval = null
   }
 
-  if (animationId.value) {
-    cancelAnimationFrame(animationId.value)
-  }
-
-  if (audioRef.value?.duration) {
-    timer.value = Math.floor(audioRef.value.duration)
+  const duration = playback.getDuration()
+  if (duration) {
+    timerControl.setTime(Math.floor(duration))
   } else {
-    timer.value = 0
+    timerControl.reset()
   }
 }
 
-onMounted(() => {
-  initWaveform()
-})
-
-onUnmounted(() => {
-  stopRecording()
-  stopPlayback()
-  if (recordedURL.value) {
-    URL.revokeObjectURL(recordedURL.value)
-  }
-
-  if (audioContext.value && audioContext.value.state !== 'closed') {
-    void audioContext.value.close()
-  }
-  mediaElementSource.value = null
-})
-
+// Serialization function for workflow execution
 async function serializeValue() {
-  if (isRecording.value && mediaRecorder.value) {
-    mediaRecorder.value.stop()
+  if (isRecording.value && recorder.mediaRecorder.value) {
+    recorder.mediaRecorder.value.stop()
 
     await new Promise((resolve) => {
       const checkRecording = () => {
@@ -408,6 +261,18 @@ async function serializeValue() {
 
   return modelValue.value || lastUploadedPath || ''
 }
+
+onMounted(() => {
+  waveform.initWaveform()
+})
+
+onUnmounted(() => {
+  recorder.dispose()
+  waveform.dispose()
+  if ((playback as any)._playbackTimerInterval) {
+    clearInterval((playback as any)._playbackTimerInterval)
+  }
+})
 
 defineExpose({ serializeValue })
 </script>

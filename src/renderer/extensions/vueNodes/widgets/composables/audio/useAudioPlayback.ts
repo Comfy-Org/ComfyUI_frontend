@@ -1,0 +1,79 @@
+import { type Ref, nextTick, ref } from 'vue'
+
+export interface AudioPlaybackOptions {
+  onPlaybackEnded?: () => void
+  onMetadataLoaded?: (duration: number) => void
+}
+
+export function useAudioPlayback(
+  audioRef: Ref<HTMLAudioElement | undefined>,
+  options: AudioPlaybackOptions = {}
+) {
+  const isPlaying = ref(false)
+  const audioElementKey = ref(0)
+
+  async function play() {
+    if (!audioRef.value) return false
+
+    isPlaying.value = true
+    await audioRef.value.play()
+    return true
+  }
+
+  function pause() {
+    if (audioRef.value) {
+      audioRef.value.pause()
+    }
+    isPlaying.value = false
+  }
+
+  function stop() {
+    if (audioRef.value) {
+      audioRef.value.pause()
+      audioRef.value.currentTime = 0
+    }
+    isPlaying.value = false
+    if (options.onPlaybackEnded) {
+      options.onPlaybackEnded()
+    }
+  }
+
+  function onPlaybackEnded() {
+    isPlaying.value = false
+    if (options.onPlaybackEnded) {
+      options.onPlaybackEnded()
+    }
+  }
+
+  function onMetadataLoaded() {
+    if (audioRef.value?.duration && options.onMetadataLoaded) {
+      options.onMetadataLoaded(audioRef.value.duration)
+    }
+  }
+
+  async function resetAudioElement() {
+    audioElementKey.value += 1
+    await nextTick()
+  }
+
+  function getCurrentTime() {
+    return audioRef.value?.currentTime || 0
+  }
+
+  function getDuration() {
+    return audioRef.value?.duration || 0
+  }
+
+  return {
+    isPlaying,
+    audioElementKey,
+    play,
+    pause,
+    stop,
+    onPlaybackEnded,
+    onMetadataLoaded,
+    resetAudioElement,
+    getCurrentTime,
+    getDuration
+  }
+}
