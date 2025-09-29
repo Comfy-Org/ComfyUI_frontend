@@ -108,7 +108,6 @@
     "@comfyorg/comfyui-electron-types": "0.4.73-0",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/registry-types": "workspace:*",
-    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@iconify/json": "^2.2.380",
     "@primeuix/forms": "0.0.2",
