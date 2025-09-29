@@ -276,7 +276,11 @@ const filteredActive = computed<WidgetItem[]>(() => {
     v-if="recommendedWidgets.length"
     class="justify-center flex py-4 border-t-1 border-[var(--color-node-divider,#2E3037)]"
   >
-    <Button size="small" @click.stop="showRecommended">
+    <Button
+      size="small"
+      class="rounded border-none px-3 py-0.5"
+      @click.stop="showRecommended"
+    >
       {{ $t('subgraphStore.showRecommended') }}
     </Button>
   </div>

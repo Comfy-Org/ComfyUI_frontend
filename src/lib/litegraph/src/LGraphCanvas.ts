@@ -8007,7 +8007,7 @@ export class LGraphCanvas
       if (Object.keys(this.selected_nodes).length > 1) {
         options.push(
           {
-            content: 'Convert to Subgraph 🆕',
+            content: 'Convert to Subgraph',
             callback: () => {
               if (!this.selectedItems.size)
                 throw new Error('Convert to Subgraph: Nothing selected.')
@@ -8042,7 +8042,7 @@ export class LGraphCanvas
     } else {
       options = [
         {
-          content: 'Convert to Subgraph 🆕',
+          content: 'Convert to Subgraph',
           callback: () => {
             // find groupnodes, degroup and select children
             if (this.selectedItems.size) {

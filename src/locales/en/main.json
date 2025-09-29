@@ -347,6 +347,7 @@
     "Color": "Color",
     "Add Subgraph to Library": "Add Subgraph to Library",
     "Unpack Subgraph": "Unpack Subgraph",
+    "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Convert to Subgraph": "Convert to Subgraph",
     "Align Selected To": "Align Selected To",
     "Distribute Nodes": "Distribute Nodes",
@@ -1074,7 +1075,8 @@
     "shown": "Shown on node",
     "showAll": "Show all",
     "hidden": "Hidden / nested parameters",
-    "hideAll": "Hide all"
+    "hideAll": "Hide all",
+    "showRecommended": "Show recommended widgets"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
