@@ -76,5 +76,5 @@ const handleDownloadClick = () => {
 }
 </script>
 <style>
-@import '@/platform/onboarding/cloud/assets/css/fonts.css';
+@import '../assets/css/fonts.css';
 </style>
