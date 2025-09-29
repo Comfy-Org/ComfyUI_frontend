@@ -1052,7 +1052,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Assets.UseAssetAPI',
     name: 'Use Asset API for model library',
-    type: 'boolean',
+    type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
     defaultValue: false,
     experimental: true
