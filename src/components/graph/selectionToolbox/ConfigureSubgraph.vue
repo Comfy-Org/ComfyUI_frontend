@@ -1,7 +1,7 @@
 <template>
   <Button
     v-tooltip.top="{
-      value: t('Edit Subgraph Widgets'),
+      value: $t('Edit Subgraph Widgets'),
       showDelay: 1000
     }"
     severity="secondary"
@@ -16,9 +16,6 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { useI18n } from 'vue-i18n'
 
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
-
-const { t } = useI18n()
 </script>

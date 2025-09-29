@@ -1,4 +1,3 @@
-import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/composables/node/useNodeCanvasImagePreview'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type {
   LGraph,
@@ -142,7 +141,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
   const { updatePreviews } = useLitegraphService()
   let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
   let backingWidget = linkedWidget ?? disconnectedWidget
-  if (overlay.widgetName == CANVAS_IMAGE_PREVIEW_WIDGET) {
+  if (overlay.widgetName.startsWith('$$')) {
     overlay.node = new Proxy(subgraphNode, {
       get(_t, p) {
         if (p !== 'imgs') return Reflect.get(subgraphNode, p)
@@ -179,7 +178,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedReceiver = receiver
       if (property == 'value') redirectedReceiver = backingWidget
       else if (property == 'computedHeight') {
-        if (overlay.widgetName == CANVAS_IMAGE_PREVIEW_WIDGET && linkedNode)
+        if (overlay.widgetName.startsWith('$$') && linkedNode)
           updatePreviews(linkedNode)
           //update linkage regularly, but no more than once per frame
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)

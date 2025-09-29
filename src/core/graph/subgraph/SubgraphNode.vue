@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { refDebounced } from '@vueuse/core'
+import { computed, customRef, ref } from 'vue'
 import draggable from 'vuedraggable'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -17,13 +17,10 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 type WidgetItem = [LGraphNode, IBaseWidget]
 
-const { t } = useI18n()
-
 const canvasStore = useCanvasStore()
 
 const searchQuery = ref<string>('')
-
-const triggerUpdate = ref(0)
+const debouncedQuery = refDebounced(searchQuery, 200)
 
 function toKey(item: WidgetItem) {
   return `${item[0].id}: ${item[1].name}`
@@ -38,11 +35,9 @@ const activeNode = computed(() => {
 
 const activeWidgets = computed<WidgetItem[]>({
   get() {
-    if (triggerUpdate.value < 0) console.log('unreachable')
     const node = activeNode.value
     if (!node) return []
-    const pw = parseProxyWidgets(node.properties.proxyWidgets)
-    return pw.flatMap(([id, name]: [string, string]) => {
+    return proxyWidgets.value.flatMap(([id, name]: [string, string]) => {
       const wNode = node.subgraph._nodes_by_id[id]
       if (!wNode?.widgets) return []
       const w = wNode.widgets.find((w) => w.name === name)
@@ -52,16 +47,16 @@ const activeWidgets = computed<WidgetItem[]>({
   },
   set(value: WidgetItem[]) {
     const node = activeNode.value
-    if (!node)
-      throw new Error('Attempted to toggle widgets with no node selected')
+    if (!node) {
+      console.error('Attempted to toggle widgets with no node selected')
+      return
+    }
     //map back to id/name
     const pw: ProxyWidgetsProperty = value.map(([node, widget]) => [
       `${node.id}`,
       widget.name
     ])
-    node.properties.proxyWidgets = JSON.stringify(pw)
-    //force trigger an update
-    triggerUpdate.value++
+    proxyWidgets.value = pw
   }
 })
 function toggleVisibility(
@@ -73,17 +68,14 @@ function toggleVisibility(
   if (!node)
     throw new Error('Attempted to toggle widgets with no node selected')
   if (!isShown) {
-    const proxyWidgets = parseProxyWidgets(node.properties.proxyWidgets)
-    proxyWidgets.push([nodeId, widgetName])
-    node.properties.proxyWidgets = JSON.stringify(proxyWidgets)
+    const pw = proxyWidgets.value
+    pw.push([nodeId, widgetName])
+    proxyWidgets.value = pw
   } else {
-    let pw = parseProxyWidgets(node.properties.proxyWidgets)
-    pw = pw.filter(
+    proxyWidgets.value = proxyWidgets.value.filter(
       (p: [string, string]) => p[1] !== widgetName || p[0] !== nodeId
     )
-    node.properties.proxyWidgets = JSON.stringify(pw)
   }
-  triggerUpdate.value++
 }
 
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
@@ -91,25 +83,44 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return n.widgets.map((w: IBaseWidget) => [n, w])
 }
 
+const interiorWidgets = computed<WidgetItem[]>(() => {
+  const node = activeNode.value
+  if (!node) return []
+  const interiorNodes = node.subgraph.nodes
+  return interiorNodes
+    .flatMap(nodeWidgets)
+    .filter(([_, w]: WidgetItem) => !w.computedDisabled)
+})
+
+const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
+  get() {
+    track()
+    const node = activeNode.value
+    if (!node) return []
+    return parseProxyWidgets(node.properties.proxyWidgets)
+  },
+  set(value: ProxyWidgetsProperty) {
+    trigger()
+    const node = activeNode.value
+    if (!node) {
+      console.error('Attempted to toggle widgets with no node selected')
+      return
+    }
+    node.properties.proxyWidgets = JSON.stringify(value)
+  }
+}))
+
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
-  if (triggerUpdate.value < 0) console.log('unreachable')
-  const pw = parseProxyWidgets(node.properties.proxyWidgets)
-  const interiorNodes = node.subgraph.nodes
-  //node.widgets ??= []
-  const allWidgets: WidgetItem[] = interiorNodes.flatMap(nodeWidgets)
-  const filteredWidgets = allWidgets
-    //widget has connected link. Should not be displayed
-    .filter(([_, w]: WidgetItem) => !w.computedDisabled)
-    .filter(
-      ([n, w]: WidgetItem) =>
-        !pw.some(([pn, pw]: [string, string]) => n.id == pn && w.name == pw)
-    )
-  return filteredWidgets
+  const pw = proxyWidgets.value
+  return interiorWidgets.value.filter(
+    ([n, w]: WidgetItem) =>
+      !pw.some(([pn, pw]: [string, string]) => n.id == pn && w.name == pw)
+  )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
-  const query = searchQuery.value.toLowerCase()
+  const query = debouncedQuery.value.toLowerCase()
   if (!query) return candidateWidgets.value
   return candidateWidgets.value.filter(
     ([n, w]: WidgetItem) =>
@@ -120,29 +131,24 @@ const filteredCandidates = computed<WidgetItem[]>(() => {
 function showAll() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  const pw = parseProxyWidgets(node.properties.proxyWidgets)
+  const pw = proxyWidgets.value
   const toAdd: ProxyWidgetsProperty = filteredCandidates.value.map(
     ([n, w]: WidgetItem) => [`${n.id}`, w.name]
   )
   pw.push(...toAdd)
-  node.properties.proxyWidgets = JSON.stringify(pw)
-  triggerUpdate.value++
+  proxyWidgets.value = pw
 }
 function hideAll() {
   const node = activeNode.value
   if (!node) return //Not reachable
   //Not great from a nesting perspective, but path is cold
   //and it cleans up potential error states
-  const toKeep: ProxyWidgetsProperty = parseProxyWidgets(
-    node.properties.proxyWidgets
-  ).filter(
+  proxyWidgets.value = proxyWidgets.value.filter(
     ([nodeId, widgetName]) =>
       !filteredActive.value.some(
         ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
       )
   )
-  node.properties.proxyWidgets = JSON.stringify(toKeep)
-  triggerUpdate.value++
 }
 const recommendedNodes = [
   'CLIPTextEncode',
@@ -163,19 +169,18 @@ const recommendedWidgets = computed(() => {
 function showRecommended() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  const pw = parseProxyWidgets(node.properties.proxyWidgets)
+  const pw = proxyWidgets.value
   const toAdd: ProxyWidgetsProperty = recommendedWidgets.value.map(
     ([n, w]: WidgetItem) => [`${n.id}`, w.name]
   )
   //TODO: Add sort step here
   //Input should always be before output by default
   pw.push(...toAdd)
-  node.properties.proxyWidgets = JSON.stringify(pw)
-  triggerUpdate.value++
+  proxyWidgets.value = pw
 }
 
 const filteredActive = computed<WidgetItem[]>(() => {
-  const query = searchQuery.value.toLowerCase()
+  const query = debouncedQuery.value.toLowerCase()
   if (!query) return activeWidgets.value
   return activeWidgets.value.filter(
     ([n, w]: WidgetItem) =>
@@ -192,19 +197,19 @@ const filteredActive = computed<WidgetItem[]>(() => {
   />
   <div v-if="filteredActive.length" class="widgets-section">
     <div class="widgets-section-header">
-      <div>{{ t('subgraphStore.shown') }}</div>
-      <a @click.stop="hideAll"> {{ t('subgraphStore.hideAll') }}</a>
+      <div>{{ $t('subgraphStore.shown') }}</div>
+      <a @click.stop="hideAll"> {{ $t('subgraphStore.hideAll') }}</a>
     </div>
-    <div v-if="searchQuery" class="w-full">
+    <div v-if="debouncedQuery" class="w-full">
       <div
-        v-for="element in filteredActive"
-        :key="toKey(element)"
+        v-for="widgetItem in filteredActive"
+        :key="toKey(widgetItem)"
         class="w-full"
       >
         <SubgraphNodeWidget
-          :node-id="`${element[0].id}`"
-          :node-title="element[0].title"
-          :widget-name="element[1].name"
+          :node-id="`${widgetItem[0].id}`"
+          :node-title="widgetItem[0].title"
+          :widget-name="widgetItem[1].name"
           :toggle-visibility="toggleVisibility"
           :is-shown="true"
         />
@@ -234,8 +239,8 @@ const filteredActive = computed<WidgetItem[]>(() => {
   </div>
   <div v-if="filteredCandidates.length" class="widgets-section">
     <div class="widgets-section-header">
-      <div>{{ t('subgraphStore.hidden') }}</div>
-      <a @click.stop="showAll"> {{ t('subgraphStore.showAll') }}</a>
+      <div>{{ $t('subgraphStore.hidden') }}</div>
+      <a @click.stop="showAll"> {{ $t('subgraphStore.showAll') }}</a>
     </div>
     <div
       v-for="element in filteredCandidates"
@@ -252,7 +257,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
   </div>
   <div v-if="recommendedWidgets.length" class="justify-center flex py-4">
     <Button size="small" @click.stop="showRecommended">
-      {{ t('subgraphStore.showRecommended') }}
+      {{ $t('subgraphStore.showRecommended') }}
     </Button>
   </div>
 </template>

@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useImagePreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget'
 
-export const CANVAS_IMAGE_PREVIEW_WIDGET = '$$canvas-image-preview'
+const CANVAS_IMAGE_PREVIEW_WIDGET = '$$canvas-image-preview'
 
 /**
  * Composable for handling canvas image previews in nodes
