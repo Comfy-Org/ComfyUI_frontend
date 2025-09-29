@@ -19,13 +19,15 @@ function onClick() {
 }
 </script>
 <template>
-  <div class="widget-item items-center gap-1">
+  <div
+    class="flex pt-1 pr-4 pb-1 pl-0 break-all rounded bg-[var(--p-dialog-background,#202020)] items-center gap-1"
+  >
     <div class="size-4">
       <i-lucide:grip-vertical v-if="isDraggable" />
     </div>
     <div class="flex-1">
-      <div class="widget-node">{{ nodeTitle }}</div>
-      <div class="widget-name">{{ widgetName }}</div>
+      <div class="text-slate-100 text-[10px]">{{ nodeTitle }}</div>
+      <div class="text-xs">{{ widgetName }}</div>
     </div>
     <Button
       size="small"
@@ -39,27 +41,3 @@ function onClick() {
     </Button>
   </div>
 </template>
-
-<style scoped>
-.widget-item {
-  display: flex;
-  padding: 4px 16px 4px 0;
-  word-break: break-all;
-  border-radius: 4px;
-  background: var(--p-dialog-background, #202020);
-}
-.widget-node {
-  color: var(--color-slate-100, #9c9eab);
-
-  /* heading-text-nav */
-  font-family: Inter;
-  font-size: 10px;
-}
-.widget-name {
-  color: var(--color-text-primary, #fff);
-
-  /* body-text-small */
-  font-family: Inter;
-  font-size: 12px;
-}
-</style>

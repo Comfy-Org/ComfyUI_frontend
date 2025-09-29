@@ -195,10 +195,20 @@ const filteredActive = computed<WidgetItem[]>(() => {
     class="model-lib-search-box p-2 2xl:p-4"
     :placeholder="$t('g.search') + '...'"
   />
-  <div v-if="filteredActive.length" class="widgets-section">
-    <div class="widgets-section-header">
-      <div>{{ $t('subgraphStore.shown') }}</div>
-      <a @click.stop="hideAll"> {{ $t('subgraphStore.hideAll') }}</a>
+  <div
+    v-if="filteredActive.length"
+    class="pt-1 pb-4 border-b-1 border-[var(--color-node-divider,#2E3037)]"
+  >
+    <div class="flex py-0 px-4 justify-between">
+      <div class="text-slate-100 text-[9px] font-semibold uppercase">
+        {{ $t('subgraphStore.shown') }}
+      </div>
+      <a
+        class="cursor-pointer text-right text-blue-100 text-[11px] font-normal"
+        @click.stop="hideAll"
+      >
+        {{ $t('subgraphStore.hideAll') }}</a
+      >
     </div>
     <div v-if="debouncedQuery" class="w-full">
       <div
@@ -237,10 +247,17 @@ const filteredActive = computed<WidgetItem[]>(() => {
       </template>
     </draggable>
   </div>
-  <div v-if="filteredCandidates.length" class="widgets-section">
-    <div class="widgets-section-header">
-      <div>{{ $t('subgraphStore.hidden') }}</div>
-      <a @click.stop="showAll"> {{ $t('subgraphStore.showAll') }}</a>
+  <div v-if="filteredCandidates.length" class="pt-1 pb-4">
+    <div class="flex py-0 px-4 justify-between">
+      <div class="text-slate-100 text-[9px] font-semibold uppercase">
+        {{ $t('subgraphStore.hidden') }}
+      </div>
+      <a
+        class="cursor-pointer text-right text-blue-100 text-[11px] font-normal"
+        @click.stop="showAll"
+      >
+        {{ $t('subgraphStore.showAll') }}</a
+      >
     </div>
     <div
       v-for="element in filteredCandidates"
@@ -255,39 +272,12 @@ const filteredActive = computed<WidgetItem[]>(() => {
       />
     </div>
   </div>
-  <div v-if="recommendedWidgets.length" class="justify-center flex py-4">
+  <div
+    v-if="recommendedWidgets.length"
+    class="justify-center flex py-4 border-t-1 border-[var(--color-node-divider,#2E3037)]"
+  >
     <Button size="small" @click.stop="showRecommended">
       {{ $t('subgraphStore.showRecommended') }}
     </Button>
   </div>
 </template>
-<style scoped>
-.widgets-section-header {
-  display: flex;
-  padding: 0 16px;
-  justify-content: space-between;
-}
-.widgets-section-header div {
-  color: var(--color-slate-100, #9c9eab);
-  /* body-text-badge */
-  font-family: Inter;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-a {
-  cursor: pointer;
-  color: var(--color-blue-100, #0b8ce9);
-  text-align: right;
-
-  /* body-text-caption */
-  font-family: Inter;
-  font-size: 11px;
-  font-weight: 400;
-}
-
-.widgets-section {
-  padding: 4px 0 16px 0;
-  border-bottom: 1px solid var(--color-node-divider, #2e3037);
-}
-</style>
