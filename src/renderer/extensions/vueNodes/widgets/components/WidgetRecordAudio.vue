@@ -454,26 +454,14 @@ onUnmounted(() => {
 
 // Serialization function for workflow execution
 async function serializeValue() {
-  console.info('[RECORD_AUDIO_SERIALIZE] serializeValue called', {
-    isRecording: isRecording.value,
-    hasMediaRecorder: !!mediaRecorder.value,
-    modelValue: modelValue.value,
-    lastUploadedPath
-  })
-
   // If still recording, stop and wait for completion
   if (isRecording.value && mediaRecorder.value) {
-    console.info('[RECORD_AUDIO_SERIALIZE] Still recording, stopping...')
     mediaRecorder.value.stop()
 
     // Wait for recording to complete and upload
     await new Promise((resolve) => {
       const checkRecording = () => {
         if (!isRecording.value && modelValue.value) {
-          console.info(
-            '[RECORD_AUDIO_SERIALIZE] Recording stopped and uploaded:',
-            modelValue.value
-          )
           resolve(undefined)
         } else {
           setTimeout(checkRecording, 100)
@@ -484,9 +472,7 @@ async function serializeValue() {
   }
 
   // Return the current model value - it should always be up to date now
-  const result = modelValue.value || lastUploadedPath || ''
-  console.info('[RECORD_AUDIO_SERIALIZE] Returning value:', result)
-  return result
+  return modelValue.value || lastUploadedPath || ''
 }
 
 // Expose serializeValue for workflow execution

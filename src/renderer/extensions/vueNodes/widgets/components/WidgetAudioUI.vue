@@ -51,14 +51,6 @@ const props = defineProps<{
   node?: LGraphNode
 }>()
 
-console.info('[AUDIO_UI_DEBUG] WidgetAudioUI mounted/created', {
-  hasWidget: !!props.widget,
-  hasNode: !!props.node,
-  hasNodeData: !!props.nodeData,
-  nodeDataType: props.nodeData?.type,
-  nodeDataClass: props.nodeData?.constructor?.comfyClass
-})
-
 const modelValue = defineModel<any>('modelValue')
 
 defineEmits<{
@@ -165,27 +157,13 @@ watch(audioFilePath, async (newAudioPath) => {
 
 // Serialization support for workflow saving - route based on widget type
 async function serializeValue() {
-  console.info('[AUDIO_UI_SERIALIZE] serializeValue called', {
-    audioWidgetType: audioWidgetType.value,
-    hasRecordAudioRef: !!recordAudioRef.value,
-    audioFilePath: audioFilePath.value,
-    modelValue: modelValue.value
-  })
-
   // For recording widgets, delegate to the record audio component
   if (audioWidgetType.value === 'record' && recordAudioRef.value) {
-    const result = await recordAudioRef.value.serializeValue()
-    console.info(
-      '[AUDIO_UI_SERIALIZE] RecordAudio serializeValue result:',
-      result
-    )
-    return result
+    return await recordAudioRef.value.serializeValue()
   }
 
   // For LoadAudio and other widget types, return the current audio file path
-  const result = audioFilePath.value || modelValue.value || ''
-  console.info('[AUDIO_UI_SERIALIZE] LoadAudio serializeValue result:', result)
-  return result
+  return audioFilePath.value || modelValue.value || ''
 }
 
 // Register serialization directly on the LiteGraph widget
@@ -197,19 +175,8 @@ function registerWidgetSerialization() {
     props.node?.type ||
     ''
 
-  console.info('[AUDIO_UI_SERIALIZE] registerWidgetSerialization called', {
-    nodeClass,
-    hasNode: !!props.node,
-    nodeDataId: props.nodeData?.id
-  })
-
   // Only register for RecordAudio and LoadAudio nodes
-  if (!['RecordAudio', 'LoadAudio'].includes(nodeClass)) {
-    console.info(
-      '[AUDIO_UI_SERIALIZE] Not a RecordAudio or LoadAudio node, skipping'
-    )
-    return
-  }
+  if (!['RecordAudio', 'LoadAudio'].includes(nodeClass)) return
 
   // In Vue rendering mode, we need to find the LiteGraph node from app.graph
   let litegraphNode: LGraphNode | undefined = props.node
@@ -217,21 +184,9 @@ function registerWidgetSerialization() {
   if (!litegraphNode && props.nodeData?.id && app.graph) {
     // Find node by ID in the graph
     litegraphNode = app.graph.getNodeById(props.nodeData.id) as LGraphNode
-    console.info('[AUDIO_UI_SERIALIZE] Found LiteGraph node by ID:', {
-      nodeId: props.nodeData.id,
-      found: !!litegraphNode
-    })
   }
 
-  if (!litegraphNode?.widgets) {
-    console.warn('[AUDIO_UI_SERIALIZE] No widgets found on node')
-    return
-  }
-
-  console.info(
-    '[AUDIO_UI_SERIALIZE] Available widgets:',
-    litegraphNode.widgets.map((w: any) => ({ name: w.name, type: w.type }))
-  )
+  if (!litegraphNode?.widgets) return
 
   // Both RecordAudio and LoadAudio use the 'audio' widget for serialization
   const targetWidget = litegraphNode.widgets.find(
@@ -239,14 +194,7 @@ function registerWidgetSerialization() {
   )
 
   if (targetWidget) {
-    console.info(
-      '[AUDIO_UI_SERIALIZE] Registering serializeValue on audio widget'
-    )
     targetWidget.serializeValue = serializeValue
-  } else {
-    console.warn(
-      '[AUDIO_UI_SERIALIZE] Could not find audio widget to register serialization'
-    )
   }
 }
 
@@ -327,7 +275,6 @@ watch(
 
 // Register serialization on mount (after app.graph is available)
 onMounted(() => {
-  console.info('[AUDIO_UI_DEBUG] onMounted - attempting registration')
   registerWidgetSerialization()
 })
 
