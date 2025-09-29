@@ -68,7 +68,6 @@
       <i class="icon-[lucide--square] size-4 text-[#00D2D3]" />
     </button>
   </div>
-  <!-- Hidden audio element -->
   <audio
     v-if="recordedURL"
     ref="audioRef"
@@ -87,8 +86,9 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
+
+import { formatTime } from '../utils/audioUtils'
 
 const WAVEFORM_NUM_BARS = 18
 const props = defineProps<{
@@ -131,13 +131,6 @@ const audioElementKey = ref(0)
 // Keep track of the last uploaded path as a backup
 let lastUploadedPath = ''
 
-// Format time
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
 const initWaveform = () => {
   waveformBars.value = Array.from({ length: WAVEFORM_NUM_BARS }, () => ({
     height: Math.random() * 28 + 4
@@ -159,7 +152,9 @@ const updateWaveform = () => {
 const updateWaveformFromAudio = () => {
   if (!analyser.value || !dataArray.value) return
 
-  analyser.value.getByteFrequencyData(dataArray.value as any)
+  analyser.value.getByteFrequencyData(
+    dataArray.value as Uint8Array<ArrayBuffer>
+  )
   const barCount = waveformBars.value.length
   const samplesPerBar = Math.floor(dataArray.value.length / barCount)
 
@@ -192,8 +187,7 @@ const setupRecordingAudio = async () => {
   await useAudioService().registerWavEncoder()
   stream.value = await navigator.mediaDevices.getUserMedia({ audio: true })
 
-  audioContext.value = new (window.AudioContext ||
-    (window as any).webkitAudioContext)()
+  audioContext.value = new window.AudioContext()
   analyser.value = audioContext.value.createAnalyser()
   const source = audioContext.value.createMediaStreamSource(stream.value)
   source.connect(analyser.value)
@@ -213,62 +207,9 @@ const handleRecordingStop = async () => {
   try {
     const path = await useAudioService().convertBlobToFileAndSubmit(blob)
 
-    // Immediately update all values - this is the new recording, override everything
     modelValue.value = path
     lastUploadedPath = path
-
-    // Update Vue nodeData widgets
-    if (props.nodeData?.widgets) {
-      const audioWidgets = props.nodeData.widgets.filter(
-        (w: any) =>
-          w.name === 'audio' ||
-          w.name === 'audioUI' ||
-          w.type === 'AUDIO_RECORD' ||
-          w.type === 'AUDIOUPLOAD'
-      )
-
-      audioWidgets.forEach((widget: any) => {
-        if (widget.options?.values && !widget.options.values.includes(path)) {
-          widget.options.values.push(path)
-        }
-        widget.value = path
-      })
-    }
-
-    // Update the model value to trigger reactivity and parent updates
     modelValue.value = path
-
-    // Update LiteGraph node widgets directly
-    if (props.node && (props.node as any).widgets) {
-      const litegraphWidgets = (props.node as any).widgets
-      litegraphWidgets.forEach((widget: any) => {
-        if (widget.name === 'audio' || widget.name === 'audioUI') {
-          widget.value = path
-          if (widget.options?.values && !widget.options.values.includes(path)) {
-            widget.options.values.push(path)
-          }
-        }
-      })
-    } else if (app && app.graph && app.graph.nodes) {
-      // Try to find the LiteGraph node in the global graph
-      const recordAudioNode = app.graph.nodes.find(
-        (node: any) => node.constructor?.comfyClass === 'RecordAudio'
-      )
-
-      if (recordAudioNode && recordAudioNode.widgets) {
-        recordAudioNode.widgets.forEach((widget: any) => {
-          if (widget.name === 'audio' || widget.name === 'audioUI') {
-            widget.value = path
-            if (
-              widget.options?.values &&
-              !widget.options.values.includes(path)
-            ) {
-              widget.options.values.push(path)
-            }
-          }
-        })
-      }
-    }
   } catch (e) {
     useToastStore().addAlert('Failed to upload recorded audio')
   }
@@ -287,7 +228,6 @@ async function startRecording() {
 
     audioChunks.value = []
     recordedURL.value = null
-    // Don't clear modelValue here - it will be updated when recording stops
     timer.value = 0
 
     await setupAudioContext()
@@ -302,8 +242,6 @@ async function startRecording() {
     }
 
     mediaRecorder.value.onstop = handleRecordingStop
-
-    // Start recording with minimum chunk interval to ensure we get data
     mediaRecorder.value.start(100)
     isRecording.value = true
 
@@ -452,13 +390,10 @@ onUnmounted(() => {
   mediaElementSource.value = null
 })
 
-// Serialization function for workflow execution
 async function serializeValue() {
-  // If still recording, stop and wait for completion
   if (isRecording.value && mediaRecorder.value) {
     mediaRecorder.value.stop()
 
-    // Wait for recording to complete and upload
     await new Promise((resolve) => {
       const checkRecording = () => {
         if (!isRecording.value && modelValue.value) {
@@ -471,10 +406,8 @@ async function serializeValue() {
     })
   }
 
-  // Return the current model value - it should always be up to date now
   return modelValue.value || lastUploadedPath || ''
 }
 
-// Expose serializeValue for workflow execution
 defineExpose({ serializeValue })
 </script>
