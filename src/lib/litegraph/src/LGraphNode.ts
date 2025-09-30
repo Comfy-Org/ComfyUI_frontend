@@ -2616,7 +2616,12 @@ export class LGraphNode
     if (slotIndex !== undefined)
       return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
-    // No compatible slot found - connection not possible
+    console.error(
+      '[connectByType]: no way to connect type:',
+      source_slotType,
+      'to node:',
+      source_node
+    )
     return null
   }
 
@@ -3080,7 +3085,7 @@ export class LGraphNode
 
     const input = this.inputs[slot]
     if (!input) {
-      // Input not found - already disconnected or doesn't exist
+      console.error('disconnectInput: input not found', slot, this.inputs)
       return false
     }
 
@@ -3109,7 +3114,10 @@ export class LGraphNode
 
         const target_node = graph.getNodeById(link_info.origin_id)
         if (!target_node) {
-          // Target node not found - may have been deleted
+          console.error(
+            'disconnectInput: output not found',
+            link_info.origin_slot
+          )
           return false
         }
 
