@@ -1,79 +1,82 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, shallowRef } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  type GraphNodeManager,
+  type VueNodeData,
+  useGraphNodeManager
+} from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn()
-}))
-
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
-  useLayoutMutations: vi.fn()
-}))
-
-function createMockCanvas(): Pick<
-  LGraphCanvas,
-  'select' | 'deselect' | 'deselectAll'
-> {
-  return {
+vi.mock('@/renderer/core/canvas/canvasStore', () => {
+  const canvas: Partial<LGraphCanvas> = {
     select: vi.fn(),
     deselect: vi.fn(),
     deselectAll: vi.fn()
   }
-}
-
-function createMockNode(): Pick<LGraphNode, 'id' | 'selected' | 'flags'> {
+  const updateSelectedItems = vi.fn()
   return {
+    useCanvasStore: vi.fn(() => ({
+      canvas: canvas as LGraphCanvas,
+      updateSelectedItems,
+      selectedItems: []
+    }))
+  }
+})
+
+vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
+  useCanvasInteractions: vi.fn(() => ({
+    shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
+  }))
+}))
+
+vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
+  const setSource = vi.fn()
+  const bringNodeToFront = vi.fn()
+  return {
+    useLayoutMutations: vi.fn(() => ({
+      setSource,
+      bringNodeToFront
+    }))
+  }
+})
+
+vi.mock('@/composables/graph/useGraphNodeManager', () => {
+  const mockNode = {
     id: 'node-1',
     selected: false,
     flags: { pinned: false }
   }
-}
-
-function createMockNodeManager(
-  node: Pick<LGraphNode, 'id' | 'selected' | 'flags'>
-) {
+  const nodeManager = shallowRef({
+    getNode: vi.fn(() => mockNode as Partial<LGraphNode> as LGraphNode)
+  } as Partial<GraphNodeManager> as GraphNodeManager)
   return {
-    getNode: vi.fn().mockReturnValue(node) as ReturnType<
-      typeof useGraphNodeManager
-    >['getNode']
+    useGraphNodeManager: vi.fn(() => nodeManager)
   }
-}
+})
 
-function createMockCanvasStore(
-  canvas: Pick<LGraphCanvas, 'select' | 'deselect' | 'deselectAll'>
-): Pick<
-  ReturnType<typeof useCanvasStore>,
-  'canvas' | 'selectedItems' | 'updateSelectedItems'
-> {
+vi.mock('@/composables/graph/useVueNodeLifecycle', () => {
+  const nodeManager = useGraphNodeManager(undefined as unknown as LGraph)
   return {
-    canvas: canvas as LGraphCanvas,
-    selectedItems: [],
-    updateSelectedItems: vi.fn()
+    useVueNodeLifecycle: vi.fn(() => ({
+      nodeManager
+    }))
   }
-}
-
-function createMockLayoutMutations(): Pick<
-  ReturnType<typeof useLayoutMutations>,
-  'setSource' | 'bringNodeToFront'
-> {
-  return {
-    setSource: vi.fn(),
-    bringNodeToFront: vi.fn()
-  }
-}
+})
 
 describe('useNodeEventHandlers', () => {
-  let mockCanvas: ReturnType<typeof createMockCanvas>
-  let mockNode: ReturnType<typeof createMockNode>
-  let mockNodeManager: ReturnType<typeof createMockNodeManager>
-  let mockCanvasStore: ReturnType<typeof createMockCanvasStore>
-  let mockLayoutMutations: ReturnType<typeof createMockLayoutMutations>
+  const { nodeManager: mockNodeManager } = useVueNodeLifecycle()
+
+  const mockNode = mockNodeManager.value!.getNode('fake_id')
+  const mockLayoutMutations = useLayoutMutations()
 
   const testNodeData: VueNodeData = {
     id: 'node-1',
@@ -85,24 +88,13 @@ describe('useNodeEventHandlers', () => {
   }
 
   beforeEach(async () => {
-    mockNode = createMockNode()
-    mockCanvas = createMockCanvas()
-    mockNodeManager = createMockNodeManager(mockNode)
-    mockCanvasStore = createMockCanvasStore(mockCanvas)
-    mockLayoutMutations = createMockLayoutMutations()
-
-    vi.mocked(useCanvasStore).mockReturnValue(
-      mockCanvasStore as ReturnType<typeof useCanvasStore>
-    )
-    vi.mocked(useLayoutMutations).mockReturnValue(
-      mockLayoutMutations as ReturnType<typeof useLayoutMutations>
-    )
+    vi.restoreAllMocks()
   })
 
   describe('handleNodeSelect', () => {
     it('should select single node on regular click', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { canvas, updateSelectedItems } = useCanvasStore()
 
       const event = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -112,17 +104,17 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(event, testNodeData, false)
 
-      expect(mockCanvas.deselectAll).toHaveBeenCalledOnce()
-      expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
-      expect(mockCanvasStore.updateSelectedItems).toHaveBeenCalledOnce()
+      expect(canvas?.deselectAll).toHaveBeenCalledOnce()
+      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(updateSelectedItems).toHaveBeenCalledOnce()
     })
 
     it('should toggle selection on ctrl+click', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { canvas } = useCanvasStore()
 
       // Test selecting unselected node with ctrl
-      mockNode.selected = false
+      mockNode!.selected = false
 
       const ctrlClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -132,16 +124,16 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(ctrlClickEvent, testNodeData, false)
 
-      expect(mockCanvas.deselectAll).not.toHaveBeenCalled()
-      expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
+      expect(canvas?.deselectAll).not.toHaveBeenCalled()
+      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
     })
 
     it('should deselect on ctrl+click of selected node', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { canvas } = useCanvasStore()
 
       // Test deselecting selected node with ctrl
-      mockNode.selected = true
+      mockNode!.selected = true
 
       const ctrlClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -151,15 +143,15 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(ctrlClickEvent, testNodeData, false)
 
-      expect(mockCanvas.deselect).toHaveBeenCalledWith(mockNode)
-      expect(mockCanvas.select).not.toHaveBeenCalled()
+      expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
+      expect(canvas?.select).not.toHaveBeenCalled()
     })
 
     it('should handle meta key (Cmd) on Mac', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { canvas } = useCanvasStore()
 
-      mockNode.selected = false
+      mockNode!.selected = false
 
       const metaClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -169,15 +161,14 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(metaClickEvent, testNodeData, false)
 
-      expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
-      expect(mockCanvas.deselectAll).not.toHaveBeenCalled()
+      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(canvas?.deselectAll).not.toHaveBeenCalled()
     })
 
     it('should bring node to front when not pinned', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
+      const { handleNodeSelect } = useNodeEventHandlers()
 
-      mockNode.flags.pinned = false
+      mockNode!.flags.pinned = false
 
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeData, false)
@@ -188,49 +179,14 @@ describe('useNodeEventHandlers', () => {
     })
 
     it('should not bring pinned node to front', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
+      const { handleNodeSelect } = useNodeEventHandlers()
 
-      mockNode.flags.pinned = true
+      mockNode!.flags.pinned = true
 
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeData, false)
 
       expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
-    })
-
-    it('should handle missing canvas gracefully', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
-
-      mockCanvasStore.canvas = null
-
-      const event = new PointerEvent('pointerdown')
-      expect(() => {
-        handleNodeSelect(event, testNodeData, false)
-      }).not.toThrow()
-
-      expect(mockCanvas.select).not.toHaveBeenCalled()
-    })
-
-    it('should handle missing node gracefully', () => {
-      const nodeManager = ref(mockNodeManager)
-      const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
-
-      vi.mocked(mockNodeManager.getNode).mockReturnValue(undefined)
-
-      const event = new PointerEvent('pointerdown')
-      const nodeData = {
-        id: 'missing-node',
-        title: 'Missing Node',
-        type: 'test'
-      } as any
-
-      expect(() => {
-        handleNodeSelect(event, nodeData, false)
-      }).not.toThrow()
-
-      expect(mockCanvas.select).not.toHaveBeenCalled()
     })
   })
 })

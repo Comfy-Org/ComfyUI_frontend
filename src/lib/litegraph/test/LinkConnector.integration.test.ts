@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, vi } from 'vitest'
 
+import type { LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
 import {
-  LGraph,
   LGraphNode,
   LLink,
-  Reroute,
   type RerouteId
 } from '@/lib/litegraph/src/litegraph'
 import { LinkConnector } from '@/lib/litegraph/src/litegraph'

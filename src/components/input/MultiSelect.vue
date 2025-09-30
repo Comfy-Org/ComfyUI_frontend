@@ -9,7 +9,7 @@
   -->
   <MultiSelect
     v-model="selectedItems"
-    v-bind="$attrs"
+    v-bind="{ ...$attrs, options: filteredOptions }"
     option-label="name"
     unstyled
     :max-selected-labels="0"
@@ -105,11 +105,11 @@
 </template>
 
 <script setup lang="ts">
+import { type UseFuseOptions, useFuse } from '@vueuse/integrations/useFuse'
 import Button from 'primevue/button'
-import MultiSelect, {
-  MultiSelectPassThroughMethodOptions
-} from 'primevue/multiselect'
-import { computed } from 'vue'
+import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
+import MultiSelect from 'primevue/multiselect'
+import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/input/SearchBox.vue'
@@ -117,7 +117,7 @@ import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
 import TextButton from '../button/TextButton.vue'
-import { type SelectOption } from './types'
+import type { SelectOption } from './types'
 
 type Option = SelectOption
 
@@ -159,7 +159,7 @@ const {
 const selectedItems = defineModel<Option[]>({
   required: true
 })
-const searchQuery = defineModel<string>('searchQuery')
+const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
 const selectedCount = computed(() => selectedItems.value.length)
@@ -167,6 +167,40 @@ const selectedCount = computed(() => selectedItems.value.length)
 const popoverStyle = usePopoverSizing({
   minWidth: popoverMinWidth,
   maxWidth: popoverMaxWidth
+})
+const attrs = useAttrs()
+const originalOptions = computed(() => (attrs.options as Option[]) || [])
+
+// Use VueUse's useFuse for better reactivity and performance
+const fuseOptions: UseFuseOptions<Option> = {
+  fuseOptions: {
+    keys: ['name', 'value'],
+    threshold: 0.3,
+    includeScore: false
+  },
+  matchAllWhenSearchEmpty: true
+}
+
+const { results } = useFuse(searchQuery, originalOptions, fuseOptions)
+
+// Filter options based on search, but always include selected items
+const filteredOptions = computed(() => {
+  if (!searchQuery.value || searchQuery.value.trim() === '') {
+    return originalOptions.value
+  }
+
+  // results.value already contains the search results from useFuse
+  const searchResults = results.value.map(
+    (result: { item: Option }) => result.item
+  )
+
+  // Include selected items that aren't in search results
+  const selectedButNotInResults = selectedItems.value.filter(
+    (item) =>
+      !searchResults.some((result: Option) => result.value === item.value)
+  )
+
+  return [...selectedButNotInResults, ...searchResults]
 })
 
 const pt = computed(() => ({

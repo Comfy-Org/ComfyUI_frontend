@@ -32,11 +32,10 @@ jobs:
       with:
         repository: Comfy-Org/ComfyUI_frontend
         path: ComfyUI_frontend
-    - name: Checkout ComfyUI_devtools
-      uses: actions/checkout@v4
-      with:
-        repository: Comfy-Org/ComfyUI_devtools
-        path: ComfyUI/custom_nodes/ComfyUI_devtools
+    - name: Copy ComfyUI_devtools from frontend repo
+      run: |
+        mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
+        cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
     - name: Checkout custom node repository
       uses: actions/checkout@v4
       with:
@@ -79,7 +78,7 @@ jobs:
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
     - name: Install Playwright Browsers
-      run: npx playwright install chromium --with-deps
+      run: pnpm exec playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
@@ -87,7 +86,7 @@ jobs:
       run: pnpm dev:electron &
       working-directory: ComfyUI_frontend
     - name: Capture base i18n
-      run: npx tsx scripts/diff-i18n capture
+      run: pnpm exec tsx scripts/diff-i18n capture
       working-directory: ComfyUI_frontend
     - name: Update en.json
       run: pnpm collect-i18n
@@ -100,7 +99,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       working-directory: ComfyUI_frontend
     - name: Diff base vs updated i18n
-      run: npx tsx scripts/diff-i18n diff
+      run: pnpm exec tsx scripts/diff-i18n diff
       working-directory: ComfyUI_frontend
     - name: Update i18n in custom node repository
       run: |

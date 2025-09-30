@@ -4,8 +4,8 @@ import Button from 'primevue/button'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import NodeConflictDialogContent from '@/components/dialog/content/manager/NodeConflictDialogContent.vue'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
+import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 // Mock getConflictMessage utility
 vi.mock('@/utils/conflictMessageUtil', () => ({
@@ -34,11 +34,14 @@ vi.mock('vue-i18n', () => ({
 const mockConflictData = ref<ConflictDetectionResult[]>([])
 
 // Mock useConflictDetection composable
-vi.mock('@/composables/useConflictDetection', () => ({
-  useConflictDetection: () => ({
-    conflictedPackages: computed(() => mockConflictData.value)
+vi.mock(
+  '@/workbench/extensions/manager/composables/useConflictDetection',
+  () => ({
+    useConflictDetection: () => ({
+      conflictedPackages: computed(() => mockConflictData.value)
+    })
   })
-}))
+)
 
 describe('NodeConflictDialogContent', () => {
   let pinia: ReturnType<typeof createPinia>

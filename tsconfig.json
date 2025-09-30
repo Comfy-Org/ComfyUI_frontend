@@ -19,21 +19,30 @@
     "downlevelIteration": true,
     "noImplicitOverride": true,
     "allowJs": true,
+    "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@/utils/formatUtil": [
+        "packages/shared-frontend-utils/src/formatUtil.ts"
+      ],
+      "@/utils/networkUtil": [
+        "packages/shared-frontend-utils/src/networkUtil.ts"
+      ]
     },
     "typeRoots": ["src/types", "node_modules/@types"],
     "outDir": "./dist",
     "rootDir": "./"
   },
   "include": [
-    "src/**/*",
+    ".storybook/**/*",
+    "eslint.config.ts",
+    "global.d.ts",
+    "knip.config.ts",
     "src/**/*.vue",
+    "src/**/*",
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
-    "global.d.ts",
-    "vite.config.mts",
-    ".storybook/**/*"
+    "tailwind.config.ts"
   ]
 }

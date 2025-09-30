@@ -58,13 +58,14 @@
 </template>
 
 <script setup lang="ts">
-import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
+import type { SelectPassThroughMethodOptions } from 'primevue/select'
+import Select from 'primevue/select'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/utils/tailwindUtil'
 
-import { type SelectOption } from './types'
+import type { SelectOption } from './types'
 
 defineOptions({
   inheritAttrs: false
@@ -142,7 +143,7 @@ const pt = computed(() => ({
   label: {
     class:
       // Align with MultiSelect labelContainer spacing
-      'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 outline-hidden'
+      'flex-1 flex items-center whitespace-nowrap pl-4 py-2 outline-hidden'
   },
   dropdown: {
     class:

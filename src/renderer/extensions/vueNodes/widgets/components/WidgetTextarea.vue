@@ -1,14 +1,17 @@
 <template>
-  <Textarea
-    v-model="localValue"
-    v-bind="filteredProps"
-    :disabled="readonly"
-    :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-    :placeholder="placeholder || widget.name || ''"
-    size="small"
-    rows="3"
-    @update:model-value="onChange"
-  />
+  <div class="relative">
+    <Textarea
+      v-model="localValue"
+      v-bind="filteredProps"
+      :disabled="readonly"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs lod-toggle')"
+      :placeholder="placeholder || widget.name || ''"
+      size="small"
+      rows="3"
+      @update:model-value="onChange"
+    />
+    <LODFallback />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -23,6 +26,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import LODFallback from '../../components/LODFallback.vue'
 import { WidgetInputBaseClass } from './layout'
 
 const props = defineProps<{

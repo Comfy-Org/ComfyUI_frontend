@@ -1,6 +1,5 @@
+import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import {
-  NavigationGuardNext,
-  RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
   createWebHistory
@@ -115,6 +114,12 @@ const router = createRouter({
           path: 'desktop-update',
           name: 'DesktopUpdateView',
           component: () => import('@/views/DesktopUpdateView.vue'),
+          beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'desktop-dialog/:dialogId',
+          name: 'DesktopDialogView',
+          component: () => import('@/views/DesktopDialogView.vue'),
           beforeEnter: guardElectronAccess
         }
       ]

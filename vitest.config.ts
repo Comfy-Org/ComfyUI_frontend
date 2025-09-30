@@ -9,7 +9,7 @@ export default defineConfig({
     Icons({
       compiler: 'vue3',
       customCollections: {
-        comfy: FileSystemIconLoader('src/assets/icons/custom')
+        comfy: FileSystemIconLoader('packages/design-system/src/icons')
       }
     })
   ],
@@ -32,10 +32,14 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
       'src/lib/litegraph/test/**'
-    ]
+    ],
+    silent: 'passed-only'
   },
   resolve: {
     alias: {
+      '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
+      '@/utils/networkUtil':
+        '/packages/shared-frontend-utils/src/networkUtil.ts',
       '@': '/src'
     }
   },

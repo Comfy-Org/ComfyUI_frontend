@@ -1,111 +1,54 @@
 <template>
   <BaseViewTemplate dark>
-    <!-- h-full to make sure the stepper does not layout shift between steps
-    as for each step the stepper height is different. Inherit the center element
-    placement from BaseViewTemplate would cause layout shift. -->
-    <Stepper
-      class="h-full p-8 2xl:p-16"
-      value="0"
-      @update:value="handleStepChange"
-    >
-      <StepList class="select-none">
-        <Step value="0">
-          {{ $t('install.gpu') }}
-        </Step>
-        <Step value="1" :disabled="noGpu">
-          {{ $t('install.installLocation') }}
-        </Step>
-        <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
-          {{ $t('install.migration') }}
-        </Step>
-        <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
-          {{ $t('install.desktopSettings') }}
-        </Step>
-      </StepList>
-      <StepPanels>
-        <StepPanel v-slot="{ activateCallback }" value="0">
-          <GpuPicker v-model:device="device" />
-          <div class="flex pt-6 justify-end">
-            <Button
-              :label="$t('g.next')"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
-              :disabled="typeof device !== 'string'"
-              @click="activateCallback('1')"
+    <!-- Fixed height container with flexbox layout for proper content management -->
+    <div class="w-full h-full flex flex-col">
+      <Stepper
+        v-model:value="currentStep"
+        class="flex flex-col h-full"
+        @update:value="handleStepChange"
+      >
+        <!-- Main content area that grows to fill available space -->
+        <StepPanels
+          class="flex-1 overflow-auto"
+          :style="{ scrollbarGutter: 'stable' }"
+        >
+          <StepPanel value="1" class="flex">
+            <GpuPicker v-model:device="device" />
+          </StepPanel>
+          <StepPanel value="2">
+            <InstallLocationPicker
+              v-model:install-path="installPath"
+              v-model:path-error="pathError"
+              v-model:migration-source-path="migrationSourcePath"
+              v-model:migration-item-ids="migrationItemIds"
+              v-model:python-mirror="pythonMirror"
+              v-model:pypi-mirror="pypiMirror"
+              v-model:torch-mirror="torchMirror"
+              :device="device"
             />
-          </div>
-        </StepPanel>
-        <StepPanel v-slot="{ activateCallback }" value="1">
-          <InstallLocationPicker
-            v-model:installPath="installPath"
-            v-model:pathError="pathError"
-          />
-          <div class="flex pt-6 justify-between">
-            <Button
-              :label="$t('g.back')"
-              severity="secondary"
-              icon="pi pi-arrow-left"
-              @click="activateCallback('0')"
+          </StepPanel>
+          <StepPanel value="3">
+            <DesktopSettingsConfiguration
+              v-model:auto-update="autoUpdate"
+              v-model:allow-metrics="allowMetrics"
             />
-            <Button
-              :label="$t('g.next')"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
-              :disabled="pathError !== ''"
-              @click="activateCallback('2')"
-            />
-          </div>
-        </StepPanel>
-        <StepPanel v-slot="{ activateCallback }" value="2">
-          <MigrationPicker
-            v-model:sourcePath="migrationSourcePath"
-            v-model:migrationItemIds="migrationItemIds"
-          />
-          <div class="flex pt-6 justify-between">
-            <Button
-              :label="$t('g.back')"
-              severity="secondary"
-              icon="pi pi-arrow-left"
-              @click="activateCallback('1')"
-            />
-            <Button
-              :label="$t('g.next')"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
-              @click="activateCallback('3')"
-            />
-          </div>
-        </StepPanel>
-        <StepPanel v-slot="{ activateCallback }" value="3">
-          <DesktopSettingsConfiguration
-            v-model:autoUpdate="autoUpdate"
-            v-model:allowMetrics="allowMetrics"
-          />
-          <MirrorsConfiguration
-            v-model:pythonMirror="pythonMirror"
-            v-model:pypiMirror="pypiMirror"
-            v-model:torchMirror="torchMirror"
-            :device="device"
-            class="mt-6"
-          />
-          <div class="flex mt-6 justify-between">
-            <Button
-              :label="$t('g.back')"
-              severity="secondary"
-              icon="pi pi-arrow-left"
-              @click="activateCallback('2')"
-            />
-            <Button
-              :label="$t('g.install')"
-              icon="pi pi-check"
-              icon-pos="right"
-              :disabled="hasError"
-              @click="install()"
-            />
-          </div>
-        </StepPanel>
-      </StepPanels>
-    </Stepper>
+          </StepPanel>
+        </StepPanels>
+
+        <!-- Install footer with navigation -->
+        <InstallFooter
+          class="w-full max-w-2xl my-6 mx-auto"
+          :current-step
+          :can-proceed
+          :disable-location-step="noGpu"
+          :disable-migration-step="noGpu || hasError || highestStep < 2"
+          :disable-settings-step="noGpu || hasError || highestStep < 3"
+          @previous="goToPreviousStep"
+          @next="goToNextStep"
+          @install="install"
+        />
+      </Stepper>
+    </div>
   </BaseViewTemplate>
 </template>
 
@@ -114,9 +57,6 @@ import type {
   InstallOptions,
   TorchDeviceType
 } from '@comfyorg/comfyui-electron-types'
-import Button from 'primevue/button'
-import Step from 'primevue/step'
-import StepList from 'primevue/steplist'
 import StepPanel from 'primevue/steppanel'
 import StepPanels from 'primevue/steppanels'
 import Stepper from 'primevue/stepper'
@@ -125,9 +65,8 @@ import { useRouter } from 'vue-router'
 
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 import GpuPicker from '@/components/install/GpuPicker.vue'
+import InstallFooter from '@/components/install/InstallFooter.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
-import MigrationPicker from '@/components/install/MigrationPicker.vue'
-import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
@@ -144,6 +83,9 @@ const allowMetrics = ref(true)
 const pythonMirror = ref('')
 const pypiMirror = ref('')
 const torchMirror = ref('')
+
+/** Current step in the stepper */
+const currentStep = ref('1')
 
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
@@ -163,6 +105,40 @@ const setHighestStep = (value: string | number) => {
 
 const hasError = computed(() => pathError.value !== '')
 const noGpu = computed(() => typeof device.value !== 'string')
+
+// Computed property to determine if user can proceed to next step
+const regex = /^Insufficient space - minimum free space: \d+ GB$/
+
+const canProceed = computed(() => {
+  switch (currentStep.value) {
+    case '1':
+      return typeof device.value === 'string'
+    case '2':
+      return pathError.value === '' || regex.test(pathError.value)
+    case '3':
+      return !hasError.value
+    default:
+      return false
+  }
+})
+
+// Navigation methods
+const goToNextStep = () => {
+  const nextStep = (parseInt(currentStep.value) + 1).toString()
+  currentStep.value = nextStep
+  setHighestStep(nextStep)
+  electronAPI().Events.trackEvent('install_stepper_change', {
+    step: nextStep
+  })
+}
+
+const goToPreviousStep = () => {
+  const prevStep = (parseInt(currentStep.value) - 1).toString()
+  currentStep.value = prevStep
+  electronAPI().Events.trackEvent('install_stepper_change', {
+    step: prevStep
+  })
+}
 
 const electron = electronAPI()
 const router = useRouter()
@@ -195,7 +171,7 @@ onMounted(async () => {
   }
 
   electronAPI().Events.trackEvent('install_stepper_change', {
-    step: '0',
+    step: currentStep.value,
     gpu: detectedGpu
   })
 })
@@ -205,6 +181,30 @@ onMounted(async () => {
 @reference '../assets/css/style.css';
 
 :deep(.p-steppanel) {
+  @apply mt-8 flex justify-center bg-transparent;
+}
+
+/* Remove default padding/margin from StepPanels to make scrollbar flush */
+:deep(.p-steppanels) {
+  @apply p-0 m-0;
+}
+
+/* Ensure StepPanel content container has no top/bottom padding */
+:deep(.p-steppanel-content) {
+  @apply p-0;
+}
+
+/* Custom overlay scrollbar for WebKit browsers (Electron, Chrome) */
+:deep(.p-steppanels::-webkit-scrollbar) {
+  @apply w-4;
+}
+
+:deep(.p-steppanels::-webkit-scrollbar-track) {
   @apply bg-transparent;
+}
+
+:deep(.p-steppanels::-webkit-scrollbar-thumb) {
+  @apply bg-white/20 rounded-lg border-[4px] border-transparent;
+  background-clip: content-box;
 }
 </style>

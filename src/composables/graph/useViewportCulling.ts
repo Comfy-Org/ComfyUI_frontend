@@ -6,101 +6,98 @@
  * 2. Set display none on element to avoid cascade resolution overhead
  * 3. Only run when transform changes (event driven)
  */
-import { type Ref, computed } from 'vue'
+import { createSharedComposable, useThrottleFn } from '@vueuse/core'
+import { computed } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app as comfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 
-interface NodeManager {
-  getNode: (id: string) => any
+type Bounds = [left: number, right: number, top: number, bottom: number]
+
+function getNodeBounds(node: LGraphNode): Bounds {
+  const [nodeLeft, nodeTop] = node.pos
+  const nodeRight = nodeLeft + node.size[0]
+  const nodeBottom = nodeTop + node.size[1]
+  return [nodeLeft, nodeRight, nodeTop, nodeBottom]
 }
 
-export function useViewportCulling(
-  isVueNodesEnabled: Ref<boolean>,
-  vueNodeData: Ref<ReadonlyMap<string, VueNodeData>>,
-  nodeDataTrigger: Ref<number>,
-  nodeManager: Ref<NodeManager | null>
-) {
-  const canvasStore = useCanvasStore()
+function viewportEdges(
+  canvas: ReturnType<typeof useCanvasStore>['canvas']
+): Bounds | undefined {
+  if (!canvas) {
+    return
+  }
+  const ds = canvas.ds
+  const viewport_width = canvas.canvas.width
+  const viewport_height = canvas.canvas.height
+  const margin = 500 * ds.scale
 
-  const allNodes = computed(() => {
-    if (!isVueNodesEnabled.value) return []
-    void nodeDataTrigger.value // Force re-evaluation when nodeManager initializes
-    return Array.from(vueNodeData.value.values())
-  })
+  const [xOffset, yOffset] = ds.offset
+
+  const leftEdge = -margin / ds.scale - xOffset
+  const rightEdge = (viewport_width + margin) / ds.scale - xOffset
+  const topEdge = -margin / ds.scale - yOffset
+  const bottomEdge = (viewport_height + margin) / ds.scale - yOffset
+  return [leftEdge, rightEdge, topEdge, bottomEdge]
+}
+
+function boundsIntersect(boxA: Bounds, boxB: Bounds): boolean {
+  const [aLeft, aRight, aTop, aBottom] = boxA
+  const [bLeft, bRight, bTop, bBottom] = boxB
+
+  const leftOf = aRight < bLeft
+  const rightOf = aLeft > bRight
+  const above = aBottom < bTop
+  const below = aTop > bBottom
+  return !(leftOf || rightOf || above || below)
+}
+
+function useViewportCullingIndividual() {
+  const canvasStore = useCanvasStore()
+  const { nodeManager } = useVueNodeLifecycle()
+
+  const viewport = computed(() => viewportEdges(canvasStore.canvas))
+
+  function inViewport(node: LGraphNode | undefined): boolean {
+    if (!viewport.value || !node) {
+      return true
+    }
+    const nodeBounds = getNodeBounds(node)
+    return boundsIntersect(nodeBounds, viewport.value)
+  }
 
   /**
    * Update visibility of all nodes based on viewport
    * Queries DOM directly - no cache maintenance needed
    */
-  const updateVisibility = () => {
-    if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
+  function updateVisibility() {
+    if (!nodeManager.value || !app.canvas) return // load bearing app.canvas check for workflows being loaded.
 
-    const canvas = canvasStore.canvas
-    const manager = nodeManager.value
-    const ds = canvas.ds
-
-    // Viewport bounds
-    const viewport_width = canvas.canvas.width
-    const viewport_height = canvas.canvas.height
-    const margin = 500 * ds.scale
-
-    // Get all node elements at once
     const nodeElements = document.querySelectorAll('[data-node-id]')
-
-    // Update each element's visibility
     for (const element of nodeElements) {
       const nodeId = element.getAttribute('data-node-id')
       if (!nodeId) continue
 
-      const node = manager.getNode(nodeId)
+      const node = nodeManager.value.getNode(nodeId)
       if (!node) continue
 
-      // Calculate if node is outside viewport
-      const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
-      const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
-      const screen_width = node.size[0] * ds.scale
-      const screen_height = node.size[1] * ds.scale
-
-      const isNodeOutsideViewport =
-        screen_x + screen_width < -margin ||
-        screen_x > viewport_width + margin ||
-        screen_y + screen_height < -margin ||
-        screen_y > viewport_height + margin
-
-      // Setting display none directly avoid potential cascade resolution
-      if (element instanceof HTMLElement) {
-        element.style.display = isNodeOutsideViewport ? 'none' : ''
+      const displayValue = inViewport(node) ? '' : 'none'
+      if (
+        element instanceof HTMLElement &&
+        element.style.display !== displayValue
+      ) {
+        element.style.display = displayValue
       }
     }
   }
 
-  // RAF throttling for smooth updates during continuous panning
-  let rafId: number | null = null
+  const handleTransformUpdate = useThrottleFn(() => updateVisibility, 100, true)
 
-  /**
-   * Handle transform update - called by TransformPane event
-   * Uses RAF to batch updates for smooth performance
-   */
-  const handleTransformUpdate = () => {
-    if (!isVueNodesEnabled.value) return
-
-    // Cancel previous RAF if still pending
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-    }
-
-    // Schedule update in next animation frame
-    rafId = requestAnimationFrame(() => {
-      updateVisibility()
-      rafId = null
-    })
-  }
-
-  return {
-    allNodes,
-    handleTransformUpdate,
-    updateVisibility
-  }
+  return { handleTransformUpdate }
 }
+
+export const useViewportCulling = createSharedComposable(
+  useViewportCullingIndividual
+)

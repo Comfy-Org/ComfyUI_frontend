@@ -58,15 +58,14 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
-import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useManagerState } from '@/composables/useManagerState'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { MissingNodeType } from '@/types/comfy'
-import { ManagerTab } from '@/types/comfyManagerTypes'
-
-import PackInstallButton from './manager/button/PackInstallButton.vue'
+import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
@@ -138,7 +137,7 @@ const allMissingNodesInstalled = computed(() => {
 })
 // Watch for completion and close dialog
 watch(allMissingNodesInstalled, async (allInstalled) => {
-  if (allInstalled) {
+  if (allInstalled && showInstallAllButton.value) {
     // Use nextTick to ensure state updates are complete
     await nextTick()
 

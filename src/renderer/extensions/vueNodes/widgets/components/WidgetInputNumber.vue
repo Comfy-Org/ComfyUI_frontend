@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'

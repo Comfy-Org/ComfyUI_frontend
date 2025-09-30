@@ -19,14 +19,15 @@
 
 <script setup lang="ts">
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import { CSSProperties, computed, nextTick, onMounted, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
-import { DomWidgetState } from '@/stores/domWidgetStore'
+import type { DomWidgetState } from '@/stores/domWidgetStore'
 
 const { widgetState } = defineProps<{
   widgetState: DomWidgetState
@@ -124,50 +125,43 @@ watch(
     }
   }
 )
-
-// Set up event listeners only after the widget is mounted and visible
-const setupDOMEventListeners = () => {
-  if (!isDOMWidget(widget) || !widgetState.visible) return
-
-  if (widget.element.blur) {
-    useEventListener(document, 'mousedown', (event) => {
-      if (!widget.element.contains(event.target as HTMLElement)) {
-        widget.element.blur()
-      }
-    })
+useEventListener(document, 'mousedown', (event) => {
+  if (!isDOMWidget(widget) || !widgetState.visible || !widget.element.blur) {
+    return
   }
+  if (!widget.element.contains(event.target as HTMLElement)) {
+    widget.element.blur()
+  }
+})
 
-  for (const evt of widget.options.selectOn ?? ['focus', 'click']) {
-    useEventListener(widget.element, evt, () => {
+onMounted(() => {
+  if (!isDOMWidget(widget)) {
+    return
+  }
+  useEventListener(
+    widget.element,
+    widget.options.selectOn ?? ['focus', 'click'],
+    () => {
       const lgCanvas = canvasStore.canvas
       lgCanvas?.selectNode(widget.node)
       lgCanvas?.bringToFront(widget.node)
-    })
-  }
-}
-
-// Set up event listeners when widget becomes visible
-watch(
-  () => widgetState.visible,
-  (visible) => {
-    if (visible) {
-      setupDOMEventListeners()
     }
-  },
-  { immediate: true }
-)
+  )
+})
 
 const inputSpec = widget.node.constructor.nodeData
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
 // Mount DOM element when widget is or becomes visible
 const mountElementIfVisible = () => {
-  if (widgetState.visible && isDOMWidget(widget) && widgetElement.value) {
-    // Only append if not already a child
-    if (!widgetElement.value.contains(widget.element)) {
-      widgetElement.value.appendChild(widget.element)
-    }
+  if (!(widgetState.visible && isDOMWidget(widget) && widgetElement.value)) {
+    return
   }
+  // Only append if not already a child
+  if (widgetElement.value.contains(widget.element)) {
+    return
+  }
+  widgetElement.value.appendChild(widget.element)
 }
 
 // Check on mount - but only after next tick to ensure visibility is calculated

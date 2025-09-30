@@ -131,9 +131,24 @@ export const useLitegraphSettings = () => {
     const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode') as
       | 'standard'
       | 'legacy'
+      | 'custom'
 
     LiteGraph.canvasNavigationMode = navigationMode
     LiteGraph.macTrackpadGestures = navigationMode === 'standard'
+  })
+
+  watchEffect(() => {
+    const leftMouseBehavior = settingStore.get(
+      'Comfy.Canvas.LeftMouseClickBehavior'
+    ) as 'panning' | 'select'
+    LiteGraph.leftMouseClickBehavior = leftMouseBehavior
+  })
+
+  watchEffect(() => {
+    const mouseWheelScroll = settingStore.get(
+      'Comfy.Canvas.MouseWheelScroll'
+    ) as 'panning' | 'zoom'
+    LiteGraph.mouseWheelScroll = mouseWheelScroll
   })
 
   watchEffect(() => {

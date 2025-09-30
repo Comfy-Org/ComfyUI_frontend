@@ -3,7 +3,7 @@ import type { MultiSelectProps } from 'primevue/multiselect'
 import { ref } from 'vue'
 
 import MultiSelect from './MultiSelect.vue'
-import { type SelectOption } from './types'
+import type { SelectOption } from './types'
 
 // Combine our component props with PrimeVue MultiSelect props
 // Since we use v-bind="$attrs", all PrimeVue props are available

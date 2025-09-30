@@ -16,15 +16,20 @@ Without this flag, parallel tests will conflict and fail randomly.
 
 ### ComfyUI devtools
 
-Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` directory.  
+ComfyUI_devtools is now included in this repository under `tools/devtools/`. During CI/CD, these files are automatically copied to the `custom_nodes` directory.  
 _ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
+
+For local development, copy the devtools files to your ComfyUI installation:
+```bash
+cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
+```
 
 ### Node.js & Playwright Prerequisites
 
 Ensure you have Node.js v20 or v22 installed. Then, set up the Chromium test driver:
 
 ```bash
-npx playwright install chromium --with-deps
+pnpm exec playwright install chromium --with-deps
 ```
 
 ### Environment Configuration
@@ -51,14 +56,6 @@ TEST_COMFYUI_DIR=/path/to/your/ComfyUI
 
 ### Common Setup Issues
 
-**Most tests require the new menu system** - Add to your test:
-
-```typescript
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-})
-```
-
 ### Release API Mocking
 
 By default, all tests mock the release API (`api.comfy.org/releases`) to prevent release notification popups from interfering with test execution. This is necessary because the release notifications can appear over UI elements and block test interactions.
@@ -76,7 +73,7 @@ For tests that specifically need to test release functionality, see the example 
 **Always use UI mode for development:**
 
 ```bash
-npx playwright test --ui
+pnpm exec playwright test --ui
 ```
 
 UI mode features:
@@ -92,8 +89,8 @@ UI mode features:
 For CI or headless testing:
 
 ```bash
-npx playwright test                    # Run all tests
-npx playwright test widget.spec.ts     # Run specific test file
+pnpm exec playwright test                    # Run all tests
+pnpm exec playwright test widget.spec.ts     # Run specific test file
 ```
 
 ### Local Development Config
@@ -389,7 +386,7 @@ export default defineConfig({
 Option 2 - Generate local baselines for comparison:
 
 ```bash
-npx playwright test --update-snapshots
+pnpm exec playwright test --update-snapshots
 ```
 
 ### Creating New Screenshot Baselines

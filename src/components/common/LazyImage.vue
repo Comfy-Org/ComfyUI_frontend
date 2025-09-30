@@ -10,7 +10,7 @@
       class="absolute inset-0"
     />
     <img
-      v-show="isImageLoaded"
+      v-if="cachedSrc"
       ref="imageRef"
       :src="cachedSrc"
       :alt="alt"
@@ -24,7 +24,13 @@
       v-if="hasError"
       class="absolute inset-0 flex items-center justify-center bg-surface-50 dark-theme:bg-surface-800 text-muted"
     >
-      <i class="pi pi-image text-2xl" />
+      <img
+        src="/assets/images/default-template.png"
+        :alt="alt"
+        draggable="false"
+        :class="imageClass"
+        :style="imageStyle"
+      />
     </div>
   </div>
 </template>
@@ -77,8 +83,8 @@ const shouldLoad = computed(() => isIntersecting.value)
 
 watch(
   shouldLoad,
-  async (shouldLoad) => {
-    if (shouldLoad && src && !cachedSrc.value && !hasError.value) {
+  async (shouldLoadVal) => {
+    if (shouldLoadVal && src && !cachedSrc.value && !hasError.value) {
       try {
         const cachedMedia = await getCachedMedia(src)
         if (cachedMedia.error) {
@@ -93,7 +99,7 @@ watch(
         console.warn('Failed to load cached media:', error)
         cachedSrc.value = src
       }
-    } else if (!shouldLoad) {
+    } else if (!shouldLoadVal) {
       if (cachedSrc.value?.startsWith('blob:')) {
         releaseUrl(src)
       }

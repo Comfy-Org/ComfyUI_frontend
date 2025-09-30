@@ -18,6 +18,7 @@
     "calculatingDimensions": "Calculating dimensions",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
+    "logoAlt": "ComfyUI Logo",
     "refresh": "Refresh",
     "refreshNode": "Refresh Node",
     "terminal": "Terminal",
@@ -168,6 +169,7 @@
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
     "moreWorkflows": "More workflows",
+    "seeTutorial": "See a tutorial",
     "nodeRenderError": "Node Render Error",
     "nodeContentError": "Node Content Error",
     "nodeHeaderError": "Node Header Error",
@@ -406,6 +408,27 @@
     "migration": "Migration",
     "desktopSettings": "Desktop Settings",
     "chooseInstallationLocation": "Choose Installation Location",
+    "gpuPicker": {
+      "title": "Choose your hardware setup",
+      "recommended": "RECOMMENDED",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "CPU Mode",
+      "manualSubtitle": "Manual Setup",
+      "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",
+      "nvidiaDescription": "Use your NVIDIA GPU with CUDA acceleration for the best performance.",
+      "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
+      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
+    },
+    "locationPicker": {
+      "title": "Choose where to install ComfyUI",
+      "subtitle": "Pick a folder for ComfyUI's files. We'll also set up Python there automatically.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "Select existing ComfyUI installation (optional)",
+      "migrateFromExisting": "Migrate from existing installation",
+      "migrateDescription": "Copy or link your existing models, custom nodes, and configurations from a previous ComfyUI installation.",
+      "chooseDownloadServers": "Choose download servers manually",
+      "downloadServersDescription": "Select specific mirror servers for downloading Python, PyPI packages, and PyTorch based on your location."
+    },
     "systemLocations": "System Locations",
     "failedToSelectDirectory": "Failed to select directory",
     "pathValidationFailed": "Failed to validate path",
@@ -490,18 +513,26 @@
     "metricsDisabled": "Metrics Disabled",
     "updateConsent": "You previously opted in to reporting crashes. We are now tracking event-based metrics to help identify bugs and improve the app. No personal identifiable information is collected."
   },
+  "desktopStart": {
+    "initialising": "Initialising..."
+  },
   "serverStart": {
+    "title": "Starting ComfyUI",
     "troubleshoot": "Troubleshoot",
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
     "showTerminal": "Show Terminal",
     "copySelectionTooltip": "Copy selection",
     "copyAllTooltip": "Copy all",
+    "errorMessage": "Unable to start ComfyUI Desktop",
+    "installation": {
+      "title": "Installing ComfyUI"
+    },
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",
       "starting-server": "Starting ComfyUI server...",
-      "ready": "Finishing...",
+      "ready": "Loading Human Interface",
       "error": "Unable to start ComfyUI Desktop"
     }
   },
@@ -655,6 +686,7 @@
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
       "Basics": "Basics",
+      "GettingStarted": "Getting Started",
       "Flux": "Flux",
       "ControlNet": "ControlNet",
       "Upscaling": "Upscaling",
@@ -663,6 +695,7 @@
       "Area Composition": "Area Composition",
       "3D": "3D",
       "Audio": "Audio",
+      "LLMs": "LLMs",
       "Image API": "Image API",
       "Video API": "Video API",
       "LLM API": "LLM API",
@@ -971,6 +1004,24 @@
         "audio_ace_step_1_t2a_song": "ACE Step v1 Text to Song",
         "audio_ace_step_1_m2m_editing": "ACE Step v1 M2M Editing"
       }
+    },
+    "categories": "Categories",
+    "resetFilters": "Clear Filters",
+    "sorting": "Sort by",
+    "activeFilters": "Filters:",
+    "loading": "Loading templates...",
+    "noResults": "No templates found",
+    "noResultsHint": "Try adjusting your search or filters",
+    "modelFilter": "Model Filter",
+    "modelsSelected": "{count} Models",
+    "useCasesSelected": "{count} Use Cases",
+    "licensesSelected": "{count} Licenses",
+    "resultsCount": "Showing {count} of {total} templates",
+    "sort": {
+      "recommended": "Recommended",
+      "alphabetical": "A → Z",
+      "newest": "Newest",
+      "searchPlaceholder": "Search..."
     }
   },
   "graphCanvasMenu": {
@@ -1821,7 +1872,15 @@
     "copyTooltip": "Copy message to clipboard"
   },
   "widgets": {
-    "selectModel": "Select model"
+    "selectModel": "Select model",
+    "uploadSelect": {
+      "placeholder": "Select...",
+      "placeholderImage": "Select image...",
+      "placeholderAudio": "Select audio...",
+      "placeholderVideo": "Select video...",
+      "placeholderModel": "Select model...",
+      "placeholderUnknown": "Select media..."
+    }
   },
   "nodeHelpPage": {
     "inputs": "Inputs",
@@ -1862,5 +1921,24 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "assetBrowser": {
+    "assets": "Assets",
+    "browseAssets": "Browse Assets",
+    "noAssetsFound": "No assets found",
+    "tryAdjustingFilters": "Try adjusting your search or filters",
+    "loadingModels": "Loading {type}...",
+    "connectionError": "Please check your connection and try again",
+    "noModelsInFolder": "No {type} available in this folder",
+    "searchAssetsPlaceholder": "Search assets...",
+    "allModels": "All Models",
+    "unknown": "Unknown",
+    "fileFormats": "File formats",
+    "baseModels": "Base models",
+    "sortBy": "Sort by",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "Recent",
+    "sortPopular": "Popular"
   }
 }

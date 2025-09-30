@@ -2,7 +2,7 @@ import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
-import { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 
 vi.mock('axios', () => {
   return {
@@ -542,7 +542,8 @@ describe('useRemoteWidget', () => {
         false,
         expect.any(Function),
         {
-          serialize: false
+          serialize: false,
+          canvasOnly: true
         }
       )
     })

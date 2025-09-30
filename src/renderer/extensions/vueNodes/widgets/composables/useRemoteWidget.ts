@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { IWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 
@@ -219,7 +219,9 @@ export function useRemoteWidget<
    * Add a refresh button to the node that, when clicked, will force the widget to refresh
    */
   function addRefreshButton() {
-    node.addWidget('button', 'refresh', 'refresh', widget.refresh)
+    node.addWidget('button', 'refresh', 'refresh', widget.refresh, {
+      canvasOnly: true
+    })
   }
 
   /**
@@ -244,7 +246,8 @@ export function useRemoteWidget<
         autoRefreshEnabled = value
       },
       {
-        serialize: false
+        serialize: false,
+        canvasOnly: true
       }
     )
 

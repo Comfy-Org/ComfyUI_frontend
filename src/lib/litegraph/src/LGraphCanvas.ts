@@ -64,10 +64,10 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { Subgraph } from './subgraph/Subgraph'
+import type { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
-import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
@@ -87,6 +87,7 @@ import type { PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
+import { resolveConnectingLinkColor } from './utils/linkColors'
 import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -687,8 +688,8 @@ export class LGraphCanvas
 
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
   dragZoomEnabled: boolean = false
-  /** The start position of the drag zoom. */
-  #dragZoomStart: { pos: Point; scale: number } | null = null
+  /** The start position of the drag zoom and original read-only state. */
+  #dragZoomStart: { pos: Point; scale: number; readOnly: boolean } | null = null
 
   getMenuOptions?(): IContextMenuValue<string>[]
   getExtraMenuOptions?(
@@ -756,9 +757,7 @@ export class LGraphCanvas
 
     // Initialize link renderer if graph is available
     if (graph) {
-      this.linkRenderer = new LitegraphLinkAdapter(graph)
-      // Disable layout writes during render
-      this.linkRenderer.enableLayoutStoreWrites = false
+      this.linkRenderer = new LitegraphLinkAdapter(false)
     }
 
     this.linkConnector.events.addEventListener('link-created', () =>
@@ -1857,9 +1856,7 @@ export class LGraphCanvas
     newGraph.attachCanvas(this)
 
     // Re-initialize link renderer with new graph
-    this.linkRenderer = new LitegraphLinkAdapter(newGraph)
-    // Disable layout writes during render
-    this.linkRenderer.enableLayoutStoreWrites = false
+    this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
     this.#dirty()
@@ -2187,7 +2184,12 @@ export class LGraphCanvas
       !e.altKey &&
       e.buttons
     ) {
-      this.#dragZoomStart = { pos: [e.x, e.y], scale: this.ds.scale }
+      this.#dragZoomStart = {
+        pos: [e.x, e.y],
+        scale: this.ds.scale,
+        readOnly: this.read_only
+      }
+      this.read_only = true
       return
     }
 
@@ -2348,7 +2350,7 @@ export class LGraphCanvas
     if (
       ctrlOrMeta &&
       !e.altKey &&
-      LiteGraph.canvasNavigationMode === 'legacy'
+      LiteGraph.leftMouseClickBehavior === 'panning'
     ) {
       this.#setupNodeSelectionDrag(e, pointer, node)
 
@@ -2616,8 +2618,8 @@ export class LGraphCanvas
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      // allow dragging canvas if canvas is not in standard, or read-only (pan mode in standard)
-      if (LiteGraph.canvasNavigationMode !== 'standard' || this.read_only) {
+      // allow dragging canvas based on leftMouseClickBehavior or read-only mode
+      if (LiteGraph.leftMouseClickBehavior === 'panning' || this.read_only) {
         pointer.onClick = () => this.processSelect(null, e)
         pointer.finally = () => (this.dragging_canvas = false)
         this.dragging_canvas = true
@@ -3124,7 +3126,7 @@ export class LGraphCanvas
   #processDragZoom(e: PointerEvent): void {
     // stop canvas zoom action
     if (!e.buttons) {
-      this.#dragZoomStart = null
+      this.#finishDragZoom()
       return
     }
 
@@ -3140,6 +3142,13 @@ export class LGraphCanvas
 
     this.ds.changeScale(scale, start.pos)
     this.graph.change()
+  }
+
+  #finishDragZoom(): void {
+    const start = this.#dragZoomStart
+    if (!start) return
+    this.#dragZoomStart = null
+    this.read_only = start.readOnly
   }
 
   /**
@@ -3523,6 +3532,8 @@ export class LGraphCanvas
     const { graph, pointer } = this
     if (!graph) return
 
+    this.#finishDragZoom()
+
     LGraphCanvas.active_canvas = this
 
     this.adjustMouseEvent(e)
@@ -3629,8 +3640,8 @@ export class LGraphCanvas
       e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
     const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
-      // Legacy mode or standard mode with ctrl - use wheel for zoom
+    if (isZoomModifier || LiteGraph.mouseWheelScroll === 'zoom') {
+      // Zoom mode or modifier key pressed - use wheel for zoom
       if (isTrackpad) {
         // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
@@ -3645,7 +3656,6 @@ export class LGraphCanvas
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
-      // Standard mode without ctrl - use wheel / gestures to pan
       // Trackpads and mice work on significantly different scales
       const factor = isTrackpad ? 0.18 : 0.008_333
 
@@ -4031,6 +4041,18 @@ export class LGraphCanvas
     }
 
     // TODO: Report failures, i.e. `failedNodes`
+
+    const newPositions = created.map((node) => ({
+      nodeId: String(node.id),
+      bounds: {
+        x: node.pos[0],
+        y: node.pos[1],
+        width: node.size?.[0] ?? 100,
+        height: node.size?.[1] ?? 200
+      }
+    }))
+
+    layoutStore.batchUpdateNodeBounds(newPositions)
 
     this.selectItems(created)
 
@@ -4717,29 +4739,20 @@ export class LGraphCanvas
           const connShape = fromSlot.shape
           const connType = fromSlot.type
 
-          const colour =
-            connType === LiteGraph.EVENT
-              ? LiteGraph.EVENT_LINK_COLOR
-              : LiteGraph.CONNECTING_LINK_COLOR
+          const colour = resolveConnectingLinkColor(connType)
 
           // the connection being dragged by the mouse
           if (this.linkRenderer) {
-            this.linkRenderer.renderLinkDirect(
+            this.linkRenderer.renderDraggingLink(
               ctx,
               pos,
               highlightPos,
-              null,
-              false,
-              null,
               colour,
               fromDirection,
               dragDirection,
               {
                 ...this.buildLinkRenderContext(),
                 linkMarkerShape: LinkMarkerShape.None
-              },
-              {
-                disabled: false
               }
             )
           }

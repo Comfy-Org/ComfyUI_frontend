@@ -31,7 +31,8 @@ export default defineConfig({
       ignored: [
         '**/coverage/**',
         '**/playwright-report/**',
-        '**/*.{test,spec}.ts'
+        '**/*.{test,spec}.ts',
+        '*.config.{ts,mts}'
       ]
     },
     proxy: {
@@ -132,7 +133,7 @@ export default defineConfig({
     Icons({
       compiler: 'vue3',
       customCollections: {
-        comfy: FileSystemIconLoader('src/assets/icons/custom')
+        comfy: FileSystemIconLoader('packages/design-system/src/icons')
       }
     }),
 
@@ -189,6 +190,9 @@ export default defineConfig({
 
   resolve: {
     alias: {
+      '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
+      '@/utils/networkUtil':
+        '/packages/shared-frontend-utils/src/networkUtil.ts',
       '@': '/src'
     }
   },

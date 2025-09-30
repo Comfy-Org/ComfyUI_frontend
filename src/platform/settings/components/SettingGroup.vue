@@ -20,7 +20,7 @@
 import Divider from 'primevue/divider'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
-import { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{

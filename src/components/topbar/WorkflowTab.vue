@@ -1,7 +1,7 @@
 <template>
   <div
     ref="workflowTabRef"
-    class="flex p-2 gap-2 workflow-tab"
+    class="flex p-2 gap-2 workflow-tab group"
     v-bind="$attrs"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
@@ -11,9 +11,13 @@
       {{ workflowOption.workflow.filename }}
     </span>
     <div class="relative">
-      <span v-if="shouldShowStatusIndicator" class="status-indicator">•</span>
+      <span
+        v-if="shouldShowStatusIndicator"
+        class="group-hover:hidden absolute font-bold text-2xl top-1/2 left-1/2 -translate-1/2 z-10 bg-(--comfy-menu-secondary-bg) w-4"
+        >•</span
+      >
       <Button
-        class="close-button p-0 w-auto"
+        class="close-button p-0 w-auto invisible"
         icon="pi pi-times"
         text
         severity="secondary"
@@ -42,7 +46,7 @@ import {
 } from '@/composables/usePragmaticDragAndDrop'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -173,18 +177,6 @@ onUnmounted(() => {
   popoverRef.value?.hidePopover()
 })
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-.status-indicator {
-  @apply absolute font-bold;
-  font-size: 1.5rem;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-</style>
 
 <style>
 .p-tooltip.workflow-tab-tooltip {
