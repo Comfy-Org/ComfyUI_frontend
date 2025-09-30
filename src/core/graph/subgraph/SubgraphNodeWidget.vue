@@ -15,7 +15,7 @@ defineEmits<{
 </script>
 <template>
   <div
-    class="flex pt-1 pr-4 pb-1 pl-0 break-all rounded bg-pure-white dark-theme:bg-charcoal-800 items-center gap-1"
+    class="flex py-1 pr-4 pl-0 break-all rounded bg-pure-white dark-theme:bg-charcoal-800 items-center gap-1"
   >
     <div
       :class="cn('size-4', isDraggable ? 'icon-[lucide--grip-vertical]' : '')"

@@ -8,6 +8,7 @@ import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
 import {
   type WidgetItem,
   demoteWidget,
+  isRecommendedWidget,
   matchesPropertyItem,
   matchesWidgetItem,
   promoteWidget,
@@ -27,10 +28,24 @@ const canvasStore = useCanvasStore()
 
 const searchQuery = ref<string>('')
 const debouncedQuery = refDebounced(searchQuery, 200)
-
-function toKey(item: WidgetItem) {
-  return `${item[0].id}: ${item[1].name}`
-}
+const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
+  get() {
+    track()
+    const node = activeNode.value
+    if (!node) return []
+    return parseProxyWidgets(node.properties.proxyWidgets)
+  },
+  set(value?: ProxyWidgetsProperty) {
+    trigger()
+    const node = activeNode.value
+    if (!value) return
+    if (!node) {
+      console.error('Attempted to toggle widgets with no node selected')
+      return
+    }
+    node.properties.proxyWidgets = value
+  }
+}))
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -63,11 +78,6 @@ const activeWidgets = computed<WidgetItem[]>({
   }
 })
 
-function nodeWidgets(n: LGraphNode): WidgetItem[] {
-  if (!n.widgets) return []
-  return n.widgets.map((w: IBaseWidget) => [n, w])
-}
-
 const interiorWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
@@ -76,38 +86,6 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
     .flatMap(nodeWidgets)
     .filter(([_, w]: WidgetItem) => !w.computedDisabled)
 })
-
-const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
-  get() {
-    track()
-    const node = activeNode.value
-    if (!node) return []
-    return parseProxyWidgets(node.properties.proxyWidgets)
-  },
-  set(value?: ProxyWidgetsProperty) {
-    trigger()
-    const node = activeNode.value
-    if (!value) return
-    if (!node) {
-      console.error('Attempted to toggle widgets with no node selected')
-      return
-    }
-    node.properties.proxyWidgets = value
-  }
-}))
-
-function demote([node, widget]: WidgetItem) {
-  const subgraphNode = activeNode.value
-  if (!subgraphNode) return []
-  demoteWidget(node, widget, [subgraphNode])
-  triggerRef(proxyWidgets)
-}
-function promote([node, widget]: WidgetItem) {
-  const subgraphNode = activeNode.value
-  if (!subgraphNode) return []
-  promoteWidget(node, widget, [subgraphNode])
-  triggerRef(proxyWidgets)
-}
 
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
@@ -126,6 +104,42 @@ const filteredCandidates = computed<WidgetItem[]>(() => {
       w.name.toLowerCase().includes(query)
   )
 })
+
+const recommendedWidgets = computed(() => {
+  const node = activeNode.value
+  if (!node) return [] //Not reachable
+  return filteredCandidates.value.filter(isRecommendedWidget)
+})
+
+const filteredActive = computed<WidgetItem[]>(() => {
+  const query = debouncedQuery.value.toLowerCase()
+  if (!query) return activeWidgets.value
+  return activeWidgets.value.filter(
+    ([n, w]: WidgetItem) =>
+      n.title.toLowerCase().includes(query) ||
+      w.name.toLowerCase().includes(query)
+  )
+})
+
+function toKey(item: WidgetItem) {
+  return `${item[0].id}: ${item[1].name}`
+}
+function nodeWidgets(n: LGraphNode): WidgetItem[] {
+  if (!n.widgets) return []
+  return n.widgets.map((w: IBaseWidget) => [n, w])
+}
+function demote([node, widget]: WidgetItem) {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return []
+  demoteWidget(node, widget, [subgraphNode])
+  triggerRef(proxyWidgets)
+}
+function promote([node, widget]: WidgetItem) {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return []
+  promoteWidget(node, widget, [subgraphNode])
+  triggerRef(proxyWidgets)
+}
 function showAll() {
   const node = activeNode.value
   if (!node) return //Not reachable
@@ -144,22 +158,6 @@ function hideAll() {
     (widgetItem) => !filteredActive.value.some(matchesWidgetItem(widgetItem))
   )
 }
-const recommendedNodes = [
-  'CLIPTextEncode',
-  'LoadImage',
-  'SaveImage',
-  'PreviewImage'
-]
-const recommendedWidgetNames = ['seed']
-const recommendedWidgets = computed(() => {
-  const node = activeNode.value
-  if (!node) return [] //Not reachable
-  return filteredCandidates.value.filter(
-    ([node, widget]: WidgetItem) =>
-      recommendedNodes.includes(node.type) ||
-      recommendedWidgetNames.includes(widget.name)
-  )
-})
 function showRecommended() {
   const node = activeNode.value
   if (!node) return //Not reachable
@@ -171,16 +169,6 @@ function showRecommended() {
   widgets.push(...toAdd)
   proxyWidgets.value = widgets
 }
-
-const filteredActive = computed<WidgetItem[]>(() => {
-  const query = debouncedQuery.value.toLowerCase()
-  if (!query) return activeWidgets.value
-  return activeWidgets.value.filter(
-    ([n, w]: WidgetItem) =>
-      n.title.toLowerCase().includes(query) ||
-      w.name.toLowerCase().includes(query)
-  )
-})
 </script>
 <template>
   <SearchBox

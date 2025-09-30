@@ -12,9 +12,9 @@ import {
   createTestSubgraphNode
 } from '../litegraph/subgraph/fixtures/subgraphHelpers'
 
-registerProxyWidgets({
-  canvas: { addEventListener() {} }
-} as unknown as LGraphCanvas)
+const canvasEl: Partial<HTMLCanvasElement> = { addEventListener() {} }
+const canvas: Partial<LGraphCanvas> = { canvas: canvasEl as HTMLCanvasElement }
+registerProxyWidgets(canvas as LGraphCanvas)
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})

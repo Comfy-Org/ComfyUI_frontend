@@ -100,8 +100,6 @@ export function addWidgetPromotionOptions(
     })
   }
 }
-//FIXME: This currently has ugly duplication with the sidebar pane
-//Refactor all the computed widget logic into a separate file (composable?)
 const recommendedNodes = [
   'CLIPTextEncode',
   'LoadImage',
@@ -109,6 +107,14 @@ const recommendedNodes = [
   'PreviewImage'
 ]
 const recommendedWidgetNames = ['seed']
+export function isRecommendedWidget([node, widget]: WidgetItem) {
+  return (
+    !widget.computedDisabled &&
+    (recommendedNodes.includes(node.type) ||
+      recommendedWidgetNames.includes(widget.name))
+  )
+}
+
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return n.widgets?.map((w: IBaseWidget) => [n, w]) ?? []
 }
@@ -116,13 +122,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
-    //widget has connected link. Should not be eligible for promotion
-    .filter(([_, w]: WidgetItem) => !w.computedDisabled)
-    .filter(
-      ([node, widget]: WidgetItem) =>
-        recommendedNodes.includes(node.type) ||
-        recommendedWidgetNames.includes(widget.name)
-    )
+    .filter(isRecommendedWidget)
   const proxyWidgets: ProxyWidgetsProperty =
     filteredWidgets.map(widgetItemToProperty)
   subgraphNode.properties.proxyWidgets = proxyWidgets
