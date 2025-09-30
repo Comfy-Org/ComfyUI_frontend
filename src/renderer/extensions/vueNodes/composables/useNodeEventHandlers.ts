@@ -15,6 +15,7 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
@@ -26,11 +27,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node selection events
    * Supports single selection and multi-select with Ctrl/Cmd
    */
-  const handleNodeSelect = (
-    event: PointerEvent,
-    nodeData: VueNodeData,
-    wasDragging: boolean
-  ) => {
+  const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -48,12 +45,13 @@ function useNodeEventHandlersIndividual() {
         canvasStore.canvas.select(node)
       }
     } else {
-      // If it wasn't a drag: single-select the node
-      if (!wasDragging) {
+      const selectedMultipleNodes =
+        canvasStore.selectedItems.filter((n) => isLGraphNode(n)).length > 1
+      if (!selectedMultipleNodes) {
+        // Single-select the node
         canvasStore.canvas.deselectAll()
         canvasStore.canvas.select(node)
       }
-      // Regular click -> single select
     }
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
@@ -122,7 +120,7 @@ function useNodeEventHandlersIndividual() {
     // TODO: add custom double-click behavior here
     // For now, ensure node is selected
     if (!node.selected) {
-      handleNodeSelect(event, nodeData, false)
+      handleNodeSelect(event, nodeData)
     }
   }
 
@@ -143,7 +141,7 @@ function useNodeEventHandlersIndividual() {
 
     // Select the node if not already selected
     if (!node.selected) {
-      handleNodeSelect(event, nodeData, false)
+      handleNodeSelect(event, nodeData)
     }
 
     // Let LiteGraph handle the context menu
@@ -170,7 +168,7 @@ function useNodeEventHandlersIndividual() {
         metaKey: event.metaKey,
         bubbles: true
       })
-      handleNodeSelect(syntheticEvent, nodeData, false)
+      handleNodeSelect(syntheticEvent, nodeData)
     }
 
     // Set drag data for potential drop operations
