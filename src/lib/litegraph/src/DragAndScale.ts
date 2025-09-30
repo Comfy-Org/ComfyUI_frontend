@@ -220,7 +220,7 @@ export class DragAndScale {
    * @param bounds The bounds to animate the view to, defined by a rectangle.
    */
   animateToBounds(
-    bounds: Rect | Rectangle,
+    bounds: Readonly<Rect | Rectangle>,
     setDirty: () => void,
     {
       duration = 350,

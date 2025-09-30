@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { Rectangle } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import NodeSlots from './NodeSlots.vue'
@@ -29,7 +30,7 @@ const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
 interface StubSlotData {
   name?: string
   type?: string
-  boundingRect?: [number, number, number, number]
+  boundingRect?: Rectangle
 }
 
 const InputSlotStub = defineComponent({
@@ -96,13 +97,13 @@ describe('NodeSlots.vue', () => {
     const inputObjNoWidget = {
       name: 'objNoWidget',
       type: 'number',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: new Rectangle(0, 0, 0, 0),
       link: null
     }
     const inputObjWithWidget = {
       name: 'objWithWidget',
       type: 'number',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: new Rectangle(0, 0, 0, 0),
       widget: { name: 'objWithWidget' },
       link: null
     }
@@ -150,13 +151,13 @@ describe('NodeSlots.vue', () => {
     const outputObj = {
       name: 'outA',
       type: 'any',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: new Rectangle(0, 0, 0, 0),
       links: []
     }
     const outputObjB = {
       name: 'outB',
       type: 'any',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: new Rectangle(0, 0, 0, 0),
       links: []
     }
     const outputs: INodeOutputSlot[] = [outputObj, outputObjB]

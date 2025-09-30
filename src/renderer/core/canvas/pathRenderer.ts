@@ -70,7 +70,7 @@ export interface RenderContext {
   highlightedIds?: Set<string>
 }
 
-interface DragLinkData {
+export interface DragLinkData {
   /** Fixed end - the slot being dragged from */
   fixedPoint: Point
   fixedDirection: Direction
@@ -605,6 +605,7 @@ export class CanvasPathRenderer {
           type: dragData.type,
           disabled: dragData.disabled
         }
+    console.log({ linkData })
 
     // Use standard link drawing
     return this.drawLink(ctx, linkData, context)

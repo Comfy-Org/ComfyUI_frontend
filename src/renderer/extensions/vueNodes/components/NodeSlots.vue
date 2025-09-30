@@ -34,7 +34,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { type INodeSlot, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
 import InputSlot from './InputSlot.vue'
@@ -60,28 +60,30 @@ const filteredInputs = computed(() => {
       }
       return true
     })
-    .map((input) =>
-      isSlotObject(input)
-        ? input
-        : ({
-            name: typeof input === 'string' ? input : '',
-            type: 'any',
-            boundingRect: [0, 0, 0, 0] as [number, number, number, number]
-          } as INodeSlot)
+    .map(
+      (input): INodeSlot =>
+        isSlotObject(input)
+          ? input
+          : {
+              name: typeof input === 'string' ? input : '',
+              type: 'any',
+              boundingRect: new Rectangle(0, 0, 0, 0)
+            }
     )
 })
 
 // Outputs don't have widgets, so we don't need to filter them
 const filteredOutputs = computed(() => {
   const outputs = nodeData?.outputs || []
-  return outputs.map((output) =>
-    isSlotObject(output)
-      ? output
-      : ({
-          name: typeof output === 'string' ? output : '',
-          type: 'any',
-          boundingRect: [0, 0, 0, 0] as [number, number, number, number]
-        } as INodeSlot)
+  return outputs.map(
+    (output): INodeSlot =>
+      isSlotObject(output)
+        ? output
+        : {
+            name: typeof output === 'string' ? output : '',
+            type: 'any',
+            boundingRect: new Rectangle(0, 0, 0, 0)
+          }
   )
 })
 

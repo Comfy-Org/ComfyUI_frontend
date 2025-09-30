@@ -7,7 +7,7 @@
  * Maintains backward compatibility with existing litegraph integration.
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type {
   CanvasColour,
@@ -21,6 +21,7 @@ import {
   LinkMarkerShape,
   LinkRenderType
 } from '@/lib/litegraph/src/types/globalEnums'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
   type ArrowShape,
   CanvasPathRenderer,
@@ -411,7 +412,6 @@ export class LitegraphLinkAdapter {
     const slotDir =
       fromSlot.dir ||
       (options.fromInput ? LinkDirection.LEFT : LinkDirection.RIGHT)
-
     // Create drag data
     const dragData: DragLinkData = {
       fixedPoint: { x: slotPos[0], y: slotPos[1] },

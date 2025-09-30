@@ -42,7 +42,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import { RenderShape } from '@/lib/litegraph/src/litegraph'
+import { Rectangle, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeContent from '@/renderer/extensions/vueNodes/components/NodeContent.vue'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -85,7 +85,7 @@ const nodeData = computed<VueNodeData>(() => {
       name,
       type: input.type,
       shape: input.isOptional ? RenderShape.HollowCircle : undefined,
-      boundingRect: [0, 0, 0, 0],
+      boundingRect: new Rectangle(0, 0, 0, 0),
       link: null
     }))
 
@@ -94,13 +94,13 @@ const nodeData = computed<VueNodeData>(() => {
       return {
         name: output,
         type: output,
-        boundingRect: [0, 0, 0, 0],
+        boundingRect: new Rectangle(0, 0, 0, 0),
         links: []
       }
     }
     return {
       ...output,
-      boundingRect: [0, 0, 0, 0],
+      boundingRect: new Rectangle(0, 0, 0, 0),
       links: []
     }
   })

@@ -30,7 +30,7 @@
           :slot-data="{
             name: widget.name,
             type: widget.type,
-            boundingRect: [0, 0, 0, 0]
+            boundingRect
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="getWidgetInputIndex(widget)"
@@ -60,6 +60,7 @@ import type {
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { Rectangle } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 // Import widget components directly
@@ -163,6 +164,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
   return result
 })
+
+const boundingRect = new Rectangle(0, 0, 0, 0)
 
 // TODO: Refactor to avoid O(n) lookup - consider storing input index on widget creation
 // or restructuring data model to unify widgets and inputs

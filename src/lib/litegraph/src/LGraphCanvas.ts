@@ -4733,32 +4733,47 @@ export class LGraphCanvas
         for (const renderLink of renderLinks) {
           const {
             fromSlot,
-            fromPos: pos,
-            fromDirection,
-            dragDirection
+            fromPos: pos
+            // fromDirection,
+            // dragDirection
           } = renderLink
           const connShape = fromSlot.shape
           const connType = fromSlot.type
 
-          const colour = resolveConnectingLinkColor(connType)
+          const color = resolveConnectingLinkColor(connType)
 
           // the connection being dragged by the mouse
-          if (this.linkRenderer) {
-            this.linkRenderer.renderDraggingLink(
-              ctx,
-              pos,
-              highlightPos,
-              colour,
-              fromDirection,
-              dragDirection,
-              {
-                ...this.buildLinkRenderContext(),
-                linkMarkerShape: LinkMarkerShape.None
-              }
-            )
+          if (
+            this.linkRenderer &&
+            renderLink.fromSlotIndex !== undefined &&
+            renderLink.node !== undefined
+          ) {
+            const { fromSlotIndex, node } = renderLink
+            if (
+              node instanceof LGraphNode &&
+              ('link' in fromSlot || 'links' in fromSlot)
+            ) {
+              this.linkRenderer.renderDraggingLink(
+                ctx,
+                node,
+                fromSlot,
+                fromSlotIndex,
+                highlightPos,
+                this.buildLinkRenderContext(),
+                { fromInput: 'link' in fromSlot, color }
+                // pos,
+                // colour,
+                // fromDirection,
+                // dragDirection,
+                // {
+                //   ...this.buildLinkRenderContext(),
+                //   linkMarkerShape: LinkMarkerShape.None
+                // }
+              )
+            }
           }
 
-          ctx.fillStyle = colour
+          ctx.fillStyle = color
           ctx.beginPath()
           if (connType === LiteGraph.EVENT || connShape === RenderShape.BOX) {
             ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)

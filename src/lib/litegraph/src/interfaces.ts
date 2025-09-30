@@ -1,4 +1,4 @@
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
 import type { ContextMenu } from './ContextMenu'

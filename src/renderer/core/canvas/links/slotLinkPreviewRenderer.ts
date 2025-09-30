@@ -1,13 +1,15 @@
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { ReadOnlyPoint } from '@/lib/litegraph/src/interfaces'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+// import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+// import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveConnectingLinkColor } from '@/lib/litegraph/src/utils/linkColors'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragState } from '@/renderer/core/canvas/links/slotLinkDragState'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+
+// import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+// import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 function buildContext(canvas: LGraphCanvas): LinkRenderContext {
   return {
@@ -49,24 +51,32 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     const renderLinks = createLinkConnectorAdapter()?.renderLinks
     if (!renderLinks || renderLinks.length === 0) return
 
-    const to: ReadOnlyPoint = [pointer.canvas.x, pointer.canvas.y]
+    const to: Point = [pointer.canvas.x, pointer.canvas.y]
     ctx.save()
     for (const link of renderLinks) {
-      const startDir = link.fromDirection ?? LinkDirection.RIGHT
-      const endDir = link.dragDirection ?? LinkDirection.CENTER
-      const colour = resolveConnectingLinkColor(link.fromSlot.type)
+      // const startDir = link.fromDirection ?? LinkDirection.RIGHT
+      // const endDir = link.dragDirection ?? LinkDirection.CENTER
+      const color = resolveConnectingLinkColor(link.fromSlot.type)
 
-      const fromPoint = resolveRenderLinkOrigin(link)
-
-      linkRenderer.renderDraggingLink(
-        ctx,
-        fromPoint,
-        to,
-        colour,
-        startDir,
-        endDir,
-        context
-      )
+      // const fromPoint = resolveRenderLinkOrigin(link)
+      const { node, fromSlot, fromSlotIndex } = link
+      if (node instanceof LGraphNode && 'link' in fromSlot) {
+        linkRenderer.renderDraggingLink(
+          ctx,
+          node,
+          fromSlot,
+          fromSlotIndex,
+          to,
+          context,
+          {
+            color
+          }
+          // colour,
+          // startDir,
+          // endDir,
+          // context
+        )
+      }
     }
     ctx.restore()
   }
@@ -74,35 +84,35 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
   canvas.onDrawForeground = patched
 }
 
-function resolveRenderLinkOrigin(link: RenderLink): ReadOnlyPoint {
-  if (link.fromReroute) {
-    const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
-    if (rerouteLayout) {
-      return [rerouteLayout.position.x, rerouteLayout.position.y]
-    }
+// function resolveRenderLinkOrigin(link: RenderLink): Point {
+//   if (link.fromReroute) {
+//     const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
+//     if (rerouteLayout) {
+//       return [rerouteLayout.position.x, rerouteLayout.position.y]
+//     }
 
-    const [x, y] = link.fromReroute.pos
-    return [x, y]
-  }
+//     const [x, y] = link.fromReroute.pos
+//     return [x, y]
+//   }
 
-  const nodeId = getRenderLinkNodeId(link)
-  if (nodeId != null) {
-    const isInputFrom = link.toType === 'output'
-    const key = getSlotKey(String(nodeId), link.fromSlotIndex, isInputFrom)
-    const layout = layoutStore.getSlotLayout(key)
-    if (layout) {
-      return [layout.position.x, layout.position.y]
-    }
-  }
+//   const nodeId = getRenderLinkNodeId(link)
+//   if (nodeId != null) {
+//     const isInputFrom = link.toType === 'output'
+//     const key = getSlotKey(String(nodeId), link.fromSlotIndex, isInputFrom)
+//     const layout = layoutStore.getSlotLayout(key)
+//     if (layout) {
+//       return [layout.position.x, layout.position.y]
+//     }
+//   }
 
-  return link.fromPos
-}
+//   return link.fromPos
+// }
 
-function getRenderLinkNodeId(link: RenderLink): number | null {
-  const node = link.node
-  if (typeof node === 'object' && node !== null && 'id' in node) {
-    const maybeId = node.id
-    if (typeof maybeId === 'number') return maybeId
-  }
-  return null
-}
+// function getRenderLinkNodeId(link: RenderLink): number | null {
+//   const node = link.node
+//   if (typeof node === 'object' && node !== null && 'id' in node) {
+//     const maybeId = node.id
+//     if (typeof maybeId === 'number') return maybeId
+//   }
+//   return null
+// }
