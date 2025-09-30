@@ -190,7 +190,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
   />
   <div
     v-if="filteredActive.length"
-    class="pt-1 pb-4 border-b-1 border-[var(--color-node-divider,#2E3037)]"
+    class="pt-1 pb-4 border-b-1 border-sand-100 dark-theme:border-charcoal-600"
   >
     <div class="flex py-0 px-4 justify-between">
       <div class="text-slate-100 text-[9px] font-semibold uppercase">
@@ -264,7 +264,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
   </div>
   <div
     v-if="recommendedWidgets.length"
-    class="justify-center flex py-4 border-t-1 border-[var(--color-node-divider,#2E3037)]"
+    class="justify-center flex py-4 border-t-1 border-sand-100 dark-theme:border-charcoal-600"
   >
     <Button
       size="small"
