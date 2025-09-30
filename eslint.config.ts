@@ -90,6 +90,7 @@ export default defineConfig([
         }
       ],
       'unused-imports/no-unused-imports': 'error',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
