@@ -10,10 +10,12 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
+export type WidgetItem = [LGraphNode, IBaseWidget]
+
 function pushWidgets(node: SubgraphNode, ...widgets: [string, string][]) {
-  const pw = getProxyWidgets(node)
-  pw.push(...widgets)
-  node.properties.proxyWidgets = pw
+  const proxyWidgets = getProxyWidgets(node)
+  proxyWidgets.push(...widgets)
+  node.properties.proxyWidgets = proxyWidgets
 }
 function getProxyWidgets(node: SubgraphNode) {
   return parseProxyWidgets(node.properties.proxyWidgets)
@@ -39,12 +41,23 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   for (const parent of parents) {
-    const pw = getProxyWidgets(parent).filter(
-      ([id, name]) => node.id != id || widget.name !== name
+    const proxyWidgets = getProxyWidgets(parent).filter(
+      (widgetItem) => !matchesPropertyItem([node, widget])(widgetItem)
     )
-    parent.properties.proxyWidgets = pw
+    parent.properties.proxyWidgets = proxyWidgets
   }
   widget.promoted = false
+}
+
+export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
+  return ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
+}
+export function matchesPropertyItem([n, w]: WidgetItem) {
+  return ([nodeId, widgetName]: [string, string]) =>
+    n.id == nodeId && w.name === widgetName
+}
+export function widgetItemToProperty([n, w]: WidgetItem): [string, string] {
+  return [`${n.id}`, w.name]
 }
 
 function getParentNodes(): SubgraphNode[] {
@@ -69,10 +82,7 @@ export function addWidgetPromotionOptions(
 ) {
   const parents = getParentNodes()
   const promotableParents = parents.filter(
-    (s) =>
-      !getProxyWidgets(s).some(
-        ([id, name]) => node.id == id && widget.name === name
-      )
+    (s) => !getProxyWidgets(s).some(matchesPropertyItem([node, widget]))
   )
   if (promotableParents.length > 0)
     options.unshift({
@@ -92,7 +102,6 @@ export function addWidgetPromotionOptions(
 }
 //FIXME: This currently has ugly duplication with the sidebar pane
 //Refactor all the computed widget logic into a separate file (composable?)
-type WidgetItem = [LGraphNode, IBaseWidget]
 const recommendedNodes = [
   'CLIPTextEncode',
   'LoadImage',
@@ -114,9 +123,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
         recommendedNodes.includes(node.type) ||
         recommendedWidgetNames.includes(widget.name)
     )
-  const pw: ProxyWidgetsProperty = filteredWidgets.map(([n, w]: WidgetItem) => [
-    `${n.id}`,
-    w.name
-  ])
-  subgraphNode.properties.proxyWidgets = pw
+  const proxyWidgets: ProxyWidgetsProperty =
+    filteredWidgets.map(widgetItemToProperty)
+  subgraphNode.properties.proxyWidgets = proxyWidgets
 }

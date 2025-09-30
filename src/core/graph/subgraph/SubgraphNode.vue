@@ -6,8 +6,12 @@ import draggable from 'vuedraggable'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
 import {
+  type WidgetItem,
   demoteWidget,
-  promoteWidget
+  matchesPropertyItem,
+  matchesWidgetItem,
+  promoteWidget,
+  widgetItemToProperty
 } from '@/core/graph/subgraph/proxyWidgetUtils'
 import {
   type ProxyWidgetsProperty,
@@ -18,8 +22,6 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-type WidgetItem = [LGraphNode, IBaseWidget]
 
 const canvasStore = useCanvasStore()
 
@@ -56,11 +58,8 @@ const activeWidgets = computed<WidgetItem[]>({
       return
     }
     //map back to id/name
-    const pw: ProxyWidgetsProperty = value.map(([node, widget]) => [
-      `${node.id}`,
-      widget.name
-    ])
-    proxyWidgets.value = pw
+    const widgets: ProxyWidgetsProperty = value.map(widgetItemToProperty)
+    proxyWidgets.value = widgets
   }
 })
 
@@ -113,10 +112,9 @@ function promote([node, widget]: WidgetItem) {
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
-  const pw = proxyWidgets.value
+  const widgets = proxyWidgets.value
   return interiorWidgets.value.filter(
-    ([n, w]: WidgetItem) =>
-      !pw.some(([pn, pw]: [string, string]) => n.id == pn && w.name == pw)
+    (widgetItem: WidgetItem) => !widgets.some(matchesPropertyItem(widgetItem))
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
@@ -131,12 +129,11 @@ const filteredCandidates = computed<WidgetItem[]>(() => {
 function showAll() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  const pw = proxyWidgets.value
-  const toAdd: ProxyWidgetsProperty = filteredCandidates.value.map(
-    ([n, w]: WidgetItem) => [`${n.id}`, w.name]
-  )
-  pw.push(...toAdd)
-  proxyWidgets.value = pw
+  const widgets = proxyWidgets.value
+  const toAdd: ProxyWidgetsProperty =
+    filteredCandidates.value.map(widgetItemToProperty)
+  widgets.push(...toAdd)
+  proxyWidgets.value = widgets
 }
 function hideAll() {
   const node = activeNode.value
@@ -144,10 +141,7 @@ function hideAll() {
   //Not great from a nesting perspective, but path is cold
   //and it cleans up potential error states
   proxyWidgets.value = proxyWidgets.value.filter(
-    ([nodeId, widgetName]) =>
-      !filteredActive.value.some(
-        ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
-      )
+    (widgetItem) => !filteredActive.value.some(matchesWidgetItem(widgetItem))
   )
 }
 const recommendedNodes = [
@@ -169,14 +163,13 @@ const recommendedWidgets = computed(() => {
 function showRecommended() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  const pw = proxyWidgets.value
-  const toAdd: ProxyWidgetsProperty = recommendedWidgets.value.map(
-    ([n, w]: WidgetItem) => [`${n.id}`, w.name]
-  )
+  const widgets = proxyWidgets.value
+  const toAdd: ProxyWidgetsProperty =
+    recommendedWidgets.value.map(widgetItemToProperty)
   //TODO: Add sort step here
   //Input should always be before output by default
-  pw.push(...toAdd)
-  proxyWidgets.value = pw
+  widgets.push(...toAdd)
+  proxyWidgets.value = widgets
 }
 
 const filteredActive = computed<WidgetItem[]>(() => {

@@ -51,10 +51,12 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
   //NOTE: canvasStore hasn't been initialized yet
   canvas.canvas.addEventListener<'subgraph-opened'>('subgraph-opened', (e) => {
     const { subgraph, fromNode } = e.detail
-    const pw = parseProxyWidgets(fromNode.properties.proxyWidgets)
+    const proxyWidgets = parseProxyWidgets(fromNode.properties.proxyWidgets)
     for (const node of subgraph.nodes) {
       for (const widget of node.widgets ?? []) {
-        widget.promoted = pw.some(([n, w]) => node.id == n && widget.name == w)
+        widget.promoted = proxyWidgets.some(
+          ([n, w]) => node.id == n && widget.name == w
+        )
       }
     }
   })
