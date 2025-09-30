@@ -241,7 +241,7 @@ app.registerExtension({
           inputName,
           '',
           openFileSelection,
-          { serialize: false }
+          { serialize: false, canvasOnly: true }
         )
         uploadWidget.label = t('g.choose_file_to_upload')
 
@@ -398,7 +398,7 @@ app.registerExtension({
               mediaRecorder.stop()
             }
           },
-          { serialize: false }
+          { serialize: false, canvasOnly: true }
         )
 
         recordWidget.label = t('g.startRecording')

@@ -1613,6 +1613,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     WanTextToImageApi: {
       displayPrice: '$0.03/Run'
+    },
+    WanImageToImageApi: {
+      displayPrice: '$0.03/Run'
     }
   }
 

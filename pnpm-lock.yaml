@@ -20,6 +20,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/registry-types':
+        specifier: workspace:*
+        version: link:packages/registry-types
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
@@ -366,6 +369,18 @@ importers:
         version: 3.4.17
       typescript:
         specifier: ^5.4.5
+        version: 5.9.2
+
+  packages/registry-types: {}
+
+  packages/shared-frontend-utils:
+    dependencies:
+      axios:
+        specifier: ^1.11.0
+        version: 1.11.0
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
         version: 5.9.2
 
   packages/tailwind-utils:
@@ -6507,8 +6522,8 @@ packages:
   vue-component-type-helpers@3.0.7:
     resolution: {integrity: sha512-TvyUcFXmjZcXUvU+r1MOyn4/vv4iF+tPwg5Ig33l/FJ3myZkxeQpzzQMLMFWcQAjr6Xs7BRwVy/TwbmNZUA/4w==}
 
-  vue-component-type-helpers@3.0.8:
-    resolution: {integrity: sha512-WyR30Eq15Y/+odrUUMax6FmPbZwAp/HnC7qgR1r3lVFAcqwQ4wUoV79Mbh4SxDy3NiqDa+G4TOKD5xXSgBHo5A==}
+  vue-component-type-helpers@3.1.0:
+    resolution: {integrity: sha512-cC1pYNRZkSS1iCvdlaMbbg2sjDwxX098FucEjtz9Yig73zYjWzQsnMe5M9H8dRNv55hAIDGUI29hF2BEUA4FMQ==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -9066,7 +9081,7 @@ snapshots:
       storybook: 9.1.6(@testing-library/dom@10.4.1)(prettier@3.3.2)(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2))
       type-fest: 2.19.0
       vue: 3.5.13(typescript@5.9.2)
-      vue-component-type-helpers: 3.0.8
+      vue-component-type-helpers: 3.1.0
 
   '@swc/helpers@0.5.17':
     dependencies:
@@ -13864,7 +13879,7 @@ snapshots:
 
   vue-component-type-helpers@3.0.7: {}
 
-  vue-component-type-helpers@3.0.8: {}
+  vue-component-type-helpers@3.1.0: {}
 
   vue-demi@0.14.10(vue@3.5.13(typescript@5.9.2)):
     dependencies:

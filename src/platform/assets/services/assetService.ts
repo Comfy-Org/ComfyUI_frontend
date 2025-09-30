@@ -13,6 +13,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'
 const MISSING_TAG = 'missing'
+const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 
 /**
  * Input names that are eligible for asset browser
@@ -27,7 +28,9 @@ function validateAssetResponse(data: unknown): AssetResponse {
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
-  throw new Error(`Invalid asset response against zod schema:\n${error}`)
+  throw new Error(
+    `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
+  )
 }
 
 /**
@@ -45,7 +48,7 @@ function createAssetService() {
     const res = await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
-        `Unable to load ${context}: Server returned ${res.status}. Please try again.`
+        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -174,7 +177,7 @@ function createAssetService() {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
     if (!res.ok) {
       throw new Error(
-        `Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
+        `${EXPERIMENTAL_WARNING}Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -188,7 +191,9 @@ function createAssetService() {
     const error = result.error
       ? fromZodError(result.error)
       : 'Unknown validation error'
-    throw new Error(`Invalid asset response against zod schema:\n${error}`)
+    throw new Error(
+      `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
+    )
   }
 
   return {

@@ -9,7 +9,7 @@ import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
-import { createAnnotatedPath } from '@/utils/formatUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
@@ -91,7 +91,8 @@ export const useImageUploadWidget = () => {
       'image',
       () => openFileSelection(),
       {
-        serialize: false
+        serialize: false,
+        canvasOnly: true
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')
