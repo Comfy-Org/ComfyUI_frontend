@@ -22,7 +22,13 @@
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@/utils/formatUtil": [
+        "packages/shared-frontend-utils/src/formatUtil.ts"
+      ],
+      "@/utils/networkUtil": [
+        "packages/shared-frontend-utils/src/networkUtil.ts"
+      ]
     },
     "typeRoots": ["src/types", "node_modules/@types"],
     "outDir": "./dist",

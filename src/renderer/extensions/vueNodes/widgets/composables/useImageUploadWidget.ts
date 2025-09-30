@@ -10,7 +10,7 @@ import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { fileNameMappingService } from '@/services/fileNameMappingService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
-import { createAnnotatedPath } from '@/utils/formatUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
