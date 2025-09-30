@@ -2,15 +2,11 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe('Keybindings', () => {
   test('Should not trigger non-modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'KeyK' }, () => {
+    await comfyPage.registerKeybinding({ key: 'k' }, () => {
       window['TestCommand'] = true
     })
 
@@ -26,7 +22,7 @@ test.describe('Keybindings', () => {
   test('Should not trigger modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'KeyK', ctrl: true }, () => {
+    await comfyPage.registerKeybinding({ key: 'k', ctrl: true }, () => {
       window['TestCommand'] = true
     })
 
