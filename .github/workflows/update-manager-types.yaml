@@ -17,7 +17,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -51,7 +51,7 @@ jobs:
             comfyui-manager-repo-${{ runner.os }}-
 
       - name: Checkout ComfyUI-Manager repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: Comfy-Org/ComfyUI-Manager
           path: ComfyUI-Manager
