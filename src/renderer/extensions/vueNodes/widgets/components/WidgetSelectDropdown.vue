@@ -8,6 +8,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useQueueStore } from '@/stores/queueStore'
+import { getAcceptString } from '@/types/mediaTypes'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -145,6 +146,13 @@ const mediaPlaceholder = computed(() => {
 
 const uploadable = computed(() => props.allowUpload === true)
 
+const acceptTypes = computed(() => {
+  if (!props.assetKind) return undefined
+  // AssetKind includes 'model' which isn't in MediaKind
+  if (props.assetKind === 'model') return undefined
+  return getAcceptString(props.assetKind)
+})
+
 watch(
   localValue,
   (currentValue) => {
@@ -269,6 +277,7 @@ function getMediaUrl(
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable="uploadable"
+      :accept="acceptTypes"
       :filter-options="filterOptions"
       v-bind="combinedProps"
       class="w-full"

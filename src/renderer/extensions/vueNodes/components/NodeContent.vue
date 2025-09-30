@@ -5,9 +5,15 @@
   <div v-else class="lg-node-content">
     <!-- Default slot for custom content -->
     <slot>
+      <VideoPreview
+        v-if="hasMediaUrls && isVideo"
+        :image-urls="props.mediaUrls || []"
+        :node-id="nodeId"
+        class="mt-2"
+      />
       <ImagePreview
-        v-if="hasImages"
-        :image-urls="props.imageUrls || []"
+        v-else-if="hasMediaUrls"
+        :image-urls="props.mediaUrls || []"
         :node-id="nodeId"
         class="mt-2"
       />
@@ -21,18 +27,26 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isVideoNode } from '@/utils/litegraphUtil'
 
+import VideoPreview from '../VideoPreview.vue'
 import ImagePreview from './ImagePreview.vue'
 
 interface NodeContentProps {
-  node?: LGraphNode // For backwards compatibility
-  nodeData?: VueNodeData // New clean data structure
-  imageUrls?: string[]
+  node?: LGraphNode | null
+  nodeData?: VueNodeData
+  mediaUrls?: string[] // URLs for images, videos, or other media
 }
 
 const props = defineProps<NodeContentProps>()
 
-const hasImages = computed(() => props.imageUrls && props.imageUrls.length > 0)
+const hasMediaUrls = computed(
+  () => props.mediaUrls && props.mediaUrls.length > 0
+)
+
+const isVideo = computed(() => {
+  return props.node ? isVideoNode(props.node) : false
+})
 
 // Get node ID from nodeData or node prop
 const nodeId = computed(() => {
