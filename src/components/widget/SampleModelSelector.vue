@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, provide, ref, watch } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -202,8 +202,4 @@ const selectedSort = ref<string>('popular')
 const selectedNavItem = ref<string | null>('installed')
 
 const gridStyle = computed(() => createGridStyle())
-
-watch(searchText, (_newQuery) => {})
-
-watch(searchQuery, (_newQuery) => {})
 </script>
