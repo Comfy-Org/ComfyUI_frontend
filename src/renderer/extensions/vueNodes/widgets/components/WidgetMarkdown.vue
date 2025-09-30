@@ -23,6 +23,7 @@
           onBlur: handleBlur
         }
       }"
+      data-capture-wheel="true"
       @update:model-value="onChange"
       @click.stop
       @keydown.stop
