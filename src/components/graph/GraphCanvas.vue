@@ -43,7 +43,6 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
-      :readonly="false"
       :error="
         executionStore.lastExecutionError?.node_id === nodeData.id
           ? 'Execution error'

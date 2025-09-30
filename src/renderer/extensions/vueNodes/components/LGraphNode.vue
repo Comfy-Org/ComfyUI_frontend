@@ -51,7 +51,6 @@
       </template>
       <NodeHeader
         :node-data="nodeData"
-        :readonly="readonly"
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
@@ -93,20 +92,15 @@
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
-        <NodeSlots :node-data="nodeData" :readonly="readonly" />
+        <NodeSlots :node-data="nodeData" />
 
         <!-- Widgets rendered at reduced+ detail -->
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
         <NodeContent
           v-if="hasCustomContent"
           :node-data="nodeData"
-          :readonly="readonly"
           :image-urls="nodeImageUrls"
         />
         <!-- Live preview image -->
@@ -160,16 +154,11 @@ import SlotConnectionDot from './SlotConnectionDot.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   nodeData: VueNodeData
-  readonly?: boolean
   error?: string | null
   zoomLevel?: number
 }
 
-const {
-  nodeData,
-  error = null,
-  readonly = false
-} = defineProps<LGraphNodeProps>()
+const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const {
   handleNodeCollapse,
