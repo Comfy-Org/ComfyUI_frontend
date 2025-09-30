@@ -167,17 +167,15 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       // Draw a placeholder rectangle
       const originalFillStyle = ctx.fillStyle
       ctx.beginPath()
-      ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
-      let margin = this.margin
-      if (this.promoted) {
-        ctx.fillStyle = LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
-        margin -= 1
-      }
+      ctx.fillStyle = this.promoted
+        ? LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+        : LiteGraph.WIDGET_BGCOLOR
+      const adjustedMargin = this.promoted ? this.margin - 1 : this.margin
       ctx.rect(
-        margin,
-        y + margin,
-        widget_width - margin * 2,
-        (this.computedHeight ?? widget_height) - 2 * margin
+        adjustedMargin,
+        y + adjustedMargin,
+        widget_width - adjustedMargin * 2,
+        (this.computedHeight ?? widget_height) - 2 * adjustedMargin
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle
