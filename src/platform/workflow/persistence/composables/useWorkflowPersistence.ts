@@ -104,7 +104,7 @@ export function useWorkflowPersistence() {
       }
 
       const paths = openWorkflows.value
-        .filter((workflow) => workflow?.isPersisted && !workflow.isModified)
+        .filter((workflow) => workflow?.isPersisted)
         .map((workflow) => workflow.path)
       const activeIndex = openWorkflows.value.findIndex(
         (workflow) => workflow.path === activeWorkflow.value?.path
