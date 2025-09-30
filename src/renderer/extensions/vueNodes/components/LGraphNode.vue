@@ -211,7 +211,8 @@ const isSelected = computed(() => {
 })
 
 // Use execution state composable
-const { executing, progress } = useNodeExecutionState(() => nodeData.id)
+const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
+const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 
 // Direct access to execution store for error state
 const executionStore = useExecutionStore()
