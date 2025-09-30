@@ -1,4 +1,5 @@
 import {
+  type RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
   createWebHistory
