@@ -6,12 +6,10 @@
     }"
     severity="secondary"
     text
+    icon="icon-[lucide--settings-2]"
     @click="showSubgraphNodeDialog"
-  >
-    <i-lucide:settings2 />
-  </Button>
+  />
 </template>
-
 <script setup lang="ts">
 import Button from 'primevue/button'
 
