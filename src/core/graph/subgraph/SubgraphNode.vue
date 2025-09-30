@@ -192,7 +192,7 @@ const filteredActive = computed<WidgetItem[]>(() => {
 <template>
   <SearchBox
     v-model:model-value="searchQuery"
-    class="model-lib-search-box p-2 2xl:p-4"
+    class="p-2"
     :placeholder="$t('g.search') + '...'"
   />
   <div

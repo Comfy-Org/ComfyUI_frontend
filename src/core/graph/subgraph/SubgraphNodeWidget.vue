@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
+import { cn } from '@/utils/tailwindUtil'
+
 defineProps<{
   nodeTitle: string
   widgetName: string
@@ -24,13 +26,15 @@ defineEmits<{
     </div>
     <Button
       size="small"
-      class="shrink-0"
+      :class="
+        cn(
+          'shrink-0',
+          isShown ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'
+        )
+      "
       text
       severity="secondary"
       @click.stop="$emit('toggleVisibility')"
-    >
-      <i-lucide:eye v-if="isShown" />
-      <i-lucide:eye-off v-else />
-    </Button>
+    />
   </div>
 </template>

@@ -8,9 +8,7 @@
     text
     @click="showSubgraphNodeDialog"
   >
-    <template #icon>
-      <i-lucide:settings2 />
-    </template>
+    <i-lucide:settings2 />
   </Button>
 </template>
 

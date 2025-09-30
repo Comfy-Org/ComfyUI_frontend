@@ -110,9 +110,11 @@ function addProxyWidget(
 ) {
   const name = `${nodeId}: ${widgetName}`
   const overlay = {
+    //items specific for proxy management
     nodeId,
-    widgetName,
     graph: subgraphNode.subgraph,
+    widgetName,
+    //Items which normally exist on widgets
     afterQueued: undefined,
     computedHeight: undefined,
     isProxyWidget: true,
@@ -178,9 +180,10 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedReceiver = receiver
       if (property == 'value') redirectedReceiver = backingWidget
       else if (property == 'computedHeight') {
-        if (overlay.widgetName.startsWith('$$') && linkedNode)
+        if (overlay.widgetName.startsWith('$$') && linkedNode) {
           updatePreviews(linkedNode)
-          //update linkage regularly, but no more than once per frame
+        }
+        //update linkage regularly, but no more than once per frame
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
         backingWidget = linkedWidget ?? disconnectedWidget
       }

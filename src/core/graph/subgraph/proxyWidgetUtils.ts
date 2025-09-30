@@ -55,14 +55,11 @@ function getParentNodes(): SubgraphNode[] {
   const { navigationStack } = useSubgraphNavigationStore()
   const subgraph = navigationStack.at(-1)
   if (!subgraph) throw new Error("Can't promote widget when not in subgraph")
-  const validNodes = []
   const parentGraph = navigationStack.at(-2) ?? subgraph.rootGraph
-  for (const onode of parentGraph.nodes) {
-    if (onode.type === subgraph.id && onode.isSubgraphNode()) {
-      validNodes.push(onode)
-    }
-  }
-  return validNodes
+  return parentGraph.nodes.filter(
+    (node): node is SubgraphNode =>
+      node.type === subgraph.id && node.isSubgraphNode()
+  )
 }
 
 export function addWidgetPromotionOptions(
@@ -104,8 +101,7 @@ const recommendedNodes = [
 ]
 const recommendedWidgetNames = ['seed']
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
-  if (!n.widgets) return []
-  return n.widgets.map((w: IBaseWidget) => [n, w])
+  return n.widgets?.map((w: IBaseWidget) => [n, w]) ?? []
 }
 export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
