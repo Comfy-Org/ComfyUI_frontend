@@ -14,9 +14,9 @@
     "./networkUtil": "./src/networkUtil.ts"
   },
   "dependencies": {
-    "axios": "catalog:"
+    "axios": "^1.11.0"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "typescript": "^5.9.2"
   }
 }
