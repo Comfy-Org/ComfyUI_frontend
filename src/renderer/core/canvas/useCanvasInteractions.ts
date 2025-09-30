@@ -30,6 +30,15 @@ export function useCanvasInteractions() {
    * when appropriate (e.g., Ctrl+wheel for zoom in standard mode)
    */
   const handleWheel = (event: WheelEvent) => {
+    // Check if the wheel event is from an element that wants to capture wheel events
+    const target = event.target as HTMLElement
+    const captureElement = target?.closest('[data-capture-wheel="true"]')
+
+    if (captureElement) {
+      // Element wants to capture wheel events, don't forward to canvas
+      return
+    }
+
     // In standard mode, Ctrl+wheel should go to canvas for zoom
     if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
       forwardEventToCanvas(event)
@@ -72,6 +81,15 @@ export function useCanvasInteractions() {
   const forwardEventToCanvas = (
     event: WheelEvent | PointerEvent | MouseEvent
   ) => {
+    // Check if the wheel event is from an element that wants to capture wheel events
+    const target = event.target as HTMLElement
+    const captureElement = target?.closest('[data-capture-wheel="true"]')
+
+    if (captureElement) {
+      // Element wants to capture wheel events, don't forward to canvas
+      return
+    }
+
     const canvasEl = app.canvas?.canvas
     if (!canvasEl) return
     event.preventDefault()
