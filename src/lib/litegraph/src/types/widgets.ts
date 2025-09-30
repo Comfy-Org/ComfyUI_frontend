@@ -308,7 +308,7 @@ export interface IBaseWidget<
   advanced?: boolean
   /**
    * Set if the node is displayed on the parent subgraphNode
-   * Promoted widgets have a green border
+   * Promoted widgets have a colored border
    * @readonly [Computed] This property is computed on graph change
    */
   promoted?: boolean
