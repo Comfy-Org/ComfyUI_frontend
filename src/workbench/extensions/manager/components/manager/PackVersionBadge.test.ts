@@ -40,15 +40,20 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
     installedPacks: mockInstalledPacks,
     isPackInstalled: (id: string) =>
       !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
-    isPackEnabled: mockIsPackEnabled
+    isPackEnabled: mockIsPackEnabled,
+    getInstalledPackVersion: (id: string) =>
+      mockInstalledPacks[id as keyof typeof mockInstalledPacks]?.ver
   }))
 }))
 
-vi.mock('@/composables/nodePack/usePackUpdateStatus', () => ({
-  usePackUpdateStatus: vi.fn(() => ({
-    isUpdateAvailable: false
-  }))
-}))
+vi.mock(
+  '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus',
+  () => ({
+    usePackUpdateStatus: vi.fn(() => ({
+      isUpdateAvailable: false
+    }))
+  })
+)
 
 const mockToggle = vi.fn()
 const mockHide = vi.fn()

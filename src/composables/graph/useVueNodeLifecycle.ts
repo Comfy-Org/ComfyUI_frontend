@@ -1,11 +1,8 @@
 import { createSharedComposable } from '@vueuse/core'
-import { readonly, ref, shallowRef, watch } from 'vue'
+import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type {
-  GraphNodeManager,
-  VueNodeData
-} from '@/composables/graph/useGraphNodeManager'
+import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -22,31 +19,19 @@ function useVueNodeLifecycleIndividual() {
   const { shouldRenderVueNodes } = useVueFeatureFlags()
 
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
-  const cleanupNodeManager = shallowRef<(() => void) | null>(null)
 
-  // Sync management
-  const slotSync = shallowRef<ReturnType<typeof useSlotLayoutSync> | null>(null)
-  const slotSyncStarted = ref(false)
-  const linkSync = shallowRef<ReturnType<typeof useLinkLayoutSync> | null>(null)
-
-  // Vue node data state
-  const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
-
-  // Trigger for forcing computed re-evaluation
-  const nodeDataTrigger = ref(0)
+  const { startSync } = useLayoutSync()
+  const linkSyncManager = useLinkLayoutSync()
+  const slotSyncManager = useSlotLayoutSync()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
-    const activeGraph = comfyApp.canvas?.graph || comfyApp.graph
+    const activeGraph = comfyApp.canvas?.graph
     if (!activeGraph || nodeManager.value) return
 
     // Initialize the core node manager
     const manager = useGraphNodeManager(activeGraph)
     nodeManager.value = manager
-    cleanupNodeManager.value = manager.cleanup
-
-    // Use the manager's data maps
-    vueNodeData.value = manager.vueNodeData
 
     // Initialize layout system with existing nodes from active graph
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
@@ -76,46 +61,29 @@ function useVueNodeLifecycleIndividual() {
     }
 
     // Initialize layout sync (one-way: Layout Store → LiteGraph)
-    const { startSync } = useLayoutSync()
     startSync(canvasStore.canvas)
 
-    // Initialize link layout sync for event-driven updates
-    const linkSyncManager = useLinkLayoutSync()
-    linkSync.value = linkSyncManager
     if (comfyApp.canvas) {
       linkSyncManager.start(comfyApp.canvas)
     }
-
-    // Force computed properties to re-evaluate
-    nodeDataTrigger.value++
   }
 
   const disposeNodeManagerAndSyncs = () => {
     if (!nodeManager.value) return
 
     try {
-      cleanupNodeManager.value?.()
+      nodeManager.value.cleanup()
     } catch {
       /* empty */
     }
     nodeManager.value = null
-    cleanupNodeManager.value = null
 
-    // Clean up link layout sync
-    if (linkSync.value) {
-      linkSync.value.stop()
-      linkSync.value = null
-    }
-
-    // Reset reactive maps to clean state
-    vueNodeData.value = new Map()
+    linkSyncManager.stop()
   }
 
   // Watch for Vue nodes enabled state changes
   watch(
-    () =>
-      shouldRenderVueNodes.value &&
-      Boolean(comfyApp.canvas?.graph || comfyApp.graph),
+    () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
@@ -138,20 +106,14 @@ function useVueNodeLifecycleIndividual() {
       }
 
       // Switching to Vue
-      if (vueMode && slotSyncStarted.value) {
-        slotSync.value?.stop()
-        slotSyncStarted.value = false
+      if (vueMode) {
+        slotSyncManager.stop()
       }
 
       // Switching to LG
       const shouldRun = Boolean(canvas?.graph) && !vueMode
-      if (shouldRun && !slotSyncStarted.value && canvas) {
-        // Initialize slot sync if not already created
-        if (!slotSync.value) {
-          slotSync.value = useSlotLayoutSync()
-        }
-        const started = slotSync.value.attemptStart(canvas as LGraphCanvas)
-        slotSyncStarted.value = started
+      if (shouldRun && canvas) {
+        slotSyncManager.attemptStart(canvas as LGraphCanvas)
       }
     },
     { immediate: true }
@@ -159,26 +121,27 @@ function useVueNodeLifecycleIndividual() {
 
   // Handle case where Vue nodes are enabled but graph starts empty
   const setupEmptyGraphListener = () => {
+    const activeGraph = comfyApp.canvas?.graph
     if (
-      shouldRenderVueNodes.value &&
-      comfyApp.graph &&
-      !nodeManager.value &&
-      comfyApp.graph._nodes.length === 0
+      !shouldRenderVueNodes.value ||
+      nodeManager.value ||
+      activeGraph?._nodes.length !== 0
     ) {
-      const originalOnNodeAdded = comfyApp.graph.onNodeAdded
-      comfyApp.graph.onNodeAdded = function (node: LGraphNode) {
-        // Restore original handler
-        comfyApp.graph.onNodeAdded = originalOnNodeAdded
+      return
+    }
+    const originalOnNodeAdded = activeGraph.onNodeAdded
+    activeGraph.onNodeAdded = function (node: LGraphNode) {
+      // Restore original handler
+      activeGraph.onNodeAdded = originalOnNodeAdded
 
-        // Initialize node manager if needed
-        if (shouldRenderVueNodes.value && !nodeManager.value) {
-          initializeNodeManager()
-        }
+      // Initialize node manager if needed
+      if (shouldRenderVueNodes.value && !nodeManager.value) {
+        initializeNodeManager()
+      }
 
-        // Call original handler
-        if (originalOnNodeAdded) {
-          originalOnNodeAdded.call(this, node)
-        }
+      // Call original handler
+      if (originalOnNodeAdded) {
+        originalOnNodeAdded.call(this, node)
       }
     }
   }
@@ -189,20 +152,12 @@ function useVueNodeLifecycleIndividual() {
       nodeManager.value.cleanup()
       nodeManager.value = null
     }
-    if (slotSyncStarted.value) {
-      slotSync.value?.stop()
-      slotSyncStarted.value = false
-    }
-    slotSync.value = null
-    if (linkSync.value) {
-      linkSync.value.stop()
-      linkSync.value = null
-    }
+    slotSyncManager.stop()
+    linkSyncManager.stop()
   }
 
   return {
-    vueNodeData,
-    nodeManager: readonly(nodeManager),
+    nodeManager,
 
     // Lifecycle methods
     initializeNodeManager,

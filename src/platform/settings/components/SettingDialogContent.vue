@@ -6,6 +6,7 @@
         class="settings-search-box w-full mb-2"
         :placeholder="$t('g.searchSettings') + '...'"
         :debounce-time="128"
+        autofocus
         @search="handleSearch"
       />
       <Listbox

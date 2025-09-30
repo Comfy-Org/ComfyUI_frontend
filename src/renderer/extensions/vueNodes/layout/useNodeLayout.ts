@@ -4,6 +4,7 @@ import {
   type MaybeRefOrGetter,
   computed,
   inject,
+  ref,
   toValue
 } from 'vue'
 
@@ -50,7 +51,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   const zIndex = computed(() => layoutRef.value?.zIndex ?? 0)
 
   // Drag state
-  let isDragging = false
+  const isDragging = ref(false)
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
@@ -59,9 +60,9 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
    * Start dragging the node
    */
   function startDrag(event: PointerEvent) {
-    if (!layoutRef.value) return
+    if (!layoutRef.value || !transformState) return
 
-    isDragging = true
+    isDragging.value = true
     dragStartPos = { ...position.value }
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
@@ -87,15 +88,20 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     mutations.setSource(LayoutSource.Vue)
 
     // Capture pointer
-    const target = event.target as HTMLElement
-    target.setPointerCapture(event.pointerId)
+    if (!(event.target instanceof HTMLElement)) return
+    event.target.setPointerCapture(event.pointerId)
   }
 
   /**
    * Handle drag movement
    */
   const handleDrag = (event: PointerEvent) => {
-    if (!isDragging || !dragStartPos || !dragStartMouse || !transformState) {
+    if (
+      !isDragging.value ||
+      !dragStartPos ||
+      !dragStartMouse ||
+      !transformState
+    ) {
       return
     }
 
@@ -141,16 +147,16 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
    * End dragging
    */
   function endDrag(event: PointerEvent) {
-    if (!isDragging) return
+    if (!isDragging.value) return
 
-    isDragging = false
+    isDragging.value = false
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
 
     // Release pointer
-    const target = event.target as HTMLElement
-    target.releasePointerCapture(event.pointerId)
+    if (!(event.target instanceof HTMLElement)) return
+    event.target.releasePointerCapture(event.pointerId)
   }
 
   /**
@@ -177,6 +183,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     bounds,
     isVisible,
     zIndex,
+    isDragging,
 
     // Mutations
     moveTo,
@@ -196,7 +203,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
         width: `${size.value.width}px`,
         height: `${size.value.height}px`,
         zIndex: zIndex.value,
-        cursor: isDragging ? 'grabbing' : 'grab'
+        cursor: isDragging.value ? 'grabbing' : 'grab'
       })
     )
   }

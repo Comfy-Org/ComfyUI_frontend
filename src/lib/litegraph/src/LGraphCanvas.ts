@@ -688,8 +688,8 @@ export class LGraphCanvas
 
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
   dragZoomEnabled: boolean = false
-  /** The start position of the drag zoom. */
-  #dragZoomStart: { pos: Point; scale: number } | null = null
+  /** The start position of the drag zoom and original read-only state. */
+  #dragZoomStart: { pos: Point; scale: number; readOnly: boolean } | null = null
 
   getMenuOptions?(): IContextMenuValue<string>[]
   getExtraMenuOptions?(
@@ -757,9 +757,7 @@ export class LGraphCanvas
 
     // Initialize link renderer if graph is available
     if (graph) {
-      this.linkRenderer = new LitegraphLinkAdapter(graph)
-      // Disable layout writes during render
-      this.linkRenderer.enableLayoutStoreWrites = false
+      this.linkRenderer = new LitegraphLinkAdapter(false)
     }
 
     this.linkConnector.events.addEventListener('link-created', () =>
@@ -1858,9 +1856,7 @@ export class LGraphCanvas
     newGraph.attachCanvas(this)
 
     // Re-initialize link renderer with new graph
-    this.linkRenderer = new LitegraphLinkAdapter(newGraph)
-    // Disable layout writes during render
-    this.linkRenderer.enableLayoutStoreWrites = false
+    this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
     this.#dirty()
@@ -2188,7 +2184,12 @@ export class LGraphCanvas
       !e.altKey &&
       e.buttons
     ) {
-      this.#dragZoomStart = { pos: [e.x, e.y], scale: this.ds.scale }
+      this.#dragZoomStart = {
+        pos: [e.x, e.y],
+        scale: this.ds.scale,
+        readOnly: this.read_only
+      }
+      this.read_only = true
       return
     }
 
@@ -3125,7 +3126,7 @@ export class LGraphCanvas
   #processDragZoom(e: PointerEvent): void {
     // stop canvas zoom action
     if (!e.buttons) {
-      this.#dragZoomStart = null
+      this.#finishDragZoom()
       return
     }
 
@@ -3141,6 +3142,13 @@ export class LGraphCanvas
 
     this.ds.changeScale(scale, start.pos)
     this.graph.change()
+  }
+
+  #finishDragZoom(): void {
+    const start = this.#dragZoomStart
+    if (!start) return
+    this.#dragZoomStart = null
+    this.read_only = start.readOnly
   }
 
   /**
@@ -3523,6 +3531,8 @@ export class LGraphCanvas
 
     const { graph, pointer } = this
     if (!graph) return
+
+    this.#finishDragZoom()
 
     LGraphCanvas.active_canvas = this
 

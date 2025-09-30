@@ -91,12 +91,12 @@ import { useI18n } from 'vue-i18n'
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
-import { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import { getJoinedConflictMessages } from '@/workbench/extensions/manager/utils/conflictMessageUtil'
 
 type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
 type ManagerDatabaseSource =

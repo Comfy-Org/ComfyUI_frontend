@@ -5,7 +5,7 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      class="-translate-x-1/2"
+      :class="cn('-translate-x-1/2', errorClassesDot)"
       v-on="readonly ? {} : { pointerdown: onPointerDown }"
     />
 
@@ -13,7 +13,9 @@
     <div class="relative">
       <span
         v-if="!dotOnly"
-        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+        :class="
+          cn('whitespace-nowrap text-sm font-normal lod-toggle', labelClasses)
+        "
       >
         {{ slotData.localized_name || slotData.name || `Input ${index}` }}
       </span>
@@ -39,6 +41,7 @@ import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
@@ -57,7 +60,30 @@ interface InputSlotProps {
 
 const props = defineProps<InputSlotProps>()
 
-// Error boundary implementation
+const executionStore = useExecutionStore()
+
+const hasSlotError = computed(() => {
+  const nodeErrors = executionStore.lastNodeErrors?.[props.nodeId ?? '']
+  if (!nodeErrors) return false
+
+  const slotName = props.slotData.name
+  return nodeErrors.errors.some(
+    (error) => error.extra_info?.input_name === slotName
+  )
+})
+
+const errorClassesDot = computed(() => {
+  return hasSlotError.value
+    ? 'ring-2 ring-error dark-theme:ring-error ring-offset-0 rounded-full'
+    : ''
+})
+
+const labelClasses = computed(() =>
+  hasSlotError.value
+    ? 'text-error dark-theme:text-error font-medium'
+    : 'dark-theme:text-slate-200 text-stone-200'
+)
+
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
@@ -81,8 +107,12 @@ onErrorCaptured((error) => {
   return false
 })
 
-// Get slot color based on type
-const slotColor = computed(() => getSlotColor(props.slotData.type))
+const slotColor = computed(() => {
+  if (hasSlotError.value) {
+    return 'var(--color-error)'
+  }
+  return getSlotColor(props.slotData.type)
+})
 
 const slotWrapperClass = computed(() =>
   cn(
@@ -103,8 +133,6 @@ const connectionDotRef = ref<ComponentPublicInstance<{
 }> | null>(null)
 const slotElRef = ref<HTMLElement | null>(null)
 
-// Watch for when the child component's ref becomes available
-// Vue automatically unwraps the Ref when exposing it
 watchEffect(() => {
   const el = connectionDotRef.value?.slotElRef
   slotElRef.value = el || null

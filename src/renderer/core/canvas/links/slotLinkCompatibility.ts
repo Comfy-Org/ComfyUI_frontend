@@ -10,7 +10,6 @@ import type {
   SlotDragSource,
   SlotDropCandidate
 } from '@/renderer/core/canvas/links/slotLinkDragState'
-import { app } from '@/scripts/app'
 
 interface CompatibilityResult {
   allowable: boolean
@@ -21,7 +20,7 @@ interface CompatibilityResult {
 function resolveNode(nodeId: NodeId) {
   const pinia = getActivePinia()
   const canvasStore = pinia ? useCanvasStore() : null
-  const graph = canvasStore?.canvas?.graph ?? app.canvas?.graph
+  const graph = canvasStore?.canvas?.graph
   if (!graph) return null
   const id = typeof nodeId === 'string' ? Number(nodeId) : nodeId
   if (Number.isNaN(id)) return null

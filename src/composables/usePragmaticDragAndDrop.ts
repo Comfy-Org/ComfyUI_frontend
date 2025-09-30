@@ -2,19 +2,17 @@ import {
   draggable,
   dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { onBeforeUnmount, onMounted } from 'vue'
+import { toValue } from 'vue'
+import { type MaybeRefOrGetter, onBeforeUnmount, onMounted } from 'vue'
 
 export function usePragmaticDroppable(
-  dropTargetElement: HTMLElement | (() => HTMLElement),
+  dropTargetElement: MaybeRefOrGetter<HTMLElement | null>,
   options: Omit<Parameters<typeof dropTargetForElements>[0], 'element'>
 ) {
   let cleanup = () => {}
 
   onMounted(() => {
-    const element =
-      typeof dropTargetElement === 'function'
-        ? dropTargetElement()
-        : dropTargetElement
+    const element = toValue(dropTargetElement)
 
     if (!element) {
       return
@@ -32,16 +30,13 @@ export function usePragmaticDroppable(
 }
 
 export function usePragmaticDraggable(
-  draggableElement: HTMLElement | (() => HTMLElement),
+  draggableElement: MaybeRefOrGetter<HTMLElement | null>,
   options: Omit<Parameters<typeof draggable>[0], 'element'>
 ) {
   let cleanup = () => {}
 
   onMounted(() => {
-    const element =
-      typeof draggableElement === 'function'
-        ? draggableElement()
-        : draggableElement
+    const element = toValue(draggableElement)
 
     if (!element) {
       return
@@ -51,6 +46,7 @@ export function usePragmaticDraggable(
       element,
       ...options
     })
+    // TODO: Change to onScopeDispose
   })
 
   onBeforeUnmount(() => {

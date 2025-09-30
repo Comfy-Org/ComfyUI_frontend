@@ -1,3 +1,4 @@
+import '@/core/graph/subgraph/proxyWidget'
 import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -133,13 +134,13 @@ export function addValueControlWidgets(
     function () {},
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
-      serialize: false // Don't include this in prompt.
+      serialize: false, // Don't include this in prompt.
+      canvasOnly: true
     }
   ) as IComboWidget
 
   valueControl.tooltip =
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
-  // @ts-ignore index with symbol
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
   const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
@@ -272,12 +273,10 @@ export function addValueControlWidgets(
   valueControl.beforeQueued = () => {
     if (controlValueRunBefore()) {
       // Don't run on first execution
-      // @ts-ignore index with symbol
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
       }
     }
-    // @ts-ignore index with symbol
     valueControl[HAS_EXECUTED] = true
   }
 

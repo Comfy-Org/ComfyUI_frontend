@@ -1,9 +1,15 @@
 <template>
-  <div :class="wrapperStyle">
+  <div :class="wrapperStyle" @click="focusInput">
     <i-lucide:search :class="iconColorStyle" />
     <InputText
+      ref="input"
       v-model="searchQuery"
-      :placeholder="placeHolder || 'Search...'"
+      :aria-label="
+        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+      "
+      :placeholder="
+        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+      "
       type="text"
       unstyled
       :class="inputStyle"
@@ -13,8 +19,9 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
@@ -28,6 +35,13 @@ const {
 }>()
 // defineModel without arguments uses 'modelValue' as the prop name
 const searchQuery = defineModel<string>()
+
+const input = ref<{ $el: HTMLElement } | null>()
+const focusInput = () => {
+  if (input.value && input.value.$el) {
+    input.value.$el.focus()
+  }
+}
 
 const wrapperStyle = computed(() => {
   const baseClasses = [

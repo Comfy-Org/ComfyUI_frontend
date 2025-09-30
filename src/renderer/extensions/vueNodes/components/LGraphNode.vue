@@ -10,7 +10,7 @@
       cn(
         'bg-white dark-theme:bg-charcoal-800',
         'lg-node absolute rounded-2xl',
-        'border border-solid border-sand-100 dark-theme:border-charcoal-600',
+        'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
@@ -21,6 +21,8 @@
           'animate-pulse': executing,
           'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
+          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
+            muted,
           'will-change-transform': isDragging
         },
 
@@ -32,23 +34,29 @@
     :style="[
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex
+        zIndex: zIndex,
+        backgroundColor: nodeBodyBackgroundColor,
+        opacity: nodeOpacity
       },
       dragStyle
     ]"
-    @pointerdown="handlePointerDown"
-    @pointermove="handlePointerMove"
-    @pointerup="handlePointerUp"
+    v-bind="pointerHandlers"
     @wheel="handleWheel"
+    @contextmenu="handleContextMenu"
   >
     <div class="flex items-center">
       <template v-if="isCollapsed">
         <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
-      <!-- Header only updates on title/color changes -->
       <NodeHeader
-        v-memo="[nodeData.title, isCollapsed]"
+        v-memo="[
+          nodeData.title,
+          nodeData.color,
+          nodeData.bgcolor,
+          isCollapsed,
+          nodeData.flags?.pinned
+        ]"
         :node-data="nodeData"
         :readonly="readonly"
         :collapsed="isCollapsed"
@@ -93,7 +101,11 @@
       >
         <!-- Slots only rendered at full detail -->
         <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
+          v-memo="[
+            nodeData.inputs?.length,
+            nodeData.outputs?.length,
+            executionStore.lastNodeErrors
+          ]"
           :node-data="nodeData"
           :readonly="readonly"
         />
@@ -135,8 +147,10 @@ import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -146,9 +160,11 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -175,8 +191,12 @@ const {
   readonly = false
 } = defineProps<LGraphNodeProps>()
 
-const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeSelect } =
-  useNodeEventHandlers()
+const {
+  handleNodeCollapse,
+  handleNodeTitleUpdate,
+  handleNodeSelect,
+  handleNodeRightClick
+} = useNodeEventHandlers()
 
 useVueElementTracking(() => nodeData.id, 'node')
 
@@ -199,12 +219,34 @@ const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
 )
 
-// Computed error states for styling
-const hasAnyError = computed(
-  (): boolean => !!(hasExecutionError.value || nodeData.hasErrors || error)
-)
+const hasAnyError = computed((): boolean => {
+  return !!(
+    hasExecutionError.value ||
+    nodeData.hasErrors ||
+    error ||
+    (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
+  )
+})
 
 const bypassed = computed((): boolean => nodeData.mode === 4)
+const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
+
+const nodeBodyBackgroundColor = computed(() => {
+  const colorPaletteStore = useColorPaletteStore()
+
+  if (!nodeData.bgcolor) {
+    return ''
+  }
+
+  return applyLightThemeColor(
+    nodeData.bgcolor,
+    Boolean(colorPaletteStore.completedActivePalette.light_theme)
+  )
+})
+
+const nodeOpacity = computed(
+  () => useSettingStore().get('Comfy.Node.Opacity') ?? 1
+)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -221,13 +263,25 @@ onErrorCaptured((error) => {
 
 // Use layout system for node position and dragging
 const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
-const {
-  handlePointerDown,
-  handlePointerUp,
-  handlePointerMove,
-  isDragging,
-  dragStyle
-} = useNodePointerInteractions(() => nodeData, handleNodeSelect)
+const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
+  () => nodeData,
+  handleNodeSelect
+)
+
+// Handle right-click context menu
+const handleContextMenu = (event: MouseEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  // First handle the standard right-click behavior (selection)
+  handleNodeRightClick(event as PointerEvent, nodeData)
+
+  // Show the node options menu at the cursor position
+  const targetElement = event.currentTarget as HTMLElement
+  if (targetElement) {
+    toggleNodeOptions(event, targetElement, false)
+  }
+}
 
 onMounted(() => {
   if (size.value && transformState?.camera) {
@@ -262,26 +316,19 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  if (hasAnyError.value) {
-    return 'border-error'
-  }
-  if (executing.value) {
-    return 'border-blue-500'
-  }
-  return undefined
+  return (
+    (hasAnyError.value && 'border-error dark-theme:border-error') ||
+    (executing.value && 'border-blue-500')
+  )
 })
 
 const outlineClass = computed(() => {
-  if (!isSelected.value) {
-    return undefined
-  }
-  if (hasAnyError.value) {
-    return 'outline-error'
-  }
-  if (executing.value) {
-    return 'outline-blue-500'
-  }
-  return 'outline-black dark-theme:outline-white'
+  return (
+    isSelected.value &&
+    ((hasAnyError.value && 'outline-error dark-theme:outline-error') ||
+      (executing.value && 'outline-blue-500 dark-theme:outline-blue-500') ||
+      'outline-black dark-theme:outline-white')
+  )
 })
 
 // Event handlers

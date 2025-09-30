@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Keybindings', () => {
   test('Should execute command', async ({ comfyPage }) => {
     await comfyPage.registerCommand('TestCommand', () => {

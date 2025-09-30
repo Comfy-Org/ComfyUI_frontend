@@ -62,6 +62,7 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
+    <NodeOptions />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -87,10 +88,12 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
+import NodeOptions from '@/components/graph/selectionToolbox/NodeOptions.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -101,7 +104,6 @@ import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { i18n, t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -165,7 +167,7 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
-const viewportCulling = useViewportCulling()
+const { handleTransformUpdate } = useViewportCulling()
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
@@ -187,8 +189,9 @@ watch(
   }
 )
 
-const allNodes = viewportCulling.allNodes
-const handleTransformUpdate = viewportCulling.handleTransformUpdate
+const allNodes = computed((): VueNodeData[] =>
+  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -222,7 +225,6 @@ watch(
     for (const n of comfyApp.graph.nodes) {
       if (!n.widgets) continue
       for (const w of n.widgets) {
-        // @ts-expect-error fixme ts strict error
         if (w[IS_CONTROL_WIDGET]) {
           updateControlWidgetLabel(w)
           if (w.linkedWidgets) {
@@ -290,31 +292,36 @@ watch(
   { deep: true }
 )
 
-// Update node slot errors
+// Update node slot errors for LiteGraph nodes
+// (Vue nodes read from store directly)
 watch(
   () => executionStore.lastNodeErrors,
   (lastNodeErrors) => {
-    const removeSlotError = (node: LGraphNode) => {
+    if (!comfyApp.graph) return
+
+    for (const node of comfyApp.graph.nodes) {
+      // Clear existing errors
       for (const slot of node.inputs) {
         delete slot.hasErrors
       }
       for (const slot of node.outputs) {
         delete slot.hasErrors
       }
-    }
 
-    for (const node of comfyApp.graph.nodes) {
-      removeSlotError(node)
       const nodeErrors = lastNodeErrors?.[node.id]
       if (!nodeErrors) continue
-      for (const error of nodeErrors.errors) {
-        if (error.extra_info && error.extra_info.input_name) {
-          const inputIndex = node.findInputSlot(error.extra_info.input_name)
-          if (inputIndex !== -1) {
-            node.inputs[inputIndex].hasErrors = true
-          }
+
+      const validErrors = nodeErrors.errors.filter(
+        (error) => error.extra_info?.input_name !== undefined
+      )
+
+      validErrors.forEach((error) => {
+        const inputName = error.extra_info!.input_name!
+        const inputIndex = node.findInputSlot(inputName)
+        if (inputIndex !== -1) {
+          node.inputs[inputIndex].hasErrors = true
         }
-      }
+      })
     }
 
     comfyApp.canvas.draw(true, true)
@@ -347,7 +354,6 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
-// @ts-expect-error fixme ts strict error
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()

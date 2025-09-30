@@ -1,14 +1,14 @@
 <template>
   <div
-    class="absolute inset-0 w-full h-full pointer-events-none"
+    data-testid="transform-pane"
     :class="
       cn(
+        'absolute inset-0 w-full h-full pointer-events-none',
         isInteracting ? 'transform-pane--interacting' : 'will-change-auto',
-        isLOD ? 'isLOD' : ''
+        isLOD && 'isLOD'
       )
     "
     :style="transformStyle"
-    @pointerdown="handlePointerDown"
   >
     <!-- Vue nodes will be rendered here -->
     <slot />
@@ -56,18 +56,7 @@ provide(TransformStateKey, {
   isNodeInViewport
 })
 
-const handlePointerDown = (event: PointerEvent) => {
-  const target = event.target as HTMLElement
-  const nodeElement = target.closest('[data-node-id]')
-
-  if (nodeElement) {
-    // TODO: Emit event for node interaction
-    // Node interaction with nodeId will be handled in future implementation
-  }
-}
-
 const emit = defineEmits<{
-  rafStatusChange: [active: boolean]
   transformUpdate: []
 }>()
 
@@ -84,23 +73,7 @@ useRafFn(
 </script>
 
 <style scoped>
-.transform-pane {
-  position: absolute;
-  inset: 0;
-  transform-origin: 0 0;
-  pointer-events: none;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
 .transform-pane--interacting {
   will-change: transform;
-}
-
-/* Allow pointer events on nodes */
-.transform-pane :deep([data-node-id]) {
-  pointer-events: auto;
 }
 </style>
