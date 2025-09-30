@@ -36,6 +36,12 @@
   --code-text-color: rgba(0, 122, 255, 1);
   --code-bg-color: rgba(96, 165, 250, 0.2);
   --code-block-bg-color: rgba(60, 60, 60, 0.12);
+
+  /* Scrollbar tokens (colors reuse existing palette) */
+  --scrollbar-size: 10px; /* width/height for webkit scrollbars */
+  --scrollbar-track: var(--color-white);
+  --scrollbar-thumb: var(--color-gray-400);
+  --scrollbar-thumb-hover: var(--color-gray-400);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,7 +52,25 @@
     --content-fg: #fff;
     --content-hover-bg: #222;
     --content-hover-fg: #fff;
+    --scrollbar-track: var(--color-charcoal-600);
+    /* Dark overrides for scrollbar */
+    --scrollbar-thumb: var(--color-charcoal-100);
+    --scrollbar-thumb-hover: var(--color-gray-800);
   }
+}
+
+/* Dark theme variable overrides for class-based theming */
+.dark-theme {
+  /* ensure tokens match dark scheme even without prefers-color-scheme */
+  --scrollbar-track: var(--color-charcoal-600);
+  --scrollbar-thumb: var(--color-charcoal-100);
+  --scrollbar-thumb-hover: var(--color-gray-800);
+  /* let UA widgets (including scrollbars) render in dark mode where supported */
+  color-scheme: dark;
+}
+/* Ensure scrollable containers participate in dark color-scheme */
+.dark-theme .custom-scrollbar {
+  color-scheme: dark;
 }
 
 @theme {
@@ -151,6 +175,56 @@
     background-color: transparent;
   }
 }
+
+/* ===================== Custom Scrollbar (cross-browser) =====================
+   Usage: Add `custom-scrollbar` class to any scrollable container.
+   Notes:
+   - Firefox uses `scrollbar-width` and `scrollbar-color`.
+   - WebKit/Blink (Chrome/Edge/Safari) use `::-webkit-scrollbar` pseudo elements.
+   - macOS/iOS show overlay scrollbars; thick tracks may appear slimmer there.
+   - Uses existing CSS variables (tokens) for colors and size.
+============================================================================ */
+@layer components {
+  /* Base (light) theme */
+  .custom-scrollbar {
+    /* Firefox */
+    scrollbar-width: thin;                 /* auto | thin | none */
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);      /* thumb track */
+    /* Layout stability where supported */
+    scrollbar-gutter: stable both-edges;   /* ignored if unsupported */
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 999px;
+    border: 2px solid var(--scrollbar-track);            /* visual separation from track */
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);                   /* hover color */
+  }
+
+  /* Dark theme overrides (scoped to your `.dark-theme` root) */
+  .dark-theme .custom-scrollbar {
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);      /* thumb track */
+  }
+  .dark-theme .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  .dark-theme .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border: 2px solid var(--scrollbar-track);
+  }
+  .dark-theme .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);                   /* hover color */
+  }
+}
+/* =================== End Custom Scrollbar (cross-browser) =================== */
 
 /* Everthing below here to be cleaned up over time. */
 
