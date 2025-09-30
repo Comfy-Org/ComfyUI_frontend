@@ -13,7 +13,6 @@ runs:
       with:
         repository: 'comfyanonymous/ComfyUI'
         path: 'ComfyUI'
-        ref: 'master'
 
     - name: Checkout ComfyUI_frontend
       uses: actions/checkout@v4
