@@ -1,23 +1,33 @@
 import type { TooltipDirectivePassThroughOptions } from 'primevue'
-import { type MaybeRef, type Ref, computed, unref, watch } from 'vue'
+import { type MaybeRef, type Ref, computed, ref, unref } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 /**
- * Hide all visible tooltips by finding them via class and dispatching mouseleave
- * Tooltips only exist in DOM when visible, so we can query them directly
+ * Hide all visible tooltips by dispatching mouseleave events
+ *
+ *
+ * IMPORTANT: this escape is needed for many reason due to primevue's directive tooltip system.
+ * We cannot use PT to conditonally render the tooltips because the entire PT object only run
+ * once during the intialization of the directive not every mount/unmount.
+ * Once the directive is constructed its no longer reactive in the traditional sense.
+ * We have to use something non destructive like mouseevents to dismiss the tooltip.
+ *
+ * TODO: use a better tooltip component like RekaUI for vue nodes specifically.
  */
+
+const tooltipsTemporarilyDisabled = ref(false)
+
 const hideTooltipsGlobally = () => {
-  // Get all visible tooltip elements (PrimeVue uses .p-tooltip class)
+  // Get all visible tooltip elements
   const tooltips = document.querySelectorAll('.p-tooltip')
 
-  // Early return if no tooltips are visible - avoid unnecessary work
+  // Early return if no tooltips are visible
   if (tooltips.length === 0) return
 
   tooltips.forEach((tooltipEl) => {
@@ -35,38 +45,32 @@ const hideTooltipsGlobally = () => {
       }
     }
   })
+
+  // Disable tooltips temporarily after hiding (for drag operations)
+  tooltipsTemporarilyDisabled.value = true
+}
+
+/**
+ * Re-enable tooltips after pointer interaction ends
+ */
+const handlePointerUp = () => {
+  tooltipsTemporarilyDisabled.value = false
 }
 
 // Global tooltip hiding system
-const globalTooltipState = { watchersSetup: false }
+const globalTooltipState = { listenersSetup: false }
 
 function setupGlobalTooltipHiding() {
-  if (globalTooltipState.watchersSetup) return
+  if (globalTooltipState.listenersSetup) return
 
-  // Watch isDraggingVueNodes from useNodePointerInteractions
-  // This tracks when ANY node is being dragged (set by pointerHandlers in useNodePointerInteractions)
-  // When dragging starts, hide all tooltips immediately
-  watch(
-    () => layoutStore.isDraggingVueNodes.value,
-    (isDragging) => {
-      if (isDragging) {
-        hideTooltipsGlobally()
-      }
-    }
-  )
-
-  // Hide on any pointerdown (immediate click hiding)
-  // This catches clicks that don't result in drags
   document.addEventListener('pointerdown', hideTooltipsGlobally)
-
-  // Hide on wheel/scroll (for zoom operations)
-  // Use capture phase to catch wheel events before they reach canvas/nodes
+  document.addEventListener('pointerup', handlePointerUp)
   window.addEventListener('wheel', hideTooltipsGlobally, {
-    capture: true,
+    capture: true, //Need this to bypass the event layer from Litegraph
     passive: true
   })
 
-  globalTooltipState.watchersSetup = true
+  globalTooltipState.listenersSetup = true
 }
 
 /**
@@ -141,7 +145,7 @@ export function useNodeTooltips(
 
   /**
    * Create tooltip configuration object for v-tooltip directive
-   * Includes automatic pointerdown-to-hide behavior
+   * Components wrap this in computed() for reactivity
    */
   const createTooltipConfig = (text: string) => {
     const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
@@ -161,7 +165,8 @@ export function useNodeTooltips(
       disabled:
         !tooltipsEnabled.value ||
         !tooltipText ||
-        layoutStore.isDraggingVueNodes.value,
+        tooltipsTemporarilyDisabled.value, // this reactive value works but only on next mount,
+      // so if the tooltip is already visible changing this will not hide it
       pt: {
         text: {
           class:
