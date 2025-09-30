@@ -6406,7 +6406,7 @@ export class LGraphCanvas
 
           return true
         }
-        console.log(`failed creating ${nodeNewType}`)
+        console.error(`failed creating ${nodeNewType}`)
       }
     }
     return false

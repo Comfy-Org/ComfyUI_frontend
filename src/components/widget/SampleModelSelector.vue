@@ -203,11 +203,7 @@ const selectedNavItem = ref<string | null>('installed')
 
 const gridStyle = computed(() => createGridStyle())
 
-watch(searchText, (newQuery) => {
-  console.log('searchText:', searchText.value, newQuery)
-})
+watch(searchText, (_newQuery) => {})
 
-watch(searchQuery, (newQuery) => {
-  console.log('searchQuery:', searchQuery.value, newQuery)
-})
+watch(searchQuery, (_newQuery) => {})
 </script>

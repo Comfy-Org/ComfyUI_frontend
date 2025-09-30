@@ -398,8 +398,6 @@ export class LiteGraphGlobal {
       throw 'Cannot register a simple object, it must be a class with a prototype'
     base_class.type = type
 
-    if (this.debug) console.log('Node registered:', type)
-
     const classname = base_class.name
 
     const pos = type.lastIndexOf('/')
@@ -415,7 +413,7 @@ export class LiteGraphGlobal {
 
     const prev = this.registered_node_types[type]
     if (prev && this.debug) {
-      console.log('replacing node type:', type)
+      console.warn('replacing node type:', type)
     }
 
     this.registered_node_types[type] = base_class
@@ -524,7 +522,7 @@ export class LiteGraphGlobal {
   ): LGraphNode | null {
     const base_class = this.registered_node_types[type]
     if (!base_class) {
-      if (this.debug) console.log(`GraphNode type "${type}" not registered.`)
+      if (this.debug) console.warn(`GraphNode type "${type}" not registered.`)
       return null
     }
 
@@ -637,7 +635,6 @@ export class LiteGraphGlobal {
         continue
 
       try {
-        if (this.debug) console.log('Reloading:', src)
         const dynamicScript = document.createElement('script')
         dynamicScript.type = 'text/javascript'
         dynamicScript.src = src
@@ -645,11 +642,9 @@ export class LiteGraphGlobal {
         script_file.remove()
       } catch (error) {
         if (this.throw_errors) throw error
-        if (this.debug) console.log('Error while reloading', src)
+        if (this.debug) console.error('Error while reloading', src)
       }
     }
-
-    if (this.debug) console.log('Nodes reloaded')
   }
 
   // separated just to improve if it doesn't work
@@ -749,7 +744,7 @@ export class LiteGraphGlobal {
     // convert pointerevents to touch event when not available
     if (sMethod == 'pointer' && !window.PointerEvent) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
-      console.log(
+      console.warn(
         `Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`
       )
       switch (sEvent) {
@@ -774,7 +769,7 @@ export class LiteGraphGlobal {
           break
         }
         case 'enter': {
-          console.log('debug: Should I send a move event?') // ???
+          // TODO: Determine if a move event should be sent
           break
         }
         // case "over": case "out": not used at now

@@ -1950,7 +1950,7 @@ export class LGraphNode
     try {
       this.removeWidget(widget)
     } catch (error) {
-      console.debug('Failed to remove widget', error)
+      console.warn('Failed to remove widget', error)
     }
   }
 
@@ -2583,12 +2583,7 @@ export class LGraphNode
     if (slotIndex !== undefined)
       return this.connect(slot, target_node, slotIndex, optsIn?.afterRerouteId)
 
-    console.debug(
-      '[connectByType]: no way to connect type:',
-      target_slotType,
-      'to node:',
-      target_node
-    )
+    // No compatible slot found - connection not possible
     return null
   }
 
@@ -2621,12 +2616,7 @@ export class LGraphNode
     if (slotIndex !== undefined)
       return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
-    console.debug(
-      '[connectByType]: no way to connect type:',
-      source_slotType,
-      'to node:',
-      source_node
-    )
+    // No compatible slot found - connection not possible
     return null
   }
 
@@ -2661,7 +2651,7 @@ export class LGraphNode
     if (!graph) {
       // could be connected before adding it to a graph
       // due to link ids being associated with graphs
-      console.log(
+      console.error(
         "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
       )
       return null
@@ -2672,11 +2662,12 @@ export class LGraphNode
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return null
       }
     } else if (!outputs || slot >= outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return null
     }
 
@@ -2696,7 +2687,7 @@ export class LGraphNode
       targetIndex = target_node.findInputSlot(target_slot)
       if (targetIndex == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${targetIndex}`)
+          console.error(`Connect: Error, no slot of name ${targetIndex}`)
         return null
       }
     } else if (target_slot === LiteGraph.EVENT) {
@@ -2728,7 +2719,8 @@ export class LGraphNode
       !target_node.inputs ||
       targetIndex >= target_node.inputs.length
     ) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return null
     }
 
@@ -2955,11 +2947,12 @@ export class LGraphNode
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.outputs || slot >= this.outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return false
     }
 
@@ -3075,19 +3068,19 @@ export class LGraphNode
       slot = this.findInputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.inputs || slot >= this.inputs.length) {
       if (LiteGraph.debug) {
-        console.log('Connect: Error, slot number not found')
+        console.error('Connect: Error, slot number not found')
       }
       return false
     }
 
     const input = this.inputs[slot]
     if (!input) {
-      console.debug('disconnectInput: input not found', slot, this.inputs)
+      // Input not found - already disconnected or doesn't exist
       return false
     }
 
@@ -3116,19 +3109,13 @@ export class LGraphNode
 
         const target_node = graph.getNodeById(link_info.origin_id)
         if (!target_node) {
-          console.debug(
-            'disconnectInput: target node not found',
-            link_info.origin_id
-          )
+          // Target node not found - may have been deleted
           return false
         }
 
         const output = target_node.outputs[link_info.origin_slot]
         if (!output?.links?.length) {
-          console.debug(
-            'disconnectInput: output not found',
-            link_info.origin_slot
-          )
+          // Output not found - may have been removed
           return false
         }
 

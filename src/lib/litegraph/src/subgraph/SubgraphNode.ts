@@ -429,13 +429,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   resolveSubgraphInputLinks(slot: number): ResolvedConnection[] {
     const inputSlot = this.subgraph.inputNode.slots[slot]
     const innerLinks = inputSlot.getLinks()
-    if (innerLinks.length === 0) {
-      console.debug(
-        `[SubgraphNode.resolveSubgraphInputLinks] No inner links found for input slot [${slot}] ${inputSlot.name}`,
-        this
-      )
-      return []
-    }
+    if (innerLinks.length === 0) return []
     return innerLinks.map((link) => link.resolve(this.subgraph))
   }
 
@@ -447,12 +441,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   resolveSubgraphOutputLink(slot: number): ResolvedConnection | undefined {
     const outputSlot = this.subgraph.outputNode.slots[slot]
     const innerLink = outputSlot.getLinks().at(0)
-    if (innerLink) return innerLink.resolve(this.subgraph)
-
-    console.debug(
-      `[SubgraphNode.resolveSubgraphOutputLink] No inner link found for output slot [${slot}] ${outputSlot.name}`,
-      this
-    )
+    return innerLink?.resolve(this.subgraph)
   }
 
   /** @internal Used to flatten the subgraph before execution. */

@@ -187,24 +187,12 @@ export class SubgraphInputNode
     subgraph._version++
 
     const subgraphInput = this.slots.at(subgraphInputIndex)
-    if (!subgraphInput) {
-      console.debug(
-        'disconnectNodeInput: subgraphInput not found',
-        this,
-        subgraphInputIndex
-      )
-      return
-    }
+    if (!subgraphInput) return
 
     // search in the inputs list for this link
     const index = subgraphInput.linkIds.indexOf(link.id)
     if (index !== -1) {
       subgraphInput.linkIds.splice(index, 1)
-    } else {
-      console.debug(
-        'disconnectNodeInput: link ID not found in subgraphInput linkIds',
-        link.id
-      )
     }
 
     node.onConnectionsChange?.(

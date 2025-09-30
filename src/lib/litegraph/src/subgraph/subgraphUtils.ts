@@ -115,10 +115,7 @@ export function getBoundaryLinks(
           if (input.link == null) continue
 
           const resolved = LLink.resolve(input.link, graph)
-          if (!resolved) {
-            console.debug(`Failed to resolve link ID [${input.link}]`)
-            continue
-          }
+          if (!resolved) continue
 
           // Output end of this link is outside the items set
           const { link, outputNode } = resolved
