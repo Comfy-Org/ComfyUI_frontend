@@ -8,6 +8,7 @@
       :placeholder="placeholder || widget.name || ''"
       size="small"
       rows="3"
+      data-capture-wheel="true"
       @update:model-value="onChange"
     />
     <LODFallback />
