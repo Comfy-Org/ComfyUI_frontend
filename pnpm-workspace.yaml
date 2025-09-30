@@ -41,6 +41,7 @@ catalog:
   'vue-eslint-parser': ^10.2.0
   'typescript-eslint': ^8.44.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.0
+  globals: ^15.9.0
 
   # Vue ecosystem
   'vue-router': ^4.4.3
