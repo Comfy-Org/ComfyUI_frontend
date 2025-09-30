@@ -45,6 +45,7 @@
         :widget="widget.simplified"
         :model-value="widget.value"
         :readonly="readonly"
+        :node-data="nodeData"
         class="flex-1"
         @update:model-value="widget.updateHandler"
       />
