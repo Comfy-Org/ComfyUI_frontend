@@ -7,12 +7,14 @@ import type { Point, SlotLayout } from '@/renderer/core/layout/types'
 
 type SlotDragType = 'input' | 'output'
 
-export interface SlotDragSource {
+interface SlotDragSource {
   nodeId: string
   slotIndex: number
   type: SlotDragType
   direction: LinkDirection
   position: Readonly<Point>
+  linkId?: number
+  movingExistingOutput?: boolean
 }
 
 export interface SlotDropCandidate {
