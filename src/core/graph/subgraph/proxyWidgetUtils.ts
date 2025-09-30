@@ -13,7 +13,7 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 function pushWidgets(node: SubgraphNode, ...widgets: [string, string][]) {
   const pw = getProxyWidgets(node)
   pw.push(...widgets)
-  node.properties.proxyWidgets = JSON.stringify(pw)
+  node.properties.proxyWidgets = pw
 }
 function getProxyWidgets(node: SubgraphNode) {
   return parseProxyWidgets(node.properties.proxyWidgets)
@@ -42,7 +42,7 @@ export function demoteWidget(
     const pw = getProxyWidgets(parent).filter(
       ([id, name]) => node.id != id || widget.name !== name
     )
-    parent.properties.proxyWidgets = JSON.stringify(pw)
+    parent.properties.proxyWidgets = pw
   }
   widget.promoted = false
 }
@@ -118,5 +118,5 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     `${n.id}`,
     w.name
   ])
-  subgraphNode.properties.proxyWidgets = JSON.stringify(pw)
+  subgraphNode.properties.proxyWidgets = pw
 }

@@ -93,7 +93,7 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
       console.error('Attempted to toggle widgets with no node selected')
       return
     }
-    node.properties.proxyWidgets = JSON.stringify(value)
+    node.properties.proxyWidgets = value
   }
 }))
 

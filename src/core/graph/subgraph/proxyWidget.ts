@@ -71,7 +71,7 @@ const onConfigure = function (
 
   const canvasStore = useCanvasStore()
   //Must give value to proxyWidgets prior to defining or it won't serialize
-  this.properties.proxyWidgets ??= '[]'
+  this.properties.proxyWidgets ??= []
   let proxyWidgets = this.properties.proxyWidgets
 
   originalOnConfigure?.call(this, serialisedNode)

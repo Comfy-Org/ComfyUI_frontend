@@ -9,13 +9,7 @@ export type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
 export function parseProxyWidgets(
   property: NodeProperty | undefined
 ): ProxyWidgetsProperty {
-  if (typeof property !== 'string') {
-    throw new Error(
-      'Invalid assignment for properties.proxyWidgets:\nValue must be a string'
-    )
-  }
-  const parsed = JSON.parse(property)
-  const result = proxyWidgetsPropertySchema.safeParse(parsed)
+  const result = proxyWidgetsPropertySchema.safeParse(property)
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
