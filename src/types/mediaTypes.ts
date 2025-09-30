@@ -3,15 +3,15 @@
  * Single source of truth for supported media formats
  */
 
-export type MediaKind = 'image' | 'video' | 'audio' | 'unknown'
+type MediaKind = 'image' | 'video' | 'audio' | 'unknown'
 
-export const MEDIA_EXTENSIONS = {
+const MEDIA_EXTENSIONS = {
   image: ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'] as const,
   video: ['.mp4', '.webm', '.mov', '.avi'] as const,
   audio: ['.mp3', '.wav', '.ogg', '.flac'] as const
 } as const
 
-export const MEDIA_MIME_TYPES = {
+const MEDIA_MIME_TYPES = {
   image: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const,
   video: ['video/mp4', 'video/webm'] as const,
   audio: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac'] as const
@@ -36,7 +36,7 @@ export function getAcceptString(kind: MediaKind): string | undefined {
 /**
  * Detect media type from URL or filename
  */
-export function getMediaKindFromUrl(url: string): MediaKind {
+function getMediaKindFromUrl(url: string): MediaKind {
   if (!url) return 'unknown'
 
   try {
@@ -75,11 +75,4 @@ export function getMediaKindFromUrl(url: string): MediaKind {
  */
 export function isVideoUrl(url: string): boolean {
   return getMediaKindFromUrl(url) === 'video'
-}
-
-/**
- * Check if URL is an image
- */
-export function isImageUrl(url: string): boolean {
-  return getMediaKindFromUrl(url) === 'image'
 }
