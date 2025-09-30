@@ -727,7 +727,7 @@ test.describe('Subgraph Operations', () => {
         {
           commandId: 'Comfy.Graph.ExitSubgraph',
           combo: {
-            key: 'q',
+            key: 'KeyQ',
             ctrl: false,
             alt: true,
             shift: false

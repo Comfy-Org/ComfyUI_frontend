@@ -10,7 +10,7 @@ test.describe('Keybindings', () => {
   test('Should not trigger non-modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'k' }, () => {
+    await comfyPage.registerKeybinding({ key: 'KeyK' }, () => {
       window['TestCommand'] = true
     })
 
@@ -26,7 +26,7 @@ test.describe('Keybindings', () => {
   test('Should not trigger modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'k', ctrl: true }, () => {
+    await comfyPage.registerKeybinding({ key: 'KeyK', ctrl: true }, () => {
       window['TestCommand'] = true
     })
 
