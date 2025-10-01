@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core'
+import { refDebounced, watchDebounced } from '@vueuse/core'
 import {
   computed,
   customRef,
   onBeforeUnmount,
   onMounted,
   ref,
-  triggerRef,
-  watch
+  triggerRef
 } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -198,9 +197,13 @@ function setDraggableState() {
     }
   )
 }
-watch(filteredActive, () => {
-  setTimeout(setDraggableState, 100)
-})
+watchDebounced(
+  [filteredActive, debouncedQuery],
+  () => {
+    setDraggableState()
+  },
+  { debounce: 100 }
+)
 onMounted(() => {
   setDraggableState()
 })
@@ -229,7 +232,7 @@ onBeforeUnmount(() => {
         {{ $t('subgraphStore.hideAll') }}</a
       >
     </div>
-    <div v-if="debouncedQuery" class="w-full">
+    <div ref="draggableItems">
       <div
         v-for="widgetItem in filteredActive"
         :key="toKey(widgetItem)"
@@ -239,21 +242,7 @@ onBeforeUnmount(() => {
           :node-title="widgetItem[0].title"
           :widget-name="widgetItem[1].name"
           :is-shown="true"
-          @toggle-visibility="demote(widgetItem)"
-        />
-      </div>
-    </div>
-    <div v-else ref="draggableItems" class="w-full">
-      <div
-        v-for="widgetItem in filteredActive"
-        :key="toKey(widgetItem)"
-        class="w-full"
-      >
-        <SubgraphNodeWidget
-          :node-title="widgetItem[0].title"
-          :widget-name="widgetItem[1].name"
-          :is-shown="true"
-          :is-draggable="true"
+          :is-draggable="!debouncedQuery"
           @toggle-visibility="demote(widgetItem)"
         />
       </div>
