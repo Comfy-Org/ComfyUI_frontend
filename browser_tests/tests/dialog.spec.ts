@@ -290,7 +290,7 @@ test.describe('Settings', () => {
     const expectedSetting: Keybinding = {
       commandId: 'Comfy.NewBlankWorkflow',
       combo: {
-        key: 'KeyN',
+        key: 'n',
         ctrl: false,
         alt: true,
         shift: false

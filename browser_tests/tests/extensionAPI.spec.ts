@@ -69,7 +69,7 @@ test.describe('Topbar commands', () => {
         ],
         keybindings: [
           {
-            combo: { key: 'KeyK' },
+            combo: { key: 'k' },
             commandId: 'TestCommand'
           }
         ]
