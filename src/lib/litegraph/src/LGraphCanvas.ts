@@ -1,7 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import {
   type LinkRenderContext,
   LitegraphLinkAdapter
@@ -17,6 +16,7 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
 import { LLink, type LinkId } from './LLink'
 import { Reroute, type RerouteId } from './Reroute'
+import { LinkConnector } from './canvas/LinkConnector'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import type {
@@ -25,6 +25,7 @@ import type {
 } from './infrastructure/CustomEventTarget'
 import type { LGraphCanvasEventMap } from './infrastructure/LGraphCanvasEventMap'
 import { NullGraphError } from './infrastructure/NullGraphError'
+import { Rectangle } from './infrastructure/Rectangle'
 import type {
   CanvasColour,
   ColorOption,
@@ -51,7 +52,7 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import { LiteGraph, Rectangle, SubgraphNode, createUuidv4 } from './litegraph'
+import { LiteGraph } from './litegraph'
 import {
   containsRect,
   createBounds,
@@ -66,6 +67,7 @@ import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphNode } from './subgraph/SubgraphNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
   CanvasPointerEvent,
@@ -87,6 +89,7 @@ import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
+import { createUuidv4 } from './utils/uuid'
 import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -235,11 +238,11 @@ export class LGraphCanvas
   implements CustomEventDispatcher<LGraphCanvasEventMap>
 {
   // Optimised buffers used during rendering
-  static #temp = new Rectangle()
-  static #temp_vec2: Point = [0, 0]
-  static #tmp_area = new Rectangle()
-  static #margin_area = new Rectangle()
-  static #link_bounding = new Rectangle()
+  private static temp = new Rectangle()
+  private static temp_vec2: Point = [0, 0]
+  private static tmp_area = new Rectangle()
+  private static margin_area = new Rectangle()
+  private static link_bounding = new Rectangle()
 
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
@@ -5203,7 +5206,7 @@ export class LGraphCanvas
 
     // clip if required (mask)
     const shape = node._shape || RenderShape.BOX
-    const size = LGraphCanvas.#temp_vec2
+    const size = LGraphCanvas.temp_vec2
     size.splice(0, 2, ...node.renderingSize)
 
     if (node.collapsed) {
@@ -5398,7 +5401,7 @@ export class LGraphCanvas
         : true
 
     // Normalised node dimensions
-    const area = LGraphCanvas.#tmp_area
+    const area = LGraphCanvas.tmp_area
     area.set(node.boundingRect)
     area[0] -= node.pos[0]
     area[1] -= node.pos[1]
@@ -5500,7 +5503,7 @@ export class LGraphCanvas
     item: Positionable,
     shape = RenderShape.ROUND
   ) {
-    const snapGuide = LGraphCanvas.#temp
+    const snapGuide = LGraphCanvas.temp
     snapGuide.set(item.boundingRect)
 
     // Not all items have pos equal to top-left of bounds
@@ -5547,10 +5550,10 @@ export class LGraphCanvas
 
     const now = LiteGraph.getTime()
     const { visible_area } = this
-    LGraphCanvas.#margin_area[0] = visible_area[0] - 20
-    LGraphCanvas.#margin_area[1] = visible_area[1] - 20
-    LGraphCanvas.#margin_area[2] = visible_area[2] + 40
-    LGraphCanvas.#margin_area[3] = visible_area[3] + 40
+    LGraphCanvas.margin_area[0] = visible_area[0] - 20
+    LGraphCanvas.margin_area[1] = visible_area[1] - 20
+    LGraphCanvas.margin_area[2] = visible_area[2] + 40
+    LGraphCanvas.margin_area[3] = visible_area[3] + 40
 
     // draw connections
     ctx.lineWidth = this.connections_width
@@ -5771,17 +5774,15 @@ export class LGraphCanvas
     // Bounding box of all points (bezier overshoot on long links will be cut)
     const pointsX = points.map((x) => x[0])
     const pointsY = points.map((x) => x[1])
-    LGraphCanvas.#link_bounding[0] = Math.min(...pointsX)
-    LGraphCanvas.#link_bounding[1] = Math.min(...pointsY)
-    LGraphCanvas.#link_bounding[2] =
-      Math.max(...pointsX) - LGraphCanvas.#link_bounding[0]
-    LGraphCanvas.#link_bounding[3] =
-      Math.max(...pointsY) - LGraphCanvas.#link_bounding[1]
+    LGraphCanvas.link_bounding[0] = Math.min(...pointsX)
+    LGraphCanvas.link_bounding[1] = Math.min(...pointsY)
+    LGraphCanvas.link_bounding[2] =
+      Math.max(...pointsX) - LGraphCanvas.link_bounding[0]
+    LGraphCanvas.link_bounding[3] =
+      Math.max(...pointsY) - LGraphCanvas.link_bounding[1]
 
     // skip links outside of the visible area of the canvas
-    if (
-      !overlapBounding(LGraphCanvas.#link_bounding, LGraphCanvas.#margin_area)
-    )
+    if (!overlapBounding(LGraphCanvas.link_bounding, LGraphCanvas.margin_area))
       return
 
     const start_dir = startDirection || LinkDirection.RIGHT
