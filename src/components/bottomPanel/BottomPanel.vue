@@ -16,14 +16,25 @@
               :key="tab.id"
               :value="tab.id"
               class="border-none m-1 mx-2"
+              :class="{
+                'tab-list-single-item':
+                  bottomPanelStore.bottomPanelTabs.length === 1
+              }"
               :pt:root="
                 (x: TabPassThroughMethodOptions) => ({
-                  class: 'p-3 rounded-lg',
-                  style:
-                    'color: var(--fg-color);' +
-                    (x.context.active
-                      ? 'background-color: var(--bg-color)'
-                      : '')
+                  class: {
+                    'p-3 rounded-lg': true,
+                    'pointer-events-none':
+                      bottomPanelStore.bottomPanelTabs.length === 1
+                  },
+                  style: {
+                    color: 'var(--fg-color)',
+                    backgroundColor:
+                      !x.context.active ||
+                      bottomPanelStore.bottomPanelTabs.length === 1
+                        ? ''
+                        : 'var(--bg-color)'
+                  }
                 })
               "
             >
