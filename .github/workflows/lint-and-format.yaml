@@ -15,9 +15,7 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
