@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { type ComputedRef, computed, inject, ref } from 'vue'
 
-import { isVideoUrl } from '@/types/mediaTypes'
+import type { AssetKind } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { LayoutMode } from './types'
@@ -24,8 +24,11 @@ const emit = defineEmits<{
 
 const actualDimensions = ref<string | null>(null)
 
-// Detect if the source is a video
-const isVideo = computed(() => isVideoUrl(props.mediaSrc))
+// Inject assetKind from WidgetSelectDropdown
+const assetKind = inject<ComputedRef<AssetKind | undefined>>('assetKind')
+
+// Determine if this is a video based on the widget spec, not URL
+const isVideo = computed(() => assetKind?.value === 'video')
 
 function handleClick() {
   emit('click', props.index)

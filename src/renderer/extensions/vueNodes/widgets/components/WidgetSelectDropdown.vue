@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
@@ -31,6 +31,12 @@ const props = defineProps<{
   allowUpload?: boolean
   uploadFolder?: ResultItemType
 }>()
+
+// Provide assetKind to descendant components
+provide(
+  'assetKind',
+  computed(() => props.assetKind)
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number | undefined]
