@@ -19,8 +19,8 @@ import { isInRectangle } from '@/lib/litegraph/src/measure'
  * - {@link size}: The size of the rectangle.
  */
 export class Rectangle extends Float32Array {
-  #pos: Point | undefined
-  #size: Size | undefined
+  #pos: Float32Array<ArrayBuffer> | undefined
+  #size: Float32Array<ArrayBuffer> | undefined
 
   constructor(
     x: number = 0,
@@ -78,8 +78,8 @@ export class Rectangle extends Float32Array {
    * Updating the values of the returned object will update this rectangle.
    */
   get pos(): Point {
-    this.#pos ??= [...this.subarray(0, 2)] as Point
-    return this.#pos!
+    this.#pos ??= this.subarray(0, 2)
+    return this.#pos! as unknown as Point
   }
 
   set pos(value: Readonly<Point>) {
@@ -93,8 +93,8 @@ export class Rectangle extends Float32Array {
    * Updating the values of the returned object will update this rectangle.
    */
   get size(): Size {
-    this.#size ??= [...this.subarray(2, 4)] as Size
-    return this.#size!
+    this.#size ??= this.subarray(2, 4)
+    return this.#size! as unknown as Size
   }
 
   set size(value: Readonly<Size>) {
