@@ -6,10 +6,16 @@ const key = 'global-subgraph-node-config'
 export function showSubgraphNodeDialog() {
   const dialogStore = useDialogStore()
   const dialogComponentProps: DialogComponentProps = {
-    headless: true,
     modal: false,
-    closable: false,
-    position: 'right'
+    position: 'topright',
+    pt: {
+      root: {
+        class: 'bg-pure-white dark-theme:bg-charcoal-800 mt-12'
+      },
+      header: {
+        class: 'h-8 text-xs ml-3'
+      }
+    }
   }
   dialogStore.showDialog({
     title: 'Parameters',
