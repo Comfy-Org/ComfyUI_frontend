@@ -1,3 +1,4 @@
+import SubgraphNode from '@/core/graph/subgraph/SubgraphNode.vue'
 import { type DialogComponentProps, useDialogStore } from '@/stores/dialogStore'
 
 const key = 'global-subgraph-node-config'
@@ -10,13 +11,10 @@ export function showSubgraphNodeDialog() {
     closable: false,
     position: 'right'
   }
-  //FIXME: the vuedraggable import has unknown sideffects that break tests.
-  void import('@/core/graph/subgraph/SubgraphNode.vue').then((SubgraphNode) => {
-    dialogStore.showDialog({
-      title: 'Parameters',
-      key,
-      component: SubgraphNode.default,
-      dialogComponentProps
-    })
+  dialogStore.showDialog({
+    title: 'Parameters',
+    key,
+    component: SubgraphNode,
+    dialogComponentProps
   })
 }

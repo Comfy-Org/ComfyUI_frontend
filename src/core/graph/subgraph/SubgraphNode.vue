@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core'
-import { computed, customRef, ref, triggerRef } from 'vue'
-import draggable from 'vuedraggable'
+import {
+  computed,
+  customRef,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  triggerRef,
+  watch
+} from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
@@ -22,10 +29,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { DraggableList } from '@/scripts/ui/draggableList'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const canvasStore = useCanvasStore()
 
+const draggableList = ref<DraggableList | undefined>(undefined)
+const draggableItems = ref()
 const searchQuery = ref<string>('')
 const debouncedQuery = refDebounced(searchQuery, 200)
 const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
@@ -169,6 +179,34 @@ function showRecommended() {
   widgets.push(...toAdd)
   proxyWidgets.value = widgets
 }
+
+function setDraggableState() {
+  draggableList.value?.dispose()
+  if (debouncedQuery.value || !draggableItems.value?.children?.length) return
+  draggableList.value = new DraggableList(
+    draggableItems.value,
+    '.draggable-item'
+  )
+  draggableList.value.addEventListener(
+    'dragend',
+    // @ts-expect-error fixme ts strict error
+    ({ detail: { oldPosition, newPosition } }) => {
+      const aw = activeWidgets.value
+      const [w] = aw.splice(oldPosition, 1)
+      aw.splice(newPosition, 0, w)
+      activeWidgets.value = aw
+    }
+  )
+}
+watch(filteredActive, () => {
+  setTimeout(setDraggableState, 100)
+})
+onMounted(() => {
+  setDraggableState()
+})
+onBeforeUnmount(() => {
+  draggableList.value?.dispose()
+})
 </script>
 <template>
   <SearchBox
@@ -205,26 +243,21 @@ function showRecommended() {
         />
       </div>
     </div>
-    <draggable
-      v-else
-      v-model="activeWidgets"
-      group="enabledWidgets"
-      class="w-full cursor-grab"
-      chosen-class="cursor-grabbing"
-      drag-class="cursor-grabbing"
-      :animation="100"
-      item-key="id"
-    >
-      <template #item="{ element }">
+    <div v-else ref="draggableItems" class="w-full">
+      <div
+        v-for="widgetItem in filteredActive"
+        :key="toKey(widgetItem)"
+        class="w-full"
+      >
         <SubgraphNodeWidget
-          :node-title="element[0].title"
-          :widget-name="element[1].name"
+          :node-title="widgetItem[0].title"
+          :widget-name="widgetItem[1].name"
           :is-shown="true"
           :is-draggable="true"
-          @toggle-visibility="demote(element)"
+          @toggle-visibility="demote(widgetItem)"
         />
-      </template>
-    </draggable>
+      </div>
+    </div>
   </div>
   <div v-if="filteredCandidates.length" class="pt-1 pb-4">
     <div class="flex py-0 px-4 justify-between">
