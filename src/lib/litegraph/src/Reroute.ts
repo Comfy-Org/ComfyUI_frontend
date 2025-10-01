@@ -49,8 +49,6 @@ export class Reroute
     return Reroute.radius + gap + Reroute.slotRadius
   }
 
-  #malloc: number[] = [0, 0, 0, 0, 0, 0, 0, 0]
-
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   #network: WeakRef<LinkNetwork>
 
@@ -73,7 +71,7 @@ export class Reroute
   /** This property is only defined on the last reroute of a floating reroute chain (closest to input end). */
   floating?: FloatingRerouteSlot
 
-  #pos = [this.#malloc[0], this.#malloc[1]] as Point
+  #pos: Point = [0, 0]
   /** @inheritdoc */
   get pos(): Point {
     return this.#pos
@@ -126,14 +124,14 @@ export class Reroute
   sin: number = 0
 
   /** Bezier curve control point for the "target" (input) side of the link */
-  controlPoint: Point = [this.#malloc[4], this.#malloc[5]] as Point
+  controlPoint: Point = [0, 0]
 
   /** @inheritdoc */
   path?: Path2D
   /** @inheritdoc */
   _centreAngle?: number
   /** @inheritdoc */
-  _pos: Point = [this.#malloc[6], this.#malloc[7]] as Point
+  _pos: Point = [0, 0]
 
   /** @inheritdoc */
   _dragging?: boolean

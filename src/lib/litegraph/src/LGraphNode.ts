@@ -441,10 +441,10 @@ export class LGraphNode
     return [posX - bX, posY - bY]
   }
 
-  /** {@link pos} and {@link size} values are backed by this {@link Rect}. */
-  _posSize: Rect = [0, 0, 0, 0]
-  _pos: Point = [this._posSize[0], this._posSize[1]] as Point
-  _size: Size = [this._posSize[2], this._posSize[3]] as Size
+  /** {@link pos} and {@link size} values are backed by this {@link Rectangle}. */
+  _posSize = new Rectangle()
+  _pos: Point = this._posSize.pos
+  _size: Size = this._posSize.size
 
   public get pos() {
     return this._pos
