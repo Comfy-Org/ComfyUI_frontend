@@ -412,7 +412,7 @@ export class LGraphNode
   }
 
   /** @inheritdoc {@link renderArea} */
-  #renderArea: Float32Array = new Float32Array(4)
+  #renderArea: Rectangle = new Rectangle()
   /**
    * Rect describing the node area, including shadows and any protrusions.
    * Determines if the node is visible.  Calculated once at the start of every frame.
@@ -442,9 +442,9 @@ export class LGraphNode
   }
 
   /** {@link pos} and {@link size} values are backed by this {@link Rect}. */
-  _posSize: Float32Array = new Float32Array(4)
-  _pos: Point = [...this._posSize.subarray(0, 2)] as Point
-  _size: Size = [...this._posSize.subarray(2, 4)] as Size
+  _posSize: Rect = [0, 0, 0, 0]
+  _pos: Point = [this._posSize[0], this._posSize[1]] as Point
+  _size: Size = [this._posSize[2], this._posSize[3]] as Size
 
   public get pos() {
     return this._pos
@@ -2003,13 +2003,13 @@ export class LGraphNode
 
   /**
    * returns the bounding of the object, used for rendering purposes
-   * @param out {Float32Array[4]?} [optional] a place to store the output, to free garbage
+   * @param out {Rect?} [optional] a place to store the output, to free garbage
    * @param includeExternal {boolean?} [optional] set to true to
    * include the shadow and connection points in the bounding calculation
    * @returns the bounding box in format of [topleft_cornerx, topleft_cornery, width, height]
    */
   getBounding(out?: Rect, includeExternal?: boolean): Rect {
-    out ||= new Float32Array(4)
+    out ||= [0, 0, 0, 0]
 
     const rect = includeExternal ? this.renderArea : this.boundingRect
     out[0] = rect[0]

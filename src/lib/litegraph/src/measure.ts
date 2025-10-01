@@ -325,7 +325,7 @@ export function createBounds(
   objects: Iterable<HasBoundingRect>,
   padding: number = 10
 ): ReadOnlyRect | null {
-  const bounds = new Float32Array([Infinity, Infinity, -Infinity, -Infinity])
+  const bounds: Rect = [Infinity, Infinity, -Infinity, -Infinity]
 
   for (const obj of objects) {
     const rect = obj.boundingRect

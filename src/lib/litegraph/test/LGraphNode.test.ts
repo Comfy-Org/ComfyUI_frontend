@@ -84,8 +84,8 @@ describe('LGraphNode', () => {
       }))
     }
     node.configure(configureData)
-    expect(node.pos).toEqual(new Float32Array([50, 60]))
-    expect(node.size).toEqual(new Float32Array([70, 80]))
+    expect(node.pos).toEqual([50, 60])
+    expect(node.size).toEqual([70, 80])
   })
 
   test('should configure inputs correctly', () => {
@@ -571,7 +571,7 @@ describe('LGraphNode', () => {
         name: 'test_in',
         type: 'string',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: [0, 0, 0, 0]
       }
     })
     test('should return position based on title height when collapsed', () => {
@@ -590,11 +590,11 @@ describe('LGraphNode', () => {
 
     test('should return default vertical position when input.pos is undefined and not collapsed', () => {
       node.flags.collapsed = false
-      const inputSlot2 = {
+      const inputSlot2: INodeInputSlot = {
         name: 'test_in_2',
         type: 'number',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: [0, 0, 0, 0]
       }
       node.inputs = [inputSlot, inputSlot2]
       const slotIndex = 0
@@ -629,13 +629,13 @@ describe('LGraphNode', () => {
         name: 'in0',
         type: 'string',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: [0, 0, 0, 0]
       }
       const input1: INodeInputSlot = {
         name: 'in1',
         type: 'number',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0]),
+        boundingRect: [0, 0, 0, 0],
         pos: [5, 45]
       }
       node.inputs = [input0, input1]

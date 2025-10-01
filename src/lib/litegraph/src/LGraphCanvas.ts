@@ -2633,7 +2633,7 @@ export class LGraphCanvas
     pointer: CanvasPointer,
     node?: LGraphNode | undefined
   ): void {
-    const dragRect = new Float32Array(4)
+    const dragRect: Rect = [0, 0, 0, 0]
 
     dragRect[0] = e.canvasX
     dragRect[1] = e.canvasY
@@ -4076,7 +4076,7 @@ export class LGraphCanvas
     this.setDirty(true)
   }
 
-  #handleMultiSelect(e: CanvasPointerEvent, dragRect: Float32Array) {
+  #handleMultiSelect(e: CanvasPointerEvent, dragRect: Rect) {
     // Process drag
     // Convert Point pair (pos, offset) to Rect
     const { graph, selectedItems, subgraph } = this
