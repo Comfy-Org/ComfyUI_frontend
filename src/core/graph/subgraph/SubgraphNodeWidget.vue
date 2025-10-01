@@ -18,7 +18,7 @@ function classes() {
     'flex py-1 pr-4 pl-0 break-all rounded items-center gap-1',
     'bg-pure-white dark-theme:bg-charcoal-800',
     props.isDraggable
-      ? 'drag-handle draggable-item cursor-grab [.is-draggable]:cursor-grabbing'
+      ? 'drag-handle cursor-grab [.is-draggable]:cursor-grabbing'
       : ''
   )
 }

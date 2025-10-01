@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { refDebounced, watchDebounced } from '@vueuse/core'
+import { refDebounced } from '@vueuse/core'
 import {
   computed,
   customRef,
   onBeforeUnmount,
   onMounted,
   ref,
-  triggerRef
+  triggerRef,
+  watch
 } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -186,24 +187,41 @@ function setDraggableState() {
     draggableItems.value,
     '.draggable-item'
   )
-  draggableList.value.addEventListener(
-    'dragend',
-    // @ts-expect-error fixme ts strict error
-    ({ detail: { oldPosition, newPosition } }) => {
-      const aw = activeWidgets.value
-      const [w] = aw.splice(oldPosition, 1)
-      aw.splice(newPosition, 0, w)
-      activeWidgets.value = aw
+  //Original implementation plays really poorly with vue,
+  //It has been modified to not add/remove elements
+  draggableList.value.applyNewItemsOrder = function () {
+    const reorderedItems = []
+
+    let oldPosition = -1
+    this.getAllItems().forEach((item, index) => {
+      if (item === this.draggableItem) {
+        oldPosition = index
+        return
+      }
+      if (!this.isItemToggled(item)) {
+        reorderedItems[index] = item
+        return
+      }
+      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
+      reorderedItems[newIndex] = item
+    })
+
+    for (let index = 0; index < this.getAllItems().length; index++) {
+      const item = reorderedItems[index]
+      if (typeof item === 'undefined') {
+        reorderedItems[index] = this.draggableItem
+      }
     }
-  )
+    const newPosition = reorderedItems.indexOf(this.draggableItem)
+    const aw = activeWidgets.value
+    const [w] = aw.splice(oldPosition, 1)
+    aw.splice(newPosition, 0, w)
+    activeWidgets.value = aw
+  }
 }
-watchDebounced(
-  [filteredActive, debouncedQuery],
-  () => {
-    setDraggableState()
-  },
-  { debounce: 100 }
-)
+watch(filteredActive, () => {
+  setDraggableState()
+})
 onMounted(() => {
   setDraggableState()
 })
@@ -234,16 +252,17 @@ onBeforeUnmount(() => {
     </div>
     <div ref="draggableItems">
       <div
-        v-for="widgetItem in filteredActive"
-        :key="toKey(widgetItem)"
-        class="w-full"
+        v-for="[node, widget] in filteredActive"
+        :key="toKey([node, widget])"
+        class="w-full draggable-item"
+        style=""
       >
         <SubgraphNodeWidget
-          :node-title="widgetItem[0].title"
-          :widget-name="widgetItem[1].name"
+          :node-title="node.title"
+          :widget-name="widget.name"
           :is-shown="true"
           :is-draggable="!debouncedQuery"
-          @toggle-visibility="demote(widgetItem)"
+          @toggle-visibility="demote([node, widget])"
         />
       </div>
     </div>
@@ -261,14 +280,14 @@ onBeforeUnmount(() => {
       >
     </div>
     <div
-      v-for="widgetItem in filteredCandidates"
-      :key="toKey(widgetItem)"
+      v-for="[node, widget] in filteredCandidates"
+      :key="toKey([node, widget])"
       class="w-full"
     >
       <SubgraphNodeWidget
-        :node-title="widgetItem[0].title"
-        :widget-name="widgetItem[1].name"
-        @toggle-visibility="promote(widgetItem)"
+        :node-title="node.title"
+        :widget-name="widget.name"
+        @toggle-visibility="promote([node, widget])"
       />
     </div>
   </div>
