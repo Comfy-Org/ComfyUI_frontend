@@ -10,6 +10,7 @@
       :pt="{
         option: 'text-xs'
       }"
+      data-capture-wheel="true"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>
