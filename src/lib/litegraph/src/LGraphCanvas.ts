@@ -5617,7 +5617,9 @@ export class LGraphCanvas
           const { link, inputNode, input } = resolved
           if (!inputNode || !input) continue
 
-          const endPos = inputNode.getInputPos(link.target_slot)
+          const endPos = LiteGraph.vueNodesMode
+            ? getSlotPosition(inputNode, link.target_slot, true)
+            : inputNode.getInputPos(link.target_slot)
 
           this.#renderAllLinkSegments(
             ctx,
@@ -5642,7 +5644,9 @@ export class LGraphCanvas
         const { link, outputNode, output } = resolved
         if (!outputNode || !output) continue
 
-        const startPos = outputNode.getOutputPos(link.origin_slot)
+        const startPos = LiteGraph.vueNodesMode
+          ? getSlotPosition(outputNode, link.origin_slot, false)
+          : outputNode.getOutputPos(link.origin_slot)
 
         this.#renderAllLinkSegments(
           ctx,
