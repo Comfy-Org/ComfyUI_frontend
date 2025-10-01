@@ -8,10 +8,8 @@
     text
     :pt="{
       root: {
-        class: `side-bar-button ${
-          selected
-            ? 'p-button-primary side-bar-button-selected'
-            : 'p-button-secondary'
+        class: `side-bar-button p-button-secondary ${
+          selected ? 'side-bar-button-selected' : ''
         }`,
         'aria-label': computedTooltip
       }
@@ -87,9 +85,13 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
   font-size: var(--sidebar-icon-size) !important;
 }
 
+.side-bar-button-selected {
+  background-color: var(--content-hover-bg);
+  color: var(--content-hover-fg);
+}
+
 .side-bar-button-selected .side-bar-button-icon {
   font-size: var(--sidebar-icon-size) !important;
-  font-weight: 700;
 }
 </style>
 
