@@ -47,7 +47,6 @@ import type {
   NullableProperties,
   Point,
   Positionable,
-  ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
   Size
@@ -236,11 +235,11 @@ export class LGraphCanvas
   implements CustomEventDispatcher<LGraphCanvasEventMap>
 {
   // Optimised buffers used during rendering
-  static #temp = new Float32Array(4)
+  static #temp = new Rectangle()
   static #temp_vec2: Point = [0, 0]
-  static #tmp_area = new Float32Array(4)
-  static #margin_area = new Float32Array(4)
-  static #link_bounding = new Float32Array(4)
+  static #tmp_area = new Rectangle()
+  static #margin_area = new Rectangle()
+  static #link_bounding = new Rectangle()
 
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
@@ -628,7 +627,7 @@ export class LGraphCanvas
   dirty_area?: Rect | null
   /** @deprecated Unused */
   node_in_panel?: LGraphNode | null
-  last_mouse: ReadOnlyPoint = [0, 0]
+  last_mouse: Readonly<Point> = [0, 0]
   last_mouseclick: number = 0
   graph: LGraph | Subgraph | null
   get _graph(): LGraph | Subgraph {
@@ -3174,7 +3173,7 @@ export class LGraphCanvas
 
     LGraphCanvas.active_canvas = this
     this.adjustMouseEvent(e)
-    const mouse: ReadOnlyPoint = [e.clientX, e.clientY]
+    const mouse: Readonly<Point> = [e.clientX, e.clientY]
     this.mouse[0] = mouse[0]
     this.mouse[1] = mouse[1]
     const delta = [mouse[0] - this.last_mouse[0], mouse[1] - this.last_mouse[1]]
@@ -4848,7 +4847,7 @@ export class LGraphCanvas
   }
 
   /** Get the target snap / highlight point in graph space */
-  #getHighlightPosition(): ReadOnlyPoint {
+  #getHighlightPosition(): Readonly<Point> {
     return LiteGraph.snaps_for_comfy
       ? this.linkConnector.state.snapLinksPos ??
           this._highlight_pos ??
@@ -4863,7 +4862,7 @@ export class LGraphCanvas
    */
   #renderSnapHighlight(
     ctx: CanvasRenderingContext2D,
-    highlightPos: ReadOnlyPoint
+    highlightPos: Readonly<Point>
   ): void {
     const linkConnectorSnap = !!this.linkConnector.state.snapLinksPos
     if (!this._highlight_pos && !linkConnectorSnap) return
@@ -5942,8 +5941,8 @@ export class LGraphCanvas
    */
   renderLink(
     ctx: CanvasRenderingContext2D,
-    a: ReadOnlyPoint,
-    b: ReadOnlyPoint,
+    a: Readonly<Point>,
+    b: Readonly<Point>,
     link: LLink | null,
     skip_border: boolean,
     flow: number | null,
@@ -5960,9 +5959,9 @@ export class LGraphCanvas
       /** When defined, render data will be saved to this reroute instead of the {@link link}. */
       reroute?: Reroute
       /** Offset of the bezier curve control point from {@link a point a} (output side) */
-      startControl?: ReadOnlyPoint
+      startControl?: Readonly<Point>
       /** Offset of the bezier curve control point from {@link b point b} (input side) */
-      endControl?: ReadOnlyPoint
+      endControl?: Readonly<Point>
       /** Number of sublines (useful to represent vec3 or rgb) @todo If implemented, refactor calculations out of the loop */
       num_sublines?: number
       /** Whether this is a floating link segment */

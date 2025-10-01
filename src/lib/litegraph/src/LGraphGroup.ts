@@ -13,7 +13,7 @@ import type {
   Positionable,
   Size
 } from './interfaces'
-import { LiteGraph } from './litegraph'
+import { LiteGraph, Rectangle } from './litegraph'
 import {
   containsCentre,
   containsRect,
@@ -40,12 +40,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   title: string
   font?: string
   font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
-  _bounding: Float32Array = new Float32Array([
-    10,
-    10,
-    LGraphGroup.minWidth,
-    LGraphGroup.minHeight
-  ])
+  _bounding = new Rectangle(10, 10, LGraphGroup.minWidth, LGraphGroup.minHeight)
 
   _pos: Point = [...this._bounding.subarray(0, 2)] as Point
   _size: Size = [...this._bounding.subarray(2, 4)] as Size

@@ -1,9 +1,7 @@
 import type {
   CompassCorners,
   Point,
-  ReadOnlyPoint,
   ReadOnlyRect,
-  ReadOnlySize,
   ReadOnlyTypedArray,
   Size
 } from '@/lib/litegraph/src/interfaces'
@@ -12,15 +10,15 @@ import { isInRectangle } from '@/lib/litegraph/src/measure'
 /**
  * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
  *
- * This class is a subclass of Float64Array, and so has all the methods of that class.  Notably,
+ * This class is a subclass of Float32Array, and so has all the methods of that class.  Notably,
  * {@link Rectangle.from} can be used to convert a {@link ReadOnlyRect}. Typing of this however,
- * is broken due to the base TS lib returning Float64Array rather than `this`.
+ * is broken due to the base TS lib returning Float32Array rather than `this`.
  *
- * Sub-array properties ({@link Float64Array.subarray}):
+ * Sub-array properties ({@link Float32Array.subarray}):
  * - {@link pos}: The position of the top-left corner of the rectangle.
  * - {@link size}: The size of the rectangle.
  */
-export class Rectangle extends Float64Array {
+export class Rectangle extends Float32Array {
   #pos: Point | undefined
   #size: Size | undefined
 
@@ -50,7 +48,7 @@ export class Rectangle extends Float64Array {
    * @returns A new rectangle whose centre is at {@link x}
    */
   static fromCentre(
-    [x, y]: ReadOnlyPoint,
+    [x, y]: Readonly<Point>,
     width: number,
     height = width
   ): Rectangle {
@@ -68,10 +66,10 @@ export class Rectangle extends Float64Array {
   override subarray(
     begin: number = 0,
     end?: number
-  ): Float64Array<ArrayBuffer> {
+  ): Float32Array<ArrayBuffer> {
     const byteOffset = begin << 3
     const length = end === undefined ? end : end - begin
-    return new Float64Array(this.buffer, byteOffset, length)
+    return new Float32Array(this.buffer, byteOffset, length)
   }
 
   /**
@@ -84,7 +82,7 @@ export class Rectangle extends Float64Array {
     return this.#pos!
   }
 
-  set pos(value: ReadOnlyPoint) {
+  set pos(value: Readonly<Point>) {
     this[0] = value[0]
     this[1] = value[1]
   }
@@ -99,7 +97,7 @@ export class Rectangle extends Float64Array {
     return this.#size!
   }
 
-  set size(value: ReadOnlySize) {
+  set size(value: Readonly<Size>) {
     this[2] = value[0]
     this[3] = value[1]
   }
@@ -215,7 +213,7 @@ export class Rectangle extends Float64Array {
    * @param point The point to check
    * @returns `true` if {@link point} is inside this rectangle, otherwise `false`.
    */
-  containsPoint([x, y]: ReadOnlyPoint): boolean {
+  containsPoint([x, y]: Readonly<Point>): boolean {
     const [left, top, width, height] = this
     return x >= left && x < left + width && y >= top && y < top + height
   }
@@ -384,12 +382,12 @@ export class Rectangle extends Float64Array {
   }
 
   /** @returns The offset from the top-left of this rectangle to the point [{@link x}, {@link y}], as a new {@link Point}. */
-  getOffsetTo([x, y]: ReadOnlyPoint): Point {
+  getOffsetTo([x, y]: Readonly<Point>): Point {
     return [x - this[0], y - this[1]]
   }
 
   /** @returns The offset from the point [{@link x}, {@link y}] to the top-left of this rectangle, as a new {@link Point}. */
-  getOffsetFrom([x, y]: ReadOnlyPoint): Point {
+  getOffsetFrom([x, y]: Readonly<Point>): Point {
     return [this[0] - x, this[1] - y]
   }
 

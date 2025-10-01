@@ -37,7 +37,6 @@ import type {
   ISlotType,
   Point,
   Positionable,
-  ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
   Size
@@ -434,7 +433,7 @@ export class LGraphNode
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
-  get boundingOffset(): ReadOnlyPoint {
+  get boundingOffset(): Readonly<Point> {
     const {
       pos: [posX, posY],
       boundingRect: [bX, bY]

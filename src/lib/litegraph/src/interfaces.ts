@@ -232,25 +232,14 @@ export type Point = [x: number, y: number]
 export type Size = [width: number, height: number]
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` */
-export type Rect = [x: number, y: number, width: number, height: number]
-
-/** A point represented as `[x, y]` co-ordinates that will not be modified */
-export type ReadOnlyPoint =
-  | Readonly<Point>
-  | ReadOnlyTypedArray<Float32Array>
-  | ReadOnlyTypedArray<Float64Array>
-
-/** A size represented as `[width, height]` that will not be modified */
-export type ReadOnlySize =
-  | Readonly<Size>
-  | ReadOnlyTypedArray<Float32Array>
-  | ReadOnlyTypedArray<Float64Array>
+export type Rect =
+  | [x: number, y: number, width: number, height: number]
+  | Float32Array
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` that will not be modified */
 export type ReadOnlyRect =
   | readonly [x: number, y: number, width: number, height: number]
   | ReadOnlyTypedArray<Float32Array>
-  | ReadOnlyTypedArray<Float64Array>
 
 type TypedArrays =
   | Int8Array
@@ -261,7 +250,6 @@ type TypedArrays =
   | Int32Array
   | Uint32Array
   | Float32Array
-  | Float64Array
 
 type TypedBigIntArrays = BigInt64Array | BigUint64Array
 export type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =

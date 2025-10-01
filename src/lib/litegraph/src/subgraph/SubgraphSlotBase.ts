@@ -12,7 +12,7 @@ import type {
   INodeOutputSlot,
   Point,
   ReadOnlyRect,
-  ReadOnlySize
+  Size
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
@@ -133,7 +133,7 @@ export abstract class SubgraphSlot
     }
   }
 
-  measure(): ReadOnlySize {
+  measure(): Readonly<Size> {
     const width = LGraphCanvas._measureText?.(this.displayName) ?? 0
 
     const { defaultHeight } = SubgraphSlot

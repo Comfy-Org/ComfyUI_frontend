@@ -1,10 +1,4 @@
-import type {
-  HasBoundingRect,
-  Point,
-  ReadOnlyPoint,
-  ReadOnlyRect,
-  Rect
-} from './interfaces'
+import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from './interfaces'
 import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
 
 /**
@@ -13,7 +7,7 @@ import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
  * @param b Point b as `x, y`
  * @returns Distance between point {@link a} & {@link b}
  */
-export function distance(a: ReadOnlyPoint, b: ReadOnlyPoint): number {
+export function distance(a: Readonly<Point>, b: Readonly<Point>): number {
   return Math.sqrt(
     (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
   )
@@ -62,7 +56,7 @@ export function isInRectangle(
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
 export function isPointInRect(
-  point: ReadOnlyPoint,
+  point: Readonly<Point>,
   rect: ReadOnlyRect
 ): boolean {
   return (
@@ -289,8 +283,8 @@ export function rotateLink(
  * the right
  */
 export function getOrientation(
-  lineStart: ReadOnlyPoint,
-  lineEnd: ReadOnlyPoint,
+  lineStart: Readonly<Point>,
+  lineEnd: Readonly<Point>,
   x: number,
   y: number
 ): number {
@@ -310,10 +304,10 @@ export function getOrientation(
  */
 export function findPointOnCurve(
   out: Point,
-  a: ReadOnlyPoint,
-  b: ReadOnlyPoint,
-  controlA: ReadOnlyPoint,
-  controlB: ReadOnlyPoint,
+  a: Readonly<Point>,
+  b: Readonly<Point>,
+  controlA: Readonly<Point>,
+  controlB: Readonly<Point>,
   t: number = 0.5
 ): void {
   const iT = 1 - t
@@ -382,7 +376,7 @@ export function alignToContainer(
   rect: Rect,
   anchors: Alignment,
   [containerX, containerY, containerWidth, containerHeight]: ReadOnlyRect,
-  [insetX, insetY]: ReadOnlyPoint = [0, 0]
+  [insetX, insetY]: Readonly<Point> = [0, 0]
 ): Rect {
   if (hasFlag(anchors, Alignment.Left)) {
     // Left
@@ -425,7 +419,7 @@ export function alignOutsideContainer(
   rect: Rect,
   anchors: Alignment,
   [otherX, otherY, otherWidth, otherHeight]: ReadOnlyRect,
-  [outsetX, outsetY]: ReadOnlyPoint = [0, 0]
+  [outsetX, outsetY]: Readonly<Point> = [0, 0]
 ): Rect {
   if (hasFlag(anchors, Alignment.Left)) {
     // Left
