@@ -10,7 +10,7 @@ export function showSubgraphNodeDialog() {
     position: 'topright',
     pt: {
       root: {
-        class: 'bg-pure-white dark-theme:bg-charcoal-800 mt-12'
+        class: 'bg-pure-white dark-theme:bg-charcoal-800 mt-22'
       },
       header: {
         class: 'h-8 text-xs ml-3'
