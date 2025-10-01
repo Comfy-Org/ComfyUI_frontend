@@ -241,22 +241,10 @@ export type ReadOnlyRect =
   | readonly [x: number, y: number, width: number, height: number]
   | ReadOnlyTypedArray<Float32Array>
 
-type TypedArrays =
-  | Int8Array
-  | Uint8Array
-  | Uint8ClampedArray
-  | Int16Array
-  | Uint16Array
-  | Int32Array
-  | Uint32Array
-  | Float32Array
-
-type TypedBigIntArrays = BigInt64Array | BigUint64Array
-export type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =
-  Omit<
-    Readonly<T>,
-    'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
-  >
+export type ReadOnlyTypedArray<T extends Float32Array> = Omit<
+  Readonly<T>,
+  'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
+>
 
 /** Union of property names that are of type Match */
 type KeysOfType<T, Match> = Exclude<
@@ -315,7 +303,7 @@ export interface INodeSlot extends HasBoundingRect {
   nameLocked?: boolean
   pos?: Point
   /** @remarks Automatically calculated; not included in serialisation. */
-  boundingRect: Rect
+  boundingRect: ReadOnlyRect
   /**
    * A list of floating link IDs that are connected to this slot.
    * This is calculated at runtime; it is **not** serialized.
