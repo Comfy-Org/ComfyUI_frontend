@@ -29,6 +29,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     return new Set(
       Object.values(modelToNodeMap.value)
         .flat()
+        .filter((provider) => !!provider.nodeDef)
         .map((provider) => provider.nodeDef.name)
     )
   })
@@ -38,6 +39,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     const lookup: Record<string, string> = {}
     for (const [category, providers] of Object.entries(modelToNodeMap.value)) {
       for (const provider of providers) {
+        // Extension nodes may not be installed
+        if (!provider.nodeDef) continue
         // Only store the first category for each node type (matches current assetService behavior)
         if (!lookup[provider.nodeDef.name]) {
           lookup[provider.nodeDef.name] = category

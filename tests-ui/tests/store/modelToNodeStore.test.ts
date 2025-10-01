@@ -263,8 +263,20 @@ describe('useModelToNodeStore', () => {
       }).not.toThrow()
 
       const provider = modelToNodeStore.getNodeProvider('test_type')
-      // Optional chaining needed since getNodeProvider() can return undefined
       expect(provider?.nodeDef).toBeUndefined()
+
+      expect(() => modelToNodeStore.getRegisteredNodeTypes()).not.toThrow()
+      expect(() =>
+        modelToNodeStore.getCategoryForNodeType('NonExistentLoader')
+      ).not.toThrow()
+
+      // Non-existent nodes are filtered out from registered types
+      const types = modelToNodeStore.getRegisteredNodeTypes()
+      expect(types.has('NonExistentLoader')).toBe(false)
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('NonExistentLoader')
+      ).toBeUndefined()
     })
 
     it('should allow multiple node classes for same model type', () => {
