@@ -15,7 +15,6 @@ jobs:
       uses: ./.github/actions/setup-playwright
       with:
         working-directory: ComfyUI_frontend
-        cache-key-suffix: ${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
     - name: Run Playwright tests and update snapshots
       id: playwright-tests
       run: pnpm exec playwright test --update-snapshots

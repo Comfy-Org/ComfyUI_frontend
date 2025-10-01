@@ -30,7 +30,6 @@ jobs:
       uses: ./.github/actions/setup-playwright
       with:
         working-directory: ComfyUI_frontend
-        cache-key-suffix: ${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.
