@@ -100,9 +100,8 @@
         <!-- Custom content at reduced+ detail -->
         <NodeContent
           v-if="hasCustomContent"
-          :node="lgraphNode"
           :node-data="nodeData"
-          :media-urls="nodeImageUrls"
+          :media="nodeMedia"
         />
         <!-- Live preview image -->
         <div v-if="shouldShowPreviewImg" class="px-4">
@@ -268,10 +267,10 @@ onMounted(() => {
 // Track collapsed state
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 
-// Check if node has custom content (like image outputs)
+// Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has image outputs
-  return nodeImageUrls.value.length > 0
+  // Show custom content if node has media outputs
+  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -349,18 +348,21 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(rootGraph, locatorId)
 })
 
-const nodeImageUrls = computed(() => {
+const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
+  // Note: Despite the field name "images", videos are also included.
+  // The actual media type is determined by node.previewMediaType
+  // TODO: fix the backend to return videos using the vidoes key instead of the images key
   if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
-    if (urls) {
-      return urls
+    if (urls && urls.length > 0) {
+      const type = node.previewMediaType === 'video' ? 'video' : 'image'
+      return { type, urls } as const
     }
   }
-  // Clear URLs if no outputs or no images
-  return []
+  return undefined
 })
 
 const nodeContainerRef = ref()
