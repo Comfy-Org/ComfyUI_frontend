@@ -444,7 +444,7 @@ export class LGraphNode
 
   /** {@link pos} and {@link size} values are backed by this {@link Rect}. */
   _posSize: Float32Array = new Float32Array(4)
-  _pos: Point = this._posSize.subarray(0, 2)
+  _pos: Point = [...this._posSize.subarray(0, 2)] as Point
   _size: Size = this._posSize.subarray(2, 4)
 
   public get pos() {
@@ -3169,7 +3169,7 @@ export class LGraphNode
    * @returns the position
    */
   getConnectionPos(is_input: boolean, slot_number: number, out?: Point): Point {
-    out ||= new Float32Array(2)
+    out ||= [0, 0]
 
     const {
       pos: [nodeX, nodeY],

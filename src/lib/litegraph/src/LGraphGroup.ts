@@ -47,7 +47,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     LGraphGroup.minHeight
   ])
 
-  _pos: Point = this._bounding.subarray(0, 2)
+  _pos: Point = [...this._bounding.subarray(0, 2)] as Point
   _size: Size = this._bounding.subarray(2, 4)
   /** @deprecated See {@link _children} */
   _nodes: LGraphNode[] = []

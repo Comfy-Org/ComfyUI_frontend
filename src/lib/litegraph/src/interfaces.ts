@@ -194,7 +194,7 @@ export interface LinkSegment {
   /** The last canvas 2D path that was used to render this segment */
   path?: Path2D
   /** Centre point of the {@link path}.  Calculated during render only - can be inaccurate */
-  readonly _pos: Float32Array
+  readonly _pos: Point
   /**
    * Y-forward along the {@link path} from its centre point, in radians.
    * `undefined` if using circles for link centres.
@@ -226,7 +226,7 @@ export interface IFoundSlot extends IInputOrOutput {
 }
 
 /** A point represented as `[x, y]` co-ordinates */
-export type Point = [x: number, y: number] | Float32Array | Float64Array
+export type Point = [x: number, y: number]
 
 /** A size represented as `[width, height]` */
 export type Size = [width: number, height: number] | Float32Array | Float64Array

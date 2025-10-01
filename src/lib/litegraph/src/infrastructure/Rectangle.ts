@@ -80,7 +80,8 @@ export class Rectangle extends Float64Array {
    * Updating the values of the returned object will update this rectangle.
    */
   get pos(): Point {
-    this.#pos ??= this.subarray(0, 2)
+    const pos = this.subarray(0, 2)
+    this.#pos ??= [pos[0], pos[1]]
     return this.#pos!
   }
 

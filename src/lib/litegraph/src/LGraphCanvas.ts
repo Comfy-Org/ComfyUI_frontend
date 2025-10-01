@@ -237,7 +237,7 @@ export class LGraphCanvas
 {
   // Optimised buffers used during rendering
   static #temp = new Float32Array(4)
-  static #temp_vec2 = new Float32Array(2)
+  static #temp_vec2: Point = [0, 0]
   static #tmp_area = new Float32Array(4)
   static #margin_area = new Float32Array(4)
   static #link_bounding = new Float32Array(4)
@@ -5205,7 +5205,7 @@ export class LGraphCanvas
     // clip if required (mask)
     const shape = node._shape || RenderShape.BOX
     const size = LGraphCanvas.#temp_vec2
-    size.set(node.renderingSize)
+    size.splice(0, 2, ...node.renderingSize)
 
     if (node.collapsed) {
       ctx.font = this.inner_text_font

@@ -73,7 +73,7 @@ export class Reroute
   /** This property is only defined on the last reroute of a floating reroute chain (closest to input end). */
   floating?: FloatingRerouteSlot
 
-  #pos = this.#malloc.subarray(0, 2)
+  #pos = [...this.#malloc.subarray(0, 2)] as Point
   /** @inheritdoc */
   get pos(): Point {
     return this.#pos
@@ -126,14 +126,14 @@ export class Reroute
   sin: number = 0
 
   /** Bezier curve control point for the "target" (input) side of the link */
-  controlPoint: Point = this.#malloc.subarray(4, 6)
+  controlPoint: Point = [...this.#malloc.subarray(4, 6)] as Point
 
   /** @inheritdoc */
   path?: Path2D
   /** @inheritdoc */
   _centreAngle?: number
   /** @inheritdoc */
-  _pos: Float32Array = this.#malloc.subarray(6, 8)
+  _pos: Point = [...this.#malloc.subarray(6, 8)] as Point
 
   /** @inheritdoc */
   _dragging?: boolean
