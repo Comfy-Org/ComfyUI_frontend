@@ -445,7 +445,7 @@ export class LGraphNode
   /** {@link pos} and {@link size} values are backed by this {@link Rect}. */
   _posSize: Float32Array = new Float32Array(4)
   _pos: Point = [...this._posSize.subarray(0, 2)] as Point
-  _size: Size = this._posSize.subarray(2, 4)
+  _size: Size = [...this._posSize.subarray(2, 4)] as Size
 
   public get pos() {
     return this._pos
@@ -1653,7 +1653,7 @@ export class LGraphNode
       inputs ? inputs.filter((input) => !isWidgetInputSlot(input)).length : 1,
       outputs ? outputs.length : 1
     )
-    const size = out || new Float32Array([0, 0])
+    const size = out ?? [0, 0]
     rows = Math.max(rows, 1)
     // although it should be graphcanvas.inner_text_font size
     const font_size = LiteGraph.NODE_TEXT_SIZE

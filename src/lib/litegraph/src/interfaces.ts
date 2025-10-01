@@ -229,23 +229,20 @@ export interface IFoundSlot extends IInputOrOutput {
 export type Point = [x: number, y: number]
 
 /** A size represented as `[width, height]` */
-export type Size = [width: number, height: number] | Float32Array | Float64Array
-
-/** A very firm array */
-type ArRect = [x: number, y: number, width: number, height: number]
+export type Size = [width: number, height: number]
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` */
-export type Rect = ArRect | Float32Array | Float64Array
+export type Rect = [x: number, y: number, width: number, height: number]
 
 /** A point represented as `[x, y]` co-ordinates that will not be modified */
 export type ReadOnlyPoint =
-  | readonly [x: number, y: number]
+  | Readonly<Point>
   | ReadOnlyTypedArray<Float32Array>
   | ReadOnlyTypedArray<Float64Array>
 
 /** A size represented as `[width, height]` that will not be modified */
 export type ReadOnlySize =
-  | readonly [width: number, height: number]
+  | Readonly<Size>
   | ReadOnlyTypedArray<Float32Array>
   | ReadOnlyTypedArray<Float64Array>
 
