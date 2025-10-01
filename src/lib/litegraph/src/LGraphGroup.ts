@@ -42,8 +42,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
   _bounding = new Rectangle(10, 10, LGraphGroup.minWidth, LGraphGroup.minHeight)
 
-  _pos: Point = [...this._bounding.subarray(0, 2)] as Point
-  _size: Size = [...this._bounding.subarray(2, 4)] as Size
+  _pos: Point = this._bounding.pos
+  _size: Size = this._bounding.size
   /** @deprecated See {@link _children} */
   _nodes: LGraphNode[] = []
   _children: Set<Positionable> = new Set()
