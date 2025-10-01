@@ -307,9 +307,10 @@ export interface IBaseWidget<
   hidden?: boolean
   advanced?: boolean
   /**
-   * Set if the node is displayed on the parent subgraphNode
+   * This property is automatically computed on graph change
+   * and should not be changed.
    * Promoted widgets have a colored border
-   * @readonly [Computed] This property is computed on graph change
+   * @see /core/graph/subgraph/proxyWidget.registerProxyWidgets
    */
   promoted?: boolean
 
