@@ -29,11 +29,9 @@ jobs:
       - name: Check if we should proceed
         id: check-status
         run: |
-          # Get all check runs for this commit
-          CHECK_RUNS=$(gh api repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs --jq '.check_runs[] | select(.name | test("lint-and-format|test|playwright-tests")) | {name, conclusion}')
-          
-          # Check if any required checks failed
-          if echo "$CHECK_RUNS" | grep -q '"conclusion": "failure"'; then
+          CHECK_RUNS=$(gh api repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs --jq '.check_runs[] | select(.name | test("lint-and-format")) | {name, conclusion}')
+
+          if echo "$CHECK_RUNS" | grep -Eq '"conclusion": "(failure|cancelled|timed_out|action_required)"'; then
             echo "Some CI checks failed - skipping Claude review"
             echo "proceed=false" >> $GITHUB_OUTPUT
           else
