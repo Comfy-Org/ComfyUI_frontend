@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core'
+import { refDebounced, watchDebounced } from '@vueuse/core'
 import {
   computed,
   customRef,
   onBeforeUnmount,
   onMounted,
   ref,
-  triggerRef,
-  watch
+  triggerRef
 } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -219,9 +218,13 @@ function setDraggableState() {
     activeWidgets.value = aw
   }
 }
-watch(filteredActive, () => {
-  setDraggableState()
-})
+watchDebounced(
+  filteredActive,
+  () => {
+    setDraggableState()
+  },
+  { debounce: 100 }
+)
 onMounted(() => {
   setDraggableState()
 })
