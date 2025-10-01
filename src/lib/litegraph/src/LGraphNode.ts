@@ -902,7 +902,7 @@ export class LGraphNode
 
     if (this.onSerialize?.(o))
       console.warn(
-        'node onSerialize shouldn't return anything, data should be stored in the object pass in the first parameter'
+        'node onSerialize shouldn\'t return anything, data should be stored in the object pass in the first parameter'
       )
 
     return o
