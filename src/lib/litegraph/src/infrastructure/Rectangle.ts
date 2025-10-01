@@ -67,7 +67,7 @@ export class Rectangle extends Float32Array {
     begin: number = 0,
     end?: number
   ): Float32Array<ArrayBuffer> {
-    const byteOffset = begin << 3
+    const byteOffset = begin << 2
     const length = end === undefined ? end : end - begin
     return new Float32Array(this.buffer, byteOffset, length)
   }
