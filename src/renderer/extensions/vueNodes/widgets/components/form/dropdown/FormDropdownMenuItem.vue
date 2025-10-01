@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { type ComputedRef, computed, inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 
-import type { AssetKind } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-import type { LayoutMode } from './types'
+import { AssetKindKey, type LayoutMode } from './types'
 
 interface Props {
   index: number
@@ -24,10 +23,8 @@ const emit = defineEmits<{
 
 const actualDimensions = ref<string | null>(null)
 
-// Inject assetKind from WidgetSelectDropdown
-const assetKind = inject<ComputedRef<AssetKind | undefined>>('assetKind')
+const assetKind = inject(AssetKindKey)
 
-// Determine if this is a video based on the widget spec, not URL
 const isVideo = computed(() => assetKind?.value === 'video')
 
 function handleClick() {

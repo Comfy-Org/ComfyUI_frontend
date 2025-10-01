@@ -17,10 +17,11 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import FormDropdown from './form/dropdown/FormDropdown.vue'
-import type {
-  DropdownItem,
-  FilterOption,
-  SelectedKey
+import {
+  AssetKindKey,
+  type DropdownItem,
+  type FilterOption,
+  type SelectedKey
 } from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -32,9 +33,8 @@ const props = defineProps<{
   uploadFolder?: ResultItemType
 }>()
 
-// Provide assetKind to descendant components
 provide(
-  'assetKind',
+  AssetKindKey,
   computed(() => props.assetKind)
 )
 
@@ -153,10 +153,18 @@ const mediaPlaceholder = computed(() => {
 const uploadable = computed(() => props.allowUpload === true)
 
 const acceptTypes = computed(() => {
-  if (!props.assetKind) return undefined
-  // AssetKind includes 'model' which isn't in MediaKind
-  if (props.assetKind === 'model') return undefined
-  return getAcceptString(props.assetKind)
+  // Be permissive with accept types because backend uses libraries
+  // that can handle a wide range of formats
+  switch (props.assetKind) {
+    case 'image':
+      return 'image/*'
+    case 'video':
+      return 'video/*'
+    case 'audio':
+      return 'audio/*'
+    default:
+      return undefined // model or unknown
+  }
 })
 
 watch(
