@@ -84,8 +84,8 @@ describe('LGraphNode', () => {
       }))
     }
     node.configure(configureData)
-    expect(node.pos).toEqual([50, 60])
-    expect(node.size).toEqual([70, 80])
+    expect(node.pos).toEqual(new Float32Array([50, 60]))
+    expect(node.size).toEqual(new Float32Array([70, 80]))
   })
 
   test('should configure inputs correctly', () => {

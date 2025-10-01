@@ -39,19 +39,19 @@ LGraph {
     LGraphNode {
       "_collapsed_width": undefined,
       "_level": undefined,
-      "_pos": [
+      "_pos": Float32Array [
         10,
         10,
       ],
-      "_posSize": [
-        0,
-        0,
-        0,
-        0,
+      "_posSize": Rectangle [
+        10,
+        10,
+        140,
+        60,
       ],
       "_relative_id": undefined,
       "_shape": undefined,
-      "_size": [
+      "_size": Float32Array [
         140,
         60,
       ],
@@ -111,19 +111,19 @@ LGraph {
     "1": LGraphNode {
       "_collapsed_width": undefined,
       "_level": undefined,
-      "_pos": [
+      "_pos": Float32Array [
         10,
         10,
       ],
-      "_posSize": [
-        0,
-        0,
-        0,
-        0,
+      "_posSize": Rectangle [
+        10,
+        10,
+        140,
+        60,
       ],
       "_relative_id": undefined,
       "_shape": undefined,
-      "_size": [
+      "_size": Float32Array [
         140,
         60,
       ],
@@ -184,19 +184,19 @@ LGraph {
     LGraphNode {
       "_collapsed_width": undefined,
       "_level": undefined,
-      "_pos": [
+      "_pos": Float32Array [
         10,
         10,
       ],
-      "_posSize": [
-        0,
-        0,
-        0,
-        0,
+      "_posSize": Rectangle [
+        10,
+        10,
+        140,
+        60,
       ],
       "_relative_id": undefined,
       "_shape": undefined,
-      "_size": [
+      "_size": Float32Array [
         140,
         60,
       ],
