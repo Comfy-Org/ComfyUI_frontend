@@ -7,13 +7,13 @@ import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
-import '@/lib/litegraph/public/css/litegraph.css'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
+import { VueFire, VueFireAuth } from 'vuefire'
 
 import { FIREBASE_CONFIG } from '@/config/firebase'
+import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
-import { VueFire, VueFireAuth } from 'vuefire'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
