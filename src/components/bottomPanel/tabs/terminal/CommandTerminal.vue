@@ -64,7 +64,6 @@ const terminalCreated = (
 }
 
 :deep(.p-terminal) .xterm-screen {
-  background-color: black;
   overflow-y: hidden;
 }
 </style>
