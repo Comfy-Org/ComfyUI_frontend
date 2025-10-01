@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
-      playwright-version: ${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
     steps:
       - name: Checkout ComfyUI
         uses: actions/checkout@v4
@@ -65,12 +64,6 @@ jobs:
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
-      - name: Playwright Version
-        id: playwright-version
-        run:  |
-          PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
-          echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
-        working-directory: ComfyUI_frontend
 
       - name: Save cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
@@ -126,7 +119,6 @@ jobs:
       - name: Setup Playwright
         uses: ./ComfyUI_frontend/.github/actions/setup-playwright
         with:
-          playwright-version: ${{ needs.setup.outputs.playwright-version }}
           working-directory: ComfyUI_frontend
 
       - name: Start ComfyUI server
@@ -194,7 +186,6 @@ jobs:
       - name: Setup Playwright
         uses: ./ComfyUI_frontend/.github/actions/setup-playwright
         with:
-          playwright-version: ${{ needs.setup.outputs.playwright-version }}
           working-directory: ComfyUI_frontend
 
       - name: Start ComfyUI server

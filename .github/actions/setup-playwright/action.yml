@@ -1,20 +1,10 @@
 name: Setup Playwright
 description: Cache and install Playwright browsers with dependencies
 inputs:
-  playwright-version:
-    description: 'Playwright version for cache key (optional - will be detected if not provided)'
-    required: false
   working-directory:
     description: 'Working directory for Playwright commands'
     required: false
     default: 'ComfyUI_frontend'
-  cache-key-suffix:
-    description: 'Additional suffix for cache key (e.g., hash of lockfile)'
-    required: false
-outputs:
-  playwright-version:
-    description: 'The detected Playwright version'
-    value: ${{ steps.detect-version.outputs.playwright-version }}
 runs:
   using: composite
   steps:
@@ -23,19 +13,15 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if [ -n "${{ inputs.playwright-version }}" ]; then
-          echo "playwright-version=${{ inputs.playwright-version }}" >> $GITHUB_OUTPUT
-        else
-          PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
-          echo "playwright-version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
-        fi
+        PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
+        echo "playwright-version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
     - name: Cache Playwright Browsers
       uses: actions/cache@v4
       id: cache-playwright-browsers
       with:
         path: '~/.cache/ms-playwright'
-        key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}${{ inputs.cache-key-suffix && format('-%s', inputs.cache-key-suffix) || '' }}
+        key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}
 
     - name: Install Playwright Browsers
       if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
