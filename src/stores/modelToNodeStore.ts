@@ -131,10 +131,24 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('loras', 'LoraLoaderModelOnly', 'lora_name')
     quickRegister('vae', 'VAELoader', 'vae_name')
     quickRegister('controlnet', 'ControlNetLoader', 'control_net_name')
-    quickRegister('unet', 'UNETLoader', 'unet_name')
+    quickRegister('diffusion_models', 'UNETLoader', 'unet_name')
     quickRegister('upscale_models', 'UpscaleModelLoader', 'model_name')
-    quickRegister('style_models', 'StyleModelLoader', 'style_model')
+    quickRegister('style_models', 'StyleModelLoader', 'style_model_name')
     quickRegister('gligen', 'GLIGENLoader', 'gligen_name')
+    quickRegister('clip_vision', 'CLIPVisionLoader', 'clip_name')
+    quickRegister('text_encoders', 'CLIPLoader', 'clip_name')
+    quickRegister('audio_encoders', 'AudioEncoderLoader', 'audio_encoder_name')
+    quickRegister('model_patches', 'ModelPatchLoader', 'name')
+    quickRegister(
+      'animatediff_models',
+      'ADE_LoadAnimateDiffModel',
+      'model_name'
+    )
+    quickRegister(
+      'animatediff_motion_lora',
+      'ADE_AnimateDiffLoRALoader',
+      'name'
+    )
   }
 
   return {
