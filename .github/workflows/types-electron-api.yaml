@@ -1,4 +1,4 @@
-name: Update Electron Types
+name: Types Electron API
 
 on:
   workflow_dispatch:
