@@ -5207,7 +5207,8 @@ export class LGraphCanvas
     // clip if required (mask)
     const shape = node._shape || RenderShape.BOX
     const size = LGraphCanvas.temp_vec2
-    size.splice(0, 2, ...node.renderingSize)
+    size[0] = node.renderingSize[0]
+    size[1] = node.renderingSize[1]
 
     if (node.collapsed) {
       ctx.font = this.inner_text_font
