@@ -3,11 +3,18 @@ import { electronAPI, isElectron } from '@/utils/envUtil'
 // Allowed property value types - excludes objects, arrays, and functions to prevent sensitive data leaks
 type SafeTelemetryValue = string | number | boolean | undefined
 
-// Safe telemetry properties interface with runtime validation (sensitive properties blocked in implementation)
+/**
+ * Safe telemetry properties interface with runtime validation (sensitive properties blocked in implementation)
+ * @public
+ */
 export interface TelemetryEventProperties {
   [key: string]: SafeTelemetryValue
 }
 
+/**
+ * Core telemetry service interface
+ * @public
+ */
 export interface TelemetryService {
   trackEvent(eventName: string, properties?: TelemetryEventProperties): void
   incrementUserProperty(propertyName: string, value: number): void
@@ -206,11 +213,13 @@ class UnifiedTelemetryService implements TelemetryService {
 }
 
 // Singleton instance
+/** @public */
 export const telemetryService = new UnifiedTelemetryService()
 
 /**
  * Convenience function for tracking events throughout the app
  * Completely fail-safe - will never throw errors or break app flow
+ * @public
  */
 export function trackEvent(
   eventName: string,
@@ -304,6 +313,7 @@ export function trackEvent(
 /**
  * Convenience function for incrementing user properties
  * Completely fail-safe - will never throw errors or break app flow
+ * @public
  */
 export function incrementUserProperty(
   propertyName: string,
@@ -427,12 +437,17 @@ export const TelemetryEvents = {
   CANVAS_DOUBLE_CLICK: 'canvas:double_click'
 } as const
 
+/**
+ * Union type of all telemetry event names
+ * @public
+ */
 export type TelemetryEventName =
   (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
 
 /**
  * Type-safe event tracking with predefined event names
  * Completely fail-safe - will never throw errors or break app flow
+ * @public
  */
 export function trackTypedEvent(
   eventName: TelemetryEventName,

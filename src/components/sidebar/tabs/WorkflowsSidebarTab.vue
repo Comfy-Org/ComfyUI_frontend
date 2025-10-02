@@ -143,12 +143,12 @@ import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLe
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { TelemetryEvents, trackTypedEvent } from '@/services/telemetryService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
