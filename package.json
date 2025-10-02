@@ -86,7 +86,7 @@
     "tailwindcss-primeui": "catalog:",
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",
-    "typescript": "^5.4.5",
+    "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "unplugin-icons": "catalog:",
     "unplugin-vue-components": "catalog:",
