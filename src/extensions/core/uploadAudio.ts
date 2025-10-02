@@ -5,7 +5,7 @@ import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { type LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IStringWidget
@@ -250,9 +250,13 @@ app.registerExtension({
         audio.controls = true
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
+        let type = 'audioUI'
+        if (LiteGraph.vueNodesMode) {
+          type = 'combo'
+        }
 
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          node.addDOMWidget(inputName, /* name=*/ type, audio)
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
