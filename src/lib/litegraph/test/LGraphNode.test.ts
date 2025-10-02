@@ -266,7 +266,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -335,7 +335,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -367,7 +367,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -400,7 +400,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100

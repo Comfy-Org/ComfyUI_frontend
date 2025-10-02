@@ -10,17 +10,17 @@ import { isInRectangle } from '@/lib/litegraph/src/measure'
 /**
  * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
  *
- * This class is a subclass of Float32Array, and so has all the methods of that class.  Notably,
+ * This class is a subclass of Float64Array, and so has all the methods of that class.  Notably,
  * {@link Rectangle.from} can be used to convert a {@link ReadOnlyRect}. Typing of this however,
- * is broken due to the base TS lib returning Float32Array rather than `this`.
+ * is broken due to the base TS lib returning Float64Array rather than `this`.
  *
- * Sub-array properties ({@link Float32Array.subarray}):
+ * Sub-array properties ({@link Float64Array.subarray}):
  * - {@link pos}: The position of the top-left corner of the rectangle.
  * - {@link size}: The size of the rectangle.
  */
-export class Rectangle extends Float32Array {
-  #pos: Float32Array<ArrayBuffer> | undefined
-  #size: Float32Array<ArrayBuffer> | undefined
+export class Rectangle extends Float64Array {
+  #pos: Float64Array<ArrayBuffer> | undefined
+  #size: Float64Array<ArrayBuffer> | undefined
 
   constructor(
     x: number = 0,
@@ -66,10 +66,10 @@ export class Rectangle extends Float32Array {
   override subarray(
     begin: number = 0,
     end?: number
-  ): Float32Array<ArrayBuffer> {
-    const byteOffset = begin << 2
+  ): Float64Array<ArrayBuffer> {
+    const byteOffset = begin << 3
     const length = end === undefined ? end : end - begin
-    return new Float32Array(this.buffer, byteOffset, length)
+    return new Float64Array(this.buffer, byteOffset, length)
   }
 
   /**

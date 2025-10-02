@@ -41,19 +41,19 @@ describe('Rectangle', () => {
   })
 
   describe('array operations', () => {
-    test('should return a Float32Array representing the subarray', () => {
+    test('should return a Float64Array representing the subarray', () => {
       const rect = new Rectangle(10, 20, 30, 40)
       const sub = rect.subarray(1, 3)
-      expect(sub).toBeInstanceOf(Float32Array)
+      expect(sub).toBeInstanceOf(Float64Array)
       expect(sub.length).toBe(2)
       expect(sub[0]).toBe(20) // y
       expect(sub[1]).toBe(30) // width
     })
 
-    test('should return a Float32Array for the entire array if no args', () => {
+    test('should return a Float64Array for the entire array if no args', () => {
       const rect = new Rectangle(10, 20, 30, 40)
       const sub = rect.subarray()
-      expect(sub).toBeInstanceOf(Float32Array)
+      expect(sub).toBeInstanceOf(Float64Array)
       expect(sub.length).toBe(4)
       expect(sub[0]).toBe(10)
       expect(sub[1]).toBe(20)
@@ -66,12 +66,12 @@ describe('Rectangle', () => {
       const arr = rect.toArray()
       expect(arr).toEqual([1, 2, 3, 4])
       expect(Array.isArray(arr)).toBe(true)
-      expect(arr).not.toBeInstanceOf(Float32Array)
+      expect(arr).not.toBeInstanceOf(Float64Array)
 
       const exported = rect.export()
       expect(exported).toEqual([1, 2, 3, 4])
       expect(Array.isArray(exported)).toBe(true)
-      expect(exported).not.toBeInstanceOf(Float32Array)
+      expect(exported).not.toBeInstanceOf(Float64Array)
     })
   })
 

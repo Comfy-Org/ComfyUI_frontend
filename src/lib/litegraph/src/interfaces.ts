@@ -234,14 +234,14 @@ export type Size = [width: number, height: number]
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` */
 export type Rect =
   | [x: number, y: number, width: number, height: number]
-  | Float32Array
+  | Float64Array
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` that will not be modified */
 export type ReadOnlyRect =
   | readonly [x: number, y: number, width: number, height: number]
-  | ReadOnlyTypedArray<Float32Array>
+  | ReadOnlyTypedArray<Float64Array>
 
-export type ReadOnlyTypedArray<T extends Float32Array> = Omit<
+export type ReadOnlyTypedArray<T extends Float64Array> = Omit<
   Readonly<T>,
   'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
 >

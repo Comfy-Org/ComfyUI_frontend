@@ -84,8 +84,8 @@ describe('LGraphNode', () => {
       }))
     }
     node.configure(configureData)
-    expect(node.pos).toEqual(new Float32Array([50, 60]))
-    expect(node.size).toEqual(new Float32Array([70, 80]))
+    expect(node.pos).toEqual(new Float64Array([50, 60]))
+    expect(node.size).toEqual(new Float64Array([70, 80]))
   })
 
   test('should configure inputs correctly', () => {
@@ -266,7 +266,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -335,7 +335,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -367,7 +367,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -400,7 +400,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
