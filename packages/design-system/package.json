@@ -17,8 +17,8 @@
     ]
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.1.178",
-    "@iconify/tailwind": "^1.1.3"
+    "@iconify-json/lucide": "catalog:",
+    "@iconify/tailwind": "catalog:"
   },
   "devDependencies": {
     "tailwindcss": "catalog:",
