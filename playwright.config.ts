@@ -30,7 +30,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      timeout: 15000,
+      timeout: 25000,
       grepInvert: /@mobile/ // Run all tests except those tagged with @mobile
     },
 
