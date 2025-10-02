@@ -1950,7 +1950,7 @@ export class LGraphNode
     try {
       this.removeWidget(widget)
     } catch (error) {
-      console.warn('Failed to remove widget', error)
+      console.error('Failed to remove widget', error)
     }
   }
 
