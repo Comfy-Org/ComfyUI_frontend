@@ -8,7 +8,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useQueueStore } from '@/stores/queueStore'
-import { getAcceptString } from '@/types/mediaTypes'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -76,7 +75,7 @@ const inputItems = computed<DropdownItem[]>(() => {
 
   return values.map((value: string, index: number) => ({
     id: `input-${index}`,
-    imageSrc: getMediaUrl(value, 'input'),
+    mediaSrc: getMediaUrl(value, 'input'),
     name: value,
     metadata: ''
   }))
@@ -106,7 +105,7 @@ const outputItems = computed<DropdownItem[]>(() => {
 
   return Array.from(outputs).map((output, index) => ({
     id: `output-${index}`,
-    imageSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
+    mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,
     metadata: ''
   }))
