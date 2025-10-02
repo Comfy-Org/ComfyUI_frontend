@@ -10,7 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.label.name == 'New Browser Test Expectations'
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
+    - name: Checkout workflow repo
+      uses: actions/checkout@v5
+    - name: Setup Frontend
+      uses: ./.github/actions/setup-frontend
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
     - name: Run Playwright tests and update snapshots

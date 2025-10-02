@@ -14,14 +14,14 @@ jobs:
       cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - name: Checkout ComfyUI
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'comfyanonymous/ComfyUI'
           path: 'ComfyUI'
           ref: master
 
       - name: Checkout ComfyUI_frontend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
@@ -215,7 +215,7 @@ jobs:
     if: ${{ !cancelled() }}
     steps:
       - name: Checkout ComfyUI_frontend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
@@ -271,7 +271,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: Get start time
         id: start-time
@@ -298,7 +298,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: Download all playwright reports
         uses: actions/download-artifact@v4

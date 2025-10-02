@@ -149,7 +149,7 @@ export class PrimitiveNode extends LGraphNode {
     target_slot: number
   ) {
     // Fires before the link is made allowing us to reject it if it isn't valid
-    // No widget, we cant connect
+    // No widget, we can't connect
     if (!input.widget && !(input.type in ComfyWidgets)) {
       return false
     }
@@ -388,7 +388,7 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   onLastDisconnect() {
-    // We cant remove + re-add the output here as if you drag a link over the same link
+    // We can't remove + re-add the output here as if you drag a link over the same link
     // it removes, then re-adds, causing it to break
     this.outputs[0].type = '*'
     this.outputs[0].name = 'connect to widget input'
@@ -595,7 +595,7 @@ app.registerExtension({
 
       this.graph?.add(node)
 
-      // Calculate a position that wont directly overlap another node
+      // Calculate a position that won't directly overlap another node
       const pos: [number, number] = [
         this.pos[0] - node.size[0] - 30,
         this.pos[1]

@@ -16,7 +16,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: Post starting comment
         env:
@@ -38,7 +38,7 @@ jobs:
       workflow-url: ${{ steps.workflow-url.outputs.url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -101,7 +101,7 @@ jobs:
       chromatic-storybook-url: ${{ steps.chromatic.outputs.storybookUrl }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Required for Chromatic baseline
 
@@ -164,7 +164,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         
       - name: Download Storybook build
         if: needs.storybook-build.outputs.conclusion == 'success'

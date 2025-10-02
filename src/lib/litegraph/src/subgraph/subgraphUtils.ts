@@ -116,7 +116,7 @@ export function getBoundaryLinks(
 
           const resolved = LLink.resolve(input.link, graph)
           if (!resolved) {
-            console.debug(`Failed to resolve link ID [${input.link}]`)
+            console.warn(`Failed to resolve link ID [${input.link}]`)
             continue
           }
 
