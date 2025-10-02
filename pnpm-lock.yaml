@@ -565,7 +565,7 @@ importers:
         specifier: 'catalog:'
         version: 1.3.8
       typescript:
-        specifier: ^5.4.5
+        specifier: 'catalog:'
         version: 5.9.2
       typescript-eslint:
         specifier: 'catalog:'
