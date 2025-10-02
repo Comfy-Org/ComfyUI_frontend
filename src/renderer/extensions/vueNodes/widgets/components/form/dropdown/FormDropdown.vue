@@ -89,7 +89,7 @@ watch(searchQuery, (value) => {
 })
 
 watch(
-  debouncedSearchQuery,
+  [debouncedSearchQuery, () => props.items],
   (_, __, onCleanup) => {
     let isCleanup = false
     let cleanupFn: undefined | (() => void)
