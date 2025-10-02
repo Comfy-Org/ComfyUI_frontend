@@ -41,7 +41,6 @@ export interface ImageCompareValue {
 // Image compare widgets typically don't have v-model, they display comparison
 const props = defineProps<{
   widget: SimplifiedWidget<ImageCompareValue | string>
-  readonly?: boolean
 }>()
 
 const beforeImage = computed(() => {

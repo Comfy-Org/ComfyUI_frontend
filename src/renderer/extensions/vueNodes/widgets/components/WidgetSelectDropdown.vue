@@ -25,7 +25,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
-  readonly?: boolean
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
@@ -222,7 +221,6 @@ const filterOptions = ref<FilterOption[]>([
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable="uploadable"
-      :disabled="readonly"
       :filter-options="filterOptions"
       v-bind="combinedProps"
       class="w-full"

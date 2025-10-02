@@ -50,15 +50,7 @@
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
       <NodeHeader
-        v-memo="[
-          nodeData.title,
-          nodeData.color,
-          nodeData.bgcolor,
-          isCollapsed,
-          nodeData.flags?.pinned
-        ]"
         :node-data="nodeData"
-        :readonly="readonly"
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
@@ -100,37 +92,19 @@
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
-        <NodeSlots
-          v-memo="[
-            nodeData.inputs?.length,
-            nodeData.outputs?.length,
-            executionStore.lastNodeErrors
-          ]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeSlots :node-data="nodeData" />
 
         <!-- Widgets rendered at reduced+ detail -->
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
         <NodeContent
           v-if="hasCustomContent"
           :node-data="nodeData"
-          :readonly="readonly"
           :image-urls="nodeImageUrls"
         />
         <!-- Live preview image -->
-        <div
-          v-if="shouldShowPreviewImg"
-          v-memo="[latestPreviewUrl]"
-          class="px-4"
-        >
+        <div v-if="shouldShowPreviewImg" class="px-4">
           <img
             :src="latestPreviewUrl"
             alt="preview"
@@ -180,16 +154,11 @@ import SlotConnectionDot from './SlotConnectionDot.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   nodeData: VueNodeData
-  readonly?: boolean
   error?: string | null
   zoomLevel?: number
 }
 
-const {
-  nodeData,
-  error = null,
-  readonly = false
-} = defineProps<LGraphNodeProps>()
+const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const {
   handleNodeCollapse,

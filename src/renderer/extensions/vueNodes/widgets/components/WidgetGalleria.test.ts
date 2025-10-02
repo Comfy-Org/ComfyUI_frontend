@@ -61,8 +61,7 @@ function createMockWidget(
 
 function mountComponent(
   widget: SimplifiedWidget<GalleryValue>,
-  modelValue: GalleryValue,
-  readonly = false
+  modelValue: GalleryValue
 ) {
   return mount(WidgetGalleria, {
     global: {
@@ -71,7 +70,6 @@ function mountComponent(
     },
     props: {
       widget,
-      readonly,
       modelValue
     }
   })
@@ -87,11 +85,10 @@ function createImageStrings(count: number): string[] {
 // Factory function that takes images, creates widget internally, returns wrapper
 function createGalleriaWrapper(
   images: GalleryValue,
-  options: Partial<GalleriaProps> = {},
-  readonly = false
+  options: Partial<GalleriaProps> = {}
 ) {
   const widget = createMockWidget(images, options)
-  return mountComponent(widget, images, readonly)
+  return mountComponent(widget, images)
 }
 
 describe('WidgetGalleria Image Display', () => {
@@ -246,25 +243,6 @@ describe('WidgetGalleria Image Display', () => {
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.props('showItemNavigators')).toBe(true)
-    })
-  })
-
-  describe('Readonly Mode', () => {
-    it('passes readonly state to galleria when readonly', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images, true)
-
-      // Galleria component should receive readonly state (though it may not support disabled)
-      expect(wrapper.props('readonly')).toBe(true)
-    })
-
-    it('passes readonly state to galleria when not readonly', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images, false)
-
-      expect(wrapper.props('readonly')).toBe(false)
     })
   })
 
