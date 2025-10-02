@@ -18,7 +18,7 @@ describe('useAssetFilterOptions', () => {
         createAssetWithSpecificExtension('pt')
       ]
 
-      const { availableFileFormats } = useAssetFilterOptions(assets)
+      const { availableFileFormats } = useAssetFilterOptions(() => assets)
 
       expect(availableFileFormats.value).toEqual([
         { name: '.ckpt', value: 'ckpt' },
@@ -34,7 +34,7 @@ describe('useAssetFilterOptions', () => {
         createAssetWithSpecificExtension('ckpt')
       ]
 
-      const { availableFileFormats } = useAssetFilterOptions(assets)
+      const { availableFileFormats } = useAssetFilterOptions(() => assets)
 
       expect(availableFileFormats.value).toEqual([
         { name: '.ckpt', value: 'ckpt' },
@@ -48,7 +48,7 @@ describe('useAssetFilterOptions', () => {
         createAssetWithSpecificExtension('safetensors')
       ]
 
-      const { availableFileFormats } = useAssetFilterOptions(assets)
+      const { availableFileFormats } = useAssetFilterOptions(() => assets)
 
       expect(availableFileFormats.value).toEqual([
         { name: '.safetensors', value: 'safetensors' }
@@ -56,7 +56,7 @@ describe('useAssetFilterOptions', () => {
     })
 
     it('handles empty asset list', () => {
-      const { availableFileFormats } = useAssetFilterOptions([])
+      const { availableFileFormats } = useAssetFilterOptions(() => [])
 
       expect(availableFileFormats.value).toEqual([])
     })
@@ -70,7 +70,7 @@ describe('useAssetFilterOptions', () => {
         createAssetWithSpecificBaseModel('sd35')
       ]
 
-      const { availableBaseModels } = useAssetFilterOptions(assets)
+      const { availableBaseModels } = useAssetFilterOptions(() => assets)
 
       expect(availableBaseModels.value).toEqual([
         { name: 'sd15', value: 'sd15' },
@@ -86,7 +86,7 @@ describe('useAssetFilterOptions', () => {
         createAssetWithSpecificBaseModel('sdxl')
       ]
 
-      const { availableBaseModels } = useAssetFilterOptions(assets)
+      const { availableBaseModels } = useAssetFilterOptions(() => assets)
 
       expect(availableBaseModels.value).toEqual([
         { name: 'sd15', value: 'sd15' },
@@ -100,7 +100,7 @@ describe('useAssetFilterOptions', () => {
         createAssetWithSpecificBaseModel('sd15')
       ]
 
-      const { availableBaseModels } = useAssetFilterOptions(assets)
+      const { availableBaseModels } = useAssetFilterOptions(() => assets)
 
       expect(availableBaseModels.value).toEqual([
         { name: 'sd15', value: 'sd15' }
@@ -113,7 +113,7 @@ describe('useAssetFilterOptions', () => {
         createAssetWithSpecificBaseModel('sdxl')
       ]
 
-      const { availableBaseModels } = useAssetFilterOptions(assets)
+      const { availableBaseModels } = useAssetFilterOptions(() => assets)
 
       expect(availableBaseModels.value).toEqual([
         { name: 'sdxl', value: 'sdxl' }
@@ -121,7 +121,7 @@ describe('useAssetFilterOptions', () => {
     })
 
     it('handles empty asset list', () => {
-      const { availableBaseModels } = useAssetFilterOptions([])
+      const { availableBaseModels } = useAssetFilterOptions(() => [])
 
       expect(availableBaseModels.value).toEqual([])
     })
@@ -132,9 +132,8 @@ describe('useAssetFilterOptions', () => {
       const assets = [createAssetWithSpecificExtension('safetensors')]
 
       const { availableFileFormats, availableBaseModels } =
-        useAssetFilterOptions(assets)
+        useAssetFilterOptions(() => assets)
 
-      // These should be computed refs
       expect(availableFileFormats.value).toBeDefined()
       expect(availableBaseModels.value).toBeDefined()
       expect(typeof availableFileFormats.value).toBe('object')

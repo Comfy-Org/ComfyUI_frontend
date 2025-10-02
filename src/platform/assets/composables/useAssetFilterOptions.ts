@@ -8,12 +8,13 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
  * Composable that extracts available filter options from asset data
  * Provides reactive computed properties for file formats and base models
  */
-export function useAssetFilterOptions(assets: AssetItem[] = []) {
+export function useAssetFilterOptions(assetsGetter: () => AssetItem[]) {
   /**
    * Extract unique file formats from asset names
    * Returns sorted SelectOption array with extensions
    */
   const availableFileFormats = computed<SelectOption[]>(() => {
+    const assets = assetsGetter()
     const extensions = assets
       .map((asset) => {
         const extension = asset.name.split('.').pop()
@@ -34,6 +35,7 @@ export function useAssetFilterOptions(assets: AssetItem[] = []) {
    * Returns sorted SelectOption array with base model names
    */
   const availableBaseModels = computed<SelectOption[]>(() => {
+    const assets = assetsGetter()
     const models = assets
       .map((asset) => asset.user_metadata?.base_model)
       .filter(
