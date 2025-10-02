@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
-      playwright-version: ${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
     steps:
       - name: Checkout ComfyUI
         uses: actions/checkout@v5
@@ -65,12 +64,6 @@ jobs:
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
-      - name: Playwright Version
-        id: playwright-version
-        run:  |
-          PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
-          echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
-        working-directory: ComfyUI_frontend
 
       - name: Save cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
@@ -123,22 +116,8 @@ jobs:
         working-directory: ComfyUI
 
 
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v4
-        id: cache-playwright-browsers
-        with:
-          path: '~/.cache/ms-playwright'
-          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
-
-      - name: Install Playwright Browsers
-        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
-
-      - name: Install Playwright Browsers (operating system dependencies)
-        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps
-        working-directory: ComfyUI_frontend
+      - name: Setup Playwright
+        uses: ./ComfyUI_frontend/.github/actions/setup-playwright
 
       - name: Start ComfyUI server
         run: |
@@ -202,22 +181,8 @@ jobs:
           pip install wait-for-it
         working-directory: ComfyUI
 
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v4
-        id: cache-playwright-browsers
-        with:
-          path: '~/.cache/ms-playwright'
-          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
-
-      - name: Install Playwright Browsers
-        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
-
-      - name: Install Playwright Browsers (operating system dependencies)
-        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps
-        working-directory: ComfyUI_frontend
+      - name: Setup Playwright
+        uses: ./ComfyUI_frontend/.github/actions/setup-playwright
 
       - name: Start ComfyUI server
         run: |

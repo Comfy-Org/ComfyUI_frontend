@@ -14,16 +14,8 @@ jobs:
       uses: actions/checkout@v5
     - name: Setup Frontend
       uses: ./.github/actions/setup-frontend
-    - name: Cache Playwright browsers
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
-        restore-keys: |
-          playwright-browsers-${{ runner.os }}-
-    - name: Install Playwright Browsers
-      run: pnpm exec playwright install chromium --with-deps
-      working-directory: ComfyUI_frontend
+    - name: Setup Playwright
+      uses: ./.github/actions/setup-playwright
     - name: Run Playwright tests and update snapshots
       id: playwright-tests
       run: pnpm exec playwright test --update-snapshots
