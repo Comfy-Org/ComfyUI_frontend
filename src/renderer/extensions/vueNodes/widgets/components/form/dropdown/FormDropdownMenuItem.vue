@@ -18,7 +18,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   click: [index: number]
-  imageLoad: [event: Event]
+  mediaLoad: [event: Event]
 }>()
 
 const actualDimensions = ref<string | null>(null)
@@ -32,7 +32,7 @@ function handleClick() {
 }
 
 function handleImageLoad(event: Event) {
-  emit('imageLoad', event)
+  emit('mediaLoad', event)
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
   if (img.naturalWidth && img.naturalHeight) {
@@ -41,7 +41,7 @@ function handleImageLoad(event: Event) {
 }
 
 function handleVideoLoad(event: Event) {
-  emit('imageLoad', event)
+  emit('mediaLoad', event)
   if (!event.target || !(event.target instanceof HTMLVideoElement)) return
   const video = event.target
   if (video.videoWidth && video.videoHeight) {
