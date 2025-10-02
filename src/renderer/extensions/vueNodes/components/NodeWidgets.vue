@@ -64,12 +64,13 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 // Import widget components directly
-import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
@@ -130,7 +131,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    const vueComponent = getComponent(widget.type) || WidgetInputText
+    const vueComponent = getComponent(widget.type) || WidgetLegacy
 
     const simplified: SimplifiedWidget = {
       name: widget.name,

@@ -11,6 +11,7 @@ import WidgetGalleria from '../components/WidgetGalleria.vue'
 import WidgetImageCompare from '../components/WidgetImageCompare.vue'
 import WidgetInputNumber from '../components/WidgetInputNumber.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
+import WidgetLegacy from '../components/WidgetLegacy.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
 import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
 import WidgetSelect from '../components/WidgetSelect.vue'
@@ -36,15 +37,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       component: WidgetInputText,
       aliases: ['STRING', 'text'],
       essential: false
-    }
-  ],
-  ['int', { component: WidgetInputNumber, aliases: ['INT'], essential: true }],
-  [
-    'float',
-    {
-      component: WidgetInputNumber,
-      aliases: ['FLOAT', 'number', 'slider'],
-      essential: true
     }
   ],
   [
@@ -108,6 +100,10 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
+  ],
+  [
+    'legacy',
+    { component: WidgetLegacy, aliases: [], essential: true}
   ]
 ]
 
@@ -146,5 +142,5 @@ export const shouldRenderAsVue = (widget: {
 }): boolean => {
   if (widget.options?.canvasOnly) return false
   if (!widget.type) return false
-  return isSupported(widget.type)
+  return true
 }
