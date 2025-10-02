@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
@@ -91,6 +91,9 @@ export function useSelectionToolboxPosition(
         // Fallback to LiteGraph bounds for regular nodes or non-string IDs
         if (item instanceof LGraphNode) {
           const bounds = item.getBounding()
+          allBounds.push([bounds[0], bounds[1], bounds[2], bounds[3]] as const)
+        } else if (item instanceof LGraphGroup) {
+          const bounds = item.boundingRect
           allBounds.push([bounds[0], bounds[1], bounds[2], bounds[3]] as const)
         }
       }
