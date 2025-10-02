@@ -53,6 +53,7 @@
 
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
+import { debounce } from 'es-toolkit/compat'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
@@ -99,19 +100,29 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 
 const isOverflowing = ref(false)
 
+const buffer = 30 // Pixels of buffer zone
+const checkOverflow = debounce(() => {
+  if (!overflowCheckRef.value) return
+
+  const h = window.innerHeight
+  const b = overflowCheckRef.value.getBoundingClientRect().bottom + 7
+
+  if (isOverflowing.value) {
+    isOverflowing.value = h < b - buffer
+  } else {
+    isOverflowing.value = h < b
+  }
+}, 10)
+
 onMounted(() => {
   if (!sideToolbarRef.value || !overflowCheckRef.value) return
 
-  const overflowObserver = useResizeObserver(sideToolbarRef.value, () => {
-    const h = window.innerHeight
-    let b = overflowCheckRef.value!.getBoundingClientRect().bottom + 7
+  const overflowObserver = useResizeObserver(
+    sideToolbarRef.value,
+    checkOverflow
+  )
 
-    if (isOverflowing.value) {
-      b += 20 // Prevent it from flipping back and forth due to small size changes
-    }
-
-    isOverflowing.value = h < b
-  })
+  checkOverflow()
 
   onBeforeUnmount(() => {
     overflowObserver.stop()
