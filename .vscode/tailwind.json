@@ -7,7 +7,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#import"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#import-directive"
         }
       ]
     },
@@ -17,7 +17,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#theme"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#theme-directive"
         }
       ]
     },
@@ -27,17 +27,17 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#layer"
+          "url": "https://tailwindcss.com/docs/theme#layers"
         }
       ]
     },
     {
       "name": "@apply",
-      "description": "Use the `@apply` directive to inline any existing utility classes into your own custom CSS. This is useful when you find a common utility pattern in your HTML that you’d like to extract to a new component.",
+      "description": "Use the `@apply` directive to inline any existing utility classes into your own custom CSS. This is useful when you find a common utility pattern in your HTML that you'd like to extract to a new component.",
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#apply"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#apply-directive"
         }
       ]
     },
@@ -47,7 +47,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#config"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#config-directive"
         }
       ]
     },
@@ -57,7 +57,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#reference"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#reference-directive"
         }
       ]
     },
@@ -67,7 +67,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#plugin"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#plugin-directive"
         }
       ]
     },
