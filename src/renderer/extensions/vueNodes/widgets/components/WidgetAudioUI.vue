@@ -1,9 +1,15 @@
 <template>
   <div class="w-full">
+    <WidgetSelect
+      v-if="audioWidgetType == 'preview'"
+      v-model="modelValue"
+      :widget="props.widget"
+    />
+    <p v-if="audioWidgetType == 'preview'" class="my-4"></p>
     <WidgetRecordAudio
       v-if="audioWidgetType === 'record'"
       ref="recordAudioRef"
-      :widget="widget"
+      :widget="props.widget!"
       :model-value="modelValue"
       :readonly="readonly"
       @update:model-value="$emit('update:modelValue', $event)"
@@ -15,7 +21,6 @@
       :readonly="readonly"
       :hide-when-empty="isOutputNode"
       :show-options-button="true"
-      @options-click="handleOptionsClick"
     />
   </div>
 </template>
@@ -28,16 +33,18 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
 
 import { getAudioUrlFromPath, getResourceURL } from '../utils/audioUtils'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
+import WidgetSelect from './WidgetSelect.vue'
 import AudioPreviewPlayer from './audio/AudioPreviewPlayer.vue'
 
 const props = defineProps<{
-  widget?: IBaseWidget
+  widget: SimplifiedWidget<string | number | undefined>
   readonly?: boolean
-  nodeId?: string
+  nodeId: string
 }>()
 
 const modelValue = defineModel<any>('modelValue')
@@ -94,43 +101,20 @@ const nodeLocatorId = computed(() => {
 
 const nodeOutputStore = useNodeOutputStore()
 
-// Handle options click from preview player
-const handleOptionsClick = () => {
-  // TODO: Implement options menu (playback speed, loop, etc.)
-}
+const audioFilePath = computed(() => props.widget.value as string)
 
-// Track the audio widget value from the LiteGraph node
-const audioWidgetValue = computed(() => {
-  const node = litegraphNode.value
-  if (!node?.widgets) {
-    return null
-  }
-
-  const audioWidget = node.widgets.find((w: IBaseWidget) => w.name === 'audio')
-  return audioWidget?.value as string | null | undefined
-})
-
-const audioFilePath = ref<string | null>(null)
-
-// Sync audioFilePath with the widget value
 watch(
-  audioWidgetValue,
-  (newValue) => {
-    if (newValue && newValue !== audioFilePath.value) {
-      audioFilePath.value = newValue
-    }
+  audioFilePath,
+  async (newPath) => {
+    if (!newPath) return
+
+    await nextTick()
+    const audioUrl = getAudioUrlFromPath(newPath, 'input')
+    if (!audioPreviewRef.value) return
+    audioPreviewRef.value.loadAudioFromUrl(audioUrl)
   },
   { immediate: true }
 )
-
-watch(audioFilePath, async (newAudioPath) => {
-  if (!newAudioPath) return
-  await nextTick()
-  if (audioPreviewRef.value) {
-    const audioUrl = getAudioUrlFromPath(newAudioPath)
-    audioPreviewRef.value.loadAudioFromUrl(audioUrl)
-  }
-})
 
 async function serializeValue() {
   if (audioWidgetType.value === 'record' && recordAudioRef.value) {

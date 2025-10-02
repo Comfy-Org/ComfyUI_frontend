@@ -180,7 +180,12 @@
     "ready": "Ready",
     "playRecording": "Play Recording",
     "playing": "Playing",
-    "stopPlayback": "Stop Playback"
+    "stopPlayback": "Stop Playback",
+    "playbackSpeed": "Playback Speed",
+    "volume": "Volume",
+    "halfSpeed": "0.5x",
+    "1x": "1x",
+    "2x": "2x"
   },
   "manager": {
     "title": "Custom Nodes Manager",
