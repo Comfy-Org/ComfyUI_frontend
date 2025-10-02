@@ -675,7 +675,7 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
-                window.name = clientId // use window name so it isnt reused when duplicating tabs
+                window.name = clientId // use window name so it isn't reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)

@@ -69,7 +69,7 @@ const terminalCreated = (
       await loadLogEntries()
     } catch (err) {
       console.error('Error loading logs', err)
-      // On older backends the endpoints wont exist
+      // On older backends the endpoints won't exist
       errorMessage.value =
         'Unable to load logs, please ensure you have updated your ComfyUI backend.'
       return

@@ -241,10 +241,10 @@ export class LiteGraphGlobal {
    */
   do_add_triggers_slots = false
 
-  /** [false!] being events, it is strongly reccomended to use them sequentially, one by one */
+  /** [false!] being events, it is strongly recommended to use them sequentially, one by one */
   allow_multi_output_for_events = true
 
-  /** [true!] allows to create and connect a ndoe clicking with the third button (wheel) */
+  /** [true!] allows to create and connect a node clicking with the third button (wheel) */
   middle_click_slot_add_default_node = false
 
   /** [true!] dragging a link to empty space will open a menu, add from list, search or defaults */
@@ -428,7 +428,7 @@ export class LiteGraphGlobal {
         `LiteGraph node class ${type} has onPropertyChange method, it must be called onPropertyChanged with d at the end`
       )
 
-    // TODO one would want to know input and ouput :: this would allow through registerNodeAndSlotType to get all the slots types
+    // TODO one would want to know input and output :: this would allow through registerNodeAndSlotType to get all the slots types
     if (this.auto_load_slot_types) new base_class(base_class.title || 'tmpnode')
   }
 
