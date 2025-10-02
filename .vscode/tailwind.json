@@ -70,6 +70,26 @@
           "url": "https://tailwindcss.com/docs/functions-and-directives#plugin"
         }
       ]
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Use the `@custom-variant` directive to add a custom variant to your project. Custom variants can be used with utilities like `hover`, `focus`, and responsive breakpoints. Use `@slot` inside the variant to indicate where the utility's styles should be inserted.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/adding-custom-styles#adding-custom-variants"
+        }
+      ]
+    },
+    {
+      "name": "@utility",
+      "description": "Use the `@utility` directive to add custom utilities to your project. Custom utilities work with all variants like `hover`, `focus`, and responsive variants. Use `--value()` to create functional utilities that accept arguments.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/adding-custom-styles#adding-custom-utilities"
+        }
+      ]
     }
   ]
 }
