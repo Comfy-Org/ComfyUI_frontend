@@ -109,16 +109,12 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
-  ],
-  [
-    'audioUI',
-    {
-      component: WidgetAudioUI,
-      aliases: ['AUDIOUI', 'AUDIO_UI'],
-      essential: false
-    }
   ]
 ]
+
+const comboWidgetAdditions: Map<string, Component> = new Map([
+  ['audio', WidgetAudioUI]
+])
 
 // Build lookup maps
 const widgets = new Map<string, WidgetDefinition>()
@@ -134,7 +130,10 @@ for (const [type, def] of coreWidgetDefinitions) {
 // Utility functions
 const getCanonicalType = (type: string): string => aliasMap.get(type) || type
 
-export const getComponent = (type: string): Component | null => {
+export const getComponent = (type: string, name: string): Component | null => {
+  if (type == 'combo' && comboWidgetAdditions.has(name)) {
+    return comboWidgetAdditions.get(name) || null
+  }
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.component || null
 }

@@ -131,7 +131,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    const vueComponent = getComponent(widget.type) || WidgetInputText
+    const vueComponent =
+      getComponent(widget.type, widget.name) || WidgetInputText
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
