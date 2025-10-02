@@ -1,14 +1,7 @@
-<template>
-  <canvas ref="canvas" class="w-full h-7 ml-[-24px] mr-[-16px] my-[-16px]"
-    @pointerdown="handleMouse"
-    @pointermove="handleMouse"
-    @pointerup="handleMouse"
-    />
-</template>
-
 <script setup lang="ts">
-import { computed, ref, onBeforeUnmount, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 // Button widgets don't have a v-model value, they trigger actions
 const props = defineProps<{
@@ -16,30 +9,35 @@ const props = defineProps<{
   readonly?: boolean
 }>()
 
-const canvas = ref()
+
+const canvasEl = ref()
 console.log(props.widget)
-let interval
+
+
+const { canvas } = useCanvasStore()
 let node
 let widget
 onMounted(() => {
-  interval = setInterval(draw, 100)
-  node = window.app.canvas.graph.getNodeById(canvas.value.attributes['node-id'].value)
+  node = canvas.graph.getNodeById(canvasEl.value.attributes['node-id'].value)
+  if (!node) return
   widget = node.widgets.find((w) => w.name === props.widget.name)
-})
-onBeforeUnmount(() => {
-  clearInterval(interval)
+  const originalCallback = widget.callback
+  widget.callback = function() {
+    const ret = originalCallback.apply(this, arguments)
+    draw()
+    return ret
+  }
+  draw()
 })
 function draw() {
-  const ctx = canvas.value?.getContext('2d')
-  if (!ctx) {
-    clearInterval(interval)
-    return
-  }
+  console.log('draw')
+  const ctx = canvasEl.value?.getContext('2d')
+  if (!ctx) return
   window.LiteGraph.WIDGET_BGCOLOR = "#71717A1A"
-  const { width } = canvas.value
+  const { width } = canvasEl.value
   const height = widget.computeSize ? widget.computeSize(width)[1] : 20
   widget.y = 0
-  canvas.value.height = height
+  canvasEl.value.height = height
   ctx.fill
   if (widget.draw)
     widget.draw(ctx, node, width, 0, height)
@@ -54,10 +52,25 @@ function handleMouse(e) {
     interactingMouse = true
   else if (e.type == 'pointermove' && !interactingMouse)
     return
-  const ds = window.app.canvas.ds
-  const { x, y } = canvas.value.getBoundingClientRect()
+  const x = e.offsetX
+  const y = e.offsetY
+  e.canvasX = x + node.pos[0]
+  e.canvasY = y + node.pos[1]
 
-  if (widget.mouse)
-    widget.mouse(e, [(e.x - x)/ds.scale, (e.y - y)/ds.scale], node)
+  if (widget.mouse) {
+    widget.mouse(e, [x, y], node)
+    return
+  }
+  if (widget.onClick && e.type == 'pointerup')
+    widget.onClick({e, node, canvas})
+  else if (widget.onDrag && e.type =='pointermove' && interactingMouse)
+    widget.onDrag({e, node, canvas})
 }
 </script>
+<template>
+  <canvas ref="canvasEl" class="w-full h-7 ml-[-24px] mr-[-16px] my-[-16px]"
+    @pointerdown="handleMouse"
+    @pointermove="handleMouse"
+    @pointerup="handleMouse"
+    />
+</template>
