@@ -1,7 +1,7 @@
 <template>
   <div class="mb-4">
     <Button
-      class="bg-[#2D2E32] text-white border-0 w-[413px]"
+      class="bg-zinc-500/10 dark-theme:bg-node-component-surface text-zinc-400 dark-theme:text-white border-0 w-[413px]"
       :disabled="isRecording || readonly"
       @click="handleStartRecording"
     >
@@ -85,9 +85,9 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAudioService } from '@/services/audioService'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
@@ -96,7 +96,7 @@ import { useTimer } from '../composables/audio/useTimer'
 import { formatTime } from '../utils/audioUtils'
 
 const props = defineProps<{
-  widget?: IBaseWidget
+  widget?: SimplifiedWidget<string | number | undefined>
   readonly?: boolean
   node?: LGraphNode
 }>()
