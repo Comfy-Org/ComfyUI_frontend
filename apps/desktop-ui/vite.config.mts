@@ -46,7 +46,20 @@ export default defineConfig(() => {
         ...baseAlias,
         '@desktop': path.resolve(projectRoot, 'src'),
         '@': path.resolve(projectRoot, 'src'),
-        '@frontend-locales': path.resolve(projectRoot, '../../src/locales')
+        '@frontend-locales': path.resolve(projectRoot, '../../src/locales'),
+        // Override shared utils paths to work from desktop-ui directory
+        '@/utils/formatUtil': path.resolve(
+          projectRoot,
+          '../../packages/shared-frontend-utils/src/formatUtil.ts'
+        ),
+        '@/utils/networkUtil': path.resolve(
+          projectRoot,
+          '../../packages/shared-frontend-utils/src/networkUtil.ts'
+        ),
+        '@/utils/electronMirrorCheck': path.resolve(
+          projectRoot,
+          '../../src/utils/electronMirrorCheck.ts'
+        )
       }
     },
     plugins: [

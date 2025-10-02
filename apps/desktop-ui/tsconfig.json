@@ -21,7 +21,8 @@
     "src/**/*.tsx",
     "src/**/*.vue",
     "src/**/*.json",
-    "src/**/*.d.ts"
+    "src/**/*.d.ts",
+    "vite.config.mts"
   ],
   "references": []
 }
