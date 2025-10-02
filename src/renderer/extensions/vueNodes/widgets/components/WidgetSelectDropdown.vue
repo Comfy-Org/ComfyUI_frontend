@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
@@ -16,10 +16,11 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import FormDropdown from './form/dropdown/FormDropdown.vue'
-import type {
-  DropdownItem,
-  FilterOption,
-  SelectedKey
+import {
+  AssetKindKey,
+  type DropdownItem,
+  type FilterOption,
+  type SelectedKey
 } from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -30,6 +31,11 @@ const props = defineProps<{
   allowUpload?: boolean
   uploadFolder?: ResultItemType
 }>()
+
+provide(
+  AssetKindKey,
+  computed(() => props.assetKind)
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number | undefined]
@@ -69,7 +75,7 @@ const inputItems = computed<DropdownItem[]>(() => {
 
   return values.map((value: string, index: number) => ({
     id: `input-${index}`,
-    imageSrc: getMediaUrl(value, 'input'),
+    mediaSrc: getMediaUrl(value, 'input'),
     name: value,
     metadata: ''
   }))
@@ -99,7 +105,7 @@ const outputItems = computed<DropdownItem[]>(() => {
 
   return Array.from(outputs).map((output, index) => ({
     id: `output-${index}`,
-    imageSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
+    mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,
     metadata: ''
   }))
@@ -144,6 +150,21 @@ const mediaPlaceholder = computed(() => {
 })
 
 const uploadable = computed(() => props.allowUpload === true)
+
+const acceptTypes = computed(() => {
+  // Be permissive with accept types because backend uses libraries
+  // that can handle a wide range of formats
+  switch (props.assetKind) {
+    case 'image':
+      return 'image/*'
+    case 'video':
+      return 'video/*'
+    case 'audio':
+      return 'audio/*'
+    default:
+      return undefined // model or unknown
+  }
+})
 
 watch(
   localValue,
@@ -269,6 +290,7 @@ function getMediaUrl(
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable="uploadable"
+      :accept="acceptTypes"
       :filter-options="filterOptions"
       v-bind="combinedProps"
       class="w-full"

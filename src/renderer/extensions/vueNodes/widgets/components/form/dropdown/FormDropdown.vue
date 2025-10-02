@@ -29,6 +29,7 @@ interface Props {
 
   uploadable?: boolean
   disabled?: boolean
+  accept?: string
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
   isSelected?: (
@@ -195,6 +196,7 @@ function handleSelection(item: DropdownItem, index: number) {
       :selected="selected"
       :uploadable="uploadable"
       :disabled="disabled"
+      :accept="accept"
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
