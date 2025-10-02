@@ -167,8 +167,8 @@ input|output: every connection
 general properties:
     + clip_area: if you render outside the node, it will be clipped
     + unsafe_execution: not allowed for safe execution
-    + skip_repeated_outputs: when adding new outputs, it wont show if there is one already connected
-    + resizable: if set to false it wont be resizable with the mouse
+    + skip_repeated_outputs: when adding new outputs, it won't show if there is one already connected
+    + resizable: if set to false it won't be resizable with the mouse
     + widgets_start_y: widgets start at y distance from the top of the node
 
 flags object:
@@ -902,7 +902,7 @@ export class LGraphNode
 
     if (this.onSerialize?.(o))
       console.warn(
-        'node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter'
+        'node onSerialize shouldn\'t return anything, data should be stored in the object pass in the first parameter'
       )
 
     return o
@@ -1950,7 +1950,7 @@ export class LGraphNode
     try {
       this.removeWidget(widget)
     } catch (error) {
-      console.debug('Failed to remove widget', error)
+      console.error('Failed to remove widget', error)
     }
   }
 
@@ -2351,7 +2351,7 @@ export class LGraphNode
 
   /**
    * returns the output (or input) slot with a given type, -1 if not found
-   * @param input uise inputs instead of outputs
+   * @param input use inputs instead of outputs
    * @param type the type of the slot to find
    * @param returnObj if the obj itself wanted
    * @param preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
@@ -2583,12 +2583,7 @@ export class LGraphNode
     if (slotIndex !== undefined)
       return this.connect(slot, target_node, slotIndex, optsIn?.afterRerouteId)
 
-    console.debug(
-      '[connectByType]: no way to connect type:',
-      target_slotType,
-      'to node:',
-      target_node
-    )
+    // No compatible slot found - connection not possible
     return null
   }
 
@@ -2621,7 +2616,7 @@ export class LGraphNode
     if (slotIndex !== undefined)
       return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
-    console.debug(
+    console.error(
       '[connectByType]: no way to connect type:',
       source_slotType,
       'to node:',
@@ -2661,7 +2656,7 @@ export class LGraphNode
     if (!graph) {
       // could be connected before adding it to a graph
       // due to link ids being associated with graphs
-      console.log(
+      console.error(
         "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
       )
       return null
@@ -2672,11 +2667,12 @@ export class LGraphNode
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return null
       }
     } else if (!outputs || slot >= outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return null
     }
 
@@ -2696,7 +2692,7 @@ export class LGraphNode
       targetIndex = target_node.findInputSlot(target_slot)
       if (targetIndex == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${targetIndex}`)
+          console.error(`Connect: Error, no slot of name ${targetIndex}`)
         return null
       }
     } else if (target_slot === LiteGraph.EVENT) {
@@ -2728,7 +2724,8 @@ export class LGraphNode
       !target_node.inputs ||
       targetIndex >= target_node.inputs.length
     ) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return null
     }
 
@@ -2914,7 +2911,7 @@ export class LGraphNode
     const fromLastFloatingReroute =
       parentReroute?.floating?.slotType === 'output'
 
-    // Adding from an ouput, or a floating reroute that is NOT the tip of an existing floating chain
+    // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
     if (afterRerouteId == null || !fromLastFloatingReroute) {
       const link = new LLink(
         -1,
@@ -2955,11 +2952,12 @@ export class LGraphNode
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.outputs || slot >= this.outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return false
     }
 
@@ -3075,19 +3073,19 @@ export class LGraphNode
       slot = this.findInputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.inputs || slot >= this.inputs.length) {
       if (LiteGraph.debug) {
-        console.log('Connect: Error, slot number not found')
+        console.error('Connect: Error, slot number not found')
       }
       return false
     }
 
     const input = this.inputs[slot]
     if (!input) {
-      console.debug('disconnectInput: input not found', slot, this.inputs)
+      console.error('disconnectInput: input not found', slot, this.inputs)
       return false
     }
 
@@ -3116,19 +3114,16 @@ export class LGraphNode
 
         const target_node = graph.getNodeById(link_info.origin_id)
         if (!target_node) {
-          console.debug(
-            'disconnectInput: target node not found',
-            link_info.origin_id
+          console.error(
+            'disconnectInput: output not found',
+            link_info.origin_slot
           )
           return false
         }
 
         const output = target_node.outputs[link_info.origin_slot]
         if (!output?.links?.length) {
-          console.debug(
-            'disconnectInput: output not found',
-            link_info.origin_slot
-          )
+          // Output not found - may have been removed
           return false
         }
 

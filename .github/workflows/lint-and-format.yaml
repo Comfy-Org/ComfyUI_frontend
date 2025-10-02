@@ -13,11 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4

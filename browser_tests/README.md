@@ -16,7 +16,7 @@ Without this flag, parallel tests will conflict and fail randomly.
 
 ### ComfyUI devtools
 
-ComfyUI_devtools is now included in this repository under `tools/devtools/`. During CI/CD, these files are automatically copied to the `custom_nodes` directory.  
+ComfyUI_devtools is included in this repository under `tools/devtools/`. During CI/CD, these files are automatically copied to the `custom_nodes` directory.  
 _ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
 
 For local development, copy the devtools files to your ComfyUI installation:
@@ -84,7 +84,7 @@ UI mode features:
 - **Console/Network Tabs**: View logs and API calls at each step
 - **Attachments Tab**: View all snapshots with expected and actual images
 
-![Playwright UI Mode](https://github.com/user-attachments/assets/c158c93f-b39a-44c5-a1a1-e0cc975ee9f2)
+![Playwright UI Mode](https://github.com/user-attachments/assets/9b9cb09f-6da7-4fa0-81df-2effceced755)
 
 For CI or headless testing:
 

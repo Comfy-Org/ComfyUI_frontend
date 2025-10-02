@@ -461,7 +461,7 @@ export class LGraphCanvas
     }
 
     const baseFontSize = LiteGraph.NODE_TEXT_SIZE // 14px
-    const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1) //Using sqrt here because higher DPR monitors do not linearily scale the readability of the font, instead they increase the font by some heurisitc, and to approximate we use sqrt to say bascially a DPR of 2 increases the readibility by 40%, 3 by 70%
+    const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1) //Using sqrt here because higher DPR monitors do not linearily scale the readability of the font, instead they increase the font by some heurisitc, and to approximate we use sqrt to say basically a DPR of 2 increases the readability by 40%, 3 by 70%
 
     // Calculate the zoom level where text becomes unreadable
     this._lowQualityZoomThreshold =
@@ -547,7 +547,7 @@ export class LGraphCanvas
   linkMarkerShape: LinkMarkerShape = LinkMarkerShape.Circle
   links_render_mode: number
   /** Minimum font size in pixels before switching to low quality rendering.
-   * This intializes first and if we cant get the value from the settings we default to 8px
+   * This initializes first and if we can't get the value from the settings we default to 8px
    */
   private _min_font_size_for_lod: number = 8
 
@@ -1228,7 +1228,7 @@ export class LGraphCanvas
         className: 'event'
       })
     }
-    // add callback for modifing the menu elements onMenuNodeOutputs
+    // add callback for modifying the menu elements onMenuNodeOutputs
     const retEntries = node.onMenuNodeOutputs?.(entries)
     if (retEntries) entries = retEntries
 
@@ -3902,7 +3902,7 @@ export class LGraphCanvas
     for (const item of [...parsed.nodes, ...parsed.reroutes]) {
       if (item.pos == null)
         throw new TypeError(
-          'Invalid node encounterd on paste.  `pos` was null.'
+          'Invalid node encountered on paste.  `pos` was null.'
         )
 
       if (item.pos[0] < offsetX) offsetX = item.pos[0]
@@ -6406,7 +6406,7 @@ export class LGraphCanvas
 
           return true
         }
-        console.log(`failed creating ${nodeNewType}`)
+        console.error(`failed creating ${nodeNewType}`)
       }
     }
     return false
@@ -6818,7 +6818,7 @@ export class LGraphCanvas
         canvas.focus()
         root_document.body.style.overflow = ''
 
-        // important, if canvas loses focus keys wont be captured
+        // important, if canvas loses focus keys won't be captured
         setTimeout(() => canvas.focus(), 20)
         dialog.remove()
       }
@@ -7095,7 +7095,7 @@ export class LGraphCanvas
                 )
               }
             } else {
-              // console.warn("cant find slot " + options.slot_from);
+              // console.warn("can't find slot " + options.slot_from);
             }
           }
           if (options.node_to) {
@@ -7140,7 +7140,7 @@ export class LGraphCanvas
                 )
               }
             } else {
-              // console.warn("cant find slot_nodeTO " + options.slot_from);
+              // console.warn("can't find slot_nodeTO " + options.slot_from);
             }
           }
 
@@ -7478,7 +7478,7 @@ export class LGraphCanvas
     return dialog
   }
 
-  // TODO refactor, theer are different dialog, some uses createDialog, some dont
+  // TODO refactor, there are different dialog, some uses createDialog, some dont
   createDialog(html: string, options: IDialogOptions): IDialog {
     const def_options = {
       checkForInput: false,

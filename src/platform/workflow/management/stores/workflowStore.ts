@@ -87,7 +87,6 @@ export class ComfyWorkflow extends UserFile {
     }
 
     // Note: originalContent is populated by super.load()
-    console.debug('load and start tracking of workflow', this.path)
     this.changeTracker = markRaw(
       new ChangeTracker(
         this,
@@ -98,7 +97,6 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override unload(): void {
-    console.debug('unload workflow', this.path)
     this.changeTracker = null
     super.unload()
   }
@@ -302,7 +300,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
     comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
-    console.debug('[workflowStore] open workflow', workflow.path)
     return loadedWorkflow
   }
 
@@ -379,7 +376,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     } else {
       workflow.unload()
     }
-    console.debug('[workflowStore] close workflow', workflow.path)
   }
 
   /**

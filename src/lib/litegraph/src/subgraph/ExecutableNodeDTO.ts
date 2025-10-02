@@ -57,7 +57,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
   #id: ExecutionId
 
   /**
-   * The path to the acutal node through subgraph instances, represented as a list of all subgraph node IDs (instances),
+   * The path to the actual node through subgraph instances, represented as a list of all subgraph node IDs (instances),
    * followed by the actual original node ID within the subgraph. Each segment is separated by `:`.
    *
    * e.g. `1:2:3`:
@@ -104,7 +104,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     readonly subgraphNodePath: readonly NodeId[],
     /** A flattened map of all DTOs in this node network. Subgraph instances have been expanded into their inner nodes. */
     readonly nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
-    /** The actual subgraph instance that contains this node, otherise undefined. */
+    /** The actual subgraph instance that contains this node, otherwise undefined. */
     readonly subgraphNode?: SubgraphNode
   ) {
     if (!node.graph) throw new NullGraphError()
@@ -271,9 +271,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       // Bypass nodes by finding first input with matching type
       const matchingIndex = this.#getBypassSlotIndex(slot, type)
 
-      // No input types match
+      // No input types match - bypass not possible
       if (matchingIndex === -1) {
-        console.debug(
+        console.warn(
           `[ExecutableNodeDTO.resolveOutput] No input types match type [${type}] for id [${this.id}] slot [${slot}]`,
           this
         )

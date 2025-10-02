@@ -373,6 +373,16 @@ importers:
 
   packages/registry-types: {}
 
+  packages/shared-frontend-utils:
+    dependencies:
+      axios:
+        specifier: ^1.11.0
+        version: 1.11.0
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+
   packages/tailwind-utils:
     dependencies:
       clsx:
