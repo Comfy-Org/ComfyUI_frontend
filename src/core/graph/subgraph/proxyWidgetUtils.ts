@@ -12,26 +12,21 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 export type WidgetItem = [LGraphNode, IBaseWidget]
 
-function pushWidgets(node: SubgraphNode, ...widgets: [string, string][]) {
-  const proxyWidgets = getProxyWidgets(node)
-  proxyWidgets.push(...widgets)
-  node.properties.proxyWidgets = proxyWidgets
-}
 function getProxyWidgets(node: SubgraphNode) {
   return parseProxyWidgets(node.properties.proxyWidgets)
 }
-
-/**
- * Enables display of a widget on the parent subgraphNode
- * @param {IBaseWidget} widget - The widget to be promoted
- * @param {LGraphNode} node - the node which owns the widget
- */
 export function promoteWidget(
   node: LGraphNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
-  for (const parent of parents) pushWidgets(parent, [`${node.id}`, widget.name])
+  for (const parent of parents) {
+    const proxyWidgets = [
+      ...getProxyWidgets(parent),
+      widgetItemToProperty([node, widget])
+    ]
+    parent.properties.proxyWidgets = proxyWidgets
+  }
   widget.promoted = true
 }
 
