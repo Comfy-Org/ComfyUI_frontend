@@ -8,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 export type WidgetItem = [LGraphNode, IBaseWidget]
@@ -114,7 +115,14 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return n.widgets?.map((w: IBaseWidget) => [n, w]) ?? []
 }
 export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
+  const { updatePreviews } = useLitegraphService()
   const interiorNodes = subgraphNode.subgraph.nodes
+  for (const node of interiorNodes) {
+    node.updateComputedDisabled()
+    //NOTE: Since this operation is async, previews still don't exist after the single frame
+    //Add an onLoad callback to updatePreviews?
+    updatePreviews(node)
+  }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
     .filter(isRecommendedWidget)

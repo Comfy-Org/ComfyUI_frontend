@@ -1,3 +1,4 @@
+import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type {
   LGraph,
@@ -184,6 +185,9 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       else if (property == 'computedHeight') {
         if (overlay.widgetName.startsWith('$$') && linkedNode) {
           updatePreviews(linkedNode)
+        }
+        if (linkedNode && linkedWidget?.computedDisabled) {
+          demoteWidget(linkedNode, linkedWidget, [subgraphNode])
         }
         //update linkage regularly, but no more than once per frame
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)

@@ -29,6 +29,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const canvasStore = useCanvasStore()
@@ -90,7 +91,12 @@ const activeWidgets = computed<WidgetItem[]>({
 const interiorWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
+  const { updatePreviews } = useLitegraphService()
   const interiorNodes = node.subgraph.nodes
+  for (const node of interiorNodes) {
+    node.updateComputedDisabled()
+    updatePreviews(node)
+  }
   return interiorNodes
     .flatMap(nodeWidgets)
     .filter(([_, w]: WidgetItem) => !w.computedDisabled)
