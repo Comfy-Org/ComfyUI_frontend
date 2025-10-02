@@ -100,7 +100,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(innerNodes[0].widgets[0].last_y).toBe(11)
     expect(innerNodes[0].widgets[0].computedHeight).toBe(12)
   })
-  test('Can detatch and re-attach widgets', () => {
+  test('Can detach and re-attach widgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     subgraphNode.properties.proxyWidgets = JSON.stringify([

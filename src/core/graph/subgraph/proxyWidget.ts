@@ -135,7 +135,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
    * @param {string} property - The name of the accessed value.
    *   Checked for conditional logic, but never changed
    * @param {object} receiver - The object the result is set to
-   *   and the vlaue used as 'this' if property is a get/set method
+   *   and the value used as 'this' if property is a get/set method
    * @param {unknown} value - only used on set calls. The thing being assigned
    */
   const handler = {
