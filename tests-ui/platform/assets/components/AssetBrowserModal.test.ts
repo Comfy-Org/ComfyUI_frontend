@@ -57,6 +57,9 @@ vi.mock('@/components/widget/layout/BaseModalLayout.vue', () => ({
         <div data-testid="header">
           <slot name="header" />
         </div>
+        <div v-if="$slots.contentFilter" data-testid="content-filter">
+          <slot name="contentFilter" />
+        </div>
         <div data-testid="content">
           <slot name="content" />
         </div>
@@ -81,6 +84,19 @@ vi.mock('@/components/widget/panel/LeftSidePanel.vue', () => ({
         >
           {{ item.label }}
         </button>
+      </div>
+    `
+  }
+}))
+
+vi.mock('@/platform/assets/components/AssetFilterBar.vue', () => ({
+  default: {
+    name: 'AssetFilterBar',
+    props: ['assets'],
+    emits: ['filter-change'],
+    template: `
+      <div data-testid="asset-filter-bar">
+        Filter bar with {{ assets ? assets.length : 0 }} assets
       </div>
     `
   }
@@ -289,7 +305,12 @@ describe('AssetBrowserModal', () => {
       // Click on first asset
       await wrapper.find('[data-testid="asset-asset1"]').trigger('click')
 
-      expect(onSelectSpy).toHaveBeenCalledWith('Test Model')
+      expect(onSelectSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'asset1',
+          name: 'Test Model'
+        })
+      )
     })
   })
 
@@ -325,6 +346,38 @@ describe('AssetBrowserModal', () => {
         showLeftPanel: false
       })
       expect(wrapper2.find('[data-testid="left-panel"]').exists()).toBe(false)
+    })
+  })
+
+  describe('Filter Options Reactivity', () => {
+    it('updates filter options when category changes', async () => {
+      const assets = [
+        createTestAsset('c1', 'model.safetensors', 'checkpoints'),
+        createTestAsset('c2', 'another.safetensors', 'checkpoints'),
+        createTestAsset('l1', 'lora.pt', 'loras')
+      ]
+      const wrapper = createWrapper(assets, { showLeftPanel: true })
+
+      // Initially on "all" category - should have both .safetensors and .pt
+      const filterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
+      expect(filterBar.exists()).toBe(true)
+
+      // Switch to checkpoints category
+      const checkpointsNav = wrapper.find(
+        '[data-testid="nav-item-checkpoints"]'
+      )
+      expect(checkpointsNav.exists()).toBe(true)
+      await checkpointsNav.trigger('click')
+
+      // Filter bar should receive only checkpoint assets now
+      const updatedFilterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
+      const filterBarAssets = updatedFilterBar.props('assets')
+
+      // Should only have checkpoints (both .safetensors)
+      expect(filterBarAssets).toHaveLength(2)
+      expect(
+        filterBarAssets.every((a: AssetItem) => a.tags.includes('checkpoints'))
+      ).toBe(true)
     })
   })
 })

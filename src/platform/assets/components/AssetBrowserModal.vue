@@ -28,7 +28,10 @@
     </template>
 
     <template #contentFilter>
-      <AssetFilterBar :assets="assets" @filter-change="updateFilters" />
+      <AssetFilterBar
+        :assets="categoryFilteredAssets"
+        @filter-change="updateFilters"
+      />
     </template>
 
     <template #content>
@@ -74,8 +77,8 @@ const {
   selectedCategory,
   availableCategories,
   contentTitle,
+  categoryFilteredAssets,
   filteredAssets,
-  selectAssetWithCallback,
   updateFilters
 } = useAssetBrowser(props.assets)
 
@@ -88,8 +91,10 @@ function handleClose() {
   emit('close')
 }
 
-async function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
+function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   emit('asset-select', asset)
-  await selectAssetWithCallback(asset.id, props.onSelect)
+  // onSelect callback is provided by dialog composable layer
+  // It handles the appropriate transformation (filename extraction or full asset)
+  props.onSelect?.(asset)
 }
 </script>
