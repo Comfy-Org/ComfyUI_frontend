@@ -6,6 +6,12 @@ settings:
 
 catalogs:
   default:
+    '@iconify-json/lucide':
+      specifier: ^1.1.178
+      version: 1.2.66
+    '@iconify/tailwind':
+      specifier: ^1.1.3
+      version: 1.2.0
     tailwindcss:
       specifier: ^4.1.12
       version: 4.1.12
@@ -367,10 +373,10 @@ importers:
   packages/design-system:
     dependencies:
       '@iconify-json/lucide':
-        specifier: ^1.1.178
+        specifier: 'catalog:'
         version: 1.2.66
       '@iconify/tailwind':
-        specifier: ^1.1.3
+        specifier: 'catalog:'
         version: 1.2.0
     devDependencies:
       tailwindcss:
