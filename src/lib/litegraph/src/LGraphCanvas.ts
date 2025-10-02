@@ -6190,14 +6190,14 @@ export class LGraphCanvas
 
         case 'Delete': {
           // segment can be a Reroute object, in which case segment.id is the reroute id
-          const linkId =
-            segment instanceof Reroute
-              ? segment.linkIds.values().next().value
-              : segment.id
-          if (linkId !== undefined) {
-            graph.removeLink(linkId)
-            // Clean up layout store
-            layoutStore.deleteLinkLayout(linkId)
+          const linkIds =
+            segment instanceof Reroute ? segment.linkIds : [segment.id]
+          for (const linkId of linkIds) {
+            if (linkId !== undefined) {
+              graph.removeLink(linkId)
+              // Clean up layout store
+              layoutStore.deleteLinkLayout(linkId)
+            }
           }
           break
         }

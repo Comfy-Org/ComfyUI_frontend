@@ -180,14 +180,14 @@ interface WorkflowStore {
   activeSubgraph: Subgraph | undefined
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
-  executionIdToCurrentId: (id: string) => any
+  executionIdToCurrentId: (id: NodeExecutionId) => any
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
   nodeExecutionIdToNodeLocatorId: (
-    nodeExecutionId: NodeExecutionId | string
+    nodeExecutionId: NodeExecutionId
   ) => NodeLocatorId | null
-  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId | string) => NodeId | null
+  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId) => NodeId | null
   nodeLocatorIdToNodeExecutionId: (
-    locatorId: NodeLocatorId | string,
+    locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
   ) => NodeExecutionId | null
 }
@@ -514,14 +514,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSubgraphActive.value = isSubgraph(subgraph)
   }
 
-  const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
+  const subgraphNodeIdToSubgraph = (id: NodeId, graph: LGraph | Subgraph) => {
     const node = graph.getNodeById(id)
     if (node?.isSubgraphNode()) return node.subgraph
   }
 
   const getSubgraphsFromInstanceIds = (
     currentGraph: LGraph | Subgraph,
-    subgraphNodeIds: string[],
+    subgraphNodeIds: NodeId[],
     subgraphs: Subgraph[] = []
   ): Subgraph[] => {
     const currentPart = subgraphNodeIds.shift()
@@ -534,7 +534,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
   }
 
-  const executionIdToCurrentId = (id: string) => {
+  const executionIdToCurrentId = (id: NodeExecutionId) => {
     const subgraph = activeSubgraph.value
 
     // Short-circuit: ID belongs to the parent workflow / no active subgraph
@@ -584,11 +584,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The NodeLocatorId or null if conversion fails
    */
   const nodeExecutionIdToNodeLocatorId = (
-    nodeExecutionId: NodeExecutionId | string
+    nodeExecutionId: NodeExecutionId
   ): NodeLocatorId | null => {
     // Handle simple node IDs (root graph - no colons)
     if (!nodeExecutionId.includes(':')) {
-      return nodeExecutionId
+      return nodeExecutionId as NodeLocatorId
     }
 
     const parts = parseNodeExecutionId(nodeExecutionId)
@@ -619,9 +619,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param locatorId The NodeLocatorId
    * @returns The local node ID or null if invalid
    */
-  const nodeLocatorIdToNodeId = (
-    locatorId: NodeLocatorId | string
-  ): NodeId | null => {
+  const nodeLocatorIdToNodeId = (locatorId: NodeLocatorId): NodeId | null => {
     const parsed = parseNodeLocatorId(locatorId)
     return parsed?.localNodeId ?? null
   }
@@ -633,7 +631,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The execution ID or null if the node is not accessible from the target context
    */
   const nodeLocatorIdToNodeExecutionId = (
-    locatorId: NodeLocatorId | string,
+    locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
   ): NodeExecutionId | null => {
     const parsed = parseNodeLocatorId(locatorId)

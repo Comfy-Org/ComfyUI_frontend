@@ -572,7 +572,7 @@ export class LGraph
     const S: LGraphNode[] = []
     const M: Dictionary<LGraphNode> = {}
     // to avoid repeating links
-    const visited_links: Record<NodeId, boolean> = {}
+    const visited_links: Record<LinkId, boolean> = {}
     const remaining_links: Record<NodeId, number> = {}
 
     // search for the nodes without inputs (starting nodes)

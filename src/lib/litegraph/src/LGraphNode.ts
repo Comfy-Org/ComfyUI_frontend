@@ -40,7 +40,8 @@ import type {
   ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
-  Size
+  Size,
+  UniqueId
 } from './interfaces'
 import {
   type LGraphNodeConstructor,
@@ -90,7 +91,7 @@ import { type WidgetTypeMap, toConcreteWidget } from './widgets/widgetMap'
 
 // #region Types
 
-export type NodeId = number | string
+export type NodeId = UniqueId<number | string, 'NodeId'>
 
 export type NodeProperty = string | number | boolean | object
 
