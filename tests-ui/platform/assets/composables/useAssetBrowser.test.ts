@@ -3,13 +3,6 @@ import { nextTick } from 'vue'
 
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
-
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetDetails: vi.fn()
-  }
-}))
 
 vi.mock('@/i18n', () => ({
   t: (key: string) => {
@@ -40,6 +33,38 @@ describe('useAssetBrowser', () => {
     updated_at: '2024-01-01T00:00:00Z',
     last_access_time: '2024-01-01T00:00:00Z',
     ...overrides
+  })
+
+  describe('Category Filtering', () => {
+    it('exposes category-filtered assets for filter options', () => {
+      const checkpointAsset = createApiAsset({
+        id: 'checkpoint-1',
+        name: 'model.safetensors',
+        tags: ['models', 'checkpoints']
+      })
+      const loraAsset = createApiAsset({
+        id: 'lora-1',
+        name: 'lora.pt',
+        tags: ['models', 'loras']
+      })
+
+      const { selectedCategory, categoryFilteredAssets } = useAssetBrowser([
+        checkpointAsset,
+        loraAsset
+      ])
+
+      // Initially should show all assets
+      expect(categoryFilteredAssets.value).toHaveLength(2)
+
+      // When category selected, should only show that category
+      selectedCategory.value = 'checkpoints'
+      expect(categoryFilteredAssets.value).toHaveLength(1)
+      expect(categoryFilteredAssets.value[0].id).toBe('checkpoint-1')
+
+      selectedCategory.value = 'loras'
+      expect(categoryFilteredAssets.value).toHaveLength(1)
+      expect(categoryFilteredAssets.value[0].id).toBe('lora-1')
+    })
   })
 
   describe('Asset Transformation', () => {
@@ -255,181 +280,6 @@ describe('useAssetBrowser', () => {
         '2024-02-01T00:00:00Z',
         '2024-01-01T00:00:00Z'
       ])
-    })
-  })
-
-  describe('Async Asset Selection with Detail Fetching', () => {
-    it('should fetch asset details and call onSelect with full AssetItem', async () => {
-      const onSelectSpy = vi.fn()
-      const asset = createApiAsset({
-        id: 'asset-123',
-        name: 'test-model.safetensors'
-      })
-
-      const assetDetails = createApiAsset({
-        id: 'asset-123',
-        name: 'test-model.safetensors',
-        user_metadata: { filename: 'checkpoints/test-model.safetensors' }
-      })
-      vi.mocked(assetService.getAssetDetails).mockResolvedValue(assetDetails)
-
-      const { selectAssetWithCallback } = useAssetBrowser([asset])
-
-      await selectAssetWithCallback(asset.id, onSelectSpy)
-
-      expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-123')
-      expect(onSelectSpy).toHaveBeenCalledWith(assetDetails)
-    })
-
-    it('should handle missing user_metadata.filename as error', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const onSelectSpy = vi.fn()
-      const asset = createApiAsset({ id: 'asset-456' })
-
-      const assetDetails = createApiAsset({
-        id: 'asset-456',
-        user_metadata: { filename: '' } // Invalid empty filename
-      })
-      vi.mocked(assetService.getAssetDetails).mockResolvedValue(assetDetails)
-
-      const { selectAssetWithCallback } = useAssetBrowser([asset])
-
-      await selectAssetWithCallback(asset.id, onSelectSpy)
-
-      expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-456')
-      expect(onSelectSpy).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Invalid asset filename:',
-        expect.arrayContaining([
-          expect.objectContaining({
-            message: 'Filename cannot be empty'
-          })
-        ]),
-        'for asset:',
-        'asset-456'
-      )
-    })
-
-    it('should handle API errors gracefully', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const onSelectSpy = vi.fn()
-      const asset = createApiAsset({ id: 'asset-789' })
-
-      const apiError = new Error('API Error')
-      vi.mocked(assetService.getAssetDetails).mockRejectedValue(apiError)
-
-      const { selectAssetWithCallback } = useAssetBrowser([asset])
-
-      await selectAssetWithCallback(asset.id, onSelectSpy)
-
-      expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-789')
-      expect(onSelectSpy).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to fetch asset details for asset-789'),
-        apiError
-      )
-    })
-
-    it('should not fetch details when no callback provided', async () => {
-      const asset = createApiAsset({ id: 'asset-no-callback' })
-
-      const { selectAssetWithCallback } = useAssetBrowser([asset])
-
-      await selectAssetWithCallback(asset.id)
-
-      expect(assetService.getAssetDetails).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Filename Validation Security', () => {
-    const createValidationTest = (filename: string) => {
-      const testAsset = createApiAsset({ id: 'validation-test' })
-      const detailAsset = createApiAsset({
-        id: 'validation-test',
-        user_metadata: { filename }
-      })
-      return { testAsset, detailAsset }
-    }
-
-    it('accepts valid file paths with forward slashes', async () => {
-      const onSelectSpy = vi.fn()
-      const { testAsset, detailAsset } = createValidationTest(
-        'models/checkpoints/v1/test-model.safetensors'
-      )
-      vi.mocked(assetService.getAssetDetails).mockResolvedValue(detailAsset)
-
-      const { selectAssetWithCallback } = useAssetBrowser([testAsset])
-      await selectAssetWithCallback(testAsset.id, onSelectSpy)
-
-      expect(onSelectSpy).toHaveBeenCalledWith(detailAsset)
-    })
-
-    it('rejects directory traversal attacks', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const onSelectSpy = vi.fn()
-
-      const maliciousPaths = [
-        '../malicious-model.safetensors',
-        'models/../../../etc/passwd',
-        '/etc/passwd'
-      ]
-
-      for (const path of maliciousPaths) {
-        const { testAsset, detailAsset } = createValidationTest(path)
-        vi.mocked(assetService.getAssetDetails).mockResolvedValue(detailAsset)
-
-        const { selectAssetWithCallback } = useAssetBrowser([testAsset])
-        await selectAssetWithCallback(testAsset.id, onSelectSpy)
-
-        expect(onSelectSpy).not.toHaveBeenCalled()
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Invalid asset filename:',
-          expect.arrayContaining([
-            expect.objectContaining({
-              message: 'Path must not start with / or contain ..'
-            })
-          ]),
-          'for asset:',
-          'validation-test'
-        )
-      }
-    })
-
-    it('rejects invalid filename characters', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const onSelectSpy = vi.fn()
-
-      const invalidChars = ['\\', ':', '*', '?', '"', '<', '>', '|']
-
-      for (const char of invalidChars) {
-        const { testAsset, detailAsset } = createValidationTest(
-          `bad${char}filename.safetensors`
-        )
-        vi.mocked(assetService.getAssetDetails).mockResolvedValue(detailAsset)
-
-        const { selectAssetWithCallback } = useAssetBrowser([testAsset])
-        await selectAssetWithCallback(testAsset.id, onSelectSpy)
-
-        expect(onSelectSpy).not.toHaveBeenCalled()
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Invalid asset filename:',
-          expect.arrayContaining([
-            expect.objectContaining({
-              message: 'Invalid filename characters'
-            })
-          ]),
-          'for asset:',
-          'validation-test'
-        )
-      }
     })
   })
 
