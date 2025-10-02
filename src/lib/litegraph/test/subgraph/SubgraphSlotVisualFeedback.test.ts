@@ -134,7 +134,7 @@ describe('SubgraphSlot visual feedback', () => {
     expect(globalAlphaValues).toContain(0.4)
   })
 
-  // "not implmeneted yet"
+  // "not implemented yet"
   // it("should render slots with full opacity when dragging between compatible SubgraphInput and SubgraphOutput", () => {
   //   const subgraph = createTestSubgraph()
 

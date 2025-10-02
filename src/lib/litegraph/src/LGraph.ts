@@ -1126,7 +1126,7 @@ export class LGraph
   /**
    * Snaps the provided items to a grid.
    *
-   * Item positions are reounded to the nearest multiple of {@link LiteGraph.CANVAS_GRID_SIZE}.
+   * Item positions are rounded to the nearest multiple of {@link LiteGraph.CANVAS_GRID_SIZE}.
    *
    * When {@link LiteGraph.alwaysSnapToGrid} is enabled
    * and the grid size is falsy, a default of 1 is used.

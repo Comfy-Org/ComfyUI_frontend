@@ -167,8 +167,8 @@ input|output: every connection
 general properties:
     + clip_area: if you render outside the node, it will be clipped
     + unsafe_execution: not allowed for safe execution
-    + skip_repeated_outputs: when adding new outputs, it wont show if there is one already connected
-    + resizable: if set to false it wont be resizable with the mouse
+    + skip_repeated_outputs: when adding new outputs, it won't show if there is one already connected
+    + resizable: if set to false it won't be resizable with the mouse
     + widgets_start_y: widgets start at y distance from the top of the node
 
 flags object:
@@ -902,7 +902,7 @@ export class LGraphNode
 
     if (this.onSerialize?.(o))
       console.warn(
-        'node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter'
+        'node onSerialize shouldn\'t return anything, data should be stored in the object pass in the first parameter'
       )
 
     return o
@@ -2351,7 +2351,7 @@ export class LGraphNode
 
   /**
    * returns the output (or input) slot with a given type, -1 if not found
-   * @param input uise inputs instead of outputs
+   * @param input use inputs instead of outputs
    * @param type the type of the slot to find
    * @param returnObj if the obj itself wanted
    * @param preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
@@ -2911,7 +2911,7 @@ export class LGraphNode
     const fromLastFloatingReroute =
       parentReroute?.floating?.slotType === 'output'
 
-    // Adding from an ouput, or a floating reroute that is NOT the tip of an existing floating chain
+    // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
     if (afterRerouteId == null || !fromLastFloatingReroute) {
       const link = new LLink(
         -1,
