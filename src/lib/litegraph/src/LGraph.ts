@@ -274,8 +274,6 @@ export class LGraph
    * @param o data from previous serialization [optional]
    */
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
-    if (LiteGraph.debug) console.log('Graph created')
-
     /** @see MapProxyHandler */
     const links = this._links
     MapProxyHandler.bindAllMethods(links)
@@ -532,7 +530,7 @@ export class LGraph
         this.errors_in_execution = true
         if (LiteGraph.throw_errors) throw error
 
-        if (LiteGraph.debug) console.log('Error during execution:', error)
+        if (LiteGraph.debug) console.error('Error during execution:', error)
         this.stop()
       }
     }
@@ -1167,7 +1165,7 @@ export class LGraph
       const ctor = LiteGraph.registered_node_types[node.type]
       if (node.constructor == ctor) continue
 
-      console.log('node being replaced by newer version:', node.type)
+      console.warn('node being replaced by newer version:', node.type)
       const newnode = LiteGraph.createNode(node.type)
       if (!newnode) continue
       _nodes[i] = newnode
@@ -1229,9 +1227,6 @@ export class LGraph
 
   /* Called when something visually changed (not the graph!) */
   change(): void {
-    if (LiteGraph.debug) {
-      console.log('Graph changed')
-    }
     this.canvasAction((c) => c.setDirty(true, true))
     this.on_change?.(this)
   }
@@ -1626,12 +1621,6 @@ export class LGraph
         } else {
           throw new TypeError('Subgraph input node is not a SubgraphInput')
         }
-        console.debug(
-          'Reconnect input links in parent graph',
-          { ...link },
-          this.links.get(link.id),
-          this.links.get(link.id) === link
-        )
 
         for (const resolved of others) {
           resolved.link.disconnect(this)
@@ -2233,7 +2222,7 @@ export class LGraph
           let node = LiteGraph.createNode(String(n_info.type), n_info.title)
           if (!node) {
             if (LiteGraph.debug)
-              console.log('Node not found or has errors:', n_info.type)
+              console.warn('Node not found or has errors:', n_info.type)
 
             // in case of error we create a replacement node to avoid losing info
             node = new LGraphNode('')

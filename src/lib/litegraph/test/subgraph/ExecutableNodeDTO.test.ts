@@ -426,7 +426,6 @@ describe('ExecutableNodeDTO Integration', () => {
 describe('ExecutableNodeDTO Scale Testing', () => {
   it('should create DTOs at scale', () => {
     const graph = new LGraph()
-    const startTime = performance.now()
     const dtos: ExecutableNodeDTO[] = []
 
     // Create DTOs to test performance
@@ -440,16 +439,11 @@ describe('ExecutableNodeDTO Scale Testing', () => {
       dtos.push(dto)
     }
 
-    const endTime = performance.now()
-    const duration = endTime - startTime
-
     expect(dtos).toHaveLength(1000)
     // Test deterministic properties instead of flaky timing
     expect(dtos[0].id).toBe('parent:0')
     expect(dtos[999].id).toBe('parent:999')
     expect(dtos.every((dto, i) => dto.id === `parent:${i}`)).toBe(true)
-
-    console.log(`Created 1000 DTOs in ${duration.toFixed(2)}ms`)
   })
 
   it('should handle complex path generation correctly', () => {
