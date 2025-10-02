@@ -2,7 +2,7 @@
   <BaseModalLayout
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
-    :content-title="contentTitle"
+    :content-title="displayTitle"
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
@@ -14,7 +14,9 @@
         <template #header-icon>
           <div class="icon-[lucide--folder] size-4" />
         </template>
-        <template #header-title>{{ $t('assetBrowser.browseAssets') }}</template>
+        <template #header-title>
+          <span class="capitalize">{{ displayTitle }}</span>
+        </template>
       </LeftSidePanel>
     </template>
 
@@ -63,6 +65,7 @@ const props = defineProps<{
   onClose?: () => void
   showLeftPanel?: boolean
   assets?: AssetItem[]
+  title?: string
 }>()
 
 const emit = defineEmits<{
@@ -81,6 +84,10 @@ const {
   filteredAssets,
   updateFilters
 } = useAssetBrowser(props.assets)
+
+const displayTitle = computed(() => {
+  return props.title ?? contentTitle.value
+})
 
 const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true

@@ -1945,6 +1945,7 @@
     "noModelsInFolder": "No {type} available in this folder",
     "searchAssetsPlaceholder": "Search assets...",
     "allModels": "All Models",
+    "allCategory": "All {category}",
     "unknown": "Unknown",
     "fileFormats": "File formats",
     "baseModels": "Base models",

@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
@@ -79,6 +80,22 @@ export const useAssetBrowserDialog = () => {
         return []
       })
 
+    // Extract node type category from first asset's tags (e.g., "loras", "checkpoints")
+    // Tags are ordered: ["models", "loras"] so take the second tag
+    const nodeTypeCategory =
+      assets[0]?.tags?.find((tag) => tag !== 'models') ?? 'models'
+
+    // Format category label: replace underscores, handle special acronyms
+    const acronyms = new Set(['vae', 'clip', 'gligen'])
+    const categoryLabel = nodeTypeCategory
+      .split('_')
+      .map((word) =>
+        acronyms.has(word.toLowerCase()) ? word.toUpperCase() : word
+      )
+      .join(' ')
+
+    const title = t('assetBrowser.allCategory', { category: categoryLabel })
+
     dialogStore.showDialog({
       key: dialogKey,
       component: AssetBrowserModal,
@@ -87,6 +104,7 @@ export const useAssetBrowserDialog = () => {
         inputName: props.inputName,
         currentValue: props.currentValue,
         assets,
+        title,
         onSelect: handleAssetSelected,
         onClose: () => dialogStore.closeDialog({ key: dialogKey })
       },

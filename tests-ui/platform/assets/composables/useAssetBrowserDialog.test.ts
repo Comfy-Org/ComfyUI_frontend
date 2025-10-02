@@ -6,6 +6,15 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock('@/stores/dialogStore')
 
+vi.mock('@/i18n', () => ({
+  t: (key: string, params?: Record<string, string>) => {
+    if (params) {
+      return `${key}:${JSON.stringify(params)}`
+    }
+    return key
+  }
+}))
+
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetsForNodeType: vi.fn().mockResolvedValue([]),
@@ -15,6 +24,33 @@ vi.mock('@/platform/assets/services/assetService', () => ({
 
 const { assetService } = await import('@/platform/assets/services/assetService')
 const mockGetAssetsByTag = vi.mocked(assetService.getAssetsByTag)
+const mockGetAssetsForNodeType = vi.mocked(assetService.getAssetsForNodeType)
+
+function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
+  return {
+    id: 'asset-123',
+    name: 'test-model.safetensors',
+    size: 1024,
+    created_at: '2025-10-01T00:00:00Z',
+    tags: ['models', 'checkpoints'],
+    user_metadata: {
+      filename: 'models/checkpoints/test-model.safetensors'
+    },
+    ...overrides
+  }
+}
+
+function setupDialogMocks() {
+  const mockShowDialog = vi.fn()
+  const mockCloseDialog = vi.fn()
+  vi.mocked(useDialogStore).mockReturnValue({
+    showDialog: mockShowDialog,
+    closeDialog: mockCloseDialog
+  } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
+    typeof useDialogStore
+  >)
+  return { mockShowDialog, mockCloseDialog }
+}
 
 describe('useAssetBrowserDialog', () => {
   describe('Asset Selection Flow', () => {
@@ -94,20 +130,6 @@ describe('useAssetBrowserDialog', () => {
   })
 
   describe('.browse() method', () => {
-    function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-      return {
-        id: 'asset-123',
-        name: 'test-model.safetensors',
-        size: 1024,
-        created_at: '2025-10-01T00:00:00Z',
-        tags: ['models', 'checkpoints'],
-        user_metadata: {
-          filename: 'models/checkpoints/test-model.safetensors'
-        },
-        ...overrides
-      }
-    }
-
     it('opens asset browser dialog with tag-based filtering', async () => {
       const mockShowDialog = vi.fn()
       const mockCloseDialog = vi.fn()
@@ -297,6 +319,40 @@ describe('useAssetBrowserDialog', () => {
       )
 
       consoleErrorSpy.mockRestore()
+    })
+  })
+
+  describe('.show() title formatting', () => {
+    it('formats title with VAE acronym uppercase', async () => {
+      const { mockShowDialog } = setupDialogMocks()
+      mockGetAssetsForNodeType.mockResolvedValueOnce([
+        createMockAsset({ tags: ['models', 'vae'] })
+      ])
+
+      const assetBrowserDialog = useAssetBrowserDialog()
+      await assetBrowserDialog.show({
+        nodeType: 'VAELoader',
+        inputName: 'vae_name'
+      })
+
+      const dialogCall = mockShowDialog.mock.calls[0][0]
+      expect(dialogCall.props.title).toContain('VAE')
+    })
+
+    it('replaces underscores with spaces in tag names', async () => {
+      const { mockShowDialog } = setupDialogMocks()
+      mockGetAssetsForNodeType.mockResolvedValueOnce([
+        createMockAsset({ tags: ['models', 'style_models'] })
+      ])
+
+      const assetBrowserDialog = useAssetBrowserDialog()
+      await assetBrowserDialog.show({
+        nodeType: 'StyleModelLoader',
+        inputName: 'style_model_name'
+      })
+
+      const dialogCall = mockShowDialog.mock.calls[0][0]
+      expect(dialogCall.props.title).toContain('style models')
     })
   })
 })
