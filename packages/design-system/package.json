@@ -4,10 +4,7 @@
   "description": "Shared design system for ComfyUI Frontend",
   "type": "module",
   "exports": {
-    "./tailwind-config": {
-      "import": "./tailwind.config.ts",
-      "types": "./tailwind.config.ts"
-    },
+    "./tailwind-config": "./tailwind.config.ts",
     "./css/*": "./src/css/*"
   },
   "scripts": {
@@ -20,12 +17,12 @@
     ]
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.1.178",
-    "@iconify/tailwind": "^1.1.3"
+    "@iconify-json/lucide": "catalog:",
+    "@iconify/tailwind": "catalog:"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.4.5"
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.17.1"
 }

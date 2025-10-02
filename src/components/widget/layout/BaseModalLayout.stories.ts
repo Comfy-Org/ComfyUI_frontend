@@ -86,7 +86,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     const t = (k: string) => k
 
     const onClose = () => {
-      console.log('OnClose invoked')
+      // OnClose handler for story
     }
     provide(OnCloseKey, onClose)
 

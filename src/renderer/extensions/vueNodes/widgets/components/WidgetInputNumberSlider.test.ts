@@ -86,7 +86,6 @@ describe('WidgetInputNumberSlider Value Binding', () => {
     it('renders input field', () => {
       const widget = createMockWidget(5)
       const wrapper = mountComponent(widget, 5)
-      console.log(wrapper.html())
 
       expect(wrapper.find('input[inputmode="numeric"]').exists()).toBe(true)
     })
