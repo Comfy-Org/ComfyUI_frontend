@@ -1,4 +1,4 @@
-name: Claude PR Review
+name: PR Claude Review
 
 permissions:
   contents: read

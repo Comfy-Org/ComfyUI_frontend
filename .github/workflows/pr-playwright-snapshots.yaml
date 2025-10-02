@@ -1,5 +1,5 @@
 # Setting test expectation screenshots for Playwright
-name: Update Playwright Expectations
+name: PR Playwright Snapshots
 
 on:
   pull_request:

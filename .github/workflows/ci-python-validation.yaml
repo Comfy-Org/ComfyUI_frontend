@@ -1,4 +1,4 @@
-name: Devtools Python Check
+name: Python Validation CI
 
 on:
   pull_request:
