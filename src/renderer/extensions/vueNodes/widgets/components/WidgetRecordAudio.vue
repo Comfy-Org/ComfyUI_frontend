@@ -84,6 +84,8 @@ import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAudioService } from '@/services/audioService'
 
@@ -94,10 +96,9 @@ import { useTimer } from '../composables/audio/useTimer'
 import { formatTime } from '../utils/audioUtils'
 
 const props = defineProps<{
-  widget?: any
-  nodeData?: any
+  widget?: IBaseWidget
   readonly?: boolean
-  node?: any
+  node?: LGraphNode
 }>()
 
 const modelValue = defineModel<any>('modelValue')
@@ -163,7 +164,7 @@ async function handleStartRecording() {
 
     // Setup waveform visualization for recording
     if (recorder.mediaRecorder.value) {
-      const stream = (recorder.mediaRecorder.value as any).stream
+      const stream = recorder.mediaRecorder.value.stream
       if (stream) {
         await waveform.setupRecordingVisualization(stream)
       }

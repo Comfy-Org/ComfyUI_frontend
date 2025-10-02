@@ -6,7 +6,6 @@
       :widget="widget"
       :model-value="modelValue"
       :readonly="readonly"
-      :node-data="nodeData"
       @update:model-value="$emit('update:modelValue', $event)"
     />
 
@@ -36,9 +35,9 @@ import WidgetRecordAudio from './WidgetRecordAudio.vue'
 import AudioPreviewPlayer from './audio/AudioPreviewPlayer.vue'
 
 const props = defineProps<{
-  widget?: any
+  widget?: IBaseWidget
   readonly?: boolean
-  nodeData?: any
+  nodeId?: string
 }>()
 
 const modelValue = defineModel<any>('modelValue')
@@ -51,13 +50,20 @@ defineEmits<{
 const audioPreviewRef = ref<InstanceType<typeof AudioPreviewPlayer>>()
 const recordAudioRef = ref<InstanceType<typeof WidgetRecordAudio>>()
 
+// Get litegraph node
+const litegraphNode = computed(() => {
+  if (!props.nodeId || !app.rootGraph) return null
+  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+})
+
 // Check if this is an output node (PreviewAudio, SaveAudio, etc)
 const isOutputNode = computed(() => {
-  const fromNodeData = props.nodeData?.output_node === true
-  const fromNode = props.nodeData?.output_node === true
+  const node = litegraphNode.value
+  if (!node) return false
 
-  const nodeClass =
-    props.nodeData?.constructor?.comfyClass || props.nodeData?.type || 'Unknown'
+  const fromNode = node.constructor.nodeData?.output_node === true
+
+  const nodeClass = node.constructor?.comfyClass || node.type || 'Unknown'
 
   const isPreviewOrSaveNode = [
     'PreviewAudio',
@@ -66,12 +72,14 @@ const isOutputNode = computed(() => {
     'SaveAudioOpus'
   ].includes(nodeClass)
 
-  return fromNodeData || fromNode || isPreviewOrSaveNode
+  return fromNode || isPreviewOrSaveNode
 })
 
 const audioWidgetType = computed(() => {
-  const nodeClass =
-    props.nodeData?.constructor?.comfyClass || props.nodeData?.type || ''
+  const node = litegraphNode.value
+  if (!node) return 'preview'
+
+  const nodeClass = node.constructor?.comfyClass || node.type || ''
   if (nodeClass === 'RecordAudio') {
     return 'record'
   }
@@ -79,8 +87,9 @@ const audioWidgetType = computed(() => {
 })
 
 const nodeLocatorId = computed(() => {
-  if (!props.nodeData) return null
-  return getLocatorIdFromNodeData(props.nodeData as any)
+  const node = litegraphNode.value
+  if (!node) return null
+  return getLocatorIdFromNodeData(node)
 })
 
 const nodeOutputStore = useNodeOutputStore()
@@ -90,7 +99,29 @@ const handleOptionsClick = () => {
   // TODO: Implement options menu (playback speed, loop, etc.)
 }
 
+// Track the audio widget value from the LiteGraph node
+const audioWidgetValue = computed(() => {
+  const node = litegraphNode.value
+  if (!node?.widgets) {
+    return null
+  }
+
+  const audioWidget = node.widgets.find((w: IBaseWidget) => w.name === 'audio')
+  return audioWidget?.value as string | null | undefined
+})
+
 const audioFilePath = ref<string | null>(null)
+
+// Sync audioFilePath with the widget value
+watch(
+  audioWidgetValue,
+  (newValue) => {
+    if (newValue && newValue !== audioFilePath.value) {
+      audioFilePath.value = newValue
+    }
+  },
+  { immediate: true }
+)
 
 watch(audioFilePath, async (newAudioPath) => {
   if (!newAudioPath) return
@@ -109,21 +140,15 @@ async function serializeValue() {
 }
 
 function registerWidgetSerialization() {
-  const nodeClass =
-    props.nodeData?.constructor?.comfyClass || props.nodeData?.type || ''
+  const node = litegraphNode.value
+  if (!node) return
+
+  const nodeClass = node.constructor?.comfyClass || node.type || ''
   if (!['RecordAudio', 'LoadAudio'].includes(nodeClass)) return
 
-  let litegraphNode: LGraphNode | undefined = undefined
+  if (!node.widgets) return
 
-  if (props.nodeData?.id && app.rootGraph) {
-    litegraphNode = app.rootGraph.getNodeById(props.nodeData.id) as LGraphNode
-  }
-
-  if (!litegraphNode?.widgets) return
-
-  const targetWidget = litegraphNode.widgets.find(
-    (w: IBaseWidget) => w.name === 'audio'
-  )
+  const targetWidget = node.widgets.find((w: IBaseWidget) => w.name === 'audio')
   if (targetWidget) {
     targetWidget.serializeValue = serializeValue
   }
@@ -149,25 +174,6 @@ watch(
       audioPreviewRef.value.loadAudioFromUrl(audioUrl)
     }
   }
-)
-
-watch(
-  () => {
-    const widgets = props.nodeData?.widgets
-    if (!widgets) return null
-
-    const audioWidget = widgets.find((w: any) => w.name === 'audio')
-    return {
-      value: audioWidget?.value,
-      timestamp: Date.now()
-    }
-  },
-  (data) => {
-    if (data?.value && data.value !== audioFilePath.value) {
-      audioFilePath.value = data.value as string
-    }
-  },
-  { immediate: true, flush: 'post' }
 )
 
 onMounted(() => {
