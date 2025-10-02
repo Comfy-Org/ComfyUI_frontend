@@ -3,57 +3,45 @@
   "properties": [
     {
       "name": "app-region",
-      "description": "Electron-specific CSS property that defines whether an area of the window can be used to drag the window. Values: 'drag' allows dragging, 'no-drag' prevents dragging.",
+      "description": "Electron-specific CSS property that defines draggable regions in custom title bar windows. Setting 'drag' marks a rectangular area as draggable for moving the window; 'no-drag' excludes areas from the draggable region.",
       "values": [
         {
           "name": "drag",
-          "description": "Makes the element draggable for moving the Electron window"
+          "description": "Marks the element as draggable for moving the Electron window"
         },
         {
           "name": "no-drag",
-          "description": "Prevents the element from being used to drag the Electron window"
+          "description": "Excludes the element from being used to drag the Electron window"
         }
       ],
       "references": [
         {
-          "name": "Electron Documentation",
-          "url": "https://www.electronjs.org/docs/latest/api/frameless-window#draggable-region"
+          "name": "Electron Window Customization",
+          "url": "https://www.electronjs.org/docs/latest/tutorial/window-customization"
         }
       ]
     },
     {
       "name": "speak",
-      "description": "Deprecated CSS property for screen readers. Consider using modern ARIA attributes instead.",
+      "description": "Deprecated CSS2 aural stylesheet property for controlling screen reader speech. Use ARIA attributes instead.",
       "values": [
         {
-          "name": "none",
-          "description": "Prevents the element from being spoken by screen readers"
+          "name": "auto",
+          "description": "Content is read aurally if element is not a block and is visible"
         },
         {
-          "name": "normal",
-          "description": "Uses language-dependent pronunciation rules for speaking the element"
+          "name": "never",
+          "description": "Content will not be read aurally"
         },
         {
-          "name": "spell-out",
-          "description": "Spells out the text character by character"
-        },
-        {
-          "name": "digits",
-          "description": "Speaks digits as individual digits"
-        },
-        {
-          "name": "literal-punctuation",
-          "description": "Speaks punctuation marks instead of pauses"
-        },
-        {
-          "name": "no-punctuation",
-          "description": "Does not speak punctuation marks"
+          "name": "always",
+          "description": "Content will be read aurally regardless of display settings"
         }
       ],
       "references": [
         {
-          "name": "MDN Documentation",
-          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/speak"
+          "name": "CSS-Tricks Reference",
+          "url": "https://css-tricks.com/almanac/properties/s/speak/"
         }
       ],
       "status": "obsolete"
