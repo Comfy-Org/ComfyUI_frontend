@@ -186,6 +186,22 @@ describe('useModelToNodeStore', () => {
   })
 
   describe('registerNodeProvider', () => {
+    it('should not register provider when nodeDef is undefined', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      const providerWithoutNodeDef = new ModelNodeProvider(
+        undefined as any,
+        'custom_key'
+      )
+
+      modelToNodeStore.registerNodeProvider(
+        'custom_type',
+        providerWithoutNodeDef
+      )
+
+      const retrieved = modelToNodeStore.getNodeProvider('custom_type')
+      expect(retrieved).toBeUndefined()
+    })
+
     it('should register provider directly', () => {
       const modelToNodeStore = useModelToNodeStore()
       const nodeDefStore = useNodeDefStore()

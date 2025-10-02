@@ -101,6 +101,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     nodeProvider: ModelNodeProvider
   ) {
     registerDefaults()
+    if (!nodeProvider.nodeDef) return
     if (!modelToNodeMap.value[modelType]) {
       modelToNodeMap.value[modelType] = []
     }
