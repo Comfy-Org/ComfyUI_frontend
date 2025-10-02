@@ -113,7 +113,7 @@
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
           v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
+          v-memo="[nodeData.widgets?.length, nodeData.inputs]"
           :node-data="nodeData"
           :readonly="readonly"
         />
