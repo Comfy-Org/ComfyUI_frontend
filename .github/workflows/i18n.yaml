@@ -28,8 +28,6 @@ jobs:
           i18n-tools-cache-${{ runner.os }}-
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
-      with:
-        working-directory: ComfyUI_frontend
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.

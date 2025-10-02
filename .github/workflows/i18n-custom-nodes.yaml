@@ -79,8 +79,6 @@ jobs:
       working-directory: ComfyUI
     - name: Setup Playwright
       uses: ./ComfyUI_frontend/.github/actions/setup-playwright
-      with:
-        working-directory: ComfyUI_frontend
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.

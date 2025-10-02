@@ -118,8 +118,6 @@ jobs:
 
       - name: Setup Playwright
         uses: ./ComfyUI_frontend/.github/actions/setup-playwright
-        with:
-          working-directory: ComfyUI_frontend
 
       - name: Start ComfyUI server
         run: |
@@ -185,8 +183,6 @@ jobs:
 
       - name: Setup Playwright
         uses: ./ComfyUI_frontend/.github/actions/setup-playwright
-        with:
-          working-directory: ComfyUI_frontend
 
       - name: Start ComfyUI server
         run: |
