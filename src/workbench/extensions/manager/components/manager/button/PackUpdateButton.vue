@@ -61,15 +61,12 @@ const updateAllPacks = async () => {
     managerStore.isPackInstalled(pack.id)
   )
   if (!updatablePacks.length) {
-    console.info('No installed packs available for update')
     isUpdating.value = false
     return
   }
-  console.info(`Starting update of ${updatablePacks.length} packs`)
   try {
     await Promise.all(updatablePacks.map(updatePack))
     managerStore.updatePack.clear()
-    console.info('All packs updated successfully')
   } catch (error) {
     console.error('Pack update failed:', error)
     console.error(

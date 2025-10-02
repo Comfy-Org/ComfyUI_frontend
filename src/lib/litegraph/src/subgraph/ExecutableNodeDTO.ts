@@ -271,9 +271,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       // Bypass nodes by finding first input with matching type
       const matchingIndex = this.#getBypassSlotIndex(slot, type)
 
-      // No input types match
+      // No input types match - bypass not possible
       if (matchingIndex === -1) {
-        console.debug(
+        console.warn(
           `[ExecutableNodeDTO.resolveOutput] No input types match type [${type}] for id [${this.id}] slot [${slot}]`,
           this
         )

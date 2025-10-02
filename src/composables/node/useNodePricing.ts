@@ -300,9 +300,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
         const durationValue = String(durationWidget.value)
         const modelValue = String(modelWidget.value)
-        console.log('modelValue', modelValue)
-        console.log('modeValue', modeValue)
-        console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
         if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
@@ -356,9 +353,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
         const durationValue = String(durationWidget.value)
         const modelValue = String(modelWidget.value)
-        console.log('modelValue', modelValue)
-        console.log('modeValue', modeValue)
-        console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
         if (
@@ -564,9 +558,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const model = String(modelWidget.value)
         const resolution = String(resolutionWidget.value).toLowerCase()
         const duration = String(durationWidget.value)
-        console.log('model', model)
-        console.log('resolution', resolution)
-        console.log('duration', duration)
 
         if (model.includes('ray-flash-2')) {
           if (duration.includes('5s')) {
