@@ -1,8 +1,10 @@
-name: PR Playwright Deploy (Forks)
+name: Tests Storybook Forks CI
+
+# Deploys Storybook previews from forked PRs (forks can't access deployment secrets)
 
 on:
   workflow_run:
-    workflows: ["Tests CI"]
+    workflows: ['Tests Storybook CI']
     types: [requested, completed]
 
 env:
@@ -53,40 +55,38 @@ jobs:
             console.log(`Found PR #${pr.number} from fork: ${context.payload.workflow_run.head_repository.full_name}`);
             return pr.number;
 
-      - name: Handle Test Start
+      - name: Handle Storybook Start
         if: steps.pr.outputs.result != 'null' && github.event.action == 'requested'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+          chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
+          ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ steps.pr.outputs.result }}" \
             "${{ github.event.workflow_run.head_branch }}" \
             "starting" \
             "$(date -u '${{ env.DATE_FORMAT }}')"
 
-      - name: Download and Deploy Reports
-        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
+      - name: Download and Deploy Storybook
+        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed' && github.event.workflow_run.conclusion == 'success'
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
-          pattern: playwright-report-*
-          path: reports
+          name: storybook-static
+          path: storybook-static
           
-      - name: Handle Test Completion
+      - name: Handle Storybook Completion
         if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
         run: |
-          # Rename merged report if exists
-          [ -d "reports/playwright-report-chromium-merged" ] && \
-            mv reports/playwright-report-chromium-merged reports/playwright-report-chromium
-          
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+          chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
+          ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ steps.pr.outputs.result }}" \
             "${{ github.event.workflow_run.head_branch }}" \
             "completed"

@@ -1,4 +1,4 @@
-name: Update Locales
+name: i18n Update Core
 
 on:
   # Manual dispatch for urgent translation updates  

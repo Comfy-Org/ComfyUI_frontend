@@ -1,4 +1,4 @@
-name: Update Comfy Registry API Types
+name: Types Registry API
 
 on:
   # Manual trigger
