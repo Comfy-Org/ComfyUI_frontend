@@ -31,7 +31,6 @@ import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

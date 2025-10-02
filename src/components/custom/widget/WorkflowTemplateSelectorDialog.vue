@@ -172,7 +172,6 @@
             v-for="template in isLoading ? [] : displayTemplates"
             :key="template.name"
             ref="cardRefs"
-            v-memo="[template.name, hoveredTemplate === template.name]"
             ratio="smallSquare"
             type="workflow-template-card"
             :data-testid="`template-workflow-${template.name}`"

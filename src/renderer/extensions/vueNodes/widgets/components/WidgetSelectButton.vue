@@ -3,7 +3,6 @@
     <FormSelectButton
       v-model="localValue"
       :options="widget.options?.values || []"
-      :disabled="readonly"
       class="w-full"
       @update:model-value="onChange"
     />
@@ -20,7 +19,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string>
   modelValue: string
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

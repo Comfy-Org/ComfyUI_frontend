@@ -27,7 +27,6 @@ import ImagePreview from './ImagePreview.vue'
 interface NodeContentProps {
   node?: LGraphNode // For backwards compatibility
   nodeData?: VueNodeData // New clean data structure
-  readonly?: boolean
   imageUrls?: string[]
 }
 
