@@ -182,12 +182,30 @@ function createAssetService() {
     )
   }
 
+  /**
+   * Gets assets filtered by a specific tag
+   *
+   * @param tag - The tag to filter by (e.g., 'models')
+   * @returns Promise<AssetItem[]> - Full asset objects filtered by tag, excluding missing assets
+   */
+  async function getAssetsByTag(tag: string): Promise<AssetItem[]> {
+    const data = await handleAssetRequest(
+      `${ASSETS_ENDPOINT}?include_tags=${tag}&limit=${DEFAULT_LIMIT}`,
+      `assets for tag ${tag}`
+    )
+
+    return (
+      data?.assets?.filter((asset) => !asset.tags.includes(MISSING_TAG)) ?? []
+    )
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
     isAssetBrowserEligible,
     getAssetsForNodeType,
-    getAssetDetails
+    getAssetDetails,
+    getAssetsByTag
   }
 }
 

@@ -3,7 +3,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { type DialogComponentProps, useDialogStore } from '@/stores/dialogStore'
 
-interface AssetBrowserDialogProps {
+interface ShowOptions {
   /** ComfyUI node type for context (e.g., 'CheckpointLoaderSimple') */
   nodeType: string
   /** Widget input name (e.g., 'ckpt_name') */
@@ -17,30 +17,40 @@ interface AssetBrowserDialogProps {
   onAssetSelected?: (filename: string) => void
 }
 
+interface BrowseOptions {
+  /** Asset type tag to filter by (e.g., 'models') */
+  assetType: string
+  /** Custom modal title (optional) */
+  title?: string
+  /** Called when asset selected */
+  onAssetSelected?: (asset: AssetItem) => void
+}
+
+const PROPS: DialogComponentProps = {
+  headless: true,
+  modal: true,
+  closable: true,
+  pt: {
+    root: {
+      class: 'rounded-2xl overflow-hidden asset-browser-dialog'
+    },
+    header: {
+      class: '!p-0 hidden'
+    },
+    content: {
+      class: '!p-0 !m-0 h-full w-full'
+    }
+  }
+}
+
 export const useAssetBrowserDialog = () => {
   const dialogStore = useDialogStore()
   const dialogKey = 'global-asset-browser'
 
-  async function show(props: AssetBrowserDialogProps) {
+  async function show(props: ShowOptions) {
     const handleAssetSelected = (filename: string) => {
       props.onAssetSelected?.(filename)
       dialogStore.closeDialog({ key: dialogKey })
-    }
-    const dialogComponentProps: DialogComponentProps = {
-      headless: true,
-      modal: true,
-      closable: true,
-      pt: {
-        root: {
-          class: 'rounded-2xl overflow-hidden asset-browser-dialog'
-        },
-        header: {
-          class: '!p-0 hidden'
-        },
-        content: {
-          class: '!p-0 !m-0 h-full w-full'
-        }
-      }
     }
 
     const assets: AssetItem[] = await assetService
@@ -65,9 +75,42 @@ export const useAssetBrowserDialog = () => {
         onSelect: handleAssetSelected,
         onClose: () => dialogStore.closeDialog({ key: dialogKey })
       },
-      dialogComponentProps
+      dialogComponentProps: PROPS
     })
   }
 
-  return { show }
+  async function browse(options: BrowseOptions): Promise<void> {
+    const handleAssetSelected = (asset: AssetItem) => {
+      options.onAssetSelected?.(asset)
+      dialogStore.closeDialog({ key: dialogKey })
+    }
+
+    const assets = await assetService
+      .getAssetsByTag(options.assetType)
+      .catch((error) => {
+        console.error(
+          'Failed to fetch assets for tag:',
+          options.assetType,
+          error
+        )
+        return []
+      })
+
+    dialogStore.showDialog({
+      key: dialogKey,
+      component: AssetBrowserModal,
+      props: {
+        nodeType: undefined,
+        inputName: undefined,
+        assets,
+        showLeftPanel: true,
+        title: options.title,
+        onSelect: handleAssetSelected,
+        onClose: () => dialogStore.closeDialog({ key: dialogKey })
+      },
+      dialogComponentProps: PROPS
+    })
+  }
+
+  return { show, browse }
 }

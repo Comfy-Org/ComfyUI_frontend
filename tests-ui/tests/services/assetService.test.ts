@@ -4,6 +4,14 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
+vi.mock('@/scripts/api', () => ({
+  api: {
+    fetchApi: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
+}))
+
 const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/modelToNodeStore', () => ({
@@ -193,7 +201,8 @@ describe('assetService', () => {
 
     it('should return false for unregistered node types', () => {
       expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('NotRegistered')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('')).toBe(false)
     })
   })
 
@@ -277,6 +286,74 @@ describe('assetService', () => {
 
       result = await assetService.getAssetsForNodeType('VAELoader')
       expect(result).toEqual(vaeAssets)
+    })
+  })
+
+  describe('getAssetsByTag', () => {
+    it('should fetch assets with correct tag query parameter', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints, MOCK_ASSETS.loras]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('models')
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models&limit=300'
+      )
+      expect(result).toEqual(testAssets)
+    })
+
+    it('should filter out assets with missing tag', async () => {
+      const testAssets = [
+        MOCK_ASSETS.checkpoints,
+        createTestAsset({
+          id: 'uuid-missing',
+          name: 'missing.safetensors',
+          tags: ['models', 'checkpoints', 'missing']
+        }),
+        MOCK_ASSETS.loras
+      ]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('models')
+
+      expect(result).toHaveLength(2)
+      expect(result).toEqual([MOCK_ASSETS.checkpoints, MOCK_ASSETS.loras])
+      expect(result.some((a) => a.id === 'uuid-missing')).toBe(false)
+    })
+
+    it('should return empty array on API error', async () => {
+      mockApiError(500)
+
+      await expect(assetService.getAssetsByTag('models')).rejects.toThrow(
+        'Unable to load assets for tag models: Server returned 500. Please try again.'
+      )
+    })
+
+    it('should return empty array for empty response', async () => {
+      mockApiResponse([])
+
+      const result = await assetService.getAssetsByTag('nonexistent')
+
+      expect(result).toEqual([])
+    })
+
+    it('should return AssetItem[] with full metadata', async () => {
+      const fullAsset = createTestAsset({
+        id: 'test-full',
+        name: 'full-model.safetensors',
+        asset_hash: 'blake3:full123',
+        size: 999999,
+        tags: ['models', 'checkpoints'],
+        user_metadata: { filename: 'models/checkpoints/full-model.safetensors' }
+      })
+      mockApiResponse([fullAsset])
+
+      const result = await assetService.getAssetsByTag('models')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toEqual(fullAsset)
+      expect(result[0]).toHaveProperty('asset_hash', 'blake3:full123')
+      expect(result[0]).toHaveProperty('user_metadata')
     })
   })
 })
