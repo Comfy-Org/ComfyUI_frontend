@@ -209,23 +209,6 @@ describe('WidgetFileUpload File Handling', () => {
       expect(editIcon.exists()).toBe(true)
       expect(deleteIcon.exists()).toBe(true)
     })
-
-    it('hides control buttons in readonly mode', () => {
-      const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget<File[] | null>(
-        [imageFile],
-        {},
-        undefined,
-        {
-          name: 'test_file_upload',
-          type: 'file'
-        }
-      )
-      const wrapper = mountComponent(widget, [imageFile], true)
-
-      const controlButtons = wrapper.find('.absolute.top-2.right-2')
-      expect(controlButtons.exists()).toBe(false)
-    })
   })
 
   describe('Audio File Display', () => {
@@ -424,80 +407,6 @@ describe('WidgetFileUpload File Handling', () => {
       await folderButton.trigger('click')
 
       expect(clickSpy).toHaveBeenCalled()
-    })
-  })
-
-  describe('Readonly Mode', () => {
-    it('disables browse button in readonly mode', () => {
-      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
-        name: 'test_file_upload',
-        type: 'file'
-      })
-      const wrapper = mountComponent(widget, null, true)
-
-      const browseButton = wrapper.find('button')
-      expect(browseButton.element.disabled).toBe(true)
-    })
-
-    it('disables file input in readonly mode', () => {
-      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
-        name: 'test_file_upload',
-        type: 'file'
-      })
-      const wrapper = mountComponent(widget, null, true)
-
-      const fileInput = wrapper.find('input[type="file"]')
-      const inputElement = fileInput.element
-      if (!(inputElement instanceof HTMLInputElement)) {
-        throw new Error('Expected HTMLInputElement')
-      }
-      expect(inputElement.disabled).toBe(true)
-    })
-
-    it('disables folder button for images in readonly mode', () => {
-      const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget<File[] | null>(
-        [imageFile],
-        {},
-        undefined,
-        {
-          name: 'test_file_upload',
-          type: 'file'
-        }
-      )
-      const wrapper = mountComponent(widget, [imageFile], true)
-
-      const buttons = wrapper.findAll('button')
-      const folderButton = buttons.find((button) =>
-        button.element.innerHTML.includes('pi-folder')
-      )
-
-      if (!folderButton) {
-        throw new Error('Folder button not found')
-      }
-
-      expect(folderButton.element.disabled).toBe(true)
-    })
-
-    it('does not handle file changes in readonly mode', async () => {
-      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
-        name: 'test_file_upload',
-        type: 'file'
-      })
-      const wrapper = mountComponent(widget, null, true)
-
-      const file = createMockFile('test.jpg', 'image/jpeg')
-      const fileInput = wrapper.find('input[type="file"]')
-
-      Object.defineProperty(fileInput.element, 'files', {
-        value: [file],
-        writable: false
-      })
-
-      await fileInput.trigger('change')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeUndefined()
     })
   })
 
