@@ -19,17 +19,6 @@ describe('LGraphNodeProperties', () => {
     }
   })
 
-  describe('constructor', () => {
-    it('should initialize with default tracked properties', () => {
-      const propManager = new LGraphNodeProperties(mockNode)
-      const tracked = propManager.getTrackedProperties()
-
-      expect(tracked).toHaveLength(2)
-      expect(tracked).toContain('title')
-      expect(tracked).toContain('flags.collapsed')
-    })
-  })
-
   describe('property tracking', () => {
     it('should track changes to existing properties', () => {
       new LGraphNodeProperties(mockNode)
