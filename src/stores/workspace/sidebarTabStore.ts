@@ -72,10 +72,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
           tab.id === 'model-library' &&
           settingStore.get('Comfy.Assets.UseAssetAPI')
         ) {
-          const browseCommand = commandStore.commands.find(
-            (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
-          )
-          await browseCommand?.function()
+          await commandStore.commands
+            .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')
+            ?.function?.()
           return
         }
 

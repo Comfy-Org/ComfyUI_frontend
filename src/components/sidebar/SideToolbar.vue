@@ -67,14 +67,10 @@ const isSmall = computed(
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 
-const onTabClick = async (item: SidebarTabExtension) => {
-  const command = commandStore.commands.find(
-    (cmd) => cmd.id === `Workspace.ToggleSidebarTab.${item.id}`
-  )
-  if (command) {
-    await command.function()
-  }
-}
+const onTabClick = async (item: SidebarTabExtension) =>
+  await commandStore.commands
+    .find((cmd) => cmd.id === `Workspace.ToggleSidebarTab.${item.id}`)
+    ?.function?.()
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
