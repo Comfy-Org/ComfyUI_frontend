@@ -43,28 +43,18 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 function setupDialogMocks() {
   const mockShowDialog = vi.fn()
   const mockCloseDialog = vi.fn()
-  vi.mocked(useDialogStore).mockReturnValue({
+  vi.mocked(useDialogStore, { partial: true }).mockReturnValue({
     showDialog: mockShowDialog,
     closeDialog: mockCloseDialog
-  } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-    typeof useDialogStore
-  >)
+  })
+
   return { mockShowDialog, mockCloseDialog }
 }
 
 describe('useAssetBrowserDialog', () => {
   describe('Asset Selection Flow', () => {
     it('auto-closes dialog when asset is selected', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
-
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
+      const { mockShowDialog, mockCloseDialog } = setupDialogMocks()
       const assetBrowserDialog = useAssetBrowserDialog()
       const onAssetSelected = vi.fn()
 
@@ -94,16 +84,7 @@ describe('useAssetBrowserDialog', () => {
     })
 
     it('closes dialog when close handler is called', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
-
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
+      const { mockShowDialog, mockCloseDialog } = setupDialogMocks()
       const assetBrowserDialog = useAssetBrowserDialog()
 
       await assetBrowserDialog.show({
@@ -124,16 +105,7 @@ describe('useAssetBrowserDialog', () => {
 
   describe('.browse() method', () => {
     it('opens asset browser dialog with tag-based filtering', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
-
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
+      const { mockShowDialog } = setupDialogMocks()
       const assetBrowserDialog = useAssetBrowserDialog()
       await assetBrowserDialog.browse({
         assetType: 'models',
@@ -151,76 +123,43 @@ describe('useAssetBrowserDialog', () => {
     })
 
     it('calls onAssetSelected callback when asset is selected', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
+      const { mockShowDialog } = setupDialogMocks()
+      const assetBrowserDialog = useAssetBrowserDialog()
       const mockAsset = createMockAsset()
       const onAssetSelected = vi.fn()
-
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
-      const assetBrowserDialog = useAssetBrowserDialog()
       await assetBrowserDialog.browse({
         assetType: 'models',
         onAssetSelected
       })
 
-      // Get the onSelect handler that was passed to the dialog
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onSelectHandler = dialogCall.props.onSelect
 
-      // Simulate asset selection by passing the asset object
       onSelectHandler(mockAsset)
 
-      // Should call the callback with the full AssetItem
       expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)
     })
 
     it('closes dialog after asset selection', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
-      const mockAsset = createMockAsset()
-
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
+      const { mockShowDialog, mockCloseDialog } = setupDialogMocks()
       const assetBrowserDialog = useAssetBrowserDialog()
+      const mockAsset = createMockAsset()
       await assetBrowserDialog.browse({
         assetType: 'models'
       })
 
-      // Get the onSelect handler
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onSelectHandler = dialogCall.props.onSelect
 
-      // Simulate asset selection
       onSelectHandler(mockAsset)
 
-      // Should close dialog
       expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'global-asset-browser'
       })
     })
 
     it('uses custom title when provided', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
-
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
+      const { mockShowDialog } = setupDialogMocks()
       const assetBrowserDialog = useAssetBrowserDialog()
       await assetBrowserDialog.browse({
         assetType: 'models',
@@ -232,18 +171,7 @@ describe('useAssetBrowserDialog', () => {
     })
 
     it('calls getAssetsByTag with correct assetType parameter', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
-
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
-      mockGetAssetsByTag.mockClear()
-
+      setupDialogMocks()
       const assetBrowserDialog = useAssetBrowserDialog()
       await assetBrowserDialog.browse({
         assetType: 'models'
@@ -253,23 +181,14 @@ describe('useAssetBrowserDialog', () => {
     })
 
     it('passes fetched assets to dialog props', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
+      const { mockShowDialog } = setupDialogMocks()
+      const assetBrowserDialog = useAssetBrowserDialog()
       const mockAssets = [
         createMockAsset({ id: 'asset-1', name: 'model1.safetensors' }),
         createMockAsset({ id: 'asset-2', name: 'model2.safetensors' })
       ]
 
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
       mockGetAssetsByTag.mockResolvedValueOnce(mockAssets)
-
-      const assetBrowserDialog = useAssetBrowserDialog()
       await assetBrowserDialog.browse({
         assetType: 'models'
       })
@@ -279,32 +198,21 @@ describe('useAssetBrowserDialog', () => {
     })
 
     it('handles asset fetch errors gracefully', async () => {
-      const mockShowDialog = vi.fn()
-      const mockCloseDialog = vi.fn()
+      const { mockShowDialog } = setupDialogMocks()
+      const assetBrowserDialog = useAssetBrowserDialog()
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
 
-      vi.mocked(useDialogStore).mockReturnValue({
-        showDialog: mockShowDialog,
-        closeDialog: mockCloseDialog
-      } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-        typeof useDialogStore
-      >)
-
       mockGetAssetsByTag.mockRejectedValueOnce(new Error('Network error'))
-
-      const assetBrowserDialog = useAssetBrowserDialog()
       await assetBrowserDialog.browse({
         assetType: 'models'
       })
 
-      // Should still open dialog with empty assets
       expect(mockShowDialog).toHaveBeenCalled()
       const dialogCall = mockShowDialog.mock.calls[0][0]
       expect(dialogCall.props.assets).toEqual([])
 
-      // Should log error
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Failed to fetch assets for tag:',
         'models',
