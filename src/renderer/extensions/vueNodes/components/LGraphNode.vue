@@ -9,7 +9,7 @@
     :class="
       cn(
         'bg-white dark-theme:bg-charcoal-800',
-        'lg-node absolute rounded-2xl',
+        'lg-node absolute rounded-2xl touch-none',
         'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -36,8 +36,7 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         backgroundColor: nodeBodyBackgroundColor,
-        opacity: nodeOpacity,
-        touchAction: 'none'
+        opacity: nodeOpacity
       },
       dragStyle
     ]"
