@@ -9,7 +9,6 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -5192,19 +5191,8 @@ export class LGraphCanvas
       return
     }
 
-    const { nodeOpacity, nodeLightness } = LiteGraph
-    const adjustments: ColorAdjustOptions = {
-      opacity: nodeOpacity,
-      lightness: nodeLightness
-    }
-
-    const color = adjustColor(node.renderingColor, { lightness: nodeLightness })
-    const bgcolor = adjustColor(
-      node.mode === LGraphEventMode.BYPASS
-        ? LiteGraph.NODE_DEFAULT_BYPASS_COLOR
-        : node.renderingBgColor,
-      adjustments
-    )
+    const color = node.renderingColor
+    const bgcolor = node.renderingBgColor
 
     const { low_quality, editor_alpha } = this
     ctx.globalAlpha =
