@@ -1,7 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import {
   type LinkRenderContext,
   LitegraphLinkAdapter
@@ -17,6 +16,7 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
 import { LLink, type LinkId } from './LLink'
 import { Reroute, type RerouteId } from './Reroute'
+import { LinkConnector } from './canvas/LinkConnector'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import type {
@@ -25,6 +25,7 @@ import type {
 } from './infrastructure/CustomEventTarget'
 import type { LGraphCanvasEventMap } from './infrastructure/LGraphCanvasEventMap'
 import { NullGraphError } from './infrastructure/NullGraphError'
+import { Rectangle } from './infrastructure/Rectangle'
 import type {
   CanvasColour,
   ColorOption,
@@ -47,12 +48,11 @@ import type {
   NullableProperties,
   Point,
   Positionable,
-  ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
   Size
 } from './interfaces'
-import { LiteGraph, Rectangle, SubgraphNode, createUuidv4 } from './litegraph'
+import { LiteGraph } from './litegraph'
 import {
   containsRect,
   createBounds,
@@ -67,6 +67,7 @@ import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphNode } from './subgraph/SubgraphNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
   CanvasPointerEvent,
@@ -88,6 +89,7 @@ import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
+import { createUuidv4 } from './utils/uuid'
 import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -228,6 +230,12 @@ const cursors = {
   NW: 'nwse-resize'
 } as const
 
+// Optimised buffers used during rendering
+const temp = new Rectangle()
+const temp_vec2: Point = [0, 0]
+const tmp_area = new Rectangle()
+const margin_area = new Rectangle()
+const link_bounding = new Rectangle()
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -235,13 +243,6 @@ const cursors = {
 export class LGraphCanvas
   implements CustomEventDispatcher<LGraphCanvasEventMap>
 {
-  // Optimised buffers used during rendering
-  static #temp = new Float32Array(4)
-  static #temp_vec2 = new Float32Array(2)
-  static #tmp_area = new Float32Array(4)
-  static #margin_area = new Float32Array(4)
-  static #link_bounding = new Float32Array(4)
-
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
 
@@ -628,7 +629,7 @@ export class LGraphCanvas
   dirty_area?: Rect | null
   /** @deprecated Unused */
   node_in_panel?: LGraphNode | null
-  last_mouse: ReadOnlyPoint = [0, 0]
+  last_mouse: Readonly<Point> = [0, 0]
   last_mouseclick: number = 0
   graph: LGraph | Subgraph | null
   get _graph(): LGraph | Subgraph {
@@ -2634,7 +2635,7 @@ export class LGraphCanvas
     pointer: CanvasPointer,
     node?: LGraphNode | undefined
   ): void {
-    const dragRect = new Float32Array(4)
+    const dragRect: Rect = [0, 0, 0, 0]
 
     dragRect[0] = e.canvasX
     dragRect[1] = e.canvasY
@@ -3174,7 +3175,7 @@ export class LGraphCanvas
 
     LGraphCanvas.active_canvas = this
     this.adjustMouseEvent(e)
-    const mouse: ReadOnlyPoint = [e.clientX, e.clientY]
+    const mouse: Readonly<Point> = [e.clientX, e.clientY]
     this.mouse[0] = mouse[0]
     this.mouse[1] = mouse[1]
     const delta = [mouse[0] - this.last_mouse[0], mouse[1] - this.last_mouse[1]]
@@ -4077,7 +4078,7 @@ export class LGraphCanvas
     this.setDirty(true)
   }
 
-  #handleMultiSelect(e: CanvasPointerEvent, dragRect: Float32Array) {
+  #handleMultiSelect(e: CanvasPointerEvent, dragRect: Rect) {
     // Process drag
     // Convert Point pair (pos, offset) to Rect
     const { graph, selectedItems, subgraph } = this
@@ -4848,7 +4849,7 @@ export class LGraphCanvas
   }
 
   /** Get the target snap / highlight point in graph space */
-  #getHighlightPosition(): ReadOnlyPoint {
+  #getHighlightPosition(): Readonly<Point> {
     return LiteGraph.snaps_for_comfy
       ? this.linkConnector.state.snapLinksPos ??
           this._highlight_pos ??
@@ -4863,7 +4864,7 @@ export class LGraphCanvas
    */
   #renderSnapHighlight(
     ctx: CanvasRenderingContext2D,
-    highlightPos: ReadOnlyPoint
+    highlightPos: Readonly<Point>
   ): void {
     const linkConnectorSnap = !!this.linkConnector.state.snapLinksPos
     if (!this._highlight_pos && !linkConnectorSnap) return
@@ -5204,8 +5205,9 @@ export class LGraphCanvas
 
     // clip if required (mask)
     const shape = node._shape || RenderShape.BOX
-    const size = LGraphCanvas.#temp_vec2
-    size.set(node.renderingSize)
+    const size = temp_vec2
+    size[0] = node.renderingSize[0]
+    size[1] = node.renderingSize[1]
 
     if (node.collapsed) {
       ctx.font = this.inner_text_font
@@ -5399,7 +5401,7 @@ export class LGraphCanvas
         : true
 
     // Normalised node dimensions
-    const area = LGraphCanvas.#tmp_area
+    const area = tmp_area
     area.set(node.boundingRect)
     area[0] -= node.pos[0]
     area[1] -= node.pos[1]
@@ -5501,7 +5503,7 @@ export class LGraphCanvas
     item: Positionable,
     shape = RenderShape.ROUND
   ) {
-    const snapGuide = LGraphCanvas.#temp
+    const snapGuide = temp
     snapGuide.set(item.boundingRect)
 
     // Not all items have pos equal to top-left of bounds
@@ -5548,10 +5550,10 @@ export class LGraphCanvas
 
     const now = LiteGraph.getTime()
     const { visible_area } = this
-    LGraphCanvas.#margin_area[0] = visible_area[0] - 20
-    LGraphCanvas.#margin_area[1] = visible_area[1] - 20
-    LGraphCanvas.#margin_area[2] = visible_area[2] + 40
-    LGraphCanvas.#margin_area[3] = visible_area[3] + 40
+    margin_area[0] = visible_area[0] - 20
+    margin_area[1] = visible_area[1] - 20
+    margin_area[2] = visible_area[2] + 40
+    margin_area[3] = visible_area[3] + 40
 
     // draw connections
     ctx.lineWidth = this.connections_width
@@ -5772,18 +5774,13 @@ export class LGraphCanvas
     // Bounding box of all points (bezier overshoot on long links will be cut)
     const pointsX = points.map((x) => x[0])
     const pointsY = points.map((x) => x[1])
-    LGraphCanvas.#link_bounding[0] = Math.min(...pointsX)
-    LGraphCanvas.#link_bounding[1] = Math.min(...pointsY)
-    LGraphCanvas.#link_bounding[2] =
-      Math.max(...pointsX) - LGraphCanvas.#link_bounding[0]
-    LGraphCanvas.#link_bounding[3] =
-      Math.max(...pointsY) - LGraphCanvas.#link_bounding[1]
+    link_bounding[0] = Math.min(...pointsX)
+    link_bounding[1] = Math.min(...pointsY)
+    link_bounding[2] = Math.max(...pointsX) - link_bounding[0]
+    link_bounding[3] = Math.max(...pointsY) - link_bounding[1]
 
     // skip links outside of the visible area of the canvas
-    if (
-      !overlapBounding(LGraphCanvas.#link_bounding, LGraphCanvas.#margin_area)
-    )
-      return
+    if (!overlapBounding(link_bounding, margin_area)) return
 
     const start_dir = startDirection || LinkDirection.RIGHT
     const end_dir = endDirection || LinkDirection.LEFT
@@ -5942,8 +5939,8 @@ export class LGraphCanvas
    */
   renderLink(
     ctx: CanvasRenderingContext2D,
-    a: ReadOnlyPoint,
-    b: ReadOnlyPoint,
+    a: Readonly<Point>,
+    b: Readonly<Point>,
     link: LLink | null,
     skip_border: boolean,
     flow: number | null,
@@ -5960,9 +5957,9 @@ export class LGraphCanvas
       /** When defined, render data will be saved to this reroute instead of the {@link link}. */
       reroute?: Reroute
       /** Offset of the bezier curve control point from {@link a point a} (output side) */
-      startControl?: ReadOnlyPoint
+      startControl?: Readonly<Point>
       /** Offset of the bezier curve control point from {@link b point b} (input side) */
-      endControl?: ReadOnlyPoint
+      endControl?: Readonly<Point>
       /** Number of sublines (useful to represent vec3 or rgb) @todo If implemented, refactor calculations out of the loop */
       num_sublines?: number
       /** Whether this is a floating link segment */
