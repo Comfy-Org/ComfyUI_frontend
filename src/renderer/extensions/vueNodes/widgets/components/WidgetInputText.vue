@@ -3,7 +3,6 @@
     <InputText
       v-model="localValue"
       v-bind="filteredProps"
-      :disabled="readonly"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
       size="small"
       @update:model-value="onChange"
@@ -29,7 +28,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string>
   modelValue: string
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -137,19 +137,6 @@ describe('WidgetInputText Value Binding', () => {
     })
   })
 
-  describe('Readonly Mode', () => {
-    it('disables input when readonly', () => {
-      const widget = createMockWidget('readonly test')
-      const wrapper = mountComponent(widget, 'readonly test', true)
-
-      const input = wrapper.find('input[type="text"]')
-      if (!(input.element instanceof HTMLInputElement)) {
-        throw new Error('Input element not found or is not an HTMLInputElement')
-      }
-      expect(input.element.disabled).toBe(true)
-    })
-  })
-
   describe('Component Rendering', () => {
     it('always renders InputText component', () => {
       const widget = createMockWidget('test value')

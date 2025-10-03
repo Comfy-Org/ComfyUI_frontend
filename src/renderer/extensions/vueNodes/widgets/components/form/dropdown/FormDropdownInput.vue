@@ -15,6 +15,7 @@ interface Props {
   maxSelectable: number
   uploadable: boolean
   disabled: boolean
+  accept?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -92,6 +93,7 @@ const theButtonStyle = computed(() => [
         class="opacity-0 absolute inset-0 -z-1"
         :multiple="maxSelectable > 1"
         :disabled="disabled"
+        :accept="accept"
         @change="emit('file-change', $event)"
       />
     </label>

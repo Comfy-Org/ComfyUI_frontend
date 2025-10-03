@@ -16,7 +16,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<number>
   modelValue: number
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -72,7 +71,6 @@ const buttonsDisabled = computed(() => {
 
 // Tooltip message for disabled buttons
 const buttonTooltip = computed(() => {
-  if (props.readonly) return null
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
   }
@@ -89,7 +87,6 @@ const buttonTooltip = computed(() => {
         :show-buttons="!buttonsDisabled"
         button-layout="horizontal"
         size="small"
-        :disabled="readonly"
         :step="stepValue"
         :use-grouping="useGrouping"
         :class="cn(WidgetInputBaseClass, 'w-full text-xs')"

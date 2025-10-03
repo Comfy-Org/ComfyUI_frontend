@@ -6,10 +6,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": {
-      "import": "./src/index.ts",
-      "types": "./src/index.ts"
-    }
+    ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -25,6 +22,6 @@
     "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "typescript": "catalog:"
   }
 }
