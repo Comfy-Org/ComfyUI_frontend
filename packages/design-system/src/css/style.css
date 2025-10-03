@@ -129,6 +129,7 @@
 }
 
 :root {
+  --backdrop: var(--color-white);
   --node-component-border: var(--color-sand-100);
   --node-component-executing: var(--color-blue-500);
   --node-component-header-icon: var(--color-stone-200);
@@ -145,11 +146,13 @@
   --node-component-tooltip: var(--color-charcoal-700);
   --node-component-tooltip-border: var(--color-sand-100);
   --node-component-tooltip-surface: var(--color-white);
+  --node-component-widget-input-surface: var(--color-zinc-500);
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
   --node-stroke: var(--color-stone-100);
 }
 
 .dark-theme {
+  --backdrop: var(--color-neutral-900);
   --node-component-border: var(--color-charcoal-600);
   --node-component-header-icon: var(--color-slate-300);
   --node-component-outline: var(--color-white);
@@ -169,6 +172,7 @@
 }
 
 @theme inline {
+  --color-backdrop: var(--backdrop);
   --color-node-component-border: var(--node-component-border);
   --color-node-component-executing: var(--node-component-executing);
   --color-node-component-header-icon: var(--node-component-header-icon);
@@ -191,6 +195,7 @@
   --color-node-component-tooltip: var(--node-component-tooltip);
   --color-node-component-tooltip-border: var(--node-component-tooltip-border);
   --color-node-component-tooltip-surface: var(--node-component-tooltip-surface);
+  --color-node-component-widget-input-surface: var(--node-component-widget-input-surface);
   --color-node-component-widget-skeleton-surface: var(
     --node-component-widget-skeleton-surface
   );
