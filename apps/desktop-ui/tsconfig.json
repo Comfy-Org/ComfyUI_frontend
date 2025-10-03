@@ -1,17 +1,13 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
-      "@desktop/*": [
-        "src/*"
-      ],
-      "@/*": [
-        "src/*"
-      ],
-      "@frontend-locales/*": [
-        "../../src/locales/*"
-      ]
+      "@desktop/*": ["src/*"],
+      "@/*": ["src/*"],
+      "@frontend-locales/*": ["../../src/locales/*"]
     }
   },
   "include": [

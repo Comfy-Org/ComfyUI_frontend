@@ -95,7 +95,7 @@ export default defineConfig(() => {
     ],
     build: {
       ...build,
-      minify: SHOULD_MINIFY ? 'esbuild' : false,
+      minify: SHOULD_MINIFY ? ('esbuild' as const) : false,
       target: 'es2022',
       sourcemap: true
     }
