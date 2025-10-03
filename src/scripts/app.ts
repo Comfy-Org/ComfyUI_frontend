@@ -10,7 +10,6 @@ import { st, t } from '@/i18n'
 import {
   LGraph,
   LGraphCanvas,
-  LGraphEventMode,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
@@ -61,12 +60,10 @@ import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -646,52 +643,6 @@ export class ComfyApp {
     }
   }
 
-  private addDrawNodeHandler() {
-    const origDrawNode = LGraphCanvas.prototype.drawNode
-    LGraphCanvas.prototype.drawNode = function (node) {
-      const editor_alpha = this.editor_alpha
-      const old_color = node.color
-      const old_bgcolor = node.bgcolor
-
-      if (node.mode === LGraphEventMode.NEVER) {
-        this.editor_alpha = 0.4
-      }
-
-      let bgColor: string
-      if (node.mode === LGraphEventMode.BYPASS) {
-        bgColor = app.bypassBgColor
-        this.editor_alpha = 0.2
-      } else {
-        bgColor = old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
-      }
-
-      const adjustments: ColorAdjustOptions = {}
-
-      const opacity = useSettingStore().get('Comfy.Node.Opacity')
-      if (opacity) adjustments.opacity = opacity
-
-      if (useColorPaletteStore().completedActivePalette.light_theme) {
-        if (old_bgcolor) adjustments.lightness = 0.5
-
-        // Lighten title bar of colored nodes on light theme
-        if (old_color) {
-          node.color = adjustColor(old_color, { lightness: 0.5 })
-        }
-      }
-
-      node.bgcolor = adjustColor(bgColor, adjustments)
-
-      // @ts-expect-error fixme ts strict error
-      const res = origDrawNode.apply(this, arguments)
-
-      this.editor_alpha = editor_alpha
-      node.color = old_color
-      node.bgcolor = old_bgcolor
-
-      return res
-    }
-  }
-
   /**
    * Handles updates from the API socket
    */
@@ -898,7 +849,6 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
 
-    this.addDrawNodeHandler()
     this.addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
