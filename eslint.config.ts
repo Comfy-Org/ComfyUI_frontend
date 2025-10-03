@@ -52,8 +52,10 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'vite.config.mts',
+            'vite.electron.config.mts',
             'vite.types.config.mts',
-            'vitest.litegraph.config.ts'
+            'playwright.config.ts',
+            'playwright.i18n.config.ts'
           ]
         },
         tsConfigRootDir: import.meta.dirname,
