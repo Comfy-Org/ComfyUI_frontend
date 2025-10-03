@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
-import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 // Mock @/i18n for useAssetBrowser and AssetFilterBar
@@ -98,7 +97,7 @@ vi.mock('@/platform/assets/components/AssetFilterBar.vue', () => ({
     emits: ['filter-change'],
     template: `
       <div data-testid="asset-filter-bar">
-        Filter bar with {{ assets ? assets.length : 0 }} assets
+        Filter bar with {{ assets?.length ?? 0 }} assets
       </div>
     `
   }
@@ -196,7 +195,7 @@ describe('AssetBrowserModal', () => {
       const wrapper = createWrapper(assets)
 
       const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const gridAssets = assetGrid.props('assets') as AssetDisplayItem[]
+      const gridAssets = assetGrid.props('assets')
 
       expect(gridAssets).toHaveLength(2)
       expect(gridAssets[0].id).toBe('asset1')
@@ -229,7 +228,7 @@ describe('AssetBrowserModal', () => {
       expect(emitted).toBeDefined()
       expect(emitted).toHaveLength(1)
 
-      const emittedAsset = emitted![0][0] as AssetDisplayItem
+      const emittedAsset = emitted![0][0] as AssetItem
       expect(emittedAsset.id).toBe('asset1')
     })
 
@@ -309,7 +308,6 @@ describe('AssetBrowserModal', () => {
       const updatedFilterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
       const filterBarAssets = updatedFilterBar.props('assets')
 
-      // Should only have checkpoints (both .safetensors)
       expect(filterBarAssets).toHaveLength(2)
       expect(
         filterBarAssets.every((a: AssetItem) => a.tags.includes('checkpoints'))
