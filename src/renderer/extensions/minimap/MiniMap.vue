@@ -45,7 +45,7 @@
       </Button>
 
       <hr
-        class="absolute top-5 bg-[#E1DED5] dark-theme:bg-[#262729] h-[1px] border-0"
+        class="absolute top-5 bg-node-component-border h-px border-0"
         :style="{
           width: containerStyles.width
         }"
