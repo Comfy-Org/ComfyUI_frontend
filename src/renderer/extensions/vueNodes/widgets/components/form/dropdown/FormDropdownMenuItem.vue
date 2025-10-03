@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 
+import LazyImage from '@/components/common/LazyImage.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { AssetKindKey, type LayoutMode } from './types'
@@ -102,10 +103,11 @@ function handleVideoLoad(event: Event) {
         muted
         @loadeddata="handleVideoLoad"
       />
-      <img
+      <LazyImage
         v-else-if="mediaSrc"
         :src="mediaSrc"
-        class="size-full object-cover"
+        :alt="name"
+        image-class="size-full object-cover"
         @load="handleImageLoad"
       />
       <div
