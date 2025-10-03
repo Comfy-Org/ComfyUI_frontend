@@ -5,7 +5,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   OptionalProps,
-  ReadOnlyPoint
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
@@ -32,7 +32,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     this.#widget = widget ? new WeakRef(widget) : undefined
   }
 
-  get collapsedPos(): ReadOnlyPoint {
+  get collapsedPos(): Readonly<Point> {
     return [0, LiteGraph.NODE_TITLE_HEIGHT * -0.5]
   }
 

@@ -93,16 +93,16 @@ const mountSlots = (nodeData: VueNodeData, readonly = false) => {
 describe('NodeSlots.vue', () => {
   it('filters out inputs with widget property and maps indexes correctly', () => {
     // Two inputs without widgets (object and string) and one with widget (filtered)
-    const inputObjNoWidget = {
+    const inputObjNoWidget: INodeInputSlot = {
       name: 'objNoWidget',
       type: 'number',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: [0, 0, 0, 0],
       link: null
     }
-    const inputObjWithWidget = {
+    const inputObjWithWidget: INodeInputSlot = {
       name: 'objWithWidget',
       type: 'number',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: [0, 0, 0, 0],
       widget: { name: 'objWithWidget' },
       link: null
     }
@@ -147,16 +147,16 @@ describe('NodeSlots.vue', () => {
   })
 
   it('maps outputs and passes correct indexes', () => {
-    const outputObj = {
+    const outputObj: INodeOutputSlot = {
       name: 'outA',
       type: 'any',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: [0, 0, 0, 0],
       links: []
     }
-    const outputObjB = {
+    const outputObjB: INodeOutputSlot = {
       name: 'outB',
       type: 'any',
-      boundingRect: new Float32Array([0, 0, 0, 0]),
+      boundingRect: [0, 0, 0, 0],
       links: []
     }
     const outputs: INodeOutputSlot[] = [outputObj, outputObjB]
