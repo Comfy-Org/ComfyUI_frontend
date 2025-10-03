@@ -119,15 +119,9 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
-    function checkWidgets() {
-      updatePreviews(node)
-      const widget = node.widgets?.find((w) => w.name.startsWith('$$'))
-      if (!widget) return
-      const pw = getProxyWidgets(subgraphNode)
-      if (pw.some(matchesPropertyItem([node, widget]))) return
-      promoteWidget(node, widget, [subgraphNode])
-    }
-    requestAnimationFrame(() => updatePreviews(node, checkWidgets))
+    //NOTE: Since this operation is async, previews still don't exist after the single frame
+    //Add an onLoad callback to updatePreviews?
+    updatePreviews(node)
   }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)

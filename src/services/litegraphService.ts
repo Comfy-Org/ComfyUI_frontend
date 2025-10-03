@@ -853,14 +853,14 @@ export const useLitegraphService = () => {
       return []
     }
   }
-  function updatePreviews(node: LGraphNode, callback?: () => void) {
+  function updatePreviews(node: LGraphNode) {
     try {
-      unsafeUpdatePreviews.call(node, callback)
+      unsafeUpdatePreviews.call(node)
     } catch (error) {
       console.error('Error drawing node background', error)
     }
   }
-  function unsafeUpdatePreviews(this: LGraphNode, callback?: () => void) {
+  function unsafeUpdatePreviews(this: LGraphNode) {
     if (this.flags.collapsed) return
 
     const nodeOutputStore = useNodeOutputStore()
@@ -891,9 +891,9 @@ export const useLitegraphService = () => {
         (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
         isVideoNode(this)
       if (isVideo) {
-        useNodeVideo(this, callback).showPreview()
+        useNodeVideo(this).showPreview()
       } else {
-        useNodeImage(this, callback).showPreview()
+        useNodeImage(this).showPreview()
       }
     }
 

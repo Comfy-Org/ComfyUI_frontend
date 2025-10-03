@@ -121,6 +121,7 @@ function addProxyWidget(
     afterQueued: undefined,
     computedHeight: undefined,
     isProxyWidget: true,
+    label: name,
     last_y: undefined,
     name,
     node: subgraphNode,
