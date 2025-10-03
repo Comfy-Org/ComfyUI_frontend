@@ -2,7 +2,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 export const WidgetInputBaseClass = cn([
   // Background
-  'bg-zinc-500/10',
+  'bg-node-component-widget-input-surface/10',
   // Outline
   'border-none',
   'outline',

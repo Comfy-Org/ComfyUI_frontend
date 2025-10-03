@@ -17,7 +17,7 @@ defineProps<{
     <div class="relative h-6 flex items-center mr-4">
       <p
         v-if="widget.name"
-        class="text-sm text-stone-200 dark-theme:text-slate-200 font-normal flex-1 truncate w-20 lod-toggle"
+        class="text-sm text-node-component-slot-text font-normal flex-1 truncate w-20 lod-toggle"
       >
         {{ widget.label || widget.name }}
       </p>
