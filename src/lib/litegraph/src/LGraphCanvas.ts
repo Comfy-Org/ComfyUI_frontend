@@ -5198,7 +5198,7 @@ export class LGraphCanvas
       lightness: nodeLightness
     }
 
-    const color = node.renderingColor
+    const color = adjustColor(node.renderingColor, { lightness: nodeLightness })
     const bgcolor = adjustColor(
       node.mode === LGraphEventMode.BYPASS
         ? LiteGraph.NODE_DEFAULT_BYPASS_COLOR
