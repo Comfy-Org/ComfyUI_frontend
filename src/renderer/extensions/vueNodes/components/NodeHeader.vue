@@ -19,7 +19,7 @@
       >
         <i
           :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-          class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
+          class="text-xs leading-none relative top-px text-node-component-header-icon"
         ></i>
       </button>
 
@@ -38,7 +38,7 @@
         />
         <i
           v-if="isPinned"
-          class="icon-[lucide--pin] w-5 h-5 text-stone-200 dark-theme:text-slate-300"
+          class="icon-[lucide--pin] w-5 h-5 text-node-component-header-icon"
           data-testid="node-pin-indicator"
         />
       </div>
@@ -47,7 +47,7 @@
           v-if="isSubgraphNode"
           size="sm"
           type="transparent"
-          class="text-stone-200 dark-theme:text-slate-300"
+          class="text-node-component-header-icon"
           data-testid="subgraph-enter-button"
           title="Enter Subgraph"
           @click.stop="handleEnterSubgraph"
