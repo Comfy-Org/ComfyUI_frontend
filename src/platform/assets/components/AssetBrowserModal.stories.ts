@@ -57,12 +57,10 @@ export const Default: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (asset: AssetDisplayItem) => {
-        console.log('Selected asset:', asset)
+      const onAssetSelect = (_asset: AssetDisplayItem) => {
+        // Asset selection handler for story
       }
-      const onClose = () => {
-        console.log('Modal closed')
-      }
+      const onClose = () => {}
 
       return {
         ...args,
@@ -97,11 +95,11 @@ export const SingleAssetType: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (asset: AssetDisplayItem) => {
-        console.log('Selected asset:', asset)
+      const onAssetSelect = (_asset: AssetDisplayItem) => {
+        // Asset selection handler for story
       }
       const onClose = () => {
-        console.log('Modal closed')
+        // Modal close handler for story
       }
 
       // Create assets with only one type (checkpoints)
@@ -146,11 +144,11 @@ export const NoLeftPanel: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (asset: AssetDisplayItem) => {
-        console.log('Selected asset:', asset)
+      const onAssetSelect = (_asset: AssetDisplayItem) => {
+        // Asset selection handler for story
       }
       const onClose = () => {
-        console.log('Modal closed')
+        // Modal close handler for story
       }
 
       return { ...args, onAssetSelect, onClose, assets: mockAssets }

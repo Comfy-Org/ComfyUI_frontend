@@ -22,7 +22,6 @@ const value = defineModel<ChartData>({ required: true })
 
 const props = defineProps<{
   widget: SimplifiedWidget<ChartData, ChartWidgetOptions>
-  readonly?: boolean
 }>()
 
 const chartType = computed(() => props.widget.options?.type ?? 'line')

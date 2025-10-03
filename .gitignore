@@ -31,6 +31,7 @@ CLAUDE.local.md
 *.code-workspace
 !.vscode/extensions.json
 !.vscode/tailwind.json
+!.vscode/custom-css.json
 !.vscode/settings.json.default
 !.vscode/launch.json.default
 .idea

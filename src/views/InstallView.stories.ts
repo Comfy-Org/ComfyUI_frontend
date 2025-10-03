@@ -48,16 +48,10 @@ const meta: Meta<typeof InstallView> = {
           getDetectedGpu: () => Promise.resolve('mps')
         },
         Events: {
-          trackEvent: (eventName: string, data?: any) => {
-            console.log('Track event:', eventName, data)
-          }
+          trackEvent: (_eventName: string, _data?: any) => {}
         },
-        installComfyUI: (options: any) => {
-          console.log('Install ComfyUI with options:', options)
-        },
-        changeTheme: (theme: any) => {
-          console.log('Change theme:', theme)
-        },
+        installComfyUI: (_options: any) => {},
+        changeTheme: (_theme: any) => {},
         getSystemPaths: () =>
           Promise.resolve({
             defaultInstallPath: '/Users/username/ComfyUI'

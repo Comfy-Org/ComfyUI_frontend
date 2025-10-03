@@ -364,10 +364,6 @@ export function useConflictDetection() {
         Object.entries(bulkResult).forEach(([packageId, failInfo]) => {
           if (failInfo !== null) {
             importFailures[packageId] = failInfo
-            console.debug(
-              `[ConflictDetection] Import failure found for ${packageId}:`,
-              failInfo
-            )
           }
         })
 
@@ -495,11 +491,6 @@ export function useConflictDetection() {
 
         // Merge conflicts for packages with the same name
         const mergedConflicts = consolidateConflictsByPackage(conflictedResults)
-
-        console.debug(
-          '[ConflictDetection] Conflicts detected (stored for UI):',
-          mergedConflicts
-        )
 
         // Store merged conflicts in Pinia store for UI usage
         conflictStore.setConflictedPackages(mergedConflicts)

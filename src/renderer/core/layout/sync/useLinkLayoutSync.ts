@@ -4,7 +4,7 @@ import { computed, ref, toValue } from 'vue'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { ReadOnlyPoint } from '@/lib/litegraph/src/interfaces'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -113,7 +113,7 @@ export function useLinkLayoutSync() {
 
         // Special handling for floating input chain
         const isFloatingInputChain = !sourceNode && targetNode
-        const startControl: ReadOnlyPoint = isFloatingInputChain
+        const startControl: Readonly<Point> = isFloatingInputChain
           ? [0, 0]
           : [dist * reroute.cos, dist * reroute.sin]
 
@@ -149,7 +149,7 @@ export function useLinkLayoutSync() {
           (endPos[1] - lastReroute.pos[1]) ** 2
       )
       const finalDist = Math.min(Reroute.maxSplineOffset, finalDistance * 0.25)
-      const finalStartControl: ReadOnlyPoint = [
+      const finalStartControl: Readonly<Point> = [
         finalDist * lastReroute.cos,
         finalDist * lastReroute.sin
       ]

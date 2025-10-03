@@ -18,7 +18,7 @@ export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
     subgraphNodePath: readonly NodeId[],
     /** A flattened map of all DTOs in this node network. Subgraph instances have been expanded into their inner nodes. */
     nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
-    /** The actual subgraph instance that contains this node, otherise undefined. */
+    /** The actual subgraph instance that contains this node, otherwise undefined. */
     subgraphNode?: SubgraphNode | undefined,
     groupNodeHandler?: GroupNodeHandler
   ) {

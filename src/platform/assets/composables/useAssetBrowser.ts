@@ -198,10 +198,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     assetId: string,
     onSelect?: (filename: string) => void
   ): Promise<void> {
-    if (import.meta.env.DEV) {
-      console.debug('Asset selected:', assetId)
-    }
-
     if (!onSelect) {
       return
     }

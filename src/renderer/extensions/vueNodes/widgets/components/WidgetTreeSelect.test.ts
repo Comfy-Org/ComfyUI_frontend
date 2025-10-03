@@ -334,30 +334,6 @@ describe('WidgetTreeSelect Tree Navigation', () => {
     })
   })
 
-  describe('Readonly Mode', () => {
-    it('disables treeselect when readonly', () => {
-      const options = createTreeData()
-      const widget = createMockWidget(null, { options })
-      const wrapper = mountComponent(widget, null, true)
-
-      const treeSelect = wrapper.findComponent({ name: 'TreeSelect' })
-      expect(treeSelect.props('disabled')).toBe(true)
-    })
-
-    it('does not emit changes in readonly mode', async () => {
-      const options = createTreeData()
-      const widget = createMockWidget(null, { options })
-      const wrapper = mountComponent(widget, null, true)
-
-      // Try to emit a change (though the component should prevent it)
-      await setTreeSelectValueAndEmit(wrapper, { key: '0-0-0', label: 'Test' })
-
-      // The component will still emit the event, but the disabled prop should prevent interaction
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined() // The event is emitted but the TreeSelect should be disabled
-    })
-  })
-
   describe('Widget Options Handling', () => {
     it('passes through valid widget options', () => {
       const options = createTreeData()
