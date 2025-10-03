@@ -89,7 +89,9 @@
 
     <div class="relative">
       <!-- Video Dimensions -->
-      <div class="text-white text-xs text-center mt-2">
+      <div
+        class="text-stone-700 dark-theme:text-white text-xs text-center mt-2 lod-toggle"
+      >
         <span v-if="videoError" class="text-red-400">
           {{ $t('g.errorLoadingVideo') }}
         </span>
