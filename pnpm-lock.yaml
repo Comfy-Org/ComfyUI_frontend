@@ -610,7 +610,11 @@ importers:
         specifier: 'catalog:'
         version: 3.24.1(zod@3.24.1)
 
-  apps/desktop-ui: {}
+  apps/desktop-ui:
+    dependencies:
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-frontend-utils
 
   packages/design-system:
     dependencies:

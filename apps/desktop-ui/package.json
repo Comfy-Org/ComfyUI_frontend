@@ -58,5 +58,8 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:*"
   }
 }
