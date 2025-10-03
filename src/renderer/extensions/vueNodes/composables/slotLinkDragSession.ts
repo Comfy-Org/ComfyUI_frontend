@@ -6,7 +6,7 @@ interface PendingMoveData {
   target: EventTarget | null
 }
 
-interface SlotLinkDragSession {
+export interface SlotLinkDragSession {
   compatCache: Map<string, boolean>
   nodePreferred: Map<
     number,

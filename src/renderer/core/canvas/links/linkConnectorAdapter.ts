@@ -1,9 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { app } from '@/scripts/app'
 
 // Keep one adapter per graph so rendering and interaction share state.
@@ -17,16 +17,11 @@ const adapterByGraph = new WeakMap<LGraph, LinkConnectorAdapter>()
  * - Preserves existing Vue composable behavior.
  */
 export class LinkConnectorAdapter {
-  readonly linkConnector: LinkConnector
-
   constructor(
     /** Network the links belong to (typically `app.canvas.graph`). */
-    readonly network: LGraph
-  ) {
-    // No-op legacy setter to avoid side effects when connectors update
-    const setConnectingLinks: (value: ConnectingLink[]) => void = () => {}
-    this.linkConnector = new LinkConnector(setConnectingLinks)
-  }
+    readonly network: LGraph,
+    readonly linkConnector: LinkConnector
+  ) {}
 
   /**
    * The currently rendered/dragged links, typed for consumer use.
@@ -133,6 +128,11 @@ export class LinkConnectorAdapter {
     this.linkConnector.disconnectLinks()
   }
 
+  /** Drops moving links onto the canvas (no target). */
+  dropOnCanvas(event: CanvasPointerEvent): void {
+    this.linkConnector.dropOnNothing(event)
+  }
+
   /** Resets connector state and clears any temporary flags. */
   reset(): void {
     this.linkConnector.reset()
@@ -141,11 +141,12 @@ export class LinkConnectorAdapter {
 
 /** Convenience creator using the current app canvas graph. */
 export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
-  const graph = app.canvas?.graph as LGraph | undefined
-  if (!graph) return null
+  const graph = app.canvas?.graph
+  const connector = app.canvas?.linkConnector
+  if (!graph || !connector) return null
   let adapter = adapterByGraph.get(graph)
-  if (!adapter) {
-    adapter = new LinkConnectorAdapter(graph)
+  if (!adapter || adapter.linkConnector !== connector) {
+    adapter = new LinkConnectorAdapter(graph, connector)
     adapterByGraph.set(graph, adapter)
   }
   return adapter
