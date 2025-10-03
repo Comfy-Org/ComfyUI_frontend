@@ -571,7 +571,8 @@
       "models": "Models",
       "workflows": "Workflows",
       "templates": "Templates",
-      "console": "Console"
+      "console": "Console",
+      "menu": "Menu"
     },
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
