@@ -38,6 +38,7 @@ export default defineConfig(() => {
     publicDir: path.resolve(projectRoot, 'public'),
     server: {
       ...server,
+      port: 5174,
       host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined
     },
     resolve: {
