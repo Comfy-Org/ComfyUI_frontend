@@ -6,6 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
@@ -65,7 +66,6 @@ const addComboWidget = (
   const isEligible = assetService.isAssetBrowserEligible(node.comfyClass ?? '')
 
   if (isUsingAssetAPI && isEligible) {
-    // Get the default value for the button text (currently selected model)
     const currentValue = getDefaultValue(inputSpec)
     const displayLabel = currentValue ?? t('widgets.selectModel')
 
@@ -83,11 +83,28 @@ const addComboWidget = (
           nodeType: node.comfyClass || '',
           inputName: inputSpec.name,
           currentValue: widget.value,
-          onAssetSelected: (filename: string) => {
+          onAssetSelected: (asset) => {
+            const filename = asset.user_metadata?.filename
+            const validatedFilename = assetFilenameSchema.safeParse(filename)
+
+            if (!validatedFilename.success) {
+              console.error(
+                'Invalid asset filename:',
+                validatedFilename.error.errors,
+                'for asset:',
+                asset.id
+              )
+              return
+            }
+
             const oldValue = widget.value
-            widget.value = filename
-            // Using onWidgetChanged prevents a callback race where asset selection could reopen the dialog
-            node.onWidgetChanged?.(widget.name, filename, oldValue, widget)
+            widget.value = validatedFilename.data
+            node.onWidgetChanged?.(
+              widget.name,
+              validatedFilename.data,
+              oldValue,
+              widget
+            )
           }
         })
       }

@@ -55,7 +55,6 @@ function setupDialogMocks() {
 describe('useAssetBrowserDialog', () => {
   describe('Asset Selection Flow', () => {
     it('auto-closes dialog when asset is selected', async () => {
-      // Create fresh mocks for this test
       const mockShowDialog = vi.fn()
       const mockCloseDialog = vi.fn()
 
@@ -75,11 +74,9 @@ describe('useAssetBrowserDialog', () => {
         onAssetSelected
       })
 
-      // Get the onSelect handler that was passed to the dialog
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onSelectHandler = dialogCall.props.onSelect
 
-      // Simulate asset selection with AssetItem
       const mockAsset = {
         id: 'test-asset-id',
         name: 'test.safetensors',
@@ -90,15 +87,13 @@ describe('useAssetBrowserDialog', () => {
       }
       onSelectHandler(mockAsset)
 
-      // Should call the original callback with extracted filename
-      expect(onAssetSelected).toHaveBeenCalledWith('selected-asset-path')
+      expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)
       expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'global-asset-browser'
       })
     })
 
     it('closes dialog when close handler is called', async () => {
-      // Create fresh mocks for this test
       const mockShowDialog = vi.fn()
       const mockCloseDialog = vi.fn()
 
@@ -116,11 +111,9 @@ describe('useAssetBrowserDialog', () => {
         inputName: 'ckpt_name'
       })
 
-      // Get the onClose handler that was passed to the dialog
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onCloseHandler = dialogCall.props.onClose
 
-      // Simulate dialog close
       onCloseHandler()
 
       expect(mockCloseDialog).toHaveBeenCalledWith({

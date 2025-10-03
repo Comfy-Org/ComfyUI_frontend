@@ -1,7 +1,6 @@
 import { t } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { type DialogComponentProps, useDialogStore } from '@/stores/dialogStore'
 
@@ -12,11 +11,7 @@ interface ShowOptions {
   inputName: string
   /** Current selected asset value */
   currentValue?: string
-  /**
-   * Callback for when an asset is selected
-   * @param {string} filename - The validated filename from user_metadata.filename
-   */
-  onAssetSelected?: (filename: string) => void
+  onAssetSelected?: (asset: AssetItem) => void
 }
 
 interface BrowseOptions {
@@ -28,7 +23,7 @@ interface BrowseOptions {
   onAssetSelected?: (asset: AssetItem) => void
 }
 
-const PROPS: DialogComponentProps = {
+const dialogComponentProps: DialogComponentProps = {
   headless: true,
   modal: true,
   closable: true,
@@ -43,7 +38,7 @@ const PROPS: DialogComponentProps = {
       class: '!p-0 !m-0 h-full w-full'
     }
   }
-}
+} as const
 
 export const useAssetBrowserDialog = () => {
   const dialogStore = useDialogStore()
@@ -51,21 +46,7 @@ export const useAssetBrowserDialog = () => {
 
   async function show(props: ShowOptions) {
     const handleAssetSelected = (asset: AssetItem) => {
-      const filename = asset.user_metadata?.filename
-      const validatedFilename = assetFilenameSchema.safeParse(filename)
-
-      if (!validatedFilename.success) {
-        console.error(
-          'Invalid asset filename:',
-          validatedFilename.error.errors,
-          'for asset:',
-          asset.id
-        )
-        dialogStore.closeDialog({ key: dialogKey })
-        return
-      }
-
-      props.onAssetSelected?.(validatedFilename.data)
+      props.onAssetSelected?.(asset)
       dialogStore.closeDialog({ key: dialogKey })
     }
 
@@ -108,7 +89,7 @@ export const useAssetBrowserDialog = () => {
         onSelect: handleAssetSelected,
         onClose: () => dialogStore.closeDialog({ key: dialogKey })
       },
-      dialogComponentProps: PROPS
+      dialogComponentProps
     })
   }
 
@@ -141,7 +122,7 @@ export const useAssetBrowserDialog = () => {
         onSelect: handleAssetSelected,
         onClose: () => dialogStore.closeDialog({ key: dialogKey })
       },
-      dialogComponentProps: PROPS
+      dialogComponentProps
     })
   }
 
