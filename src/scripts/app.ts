@@ -638,8 +638,7 @@ export class ComfyApp {
       }
 
       // Fall through to Litegraph defaults
-      // @ts-expect-error fixme ts strict error
-      return origProcessKey.apply(this, arguments)
+      return origProcessKey.apply(this, [e])
     }
   }
 
