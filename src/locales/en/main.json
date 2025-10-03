@@ -1302,7 +1302,7 @@
     "UV": "UV",
     "ContextMenu": "Context Menu",
     "Reroute": "Reroute",
-    "Load 3D": "Load 3D",
+    "Load 3D": "Load 3D & Animation",
     "Camera": "Camera",
     "Scene": "Scene",
     "3D": "3D",
@@ -1653,18 +1653,17 @@
     "camera": "Camera",
     "light": "Light",
     "switchingMaterialMode": "Switching Material Mode...",
-    "edgeThreshold": "Edge Threshold",
     "export": "Export",
     "exportModel": "Export Model",
     "exportingModel": "Exporting model...",
+    "reloadingModel": "Reloading model...",
     "uploadTexture": "Upload Texture",
     "applyingTexture": "Applying Texture...",
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
-      "depth": "Depth",
-      "lineart": "Lineart"
+      "depth": "Depth"
     },
     "upDirections": {
       "original": "Original"
@@ -1729,7 +1728,9 @@
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
-    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer"
+    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
+    "failedToLoadBackgroundImage": "Failed to load background image",
+    "failedToLoadModel": "Failed to load 3D model"
   },
   "auth": {
     "apiKey": {
