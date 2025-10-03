@@ -33,7 +33,7 @@
     },
     {
       "name": "@apply",
-      "description": "Use the `@apply` directive to inline any existing utility classes into your own custom CSS. This is useful when you find a common utility pattern in your HTML that you'd like to extract to a new component.",
+      "description": "DO NOT USE. IF YOU ARE CAUGHT USING @apply YOU WILL FACE SEVERE CONSEQUENCES.",
       "references": [
         {
           "name": "Tailwind Documentation",
