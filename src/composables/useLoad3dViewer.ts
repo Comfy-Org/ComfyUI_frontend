@@ -10,6 +10,7 @@ import type {
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'
 
 interface Load3dViewerState {
@@ -367,6 +368,49 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     }
   }
 
+  const handleModelDrop = async (file: File) => {
+    if (!load3d) {
+      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      return
+    }
+
+    try {
+      const resourceFolder =
+        (node.properties['Resource Folder'] as string) || ''
+      const subfolder = resourceFolder.trim()
+        ? `3d/${resourceFolder.trim()}`
+        : '3d'
+
+      const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+
+      if (!uploadedPath) {
+        useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+        return
+      }
+
+      const modelUrl = api.apiURL(
+        Load3dUtils.getResourceURL(
+          ...Load3dUtils.splitFilePath(uploadedPath),
+          'input'
+        )
+      )
+
+      await load3d.loadModel(modelUrl)
+
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      if (modelWidget) {
+        const options = modelWidget.options as { values?: string[] } | undefined
+        if (options?.values && !options.values.includes(uploadedPath)) {
+          options.values.push(uploadedPath)
+        }
+        modelWidget.value = uploadedPath
+      }
+    } catch (error) {
+      console.error('Model drop failed:', error)
+      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+    }
+  }
+
   const cleanup = () => {
     load3d?.remove()
     load3d = null
@@ -396,6 +440,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     applyChanges,
     refreshViewport,
     handleBackgroundImageUpdate,
+    handleModelDrop,
     cleanup
   }
 }

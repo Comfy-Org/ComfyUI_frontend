@@ -373,6 +373,61 @@ export const useLoad3d = (nodeOrRef: LGraphNode | Ref<LGraphNode | null>) => {
     }
   }
 
+  const handleModelDrop = async (file: File) => {
+    if (!load3d) {
+      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      return
+    }
+
+    const node = toRaw(nodeRef.value)
+    if (!node) return
+
+    try {
+      const resourceFolder =
+        (node.properties['Resource Folder'] as string) || ''
+
+      const subfolder = resourceFolder.trim()
+        ? `3d/${resourceFolder.trim()}`
+        : '3d'
+
+      loading.value = true
+      loadingMessage.value = t('load3d.uploadingModel')
+
+      const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+
+      if (!uploadedPath) {
+        useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+        return
+      }
+
+      const modelUrl = api.apiURL(
+        Load3dUtils.getResourceURL(
+          ...Load3dUtils.splitFilePath(uploadedPath),
+          isPreview.value ? 'output' : 'input'
+        )
+      )
+
+      loadingMessage.value = t('load3d.loadingModel')
+      await load3d.loadModel(modelUrl)
+
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+
+      if (modelWidget) {
+        const options = modelWidget.options as { values?: string[] } | undefined
+        if (options?.values && !options.values.includes(uploadedPath)) {
+          options.values.push(uploadedPath)
+        }
+        modelWidget.value = uploadedPath
+      }
+    } catch (error) {
+      console.error('Model drop failed:', error)
+      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+    } finally {
+      loading.value = false
+      loadingMessage.value = ''
+    }
+  }
+
   const eventConfig = {
     materialModeChange: (value: string) => {
       modelConfig.value.materialMode = value as MaterialMode
@@ -483,6 +538,7 @@ export const useLoad3d = (nodeOrRef: LGraphNode | Ref<LGraphNode | null>) => {
     handleClearRecording,
     handleBackgroundImageUpdate,
     handleExportModel,
+    handleModelDrop,
     cleanup
   }
 }
