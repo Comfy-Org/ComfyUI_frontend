@@ -62,10 +62,7 @@ const addComboWidget = (
 ): IBaseWidget => {
   const settingStore = useSettingStore()
   const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-  const isEligible = assetService.isAssetBrowserEligible(
-    inputSpec.name,
-    node.comfyClass || ''
-  )
+  const isEligible = assetService.isAssetBrowserEligible(node.comfyClass ?? '')
 
   if (isUsingAssetAPI && isEligible) {
     // Get the default value for the button text (currently selected model)

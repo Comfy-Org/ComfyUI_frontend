@@ -108,7 +108,9 @@ describe('assetService', () => {
 
       const result = await assetService.getAssetModelFolders()
 
-      expect(api.fetchApi).toHaveBeenCalledWith('/assets?include_tags=models')
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models&limit=300'
+      )
       expect(result).toHaveLength(2)
 
       const folderNames = result.map((f) => f.name)
@@ -153,7 +155,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetModels('checkpoints')
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints'
+        '/assets?include_tags=models,checkpoints&limit=300'
       )
       expect(result).toEqual([
         expect.objectContaining({ name: 'valid.safetensors', pathIndex: 0 })
@@ -181,41 +183,17 @@ describe('assetService', () => {
   })
 
   describe('isAssetBrowserEligible', () => {
-    it('should return true for eligible widget names with registered node types', () => {
+    it('should return true for registered node types', () => {
       expect(
-        assetService.isAssetBrowserEligible(
-          'ckpt_name',
-          'CheckpointLoaderSimple'
-        )
+        assetService.isAssetBrowserEligible('CheckpointLoaderSimple')
       ).toBe(true)
-      expect(
-        assetService.isAssetBrowserEligible('lora_name', 'LoraLoader')
-      ).toBe(true)
-      expect(assetService.isAssetBrowserEligible('vae_name', 'VAELoader')).toBe(
-        true
-      )
+      expect(assetService.isAssetBrowserEligible('LoraLoader')).toBe(true)
+      expect(assetService.isAssetBrowserEligible('VAELoader')).toBe(true)
     })
 
-    it('should return false for non-eligible widget names', () => {
-      expect(assetService.isAssetBrowserEligible('seed', 'TestNode')).toBe(
-        false
-      )
-      expect(assetService.isAssetBrowserEligible('steps', 'TestNode')).toBe(
-        false
-      )
-      expect(
-        assetService.isAssetBrowserEligible('sampler_name', 'TestNode')
-      ).toBe(false)
-      expect(assetService.isAssetBrowserEligible('', 'TestNode')).toBe(false)
-    })
-
-    it('should return false for eligible widget names with unregistered node types', () => {
-      expect(
-        assetService.isAssetBrowserEligible('ckpt_name', 'UnknownNode')
-      ).toBe(false)
-      expect(
-        assetService.isAssetBrowserEligible('lora_name', 'UnknownNode')
-      ).toBe(false)
+    it('should return false for unregistered node types', () => {
+      expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
     })
   })
 
@@ -249,7 +227,7 @@ describe('assetService', () => {
 
       // Verify API call includes correct category
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints'
+        '/assets?include_tags=models,checkpoints&limit=300'
       )
     })
 
