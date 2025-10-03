@@ -67,8 +67,6 @@ const sortBy = ref('name-asc')
 const { availableFileFormats, availableBaseModels } =
   useAssetFilterOptions(assets)
 
-// TODO: Make sortOptions configurable via props
-// Different asset types might need different sorting options
 const sortOptions = [
   { name: t('assetBrowser.sortAZ'), value: 'name-asc' },
   { name: t('assetBrowser.sortZA'), value: 'name-desc' },
