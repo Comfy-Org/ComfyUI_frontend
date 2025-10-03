@@ -3,8 +3,11 @@ import {
   LiteGraph,
   type Point
 } from '@/lib/litegraph/src/litegraph'
-import { MISSING_TAG, MODELS_TAG } from '@/platform/assets/constants'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  MISSING_TAG,
+  MODELS_TAG
+} from '@/platform/assets/services/assetService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'

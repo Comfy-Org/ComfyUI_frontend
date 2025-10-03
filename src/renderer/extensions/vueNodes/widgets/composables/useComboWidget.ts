@@ -63,7 +63,7 @@ const addComboWidget = (
 ): IBaseWidget => {
   const settingStore = useSettingStore()
   const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-  const isEligible = assetService.isAssetBrowserEligible(node.comfyClass ?? '')
+  const isEligible = assetService.isAssetBrowserEligible(node.comfyClass)
 
   if (isUsingAssetAPI && isEligible) {
     const currentValue = getDefaultValue(inputSpec)
