@@ -84,9 +84,6 @@ export const useColorPaletteService = () => {
    * @param liteGraphColorPalette - The palette to set.
    */
   const loadLiteGraphColorPalette = (palette: Colors['litegraph_base']) => {
-    // Sets special case colors
-    app.bypassBgColor = palette.NODE_BYPASS_BGCOLOR
-
     // Sets the colors of the LiteGraph objects
     app.canvas.node_title_color = palette.NODE_TITLE_COLOR
     app.canvas.default_link_color = palette.LINK_COLOR

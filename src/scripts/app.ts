@@ -194,7 +194,6 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
-  bypassBgColor: string
   // Set by Comfy.Clipspace extension
   openClipspace: () => void = () => {}
 
@@ -299,7 +298,6 @@ export class ComfyApp {
     this.canvasContainer = $el('div.graph-canvas-container')
 
     this.menu = new ComfyAppMenu(this)
-    this.bypassBgColor = '#FF00FF'
 
     /**
      * Stores the execution output data for each node
