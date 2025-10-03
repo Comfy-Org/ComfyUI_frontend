@@ -66,13 +66,13 @@ export const useAssetBrowserDialog = () => {
     const nodeTypeCategory =
       assets[0]?.tags?.find((tag) => tag !== 'models') ?? 'models'
 
-    // Format category label: replace underscores, handle special acronyms
-    const acronyms = new Set(['vae', 'clip', 'gligen'])
+    const acronyms = new Set(['VAE', 'CLIP', 'GLIGEN'])
     const categoryLabel = nodeTypeCategory
       .split('_')
-      .map((word) =>
-        acronyms.has(word.toLowerCase()) ? word.toUpperCase() : word
-      )
+      .map((word) => {
+        const uc = word.toUpperCase()
+        return acronyms.has(uc) ? uc : word
+      })
       .join(' ')
 
     const title = t('assetBrowser.allCategory', { category: categoryLabel })
