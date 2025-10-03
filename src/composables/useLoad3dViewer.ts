@@ -10,6 +10,7 @@ import type {
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'
 
 interface Load3dViewerState {
@@ -22,7 +23,6 @@ interface Load3dViewerState {
   backgroundImage: string
   upDirection: UpDirection
   materialMode: MaterialMode
-  edgeThreshold: number
 }
 
 export const useLoad3dViewer = (node: LGraphNode) => {
@@ -35,8 +35,8 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   const hasBackgroundImage = ref(false)
   const upDirection = ref<UpDirection>('original')
   const materialMode = ref<MaterialMode>('original')
-  const edgeThreshold = ref(85)
   const needApplyChanges = ref(true)
+  const isPreview = ref(false)
 
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
@@ -50,8 +50,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     cameraState: null,
     backgroundImage: '',
     upDirection: 'original',
-    materialMode: 'original',
-    edgeThreshold: 85
+    materialMode: 'original'
   })
 
   watch(backgroundColor, (newColor) => {
@@ -149,18 +148,6 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     }
   })
 
-  watch(edgeThreshold, (newValue) => {
-    if (!load3d) return
-    try {
-      load3d.setEdgeThreshold(Number(newValue))
-    } catch (error) {
-      console.error('Error updating edge threshold:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateEdgeThreshold', { threshold: newValue })
-      )
-    }
-  })
-
   const initializeViewer = async (
     containerRef: HTMLElement,
     source: Load3d
@@ -178,33 +165,51 @@ export const useLoad3dViewer = (node: LGraphNode) => {
 
       await useLoad3dService().copyLoad3dState(source, load3d)
 
-      const sourceCameraType = source.getCurrentCameraType()
       const sourceCameraState = source.getCameraState()
 
-      cameraType.value = sourceCameraType
-      backgroundColor.value = source.sceneManager.currentBackgroundColor
-      showGrid.value = source.sceneManager.gridHelper.visible
-      lightIntensity.value = (node.properties['Light Intensity'] as number) || 1
+      const sceneConfig = node.properties['Scene Config'] as any
+      const modelConfig = node.properties['Model Config'] as any
+      const cameraConfig = node.properties['Camera Config'] as any
+      const lightConfig = node.properties['Light Config'] as any
 
-      const backgroundInfo = source.sceneManager.getCurrentBackgroundInfo()
-      if (
-        backgroundInfo.type === 'image' &&
-        node.properties['Background Image']
-      ) {
-        backgroundImage.value = node.properties['Background Image'] as string
-        hasBackgroundImage.value = true
+      isPreview.value = node.type === 'Preview3D'
+
+      if (sceneConfig) {
+        backgroundColor.value =
+          sceneConfig.backgroundColor ||
+          source.sceneManager.currentBackgroundColor
+        showGrid.value =
+          sceneConfig.showGrid ?? source.sceneManager.gridHelper.visible
+
+        const backgroundInfo = source.sceneManager.getCurrentBackgroundInfo()
+        if (backgroundInfo.type === 'image' && sceneConfig.backgroundImage) {
+          backgroundImage.value = sceneConfig.backgroundImage
+          hasBackgroundImage.value = true
+        } else {
+          backgroundImage.value = ''
+          hasBackgroundImage.value = false
+        }
+      }
+
+      if (cameraConfig) {
+        cameraType.value =
+          cameraConfig.cameraType || source.getCurrentCameraType()
+        fov.value =
+          cameraConfig.fov || source.cameraManager.perspectiveCamera.fov
+      }
+
+      if (lightConfig) {
+        lightIntensity.value = lightConfig.intensity || 1
       } else {
-        backgroundImage.value = ''
-        hasBackgroundImage.value = false
+        lightIntensity.value = 1
       }
 
-      if (sourceCameraType === 'perspective') {
-        fov.value = source.cameraManager.perspectiveCamera.fov
+      if (modelConfig) {
+        upDirection.value =
+          modelConfig.upDirection || source.modelManager.currentUpDirection
+        materialMode.value =
+          modelConfig.materialMode || source.modelManager.materialMode
       }
-
-      upDirection.value = source.modelManager.currentUpDirection
-      materialMode.value = source.modelManager.materialMode
-      edgeThreshold.value = (node.properties['Edge Threshold'] as number) || 85
 
       initialState.value = {
         backgroundColor: backgroundColor.value,
@@ -215,8 +220,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
         cameraState: sourceCameraState,
         backgroundImage: backgroundImage.value,
         upDirection: upDirection.value,
-        materialMode: materialMode.value,
-        edgeThreshold: edgeThreshold.value
+        materialMode: materialMode.value
       }
 
       const width = node.widgets?.find((w) => w.name === 'width')
@@ -267,16 +271,31 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     needApplyChanges.value = false
 
     if (nodeValue.properties) {
-      nodeValue.properties['Background Color'] =
-        initialState.value.backgroundColor
-      nodeValue.properties['Show Grid'] = initialState.value.showGrid
-      nodeValue.properties['Camera Type'] = initialState.value.cameraType
-      nodeValue.properties['FOV'] = initialState.value.fov
-      nodeValue.properties['Light Intensity'] =
-        initialState.value.lightIntensity
-      nodeValue.properties['Camera Info'] = initialState.value.cameraState
-      nodeValue.properties['Background Image'] =
-        initialState.value.backgroundImage
+      nodeValue.properties['Scene Config'] = {
+        showGrid: initialState.value.showGrid,
+        backgroundColor: initialState.value.backgroundColor,
+        backgroundImage: initialState.value.backgroundImage
+      }
+
+      nodeValue.properties['Camera Config'] = {
+        cameraType: initialState.value.cameraType,
+        fov: initialState.value.fov
+      }
+
+      nodeValue.properties['Light Config'] = {
+        intensity: initialState.value.lightIntensity
+      }
+
+      nodeValue.properties['Model Config'] = {
+        upDirection: initialState.value.upDirection,
+        materialMode: initialState.value.materialMode
+      }
+
+      const currentCameraConfig = nodeValue.properties['Camera Config'] as any
+      nodeValue.properties['Camera Config'] = {
+        ...currentCameraConfig,
+        state: initialState.value.cameraState
+      }
     }
   }
 
@@ -287,20 +306,31 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     const nodeValue = node
 
     if (nodeValue.properties) {
-      nodeValue.properties['Background Color'] = backgroundColor.value
-      nodeValue.properties['Show Grid'] = showGrid.value
-      nodeValue.properties['Camera Type'] = cameraType.value
-      nodeValue.properties['FOV'] = fov.value
-      nodeValue.properties['Light Intensity'] = lightIntensity.value
-      nodeValue.properties['Camera Info'] = viewerCameraState
-      nodeValue.properties['Background Image'] = backgroundImage.value
+      nodeValue.properties['Scene Config'] = {
+        showGrid: showGrid.value,
+        backgroundColor: backgroundColor.value,
+        backgroundImage: backgroundImage.value
+      }
+
+      nodeValue.properties['Camera Config'] = {
+        cameraType: cameraType.value,
+        fov: fov.value,
+        state: viewerCameraState
+      }
+
+      nodeValue.properties['Light Config'] = {
+        intensity: lightIntensity.value
+      }
+
+      nodeValue.properties['Model Config'] = {
+        upDirection: upDirection.value,
+        materialMode: materialMode.value
+      }
     }
 
     await useLoad3dService().copyLoad3dState(load3d, sourceLoad3d)
 
-    if (backgroundImage.value) {
-      await sourceLoad3d.setBackgroundImage(backgroundImage.value)
-    }
+    await sourceLoad3d.setBackgroundImage(backgroundImage.value)
 
     sourceLoad3d.forceRender()
 
@@ -341,6 +371,49 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     }
   }
 
+  const handleModelDrop = async (file: File) => {
+    if (!load3d) {
+      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      return
+    }
+
+    try {
+      const resourceFolder =
+        (node.properties['Resource Folder'] as string) || ''
+      const subfolder = resourceFolder.trim()
+        ? `3d/${resourceFolder.trim()}`
+        : '3d'
+
+      const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+
+      if (!uploadedPath) {
+        useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+        return
+      }
+
+      const modelUrl = api.apiURL(
+        Load3dUtils.getResourceURL(
+          ...Load3dUtils.splitFilePath(uploadedPath),
+          'input'
+        )
+      )
+
+      await load3d.loadModel(modelUrl)
+
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      if (modelWidget) {
+        const options = modelWidget.options as { values?: string[] } | undefined
+        if (options?.values && !options.values.includes(uploadedPath)) {
+          options.values.push(uploadedPath)
+        }
+        modelWidget.value = uploadedPath
+      }
+    } catch (error) {
+      console.error('Model drop failed:', error)
+      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+    }
+  }
+
   const cleanup = () => {
     load3d?.remove()
     load3d = null
@@ -358,8 +431,8 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     hasBackgroundImage,
     upDirection,
     materialMode,
-    edgeThreshold,
     needApplyChanges,
+    isPreview,
 
     // Methods
     initializeViewer,
@@ -371,6 +444,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     applyChanges,
     refreshViewport,
     handleBackgroundImageUpdate,
+    handleModelDrop,
     cleanup
   }
 }

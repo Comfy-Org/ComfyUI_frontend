@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div>
-      <label>{{ t('load3d.upDirection') }}</label>
+      <label>{{ $t('load3d.upDirection') }}</label>
       <Select
         v-model="upDirection"
         :options="upDirectionOptions"
@@ -11,7 +11,7 @@
     </div>
 
     <div>
-      <label>{{ t('load3d.materialMode') }}</label>
+      <label>{{ $t('load3d.materialMode') }}</label>
       <Select
         v-model="materialMode"
         :options="materialModeOptions"

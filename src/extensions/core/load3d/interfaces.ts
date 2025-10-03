@@ -10,16 +10,7 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
-export type Load3DNodeType = 'Load3D' | 'Preview3D'
-
-export type Load3DAnimationNodeType = 'Load3DAnimation' | 'Preview3DAnimation'
-
-export type MaterialMode =
-  | 'original'
-  | 'normal'
-  | 'wireframe'
-  | 'depth'
-  | 'lineart'
+export type MaterialMode = 'original' | 'normal' | 'wireframe' | 'depth'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 
@@ -28,6 +19,27 @@ export interface CameraState {
   target: THREE.Vector3
   zoom: number
   cameraType: CameraType
+}
+
+export interface SceneConfig {
+  showGrid: boolean
+  backgroundColor: string
+  backgroundImage?: string
+}
+
+export interface ModelConfig {
+  upDirection: UpDirection
+  materialMode: MaterialMode
+}
+
+export interface CameraConfig {
+  cameraType: CameraType
+  fov: number
+  state?: CameraState
+}
+
+export interface LightConfig {
+  intensity: number
 }
 
 export interface EventCallback {
@@ -45,7 +57,6 @@ export interface CaptureResult {
   scene: string
   mask: string
   normal: string
-  lineart: string
 }
 
 interface BaseManager {
@@ -99,26 +110,6 @@ export interface ViewHelperManagerInterface extends BaseManager {
   createViewHelper(container: Element | HTMLElement): void
   update(delta: number): void
   handleResize(): void
-}
-
-export interface PreviewManagerInterface extends BaseManager {
-  previewCamera: THREE.Camera
-  previewContainer: HTMLDivElement
-  showPreview: boolean
-  previewWidth: number
-  createCapturePreview(container: Element | HTMLElement): void
-  updatePreviewSize(): void
-  togglePreview(showPreview: boolean): void
-  setTargetSize(width: number, height: number): void
-  handleResize(): void
-  updateBackgroundTexture(texture: THREE.Texture | null): void
-  getPreviewViewport(): {
-    left: number
-    bottom: number
-    width: number
-    height: number
-  } | null
-  renderPreview(): void
 }
 
 export interface EventManagerInterface {
@@ -185,3 +176,11 @@ export interface LoaderManagerInterface {
   dispose(): void
   loadModel(url: string, originalFileName?: string): Promise<void>
 }
+
+export const SUPPORTED_EXTENSIONS = new Set([
+  '.gltf',
+  '.glb',
+  '.obj',
+  '.fbx',
+  '.stl'
+])
