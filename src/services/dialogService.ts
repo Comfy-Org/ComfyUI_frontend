@@ -121,8 +121,7 @@ export const useDialogService = () => {
         pt: {
           pcCloseButton: {
             root: {
-              class:
-                'bg-gray-500 dark-theme:bg-neutral-700 w-9 h-9 p-1.5 rounded-full text-white'
+              class: 'bg-dialog-surface w-9 h-9 p-1.5 rounded-full text-white'
             }
           },
           header: { class: 'py-0! px-6 m-0! h-[68px]' },
@@ -469,7 +468,7 @@ export const useDialogService = () => {
           pcCloseButton: {
             root: {
               class:
-                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-gray-500 dark-theme:bg-neutral-700 text-white'
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-dialog-surface text-white'
             }
           }
         },
