@@ -4,7 +4,7 @@
 
 - `pnpm storybook`: Start Storybook development server
 - `pnpm build-storybook`: Build static Storybook
-- `pnpm test:component`: Run component tests (includes Storybook components)
+- `pnpm test:unit`: Run unit tests (includes Storybook components)
 
 ## Development Workflow for Storybook
 

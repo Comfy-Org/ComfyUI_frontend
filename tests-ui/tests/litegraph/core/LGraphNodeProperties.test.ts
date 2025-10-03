@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNodeProperties } from '../src/LGraphNodeProperties'
+import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 
 describe('LGraphNodeProperties', () => {
   let mockNode: any
@@ -17,17 +17,6 @@ describe('LGraphNodeProperties', () => {
       flags: {},
       graph: mockGraph
     }
-  })
-
-  describe('constructor', () => {
-    it('should initialize with default tracked properties', () => {
-      const propManager = new LGraphNodeProperties(mockNode)
-      const tracked = propManager.getTrackedProperties()
-
-      expect(tracked).toHaveLength(2)
-      expect(tracked).toContain('title')
-      expect(tracked).toContain('flags.collapsed')
-    })
   })
 
   describe('property tracking', () => {

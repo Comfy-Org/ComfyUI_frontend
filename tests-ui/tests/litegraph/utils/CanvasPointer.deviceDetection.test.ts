@@ -27,7 +27,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { CanvasPointer } from '../src/CanvasPointer'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 
 describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests', () => {
   let element: HTMLDivElement
