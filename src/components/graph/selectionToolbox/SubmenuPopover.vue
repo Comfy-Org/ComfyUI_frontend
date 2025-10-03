@@ -32,9 +32,9 @@
           :style="{ backgroundColor: subOption.color }"
         />
         <template v-else-if="!subOption.color">
-          <i-lucide:check
+          <i
             v-if="isShapeSelected(subOption)"
-            class="w-4 h-4 flex-shrink-0"
+            class="icon-[lucide--check] w-4 h-4 flex-shrink-0"
           />
           <div v-else class="w-4 flex-shrink-0" />
           <span>{{ subOption.label }}</span>

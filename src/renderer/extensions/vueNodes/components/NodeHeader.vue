@@ -36,9 +36,9 @@
           @edit="handleTitleEdit"
           @cancel="handleTitleCancel"
         />
-        <i-lucide:pin
+        <i
           v-if="isPinned"
-          class="w-5 h-5 text-stone-200 dark-theme:text-slate-300"
+          class="icon-[lucide--pin] w-5 h-5 text-stone-200 dark-theme:text-slate-300"
           data-testid="node-pin-indicator"
         />
       </div>

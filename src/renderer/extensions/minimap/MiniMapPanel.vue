@@ -13,7 +13,7 @@
           (value) => $emit('updateOption', 'Comfy.Minimap.NodeColors', value)
         "
       />
-      <i-lucide:palette />
+      <i class="icon-[lucide--palette]" />
       <label for="node-colors">{{ $t('minimap.nodeColors') }}</label>
     </div>
 
@@ -27,7 +27,7 @@
           (value) => $emit('updateOption', 'Comfy.Minimap.ShowLinks', value)
         "
       />
-      <i-lucide:route />
+      <i class="icon-[lucide--route]" />
       <label for="show-links">{{ $t('minimap.showLinks') }}</label>
     </div>
 
@@ -41,7 +41,7 @@
           (value) => $emit('updateOption', 'Comfy.Minimap.ShowGroups', value)
         "
       />
-      <i-lucide:frame />
+      <i class="icon-[lucide--frame]" />
       <label for="show-groups">{{ $t('minimap.showGroups') }}</label>
     </div>
 
@@ -56,7 +56,7 @@
             $emit('updateOption', 'Comfy.Minimap.RenderBypassState', value)
         "
       />
-      <i-lucide:circle-slash-2 />
+      <i class="icon-[lucide--circle-slash-2]" />
       <label for="render-bypass">{{ $t('minimap.renderBypassState') }}</label>
     </div>
 
@@ -71,7 +71,7 @@
             $emit('updateOption', 'Comfy.Minimap.RenderErrorState', value)
         "
       />
-      <i-lucide:message-circle-warning />
+      <i class="icon-[lucide--message-circle-warning]" />
       <label for="render-error">{{ $t('minimap.renderErrorState') }}</label>
     </div>
   </div>

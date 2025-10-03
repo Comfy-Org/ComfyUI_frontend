@@ -38,7 +38,7 @@
 
     <!-- Trigger caret -->
     <template #dropdownicon>
-      <i-lucide:chevron-down class="text-base text-neutral-500" />
+      <i class="icon-[lucide--chevron-down] text-base text-neutral-500" />
     </template>
 
     <!-- Option row -->
@@ -48,9 +48,9 @@
         :style="optionStyle"
       >
         <span class="truncate">{{ option.name }}</span>
-        <i-lucide:check
+        <i
           v-if="selected"
-          class="text-neutral-600 dark-theme:text-white"
+          class="icon-[lucide--check] text-neutral-600 dark-theme:text-white"
         />
       </div>
     </template>

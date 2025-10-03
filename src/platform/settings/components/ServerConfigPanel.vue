@@ -31,7 +31,7 @@
         </Message>
         <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
           <template #icon>
-            <i-lucide:terminal class="text-xl font-bold" />
+            <i class="icon-[lucide--terminal] text-xl font-bold" />
           </template>
           <div class="flex items-center justify-between">
             <p>{{ commandLineArgs }}</p>
