@@ -1862,13 +1862,13 @@ export class LGraphCanvas
     this.#dirty()
   }
 
-  openSubgraph(subgraph: Subgraph): void {
+  openSubgraph(subgraph: Subgraph, fromNode: SubgraphNode): void {
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
     const options = {
       bubbles: true,
-      detail: { subgraph, closingGraph: graph },
+      detail: { subgraph, closingGraph: graph, fromNode },
       cancelable: true
     }
     const mayContinue = this.canvas.dispatchEvent(
@@ -2794,7 +2794,7 @@ export class LGraphCanvas
         if (pos[1] < 0 && !inCollapse) {
           node.onNodeTitleDblClick?.(e, pos, this)
         } else if (node instanceof SubgraphNode) {
-          this.openSubgraph(node.subgraph)
+          this.openSubgraph(node.subgraph, node)
         }
 
         node.onDblClick?.(e, pos, this)
@@ -8007,7 +8007,7 @@ export class LGraphCanvas
       if (Object.keys(this.selected_nodes).length > 1) {
         options.push(
           {
-            content: 'Convert to Subgraph 🆕',
+            content: 'Convert to Subgraph',
             callback: () => {
               if (!this.selectedItems.size)
                 throw new Error('Convert to Subgraph: Nothing selected.')
@@ -8042,7 +8042,7 @@ export class LGraphCanvas
     } else {
       options = [
         {
-          content: 'Convert to Subgraph 🆕',
+          content: 'Convert to Subgraph',
           callback: () => {
             // find groupnodes, degroup and select children
             if (this.selectedItems.size) {

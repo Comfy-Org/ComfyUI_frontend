@@ -3749,6 +3749,13 @@ export class LGraphNode
     return !isHidden
   }
 
+  updateComputedDisabled() {
+    if (!this.widgets) return
+    for (const widget of this.widgets)
+      widget.computedDisabled =
+        widget.disabled || this.getSlotFromWidget(widget)?.link != null
+  }
+
   drawWidgets(
     ctx: CanvasRenderingContext2D,
     { lowQuality = false, editorAlpha = 1 }: DrawWidgetsOptions
@@ -3762,6 +3769,7 @@ export class LGraphNode
     ctx.save()
     ctx.globalAlpha = editorAlpha
 
+    this.updateComputedDisabled()
     for (const widget of widgets) {
       if (!this.isWidgetVisible(widget)) continue
 
@@ -3771,9 +3779,6 @@ export class LGraphNode
         : LiteGraph.WIDGET_OUTLINE_COLOR
 
       widget.last_y = y
-      // Disable widget if it is disabled or if the value is passed from socket connection.
-      widget.computedDisabled =
-        widget.disabled || this.getSlotFromWidget(widget)?.link != null
 
       ctx.strokeStyle = outlineColour
       ctx.fillStyle = '#222'
