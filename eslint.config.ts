@@ -37,9 +37,7 @@ export default defineConfig([
           allowDefaultProject: [
             'vite.config.mts',
             'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'playwright.config.ts',
-            'playwright.i18n.config.ts'
+            'vite.types.config.mts'
           ]
         },
         tsConfigRootDir: import.meta.dirname,
