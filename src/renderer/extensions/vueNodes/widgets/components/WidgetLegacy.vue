@@ -30,19 +30,24 @@ onMounted(() => {
   draw()
 })
 function draw() {
-  console.log('draw')
   const ctx = canvasEl.value?.getContext('2d')
   if (!ctx) return
-  window.LiteGraph.WIDGET_BGCOLOR = "#71717A1A"
-  const { width } = canvasEl.value
-  const height = widget.computeSize ? widget.computeSize(width)[1] : 20
-  widget.y = 0
-  canvasEl.value.height = height
-  ctx.fill
-  if (widget.draw)
-    widget.draw(ctx, node, width, 0, height)
-  else
-    widget.drawWidget(ctx, { width, showText: true })
+  const bgcolor = window.LiteGraph.WIDGET_BGCOLOR
+  try {
+    
+    window.LiteGraph.WIDGET_BGCOLOR = "#71717A1A"
+    const { width } = canvasEl.value
+    const height = widget.computeSize ? widget.computeSize(width)[1] : 20
+    widget.y = 0
+    canvasEl.value.height = height
+    ctx.fill
+    if (widget.draw)
+      widget.draw(ctx, node, width, 0, height)
+    else
+      widget.drawWidget(ctx, { width, showText: true })
+  } finally {
+    window.LiteGraph.WIDGET_BGCOLOR = bgcolor
+  }
 }
 let interactingMouse: boolean = false
 function handleMouse(e) {
@@ -68,7 +73,7 @@ function handleMouse(e) {
 }
 </script>
 <template>
-  <canvas ref="canvasEl" class="w-full h-7 ml-[-24px] mr-[-16px] my-[-16px]"
+  <canvas ref="canvasEl" class="ml-[-24px] mr-[-16px]"
     @pointerdown="handleMouse"
     @pointermove="handleMouse"
     @pointerup="handleMouse"
