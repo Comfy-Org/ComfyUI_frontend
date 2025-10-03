@@ -17,6 +17,23 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
+/**
+ * Check if multiple nodes are selected
+ * Optimized to return early when 2+ nodes found
+ */
+function hasMultipleNodesSelected(selectedItems: unknown[]): boolean {
+  let count = 0
+  for (let i = 0; i < selectedItems.length; i++) {
+    if (isLGraphNode(selectedItems[i])) {
+      count++
+      if (count >= 2) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
   const { nodeManager } = useVueNodeLifecycle()
@@ -45,8 +62,9 @@ function useNodeEventHandlersIndividual() {
         canvasStore.canvas.select(node)
       }
     } else {
-      const selectedMultipleNodes =
-        canvasStore.selectedItems.filter((n) => isLGraphNode(n)).length > 1
+      const selectedMultipleNodes = hasMultipleNodesSelected(
+        canvasStore.selectedItems
+      )
       if (!selectedMultipleNodes) {
         // Single-select the node
         canvasStore.canvas.deselectAll()
