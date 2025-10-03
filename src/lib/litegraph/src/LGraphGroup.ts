@@ -106,6 +106,10 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     return this._bounding
   }
 
+  getBounding() {
+    return this._bounding
+  }
+
   get nodes() {
     return this._nodes
   }
