@@ -352,17 +352,22 @@ const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  // Note: Despite the field name "images", videos are also included.
-  // The actual media type is determined by node.previewMediaType
-  // TODO: fix the backend to return videos using the vidoes key instead of the images key
-  if (node && newOutputs?.images?.length) {
-    const urls = nodeOutputs.getNodeImageUrls(node)
-    if (urls && urls.length > 0) {
-      const type = node.previewMediaType === 'video' ? 'video' : 'image'
-      return { type, urls } as const
-    }
-  }
-  return undefined
+  if (!node || !newOutputs?.images?.length) return undefined
+
+  const urls = nodeOutputs.getNodeImageUrls(node)
+  if (!urls?.length) return undefined
+
+  // Determine media type from previewMediaType or fallback to input slot types
+  // Note: Despite the field name "images", videos are also included in outputs
+  // TODO: fix the backend to return videos using the videos key instead of the images key
+  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
+  const type =
+    node.previewMediaType === 'video' ||
+    (!node.previewMediaType && hasVideoInput)
+      ? 'video'
+      : 'image'
+
+  return { type, urls } as const
 })
 
 const nodeContainerRef = ref()
