@@ -142,6 +142,9 @@
   --node-component-surface-hovered: var(--color-charcoal-400);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-white);
+  --node-component-tooltip: var(--color-charcoal-700);
+  --node-component-tooltip-border: var(--color-sand-100);
+  --node-component-tooltip-surface: var(--color-white);
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
   --node-stroke: var(--color-stone-100);
 }
@@ -158,6 +161,9 @@
   --node-component-surface-hovered: var(--color-charcoal-400);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-charcoal-800);
+  --node-component-tooltip: var(--color-white);
+  --node-component-tooltip-border: var(--color-slate-300);
+  --node-component-tooltip-surface: var(--color-charcoal-800);
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
   --node-stroke: var(--color-slate-100);
 }
@@ -182,6 +188,9 @@
   --color-node-component-surface-hovered: var(--node-component-surface-hovered);
   --color-node-component-surface-selected: var(--component-surface-selected);
   --color-node-component-surface: var(--node-component-surface);
+  --color-node-component-tooltip: var(--node-component-tooltip);
+  --color-node-component-tooltip-border: var(--node-component-tooltip-border);
+  --color-node-component-tooltip-surface: var(--node-component-tooltip-surface);
   --color-node-component-widget-skeleton-surface: var(
     --node-component-widget-skeleton-surface
   );
