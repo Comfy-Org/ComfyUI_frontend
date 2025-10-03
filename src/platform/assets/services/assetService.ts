@@ -1,5 +1,6 @@
 import { fromZodError } from 'zod-validation-error'
 
+import { MISSING_TAG, MODELS_TAG } from '@/platform/assets/constants'
 import {
   type AssetItem,
   type AssetResponse,
@@ -11,8 +12,6 @@ import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const ASSETS_ENDPOINT = '/assets'
-const MODELS_TAG = 'models'
-const MISSING_TAG = 'missing'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 300
 
