@@ -129,47 +129,45 @@
 }
 
 :root {
-  --node-component-surface: var(--color-white);
+  --node-component-border: var(--color-sand-100);
+  --node-component-executing: var(--color-blue-500);
+  --node-component-header-icon: var(--color-stone-200);
+  --node-component-outline: var(--color-black);
+  --node-component-ring: rgb(from var(--color-gray-500) r g b / 50%);
+  --node-component-slot-dot-outline-opacity-mult: 1;
+  --node-component-slot-dot-outline-opacity: 5%;
+  --node-component-slot-dot-outline: var(--color-black);
+  --node-component-slot-text: var(--color-stone-200);
   --node-component-surface-highlight: var(--color-stone-100);
   --node-component-surface-hovered: var(--color-charcoal-400);
   --node-component-surface-selected: var(--color-charcoal-200);
-  --node-component-border: var(--color-sand-100);
-  --node-component-executing: var(--color-blue-500);
-  --node-component-ring: rgb(from var(--color-gray-500) r g b / 50%);
-  --node-component-outline: var(--color-black);
-  --node-component-slot-text: var(--color-stone-200);
-  --node-component-slot-dot-outline: var(--color-black);
-  --node-component-slot-dot-outline-opacity: 5%;
-  --node-component-slot-dot-outline-opacity-mult: 1;
+  --node-component-surface: var(--color-white);
+  --node-component-widget-skeleton-surface: var(--color-zinc-300);
   --node-stroke: var(--color-stone-100);
 }
 
 .dark-theme {
-  --node-component-surface: var(--color-charcoal-800);
+  --node-component-border: var(--color-charcoal-600);
+  --node-component-header-icon: var(--color-slate-300);
+  --node-component-outline: var(--color-white);
+  --node-component-ring: rgb(var(--color-gray-500) / 20%);
+  --node-component-slot-dot-outline-opacity: 10%;
+  --node-component-slot-dot-outline: var(--color-white);
+  --node-component-slot-text: var(--color-slate-200);
   --node-component-surface-highlight: var(--color-slate-100);
   --node-component-surface-hovered: var(--color-charcoal-400);
   --node-component-surface-selected: var(--color-charcoal-200);
-  --node-component-border: var(--color-charcoal-600);
-  --node-component-ring: rgb(var(--color-gray-500) / 20%);
-  --node-component-outline: var(--color-white);
-  --node-component-slot-text: var(--color-slate-200);
-  --node-component-slot-dot-outline: var(--color-white);
-  --node-component-slot-dot-outline-opacity: 10%;
+  --node-component-surface: var(--color-charcoal-800);
+  --node-component-widget-skeleton-surface: var(--color-zinc-800);
   --node-stroke: var(--color-slate-100);
 }
 
 @theme inline {
-  --color-node-component-surface: var(--node-component-surface);
-  --color-node-component-surface-highlight: var(
-    --node-component-surface-highlight
-  );
-  --color-node-component-surface-hovered: var(--node-component-surface-hovered);
-  --color-node-component-surface-selected: var(--component-surface-selected);
   --color-node-component-border: var(--node-component-border);
   --color-node-component-executing: var(--node-component-executing);
+  --color-node-component-header-icon: var(--node-component-header-icon);
   --color-node-component-outline: var(--node-component-outline);
   --color-node-component-ring: var(--node-component-ring);
-  --color-node-component-slot-text: var(--node-component-slot-text);
   --color-node-component-slot-dot-outline: rgb(
     from var(--node-component-slot-dot-outline) r g b /
       calc(
@@ -177,7 +175,16 @@
           var(--node-component-slot-dot-outline-opacity-mult)
       )
   );
-
+  --color-node-component-slot-text: var(--node-component-slot-text);
+  --color-node-component-surface-highlight: var(
+    --node-component-surface-highlight
+  );
+  --color-node-component-surface-hovered: var(--node-component-surface-hovered);
+  --color-node-component-surface-selected: var(--component-surface-selected);
+  --color-node-component-surface: var(--node-component-surface);
+  --color-node-component-widget-skeleton-surface: var(
+    --node-component-widget-skeleton-surface
+  );
   --color-node-stroke: var(--node-stroke);
 }
 
