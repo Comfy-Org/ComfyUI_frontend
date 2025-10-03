@@ -44,7 +44,7 @@ export class KeyComboImpl implements KeyCombo {
 
   static fromEvent(event: KeyboardEvent) {
     return new KeyComboImpl({
-      key: event.key,
+      key: event.code,
       ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
       shift: event.shiftKey
@@ -75,7 +75,16 @@ export class KeyComboImpl implements KeyCombo {
   }
 
   get isModifier(): boolean {
-    return ['Control', 'Meta', 'Alt', 'Shift'].includes(this.key)
+    return [
+      'ControlLeft',
+      'ControlRight',
+      'MetaLeft',
+      'MetaRight',
+      'AltLeft',
+      'AltRight',
+      'ShiftLeft',
+      'ShiftRight'
+    ].includes(this.key)
   }
 
   get modifierCount(): number {
@@ -106,8 +115,94 @@ export class KeyComboImpl implements KeyCombo {
     if (this.shift) {
       sequences.push('Shift')
     }
-    sequences.push(this.key)
+    sequences.push(this.getDisplayKey())
     return sequences
+  }
+
+  getDisplayKey(): string {
+    // Convert key codes to display names
+    const keyMap: Record<string, string> = {
+      // Letters
+      KeyA: 'A',
+      KeyB: 'B',
+      KeyC: 'C',
+      KeyD: 'D',
+      KeyE: 'E',
+      KeyF: 'F',
+      KeyG: 'G',
+      KeyH: 'H',
+      KeyI: 'I',
+      KeyJ: 'J',
+      KeyK: 'K',
+      KeyL: 'L',
+      KeyM: 'M',
+      KeyN: 'N',
+      KeyO: 'O',
+      KeyP: 'P',
+      KeyQ: 'Q',
+      KeyR: 'R',
+      KeyS: 'S',
+      KeyT: 'T',
+      KeyU: 'U',
+      KeyV: 'V',
+      KeyW: 'W',
+      KeyX: 'X',
+      KeyY: 'Y',
+      KeyZ: 'Z',
+      // Numbers
+      Digit0: '0',
+      Digit1: '1',
+      Digit2: '2',
+      Digit3: '3',
+      Digit4: '4',
+      Digit5: '5',
+      Digit6: '6',
+      Digit7: '7',
+      Digit8: '8',
+      Digit9: '9',
+      // Function keys
+      F1: 'F1',
+      F2: 'F2',
+      F3: 'F3',
+      F4: 'F4',
+      F5: 'F5',
+      F6: 'F6',
+      F7: 'F7',
+      F8: 'F8',
+      F9: 'F9',
+      F10: 'F10',
+      F11: 'F11',
+      F12: 'F12',
+      // Special keys
+      Space: 'Space',
+      Enter: 'Enter',
+      Tab: 'Tab',
+      Escape: 'Escape',
+      Backspace: 'Backspace',
+      Delete: 'Delete',
+      ArrowUp: '↑',
+      ArrowDown: '↓',
+      ArrowLeft: '←',
+      ArrowRight: '→',
+      Home: 'Home',
+      End: 'End',
+      PageUp: 'PageUp',
+      PageDown: 'PageDown',
+      Insert: 'Insert',
+      // Punctuation
+      Minus: '-',
+      Equal: '=',
+      BracketLeft: '[',
+      BracketRight: ']',
+      Backslash: '\\',
+      Semicolon: ';',
+      Quote: "'",
+      Backquote: '`',
+      Comma: ',',
+      Period: '.',
+      Slash: '/'
+    }
+    return keyMap[this.key] || this.key
   }
 }
 
