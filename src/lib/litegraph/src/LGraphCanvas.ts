@@ -3315,7 +3315,15 @@ export class LGraphCanvas
 
                 if (slot && linkConnector.isInputValidDrop(node, slot)) {
                   highlightInput = slot
-                  highlightPos = node.getInputSlotPos(slot)
+                  if (LiteGraph.vueNodesMode) {
+                    const idx = node.inputs.indexOf(slot)
+                    highlightPos =
+                      idx !== -1
+                        ? getSlotPosition(node, idx, true)
+                        : node.getInputSlotPos(slot)
+                  } else {
+                    highlightPos = node.getInputSlotPos(slot)
+                  }
                   linkConnector.overWidget = overWidget
                 }
               }
@@ -3327,7 +3335,9 @@ export class LGraphCanvas
                   const result = node.findInputByType(firstLink.fromSlot.type)
                   if (result) {
                     highlightInput = result.slot
-                    highlightPos = node.getInputSlotPos(result.slot)
+                    highlightPos = LiteGraph.vueNodesMode
+                      ? getSlotPosition(node, result.index, true)
+                      : node.getInputSlotPos(result.slot)
                   }
                 } else if (
                   inputId != -1 &&
@@ -3352,7 +3362,9 @@ export class LGraphCanvas
               if (inputId === -1 && outputId === -1) {
                 const result = node.findOutputByType(firstLink.fromSlot.type)
                 if (result) {
-                  highlightPos = node.getOutputPos(result.index)
+                  highlightPos = LiteGraph.vueNodesMode
+                    ? getSlotPosition(node, result.index, false)
+                    : node.getOutputPos(result.index)
                 }
               } else {
                 // check if I have a slot below de mouse
@@ -5617,7 +5629,9 @@ export class LGraphCanvas
           const { link, inputNode, input } = resolved
           if (!inputNode || !input) continue
 
-          const endPos = inputNode.getInputPos(link.target_slot)
+          const endPos: Point = LiteGraph.vueNodesMode
+            ? getSlotPosition(inputNode, link.target_slot, true)
+            : inputNode.getInputPos(link.target_slot)
 
           this.#renderAllLinkSegments(
             ctx,
@@ -5642,7 +5656,9 @@ export class LGraphCanvas
         const { link, outputNode, output } = resolved
         if (!outputNode || !output) continue
 
-        const startPos = outputNode.getOutputPos(link.origin_slot)
+        const startPos: Point = LiteGraph.vueNodesMode
+          ? getSlotPosition(outputNode, link.origin_slot, false)
+          : outputNode.getOutputPos(link.origin_slot)
 
         this.#renderAllLinkSegments(
           ctx,
@@ -5707,7 +5723,9 @@ export class LGraphCanvas
         if (!node) continue
 
         const startPos = firstReroute.pos
-        const endPos = node.getInputPos(link.target_slot)
+        const endPos: Point = LiteGraph.vueNodesMode
+          ? getSlotPosition(node, link.target_slot, true)
+          : node.getInputPos(link.target_slot)
         const endDirection = node.inputs[link.target_slot]?.dir
 
         firstReroute._dragging = true
@@ -5726,7 +5744,9 @@ export class LGraphCanvas
         const node = graph.getNodeById(link.origin_id)
         if (!node) continue
 
-        const startPos = node.getOutputPos(link.origin_slot)
+        const startPos: Point = LiteGraph.vueNodesMode
+          ? getSlotPosition(node, link.origin_slot, false)
+          : node.getOutputPos(link.origin_slot)
         const endPos = reroute.pos
         const startDirection = node.outputs[link.origin_slot]?.dir
 
