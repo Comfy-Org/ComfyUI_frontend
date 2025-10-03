@@ -1,13 +1,21 @@
 <template>
   <div
-    class="comfy-menu-button-wrapper flex flex-row shrink-0 items-center justify-center p-2 cursor-pointer rounded-t-md transition-colors"
+    class="comfy-menu-button-wrapper flex flex-col shrink-0 items-center justify-center p-2 cursor-pointer rounded-t-md transition-colors"
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
     @click="menuRef?.toggle($event)"
   >
-    <ComfyLogoTransparent alt="ComfyUI Logo" class="comfyui-logo w-4 h-4" />
-    <i class="pi pi-angle-down ml-1 text-[10px]" />
+    <ComfyLogoTransparent
+      alt="ComfyUI Logo"
+      class="comfyui-logo w-[18px] h-[18px]"
+    />
+
+    <span
+      v-if="!isSmall"
+      class="side-bar-button-label text-[10px] text-center mt-1"
+      >{{ t('sideToolbar.labels.menu') }}</span
+    >
   </div>
 
   <TieredMenu
@@ -86,6 +94,10 @@ const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const dialogStore = useDialogStore()
 const managerState = useManagerState()
+
+const { isSmall = false } = defineProps<{
+  isSmall?: boolean
+}>()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
@@ -259,17 +271,17 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
 
 <style scoped>
 .comfy-menu-button-wrapper {
-  @apply transition-all duration-200;
-  height: 48px;
-  width: 100%;
+  width: var(--sidebar-width);
+  height: var(--sidebar-item-height);
 }
 
 .comfy-menu-button-wrapper:hover {
-  background-color: color-mix(in srgb, var(--fg-color) 10%, transparent);
+  background: var(--p-button-text-secondary-hover-background);
 }
 
-.comfy-menu-button-active {
-  background-color: color-mix(in srgb, var(--fg-color) 20%, transparent);
+.comfy-menu-button-active,
+.comfy-menu-button-active:hover {
+  background-color: var(--content-hover-bg);
 }
 
 .keybinding-tag {
@@ -292,6 +304,7 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
     transparent
   );
 }
+
 .comfy-command-menu ul {
   background-color: var(--comfy-menu-secondary-bg) !important;
 }
