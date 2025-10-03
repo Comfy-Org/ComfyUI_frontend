@@ -352,7 +352,6 @@ const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  // Early return if no outputs
   if (!node || !newOutputs?.images?.length) return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
