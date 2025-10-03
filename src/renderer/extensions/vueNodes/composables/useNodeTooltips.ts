@@ -13,8 +13,8 @@ import { cn } from '@/utils/tailwindUtil'
  *
  *
  * IMPORTANT: this escape is needed for many reason due to primevue's directive tooltip system.
- * We cannot use PT to conditonally render the tooltips because the entire PT object only run
- * once during the intialization of the directive not every mount/unmount.
+ * We cannot use PT to conditionally render the tooltips because the entire PT object only run
+ * once during the initialization of the directive not every mount/unmount.
  * Once the directive is constructed its no longer reactive in the traditional sense.
  * We have to use something non destructive like mouseevents to dismiss the tooltip.
  *

@@ -68,7 +68,7 @@ const updateDomClipping = () => {
     return
   }
 
-  const isSelected = selectedNode === widget.node
+  const isSelected = selectedNode === widgetState.widget.node
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale

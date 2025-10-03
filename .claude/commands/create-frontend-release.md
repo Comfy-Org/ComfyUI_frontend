@@ -294,7 +294,6 @@ echo "Last stable release: $LAST_STABLE"
 1. Run complete test suite:
    ```bash
    pnpm test:unit
-   pnpm test:component
    ```
 2. Run type checking:
    ```bash

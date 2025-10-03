@@ -13,10 +13,16 @@ const EXPECTED_DEFAULT_TYPES = [
   'loras',
   'vae',
   'controlnet',
-  'unet',
+  'diffusion_models',
   'upscale_models',
   'style_models',
-  'gligen'
+  'gligen',
+  'clip_vision',
+  'text_encoders',
+  'audio_encoders',
+  'model_patches',
+  'animatediff_models',
+  'animatediff_motion_lora'
 ] as const
 
 type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
@@ -48,7 +54,13 @@ const MOCK_NODE_NAMES = [
   'UNETLoader',
   'UpscaleModelLoader',
   'StyleModelLoader',
-  'GLIGENLoader'
+  'GLIGENLoader',
+  'CLIPVisionLoader',
+  'CLIPLoader',
+  'AudioEncoderLoader',
+  'ModelPatchLoader',
+  'ADE_LoadAnimateDiffModel',
+  'ADE_AnimateDiffLoRALoader'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -84,7 +96,7 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
       expect(Object.keys(modelToNodeStore.modelToNodeMap)).toEqual(
-        expect.arrayContaining(['checkpoints', 'unet'])
+        expect.arrayContaining(['checkpoints', 'diffusion_models'])
       )
     })
   })
@@ -153,9 +165,10 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      const unetProviders = modelToNodeStore.getAllNodeProviders('unet')
-      expect(unetProviders).toHaveLength(1)
-      expect(unetProviders[0].nodeDef.name).toBe('UNETLoader')
+      const diffusionModelProviders =
+        modelToNodeStore.getAllNodeProviders('diffusion_models')
+      expect(diffusionModelProviders).toHaveLength(1)
+      expect(diffusionModelProviders[0].nodeDef.name).toBe('UNETLoader')
     })
 
     it('should return empty array for unregistered model type', () => {
@@ -173,6 +186,22 @@ describe('useModelToNodeStore', () => {
   })
 
   describe('registerNodeProvider', () => {
+    it('should not register provider when nodeDef is undefined', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      const providerWithoutNodeDef = new ModelNodeProvider(
+        undefined as any,
+        'custom_key'
+      )
+
+      modelToNodeStore.registerNodeProvider(
+        'custom_type',
+        providerWithoutNodeDef
+      )
+
+      const retrieved = modelToNodeStore.getNodeProvider('custom_type')
+      expect(retrieved).toBeUndefined()
+    })
+
     it('should register provider directly', () => {
       const modelToNodeStore = useModelToNodeStore()
       const nodeDefStore = useNodeDefStore()
@@ -250,8 +279,20 @@ describe('useModelToNodeStore', () => {
       }).not.toThrow()
 
       const provider = modelToNodeStore.getNodeProvider('test_type')
-      // Optional chaining needed since getNodeProvider() can return undefined
       expect(provider?.nodeDef).toBeUndefined()
+
+      expect(() => modelToNodeStore.getRegisteredNodeTypes()).not.toThrow()
+      expect(() =>
+        modelToNodeStore.getCategoryForNodeType('NonExistentLoader')
+      ).not.toThrow()
+
+      // Non-existent nodes are filtered out from registered types
+      const types = modelToNodeStore.getRegisteredNodeTypes()
+      expect(types.has('NonExistentLoader')).toBe(false)
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('NonExistentLoader')
+      ).toBeUndefined()
     })
 
     it('should allow multiple node classes for same model type', () => {

@@ -11,7 +11,6 @@
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :index="getActualInputIndex(input, index)"
-        :readonly="readonly"
       />
     </div>
 
@@ -23,7 +22,6 @@
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :index="index"
-        :readonly="readonly"
       />
     </div>
   </div>
@@ -42,10 +40,9 @@ import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
   nodeData?: VueNodeData
-  readonly?: boolean
 }
 
-const { nodeData = null, readonly } = defineProps<NodeSlotsProps>()
+const { nodeData = null } = defineProps<NodeSlotsProps>()
 
 // Filter out input slots that have corresponding widgets
 const filteredInputs = computed(() => {

@@ -58,7 +58,7 @@ describe.skip('SubgraphConversion', () => {
       expect(graph.nodes.length).toBe(2)
       expect(graph.links.size).toBe(1)
     })
-    it('Should merge boundry links', () => {
+    it('Should merge boundary links', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }],
         outputs: [{ name: 'value', type: 'number' }]

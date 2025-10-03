@@ -168,7 +168,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     canvas: LGraphCanvas
   ): void {
     if (button.name === 'enter_subgraph') {
-      canvas.openSubgraph(this.subgraph)
+      canvas.openSubgraph(this.subgraph, this)
     } else {
       super.onTitleButtonClick(button, canvas)
     }
@@ -430,7 +430,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const inputSlot = this.subgraph.inputNode.slots[slot]
     const innerLinks = inputSlot.getLinks()
     if (innerLinks.length === 0) {
-      console.debug(
+      console.warn(
         `[SubgraphNode.resolveSubgraphInputLinks] No inner links found for input slot [${slot}] ${inputSlot.name}`,
         this
       )
@@ -447,9 +447,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   resolveSubgraphOutputLink(slot: number): ResolvedConnection | undefined {
     const outputSlot = this.subgraph.outputNode.slots[slot]
     const innerLink = outputSlot.getLinks().at(0)
-    if (innerLink) return innerLink.resolve(this.subgraph)
-
-    console.debug(
+    if (innerLink) {
+      return innerLink.resolve(this.subgraph)
+    }
+    console.warn(
       `[SubgraphNode.resolveSubgraphOutputLink] No inner link found for output slot [${slot}] ${outputSlot.name}`,
       this
     )

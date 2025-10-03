@@ -31,7 +31,6 @@
           icon="pi pi-folder"
           size="small"
           class="!w-8 !h-8"
-          :disabled="readonly"
           @click="triggerFileInput"
         />
       </div>
@@ -47,7 +46,6 @@
       />
       <!-- Control buttons in top right on hover -->
       <div
-        v-if="!readonly"
         class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
       >
         <!-- Edit button -->
@@ -100,7 +98,6 @@
           icon="pi pi-folder"
           size="small"
           class="!w-8 !h-8"
-          :disabled="readonly"
           @click="triggerFileInput"
         />
       </div>
@@ -128,7 +125,7 @@
         </div>
 
         <!-- Control buttons -->
-        <div v-if="!readonly" class="flex gap-1">
+        <div class="flex gap-1">
           <!-- Delete button -->
           <button
             class="w-8 h-8 rounded flex items-center justify-center transition-all duration-150 focus:outline-none border-none hover:bg-[#262729]"
@@ -159,7 +156,6 @@
             size="small"
             severity="secondary"
             class="text-xs"
-            :disabled="readonly"
             @click="triggerFileInput"
           />
         </div>
@@ -173,7 +169,6 @@
     class="hidden"
     :accept="widget.options?.accept"
     :multiple="false"
-    :disabled="readonly"
     @change="handleFileChange"
   />
 </template>
@@ -187,14 +182,9 @@ import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const {
-  widget,
-  modelValue,
-  readonly = false
-} = defineProps<{
+const { widget, modelValue } = defineProps<{
   widget: SimplifiedWidget<File[] | null>
   modelValue: File[] | null
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -284,7 +274,7 @@ const triggerFileInput = () => {
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (!readonly && target.files && target.files.length > 0) {
+  if (target.files && target.files.length > 0) {
     // Since we only support single file, take the first one
     const file = target.files[0]
 

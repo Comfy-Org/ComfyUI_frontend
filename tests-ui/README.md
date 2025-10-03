@@ -37,9 +37,6 @@ pnpm test:unit
 
 # Run unit tests in watch mode
 pnpm test:unit:dev
-
-# Run component tests with browser-native environment
-pnpm test:component
 ```
 
 Refer to the specific guides for more detailed information on each testing type.

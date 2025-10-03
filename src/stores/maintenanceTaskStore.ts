@@ -151,7 +151,6 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   /** @todo Refreshes Electron tasks only. */
   const refreshDesktopTasks = async () => {
     isRefreshing.value = true
-    console.log('Refreshing desktop tasks')
     await electron.Validation.validateInstallation(processUpdate)
   }
 

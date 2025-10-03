@@ -195,7 +195,7 @@ defineExpose({
   bottom: calc(
     var(--sidebar-width) * 2 + var(--sidebar-icon-size) / 2 -
       var(--whats-new-popup-bottom)
-  ); /* Position to center of help center icon (2 icons below + half icon height for center - whats new popup bottom position ) */
+  ); /* Position to center of help center icon (2 icons below + half icon height for center - what's new popup bottom position ) */
 }
 
 /* Sidebar positioning classes applied by parent */

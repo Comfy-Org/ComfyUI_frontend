@@ -8,7 +8,6 @@
       <Slider
         :model-value="[localValue]"
         v-bind="filteredProps"
-        :disabled="readonly"
         class="flex-grow text-xs"
         :step="stepValue"
         @update:model-value="updateLocalValue"
@@ -17,7 +16,6 @@
         :key="timesEmptied"
         :model-value="localValue"
         v-bind="filteredProps"
-        :disabled="readonly"
         :step="stepValue"
         :min-fraction-digits="precision"
         :max-fraction-digits="precision"
@@ -46,10 +44,9 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const { widget, modelValue, readonly } = defineProps<{
+const { widget, modelValue } = defineProps<{
   widget: SimplifiedWidget<number>
   modelValue: number
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

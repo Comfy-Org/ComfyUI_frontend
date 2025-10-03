@@ -1,6 +1,6 @@
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { ReadOnlyPoint } from '@/lib/litegraph/src/interfaces'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveConnectingLinkColor } from '@/lib/litegraph/src/utils/linkColors'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
@@ -49,7 +49,7 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     const renderLinks = createLinkConnectorAdapter()?.renderLinks
     if (!renderLinks || renderLinks.length === 0) return
 
-    const to: ReadOnlyPoint = [pointer.canvas.x, pointer.canvas.y]
+    const to: Readonly<Point> = [pointer.canvas.x, pointer.canvas.y]
     ctx.save()
     for (const link of renderLinks) {
       const startDir = link.fromDirection ?? LinkDirection.RIGHT
@@ -74,7 +74,7 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
   canvas.onDrawForeground = patched
 }
 
-function resolveRenderLinkOrigin(link: RenderLink): ReadOnlyPoint {
+function resolveRenderLinkOrigin(link: RenderLink): Readonly<Point> {
   if (link.fromReroute) {
     const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
     if (rerouteLayout) {

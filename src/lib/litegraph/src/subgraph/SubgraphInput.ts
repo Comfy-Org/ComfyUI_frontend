@@ -175,8 +175,6 @@ export class SubgraphInput extends SubgraphSlot {
         }
 
         widgets.push(widget)
-      } else {
-        console.debug('No input found on link id', linkId, link)
       }
     }
     return widgets

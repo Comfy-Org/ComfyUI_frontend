@@ -173,6 +173,18 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle
+    } else if (this.promoted && this.isVisible()) {
+      ctx.save()
+      const adjustedMargin = this.margin - 1
+      ctx.beginPath()
+      ctx.strokeStyle = LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+      ctx.strokeRect(
+        adjustedMargin,
+        y + adjustedMargin,
+        widget_width - adjustedMargin * 2,
+        (this.computedHeight ?? widget_height) - 2 * adjustedMargin
+      )
+      ctx.restore()
     }
     this.options.onDraw?.(this)
   }

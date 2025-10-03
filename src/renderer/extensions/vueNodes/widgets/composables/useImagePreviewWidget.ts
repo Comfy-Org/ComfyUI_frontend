@@ -19,7 +19,8 @@ import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 const renderPreview = (
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,
-  shiftY: number
+  shiftY: number,
+  computedHeight: number | undefined
 ) => {
   const canvas = useCanvasStore().getCanvas()
   const mouse = canvas.graph_mouse
@@ -46,7 +47,7 @@ const renderPreview = (
   const allowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
   const IMAGE_TEXT_SIZE_TEXT_HEIGHT = allowImageSizeDraw ? 15 : 0
   const dw = node.size[0]
-  const dh = node.size[1] - shiftY - IMAGE_TEXT_SIZE_TEXT_HEIGHT
+  const dh = computedHeight ? computedHeight - IMAGE_TEXT_SIZE_TEXT_HEIGHT : 0
 
   if (imageIndex == null) {
     // No image selected; draw thumbnails of all
@@ -260,7 +261,7 @@ class ImagePreviewWidget extends BaseWidget {
   }
 
   override drawWidget(ctx: CanvasRenderingContext2D): void {
-    renderPreview(ctx, this.node, this.y)
+    renderPreview(ctx, this.node, this.y, this.computedHeight)
   }
 
   override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {

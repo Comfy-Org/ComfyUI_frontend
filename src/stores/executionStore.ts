@@ -404,10 +404,6 @@ export const useExecutionStore = defineStore('execution', () => {
       ...queuedPrompt.nodes
     }
     queuedPrompt.workflow = workflow
-
-    console.debug(
-      `queued task ${id} with ${Object.values(queuedPrompt.nodes).length} nodes`
-    )
   }
 
   /**

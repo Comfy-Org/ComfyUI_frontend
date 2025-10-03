@@ -9,7 +9,6 @@
       <ColorPicker
         v-model="localValue"
         v-bind="filteredProps"
-        :disabled="readonly"
         class="w-8 h-4 !rounded-full overflow-hidden border-none"
         :pt="{
           preview: '!w-full !h-full !border-none'
@@ -48,7 +47,6 @@ type WidgetOptions = { format?: ColorFormat } & Record<string, unknown>
 const props = defineProps<{
   widget: SimplifiedWidget<string, WidgetOptions>
   modelValue: string
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

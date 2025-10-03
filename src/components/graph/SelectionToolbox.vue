@@ -22,7 +22,8 @@
         <ColorPickerButton v-if="showColorPicker" />
         <FrameNodes v-if="showFrameNodes" />
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-        <PublishSubgraphButton v-if="showPublishSubgraph" />
+        <ConfigureSubgraph v-if="showSubgraphButtons" />
+        <PublishSubgraphButton v-if="showSubgraphButtons" />
         <MaskEditorButton v-if="showMaskEditor" />
         <VerticalDivider
           v-if="showAnyPrimaryActions && showAnyControlActions"
@@ -50,6 +51,7 @@ import { computed, ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import ConfigureSubgraph from '@/components/graph/selectionToolbox/ConfigureSubgraph.vue'
 import ConvertToSubgraphButton from '@/components/graph/selectionToolbox/ConvertToSubgraphButton.vue'
 import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
@@ -112,7 +114,7 @@ const showInfoButton = computed(() => !!nodeDef.value)
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
-const showPublishSubgraph = computed(() => isSingleSubgraph.value)
+const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
 const showBypass = computed(
   () =>
@@ -130,7 +132,7 @@ const showAnyPrimaryActions = computed(
     showColorPicker.value ||
     showConvertToSubgraph.value ||
     showFrameNodes.value ||
-    showPublishSubgraph.value
+    showSubgraphButtons.value
 )
 
 const showAnyControlActions = computed(() => showBypass.value)

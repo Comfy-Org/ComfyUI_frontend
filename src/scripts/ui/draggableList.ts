@@ -23,11 +23,8 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
-import { $el } from '../ui'
-
-$el('style', {
-  parent: document.head,
-  textContent: `
+const styleElement = document.createElement('style')
+styleElement.textContent = `
         .draggable-item {
             position: relative;
             will-change: transform;
@@ -40,7 +37,7 @@ $el('style', {
             z-index: 10;
         }
     `
-})
+document.head.append(styleElement)
 
 export class DraggableList extends EventTarget {
   listContainer

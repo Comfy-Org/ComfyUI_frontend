@@ -131,20 +131,6 @@ describe('NodeHeader - Subgraph Functionality', () => {
     expect(subgraphButton.exists()).toBe(false)
   })
 
-  it('should not show subgraph button in readonly mode', async () => {
-    await setupMocks(true) // isSubgraph = true
-
-    const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1'),
-      readonly: true
-    })
-
-    await wrapper.vm.$nextTick()
-
-    const subgraphButton = wrapper.find('[data-testid="subgraph-enter-button"]')
-    expect(subgraphButton.exists()).toBe(false)
-  })
-
   it('should emit enter-subgraph event when button is clicked', async () => {
     await setupMocks(true) // isSubgraph = true
 

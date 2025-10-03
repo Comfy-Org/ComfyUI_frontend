@@ -906,7 +906,6 @@ export class LinkConnector {
     if (connectingTo === 'output') {
       // Dropping new output link
       const output = node.findOutputByType(firstLink.fromSlot.type)?.slot
-      console.debug('out', node, output, firstLink.fromSlot)
       if (output === undefined) {
         console.warn(
           `Could not find slot for link type: [${firstLink.fromSlot.type}].`
@@ -918,7 +917,6 @@ export class LinkConnector {
     } else if (connectingTo === 'input') {
       // Dropping new input link
       const input = node.findInputByType(firstLink.fromSlot.type)?.slot
-      console.debug('in', node, input, firstLink.fromSlot)
       if (input === undefined) {
         console.warn(
           `Could not find slot for link type: [${firstLink.fromSlot.type}].`

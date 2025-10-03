@@ -344,7 +344,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     type: 'number',
     defaultValue: null,
     tooltip:
-      'Set the amount of vram in GB you want to reserve for use by your OS/other software. By default some amount is reverved depending on your OS.'
+      'Set the amount of vram in GB you want to reserve for use by your OS/other software. By default some amount is reserved depending on your OS.'
   },
 
   // Misc settings

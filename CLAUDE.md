@@ -18,7 +18,6 @@ This bootstraps the monorepo with dependencies, builds, tests, and dev server ve
 - `pnpm build`: Build for production (via nx)
 - `pnpm lint`: Linting (via nx)
 - `pnpm format`: Prettier formatting
-- `pnpm test:component`: Run component tests with browser environment
 - `pnpm test:unit`: Run all unit tests
 - `pnpm test:browser`: Run E2E tests via Playwright
 - `pnpm test:unit -- tests-ui/tests/example.test.ts`: Run single test file

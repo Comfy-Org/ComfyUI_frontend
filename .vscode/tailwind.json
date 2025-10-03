@@ -7,7 +7,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#import"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#import-directive"
         }
       ]
     },
@@ -17,7 +17,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#theme"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#theme-directive"
         }
       ]
     },
@@ -27,17 +27,17 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#layer"
+          "url": "https://tailwindcss.com/docs/theme#layers"
         }
       ]
     },
     {
       "name": "@apply",
-      "description": "Use the `@apply` directive to inline any existing utility classes into your own custom CSS. This is useful when you find a common utility pattern in your HTML that you’d like to extract to a new component.",
+      "description": "DO NOT USE. IF YOU ARE CAUGHT USING @apply YOU WILL FACE SEVERE CONSEQUENCES.",
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#apply"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#apply-directive"
         }
       ]
     },
@@ -47,7 +47,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#config"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#config-directive"
         }
       ]
     },
@@ -57,7 +57,7 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#reference"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#reference-directive"
         }
       ]
     },
@@ -67,7 +67,27 @@
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#plugin"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#plugin-directive"
+        }
+      ]
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Use the `@custom-variant` directive to add a custom variant to your project. Custom variants can be used with utilities like `hover`, `focus`, and responsive breakpoints. Use `@slot` inside the variant to indicate where the utility's styles should be inserted.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/adding-custom-styles#adding-custom-variants"
+        }
+      ]
+    },
+    {
+      "name": "@utility",
+      "description": "Use the `@utility` directive to add custom utilities to your project. Custom utilities work with all variants like `hover`, `focus`, and responsive variants. Use `--value()` to create functional utilities that accept arguments.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/adding-custom-styles#adding-custom-utilities"
         }
       ]
     }

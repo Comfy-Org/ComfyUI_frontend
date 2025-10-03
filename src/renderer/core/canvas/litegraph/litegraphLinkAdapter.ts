@@ -8,10 +8,7 @@
  */
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type {
-  CanvasColour,
-  ReadOnlyPoint
-} from '@/lib/litegraph/src/interfaces'
+import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LinkDirection,
@@ -24,7 +21,7 @@ import {
   type Direction,
   type LinkRenderData,
   type RenderContext as PathRenderContext,
-  type Point,
+  type Point as PointObj,
   type RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -172,7 +169,7 @@ export class LitegraphLinkAdapter {
    * Critically: does nothing for CENTER/NONE directions (no case for them)
    */
   private applySplineOffset(
-    point: Point,
+    point: PointObj,
     direction: LinkDirection,
     distance: number
   ): void {
@@ -199,8 +196,8 @@ export class LitegraphLinkAdapter {
    */
   renderLinkDirect(
     ctx: CanvasRenderingContext2D,
-    a: ReadOnlyPoint,
-    b: ReadOnlyPoint,
+    a: Readonly<Point>,
+    b: Readonly<Point>,
     link: LLink | null,
     skip_border: boolean,
     flow: number | boolean | null,
@@ -210,8 +207,8 @@ export class LitegraphLinkAdapter {
     context: LinkRenderContext,
     extras: {
       reroute?: Reroute
-      startControl?: ReadOnlyPoint
-      endControl?: ReadOnlyPoint
+      startControl?: Readonly<Point>
+      endControl?: Readonly<Point>
       num_sublines?: number
       disabled?: boolean
     } = {}
@@ -250,7 +247,7 @@ export class LitegraphLinkAdapter {
       )
       const factor = 0.25
 
-      const cps: Point[] = []
+      const cps: PointObj[] = []
 
       if (hasStartCtrl && hasEndCtrl) {
         // Both provided explicitly
@@ -315,7 +312,7 @@ export class LitegraphLinkAdapter {
       // Copy calculated center position back to litegraph object
       // This is needed for hit detection and menu interaction
       if (linkData.centerPos) {
-        linkSegment._pos = linkSegment._pos || new Float32Array(2)
+        linkSegment._pos = linkSegment._pos || [0, 0]
         linkSegment._pos[0] = linkData.centerPos.x
         linkSegment._pos[1] = linkData.centerPos.y
 
@@ -329,8 +326,8 @@ export class LitegraphLinkAdapter {
       if (this.enableLayoutStoreWrites && link && link.id !== -1) {
         // Calculate bounds and center only when writing
         const bounds = this.calculateLinkBounds(
-          [linkData.startPoint.x, linkData.startPoint.y] as ReadOnlyPoint,
-          [linkData.endPoint.x, linkData.endPoint.y] as ReadOnlyPoint,
+          [linkData.startPoint.x, linkData.startPoint.y] as Readonly<Point>,
+          [linkData.endPoint.x, linkData.endPoint.y] as Readonly<Point>,
           linkData
         )
         const centerPos = linkData.centerPos || {
@@ -365,8 +362,8 @@ export class LitegraphLinkAdapter {
 
   renderDraggingLink(
     ctx: CanvasRenderingContext2D,
-    from: ReadOnlyPoint,
-    to: ReadOnlyPoint,
+    from: Readonly<Point>,
+    to: Readonly<Point>,
     colour: CanvasColour,
     startDir: LinkDirection,
     endDir: LinkDirection,
@@ -397,8 +394,8 @@ export class LitegraphLinkAdapter {
    * Includes padding for line width and control points
    */
   private calculateLinkBounds(
-    startPos: ReadOnlyPoint,
-    endPos: ReadOnlyPoint,
+    startPos: Readonly<Point>,
+    endPos: Readonly<Point>,
     linkData: LinkRenderData
   ): Bounds {
     let minX = Math.min(startPos[0], endPos[0])

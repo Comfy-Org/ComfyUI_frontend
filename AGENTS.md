@@ -12,8 +12,7 @@
 - `pnpm dev:electron`: Dev server with Electron API mocks.
 - `pnpm build`: Type-check then production build to `dist/`.
 - `pnpm preview`: Preview the production build locally.
-- `pnpm test:unit`: Run Vitest unit tests (`tests-ui/`).
-- `pnpm test:component`: Run component tests (`src/components/`).
+- `pnpm test:unit`: Run Vitest unit tests.
 - `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`).
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint). `pnpm format` / `format:check`: Prettier.
 - `pnpm typecheck`: Vue TSC type checking.

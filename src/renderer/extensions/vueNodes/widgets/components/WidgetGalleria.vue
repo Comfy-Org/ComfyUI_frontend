@@ -72,7 +72,6 @@ const value = defineModel<GalleryValue>({ required: true })
 
 const props = defineProps<{
   widget: SimplifiedWidget<GalleryValue>
-  readonly?: boolean
 }>()
 
 const activeIndex = ref(0)

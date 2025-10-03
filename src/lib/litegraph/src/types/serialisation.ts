@@ -157,7 +157,7 @@ export interface SubgraphIO extends SubgraphIOShared {
   id: UUID
   /** The data type this slot uses. Unlike nodes, this does not support legacy numeric types. */
   type: string
-  /** Links connected to this slot, or `undefined` if not connected. An ouptut slot should only ever have one link. */
+  /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
   linkIds?: LinkId[]
 }
 

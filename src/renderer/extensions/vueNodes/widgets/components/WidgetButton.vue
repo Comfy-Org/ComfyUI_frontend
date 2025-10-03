@@ -3,12 +3,7 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <Button
-      v-bind="filteredProps"
-      :disabled="readonly"
-      size="small"
-      @click="handleClick"
-    />
+    <Button v-bind="filteredProps" size="small" @click="handleClick" />
   </div>
 </template>
 
@@ -25,7 +20,6 @@ import {
 // Button widgets don't have a v-model value, they trigger actions
 const props = defineProps<{
   widget: SimplifiedWidget<void>
-  readonly?: boolean
 }>()
 
 // Button specific excluded props
@@ -36,7 +30,7 @@ const filteredProps = computed(() =>
 )
 
 const handleClick = () => {
-  if (!props.readonly && props.widget.callback) {
+  if (props.widget.callback) {
     props.widget.callback()
   }
 }

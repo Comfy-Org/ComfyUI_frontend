@@ -153,21 +153,6 @@ describe('WidgetTextarea Value Binding', () => {
     })
   })
 
-  describe('Readonly Mode', () => {
-    it('disables textarea when readonly', () => {
-      const widget = createMockWidget('readonly test')
-      const wrapper = mountComponent(widget, 'readonly test', true)
-
-      const textarea = wrapper.find('textarea')
-      if (!(textarea.element instanceof HTMLTextAreaElement)) {
-        throw new Error(
-          'Textarea element not found or is not an HTMLTextAreaElement'
-        )
-      }
-      expect(textarea.element.disabled).toBe(true)
-    })
-  })
-
   describe('Component Rendering', () => {
     it('renders textarea component', () => {
       const widget = createMockWidget('test value')

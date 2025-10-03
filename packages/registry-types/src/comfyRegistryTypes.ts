@@ -1125,7 +1125,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Create a new custom node using admin priviledge */
+    /** Create a new custom node using admin privilege */
     post: operations['adminCreateNode']
     delete?: never
     options?: never
@@ -16383,7 +16383,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Webhook processed succesfully */
+      /** @description Webhook processed successfully */
       200: {
         headers: {
           [name: string]: unknown

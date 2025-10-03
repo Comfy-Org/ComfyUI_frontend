@@ -5,9 +5,15 @@
   <div v-else class="lg-node-content">
     <!-- Default slot for custom content -->
     <slot>
+      <VideoPreview
+        v-if="hasMedia && media?.type === 'video'"
+        :image-urls="media.urls"
+        :node-id="nodeId"
+        class="mt-2"
+      />
       <ImagePreview
-        v-if="hasImages"
-        :image-urls="props.imageUrls || []"
+        v-else-if="hasMedia && media?.type === 'image'"
+        :image-urls="media.urls"
         :node-id="nodeId"
         class="mt-2"
       />
@@ -20,25 +26,24 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
+import VideoPreview from '../VideoPreview.vue'
 import ImagePreview from './ImagePreview.vue'
 
 interface NodeContentProps {
-  node?: LGraphNode // For backwards compatibility
-  nodeData?: VueNodeData // New clean data structure
-  readonly?: boolean
-  imageUrls?: string[]
+  nodeData?: VueNodeData
+  media?: {
+    type: 'image' | 'video'
+    urls: string[]
+  }
 }
 
 const props = defineProps<NodeContentProps>()
 
-const hasImages = computed(() => props.imageUrls && props.imageUrls.length > 0)
+const hasMedia = computed(() => props.media && props.media.urls.length > 0)
 
-// Get node ID from nodeData or node prop
-const nodeId = computed(() => {
-  return props.nodeData?.id?.toString() || props.node?.id?.toString()
-})
+// Get node ID from nodeData
+const nodeId = computed(() => props.nodeData?.id?.toString())
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
