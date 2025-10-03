@@ -37,7 +37,6 @@ import type {
   ISlotType,
   Point,
   Positionable,
-  ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
   Size
@@ -167,8 +166,8 @@ input|output: every connection
 general properties:
     + clip_area: if you render outside the node, it will be clipped
     + unsafe_execution: not allowed for safe execution
-    + skip_repeated_outputs: when adding new outputs, it wont show if there is one already connected
-    + resizable: if set to false it wont be resizable with the mouse
+    + skip_repeated_outputs: when adding new outputs, it won't show if there is one already connected
+    + resizable: if set to false it won't be resizable with the mouse
     + widgets_start_y: widgets start at y distance from the top of the node
 
 flags object:
@@ -413,7 +412,7 @@ export class LGraphNode
   }
 
   /** @inheritdoc {@link renderArea} */
-  #renderArea: Float32Array = new Float32Array(4)
+  #renderArea = new Rectangle()
   /**
    * Rect describing the node area, including shadows and any protrusions.
    * Determines if the node is visible.  Calculated once at the start of every frame.
@@ -434,7 +433,7 @@ export class LGraphNode
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
-  get boundingOffset(): ReadOnlyPoint {
+  get boundingOffset(): Readonly<Point> {
     const {
       pos: [posX, posY],
       boundingRect: [bX, bY]
@@ -442,10 +441,10 @@ export class LGraphNode
     return [posX - bX, posY - bY]
   }
 
-  /** {@link pos} and {@link size} values are backed by this {@link Rect}. */
-  _posSize: Float32Array = new Float32Array(4)
-  _pos: Point = this._posSize.subarray(0, 2)
-  _size: Size = this._posSize.subarray(2, 4)
+  /** {@link pos} and {@link size} values are backed by this {@link Rectangle}. */
+  _posSize = new Rectangle()
+  _pos: Point = this._posSize.pos
+  _size: Size = this._posSize.size
 
   public get pos() {
     return this._pos
@@ -902,7 +901,7 @@ export class LGraphNode
 
     if (this.onSerialize?.(o))
       console.warn(
-        'node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter'
+        "node onSerialize shouldn't return anything, data should be stored in the object pass in the first parameter"
       )
 
     return o
@@ -1653,7 +1652,7 @@ export class LGraphNode
       inputs ? inputs.filter((input) => !isWidgetInputSlot(input)).length : 1,
       outputs ? outputs.length : 1
     )
-    const size = out || new Float32Array([0, 0])
+    const size = out ?? [0, 0]
     rows = Math.max(rows, 1)
     // although it should be graphcanvas.inner_text_font size
     const font_size = LiteGraph.NODE_TEXT_SIZE
@@ -1950,7 +1949,7 @@ export class LGraphNode
     try {
       this.removeWidget(widget)
     } catch (error) {
-      console.debug('Failed to remove widget', error)
+      console.error('Failed to remove widget', error)
     }
   }
 
@@ -2004,13 +2003,13 @@ export class LGraphNode
 
   /**
    * returns the bounding of the object, used for rendering purposes
-   * @param out {Float32Array[4]?} [optional] a place to store the output, to free garbage
+   * @param out {Rect?} [optional] a place to store the output, to free garbage
    * @param includeExternal {boolean?} [optional] set to true to
    * include the shadow and connection points in the bounding calculation
    * @returns the bounding box in format of [topleft_cornerx, topleft_cornery, width, height]
    */
   getBounding(out?: Rect, includeExternal?: boolean): Rect {
-    out ||= new Float32Array(4)
+    out ||= [0, 0, 0, 0]
 
     const rect = includeExternal ? this.renderArea : this.boundingRect
     out[0] = rect[0]
@@ -2351,7 +2350,7 @@ export class LGraphNode
 
   /**
    * returns the output (or input) slot with a given type, -1 if not found
-   * @param input uise inputs instead of outputs
+   * @param input use inputs instead of outputs
    * @param type the type of the slot to find
    * @param returnObj if the obj itself wanted
    * @param preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
@@ -2583,12 +2582,7 @@ export class LGraphNode
     if (slotIndex !== undefined)
       return this.connect(slot, target_node, slotIndex, optsIn?.afterRerouteId)
 
-    console.debug(
-      '[connectByType]: no way to connect type:',
-      target_slotType,
-      'to node:',
-      target_node
-    )
+    // No compatible slot found - connection not possible
     return null
   }
 
@@ -2621,7 +2615,7 @@ export class LGraphNode
     if (slotIndex !== undefined)
       return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
-    console.debug(
+    console.error(
       '[connectByType]: no way to connect type:',
       source_slotType,
       'to node:',
@@ -2661,7 +2655,7 @@ export class LGraphNode
     if (!graph) {
       // could be connected before adding it to a graph
       // due to link ids being associated with graphs
-      console.log(
+      console.error(
         "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
       )
       return null
@@ -2672,11 +2666,12 @@ export class LGraphNode
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return null
       }
     } else if (!outputs || slot >= outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return null
     }
 
@@ -2696,7 +2691,7 @@ export class LGraphNode
       targetIndex = target_node.findInputSlot(target_slot)
       if (targetIndex == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${targetIndex}`)
+          console.error(`Connect: Error, no slot of name ${targetIndex}`)
         return null
       }
     } else if (target_slot === LiteGraph.EVENT) {
@@ -2728,7 +2723,8 @@ export class LGraphNode
       !target_node.inputs ||
       targetIndex >= target_node.inputs.length
     ) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return null
     }
 
@@ -2914,7 +2910,7 @@ export class LGraphNode
     const fromLastFloatingReroute =
       parentReroute?.floating?.slotType === 'output'
 
-    // Adding from an ouput, or a floating reroute that is NOT the tip of an existing floating chain
+    // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
     if (afterRerouteId == null || !fromLastFloatingReroute) {
       const link = new LLink(
         -1,
@@ -2955,11 +2951,12 @@ export class LGraphNode
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.outputs || slot >= this.outputs.length) {
-      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
+      if (LiteGraph.debug)
+        console.error('Connect: Error, slot number not found')
       return false
     }
 
@@ -3075,19 +3072,19 @@ export class LGraphNode
       slot = this.findInputSlot(slot)
       if (slot == -1) {
         if (LiteGraph.debug)
-          console.log(`Connect: Error, no slot of name ${slot}`)
+          console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.inputs || slot >= this.inputs.length) {
       if (LiteGraph.debug) {
-        console.log('Connect: Error, slot number not found')
+        console.error('Connect: Error, slot number not found')
       }
       return false
     }
 
     const input = this.inputs[slot]
     if (!input) {
-      console.debug('disconnectInput: input not found', slot, this.inputs)
+      console.error('disconnectInput: input not found', slot, this.inputs)
       return false
     }
 
@@ -3116,19 +3113,16 @@ export class LGraphNode
 
         const target_node = graph.getNodeById(link_info.origin_id)
         if (!target_node) {
-          console.debug(
-            'disconnectInput: target node not found',
-            link_info.origin_id
+          console.error(
+            'disconnectInput: output not found',
+            link_info.origin_slot
           )
           return false
         }
 
         const output = target_node.outputs[link_info.origin_slot]
         if (!output?.links?.length) {
-          console.debug(
-            'disconnectInput: output not found',
-            link_info.origin_slot
-          )
+          // Output not found - may have been removed
           return false
         }
 
@@ -3174,7 +3168,7 @@ export class LGraphNode
    * @returns the position
    */
   getConnectionPos(is_input: boolean, slot_number: number, out?: Point): Point {
-    out ||= new Float32Array(2)
+    out ||= [0, 0]
 
     const {
       pos: [nodeX, nodeY],
@@ -3754,6 +3748,13 @@ export class LGraphNode
     return !isHidden
   }
 
+  updateComputedDisabled() {
+    if (!this.widgets) return
+    for (const widget of this.widgets)
+      widget.computedDisabled =
+        widget.disabled || this.getSlotFromWidget(widget)?.link != null
+  }
+
   drawWidgets(
     ctx: CanvasRenderingContext2D,
     { lowQuality = false, editorAlpha = 1 }: DrawWidgetsOptions
@@ -3767,6 +3768,7 @@ export class LGraphNode
     ctx.save()
     ctx.globalAlpha = editorAlpha
 
+    this.updateComputedDisabled()
     for (const widget of widgets) {
       if (!this.isWidgetVisible(widget)) continue
 
@@ -3776,9 +3778,6 @@ export class LGraphNode
         : LiteGraph.WIDGET_OUTLINE_COLOR
 
       widget.last_y = y
-      // Disable widget if it is disabled or if the value is passed from socket connection.
-      widget.computedDisabled =
-        widget.disabled || this.getSlotFromWidget(widget)?.link != null
 
       ctx.strokeStyle = outlineColour
       ctx.fillStyle = '#222'

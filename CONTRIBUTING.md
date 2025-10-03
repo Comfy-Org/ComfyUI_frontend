@@ -213,12 +213,6 @@ Here's how Claude Code can use the Playwright MCP server to inspect the interfac
 - `pnpm i` to install all dependencies
 - `pnpm test:unit` to execute all unit tests
 
-### Component Tests
-
-Component tests verify Vue components in `src/components/`.
-
-- `pnpm test:component` to execute all component tests
-
 ### Playwright Tests
 
 Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details.
@@ -229,7 +223,6 @@ Before submitting a PR, ensure all tests pass:
 
 ```bash
 pnpm test:unit
-pnpm test:component
 pnpm test:browser
 pnpm typecheck
 pnpm lint

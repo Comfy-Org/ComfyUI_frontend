@@ -14,6 +14,7 @@ import type {
   ISlotType,
   LinkNetwork,
   LinkSegment,
+  Point,
   ReadonlyLinkNetwork
 } from './interfaces'
 import type {
@@ -109,7 +110,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   data?: number | string | boolean | { toToolTip?(): string }
   _data?: unknown
   /** Centre point of the link, calculated during render only - can be inaccurate */
-  _pos: Float32Array
+  _pos: Point
   /** @todo Clean up - never implemented in comfy. */
   _last_time?: number
   /** The last canvas 2D path that was used to render this link */
@@ -171,7 +172,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
     this._data = null
     // center
-    this._pos = new Float32Array(2)
+    this._pos = [0, 0]
   }
 
   /** @deprecated Use {@link LLink.create} */
