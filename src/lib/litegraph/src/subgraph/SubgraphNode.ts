@@ -168,7 +168,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     canvas: LGraphCanvas
   ): void {
     if (button.name === 'enter_subgraph') {
-      canvas.openSubgraph(this.subgraph)
+      canvas.openSubgraph(this.subgraph, this)
     } else {
       super.onTitleButtonClick(button, canvas)
     }

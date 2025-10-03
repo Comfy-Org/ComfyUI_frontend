@@ -5,6 +5,7 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import {
   LGraph,
@@ -883,6 +884,7 @@ export class ComfyApp {
         }
       }
     )
+    registerProxyWidgets(this.canvas)
 
     this.graph.start()
 

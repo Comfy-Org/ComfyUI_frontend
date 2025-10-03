@@ -96,6 +96,7 @@
     "searchModels": "Search Models",
     "searchKeybindings": "Search Keybindings",
     "searchExtensions": "Search Extensions",
+    "search": "Search",
     "noResultsFound": "No Results Found",
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",
@@ -352,6 +353,7 @@
     "Color": "Color",
     "Add Subgraph to Library": "Add Subgraph to Library",
     "Unpack Subgraph": "Unpack Subgraph",
+    "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Convert to Subgraph": "Convert to Subgraph",
     "Align Selected To": "Align Selected To",
     "Distribute Nodes": "Distribute Nodes",
@@ -1075,7 +1077,12 @@
     "publish": "Publish Subgraph",
     "publishSuccess": "Saved to Nodes Library",
     "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
-    "loadFailure": "Failed to load subgraph blueprints"
+    "loadFailure": "Failed to load subgraph blueprints",
+    "shown": "Shown on node",
+    "showAll": "Show all",
+    "hidden": "Hidden / nested parameters",
+    "hideAll": "Hide all",
+    "showRecommended": "Show recommended widgets"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
