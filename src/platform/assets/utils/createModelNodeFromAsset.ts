@@ -3,7 +3,10 @@ import {
   LiteGraph,
   type Point
 } from '@/lib/litegraph/src/litegraph'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  type AssetItem,
+  assetItemSchema
+} from '@/platform/assets/schemas/assetSchema'
 import {
   MISSING_TAG,
   MODELS_TAG
@@ -21,31 +24,40 @@ export function createModelNodeFromAsset(
   asset: AssetItem,
   options?: CreateNodeOptions
 ): LGraphNode {
-  // 1. Validate filename exists
-  const userMetadata: Record<string, unknown> | undefined = asset.user_metadata
+  const validatedAsset = assetItemSchema.safeParse(asset)
+
+  if (!validatedAsset.success) {
+    throw new Error(
+      `Invalid asset item: ${validatedAsset.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')}`
+    )
+  }
+
+  const validAsset = validatedAsset.data
+
+  const userMetadata = validAsset.user_metadata
   if (!userMetadata) {
-    throw new Error(`Asset ${asset.id} missing required user_metadata`)
+    throw new Error(`Asset ${validAsset.id} missing required user_metadata`)
   }
 
   const filename = userMetadata.filename
   if (typeof filename !== 'string' || filename.length === 0) {
     throw new Error(
-      `Asset ${asset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
+      `Asset ${validAsset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
     )
   }
 
-  // 2. Extract category from tags
-  const tags = asset.tags
-  if (!tags || tags.length === 0) {
+  if (validAsset.tags.length === 0) {
     throw new Error(
-      `Asset ${asset.id} has no tags defined (expected at least one category tag)`
+      `Asset ${validAsset.id} has no tags defined (expected at least one category tag)`
     )
   }
 
-  const category = tags.find((tag) => tag !== MODELS_TAG && tag !== MISSING_TAG)
+  const category = validAsset.tags.find(
+    (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
+  )
   if (!category) {
     throw new Error(
-      `Asset ${asset.id} has no valid category tag. Available tags: ${tags.join(', ')} (expected tag other than '${MODELS_TAG}' or '${MISSING_TAG}')`
+      `Asset ${validAsset.id} has no valid category tag. Available tags: ${validAsset.tags.join(', ')} (expected tag other than '${MODELS_TAG}' or '${MISSING_TAG}')`
     )
   }
 

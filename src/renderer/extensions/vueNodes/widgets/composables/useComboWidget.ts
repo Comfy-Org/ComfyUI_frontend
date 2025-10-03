@@ -6,7 +6,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
+import {
+  assetFilenameSchema,
+  assetItemSchema
+} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
@@ -84,7 +87,19 @@ const addComboWidget = (
           inputName: inputSpec.name,
           currentValue: widget.value,
           onAssetSelected: (asset) => {
-            const filename = asset.user_metadata?.filename
+            const validatedAsset = assetItemSchema.safeParse(asset)
+
+            if (!validatedAsset.success) {
+              console.error(
+                'Invalid asset item:',
+                validatedAsset.error.errors,
+                'Received:',
+                asset
+              )
+              return
+            }
+
+            const filename = validatedAsset.data.user_metadata?.filename
             const validatedFilename = assetFilenameSchema.safeParse(filename)
 
             if (!validatedFilename.success) {
@@ -92,7 +107,7 @@ const addComboWidget = (
                 'Invalid asset filename:',
                 validatedFilename.error.errors,
                 'for asset:',
-                asset.id
+                validatedAsset.data.id
               )
               return
             }
