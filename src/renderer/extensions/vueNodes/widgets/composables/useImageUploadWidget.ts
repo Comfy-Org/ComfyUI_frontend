@@ -108,12 +108,18 @@ export const useImageUploadWidget = () => {
     // On load if we have a value then render the image
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
-    requestAnimationFrame(() => {
+    nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
+      isAnimated
+    })
+    showPreview({ block: false })
+    const originalOnConfigure = node.onConfigure
+    node.onConfigure = function (...args) {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
         isAnimated
       })
       showPreview({ block: false })
-    })
+      return originalOnConfigure?.apply(this, args)
+    }
 
     return { widget: uploadWidget }
   }
