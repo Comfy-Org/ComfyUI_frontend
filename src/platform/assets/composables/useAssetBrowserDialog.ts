@@ -1,5 +1,6 @@
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { type DialogComponentProps, useDialogStore } from '@/stores/dialogStore'
 
@@ -48,8 +49,22 @@ export const useAssetBrowserDialog = () => {
   const dialogKey = 'global-asset-browser'
 
   async function show(props: ShowOptions) {
-    const handleAssetSelected = (filename: string) => {
-      props.onAssetSelected?.(filename)
+    const handleAssetSelected = (asset: AssetItem) => {
+      const filename = asset.user_metadata?.filename
+      const validatedFilename = assetFilenameSchema.safeParse(filename)
+
+      if (!validatedFilename.success) {
+        console.error(
+          'Invalid asset filename:',
+          validatedFilename.error.errors,
+          'for asset:',
+          asset.id
+        )
+        dialogStore.closeDialog({ key: dialogKey })
+        return
+      }
+
+      props.onAssetSelected?.(validatedFilename.data)
       dialogStore.closeDialog({ key: dialogKey })
     }
 

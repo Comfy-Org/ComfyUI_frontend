@@ -259,28 +259,26 @@ describe('useAssetBrowser', () => {
   })
 
   describe('Async Asset Selection with Detail Fetching', () => {
-    it('should fetch asset details and call onSelect with filename when provided', async () => {
+    it('should fetch asset details and call onSelect with full AssetItem', async () => {
       const onSelectSpy = vi.fn()
       const asset = createApiAsset({
         id: 'asset-123',
         name: 'test-model.safetensors'
       })
 
-      const detailAsset = createApiAsset({
+      const assetDetails = createApiAsset({
         id: 'asset-123',
         name: 'test-model.safetensors',
         user_metadata: { filename: 'checkpoints/test-model.safetensors' }
       })
-      vi.mocked(assetService.getAssetDetails).mockResolvedValue(detailAsset)
+      vi.mocked(assetService.getAssetDetails).mockResolvedValue(assetDetails)
 
       const { selectAssetWithCallback } = useAssetBrowser([asset])
 
       await selectAssetWithCallback(asset.id, onSelectSpy)
 
       expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-123')
-      expect(onSelectSpy).toHaveBeenCalledWith(
-        'checkpoints/test-model.safetensors'
-      )
+      expect(onSelectSpy).toHaveBeenCalledWith(assetDetails)
     })
 
     it('should handle missing user_metadata.filename as error', async () => {
@@ -290,11 +288,11 @@ describe('useAssetBrowser', () => {
       const onSelectSpy = vi.fn()
       const asset = createApiAsset({ id: 'asset-456' })
 
-      const detailAsset = createApiAsset({
+      const assetDetails = createApiAsset({
         id: 'asset-456',
         user_metadata: { filename: '' } // Invalid empty filename
       })
-      vi.mocked(assetService.getAssetDetails).mockResolvedValue(detailAsset)
+      vi.mocked(assetService.getAssetDetails).mockResolvedValue(assetDetails)
 
       const { selectAssetWithCallback } = useAssetBrowser([asset])
 
@@ -367,9 +365,7 @@ describe('useAssetBrowser', () => {
       const { selectAssetWithCallback } = useAssetBrowser([testAsset])
       await selectAssetWithCallback(testAsset.id, onSelectSpy)
 
-      expect(onSelectSpy).toHaveBeenCalledWith(
-        'models/checkpoints/v1/test-model.safetensors'
-      )
+      expect(onSelectSpy).toHaveBeenCalledWith(detailAsset)
     })
 
     it('rejects directory traversal attacks', async () => {

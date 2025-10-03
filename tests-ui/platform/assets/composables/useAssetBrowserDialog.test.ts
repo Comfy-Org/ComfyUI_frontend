@@ -43,10 +43,18 @@ describe('useAssetBrowserDialog', () => {
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onSelectHandler = dialogCall.props.onSelect
 
-      // Simulate asset selection
-      onSelectHandler('selected-asset-path')
+      // Simulate asset selection with AssetItem
+      const mockAsset = {
+        id: 'test-asset-id',
+        name: 'test.safetensors',
+        size: 1024,
+        created_at: '2025-10-01T00:00:00Z',
+        tags: ['models', 'checkpoints'],
+        user_metadata: { filename: 'selected-asset-path' }
+      }
+      onSelectHandler(mockAsset)
 
-      // Should call the original callback and trigger hide animation
+      // Should call the original callback with extracted filename
       expect(onAssetSelected).toHaveBeenCalledWith('selected-asset-path')
       expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'global-asset-browser'
@@ -258,7 +266,9 @@ describe('useAssetBrowserDialog', () => {
     it('handles asset fetch errors gracefully', async () => {
       const mockShowDialog = vi.fn()
       const mockCloseDialog = vi.fn()
-      const consoleErrorSpy = vi.spyOn(console, 'error')
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
       vi.mocked(useDialogStore).mockReturnValue({
         showDialog: mockShowDialog,

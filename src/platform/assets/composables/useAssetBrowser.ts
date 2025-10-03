@@ -190,21 +190,21 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   })
 
   /**
-   * Asset selection that fetches full details and executes callback with filename
+   * Asset selection that fetches full details and executes callback with AssetItem
    * @param assetId - The asset ID to select and fetch details for
-   * @param onSelect - Optional callback to execute with the asset filename
+   * @param onSelect - Optional callback to execute with the full AssetItem
    */
   async function selectAssetWithCallback(
     assetId: string,
-    onSelect?: (filename: string) => void
+    onSelect?: (asset: AssetItem) => void
   ): Promise<void> {
     if (!onSelect) {
       return
     }
 
     try {
-      const detailAsset = await assetService.getAssetDetails(assetId)
-      const filename = detailAsset.user_metadata?.filename
+      const assetDetails = await assetService.getAssetDetails(assetId)
+      const filename = assetDetails.user_metadata?.filename
       const validatedFilename = assetFilenameSchema.safeParse(filename)
       if (!validatedFilename.success) {
         console.error(
@@ -216,7 +216,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
         return
       }
 
-      onSelect(validatedFilename.data)
+      onSelect(assetDetails)
     } catch (error) {
       console.error(`Failed to fetch asset details for ${assetId}:`, error)
     }

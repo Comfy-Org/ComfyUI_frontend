@@ -56,7 +56,7 @@ import { OnCloseKey } from '@/types/widgetTypes'
 const props = defineProps<{
   nodeType?: string
   inputName?: string
-  onSelect?: (assetPath: string) => void
+  onSelect?: (asset: AssetItem) => void
   onClose?: () => void
   showLeftPanel?: boolean
   assets?: AssetItem[]

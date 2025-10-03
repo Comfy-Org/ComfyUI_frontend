@@ -33,10 +33,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
@@ -51,6 +54,11 @@ import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
+const { t } = useI18n()
+
+const isUsingAssetAPI = computed(() =>
+  settingStore.get('Comfy.Assets.UseAssetAPI')
+)
 
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.Sidebar.Location') === 'left'
@@ -64,9 +72,23 @@ const isSmall = computed(
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
-const onTabClick = (item: SidebarTabExtension) => {
+
+const onTabClick = async (item: SidebarTabExtension) => {
+  if (isUsingAssetAPI.value && item.id === 'model-library') {
+    const assetBrowserDialog = useAssetBrowserDialog()
+    await assetBrowserDialog.browse({
+      assetType: 'models',
+      title: t('sideToolbar.modelLibrary'),
+      onAssetSelected: (asset) => {
+        createModelNodeFromAsset(asset)
+      }
+    })
+    return
+  }
+
   workspaceStore.sidebarTab.toggleSidebarTab(item.id)
 }
+
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   const keybinding = keybindingStore.getKeybindingByCommandId(
