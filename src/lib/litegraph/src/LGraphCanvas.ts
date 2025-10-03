@@ -3434,72 +3434,7 @@ export class LGraphCanvas
         const deltaY = delta[1] / this.ds.scale
 
         if (LiteGraph.vueNodesMode) {
-          const mutations = useLayoutMutations()
-          mutations.setSource(LayoutSource.Canvas)
-
-          const nodesInMovingGroups = new Set<LGraphNode>()
-          const nodesToMove: Array<{
-            node: LGraphNode
-            newPos: { x: number; y: number }
-          }> = []
-
-          for (const item of allItems) {
-            if (item instanceof LGraphGroup) {
-              for (const child of item._children) {
-                if (child instanceof LGraphNode) {
-                  nodesInMovingGroups.add(child)
-                }
-              }
-            }
-          }
-
-          // First, collect all the moves we need to make
-          for (const item of allItems) {
-            const isNode = item instanceof LGraphNode
-            if (isNode) {
-              const node = item as LGraphNode
-              if (nodesInMovingGroups.has(node)) {
-                continue
-              }
-              nodesToMove.push({
-                node,
-                newPos: {
-                  x: node.pos[0] + deltaX,
-                  y: node.pos[1] + deltaY
-                }
-              })
-            } else if (item instanceof LGraphGroup) {
-              item.move(deltaX, deltaY, true)
-              // Collect child node moves
-              for (const child of item._children) {
-                if (child instanceof LGraphNode) {
-                  const node = child as LGraphNode
-                  nodesToMove.push({
-                    node,
-                    newPos: {
-                      x: node.pos[0] + deltaX,
-                      y: node.pos[1] + deltaY
-                    }
-                  })
-                } else {
-                  // Non-node children (nested groups, reroutes)
-                  child.move(deltaX, deltaY)
-                }
-              }
-            } else {
-              // Other items (reroutes, etc.)
-              item.move(deltaX, deltaY, true)
-            }
-          }
-
-          // Now apply all the node moves at once
-          for (const { node, newPos } of nodesToMove) {
-            // Update LiteGraph position first so next drag uses correct base position
-            node.pos[0] = newPos.x
-            node.pos[1] = newPos.y
-            // Then update layout store which will update Vue nodes
-            mutations.moveNode(node.id, newPos)
-          }
+          this.moveChildNodesInGroupVueMode(allItems, deltaX, deltaY)
         } else {
           for (const item of allItems) {
             item.move(deltaX, deltaY, true)
@@ -8526,5 +8461,78 @@ export class LGraphCanvas
 
     const setDirty = () => this.setDirty(true, true)
     this.ds.animateToBounds(bounds, setDirty, options)
+  }
+
+  moveChildNodesInGroupVueMode(
+    allItems: Set<Positionable>,
+    deltaX: number,
+    deltaY: number
+  ) {
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
+
+    const nodesInMovingGroups = new Set<LGraphNode>()
+    const nodesToMove: Array<{
+      node: LGraphNode
+      newPos: { x: number; y: number }
+    }> = []
+
+    for (const item of allItems) {
+      if (item instanceof LGraphGroup) {
+        for (const child of item._children) {
+          if (child instanceof LGraphNode) {
+            nodesInMovingGroups.add(child)
+          }
+        }
+      }
+    }
+
+    // First, collect all the moves we need to make
+    for (const item of allItems) {
+      const isNode = item instanceof LGraphNode
+      if (isNode) {
+        const node = item as LGraphNode
+        if (nodesInMovingGroups.has(node)) {
+          continue
+        }
+        nodesToMove.push({
+          node,
+          newPos: {
+            x: node.pos[0] + deltaX,
+            y: node.pos[1] + deltaY
+          }
+        })
+      } else if (item instanceof LGraphGroup) {
+        item.move(deltaX, deltaY, true)
+        // Collect child node moves
+        for (const child of item._children) {
+          if (child instanceof LGraphNode) {
+            const node = child as LGraphNode
+            nodesToMove.push({
+              node,
+              newPos: {
+                x: node.pos[0] + deltaX,
+                y: node.pos[1] + deltaY
+              }
+            })
+          } else {
+            // Non-node children (nested groups, reroutes)
+            child.move(deltaX, deltaY)
+          }
+        }
+      } else {
+        // Other items (reroutes, etc.)
+        item.move(deltaX, deltaY, true)
+      }
+    }
+
+    // Now apply all the node moves at once
+    for (const { node, newPos } of nodesToMove) {
+      // Update LiteGraph position first so next drag uses correct base position
+      node.pos[0] = newPos.x
+      node.pos[1] = newPos.y
+      // Then update layout store which will update Vue nodes
+      mutations.moveNode(node.id, newPos)
+    }
   }
 }
