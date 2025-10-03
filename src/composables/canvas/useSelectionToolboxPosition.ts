@@ -89,11 +89,8 @@ export function useSelectionToolboxPosition(
         }
       } else {
         // Fallback to LiteGraph bounds for regular nodes or non-string IDs
-        if (item instanceof LGraphNode) {
+        if (item instanceof LGraphNode || item instanceof LGraphGroup) {
           const bounds = item.getBounding()
-          allBounds.push([bounds[0], bounds[1], bounds[2], bounds[3]] as const)
-        } else if (item instanceof LGraphGroup) {
-          const bounds = item.boundingRect
           allBounds.push([bounds[0], bounds[1], bounds[2], bounds[3]] as const)
         }
       }
