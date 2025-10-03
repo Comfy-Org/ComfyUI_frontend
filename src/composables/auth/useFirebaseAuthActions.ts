@@ -1,6 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -16,6 +16,7 @@ import { usdToMicros } from '@/utils/formatUtil'
 export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
+  const route = useRoute()
   const router = useRouter()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
@@ -57,7 +58,12 @@ export const useFirebaseAuthActions = () => {
     // Redirect to login page if we're on cloud domain
     const hostname = window.location.hostname
     if (hostname.includes('cloud.comfy.org')) {
-      await router.push({ name: 'cloud-login' })
+      if (route.query.inviteCode) {
+        const inviteCode = route.query.inviteCode
+        await router.push({ name: 'cloud-login', query: { inviteCode } })
+      } else {
+        await router.push({ name: 'cloud-login' })
+      }
     }
   }, reportError)
 
