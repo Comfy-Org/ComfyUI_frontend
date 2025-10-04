@@ -18,7 +18,12 @@
         @dblclick.stop
       >
         <i
-          :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+          :class="
+            cn(
+              'icon-[lucide--chevron-down] size-5 transition-transform',
+              collapsed && '-rotate-90'
+            )
+          "
           class="text-xs leading-none relative top-px text-node-component-header-icon"
         ></i>
       </button>
@@ -38,7 +43,7 @@
         />
         <i
           v-if="isPinned"
-          class="icon-[lucide--pin] w-5 h-5 text-node-component-header-icon"
+          class="icon-[lucide--pin] size-5 text-node-component-header-icon"
           data-testid="node-pin-indicator"
         />
       </div>
@@ -47,13 +52,14 @@
           v-if="isSubgraphNode"
           size="sm"
           type="transparent"
-          class="text-node-component-header-icon"
           data-testid="subgraph-enter-button"
           title="Enter Subgraph"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <i class="pi pi-external-link"></i>
+          <i
+            class="icon-[lucide--external-link] size-5 text-node-component-header-icon"
+          ></i>
         </IconButton>
       </div>
       <LODFallback />
@@ -79,6 +85,7 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
 
