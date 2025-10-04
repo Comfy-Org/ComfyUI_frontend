@@ -34,8 +34,9 @@ jobs:
 
       - name: Determine dist-tag
         id: dist
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          VERSION='${{ steps.get_version.outputs.version }}'
           if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
             echo "dist_tag=next" >> $GITHUB_OUTPUT
           else
