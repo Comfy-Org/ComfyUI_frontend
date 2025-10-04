@@ -14,6 +14,13 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Get locator for a Vue node by its NodeId
+   */
+  getNodeLocator(nodeId: string): Locator {
+    return this.page.locator(`[data-node-id="${nodeId}"]`)
+  }
+
+  /**
    * Get locator for selected Vue node components (using visual selection indicators)
    */
   get selectedNodes(): Locator {
