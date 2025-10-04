@@ -11,13 +11,10 @@ import { defineConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin } from '../../build/plugins'
-
 dotenv.config()
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 
-const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
@@ -42,7 +39,6 @@ export default defineConfig(() => {
         ? [vueDevTools(), vue(), createHtmlPlugin({})]
         : [vue()]),
       tailwindcss(),
-      comfyAPIPlugin(IS_DEV),
       Icons({
         compiler: 'vue3',
         customCollections: {
