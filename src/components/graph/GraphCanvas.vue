@@ -39,7 +39,7 @@
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
   >
     <!-- Vue nodes rendered based on graph nodes -->
-    <VueGraphNode
+    <LGraphNode
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
@@ -117,7 +117,7 @@ import { attachSlotLinkPreviewRenderer } from '@/renderer/core/canvas/links/slot
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
-import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
