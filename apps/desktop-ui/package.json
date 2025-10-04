@@ -86,6 +86,10 @@
       }
     }
   },
+  "scripts": {
+    "storybook": "storybook dev -p 6007",
+    "build-storybook": "storybook build -o dist/storybook"
+  },
   "dependencies": {
     "@comfyorg/comfyui-electron-types": "0.4.73-0",
     "@comfyorg/shared-frontend-utils": "workspace:*",
