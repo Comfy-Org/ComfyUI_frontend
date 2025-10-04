@@ -39,16 +39,20 @@ jobs:
 
       - name: Bump desktop-ui version
         id: bump-version
+        env:
+          VERSION_TYPE: ${{ github.event.inputs.version_type }}
+          PRE_RELEASE: ${{ github.event.inputs.pre_release }}
         run: |
-          pnpm -C apps/desktop-ui version ${{ github.event.inputs.version_type }} --preid ${{ github.event.inputs.pre_release }} --no-git-tag-version
+          pnpm -C apps/desktop-ui version "$VERSION_TYPE" --preid "$PRE_RELEASE" --no-git-tag-version
           NEW_VERSION=$(node -p "require('./apps/desktop-ui/package.json').version")
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Format PR string
         id: capitalised
+        env:
+          VERSION_TYPE: ${{ github.event.inputs.version_type }}
         run: |
-          CAPITALISED_TYPE=${{ github.event.inputs.version_type }}
-          echo "capitalised=${CAPITALISED_TYPE@u}" >> $GITHUB_OUTPUT
+          echo "capitalised=${VERSION_TYPE@u}" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
