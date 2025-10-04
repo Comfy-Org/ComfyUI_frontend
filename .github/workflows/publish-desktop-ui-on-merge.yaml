@@ -51,5 +51,6 @@ jobs:
       version: ${{ needs.resolve.outputs.version }}
       dist_tag: ${{ needs.resolve.outputs.dist_tag }}
       ref: ${{ github.event.pull_request.merge_commit_sha }}
-    secrets: inherit
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
