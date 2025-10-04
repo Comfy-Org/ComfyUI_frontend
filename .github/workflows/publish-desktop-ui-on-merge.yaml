@@ -31,7 +31,9 @@ jobs:
 
       - name: Read desktop-ui version
         id: get_version
-        run: echo "version=$(node -p "require('./apps/desktop-ui/package.json').version")" >> $GITHUB_OUTPUT
+        run: |
+          VERSION=$(node -p "require('./apps/desktop-ui/package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Determine dist-tag
         id: dist
