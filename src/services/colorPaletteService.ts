@@ -12,6 +12,12 @@ import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
+const THEME_PROPERTY_MAP = {
+  NODE_DEFAULT_COLOR: 'node-component-header-surface',
+  NODE_DEFAULT_BGCOLOR: 'node-component-surface',
+  NODE_TITLE_COLOR: 'node-component-header-text'
+} as const
+
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
@@ -78,6 +84,30 @@ export const useColorPaletteService = () => {
     Object.assign(LGraphCanvas.link_type_colors, types, linkColorPalette)
   }
 
+  function validThemeProp(
+    propertyMaybe: unknown
+  ): propertyMaybe is keyof typeof THEME_PROPERTY_MAP {
+    return (
+      (propertyMaybe as keyof typeof THEME_PROPERTY_MAP) in THEME_PROPERTY_MAP
+    )
+  }
+
+  function loadLitegraphForVueNodes(palette: Colors['litegraph_base']) {
+    if (!palette) return
+    const rootStyle = document.documentElement.style
+
+    for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
+      if (!validThemeProp(themeVar)) {
+        continue
+      }
+      const cssVar = THEME_PROPERTY_MAP[themeVar]
+      const valueMaybe = palette[themeVar]
+      if (valueMaybe) {
+        rootStyle.setProperty(`--${cssVar}`, valueMaybe)
+      }
+    }
+  }
+
   /**
    * Loads the LiteGraph color palette.
    *
@@ -120,20 +150,19 @@ export const useColorPaletteService = () => {
    * @param comfyColorPalette - The palette to set.
    */
   const loadComfyColorPalette = (comfyColorPalette: Colors['comfy_base']) => {
-    if (comfyColorPalette) {
-      const rootStyle = document.documentElement.style
-      for (const [key, value] of Object.entries(comfyColorPalette)) {
-        rootStyle.setProperty('--' + key, value)
-      }
-      const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
-      if (backgroundImage) {
-        rootStyle.setProperty(
-          '--bg-img',
-          `url('${backgroundImage}') no-repeat center /cover`
-        )
-      } else {
-        rootStyle.removeProperty('--bg-img')
-      }
+    if (!comfyColorPalette) return
+    const rootStyle = document.documentElement.style
+    for (const [key, value] of Object.entries(comfyColorPalette)) {
+      rootStyle.setProperty('--' + key, value)
+    }
+    const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
+    if (backgroundImage) {
+      rootStyle.setProperty(
+        '--bg-img',
+        `url('${backgroundImage}') no-repeat center /cover`
+      )
+    } else {
+      rootStyle.removeProperty('--bg-img')
     }
   }
 
@@ -151,6 +180,7 @@ export const useColorPaletteService = () => {
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
     loadLinkColorPalette(completedPalette.colors.node_slot)
     loadLiteGraphColorPalette(completedPalette.colors.litegraph_base)
+    loadLitegraphForVueNodes(completedPalette.colors.litegraph_base)
     loadComfyColorPalette(completedPalette.colors.comfy_base)
     app.canvas.setDirty(true, true)
 
