@@ -149,6 +149,7 @@
   --node-component-tooltip-surface: var(--color-white);
   --node-component-widget-input-surface: var(--color-zinc-500);
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
+  --node-component-header-surface: var(--node-component-surface);
   --node-stroke: var(--color-stone-100);
 }
 
@@ -179,6 +180,7 @@
   --color-node-component-border: var(--node-component-border);
   --color-node-component-executing: var(--node-component-executing);
   --color-node-component-header-icon: var(--node-component-header-icon);
+  --color-node-component-header-surface: var(--node-component-header-surface);
   --color-node-component-outline: var(--node-component-outline);
   --color-node-component-ring: var(--node-component-ring);
   --color-node-component-slot-dot-outline: rgb(
@@ -198,7 +200,9 @@
   --color-node-component-tooltip: var(--node-component-tooltip);
   --color-node-component-tooltip-border: var(--node-component-tooltip-border);
   --color-node-component-tooltip-surface: var(--node-component-tooltip-surface);
-  --color-node-component-widget-input-surface: var(--node-component-widget-input-surface);
+  --color-node-component-widget-input-surface: var(
+    --node-component-widget-input-surface
+  );
   --color-node-component-widget-skeleton-surface: var(
     --node-component-widget-skeleton-surface
   );

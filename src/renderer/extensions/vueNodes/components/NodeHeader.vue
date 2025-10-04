@@ -4,7 +4,7 @@
   </div>
   <div
     v-else
-    class="lg-node-header p-4 rounded-t-2xl cursor-move w-full"
+    class="lg-node-header p-4 rounded-t-2xl cursor-move w-full bg-node-component-header-surface"
     :style="headerStyle"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
