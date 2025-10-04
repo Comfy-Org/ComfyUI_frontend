@@ -2069,6 +2069,22 @@
       "placeholderVideo": "Select video...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
+    },
+    "seed": {
+      "controlHeaderBefore": "Automatically update the seed value",
+      "controlHeaderAfter": "AFTER",
+      "controlHeaderBefore2": "BEFORE", 
+      "controlHeaderEnd": "running the workflow:",
+      "linkToGlobal": "Link to",
+      "linkToGlobalSeed": "Global Seed",
+      "linkToGlobalDesc": "Unique seed linked to the Global Seed's control setting",
+      "randomize": "Randomize Seed",
+      "randomizeDesc": "Shuffles the seed randomly after each generation",
+      "increment": "Increment Seed", 
+      "incrementDesc": "Adds 1 to the seed number",
+      "decrement": "Decrement Seed",
+      "decrementDesc": "Subtracts 1 from the seed number",
+      "editSettings": "Edit seed control settings"
     }
   },
   "nodeHelpPage": {
