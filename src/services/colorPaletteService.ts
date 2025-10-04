@@ -15,9 +15,15 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 const THEME_PROPERTY_MAP = {
   NODE_DEFAULT_COLOR: 'node-component-header-surface',
   NODE_DEFAULT_BGCOLOR: 'node-component-surface',
-  NODE_TITLE_COLOR: 'node-component-header-text'
-} as const
-
+  NODE_TITLE_COLOR: 'node-component-header',
+  NODE_BOX_OUTLINE_COLOR: 'node-component-outline',
+  WIDGET_BGCOLOR: 'node-component-widget-input-surface',
+  WIDGET_TEXT_COLOR: 'node-component-widget-input'
+  // /* TOGGLE
+} as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
+/*/
+} as const satisfies Record<keyof Colors['litegraph_base'], string>
+//*/
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
@@ -94,7 +100,8 @@ export const useColorPaletteService = () => {
 
   function loadLitegraphForVueNodes(palette: Colors['litegraph_base']) {
     if (!palette) return
-    const rootStyle = document.documentElement.style
+    const rootStyle = document.getElementById('vue-app')?.style
+    if (!rootStyle) return
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
       if (!validThemeProp(themeVar)) {
