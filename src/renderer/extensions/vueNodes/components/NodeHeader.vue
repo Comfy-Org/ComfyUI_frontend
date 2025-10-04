@@ -63,7 +63,7 @@
           @dblclick.stop
         >
           <i
-            class="icon-[lucide--external-link] size-5 text-node-component-header-icon"
+            class="icon-[lucide--picture-in-picture] size-5 text-node-component-header-icon"
           ></i>
         </IconButton>
       </div>
