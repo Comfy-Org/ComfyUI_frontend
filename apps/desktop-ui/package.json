@@ -49,6 +49,25 @@
           "command": "vite preview --config vite.config.mts"
         }
       },
+      "storybook": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "storybook dev -p 6007"
+        }
+      },
+      "build-storybook": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "cwd": "apps/desktop-ui",
+          "command": "storybook build -o dist/storybook"
+        },
+        "outputs": [
+          "{projectRoot}/dist/storybook"
+        ]
+      },
       "lint": {
         "executor": "nx:run-commands",
         "cache": true,
