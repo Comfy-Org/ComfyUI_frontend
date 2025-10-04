@@ -13,7 +13,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const THEME_PROPERTY_MAP = {
-  NODE_BOX_OUTLINE_COLOR: 'node-component-outline',
+  NODE_BOX_OUTLINE_COLOR: 'node-component-border',
   NODE_DEFAULT_BGCOLOR: 'node-component-surface',
   NODE_DEFAULT_BOXCOLOR: 'node-component-header-icon',
   NODE_DEFAULT_COLOR: 'node-component-header-surface',
