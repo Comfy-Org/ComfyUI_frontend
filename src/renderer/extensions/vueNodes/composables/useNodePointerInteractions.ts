@@ -34,6 +34,16 @@ export function useNodePointerInteractions(
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
 
+  const isMiddlePointer = (event: PointerEvent): boolean => {
+    return event.button === 1 || (event.buttons & 4) !== 0
+  }
+
+  const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
+    if (!isMiddlePointer(event)) return false
+    forwardEventToCanvas(event)
+    return true
+  }
+
   // Drag state for styling
   const isDragging = ref(false)
   const dragStyle = computed(() => {
@@ -52,10 +62,7 @@ export function useNodePointerInteractions(
       return
     }
 
-    if (event.button === 1) {
-      forwardEventToCanvas(event)
-      return
-    }
+    if (forwardMiddlePointerIfNeeded(event)) return
 
     // Only start drag on left-click (button 0)
     if (event.button !== 0) {
@@ -84,10 +91,7 @@ export function useNodePointerInteractions(
   }
 
   const handlePointerMove = (event: PointerEvent) => {
-    if ((event.buttons & 4) !== 0) {
-      forwardEventToCanvas(event)
-      return
-    }
+    if (forwardMiddlePointerIfNeeded(event)) return
 
     if (isDragging.value) {
       void handleDrag(event)
@@ -128,10 +132,7 @@ export function useNodePointerInteractions(
   }
 
   const handlePointerUp = (event: PointerEvent) => {
-    if (event.button === 1 || (event.buttons & 4) !== 0) {
-      forwardEventToCanvas(event)
-      return
-    }
+    if (forwardMiddlePointerIfNeeded(event)) return
 
     if (isDragging.value) {
       handleDragTermination(event, 'drag end')
@@ -180,8 +181,11 @@ export function useNodePointerInteractions(
   })
 
   const pointerHandlers = {
+    onPointerdownCapture: forwardMiddlePointerIfNeeded,
     onPointerdown: handlePointerDown,
+    onPointermoveCapture: forwardMiddlePointerIfNeeded,
     onPointermove: handlePointerMove,
+    onPointerupCapture: forwardMiddlePointerIfNeeded,
     onPointerup: handlePointerUp,
     onPointercancel: handlePointerCancel,
     onContextmenu: handleContextMenu
