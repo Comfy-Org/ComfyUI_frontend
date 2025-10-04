@@ -1,91 +1,96 @@
 <template>
-  <div class="mb-4">
-    <Button
-      class="bg-zinc-500/10 dark-theme:bg-node-component-surface text-zinc-400 dark-theme:text-white border-0 w-[413px]"
-      :disabled="isRecording || readonly"
-      @click="handleStartRecording"
-    >
-      {{ t('g.startRecording', 'Start Recording') }}
-      <i-lucide:mic class="ml-1" />
-    </Button>
-  </div>
-  <div
-    v-if="isRecording || isPlaying || recordedURL"
-    class="bg-[#262729] rounded-lg px-4 h-14 flex items-center gap-4 w-[413px]"
-  >
-    <!-- Recording Status -->
-    <div class="flex gap-2 items-center text-white min-w-[120px]">
-      <span class="text-xs min-w-[80px]">
-        {{
-          isRecording
-            ? t('g.listening', 'Listening...')
-            : isPlaying
-              ? t('g.playing', 'Playing...')
-              : recordedURL
-                ? t('g.ready', 'Ready')
-                : ''
-        }}
-      </span>
-      <span class="text-sm min-w-[40px]">{{ formatTime(timer) }}</span>
+  <div class="">
+    <div class="mb-4">
+      <Button
+        class="bg-zinc-500/10 dark-theme:bg-node-component-surface text-zinc-400 dark-theme:text-white border-0 w-[413px]"
+        :disabled="isRecording || readonly"
+        @click="handleStartRecording"
+      >
+        {{ t('g.startRecording', 'Start Recording') }}
+        <i-lucide:mic class="ml-1" />
+      </Button>
     </div>
+    <div
+      v-if="isRecording || isPlaying || recordedURL"
+      class="bg-[#262729] rounded-lg px-4 h-14 flex items-center gap-4 w-[413px]"
+    >
+      <!-- Recording Status -->
+      <div class="flex gap-2 items-center text-white min-w-[120px]">
+        <span class="text-xs min-w-[80px]">
+          {{
+            isRecording
+              ? t('g.listening', 'Listening...')
+              : isPlaying
+                ? t('g.playing', 'Playing...')
+                : recordedURL
+                  ? t('g.ready', 'Ready')
+                  : ''
+          }}
+        </span>
+        <span class="text-sm min-w-[40px]">{{ formatTime(timer) }}</span>
+      </div>
 
-    <!-- Waveform Visualization -->
-    <div class="flex-1 flex gap-2 items-center h-8 overflow-x-clip">
-      <div
-        v-for="(bar, index) in waveformBars"
-        :key="index"
-        class="w-[3px] bg-[#9c9eab] rounded-[1.5px] transition-all duration-100 min-h-[4px] max-h-[32px]"
-        :style="{ height: bar.height + 'px' }"
-        :title="`Bar ${index + 1}: ${bar.height}px`"
-      />
+      <!-- Waveform Visualization -->
+      <div class="flex-1 flex gap-2 items-center h-8 overflow-x-clip">
+        <div
+          v-for="(bar, index) in waveformBars"
+          :key="index"
+          class="w-[3px] bg-[#9c9eab] rounded-[1.5px] transition-all duration-100 min-h-[4px] max-h-[32px]"
+          :style="{ height: bar.height + 'px' }"
+          :title="`Bar ${index + 1}: ${bar.height}px`"
+        />
+      </div>
+
+      <!-- Control Button -->
+      <button
+        v-if="isRecording"
+        :title="t('g.stopRecording', 'Stop Recording')"
+        class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors animate-pulse"
+        @click="handleStopRecording"
+      >
+        <div class="size-2.5 bg-[#C02323] rounded-sm" />
+      </button>
+
+      <button
+        v-else-if="!isRecording && recordedURL && !isPlaying"
+        :title="t('g.playRecording') || 'Play Recording'"
+        class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+        @click="handlePlayRecording"
+      >
+        <i class="icon-[lucide--play] size-4 text-[#00D2D3]" />
+      </button>
+
+      <button
+        v-else-if="isPlaying"
+        :title="t('g.stopPlayback') || 'Stop Playback'"
+        class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+        @click="handleStopPlayback"
+      >
+        <i class="icon-[lucide--square] size-4 text-[#00D2D3]" />
+      </button>
     </div>
-
-    <!-- Control Button -->
-    <button
-      v-if="isRecording"
-      :title="t('g.stopRecording', 'Stop Recording')"
-      class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors animate-pulse"
-      @click="handleStopRecording"
-    >
-      <div class="size-2.5 bg-[#C02323] rounded-sm" />
-    </button>
-
-    <button
-      v-else-if="!isRecording && recordedURL && !isPlaying"
-      :title="t('g.playRecording') || 'Play Recording'"
-      class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-      @click="handlePlayRecording"
-    >
-      <i class="icon-[lucide--play] size-4 text-[#00D2D3]" />
-    </button>
-
-    <button
-      v-else-if="isPlaying"
-      :title="t('g.stopPlayback') || 'Stop Playback'"
-      class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-      @click="handleStopPlayback"
-    >
-      <i class="icon-[lucide--square] size-4 text-[#00D2D3]" />
-    </button>
+    <audio
+      v-if="recordedURL"
+      ref="audioRef"
+      :key="audioElementKey"
+      :src="recordedURL"
+      class="hidden"
+      @ended="playback.onPlaybackEnded"
+      @loadedmetadata="playback.onMetadataLoaded"
+    />
   </div>
-  <audio
-    v-if="recordedURL"
-    ref="audioRef"
-    :key="audioElementKey"
-    :src="recordedURL"
-    class="hidden"
-    @ended="playback.onPlaybackEnded"
-    @loadedmetadata="playback.onMetadataLoaded"
-  />
 </template>
 
 <script setup lang="ts">
 import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -95,13 +100,16 @@ import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
 import { useTimer } from '../composables/audio/useTimer'
 import { formatTime } from '../utils/audioUtils'
 
-const props = defineProps<{
-  widget?: SimplifiedWidget<string | number | undefined>
-  readonly?: boolean
-  node?: LGraphNode
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
 }>()
 
-const modelValue = defineModel<any>('modelValue')
+const props = defineProps<{
+  widget: SimplifiedWidget<string | number | undefined>
+  readonly?: boolean
+  modelValue: string
+  nodeId: string
+}>()
 
 // Audio element ref
 const audioRef = ref<HTMLAudioElement>()
@@ -144,12 +152,22 @@ const { timer } = timerControl
 
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
+const { localValue, onChange } = useStringWidgetValue(
+  props.widget as SimplifiedWidget<string, Record<string, any>>,
+  props.modelValue,
+  emit
+)
+const litegraphNode = computed(() => {
+  if (!props.nodeId || !app.rootGraph) return null
+  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+})
 
 async function handleRecordingComplete(blob: Blob) {
   try {
     const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-    modelValue.value = path
+    localValue.value = path
     lastUploadedPath = path
+    onChange(path)
   } catch (e) {
     useToastStore().addAlert('Failed to upload recorded audio')
   }
@@ -250,7 +268,7 @@ async function serializeValue() {
 
     await new Promise((resolve) => {
       const checkRecording = () => {
-        if (!isRecording.value && modelValue.value) {
+        if (!isRecording.value && props.modelValue) {
           resolve(undefined)
         } else {
           setTimeout(checkRecording, 100)
@@ -260,11 +278,21 @@ async function serializeValue() {
     })
   }
 
-  return modelValue.value || lastUploadedPath || ''
+  return props.modelValue || lastUploadedPath || ''
+}
+
+function registerWidgetSerialization() {
+  const node = litegraphNode.value
+  if (!node?.widgets) return
+  const targetWidget = node.widgets.find((w: IBaseWidget) => w.name === 'audio')
+  if (targetWidget) {
+    targetWidget.serializeValue = serializeValue
+  }
 }
 
 onMounted(() => {
   waveform.initWaveform()
+  registerWidgetSerialization()
 })
 
 onUnmounted(() => {
@@ -274,6 +302,4 @@ onUnmounted(() => {
     clearInterval((playback as any)._playbackTimerInterval)
   }
 })
-
-defineExpose({ serializeValue })
 </script>
