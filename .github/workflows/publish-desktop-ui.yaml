@@ -80,6 +80,7 @@ jobs:
         with:
           ref: ${{ steps.resolve_ref.outputs.ref }}
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
