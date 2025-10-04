@@ -8,10 +8,6 @@ export function electronAPI() {
   return (window as any).electronAPI as ElectronAPI
 }
 
-export function showNativeSystemMenu() {
-  electronAPI()?.showContextMenu()
-}
-
 export function isNativeWindow() {
   return isElectron() && !!window.navigator.windowControlsOverlay?.visible
 }
