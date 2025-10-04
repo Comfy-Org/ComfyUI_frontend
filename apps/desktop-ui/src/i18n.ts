@@ -75,7 +75,7 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
-export const { t, te, d } = i18n.global
+export const { t, te } = i18n.global
 
 /**
  * Safe translation function that returns the fallback message if the key is not found.
