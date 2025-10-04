@@ -103,6 +103,7 @@ import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { i18n, t } from '@/i18n'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -143,6 +144,8 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
+const colorPaletteStore = useColorPaletteStore()
+const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
 
 const betaMenuEnabled = computed(
@@ -193,6 +196,15 @@ const allNodes = computed((): VueNodeData[] =>
 )
 
 watchEffect(() => {
+  LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
+})
+watchEffect(() => {
+  LiteGraph.nodeLightness = colorPaletteStore.completedActivePalette.light_theme
+    ? 0.5
+    : undefined
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 
@@ -238,8 +250,6 @@ watch(
   }
 )
 
-const colorPaletteService = useColorPaletteService()
-const colorPaletteStore = useColorPaletteStore()
 watch(
   [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
   async ([canvas, currentPaletteId]) => {
