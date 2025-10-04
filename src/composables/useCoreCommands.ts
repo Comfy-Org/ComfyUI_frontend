@@ -15,6 +15,8 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -1061,6 +1063,30 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         await api.freeMemory({ freeExecutionCache: true })
+      }
+    },
+    {
+      id: 'Comfy.BrowseModelAssets',
+      icon: 'pi pi-folder-open',
+      label: 'Browse Model Assets',
+      versionAdded: '1.28.3',
+      function: async () => {
+        const assetBrowserDialog = useAssetBrowserDialog()
+        await assetBrowserDialog.browse({
+          assetType: 'models',
+          title: t('sideToolbar.modelLibrary'),
+          onAssetSelected: (asset) => {
+            const result = createModelNodeFromAsset(asset)
+            if (!result.success) {
+              toastStore.add({
+                severity: 'error',
+                summary: t('g.error'),
+                detail: t('assetBrowser.failedToCreateNode')
+              })
+              console.error('Node creation failed:', result.error)
+            }
+          }
+        })
       }
     }
   ]
