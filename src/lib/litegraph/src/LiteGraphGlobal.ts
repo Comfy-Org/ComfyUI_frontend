@@ -60,6 +60,8 @@ export class LiteGraphGlobal {
   NODE_BOX_OUTLINE_COLOR = '#FFF'
   NODE_ERROR_COLOUR = '#E00'
   NODE_FONT = 'Arial'
+  NODE_DEFAULT_BYPASS_COLOR = '#FF00FF'
+  NODE_OPACITY = 0.9
 
   DEFAULT_FONT = 'Arial'
   DEFAULT_SHADOW_COLOR = 'rgba(0,0,0,0.5)'
@@ -347,6 +349,10 @@ export class LiteGraphGlobal {
    * @default false
    */
   vueNodesMode: boolean = false
+
+  // Special Rendering Values pulled out of app.ts patches
+  nodeOpacity = 1
+  nodeLightness: number | undefined = undefined
 
   // TODO: Remove legacy accessors
   LGraph = LGraph
