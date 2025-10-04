@@ -117,6 +117,8 @@ const mutationObserver = ref<MutationObserver | null>(null)
 const viewer = useLoad3dService().getOrCreateViewer(toRaw(props.node))
 
 function handleDragOver(event: DragEvent) {
+  if (viewer.isPreview.value) return
+
   if (!event.dataTransfer) return
 
   const hasFiles = event.dataTransfer.types.includes('Files')
@@ -135,6 +137,8 @@ function handleDragLeave() {
 
 async function handleDrop(event: DragEvent) {
   isDragging.value = false
+
+  if (viewer.isPreview.value) return
 
   if (!event.dataTransfer) return
 

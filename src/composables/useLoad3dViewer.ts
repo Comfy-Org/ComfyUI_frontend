@@ -36,6 +36,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   const upDirection = ref<UpDirection>('original')
   const materialMode = ref<MaterialMode>('original')
   const needApplyChanges = ref(true)
+  const isPreview = ref(false)
 
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
@@ -170,6 +171,12 @@ export const useLoad3dViewer = (node: LGraphNode) => {
       const modelConfig = node.properties['Model Config'] as any
       const cameraConfig = node.properties['Camera Config'] as any
       const lightConfig = node.properties['Light Config'] as any
+
+      const widthWidget = node.widgets?.find((w) => w.name === 'width')
+      const heightWidget = node.widgets?.find((w) => w.name === 'height')
+      if (!(widthWidget && heightWidget)) {
+        isPreview.value = true
+      }
 
       if (sceneConfig) {
         backgroundColor.value =
@@ -429,6 +436,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     upDirection,
     materialMode,
     needApplyChanges,
+    isPreview,
 
     // Methods
     initializeViewer,

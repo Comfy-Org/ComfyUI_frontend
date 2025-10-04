@@ -14,7 +14,8 @@
       :cleanup="cleanup"
       :loading="loading"
       :loading-message="loadingMessage"
-      :on-model-drop="handleModelDrop"
+      :on-model-drop="isPreview ? undefined : handleModelDrop"
+      :is-preview="isPreview"
     />
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
       <Load3DControls

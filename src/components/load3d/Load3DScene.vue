@@ -20,7 +20,7 @@
       :loading-message="props.loadingMessage"
     />
     <div
-      v-if="isDragging"
+      v-if="!isPreview && isDragging"
       class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none"
     >
       <div
@@ -45,6 +45,7 @@ const props = defineProps<{
   loading: boolean
   loadingMessage: string
   onModelDrop?: (file: File) => void | Promise<void>
+  isPreview: boolean
 }>()
 
 const container = ref<HTMLElement | null>(null)
