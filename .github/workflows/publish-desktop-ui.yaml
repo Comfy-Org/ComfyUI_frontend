@@ -197,5 +197,5 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           DIST_TAG: ${{ inputs.dist_tag }}
-        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks
+        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks --ignore-scripts
         working-directory: ${{ steps.pkg.outputs.publish_dir }}
