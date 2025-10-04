@@ -68,6 +68,27 @@
     }
   },
   "dependencies": {
-    "@comfyorg/shared-frontend-utils": "workspace:*"
+    "@comfyorg/comfyui-electron-types": "0.4.73-0",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@primevue/core": "catalog:",
+    "@primevue/themes": "catalog:",
+    "@vueuse/core": "catalog:",
+    "pinia": "catalog:",
+    "primeicons": "catalog:",
+    "primevue": "catalog:",
+    "vue": "catalog:",
+    "vue-i18n": "catalog:",
+    "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "dotenv": "catalog:",
+    "unplugin-icons": "catalog:",
+    "unplugin-vue-components": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-html": "catalog:",
+    "vite-plugin-vue-devtools": "catalog:",
+    "vue-tsc": "catalog:"
   }
 }
