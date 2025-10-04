@@ -1,4 +1,4 @@
-export interface UVMirror {
+interface UVMirror {
   /**
    * The setting id defined for the mirror.
    */
