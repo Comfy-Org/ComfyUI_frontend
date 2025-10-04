@@ -3,6 +3,7 @@
  */
 import type { Component } from 'vue'
 
+import WidgetAudioUI from '../components/WidgetAudioUI.vue'
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
 import WidgetColorPicker from '../components/WidgetColorPicker.vue'
@@ -13,11 +14,13 @@ import WidgetInputNumber from '../components/WidgetInputNumber.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
 import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
+import WidgetRecordAudio from '../components/WidgetRecordAudio.vue'
 import WidgetSelect from '../components/WidgetSelect.vue'
 import WidgetSelectButton from '../components/WidgetSelectButton.vue'
 import WidgetTextarea from '../components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
 import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
+import AudioPreviewPlayer from '../components/audio/AudioPreviewPlayer.vue'
 
 interface WidgetDefinition {
   component: Component
@@ -108,8 +111,28 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
+  ],
+  [
+    'audiorecord',
+    {
+      component: WidgetRecordAudio,
+      aliases: ['AUDIO_RECORD', 'AUDIORECORD'],
+      essential: false
+    }
+  ],
+  [
+    'audioUI',
+    {
+      component: AudioPreviewPlayer,
+      aliases: ['AUDIOUI', 'AUDIO_UI'],
+      essential: false
+    }
   ]
 ]
+
+const comboWidgetAdditions: Map<string, Component> = new Map([
+  ['audio', WidgetAudioUI]
+])
 
 // Build lookup maps
 const widgets = new Map<string, WidgetDefinition>()
@@ -125,7 +148,10 @@ for (const [type, def] of coreWidgetDefinitions) {
 // Utility functions
 const getCanonicalType = (type: string): string => aliasMap.get(type) || type
 
-export const getComponent = (type: string): Component | null => {
+export const getComponent = (type: string, name: string): Component | null => {
+  if (type == 'combo' && comboWidgetAdditions.has(name)) {
+    return comboWidgetAdditions.get(name) || null
+  }
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.component || null
 }

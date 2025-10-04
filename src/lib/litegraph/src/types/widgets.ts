@@ -79,6 +79,7 @@ export type IWidget =
   | ISelectButtonWidget
   | ITextareaWidget
   | IAssetWidget
+  | IAudioRecordWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -224,6 +225,16 @@ export interface ISelectButtonWidget
 /** Textarea widget for multi-line text input */
 export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
   type: 'textarea'
+  value: string
+}
+
+export interface IAudioRecordWidget extends IBaseWidget<string, 'audiorecord'> {
+  type: 'audiorecord'
+  value: string
+}
+
+export interface IAudioPlayerWidget extends IBaseWidget<string, 'audioplayer'> {
+  type: 'audioplayer'
   value: string
 }
 
