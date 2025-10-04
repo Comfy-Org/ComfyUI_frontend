@@ -16,8 +16,9 @@
   >
     <div class="flex items-center justify-between gap-2.5 relative">
       <!-- Collapse/Expand Button -->
-      <button
-        class="bg-transparent border-transparent flex items-center lod-toggle"
+      <IconButton
+        size="sm"
+        type="transparent"
         data-testid="node-collapse-button"
         @click.stop="handleCollapse"
         @dblclick.stop
@@ -31,7 +32,7 @@
           "
           class="text-xs leading-none relative top-px text-node-component-header-icon"
         ></i>
-      </button>
+      </IconButton>
 
       <!-- Node Title -->
       <div
