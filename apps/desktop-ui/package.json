@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "type": "module",
   "nx": {
-    "tags": ["scope:desktop", "type:app"],
+    "tags": [
+      "scope:desktop",
+      "type:app"
+    ],
     "targets": {
       "dev": {
         "executor": "nx:run-commands",
@@ -24,17 +27,23 @@
       "build": {
         "executor": "nx:run-commands",
         "cache": true,
-        "dependsOn": ["^build"],
+        "dependsOn": [
+          "^build"
+        ],
         "options": {
           "cwd": "apps/desktop-ui",
           "command": "vite build --config vite.config.mts"
         },
-        "outputs": ["{projectRoot}/dist"]
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
       },
       "preview": {
         "executor": "nx:run-commands",
         "continuous": true,
-        "dependsOn": ["build"],
+        "dependsOn": [
+          "build"
+        ],
         "options": {
           "cwd": "apps/desktop-ui",
           "command": "vite preview --config vite.config.mts"
