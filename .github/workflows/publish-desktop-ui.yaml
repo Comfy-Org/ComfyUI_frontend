@@ -91,7 +91,7 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build Desktop UI
         run: pnpm build:desktop
