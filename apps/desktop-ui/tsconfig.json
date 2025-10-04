@@ -5,7 +5,6 @@
     "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
-      "@desktop/*": ["src/*"],
       "@/*": ["src/*"],
       "@frontend-locales/*": ["../../src/locales/*"]
     }
