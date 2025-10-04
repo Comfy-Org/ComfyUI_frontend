@@ -7,6 +7,7 @@ import type {
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAudioRecordWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useAudioRecordWidget'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
@@ -305,5 +306,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   SELECTBUTTON: transformWidgetConstructorV2ToV1(useSelectButtonWidget()),
-  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget())
+  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
+  AUDIO_RECORD: transformWidgetConstructorV2ToV1(useAudioRecordWidget())
 }

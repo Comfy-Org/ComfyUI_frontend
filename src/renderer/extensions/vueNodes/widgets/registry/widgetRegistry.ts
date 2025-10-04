@@ -14,11 +14,13 @@ import WidgetInputNumber from '../components/WidgetInputNumber.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
 import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
+import WidgetRecordAudio from '../components/WidgetRecordAudio.vue'
 import WidgetSelect from '../components/WidgetSelect.vue'
 import WidgetSelectButton from '../components/WidgetSelectButton.vue'
 import WidgetTextarea from '../components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
 import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
+import AudioPreviewPlayer from '../components/audio/AudioPreviewPlayer.vue'
 
 interface WidgetDefinition {
   component: Component
@@ -109,6 +111,22 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
+  ],
+  [
+    'audiorecord',
+    {
+      component: WidgetRecordAudio,
+      aliases: ['AUDIO_RECORD', 'AUDIORECORD'],
+      essential: false
+    }
+  ],
+  [
+    'audioUI',
+    {
+      component: AudioPreviewPlayer,
+      aliases: ['AUDIOUI', 'AUDIO_UI'],
+      essential: false
+    }
   ]
 ]
 
