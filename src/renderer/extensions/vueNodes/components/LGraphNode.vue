@@ -113,6 +113,13 @@
         </div>
       </div>
     </template>
+
+    <!-- Resize handle -->
+    <div
+      v-if="!readonly"
+      class="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-0 hover:opacity-20 hover:bg-white transition-opacity duration-200"
+      @pointerdown.stop="startResize"
+    />
   </div>
 </template>
 
@@ -145,6 +152,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useNodeResize } from '../composables/useNodeResize'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -173,6 +181,11 @@ const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
 // Inject transform state for coordinate conversion
 const transformState = inject(TransformStateKey)
+if (!transformState) {
+  throw new Error(
+    'TransformState must be provided for node resize functionality'
+  )
+}
 
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
@@ -263,6 +276,19 @@ onMounted(() => {
     resize(screenSize)
   }
 })
+
+const { startResize } = useNodeResize(
+  (newSize, element) => {
+    // Apply size directly to DOM element - ResizeObserver will pick this up
+    if (!isCollapsed.value) {
+      element.style.width = `${newSize.width}px`
+      element.style.height = `${newSize.height}px`
+    }
+  },
+  {
+    transformState
+  }
+)
 
 // Track collapsed state
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)

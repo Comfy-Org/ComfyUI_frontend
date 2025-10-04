@@ -20,6 +20,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
@@ -124,10 +125,15 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
   }
 
+  // Set source to Vue before processing DOM-driven updates
+  layoutStore.setSource(LayoutSource.Vue)
+
   // Flush per-type
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
-    if (config && updates.length) config.updateHandler(updates)
+    if (config && updates.length) {
+      config.updateHandler(updates)
+    }
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts
