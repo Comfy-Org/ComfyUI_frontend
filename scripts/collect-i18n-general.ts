@@ -1,12 +1,12 @@
 import * as fs from 'fs'
 
+import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import {
   formatCamelCase,
   normalizeI18nKey
 } from '../packages/shared-frontend-utils/src/formatUtil'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
-import { DESKTOP_DIALOGS } from '../src/constants/desktopDialogs'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { FormItem, SettingParams } from '../src/platform/settings/types'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'

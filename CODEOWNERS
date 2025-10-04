@@ -1,12 +1,7 @@
 # Desktop/Electron
-/src/types/desktop/                               @webfiltered
-/src/constants/desktopDialogs.ts                  @webfiltered
-/src/constants/desktopMaintenanceTasks.ts         @webfiltered
+/apps/desktop-ui/                                 @webfiltered
 /src/stores/electronDownloadStore.ts              @webfiltered
 /src/extensions/core/electronAdapter.ts           @webfiltered
-/src/views/DesktopDialogView.vue                  @webfiltered
-/src/components/install/                          @webfiltered
-/src/components/maintenance/                      @webfiltered
 /vite.electron.config.mts                         @webfiltered
 
 # Common UI Components
