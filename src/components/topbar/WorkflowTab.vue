@@ -13,7 +13,7 @@
     <div class="relative">
       <span
         v-if="shouldShowStatusIndicator"
-        class="group-hover:hidden absolute font-bold text-2xl top-1/2 left-1/2 -translate-1/2 z-10 bg-(--comfy-menu-secondary-bg) w-4"
+        class="group-hover:hidden absolute font-bold text-2xl top-1/2 left-1/2 -translate-1/2 z-10 bg-(--comfy-menu-bg) w-4"
         >•</span
       >
       <Button
