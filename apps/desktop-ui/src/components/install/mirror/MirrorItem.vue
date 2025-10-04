@@ -53,6 +53,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -61,7 +62,6 @@ import UrlInput from '@/components/common/UrlInput.vue'
 import type { UVMirror } from '@/constants/uvMirrors'
 import { st } from '@/i18n'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ValidationState } from '@/utils/validationUtil'
 
 const FILE_URL_SCHEME = 'file://'
