@@ -6,6 +6,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import {
+  assetFilenameSchema,
+  assetItemSchema
+} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
@@ -62,13 +66,9 @@ const addComboWidget = (
 ): IBaseWidget => {
   const settingStore = useSettingStore()
   const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-  const isEligible = assetService.isAssetBrowserEligible(
-    inputSpec.name,
-    node.comfyClass || ''
-  )
+  const isEligible = assetService.isAssetBrowserEligible(node.comfyClass)
 
   if (isUsingAssetAPI && isEligible) {
-    // Get the default value for the button text (currently selected model)
     const currentValue = getDefaultValue(inputSpec)
     const displayLabel = currentValue ?? t('widgets.selectModel')
 
@@ -86,11 +86,40 @@ const addComboWidget = (
           nodeType: node.comfyClass || '',
           inputName: inputSpec.name,
           currentValue: widget.value,
-          onAssetSelected: (filename: string) => {
+          onAssetSelected: (asset) => {
+            const validatedAsset = assetItemSchema.safeParse(asset)
+
+            if (!validatedAsset.success) {
+              console.error(
+                'Invalid asset item:',
+                validatedAsset.error.errors,
+                'Received:',
+                asset
+              )
+              return
+            }
+
+            const filename = validatedAsset.data.user_metadata?.filename
+            const validatedFilename = assetFilenameSchema.safeParse(filename)
+
+            if (!validatedFilename.success) {
+              console.error(
+                'Invalid asset filename:',
+                validatedFilename.error.errors,
+                'for asset:',
+                validatedAsset.data.id
+              )
+              return
+            }
+
             const oldValue = widget.value
-            widget.value = filename
-            // Using onWidgetChanged prevents a callback race where asset selection could reopen the dialog
-            node.onWidgetChanged?.(widget.name, filename, oldValue, widget)
+            widget.value = validatedFilename.data
+            node.onWidgetChanged?.(
+              widget.name,
+              validatedFilename.data,
+              oldValue,
+              widget
+            )
           }
         })
       }
