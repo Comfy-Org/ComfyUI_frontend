@@ -10,6 +10,7 @@
     }
   },
   "include": [
+    ".storybook/**/*",
     "src/**/*.ts",
     "src/**/*.mts",
     "src/**/*.cts",
