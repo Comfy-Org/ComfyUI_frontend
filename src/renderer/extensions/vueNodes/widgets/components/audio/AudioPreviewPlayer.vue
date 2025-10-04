@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="!hidden"
     :class="
       cn(
         'bg-zinc-500/10 dark-theme:bg-node-component-surface box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
@@ -144,19 +145,28 @@
 <script setup lang="ts">
 import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import { formatTime } from '../../utils/audioUtils'
+import { formatTime, getResourceURL } from '../../utils/audioUtils'
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   readonly?: boolean
   hideWhenEmpty?: boolean
   showOptionsButton?: boolean
+  modelValue?: string
+  nodeId?: string
+  audioUrl?: string
 }>()
 
 // Refs
@@ -175,6 +185,58 @@ const playbackRate = ref(1)
 const progressPercentage = computed(() => {
   if (!duration.value || duration.value === 0) return 0
   return (currentTime.value / duration.value) * 100
+})
+
+const litegraphNode = computed(() => {
+  if (!props.nodeId || !app.rootGraph) return null
+  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+})
+
+const hidden = computed(() => {
+  if (!litegraphNode.value) return false
+  // dont show if its a LoadAudio and we have nodeId
+  const isLoadAudio =
+    litegraphNode.value.constructor?.comfyClass === 'LoadAudio'
+  return isLoadAudio && !!props.nodeId
+})
+
+// Check if this is an output node
+const isOutputNode = computed(() => {
+  const node = litegraphNode.value
+  if (!node) return false
+  return node.constructor.nodeData?.output_node === true
+})
+
+const nodeLocatorId = computed(() => {
+  const node = litegraphNode.value
+  if (!node) return null
+  return getLocatorIdFromNodeData(node)
+})
+
+const nodeOutputStore = useNodeOutputStore()
+
+// Computed audio URL from node output (for output nodes)
+const audioUrlFromOutput = computed(() => {
+  if (!isOutputNode.value || !nodeLocatorId.value) return ''
+
+  const nodeOutput = nodeOutputStore.nodeOutputs[nodeLocatorId.value]
+  if (!nodeOutput?.audio || nodeOutput.audio.length === 0) return ''
+
+  const audio = nodeOutput.audio[0]
+  if (!audio.filename) return ''
+
+  return api.apiURL(
+    getResourceURL(
+      audio.subfolder || '',
+      audio.filename,
+      audio.type || 'output'
+    )
+  )
+})
+
+// Combined audio URL (output takes precedence for output nodes)
+const finalAudioUrl = computed(() => {
+  return audioUrlFromOutput.value || props.audioUrl || ''
 })
 
 // Playback controls
@@ -278,14 +340,28 @@ const menuItems = computed(() => [
   }
 ])
 
-// Public methods
+// Load audio from URL
 const loadAudioFromUrl = (url: string) => {
   if (!audioRef.value) return
-
+  isPlaying.value = false
+  audioRef.value.pause()
   audioRef.value.src = url
-  audioRef.value.load()
+  void audioRef.value.load()
   hasAudio.value = true
 }
+
+// Watch for finalAudioUrl changes
+watch(
+  finalAudioUrl,
+  (newUrl) => {
+    if (newUrl) {
+      void nextTick(() => {
+        loadAudioFromUrl(newUrl)
+      })
+    }
+  },
+  { immediate: true }
+)
 
 // Cleanup
 onUnmounted(() => {
@@ -293,12 +369,6 @@ onUnmounted(() => {
     audioRef.value.pause()
     audioRef.value.src = ''
   }
-})
-
-// Expose methods for parent component
-defineExpose({
-  loadAudioFromUrl,
-  hasAudio
 })
 </script>
 
