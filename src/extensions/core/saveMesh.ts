@@ -1,11 +1,17 @@
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
+import { useLoad3d } from '@/composables/useLoad3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
-import { useLoad3dService } from '@/services/load3dService'
+
+const inputSpec: CustomInputSpec = {
+  name: 'image',
+  type: 'Preview3D',
+  isPreview: true
+}
 
 useExtensionService().registerExtension({
   name: 'Comfy.SaveGLB',
@@ -20,13 +26,6 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       PREVIEW_3D(node) {
-        const inputSpec: CustomInputSpec = {
-          name: 'image',
-          type: 'Preview3D',
-          isAnimation: false,
-          isPreview: true
-        }
-
         const widget = new ComponentWidgetImpl({
           node,
           name: inputSpec.name,
@@ -34,6 +33,8 @@ useExtensionService().registerExtension({
           inputSpec,
           options: {}
         })
+
+        widget.type = 'load3D'
 
         addWidget(node, widget)
 
@@ -58,19 +59,19 @@ useExtensionService().registerExtension({
 
       const fileInfo = message['3d'][0]
 
-      const load3d = useLoad3dService().getLoad3d(node)
+      useLoad3d(node).waitForLoad3d((load3d) => {
+        const modelWidget = node.widgets?.find((w) => w.name === 'image')
 
-      const modelWidget = node.widgets?.find((w) => w.name === 'image')
+        if (load3d && modelWidget) {
+          const filePath = fileInfo['subfolder'] + '/' + fileInfo['filename']
 
-      if (load3d && modelWidget) {
-        const filePath = fileInfo['subfolder'] + '/' + fileInfo['filename']
+          modelWidget.value = filePath
 
-        modelWidget.value = filePath
+          const config = new Load3DConfiguration(load3d)
 
-        const config = new Load3DConfiguration(load3d)
-
-        config.configureForSaveMesh(fileInfo['type'], filePath)
-      }
+          config.configureForSaveMesh(fileInfo['type'], filePath)
+        }
+      })
     }
   }
 })
