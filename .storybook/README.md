@@ -211,7 +211,7 @@ This Storybook setup includes:
 
 ## Icon Usage in Storybook
 
-In this project, the `<i-lucide:... />` syntax from unplugin-icons is not supported in Storybook.  
+In this project, the `<i class="icon-[lucide--folder]" />` syntax from unplugin-icons is not supported in Storybook.  
 
 **Example:**
 

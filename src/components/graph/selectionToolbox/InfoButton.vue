@@ -9,7 +9,7 @@
     severity="secondary"
     @click="toggleHelp"
   >
-    <i-lucide:info class="w-4 h-4" />
+    <i class="icon-[lucide--info] w-4 h-4" />
   </Button>
 </template>
 

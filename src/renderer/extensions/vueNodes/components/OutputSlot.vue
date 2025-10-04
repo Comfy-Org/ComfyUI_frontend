@@ -5,7 +5,7 @@
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+        class="whitespace-nowrap text-sm font-normal text-node-component-slot-text lod-toggle"
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>

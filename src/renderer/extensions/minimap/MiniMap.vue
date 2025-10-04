@@ -28,7 +28,7 @@
         @click.stop="toggleOptionsPanel"
       >
         <template #icon>
-          <i-lucide:settings-2 />
+          <i class="icon-[lucide--settings-2]" />
         </template>
       </Button>
       <Button
@@ -40,12 +40,12 @@
         @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
         <template #icon>
-          <i-lucide:x />
+          <i class="icon-[lucide--x]" />
         </template>
       </Button>
 
       <hr
-        class="absolute top-5 bg-[#E1DED5] dark-theme:bg-[#262729] h-[1px] border-0"
+        class="absolute top-5 bg-node-component-border h-px border-0"
         :style="{
           width: containerStyles.width
         }"

@@ -28,11 +28,11 @@ defineExpose({
       :style="{ backgroundColor: color }"
       :class="
         cn(
-          'bg-[#5B5E7D] rounded-full',
+          'bg-slate-300 rounded-full',
           'transition-all duration-150',
           'cursor-crosshair',
-          'border border-solid border-black/5 dark-theme:border-white/10',
-          'group-hover/slot:border-black/20 dark-theme:group-hover/slot:border-white/50 group-hover/slot:scale-125',
+          'border border-solid border-node-component-slot-dot-outline',
+          'group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5] group-hover/slot:scale-125',
           multi ? 'w-3 h-6' : 'size-3'
         )
       "

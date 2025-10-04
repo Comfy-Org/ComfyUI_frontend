@@ -1,13 +1,11 @@
 <template>
   <div class="scale-75">
     <div
-      class="bg-white dark-theme:bg-charcoal-800 lg-node absolute rounded-2xl border border-solid border-sand-100 dark-theme:border-charcoal-600 outline-transparent -outline-offset-2 outline-2 pointer-events-none"
+      class="bg-node-component-surface lg-node absolute rounded-2xl border border-solid border-node-component-border outline-transparent -outline-offset-2 outline-2 pointer-events-none"
     >
       <NodeHeader :node-data="nodeData" :readonly="readonly" />
 
-      <div
-        class="bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full mb-4"
-      />
+      <div class="bg-node-component-border h-px mx-0 w-full mb-4" />
 
       <div class="flex flex-col gap-4 pb-4">
         <NodeSlots

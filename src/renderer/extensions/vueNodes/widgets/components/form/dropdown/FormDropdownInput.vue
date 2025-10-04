@@ -38,14 +38,13 @@ const chevronClass = computed(() =>
   })
 )
 
-const theButtonStyle = computed(() => [
-  'bg-transparent border-0 outline-none text-zinc-400',
-  {
-    'hover:bg-zinc-500/30 hover:text-black hover:dark-theme:text-white cursor-pointer':
+const theButtonStyle = computed(() =>
+  cn('bg-transparent border-0 outline-none text-zinc-400', {
+    'hover:bg-node-component-widget-input-surface/30 cursor-pointer':
       !props.disabled,
     'cursor-not-allowed': props.disabled
-  }
-])
+  })
+)
 </script>
 
 <template>
@@ -74,7 +73,7 @@ const theButtonStyle = computed(() => [
           {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
         </span>
       </span>
-      <i-lucide:chevron-down :class="chevronClass" />
+      <i class="icon-[lucide--chevron-down]" :class="chevronClass" />
     </button>
     <!-- Open File -->
     <label
@@ -87,7 +86,7 @@ const theButtonStyle = computed(() => [
         )
       "
     >
-      <i-lucide:folder-search class="size-4" />
+      <i class="icon-[lucide--folder-search] size-4" />
       <input
         type="file"
         class="opacity-0 absolute inset-0 -z-1"

@@ -29,7 +29,7 @@
           @click="resetFilters"
         >
           <template #icon>
-            <i-lucide:filter-x />
+            <i class="icon-[lucide--filter-x]" />
           </template>
         </IconTextButton>
       </div>
@@ -49,7 +49,7 @@
           :show-clear-button="true"
         >
           <template #icon>
-            <i-lucide:cpu />
+            <i class="icon-[lucide--cpu]" />
           </template>
         </MultiSelect>
 
@@ -63,7 +63,7 @@
           :show-clear-button="true"
         >
           <template #icon>
-            <i-lucide:target />
+            <i class="icon-[lucide--target]" />
           </template>
         </MultiSelect>
 
@@ -77,7 +77,7 @@
           :show-clear-button="true"
         >
           <template #icon>
-            <i-lucide:file-text />
+            <i class="icon-[lucide--file-text]" />
           </template>
         </MultiSelect>
 
@@ -90,7 +90,7 @@
             class="min-w-[270px]"
           >
             <template #icon>
-              <i-lucide:arrow-up-down />
+              <i class="icon-[lucide--arrow-up-down]" />
             </template>
           </SingleSelect>
         </div>
@@ -111,7 +111,7 @@
         v-if="!isLoading && filteredTemplates.length === 0"
         class="flex flex-col items-center justify-center h-64 text-neutral-500"
       >
-        <i-lucide:search class="w-12 h-12 mb-4 opacity-50" />
+        <i class="icon-[lucide--search] w-12 h-12 mb-4 opacity-50" />
         <p class="text-lg mb-2">
           {{ $t('templateWorkflows.noResults', 'No templates found') }}
         </p>
@@ -128,7 +128,7 @@
         <!-- Title -->
         <span
           v-if="isLoading"
-          class="inline-block h-8 w-48 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+          class="inline-block h-8 w-48 bg-dialog-surface rounded animate-pulse"
         ></span>
 
         <!-- Template Cards Grid -->
@@ -148,7 +148,7 @@
               <CardTop ratio="landscape">
                 <template #default>
                   <div
-                    class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
+                    class="w-full h-full bg-dialog-surface animate-pulse"
                   ></div>
                 </template>
               </CardTop>
@@ -157,10 +157,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="h-6 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse mb-2"
+                    class="h-6 bg-dialog-surface rounded animate-pulse mb-2"
                   ></div>
                   <div
-                    class="h-4 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+                    class="h-4 bg-dialog-surface rounded animate-pulse"
                   ></div>
                 </div>
               </CardBottom>
@@ -323,7 +323,7 @@
               <CardTop ratio="square">
                 <template #default>
                   <div
-                    class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
+                    class="w-full h-full bg-dialog-surface animate-pulse"
                   ></div>
                 </template>
               </CardTop>
@@ -332,10 +332,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="h-6 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse mb-2"
+                    class="h-6 bg-dialog-surface rounded animate-pulse mb-2"
                   ></div>
                   <div
-                    class="h-4 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+                    class="h-4 bg-dialog-surface rounded animate-pulse"
                   ></div>
                 </div>
               </CardBottom>

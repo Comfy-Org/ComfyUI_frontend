@@ -18,7 +18,7 @@
         v-if="videoError"
         class="w-full h-[352px] flex flex-col items-center justify-center text-white text-center bg-gray-800/50"
       >
-        <i-lucide:video-off class="w-12 h-12 mb-2 text-gray-400" />
+        <i class="icon-[lucide--video-off] w-12 h-12 mb-2 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.videoFailedToLoad') }}</p>
         <p class="text-xs text-gray-400 mt-1">
           {{ getVideoFilename(currentVideoUrl) }}
@@ -53,7 +53,7 @@
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i-lucide:download class="w-4 h-4" />
+          <i class="icon-[lucide--download] w-4 h-4" />
         </button>
 
         <!-- Close Button -->
@@ -63,7 +63,7 @@
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i-lucide:x class="w-4 h-4" />
+          <i class="icon-[lucide--x] w-4 h-4" />
         </button>
       </div>
 

@@ -16,7 +16,7 @@ defineEmits<{
 function classes() {
   return cn(
     'flex py-1 pr-4 pl-0 break-all rounded items-center gap-1',
-    'bg-pure-white dark-theme:bg-charcoal-800',
+    'bg-node-component-surface',
     props.isDraggable
       ? 'drag-handle cursor-grab [.is-draggable]:cursor-grabbing'
       : ''

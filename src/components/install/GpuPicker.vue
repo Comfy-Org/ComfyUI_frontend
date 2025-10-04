@@ -53,7 +53,7 @@
           :value="$t('install.gpuPicker.recommended')"
           class="bg-neutral-300 text-neutral-900 rounded-full text-sm font-bold px-2 py-[1px]"
         />
-        <i-lucide:badge-check class="text-neutral-300 text-lg" />
+        <i class="icon-[lucide--badge-check] text-neutral-300 text-lg" />
       </div>
     </div>
 
