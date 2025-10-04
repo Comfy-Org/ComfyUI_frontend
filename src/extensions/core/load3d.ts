@@ -442,12 +442,17 @@ useExtensionService().registerExtension({
           }
 
           let cameraState = message.result[1]
+          let bgImagePath = message.result[2]
 
           modelWidget.value = filePath.replaceAll('\\', '/')
 
           node.properties['Last Time Model File'] = modelWidget.value
 
           config.configure('output', modelWidget, cameraState)
+
+          if (bgImagePath) {
+            load3d.setBackgroundImage(bgImagePath)
+          }
         }
       }
     })

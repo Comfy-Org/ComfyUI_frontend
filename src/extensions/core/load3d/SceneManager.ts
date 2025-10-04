@@ -134,9 +134,20 @@ export class SceneManager implements SceneManagerInterface {
 
     this.eventManager.emitEvent('backgroundImageLoadingStart', null)
 
-    let imageUrl = Load3dUtils.getResourceURL(
-      ...Load3dUtils.splitFilePath(uploadPath)
-    )
+    let type = 'input'
+    let pathParts = Load3dUtils.splitFilePath(uploadPath)
+    let subfolder = pathParts[0]
+    let filename = pathParts[1]
+
+    if (subfolder === 'temp') {
+      type = 'temp'
+      pathParts = ['', filename]
+    } else if (subfolder === 'output') {
+      type = 'output'
+      pathParts = ['', filename]
+    }
+
+    let imageUrl = Load3dUtils.getResourceURL(...pathParts, type)
 
     if (!imageUrl.startsWith('/api')) {
       imageUrl = '/api' + imageUrl
