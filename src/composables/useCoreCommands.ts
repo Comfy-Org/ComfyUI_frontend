@@ -1068,9 +1068,23 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.BrowseModelAssets',
       icon: 'pi pi-folder-open',
-      label: 'Browse Model Assets',
+      label: 'Experimental: Browse Model Assets',
       versionAdded: '1.28.3',
       function: async () => {
+        if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) {
+          const confirmed = await dialogService.confirm({
+            title: 'Enable Asset API',
+            message:
+              'The Asset API is currently disabled. Would you like to enable it?',
+            type: 'default'
+          })
+
+          if (!confirmed) return
+
+          const settingStore = useSettingStore()
+          await settingStore.set('Comfy.Assets.UseAssetAPI', true)
+          await workflowService.reloadCurrentWorkflow()
+        }
         const assetBrowserDialog = useAssetBrowserDialog()
         await assetBrowserDialog.browse({
           assetType: 'models',
@@ -1087,6 +1101,22 @@ export function useCoreCommands(): ComfyCommand[] {
             }
           }
         })
+      }
+    },
+    {
+      id: 'Comfy.ToggleAssetAPI',
+      icon: 'pi pi-database',
+      label: () =>
+        `Experimental: ${
+          useSettingStore().get('Comfy.Assets.UseAssetAPI')
+            ? 'Disable'
+            : 'Enable'
+        } AssetAPI`,
+      function: async () => {
+        const settingStore = useSettingStore()
+        const current = settingStore.get('Comfy.Assets.UseAssetAPI') ?? false
+        await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
+        await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
     }
   ]
