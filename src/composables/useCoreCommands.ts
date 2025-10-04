@@ -1076,7 +1076,15 @@ export function useCoreCommands(): ComfyCommand[] {
           assetType: 'models',
           title: t('sideToolbar.modelLibrary'),
           onAssetSelected: (asset) => {
-            createModelNodeFromAsset(asset)
+            const result = createModelNodeFromAsset(asset)
+            if (!result.success) {
+              toastStore.add({
+                severity: 'error',
+                summary: t('g.error'),
+                detail: t('assetBrowser.failedToCreateNode')
+              })
+              console.error('Node creation failed:', result.error)
+            }
           }
         })
       }

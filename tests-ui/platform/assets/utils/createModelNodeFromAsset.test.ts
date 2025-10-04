@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { type Raw, markRaw } from 'vue'
 
-import { type LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  type LGraphNode,
+  LiteGraph,
+  type Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -8,31 +13,41 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
-// Type definitions for type-safe mocks
-type ModelToNodeStoreMock = Pick<
-  ReturnType<typeof useModelToNodeStore>,
-  'getNodeProvider'
->
-
-type LitegraphServiceMock = Pick<
-  ReturnType<typeof useLitegraphService>,
-  'getCanvasCenter'
->
-
-type WorkflowStoreMock = Pick<
-  ReturnType<typeof useWorkflowStore>,
-  'activeSubgraph' | 'isSubgraphActive'
->
-
 // Mock dependencies
 vi.mock('@/scripts/api', () => ({
   api: {
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`)
   }
 }))
-vi.mock('@/stores/modelToNodeStore')
-vi.mock('@/platform/workflow/management/stores/workflowStore')
-vi.mock('@/services/litegraphService')
+vi.mock('@/stores/modelToNodeStore', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/stores/modelToNodeStore')>()
+  return {
+    ...actual,
+    useModelToNodeStore: vi.fn()
+  }
+})
+vi.mock(
+  '@/platform/workflow/management/stores/workflowStore',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/platform/workflow/management/stores/workflowStore')
+      >()
+    return {
+      ...actual,
+      useWorkflowStore: vi.fn()
+    }
+  }
+)
+vi.mock('@/services/litegraphService', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/services/litegraphService')>()
+  return {
+    ...actual,
+    useLitegraphService: vi.fn()
+  }
+})
 vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   const actual =
     await importOriginal<typeof import('@/lib/litegraph/src/litegraph')>()
@@ -53,7 +68,6 @@ vi.mock('@/scripts/app', () => ({
     }
   }
 }))
-
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-123',
@@ -67,24 +81,26 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     ...overrides
   }
 }
-
-function createMockNode(overrides?: {
+async function createMockNode(overrides?: {
   widgetName?: string
   widgetValue?: string
   hasWidgets?: boolean
-}) {
+}): Promise<LGraphNode> {
   const {
     widgetName = 'ckpt_name',
     widgetValue = '',
     hasWidgets = true
   } = overrides || {}
 
+  const { LGraphNode: ActualLGraphNode } = await vi.importActual<
+    typeof import('@/lib/litegraph/src/litegraph')
+  >('@/lib/litegraph/src/litegraph')
+
   if (!hasWidgets) {
-    return {}
+    return Object.create(ActualLGraphNode.prototype)
   }
 
   type Widget = NonNullable<LGraphNode['widgets']>[number]
-
   const widget: Pick<Widget, 'name' | 'value' | 'type' | 'options' | 'y'> = {
     name: widgetName,
     value: widgetValue,
@@ -93,11 +109,10 @@ function createMockNode(overrides?: {
     y: 0
   }
 
-  return {
-    widgets: [widget]
-  }
+  return Object.create(ActualLGraphNode.prototype, {
+    widgets: { value: [widget], writable: true }
+  })
 }
-
 function createMockNodeProvider() {
   return {
     nodeDef: {
@@ -107,322 +122,282 @@ function createMockNodeProvider() {
     key: 'ckpt_name'
   }
 }
-
-function getMockApp() {
-  return app as unknown as {
-    canvas: { graph: { add: ReturnType<typeof vi.fn> } }
-  }
-}
-
-function getMockRootGraph() {
-  return getMockApp().canvas.graph
-}
-
 /**
  * Configures all mocked dependencies with sensible defaults.
- * Returns mock references for spying on method calls in assertions.
- * For error paths or edge cases, set up mocks explicitly instead of using this helper.
+ * Uses semantic parameters for clearer test intent.
+ * For error paths or edge cases, pass null values or specific overrides.
  */
-function setupMocks(
+async function setupMocks(
   overrides: {
-    node?: ReturnType<typeof createMockNode>
-    position?: [number, number]
-    activeSubgraph?: { add: ReturnType<typeof vi.fn> }
+    nodeProvider?: ReturnType<typeof createMockNodeProvider> | null
+    canvasCenter?: [number, number]
+    activeSubgraph?: Raw<Subgraph>
+    createdNode?: Awaited<ReturnType<typeof createMockNode>> | null
   } = {}
 ) {
   const {
-    node = createMockNode(),
-    position = [100, 200],
-    activeSubgraph = undefined
+    nodeProvider = createMockNodeProvider(),
+    canvasCenter = [100, 200],
+    activeSubgraph = undefined,
+    createdNode = await createMockNode()
   } = overrides
 
-  const mockModelToNodeStore: ModelToNodeStoreMock = {
-    getNodeProvider: vi.fn().mockReturnValue(createMockNodeProvider())
-  }
-  const mockLitegraphService: LitegraphServiceMock = {
-    getCanvasCenter: vi.fn().mockReturnValue(position)
-  }
-  const mockWorkflowStore: WorkflowStoreMock = {
-    activeSubgraph: activeSubgraph as ReturnType<
-      typeof useWorkflowStore
-    >['activeSubgraph'],
+  vi.mocked(useModelToNodeStore).mockReturnValue({
+    ...useModelToNodeStore(),
+    getNodeProvider: vi.fn().mockReturnValue(nodeProvider)
+  })
+
+  vi.mocked(useLitegraphService).mockReturnValue({
+    ...useLitegraphService(),
+    getCanvasCenter: vi.fn().mockReturnValue(canvasCenter)
+  })
+
+  vi.mocked(useWorkflowStore).mockReturnValue({
+    ...useWorkflowStore(),
+    activeSubgraph,
     isSubgraphActive: !!activeSubgraph
-  }
-
-  vi.mocked(useModelToNodeStore).mockReturnValue(
-    mockModelToNodeStore as ReturnType<typeof useModelToNodeStore>
-  )
-  vi.mocked(useLitegraphService).mockReturnValue(
-    mockLitegraphService as ReturnType<typeof useLitegraphService>
-  )
-  vi.mocked(useWorkflowStore).mockReturnValue(
-    mockWorkflowStore as ReturnType<typeof useWorkflowStore>
-  )
-  vi.mocked(LiteGraph.createNode).mockReturnValue(node as LGraphNode)
-
-  return { mockModelToNodeStore, mockLitegraphService, mockWorkflowStore }
+  })
+  vi.mocked(LiteGraph.createNode).mockReturnValue(createdNode)
 }
-
 describe('createModelNodeFromAsset', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
-
-  describe('input validation', () => {
-    describe('when asset metadata is invalid', () => {
-      it.each([
-        {
-          case: 'missing user_metadata',
-          overrides: { user_metadata: undefined },
-          errorPattern: 'Asset asset-123 missing required user_metadata'
-        },
-        {
-          case: 'missing filename property',
-          overrides: { user_metadata: {} },
-          errorPattern:
-            /Asset asset-123 has invalid user_metadata\.filename.*expected non-empty string, got undefined/
-        },
-        {
-          case: 'non-string filename',
-          overrides: { user_metadata: { filename: 123 } },
-          errorPattern:
-            /Asset asset-123 has invalid user_metadata\.filename.*expected non-empty string, got number/
-        },
-        {
-          case: 'empty filename',
-          overrides: { user_metadata: { filename: '' } },
-          errorPattern:
-            /Asset asset-123 has invalid user_metadata\.filename.*expected non-empty string/
-        }
-      ])('rejects assets with $case', ({ overrides, errorPattern }) => {
-        const asset = createMockAsset(overrides)
-        expect(() => createModelNodeFromAsset(asset)).toThrow(errorPattern)
-      })
-    })
-
-    describe('when asset tags are invalid', () => {
-      it.each([
-        {
-          case: 'without tags',
-          overrides: { tags: undefined },
-          errorPattern:
-            'Asset asset-123 has no tags defined (expected at least one category tag)'
-        },
-        {
-          case: 'with only excluded tags',
-          overrides: { tags: ['models', 'missing'] },
-          errorPattern:
-            /Asset asset-123 has no valid category tag.*Available tags: models, missing/
-        },
-        {
-          case: 'with only the models tag',
-          overrides: { tags: ['models'] },
-          errorPattern:
-            /Asset asset-123 has no valid category tag.*Available tags: models/
-        }
-      ])('rejects assets $case', ({ overrides, errorPattern }) => {
-        const asset = createMockAsset(overrides)
-        expect(() => createModelNodeFromAsset(asset)).toThrow(errorPattern)
-      })
-    })
-
-    describe('when node provider is unavailable', () => {
-      it('throws error when no provider registered for category', () => {
-        const asset = createMockAsset()
-        const mockModelToNodeStore: ModelToNodeStoreMock = {
-          getNodeProvider: vi.fn().mockReturnValue(null)
-        }
-
-        vi.mocked(useModelToNodeStore).mockReturnValue(
-          mockModelToNodeStore as ReturnType<typeof useModelToNodeStore>
-        )
-
-        expect(() => createModelNodeFromAsset(asset)).toThrow(
-          'No node provider registered for category: checkpoints'
-        )
-      })
-    })
-  })
-
-  describe('node creation', () => {
-    describe('when LiteGraph fails to create node', () => {
-      it('throws error identifying the failed node type', () => {
-        const asset = createMockAsset()
-        const mockModelToNodeStore: ModelToNodeStoreMock = {
-          getNodeProvider: vi.fn().mockReturnValue(createMockNodeProvider())
-        }
-        const mockLitegraphService: LitegraphServiceMock = {
-          getCanvasCenter: vi.fn().mockReturnValue([100, 200])
-        }
-
-        vi.mocked(useModelToNodeStore).mockReturnValue(
-          mockModelToNodeStore as ReturnType<typeof useModelToNodeStore>
-        )
-        vi.mocked(useLitegraphService).mockReturnValue(
-          mockLitegraphService as ReturnType<typeof useLitegraphService>
-        )
-        vi.mocked(LiteGraph.createNode).mockReturnValue(null)
-
-        expect(() => createModelNodeFromAsset(asset)).toThrow(
-          'Failed to create node for type: CheckpointLoaderSimple'
-        )
-      })
-    })
-
-    describe('node type selection', () => {
-      it('selects loader node by querying provider for asset category', () => {
-        const asset = createMockAsset()
-        const { mockModelToNodeStore } = setupMocks()
-
-        createModelNodeFromAsset(asset)
-
-        expect(mockModelToNodeStore.getNodeProvider).toHaveBeenCalledWith(
-          'checkpoints'
-        )
+  describe('when creating nodes from valid assets', () => {
+    it('should create the appropriate loader node for the asset category', async () => {
+      const asset = createMockAsset()
+      await setupMocks()
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(
+          vi.mocked(useModelToNodeStore)().getNodeProvider
+        ).toHaveBeenCalledWith('checkpoints')
         expect(LiteGraph.createNode).toHaveBeenCalledWith(
           'CheckpointLoaderSimple',
           'Load Checkpoint',
           { pos: [100, 200] }
         )
-      })
+      }
     })
-
-    describe('node positioning', () => {
-      it('positions node at canvas center by default', () => {
-        const asset = createMockAsset()
-        const { mockLitegraphService } = setupMocks({
-          position: [150, 250]
-        })
-
-        createModelNodeFromAsset(asset)
-
-        expect(mockLitegraphService.getCanvasCenter).toHaveBeenCalled()
-        expect(LiteGraph.createNode).toHaveBeenCalledWith(
-          'CheckpointLoaderSimple',
-          'Load Checkpoint',
-          { pos: [150, 250] }
-        )
-      })
-
-      it('uses custom position when explicitly provided', () => {
-        const asset = createMockAsset()
-        const { mockLitegraphService } = setupMocks()
-
-        createModelNodeFromAsset(asset, { position: [300, 400] })
-
-        expect(mockLitegraphService.getCanvasCenter).not.toHaveBeenCalled()
-        expect(LiteGraph.createNode).toHaveBeenCalledWith(
-          'CheckpointLoaderSimple',
-          'Load Checkpoint',
-          { pos: [300, 400] }
-        )
-      })
-    })
-  })
-
-  describe('widget configuration', () => {
-    it('configures widget with asset file path', () => {
+    it('should place node at canvas center by default', async () => {
       const asset = createMockAsset()
-      const mockNode = createMockNode()
-      setupMocks({ node: mockNode })
-
-      createModelNodeFromAsset(asset)
-
+      await setupMocks({
+        canvasCenter: [150, 250]
+      })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
+      expect(
+        vi.mocked(useLitegraphService)().getCanvasCenter
+      ).toHaveBeenCalled()
+      expect(LiteGraph.createNode).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple',
+        'Load Checkpoint',
+        { pos: [150, 250] }
+      )
+    })
+    it('should place node at specified position when position is provided', async () => {
+      const asset = createMockAsset()
+      await setupMocks()
+      const result = createModelNodeFromAsset(asset, { position: [300, 400] })
+      expect(result.success).toBe(true)
+      expect(
+        vi.mocked(useLitegraphService)().getCanvasCenter
+      ).not.toHaveBeenCalled()
+      expect(LiteGraph.createNode).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple',
+        'Load Checkpoint',
+        { pos: [300, 400] }
+      )
+    })
+    it('should populate the loader widget with the asset file path', async () => {
+      const asset = createMockAsset()
+      const mockNode = await createMockNode()
+      await setupMocks({ createdNode: mockNode })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
       expect(mockNode.widgets?.[0].value).toBe(
         'models/checkpoints/test-model.safetensors'
       )
     })
-
-    it('warns when expected widget is missing from node', () => {
+    it('should add node to root graph when no subgraph is active', async () => {
       const asset = createMockAsset()
-      const mockNode = createMockNode({ widgetName: 'wrong_widget' })
-      setupMocks({ node: mockNode })
-
-      createModelNodeFromAsset(asset)
-
-      expect(console.warn).toHaveBeenCalledWith(
-        'Widget ckpt_name not found on node CheckpointLoaderSimple'
+      const mockNode = await createMockNode()
+      await setupMocks({ createdNode: mockNode })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
+      expect(vi.mocked(app).canvas.graph!.add).toHaveBeenCalledWith(mockNode)
+    })
+    it('should add node to active subgraph when present', async () => {
+      const asset = createMockAsset()
+      const mockNode = await createMockNode()
+      const { Subgraph } = await vi.importActual<
+        typeof import('@/lib/litegraph/src/litegraph')
+      >('@/lib/litegraph/src/litegraph')
+      const mockSubgraph = markRaw(
+        Object.create(Subgraph.prototype, {
+          add: { value: vi.fn() }
+        })
       )
-    })
-
-    it('warns when node has no widgets array', () => {
-      const asset = createMockAsset()
-      const mockNode = createMockNode({ hasWidgets: false })
-      setupMocks({ node: mockNode })
-
-      createModelNodeFromAsset(asset)
-
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Widget ckpt_name not found')
-      )
-    })
-  })
-
-  describe('graph placement', () => {
-    it('adds node to root graph when no subgraph is active', () => {
-      const asset = createMockAsset()
-      const mockNode = createMockNode()
-      setupMocks({ node: mockNode })
-
-      createModelNodeFromAsset(asset)
-
-      expect(getMockRootGraph().add).toHaveBeenCalledWith(mockNode)
-    })
-
-    it('adds node to active subgraph when present', () => {
-      const asset = createMockAsset()
-      const mockNode = createMockNode()
-      const mockSubgraph = { add: vi.fn() }
-      setupMocks({
-        node: mockNode,
+      await setupMocks({
+        createdNode: mockNode,
         activeSubgraph: mockSubgraph
       })
-
-      createModelNodeFromAsset(asset)
-
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
       expect(mockSubgraph.add).toHaveBeenCalledWith(mockNode)
-      expect(getMockRootGraph().add).not.toHaveBeenCalled()
+      expect(vi.mocked(app).canvas.graph!.add).not.toHaveBeenCalled()
     })
-
-    it('throws error when neither root graph nor subgraph is available', () => {
+  })
+  describe('when asset data is incomplete or invalid', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+    it.each([
+      {
+        case: 'missing user_metadata',
+        overrides: { user_metadata: undefined },
+        expectedCode: 'INVALID_ASSET' as const,
+        errorPattern: /missing required user_metadata/
+      },
+      {
+        case: 'missing filename property',
+        overrides: { user_metadata: {} },
+        expectedCode: 'INVALID_ASSET' as const,
+        errorPattern:
+          /Invalid filename.*expected non-empty string, got undefined/
+      },
+      {
+        case: 'non-string filename',
+        overrides: { user_metadata: { filename: 123 } },
+        expectedCode: 'INVALID_ASSET' as const,
+        errorPattern: /Invalid filename.*expected non-empty string, got number/
+      },
+      {
+        case: 'empty filename',
+        overrides: { user_metadata: { filename: '' } },
+        expectedCode: 'INVALID_ASSET' as const,
+        errorPattern: /Invalid filename.*expected non-empty string/
+      }
+    ])(
+      'should fail when asset has $case',
+      ({ overrides, expectedCode, errorPattern }) => {
+        const asset = createMockAsset(overrides)
+        const result = createModelNodeFromAsset(asset)
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe(expectedCode)
+          expect(result.error.message).toMatch(errorPattern)
+          expect(result.error.assetId).toBe('asset-123')
+        }
+      }
+    )
+    it.each([
+      {
+        case: 'no tags',
+        overrides: { tags: undefined },
+        expectedCode: 'INVALID_ASSET' as const,
+        errorMessage: 'Asset has no tags defined'
+      },
+      {
+        case: 'only excluded tags',
+        overrides: { tags: ['models', 'missing'] },
+        expectedCode: 'INVALID_ASSET' as const,
+        errorMessage: 'Asset has no valid category tag'
+      },
+      {
+        case: 'only the models tag',
+        overrides: { tags: ['models'] },
+        expectedCode: 'INVALID_ASSET' as const,
+        errorMessage: 'Asset has no valid category tag'
+      }
+    ])(
+      'should fail when asset has $case',
+      ({ overrides, expectedCode, errorMessage }) => {
+        const asset = createMockAsset(overrides)
+        const result = createModelNodeFromAsset(asset)
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe(expectedCode)
+          expect(result.error.message).toBe(errorMessage)
+        }
+      }
+    )
+  })
+  describe('when system resources are unavailable', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+    it('should fail when no provider registered for category', async () => {
       const asset = createMockAsset()
-      const mockNode = createMockNode()
-      const mockModelToNodeStore: ModelToNodeStoreMock = {
-        getNodeProvider: vi.fn().mockReturnValue(createMockNodeProvider())
+      await setupMocks({ nodeProvider: null })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('NO_PROVIDER')
+        expect(result.error.message).toContain('checkpoints')
+        expect(result.error.details?.category).toBe('checkpoints')
       }
-      const mockLitegraphService: LitegraphServiceMock = {
-        getCanvasCenter: vi.fn().mockReturnValue([100, 200])
+    })
+    it('should fail when node creation fails', async () => {
+      const asset = createMockAsset()
+      await setupMocks()
+      vi.mocked(LiteGraph.createNode).mockReturnValue(null)
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('NODE_CREATION_FAILED')
+        expect(result.error.message).toContain('CheckpointLoaderSimple')
       }
-      const mockWorkflowStore: WorkflowStoreMock = {
-        activeSubgraph: null as unknown as ReturnType<
-          typeof useWorkflowStore
-        >['activeSubgraph'],
-        isSubgraphActive: false
+    })
+    it('should fail when widget is missing from node', async () => {
+      const asset = createMockAsset()
+      const mockNode = await createMockNode({ widgetName: 'wrong_widget' })
+      await setupMocks({ createdNode: mockNode })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('MISSING_WIDGET')
+        expect(result.error.message).toContain('ckpt_name')
+        expect(result.error.message).toContain('CheckpointLoaderSimple')
+        expect(result.error.details?.widgetName).toBe('ckpt_name')
       }
-
-      vi.mocked(useModelToNodeStore).mockReturnValue(
-        mockModelToNodeStore as ReturnType<typeof useModelToNodeStore>
-      )
-      vi.mocked(useLitegraphService).mockReturnValue(
-        mockLitegraphService as ReturnType<typeof useLitegraphService>
-      )
-      vi.mocked(useWorkflowStore).mockReturnValue(
-        mockWorkflowStore as ReturnType<typeof useWorkflowStore>
-      )
-      vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode as LGraphNode)
-
-      const mockApp = getMockApp()
-      const originalGraph = mockApp.canvas.graph
-      mockApp.canvas.graph = null as unknown as {
-        add: ReturnType<typeof vi.fn>
+    })
+    it('should fail when node has no widgets array', async () => {
+      const asset = createMockAsset()
+      const mockNode = await createMockNode({ hasWidgets: false })
+      await setupMocks({ createdNode: mockNode })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('MISSING_WIDGET')
+        expect(result.error.message).toContain('ckpt_name not found')
       }
-
-      expect(() => createModelNodeFromAsset(asset)).toThrow(
-        'No active graph available'
-      )
-
-      mockApp.canvas.graph = originalGraph
+    })
+    it('should not add node to graph when widget validation fails', async () => {
+      const asset = createMockAsset()
+      const mockNode = await createMockNode({ hasWidgets: false })
+      await setupMocks({ createdNode: mockNode })
+      createModelNodeFromAsset(asset)
+      expect(vi.mocked(app).canvas.graph!.add).not.toHaveBeenCalled()
+    })
+  })
+  describe('when graph is null', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(app).canvas.graph = null
+    })
+    it('should fail when no graph is available', async () => {
+      const asset = createMockAsset()
+      const mockNode = await createMockNode()
+      await setupMocks({ createdNode: mockNode })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('NO_GRAPH')
+        expect(result.error.message).toBe('No active graph available')
+      }
     })
   })
 })

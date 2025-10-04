@@ -1942,6 +1942,7 @@
     "tryAdjustingFilters": "Try adjusting your search or filters",
     "loadingModels": "Loading {type}...",
     "connectionError": "Please check your connection and try again",
+    "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
     "searchAssetsPlaceholder": "Search assets...",
     "allModels": "All Models",
