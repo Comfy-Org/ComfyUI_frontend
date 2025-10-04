@@ -43,4 +43,4 @@ app
   .use(ToastService)
   .use(pinia)
   .use(i18n)
-  .mount('#vue-app')
+  .mount('#desktop-app')
