@@ -116,7 +116,7 @@ function useVueNodeLifecycleIndividual() {
         slotSyncManager.attemptStart(canvas as LGraphCanvas)
       }
     },
-    { immediate: true }
+    { immediate: true, flush: 'sync' }
   )
 
   // Handle case where Vue nodes are enabled but graph starts empty
