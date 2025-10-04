@@ -43,10 +43,11 @@ jobs:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
       - name: Validate inputs
+        env:
+          VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="${{ inputs.version }}"
           SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
           if [[ ! "$VERSION" =~ $SEMVER_REGEX ]]; then
             echo "::error title=Invalid version::Version '$VERSION' must follow semantic versioning (x.y.z[-suffix][+build])" >&2
@@ -55,11 +56,12 @@ jobs:
 
       - name: Determine ref to checkout
         id: resolve_ref
+        env:
+          REF: ${{ inputs.ref }}
+          VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          REF="${{ inputs.ref }}"
-          VERSION="${{ inputs.version }}"
           if [ -n "$REF" ]; then
             if ! git check-ref-format --allow-onelevel "$REF"; then
               echo "::error title=Invalid ref::Ref '$REF' fails git check-ref-format validation." >&2
@@ -112,8 +114,9 @@ jobs:
             exit 1
           fi
 
-          if [ "$APP_VERSION" != "${{ inputs.version }}" ]; then
-            echo "::error title=Version mismatch::apps/desktop-ui version $APP_VERSION does not match input ${{ inputs.version }}" >&2
+          INPUT_VERSION="${{ inputs.version }}"
+          if [ "$APP_VERSION" != "$INPUT_VERSION" ]; then
+            echo "::error title=Version mismatch::apps/desktop-ui version $APP_VERSION does not match input $INPUT_VERSION" >&2
             exit 1
           fi
 
@@ -127,9 +130,10 @@ jobs:
           mkdir -p "$PUBLISH_DIR"
           cp -R apps/desktop-ui/dist "$PUBLISH_DIR/dist"
 
+          INPUT_VERSION="${{ inputs.version }}"
           jq -n \
             --arg name "$NAME" \
-            --arg version "${{ inputs.version }}" \
+            --arg version "$INPUT_VERSION" \
             --arg description "Static assets for the ComfyUI Desktop UI" \
             --arg license "$ROOT_LICENSE" \
             --arg repository "$REPO" \
@@ -168,11 +172,12 @@ jobs:
 
       - name: Check if version already on npm
         id: check_npm
+        env:
+          NAME: ${{ steps.pkg.outputs.name }}
+          VER: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          NAME='${{ steps.pkg.outputs.name }}'
-          VER='${{ inputs.version }}'
           STATUS=0
           OUTPUT=$(npm view "${NAME}@${VER}" --json 2>&1) || STATUS=$?
           if [ "$STATUS" -eq 0 ]; then
@@ -189,7 +194,8 @@ jobs:
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
-        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}" --no-git-checks
-        working-directory: ${{ steps.pkg.outputs.publish_dir }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks
+        working-directory: ${{ steps.pkg.outputs.publish_dir }}
