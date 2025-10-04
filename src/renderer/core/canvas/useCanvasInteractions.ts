@@ -54,11 +54,28 @@ export function useCanvasInteractions() {
     // Otherwise, let the component handle it normally
   }
 
+  const isMiddlePointerInput = (event: PointerEvent | MouseEvent): boolean => {
+    if ('button' in event && event.button === 1) {
+      return true
+    }
+
+    if ('buttons' in event && typeof event.buttons === 'number') {
+      return (event.buttons & 4) !== 0
+    }
+
+    return false
+  }
+
   /**
    * Handles pointer events from media elements that should potentially
    * be forwarded to canvas (e.g., space+drag for panning)
    */
   const handlePointer = (event: PointerEvent) => {
+    if (isMiddlePointerInput(event)) {
+      forwardEventToCanvas(event)
+      return
+    }
+
     // Check if canvas exists using established pattern
     const canvas = getCanvas()
     if (!canvas) return

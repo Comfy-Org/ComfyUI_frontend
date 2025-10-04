@@ -52,6 +52,11 @@ export function useNodePointerInteractions(
       return
     }
 
+    if (event.button === 1) {
+      forwardEventToCanvas(event)
+      return
+    }
+
     // Only start drag on left-click (button 0)
     if (event.button !== 0) {
       return
@@ -79,6 +84,11 @@ export function useNodePointerInteractions(
   }
 
   const handlePointerMove = (event: PointerEvent) => {
+    if ((event.buttons & 4) !== 0) {
+      forwardEventToCanvas(event)
+      return
+    }
+
     if (isDragging.value) {
       void handleDrag(event)
     }
@@ -118,6 +128,11 @@ export function useNodePointerInteractions(
   }
 
   const handlePointerUp = (event: PointerEvent) => {
+    if (event.button === 1 || (event.buttons & 4) !== 0) {
+      forwardEventToCanvas(event)
+      return
+    }
+
     if (isDragging.value) {
       handleDragTermination(event, 'drag end')
     }
