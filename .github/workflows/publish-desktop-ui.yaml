@@ -28,6 +28,9 @@ on:
       ref:
         required: false
         type: string
+    secrets:
+      NPM_TOKEN:
+        required: true
 
 concurrency:
   group: publish-desktop-ui-${{ github.workflow }}-${{ inputs.version }}-${{ inputs.dist_tag }}
