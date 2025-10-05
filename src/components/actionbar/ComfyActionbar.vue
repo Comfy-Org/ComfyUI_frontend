@@ -234,7 +234,6 @@ watch(isDragging, (dragging) => {
     // Stopped dragging - dock if mouse is over drop zone
     if (isMouseOverDropZone.value) {
       isDocked.value = true
-      console.log('Actionbar docked!')
     }
     // Reset drop zone state
     isMouseOverDropZone.value = false

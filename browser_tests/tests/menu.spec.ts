@@ -8,9 +8,7 @@ test.describe('Menu', () => {
   })
 
   test('Can register sidebar tab', async ({ comfyPage }) => {
-    const initialChildrenCount = await comfyPage.menu.sideToolbar.evaluate(
-      (el) => el.children.length
-    )
+    const initialChildrenCount = await comfyPage.menu.buttons.count()
 
     await comfyPage.page.evaluate(async () => {
       window['app'].extensionManager.registerSidebarTab({
@@ -26,9 +24,7 @@ test.describe('Menu', () => {
     })
     await comfyPage.nextFrame()
 
-    const newChildrenCount = await comfyPage.menu.sideToolbar.evaluate(
-      (el) => el.children.length
-    )
+    const newChildrenCount = await comfyPage.menu.buttons.count()
     expect(newChildrenCount).toBe(initialChildrenCount + 1)
   })
 
