@@ -5,6 +5,7 @@
     tabindex="0"
     role="region"
     :aria-label="$t('g.videoPreview')"
+    data-capture-node="true"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @keydown="handleKeyDown"
