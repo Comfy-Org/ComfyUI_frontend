@@ -20,11 +20,8 @@ const THEME_PROPERTY_MAP = {
   NODE_TITLE_COLOR: 'node-component-header',
   WIDGET_BGCOLOR: 'node-component-widget-input-surface',
   WIDGET_TEXT_COLOR: 'node-component-widget-input'
-  // /* TOGGLE
 } as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
-/*/
-} as const satisfies Record<keyof Colors['litegraph_base'], string>
-//*/
+
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
