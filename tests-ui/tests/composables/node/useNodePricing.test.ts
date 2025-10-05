@@ -115,6 +115,26 @@ describe('useNodePricing', () => {
       expect(price).toBe('$1.40/Run')
     })
 
+    it('should return low price for kling-v2-turbo model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingTextToVideoNode', [
+        { name: 'mode', value: 'pro / 5s / v2-5-turbo' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.35/Run')
+    })
+
+    it('should return high price for kling-v2-turbo model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingTextToVideoNode', [
+        { name: 'mode', value: 'pro / 10s / v2-5-turbo' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.70/Run')
+    })
+
     it('should return standard price for kling-v1-6 model', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('KlingTextToVideoNode', [
@@ -153,6 +173,18 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('$1.40/Run')
+    })
+
+    it('should return high price for kling-v2-5-turbo model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingImage2VideoNode', [
+        { name: 'model_name', value: 'v2-5-turbo' },
+        { name: 'mode', value: 'pro mode / 10s duration / kling-v2-5-turbo' },
+        { name: 'duration', value: '10' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.70/Run')
     })
 
     it('should return standard price for kling-v1-6 model', () => {
