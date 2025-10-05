@@ -145,7 +145,7 @@ defineExpose({
 .workflow-preview-content {
   @apply flex flex-col rounded-xl overflow-hidden;
   max-width: var(--popover-width);
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
   color: var(--fg-color);
 }
 
@@ -155,11 +155,7 @@ defineExpose({
 
 .workflow-preview-thumbnail img {
   @apply shadow-md;
-  background-color: color-mix(
-    in srgb,
-    var(--comfy-menu-secondary-bg) 70%,
-    black
-  );
+  background-color: color-mix(in srgb, var(--comfy-menu-bg) 70%, black);
 }
 
 .dark-theme .workflow-preview-thumbnail img {

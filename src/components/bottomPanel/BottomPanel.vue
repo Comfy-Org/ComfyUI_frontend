@@ -3,7 +3,7 @@
     <Tabs
       :key="$i18n.locale"
       v-model:value="bottomPanelStore.activeBottomPanelTabId"
-      style="--p-tabs-tablist-background: var(--comfy-menu-secondary-bg)"
+      style="--p-tabs-tablist-background: var(--comfy-menu-bg)"
     >
       <TabList
         pt:tab-list="border-none h-full flex items-center py-2 border-b-1 border-solid"

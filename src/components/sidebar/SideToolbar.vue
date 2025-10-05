@@ -179,21 +179,21 @@ onMounted(() => {
 
 .floating-sidebar {
   padding: var(--sidebar-padding);
+}
 
-  .sidebar-item-group {
-    @apply rounded-lg;
-    border-color: var(--p-panel-border-color);
-  }
+.floating-sidebar .sidebar-item-group {
+  @apply rounded-lg shadow-md;
+  border-color: var(--p-panel-border-color);
 }
 
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
 }
 
 .sidebar-item-group {
   @apply flex flex-col items-center overflow-hidden flex-shrink-0;
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
   border: 1px solid transparent;
 }
 

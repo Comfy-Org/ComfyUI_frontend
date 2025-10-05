@@ -1,6 +1,6 @@
 <template>
   <div
-    class="subgraph-breadcrumb w-auto"
+    class="subgraph-breadcrumb w-auto drop-shadow-md"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -201,7 +201,7 @@ onUpdated(() => {
   @apply h-12;
   border-top: 1px solid var(--p-panel-border-color);
   border-bottom: 1px solid var(--p-panel-border-color);
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
 }
 
 :deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
@@ -213,6 +213,7 @@ onUpdated(() => {
   /* Then collapse the root workflow */
   flex-shrink: 5000;
   border-left: 1px solid var(--p-panel-border-color);
+
   .p-breadcrumb-item-link {
     padding-left: var(--p-breadcrumb-item-padding);
   }
@@ -230,7 +231,7 @@ onUpdated(() => {
   background-color: color-mix(
     in srgb,
     var(--fg-color) 10%,
-    var(--comfy-menu-secondary-bg)
+    var(--comfy-menu-bg)
   ) !important;
   color: var(--fg-color);
 }

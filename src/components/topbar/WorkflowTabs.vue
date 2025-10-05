@@ -302,7 +302,7 @@ onUpdated(() => {
 @reference '../../assets/css/style.css';
 
 .workflow-tabs-container {
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
 }
 
 :deep(.p-togglebutton) {

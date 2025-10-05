@@ -36,6 +36,7 @@
         state-storage="local"
       >
         <SplitterPanel
+          v-if="sidebarLocation === 'left'"
           class="side-bar-panel"
           :min-size="10"
           :size="20"
@@ -61,7 +62,7 @@
               <slot name="breadcrumbs" />
             </div>
 
-            <div class="actionbar-container">
+            <div class="actionbar-container shadow-md">
               <slot name="actionbar" />
               <slot name="actionbar-end" />
             </div>
@@ -85,6 +86,7 @@
         </SplitterPanel>
 
         <SplitterPanel
+          v-if="sidebarLocation === 'right'"
           class="side-bar-panel"
           :min-size="10"
           :size="20"
@@ -166,7 +168,7 @@ const sidebarStateKey = computed(() => {
 
 .bottom-panel {
   @apply pointer-events-auto rounded-lg;
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
   border: 1px solid var(--p-panel-border-color);
   max-width: 100%;
   overflow-x: auto;
@@ -193,7 +195,7 @@ const sidebarStateKey = computed(() => {
 
 .actionbar-container {
   @apply flex mx-2 pointer-events-auto items-center h-12 rounded-lg px-2;
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
   border: 1px solid var(--p-panel-border-color);
 }
 </style>

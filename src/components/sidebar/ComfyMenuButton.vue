@@ -306,6 +306,6 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
 }
 
 .comfy-command-menu ul {
-  background-color: var(--comfy-menu-secondary-bg) !important;
+  background-color: var(--comfy-menu-bg) !important;
 }
 </style>

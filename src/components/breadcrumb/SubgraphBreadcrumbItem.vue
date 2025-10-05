@@ -26,7 +26,7 @@
     :popup="true"
     :pt="{
       root: {
-        style: 'background-color: var(--comfy-menu-secondary-bg)'
+        style: 'background-color: var(--comfy-menu-bg)'
       },
       itemLink: {
         class: 'py-2'
