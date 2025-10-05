@@ -68,5 +68,6 @@
     "playwright-report/**",
     "public/**",
     "src/lib/litegraph/**"
-  ]
+  ],
+  "files": ["**/*.css", "**/*.vue"]
 }
