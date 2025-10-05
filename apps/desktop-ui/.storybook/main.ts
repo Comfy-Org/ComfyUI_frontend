@@ -12,6 +12,7 @@ const config: StorybookConfig = {
     name: '@storybook/vue3-vite',
     options: {}
   },
+  staticDirs: [{ from: '../public', to: '/' }],
   async viteFinal(config) {
     // Use dynamic import to avoid CJS deprecation warning
     const { mergeConfig } = await import('vite')
