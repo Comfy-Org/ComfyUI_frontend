@@ -355,6 +355,70 @@ importers:
         specifier: ^3.24.1
         version: 3.24.1(zod@3.24.1)
 
+  apps/desktop-ui:
+    dependencies:
+      '@comfyorg/comfyui-electron-types':
+        specifier: 0.4.73-0
+        version: 0.4.73-0
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-frontend-utils
+      '@primevue/core':
+        specifier: 'catalog:'
+        version: 4.2.5(vue@3.5.13(typescript@5.9.2))
+      '@primevue/themes':
+        specifier: 'catalog:'
+        version: 4.2.5
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 11.0.0(vue@3.5.13(typescript@5.9.2))
+      pinia:
+        specifier: 'catalog:'
+        version: 2.2.2(typescript@5.9.2)(vue@3.5.13(typescript@5.9.2))
+      primeicons:
+        specifier: 'catalog:'
+        version: 7.0.0
+      primevue:
+        specifier: 'catalog:'
+        version: 4.2.5(vue@3.5.13(typescript@5.9.2))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.9.2)
+      vue-i18n:
+        specifier: 'catalog:'
+        version: 9.14.3(vue@3.5.13(typescript@5.9.2))
+      vue-router:
+        specifier: 'catalog:'
+        version: 4.4.3(vue@3.5.13(typescript@5.9.2))
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.1.12(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2))
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.1.4(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2))(vue@3.5.13(typescript@5.9.2))
+      dotenv:
+        specifier: 'catalog:'
+        version: 16.6.1
+      unplugin-icons:
+        specifier: 'catalog:'
+        version: 0.22.0(@vue/compiler-sfc@3.5.13)
+      unplugin-vue-components:
+        specifier: 'catalog:'
+        version: 0.28.0(@babel/parser@7.28.4)(rollup@4.22.4)(vue@3.5.13(typescript@5.9.2))
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2)
+      vite-plugin-html:
+        specifier: 'catalog:'
+        version: 3.2.2(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2))
+      vite-plugin-vue-devtools:
+        specifier: 'catalog:'
+        version: 7.7.6(rollup@4.22.4)(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2))(vue@3.5.13(typescript@5.9.2))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.0.7(typescript@5.9.2)
+
   packages/design-system:
     dependencies:
       '@iconify-json/lucide':
