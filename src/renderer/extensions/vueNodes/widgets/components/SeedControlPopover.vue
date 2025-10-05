@@ -24,20 +24,10 @@ type ControlOption = {
 const popover = ref()
 const settingStore = useSettingStore()
 
-const controlSettings = ref<ControlSettings>({
-  linkToGlobal: false,
-  randomize: false,
-  increment: true,
-  decrement: false
-})
-
-const widgetControlMode = computed(() =>
-  settingStore.get('Comfy.WidgetControlMode')
-)
-
 const toggle = (event: Event) => {
   popover.value.toggle(event)
 }
+defineExpose({ toggle })
 
 const controlOptions: ControlOption[] = [
   {
@@ -66,7 +56,30 @@ const controlOptions: ControlOption[] = [
   }
 ]
 
-defineExpose({ toggle })
+const widgetControlMode = computed(() =>
+  settingStore.get('Comfy.WidgetControlMode')
+)
+
+const controlSettings = ref<ControlSettings>({
+  linkToGlobal: false,
+  randomize: true,
+  increment: false,
+  decrement: false
+})
+
+const handleToggle = (key: keyof ControlSettings) => {
+  // If turning on, turn off all others first
+  if (!controlSettings.value[key]) {
+    controlSettings.value = {
+      linkToGlobal: false,
+      randomize: false,
+      increment: false,
+      decrement: false
+    }
+  }
+  // Toggle the clicked one
+  controlSettings.value[key] = !controlSettings.value[key]
+}
 </script>
 
 <template>
@@ -115,8 +128,9 @@ defineExpose({ toggle })
             </div>
           </div>
           <ToggleSwitch
-            v-model="controlSettings[option.key]"
+            :model-value="controlSettings[option.key]"
             class="flex-shrink-0"
+            @update:model-value="handleToggle(option.key)"
           />
         </div>
       </div>
