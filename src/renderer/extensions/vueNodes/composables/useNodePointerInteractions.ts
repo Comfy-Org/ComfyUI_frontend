@@ -1,5 +1,6 @@
 import { type MaybeRefOrGetter, computed, onUnmounted, ref, toValue } from 'vue'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -34,12 +35,8 @@ export function useNodePointerInteractions(
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
 
-  const isMiddlePointer = (event: PointerEvent): boolean => {
-    return event.button === 1 || (event.buttons & 4) !== 0
-  }
-
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
-    if (!isMiddlePointer(event)) return false
+    if (!isMiddlePointerInput(event)) return false
     forwardEventToCanvas(event)
     return true
   }

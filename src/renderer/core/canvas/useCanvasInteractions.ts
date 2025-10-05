@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -52,18 +53,6 @@ export function useCanvasInteractions() {
     }
 
     // Otherwise, let the component handle it normally
-  }
-
-  const isMiddlePointerInput = (event: PointerEvent | MouseEvent): boolean => {
-    if ('button' in event && event.button === 1) {
-      return true
-    }
-
-    if ('buttons' in event && typeof event.buttons === 'number') {
-      return event.buttons === 4
-    }
-
-    return false
   }
 
   /**
