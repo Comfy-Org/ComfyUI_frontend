@@ -110,9 +110,7 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 }
 
 .side-bar-button-content {
-  @apply flex flex-col items-center gap-2 rounded-lg justify-center;
-  width: 32px;
-  height: 32px;
+  @apply flex flex-col items-center gap-2;
 }
 
 .side-bar-button-label {
@@ -120,22 +118,13 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
   line-height: 1;
 }
 
-.small-sidebar .side-bar-button:hover,
-.small-sidebar .side-bar-button-selected {
-  background-color: unset;
-  .side-bar-button-content {
-    background: var(--p-button-text-secondary-hover-background);
-  }
+.comfyui-body-left .side-bar-button.side-bar-button-selected,
+.comfyui-body-left .side-bar-button.side-bar-button-selected:hover {
+  border-left: 4px solid var(--p-button-text-primary-color);
 }
 
-.small-sidebar .side-bar-button-selected {
-  background-color: unset;
-  .side-bar-button-content {
-    background-color: var(--content-hover-bg);
-  }
-}
-
-.small-sidebar .side-bar-button-content {
-  @apply m-2;
+.comfyui-body-right .side-bar-button.side-bar-button-selected,
+.comfyui-body-right .side-bar-button.side-bar-button-selected:hover {
+  border-right: 4px solid var(--p-button-text-primary-color);
 }
 </style>
