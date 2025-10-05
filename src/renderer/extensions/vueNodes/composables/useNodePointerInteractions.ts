@@ -1,6 +1,5 @@
 import { type MaybeRefOrGetter, computed, onUnmounted, ref, toValue } from 'vue'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -35,12 +34,6 @@ export function useNodePointerInteractions(
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
 
-  const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
-    if (!isMiddlePointerInput(event)) return false
-    forwardEventToCanvas(event)
-    return true
-  }
-
   // Drag state for styling
   const isDragging = ref(false)
   const dragStyle = computed(() => {
@@ -58,8 +51,6 @@ export function useNodePointerInteractions(
       )
       return
     }
-
-    if (forwardMiddlePointerIfNeeded(event)) return
 
     const stopNodeDragTarget =
       event.target instanceof HTMLElement
@@ -99,8 +90,6 @@ export function useNodePointerInteractions(
   }
 
   const handlePointerMove = (event: PointerEvent) => {
-    if (forwardMiddlePointerIfNeeded(event)) return
-
     if (isDragging.value) {
       void handleDrag(event)
     }
@@ -140,8 +129,6 @@ export function useNodePointerInteractions(
   }
 
   const handlePointerUp = (event: PointerEvent) => {
-    if (forwardMiddlePointerIfNeeded(event)) return
-
     if (isDragging.value) {
       handleDragTermination(event, 'drag end')
     }
