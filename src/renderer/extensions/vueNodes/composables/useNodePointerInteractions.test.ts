@@ -131,32 +131,6 @@ describe('useNodePointerInteractions', () => {
     expect(mockOnPointerUp).not.toHaveBeenCalled()
   })
 
-  it('forwards middle mouse events during capture phase', () => {
-    const mockNodeData = createMockVueNodeData()
-    const mockOnPointerUp = vi.fn()
-
-    const { pointerHandlers } = useNodePointerInteractions(
-      ref(mockNodeData),
-      mockOnPointerUp
-    )
-
-    const middlePointerDown = createPointerEvent('pointerdown', { button: 1 })
-    pointerHandlers.onPointerdownCapture?.(middlePointerDown)
-    expect(forwardEventToCanvasMock).toHaveBeenCalledWith(middlePointerDown)
-
-    forwardEventToCanvasMock.mockClear()
-
-    const middlePointerMove = createPointerEvent('pointermove', { buttons: 4 })
-    pointerHandlers.onPointermoveCapture?.(middlePointerMove)
-    expect(forwardEventToCanvasMock).toHaveBeenCalledWith(middlePointerMove)
-
-    forwardEventToCanvasMock.mockClear()
-
-    const middlePointerUp = createPointerEvent('pointerup', { button: 1 })
-    pointerHandlers.onPointerupCapture?.(middlePointerUp)
-    expect(forwardEventToCanvasMock).toHaveBeenCalledWith(middlePointerUp)
-  })
-
   it('should distinguish drag from click based on distance threshold', async () => {
     const mockNodeData = createMockVueNodeData()
     const mockOnPointerUp = vi.fn()

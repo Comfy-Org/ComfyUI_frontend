@@ -178,11 +178,8 @@ export function useNodePointerInteractions(
   })
 
   const pointerHandlers = {
-    onPointerdownCapture: forwardMiddlePointerIfNeeded,
     onPointerdown: handlePointerDown,
-    onPointermoveCapture: forwardMiddlePointerIfNeeded,
     onPointermove: handlePointerMove,
-    onPointerupCapture: forwardMiddlePointerIfNeeded,
     onPointerup: handlePointerUp,
     onPointercancel: handlePointerCancel,
     onContextmenu: handleContextMenu
