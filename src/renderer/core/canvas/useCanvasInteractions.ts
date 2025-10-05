@@ -60,7 +60,7 @@ export function useCanvasInteractions() {
     }
 
     if ('buttons' in event && typeof event.buttons === 'number') {
-      return (event.buttons & 4) !== 0
+      return event.buttons === 4
     }
 
     return false
