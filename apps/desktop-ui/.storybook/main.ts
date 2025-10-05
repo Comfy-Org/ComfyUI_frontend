@@ -12,6 +12,7 @@ const config: StorybookConfig = {
     name: '@storybook/vue3-vite',
     options: {}
   },
+  staticDirs: [{ from: '../public', to: '/' }],
   async viteFinal(config) {
     // Use dynamic import to avoid CJS deprecation warning
     const { mergeConfig } = await import('vite')
@@ -45,7 +46,7 @@ const config: StorybookConfig = {
           compiler: 'vue3',
           customCollections: {
             comfy: FileSystemIconLoader(
-              process.cwd() + '/packages/design-system/src/icons'
+              process.cwd() + '/../../packages/design-system/src/icons'
             )
           }
         }),
@@ -58,20 +59,20 @@ const config: StorybookConfig = {
           ],
           dirs: [
             process.cwd() + '/src/components',
-            process.cwd() + '/src/layout',
             process.cwd() + '/src/views'
           ],
           deep: true,
-          extensions: ['vue']
+          extensions: ['vue'],
+          directoryAsNamespace: true
         })
-        // Note: Explicitly NOT including generateImportMapPlugin to avoid externalization
       ],
       server: {
         allowedHosts: true
       },
       resolve: {
         alias: {
-          '@': process.cwd() + '/src'
+          '@': process.cwd() + '/src',
+          '@frontend-locales': process.cwd() + '/../../src/locales'
         }
       },
       build: {
