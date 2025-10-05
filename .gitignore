@@ -15,6 +15,7 @@ yarn.lock
 # Cache files
 .eslintcache
 .prettiercache
+.stylelintcache
 
 node_modules
 dist
