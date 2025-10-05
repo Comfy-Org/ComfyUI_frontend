@@ -312,6 +312,14 @@ export class LGraphCanvas
     }
   }
 
+  /**
+   * The location of the fps info widget. Leaving an element unset will use the default position for that element.
+   */
+  fpsInfoLocation:
+    | [x: number | null | undefined, y: number | null | undefined]
+    | null
+    | undefined
+
   /** Dispatches a custom event on the canvas. */
   dispatch<T extends keyof NeverNever<LGraphCanvasEventMap>>(
     type: T,
@@ -4686,7 +4694,8 @@ export class LGraphCanvas
 
     // info widget
     if (this.show_info) {
-      this.renderInfo(ctx, area ? area[0] : 0, area ? area[1] : 0)
+      const pos = this.fpsInfoLocation ?? area
+      this.renderInfo(ctx, pos?.[0] ?? 0, pos?.[1] ?? 0)
     }
 
     if (graph) {

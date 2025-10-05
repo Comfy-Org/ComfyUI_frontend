@@ -54,13 +54,14 @@
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -75,11 +76,15 @@ const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
+const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
 const overflowCheckRef = ref<HTMLElement>()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
+)
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
 )
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
@@ -127,6 +132,25 @@ onMounted(() => {
   onBeforeUnmount(() => {
     overflowObserver.stop()
   })
+
+  watch(
+    [isSmall, sidebarLocation],
+    async () => {
+      if (canvasStore.canvas) {
+        if (sidebarLocation.value === 'left') {
+          await nextTick()
+          canvasStore.canvas.fpsInfoLocation = [
+            sideToolbarRef.value?.getBoundingClientRect()?.right,
+            null
+          ]
+        } else {
+          canvasStore.canvas.fpsInfoLocation = null
+        }
+        canvasStore.canvas.setDirty(false, true)
+      }
+    },
+    { immediate: true }
+  )
 })
 </script>
 
