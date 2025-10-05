@@ -493,12 +493,12 @@
     "toggleMinimap": "ミニマップの切り替え",
     "zoomIn": "拡大",
     "zoomOut": "縮小",
-    "select": "Select",
-    "hand": "Hand",
-    "zoomOptions": "Zoom Options",
-    "focusMode": "Focus Mode",
-    "hideLinks": "Hide Links",
-    "showLinks": "Show Links"
+    "select": "選択",
+    "hand": "パンビュー",
+    "zoomOptions": "ズームオプション",
+    "focusMode": "フォーカスモード",
+    "hideLinks": "リンクを非表示",
+    "showLinks": "リンクを表示"
   },
   "groupNode": {
     "create": "グループノードを作成",
