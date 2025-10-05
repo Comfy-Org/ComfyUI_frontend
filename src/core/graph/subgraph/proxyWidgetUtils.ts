@@ -119,7 +119,6 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
-    node.images = []
     function checkWidgets() {
       updatePreviews(node)
       const widget = node.widgets?.find((w) => w.name.startsWith('$$'))
@@ -128,7 +127,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
       if (pw.some(matchesPropertyItem([node, widget]))) return
       promoteWidget(node, widget, [subgraphNode])
     }
-    updatePreviews(node, checkWidgets)
+    requestAnimationFrame(() => updatePreviews(node, checkWidgets))
   }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
