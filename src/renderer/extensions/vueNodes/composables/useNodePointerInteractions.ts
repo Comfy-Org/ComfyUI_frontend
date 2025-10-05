@@ -52,9 +52,10 @@ export function useNodePointerInteractions(
       return
     }
 
-    const stopNodeDragTarget = (event.target as HTMLElement | null)?.closest(
-      '[data-capture-node="true"]'
-    )
+    const stopNodeDragTarget =
+      event.target instanceof HTMLElement
+        ? event.target.closest('[data-capture-node="true"]')
+        : null
     if (stopNodeDragTarget) {
       if (!shouldHandleNodePointerEvents.value) {
         forwardEventToCanvas(event)
