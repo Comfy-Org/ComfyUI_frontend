@@ -84,6 +84,7 @@ import LODFallback from './LODFallback.vue'
 
 interface NodeHeaderProps {
   nodeData?: VueNodeData
+  readonly?: boolean
   collapsed?: boolean
 }
 
