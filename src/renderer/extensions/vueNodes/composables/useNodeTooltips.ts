@@ -1,5 +1,8 @@
-import type { TooltipDirectivePassThroughOptions } from 'primevue'
-import { type MaybeRef, type Ref, computed, ref, unref } from 'vue'
+import type {
+  TooltipDirectivePassThroughOptions,
+  TooltipPassThroughMethodOptions
+} from 'primevue/tooltip'
+import { type MaybeRef, computed, ref, unref } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'
@@ -77,10 +80,7 @@ function setupGlobalTooltipHiding() {
  * Composable for managing Vue node tooltips
  * Provides tooltip text for node headers, slots, and widgets
  */
-export function useNodeTooltips(
-  nodeType: MaybeRef<string>,
-  containerRef?: Ref<HTMLElement | undefined>
-) {
+export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const nodeDefStore = useNodeDefStore()
   const settingsStore = useSettingStore()
 
@@ -151,14 +151,7 @@ export function useNodeTooltips(
     const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
     const tooltipText = text || ''
 
-    const config: {
-      value: string
-      showDelay: number
-      hideDelay: number
-      disabled: boolean
-      appendTo?: HTMLElement
-      pt?: TooltipDirectivePassThroughOptions
-    } = {
+    return {
       value: tooltipText,
       showDelay: tooltipDelay as number,
       hideDelay: 0, // Immediate hiding
@@ -172,23 +165,16 @@ export function useNodeTooltips(
           class:
             'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-75 shadow-none'
         },
-        arrow: ({ context }) => ({
+        arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
           class: cn(
-            context?.top && 'border-t-node-component-tooltip-border',
-            context?.bottom && 'border-b-node-component-tooltip-border',
-            context?.left && 'border-l-node-component-tooltip-border ',
-            context?.right && 'border-r-node-component-tooltip-border'
+            context.top && 'border-t-node-component-tooltip-border',
+            context.bottom && 'border-b-node-component-tooltip-border',
+            context.left && 'border-l-node-component-tooltip-border ',
+            context.right && 'border-r-node-component-tooltip-border'
           )
         })
-      }
+      } as TooltipDirectivePassThroughOptions
     }
-
-    // If we have a container reference, append tooltips to it
-    if (containerRef?.value) {
-      config.appendTo = containerRef.value
-    }
-
-    return config
   }
 
   return {

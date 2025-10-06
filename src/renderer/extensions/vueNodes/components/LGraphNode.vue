@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -370,5 +370,4 @@ const nodeMedia = computed(() => {
 })
 
 const nodeContainerRef = ref()
-provide('tooltipContainer', nodeContainerRef)
 </script>

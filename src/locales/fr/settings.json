@@ -11,7 +11,10 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Miroir d'installation Python",
-    "tooltip": "Les installations Python gérées sont téléchargées depuis le projet Astral python-build-standalone. Cette variable peut être définie sur une URL de miroir pour utiliser une source différente pour les installations Python. L'URL fournie remplacera https://github.com/astral-sh/python-build-standalone/releases/download dans, par exemple, https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Les distributions peuvent être lues à partir d'un répertoire local en utilisant le schéma d'URL file://."
+    "tooltip": "Les installations Python gérées sont téléchargées depuis le projet Astral python-build-standalone. Cette variable peut être définie sur une URL de miroir pour utiliser une source différente pour les installations Python. L'URL fournie remplacera https://github.com/astral-sh/python-build-standalone/releases/download dans, par exemple, https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Les distributions peuvent être lues à partir d'un répertoire local en utilisant le schéma d'URL file://.",
+    "urlFormatTitle": "Format d'URL du miroir",
+    "urlDescription": "Ceci est un exemple d'URL de téléchargement Python.\n\nL'URL du miroir est la première moitié, incluant tout avant la date (20250902) :",
+    "fileUrlDescription": "Pour installer à partir d'un fichier que vous avez téléchargé précédemment, vous pouvez utiliser une URL de fichier :"
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "Miroir d'installation Torch",
@@ -420,5 +423,9 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Toujours aligner sur la grille"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "Niveau de détail du zoom des nœuds - seuil de taille de police",
+    "tooltip": "Contrôle quand les nœuds passent au rendu LOD de faible qualité. Utilise la taille de police en pixels pour déterminer quand basculer. Définir sur 0 pour désactiver. Les valeurs de 1 à 24 définissent le seuil de taille de police minimum pour le LOD - des valeurs plus élevées (24px) = basculer les nœuds vers un rendu simplifié plus tôt lors du zoom arrière, des valeurs plus faibles (1px) = maintenir la qualité complète des nœuds plus longtemps."
   }
 }
