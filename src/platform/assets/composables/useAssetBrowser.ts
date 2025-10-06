@@ -3,8 +3,6 @@ import { computed, ref } from 'vue'
 import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetFilenameSchema } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
 import {
   getAssetBaseModel,
   getAssetDescription
@@ -161,9 +159,13 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return category?.label || t('assetBrowser.assets')
   })
 
+  // Category-filtered assets for filter options (before search/format/base model filters)
+  const categoryFilteredAssets = computed(() => {
+    return assets.filter(filterByCategory(selectedCategory.value))
+  })
+
   const filteredAssets = computed(() => {
-    const filtered = assets
-      .filter(filterByCategory(selectedCategory.value))
+    const filtered = categoryFilteredAssets.value
       .filter(filterByQuery(searchQuery.value))
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
@@ -189,39 +191,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return filtered.map(transformAssetForDisplay)
   })
 
-  /**
-   * Asset selection that fetches full details and executes callback with filename
-   * @param assetId - The asset ID to select and fetch details for
-   * @param onSelect - Optional callback to execute with the asset filename
-   */
-  async function selectAssetWithCallback(
-    assetId: string,
-    onSelect?: (filename: string) => void
-  ): Promise<void> {
-    if (!onSelect) {
-      return
-    }
-
-    try {
-      const detailAsset = await assetService.getAssetDetails(assetId)
-      const filename = detailAsset.user_metadata?.filename
-      const validatedFilename = assetFilenameSchema.safeParse(filename)
-      if (!validatedFilename.success) {
-        console.error(
-          'Invalid asset filename:',
-          validatedFilename.error.errors,
-          'for asset:',
-          assetId
-        )
-        return
-      }
-
-      onSelect(validatedFilename.data)
-    } catch (error) {
-      console.error(`Failed to fetch asset details for ${assetId}:`, error)
-    }
-  }
-
   function updateFilters(newFilters: FilterState) {
     filters.value = { ...newFilters }
   }
@@ -231,8 +200,8 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     selectedCategory,
     availableCategories,
     contentTitle,
+    categoryFilteredAssets,
     filteredAssets,
-    selectAssetWithCallback,
     updateFilters
   }
 }

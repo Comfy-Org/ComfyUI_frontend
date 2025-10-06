@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 
+import LazyImage from '@/components/common/LazyImage.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-import type { LayoutMode } from './types'
+import { AssetKindKey, type LayoutMode } from './types'
 
 interface Props {
   index: number
   selected: boolean
-  imageSrc: string
+  mediaSrc: string
   name: string
   metadata?: string
   layout?: LayoutMode
@@ -18,21 +19,34 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   click: [index: number]
-  imageLoad: [event: Event]
+  mediaLoad: [event: Event]
 }>()
 
 const actualDimensions = ref<string | null>(null)
+
+const assetKind = inject(AssetKindKey)
+
+const isVideo = computed(() => assetKind?.value === 'video')
 
 function handleClick() {
   emit('click', props.index)
 }
 
 function handleImageLoad(event: Event) {
-  emit('imageLoad', event)
+  emit('mediaLoad', event)
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+  }
+}
+
+function handleVideoLoad(event: Event) {
+  emit('mediaLoad', event)
+  if (!event.target || !(event.target instanceof HTMLVideoElement)) return
+  const video = event.target
+  if (video.videoWidth && video.videoHeight) {
+    actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
   }
 }
 </script>
@@ -81,10 +95,19 @@ function handleImageLoad(event: Event) {
       >
         <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
       </div>
-      <img
-        v-if="imageSrc"
-        :src="imageSrc"
+      <video
+        v-if="mediaSrc && isVideo"
+        :src="mediaSrc"
         class="size-full object-cover"
+        preload="metadata"
+        muted
+        @loadeddata="handleVideoLoad"
+      />
+      <LazyImage
+        v-else-if="mediaSrc"
+        :src="mediaSrc"
+        :alt="name"
+        image-class="size-full object-cover"
         @load="handleImageLoad"
       />
       <div

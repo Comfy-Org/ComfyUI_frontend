@@ -3,7 +3,6 @@
     <Textarea
       v-model="localValue"
       v-bind="filteredProps"
-      :disabled="readonly"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs lod-toggle')"
       :placeholder="placeholder || widget.name || ''"
       size="small"
@@ -33,7 +32,6 @@ import { WidgetInputBaseClass } from './layout'
 const props = defineProps<{
   widget: SimplifiedWidget<string>
   modelValue: string
-  readonly?: boolean
   placeholder?: string
 }>()
 

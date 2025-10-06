@@ -355,7 +355,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modelValue = String(modelWidget.value)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (
+        if (modelValue.includes('v2-5-turbo')) {
+          if (durationValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (
           modelValue.includes('v2-1-master') ||
           modelValue.includes('v2-master')
         ) {
@@ -505,7 +510,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Pricing matrix from CSV data based on mode string content
-        if (modeValue.includes('v2-1-master')) {
+        if (modeValue.includes('v2-5-turbo')) {
+          if (modeValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (modeValue.includes('v2-1-master')) {
           if (modeValue.includes('10s')) {
             return '$2.80/Run' // price is the same as for v2-master model
           }

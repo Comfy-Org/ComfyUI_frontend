@@ -97,17 +97,6 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       const input = getNumberInput(wrapper)
       expect(input.value).toBe('42')
     })
-
-    it('disables components in readonly mode', () => {
-      const widget = createMockWidget(5)
-      const wrapper = mountComponent(widget, 5, true)
-
-      const slider = wrapper.findComponent({ name: 'Slider' })
-      expect(slider.props('disabled')).toBe(true)
-
-      const input = getNumberInput(wrapper)
-      expect(input.disabled).toBe(true)
-    })
   })
 
   describe('Widget Options', () => {

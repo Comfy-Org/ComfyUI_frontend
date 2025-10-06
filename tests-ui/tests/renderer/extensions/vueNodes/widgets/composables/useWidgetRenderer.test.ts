@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import WidgetAudioUI from '@/renderer/extensions/vueNodes/widgets/components/WidgetAudioUI.vue'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
@@ -15,6 +15,12 @@ import {
   isEssential,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+
+vi.mock('@/stores/queueStore', () => ({
+  useQueueStore: vi.fn(() => ({
+    historyTasks: []
+  }))
+}))
 
 describe('widgetRegistry', () => {
   describe('getComponent', () => {

@@ -67,7 +67,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "[auto-fix] Apply ESLint and Prettier fixes"
+          git commit -m "[automated] Apply ESLint and Prettier fixes"
           git push
 
       - name: Final validation

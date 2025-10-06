@@ -9,8 +9,8 @@
     :class="
       cn(
         'bg-white dark-theme:bg-charcoal-800',
-        'lg-node absolute rounded-2xl',
-        'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
+        'lg-node absolute rounded-2xl touch-none',
+        'border-1 border-solid border-gray-400 dark-theme:border-stone-200',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
@@ -50,15 +50,7 @@
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
       <NodeHeader
-        v-memo="[
-          nodeData.title,
-          nodeData.color,
-          nodeData.bgcolor,
-          isCollapsed,
-          nodeData.flags?.pinned
-        ]"
         :node-data="nodeData"
-        :readonly="readonly"
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
@@ -100,37 +92,19 @@
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
-        <NodeSlots
-          v-memo="[
-            nodeData.inputs?.length,
-            nodeData.outputs?.length,
-            executionStore.lastNodeErrors
-          ]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeSlots :node-data="nodeData" />
 
         <!-- Widgets rendered at reduced+ detail -->
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
         <NodeContent
           v-if="hasCustomContent"
           :node-data="nodeData"
-          :readonly="readonly"
-          :image-urls="nodeImageUrls"
+          :media="nodeMedia"
         />
         <!-- Live preview image -->
-        <div
-          v-if="shouldShowPreviewImg"
-          v-memo="[latestPreviewUrl]"
-          class="px-4"
-        >
+        <div v-if="shouldShowPreviewImg" class="px-4">
           <img
             :src="latestPreviewUrl"
             alt="preview"
@@ -180,16 +154,11 @@ import SlotConnectionDot from './SlotConnectionDot.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   nodeData: VueNodeData
-  readonly?: boolean
   error?: string | null
   zoomLevel?: number
 }
 
-const {
-  nodeData,
-  error = null,
-  readonly = false
-} = defineProps<LGraphNodeProps>()
+const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const {
   handleNodeCollapse,
@@ -298,10 +267,10 @@ onMounted(() => {
 // Track collapsed state
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 
-// Check if node has custom content (like image outputs)
+// Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has image outputs
-  return nodeImageUrls.value.length > 0
+  // Show custom content if node has media outputs
+  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -363,7 +332,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  canvas.openSubgraph(litegraphNode.subgraph)
+  canvas.openSubgraph(litegraphNode.subgraph, litegraphNode)
 }
 
 const nodeOutputs = useNodeOutputStore()
@@ -371,26 +340,34 @@ const nodeOutputs = useNodeOutputStore()
 const nodeOutputLocatorId = computed(() =>
   nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
 )
-const nodeImageUrls = computed(() => {
-  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+
+const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
-
-  // Use root graph for getNodeByLocatorId since it needs to traverse from root
   const rootGraph = app.graph?.rootGraph || app.graph
-  if (!rootGraph) {
-    return []
-  }
+  if (!rootGraph) return null
+  return getNodeByLocatorId(rootGraph, locatorId)
+})
 
-  const node = getNodeByLocatorId(rootGraph, locatorId)
+const nodeMedia = computed(() => {
+  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+  const node = lgraphNode.value
 
-  if (node && newOutputs?.images?.length) {
-    const urls = nodeOutputs.getNodeImageUrls(node)
-    if (urls) {
-      return urls
-    }
-  }
-  // Clear URLs if no outputs or no images
-  return []
+  if (!node || !newOutputs?.images?.length) return undefined
+
+  const urls = nodeOutputs.getNodeImageUrls(node)
+  if (!urls?.length) return undefined
+
+  // Determine media type from previewMediaType or fallback to input slot types
+  // Note: Despite the field name "images", videos are also included in outputs
+  // TODO: fix the backend to return videos using the videos key instead of the images key
+  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
+  const type =
+    node.previewMediaType === 'video' ||
+    (!node.previewMediaType && hasVideoInput)
+      ? 'video'
+      : 'image'
+
+  return { type, urls } as const
 })
 
 const nodeContainerRef = ref()

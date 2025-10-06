@@ -34,7 +34,6 @@
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="getWidgetInputIndex(widget)"
-          :readonly="readonly"
           :dot-only="true"
         />
       </div>
@@ -44,7 +43,6 @@
         v-tooltip.left="widget.tooltipConfig"
         :widget="widget.simplified"
         :model-value="widget.value"
-        :readonly="readonly"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         class="flex-1"
         @update:model-value="widget.updateHandler"
@@ -76,10 +74,9 @@ import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
-  readonly?: boolean
 }
 
-const { nodeData, readonly } = defineProps<NodeWidgetsProps>()
+const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()

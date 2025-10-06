@@ -4,7 +4,7 @@
   </div>
   <div
     v-else
-    class="lg-node-header p-4 rounded-t-2xl cursor-move"
+    class="lg-node-header p-4 rounded-t-2xl cursor-move w-full"
     :style="headerStyle"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
@@ -12,7 +12,6 @@
     <div class="flex items-center justify-between gap-2.5 relative">
       <!-- Collapse/Expand Button -->
       <button
-        v-show="!readonly"
         class="bg-transparent border-transparent flex items-center lod-toggle"
         data-testid="node-collapse-button"
         @click.stop="handleCollapse"
@@ -43,14 +42,14 @@
           data-testid="node-pin-indicator"
         />
       </div>
-      <div v-if="!readonly" class="flex items-center lod-toggle shrink-0">
+      <div class="flex items-center lod-toggle shrink-0">
         <IconButton
           v-if="isSubgraphNode"
+          v-tooltip.top="enterSubgraphTooltipConfig"
           size="sm"
           type="transparent"
           class="text-stone-200 dark-theme:text-slate-300"
           data-testid="subgraph-enter-button"
-          title="Enter Subgraph"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
@@ -85,11 +84,10 @@ import LODFallback from './LODFallback.vue'
 
 interface NodeHeaderProps {
   nodeData?: VueNodeData
-  readonly?: boolean
   collapsed?: boolean
 }
 
-const { nodeData, readonly, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -118,11 +116,15 @@ const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
 )
 
 const tooltipConfig = computed(() => {
-  if (readonly || isEditing.value) {
+  if (isEditing.value) {
     return { value: '', disabled: true }
   }
   const description = getNodeDescription.value
   return createTooltipConfig(description)
+})
+
+const enterSubgraphTooltipConfig = computed(() => {
+  return createTooltipConfig(st('enterSubgraph', 'Enter Subgraph'))
 })
 
 const headerStyle = computed(() => {
@@ -189,9 +191,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
-  if (!readonly) {
-    isEditing.value = true
-  }
+  isEditing.value = true
 }
 
 const handleTitleEdit = (newTitle: string) => {

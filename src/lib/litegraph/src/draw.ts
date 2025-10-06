@@ -1,5 +1,5 @@
 import type { Rectangle } from './infrastructure/Rectangle'
-import type { CanvasColour, Rect } from './interfaces'
+import type { CanvasColour } from './interfaces'
 import { LiteGraph } from './litegraph'
 import { RenderShape, TitleMode } from './types/globalEnums'
 
@@ -67,7 +67,7 @@ interface IDrawTextInAreaOptions {
  */
 export function strokeShape(
   ctx: CanvasRenderingContext2D,
-  area: Rect,
+  area: Rectangle,
   {
     shape = RenderShape.BOX,
     round_radius,

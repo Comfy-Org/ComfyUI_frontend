@@ -1,13 +1,18 @@
-import { useNodeImage } from '@/composables/node/useNodeImage'
+import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 /**
@@ -43,14 +48,33 @@ function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
   return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
 }
 
+export function registerProxyWidgets(canvas: LGraphCanvas) {
+  //NOTE: canvasStore hasn't been initialized yet
+  canvas.canvas.addEventListener<'subgraph-opened'>('subgraph-opened', (e) => {
+    const { subgraph, fromNode } = e.detail
+    const proxyWidgets = parseProxyWidgets(fromNode.properties.proxyWidgets)
+    for (const node of subgraph.nodes) {
+      for (const widget of node.widgets ?? []) {
+        widget.promoted = proxyWidgets.some(
+          ([n, w]) => node.id == n && widget.name == w
+        )
+      }
+    }
+  })
+  SubgraphNode.prototype.onConfigure = onConfigure
+}
+
 const originalOnConfigure = SubgraphNode.prototype.onConfigure
-SubgraphNode.prototype.onConfigure = function (serialisedNode) {
+const onConfigure = function (
+  this: LGraphNode,
+  serialisedNode: ISerialisedNode
+) {
   if (!this.isSubgraphNode())
     throw new Error("Can't add proxyWidgets to non-subgraphNode")
 
   const canvasStore = useCanvasStore()
   //Must give value to proxyWidgets prior to defining or it won't serialize
-  this.properties.proxyWidgets ??= '[]'
+  this.properties.proxyWidgets ??= []
   let proxyWidgets = this.properties.proxyWidgets
 
   originalOnConfigure?.call(this, serialisedNode)
@@ -62,13 +86,16 @@ SubgraphNode.prototype.onConfigure = function (serialisedNode) {
     set: (property: string) => {
       const parsed = parseProxyWidgets(property)
       const { deactivateWidget, setWidget } = useDomWidgetStore()
-      for (const w of this.widgets.filter((w) => isProxyWidget(w))) {
-        if (w instanceof DOMWidgetImpl) deactivateWidget(w.id)
+      const isActiveGraph = useCanvasStore().canvas?.graph === this.graph
+      if (isActiveGraph) {
+        for (const w of this.widgets.filter((w) => isProxyWidget(w))) {
+          if (w instanceof DOMWidgetImpl) deactivateWidget(w.id)
+        }
       }
       this.widgets = this.widgets.filter((w) => !isProxyWidget(w))
       for (const [nodeId, widgetName] of parsed) {
         const w = addProxyWidget(this, `${nodeId}`, widgetName)
-        if (w instanceof DOMWidgetImpl) setWidget(w)
+        if (isActiveGraph && w instanceof DOMWidgetImpl) setWidget(w)
       }
       proxyWidgets = property
       canvasStore.canvas?.setDirty(true, true)
@@ -86,19 +113,23 @@ function addProxyWidget(
 ) {
   const name = `${nodeId}: ${widgetName}`
   const overlay = {
+    //items specific for proxy management
     nodeId,
-    widgetName,
     graph: subgraphNode.subgraph,
-    name,
-    label: name,
-    isProxyWidget: true,
-    y: 0,
-    last_y: undefined,
-    width: undefined,
-    computedHeight: undefined,
+    widgetName,
+    //Items which normally exist on widgets
     afterQueued: undefined,
+    computedHeight: undefined,
+    isProxyWidget: true,
+    label: name,
+    last_y: undefined,
+    name,
+    node: subgraphNode,
     onRemove: undefined,
-    node: subgraphNode
+    promoted: undefined,
+    serialize: false,
+    width: undefined,
+    y: 0
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
@@ -110,23 +141,20 @@ function resolveLinkedWidget(
   if (!n) return [undefined, undefined]
   return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
 }
+
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
+  const { updatePreviews } = useLitegraphService()
   let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
   let backingWidget = linkedWidget ?? disconnectedWidget
-  if (overlay.widgetName == '$$canvas-image-preview')
+  if (overlay.widgetName.startsWith('$$')) {
     overlay.node = new Proxy(subgraphNode, {
       get(_t, p) {
         if (p !== 'imgs') return Reflect.get(subgraphNode, p)
         if (!linkedNode) return []
-        const images =
-          useNodeOutputStore().getNodeOutputs(linkedNode)?.images ?? []
-        if (images !== linkedNode.images) {
-          linkedNode.images = images
-          useNodeImage(linkedNode).showPreview()
-        }
         return linkedNode.imgs
       }
     })
+  }
   /**
    * A set of handlers which define widget interaction
    * Many arguments are shared between function calls
@@ -155,6 +183,12 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedReceiver = receiver
       if (property == 'value') redirectedReceiver = backingWidget
       else if (property == 'computedHeight') {
+        if (overlay.widgetName.startsWith('$$') && linkedNode) {
+          updatePreviews(linkedNode)
+        }
+        if (linkedNode && linkedWidget?.computedDisabled) {
+          demoteWidget(linkedNode, linkedWidget, [subgraphNode])
+        }
         //update linkage regularly, but no more than once per frame
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
         backingWidget = linkedWidget ?? disconnectedWidget
