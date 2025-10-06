@@ -181,11 +181,11 @@ describe('NodeHeader.vue', () => {
   it('renders correct chevron icon based on collapsed prop', async () => {
     const wrapper = mountHeader({ collapsed: false })
     const expandedIcon = wrapper.get('i')
-    expect(expandedIcon.classes()).toContain('pi-chevron-down')
+    expect(expandedIcon.classes()).not.toContain('-rotate-90')
 
     await wrapper.setProps({ collapsed: true })
     const collapsedIcon = wrapper.get('i')
-    expect(collapsedIcon.classes()).toContain('pi-chevron-right')
+    expect(collapsedIcon.classes()).toContain('-rotate-90')
   })
 
   describe('Tooltips', () => {

@@ -128,12 +128,90 @@
   --color-dark-elevation-2: rgba(from white r g b / 0.03);
 }
 
+:root {
+  --backdrop: var(--color-white);
+  --dialog-surface: var(--color-neutral-200);
+  --node-component-border: var(--color-gray-400);
+  --node-component-executing: var(--color-blue-500);
+  --node-component-header: var(--fg-color);
+  --node-component-header-icon: var(--color-stone-200);
+  --node-component-header-surface: var(--color-white);
+  --node-component-outline: var(--color-black);
+  --node-component-ring: rgb(from var(--color-gray-500) r g b / 50%);
+  --node-component-slot-dot-outline-opacity-mult: 1;
+  --node-component-slot-dot-outline-opacity: 5%;
+  --node-component-slot-dot-outline: var(--color-black);
+  --node-component-slot-text: var(--color-stone-200);
+  --node-component-surface-highlight: var(--color-stone-100);
+  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-selected: var(--color-charcoal-200);
+  --node-component-surface: var(--color-white);
+  --node-component-tooltip: var(--color-charcoal-700);
+  --node-component-tooltip-border: var(--color-sand-100);
+  --node-component-tooltip-surface: var(--color-white);
+  --node-component-widget-input: var(--fg-color);
+  --node-component-widget-input-surface: rgb(from var(--color-zinc-500) r g b / 10%);
+  --node-component-widget-skeleton-surface: var(--color-zinc-300);
+  --node-stroke: var(--color-stone-100);
+}
+
+.dark-theme {
+  --backdrop: var(--color-neutral-900);
+  --dialog-surface: var(--color-neutral-700);
+  --node-component-border: var(--color-stone-200);
+  --node-component-header-icon: var(--color-slate-300);
+  --node-component-header-surface: var(--color-charcoal-800);
+  --node-component-outline: var(--color-white);
+  --node-component-ring: rgb(var(--color-gray-500) / 20%);
+  --node-component-slot-dot-outline-opacity: 10%;
+  --node-component-slot-dot-outline: var(--color-white);
+  --node-component-slot-text: var(--color-slate-200);
+  --node-component-surface-highlight: var(--color-slate-100);
+  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-selected: var(--color-charcoal-200);
+  --node-component-surface: var(--color-charcoal-800);
+  --node-component-tooltip: var(--color-white);
+  --node-component-tooltip-border: var(--color-slate-300);
+  --node-component-tooltip-surface: var(--color-charcoal-800);
+  --node-component-widget-skeleton-surface: var(--color-zinc-800);
+  --node-stroke: var(--color-slate-100);
+}
+
 @theme inline {
-  --color-node-component-surface: var(--color-charcoal-600);
-  --color-node-component-surface-highlight: var(--color-slate-100);
-  --color-node-component-surface-hovered: var(--color-charcoal-400);
-  --color-node-component-surface-selected: var(--color-charcoal-200);
-  --color-node-stroke: var(--color-stone-100);
+  --color-backdrop: var(--backdrop);
+  --color-dialog-surface: var(--dialog-surface);
+  --color-node-component-border: var(--node-component-border);
+  --color-node-component-executing: var(--node-component-executing);
+  --color-node-component-header: var(--node-component-header);
+  --color-node-component-header-icon: var(--node-component-header-icon);
+  --color-node-component-header-surface: var(--node-component-header-surface);
+  --color-node-component-outline: var(--node-component-outline);
+  --color-node-component-ring: var(--node-component-ring);
+  --color-node-component-slot-dot-outline: rgb(
+    from var(--node-component-slot-dot-outline) r g b /
+      calc(
+        var(--node-component-slot-dot-outline-opacity) *
+          var(--node-component-slot-dot-outline-opacity-mult)
+      )
+  );
+  --color-node-component-slot-text: var(--node-component-slot-text);
+  --color-node-component-surface-highlight: var(
+    --node-component-surface-highlight
+  );
+  --color-node-component-surface-hovered: var(--node-component-surface-hovered);
+  --color-node-component-surface-selected: var(--component-surface-selected);
+  --color-node-component-surface: var(--node-component-surface);
+  --color-node-component-tooltip: var(--node-component-tooltip);
+  --color-node-component-tooltip-border: var(--node-component-tooltip-border);
+  --color-node-component-tooltip-surface: var(--node-component-tooltip-surface);
+  --color-node-component-widget-input: var(--node-component-widget-input);
+  --color-node-component-widget-input-surface: var(
+    --node-component-widget-input-surface
+  );
+  --color-node-component-widget-skeleton-surface: var(
+    --node-component-widget-skeleton-surface
+  );
+  --color-node-stroke: var(--node-stroke);
 }
 
 @custom-variant dark-theme {
