@@ -260,6 +260,7 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    exclude: ['@comfyorg/comfyui-electron-types']
+    exclude: ['@comfyorg/comfyui-electron-types'],
+    entries: ['index.html']
   }
 }) satisfies UserConfig as UserConfig
