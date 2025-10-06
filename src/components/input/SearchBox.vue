@@ -5,10 +5,10 @@
       ref="input"
       v-model="searchQuery"
       :aria-label="
-        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+        placeholder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
       "
       :placeholder="
-        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+        placeholder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
       "
       type="text"
       unstyled
@@ -19,17 +19,19 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
-  placeHolder,
+  autofocus = false,
+  placeholder,
   showBorder = false,
   size = 'md'
 } = defineProps<{
-  placeHolder?: string
+  autofocus?: boolean
+  placeholder?: string
   showBorder?: boolean
   size?: 'md' | 'lg'
 }>()
@@ -42,6 +44,8 @@ const focusInput = () => {
     input.value.$el.focus()
   }
 }
+
+onMounted(() => autofocus && focusInput())
 
 const wrapperStyle = computed(() => {
   const baseClasses = [
