@@ -95,7 +95,8 @@
     "clearWorkflow": "Effacer le workflow",
     "deleteWorkflow": "Supprimer le workflow",
     "duplicate": "Dupliquer",
-    "enterNewName": "Entrez un nouveau nom"
+    "enterNewName": "Entrez un nouveau nom",
+    "deleteBlueprint": "Supprimer le plan"
   },
   "chatHistory": {
     "cancelEdit": "Annuler",
@@ -150,7 +151,38 @@
     "Search": "Recherche",
     "Shapes": "Formes",
     "Title": "Titre",
-    "Unpin": "Désépingler"
+    "Unpin": "Désépingler",
+    "Open in Mask Editor": "Ouvrir dans l'éditeur de masque",
+    "Open Image": "Ouvrir l'image",
+    "Copy Image": "Copier l'image",
+    "Save Image": "Enregistrer l'image",
+    "Rename": "Renommer",
+    "Copy": "Copier",
+    "Duplicate": "Dupliquer",
+    "Paste": "Coller",
+    "Node Info": "Informations du nœud",
+    "Adjust Size": "Ajuster la taille",
+    "Minimize Node": "Réduire le nœud",
+    "Expand Node": "Développer le nœud",
+    "Shape": "Forme",
+    "Color": "Couleur",
+    "Add Subgraph to Library": "Ajouter le sous-graphe à la bibliothèque",
+    "Unpack Subgraph": "Décompresser le sous-graphe",
+    "Edit Subgraph Widgets": "Modifier les widgets du sous-graphe",
+    "Convert to Subgraph": "Convertir en sous-graphe",
+    "Align Selected To": "Aligner la sélection sur",
+    "Distribute Nodes": "Répartir les nœuds",
+    "Remove Bypass": "Supprimer le contournement",
+    "Run Branch": "Exécuter la branche",
+    "Delete": "Supprimer",
+    "Top": "Haut",
+    "Bottom": "Bas",
+    "Left": "Gauche",
+    "Right": "Droite",
+    "Horizontal": "Horizontal",
+    "Vertical": "Vertical",
+    "new": "nouveau",
+    "deprecated": "obsolète"
   },
   "credits": {
     "accountInitialized": "Compte initialisé",
@@ -418,7 +450,39 @@
     "versionMismatchWarning": "Avertissement de compatibilité de version",
     "versionMismatchWarningMessage": "{warning} : {detail} Consultez https://docs.comfy.org/installation/update_comfyui#common-update-issues pour les instructions de mise à jour.",
     "videoFailedToLoad": "Échec du chargement de la vidéo",
-    "workflow": "Flux de travail"
+    "workflow": "Flux de travail",
+    "downloadImage": "Télécharger l'image",
+    "downloadVideo": "Télécharger la vidéo",
+    "editOrMaskImage": "Modifier ou masquer l'image",
+    "removeImage": "Supprimer l'image",
+    "removeVideo": "Supprimer la vidéo",
+    "viewImageOfTotal": "Voir l'image {index} sur {total}",
+    "viewVideoOfTotal": "Voir la vidéo {index} sur {total}",
+    "imagePreview": "Aperçu de l'image - Utilisez les flèches pour naviguer entre les images",
+    "videoPreview": "Aperçu de la vidéo - Utilisez les flèches pour naviguer entre les vidéos",
+    "galleryImage": "Image de la galerie",
+    "galleryThumbnail": "Miniature de la galerie",
+    "errorLoadingImage": "Erreur lors du chargement de l'image",
+    "errorLoadingVideo": "Erreur lors du chargement de la vidéo",
+    "failedToDownloadImage": "Échec du téléchargement de l'image",
+    "failedToDownloadVideo": "Échec du téléchargement de la vidéo",
+    "calculatingDimensions": "Calcul des dimensions",
+    "logoAlt": "Logo ComfyUI",
+    "refreshNode": "Actualiser le nœud",
+    "info": "Informations du nœud",
+    "bookmark": "Enregistrer dans la bibliothèque",
+    "moreOptions": "Plus d'options",
+    "search": "Rechercher",
+    "warning": "Avertissement",
+    "multiSelectDropdown": "Menu déroulant à sélection multiple",
+    "singleSelectDropdown": "Menu déroulant à sélection unique",
+    "seeTutorial": "Voir un tutoriel",
+    "nodeRenderError": "Erreur de rendu du nœud",
+    "nodeContentError": "Erreur de contenu du nœud",
+    "nodeHeaderError": "Erreur d'en-tête du nœud",
+    "nodeSlotsError": "Erreur d'emplacements du nœud",
+    "nodeWidgetsError": "Erreur de widgets du nœud",
+    "frameNodes": "Encadrer les nœuds"
   },
   "graphCanvasMenu": {
     "fitView": "Adapter la vue",
@@ -428,7 +492,13 @@
     "toggleLinkVisibility": "Basculer la visibilité des liens",
     "toggleMinimap": "Afficher/Masquer la mini-carte",
     "zoomIn": "Zoom avant",
-    "zoomOut": "Zoom arrière"
+    "zoomOut": "Zoom arrière",
+    "select": "Sélectionner",
+    "hand": "Main",
+    "zoomOptions": "Options de zoom",
+    "focusMode": "Mode focus",
+    "hideLinks": "Masquer les liens",
+    "showLinks": "Afficher les liens"
   },
   "groupNode": {
     "create": "Créer un nœud de groupe",
@@ -446,7 +516,8 @@
     "openDevTools": "Ouvrir les outils de développement",
     "reinstall": "Réinstaller",
     "updateAvailable": "Mise à jour",
-    "whatsNew": "Quoi de neuf ?"
+    "whatsNew": "Quoi de neuf ?",
+    "managerExtension": "Manager Extension"
   },
   "icon": {
     "bookmark": "Favori",
@@ -546,7 +617,28 @@
     },
     "systemLocations": "Emplacements système",
     "unhandledError": "Erreur inconnue",
-    "updateConsent": "Vous avez précédemment accepté de signaler les plantages. Nous suivons maintenant des métriques basées sur les événements pour aider à identifier les bugs et améliorer l'application. Aucune information personnelle identifiable n'est collectée."
+    "updateConsent": "Vous avez précédemment accepté de signaler les plantages. Nous suivons maintenant des métriques basées sur les événements pour aider à identifier les bugs et améliorer l'application. Aucune information personnelle identifiable n'est collectée.",
+    "gpuPicker": {
+      "title": "Choisissez votre configuration matérielle",
+      "recommended": "RECOMMANDÉ",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "Mode CPU",
+      "manualSubtitle": "Configuration manuelle",
+      "appleMetalDescription": "Exploite le GPU de votre Mac pour une vitesse plus rapide et une meilleure expérience globale",
+      "nvidiaDescription": "Utilisez votre GPU NVIDIA avec l'accélération CUDA pour de meilleures performances.",
+      "cpuDescription": "Utilisez le mode CPU pour la compatibilité lorsque l'accélération GPU n'est pas disponible",
+      "manualDescription": "Configurez ComfyUI manuellement pour des configurations avancées ou du matériel non pris en charge"
+    },
+    "locationPicker": {
+      "title": "Choisissez où installer ComfyUI",
+      "subtitle": "Sélectionnez un dossier pour les fichiers de ComfyUI. Nous configurerons également Python automatiquement.",
+      "pathPlaceholder": "/Users/nomutilisateur/Documents/ComfyUI",
+      "migrationPathPlaceholder": "Sélectionnez une installation ComfyUI existante (facultatif)",
+      "migrateFromExisting": "Migrer depuis une installation existante",
+      "migrateDescription": "Copiez ou liez vos modèles, nœuds personnalisés et configurations existants d'une installation ComfyUI précédente.",
+      "chooseDownloadServers": "Choisir les serveurs de téléchargement manuellement",
+      "downloadServersDescription": "Sélectionnez des serveurs miroirs spécifiques pour télécharger Python, les packages PyPI et PyTorch en fonction de votre emplacement."
+    }
   },
   "issueReport": {
     "helpFix": "Aidez à résoudre cela"
@@ -586,12 +678,33 @@
     "switchingMaterialMode": "Changement de mode de matériau...",
     "upDirection": "Direction Haut",
     "uploadBackgroundImage": "Télécharger l'image de fond",
-    "uploadTexture": "Télécharger Texture"
+    "uploadTexture": "Télécharger Texture",
+    "upDirections": {
+      "original": "Original"
+    },
+    "cameraType": {
+      "perspective": "Perspective",
+      "orthographic": "Orthographique"
+    },
+    "viewer": {
+      "title": "Visualiseur 3D (Bêta)",
+      "apply": "Appliquer",
+      "cancel": "Annuler",
+      "cameraType": "Type de caméra",
+      "sceneSettings": "Paramètres de scène",
+      "cameraSettings": "Paramètres de caméra",
+      "lightSettings": "Paramètres de lumière",
+      "exportSettings": "Paramètres d'exportation",
+      "modelSettings": "Paramètres du modèle"
+    },
+    "openIn3DViewer": "Ouvrir dans le visualiseur 3D"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nécessite ComfyUI {version} :",
     "outdatedVersion": "Certains nœuds nécessitent une version plus récente de ComfyUI (actuelle : {version}). Veuillez mettre à jour pour utiliser tous les nœuds.",
-    "outdatedVersionGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez mettre à jour pour utiliser tous les nœuds."
+    "outdatedVersionGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez mettre à jour pour utiliser tous les nœuds.",
+    "missingNodesTitle": "Certains nœuds sont manquants",
+    "missingNodesDescription": "Lors du chargement du graphe, les types de nœuds suivants n'ont pas été trouvés.\nCela peut également se produire si votre version installée est inférieure et que ce type de nœud ne peut pas être trouvé."
   },
   "maintenance": {
     "None": "Aucun",
@@ -661,7 +774,9 @@
       "deleted": "Supprimé",
       "flagged": "Signalé",
       "pending": "En attente",
-      "unknown": "Inconnu"
+      "unknown": "Inconnu",
+      "conflicting": "En conflit",
+      "importFailed": "Erreur d'installation"
     },
     "title": "Gestionnaire de Nœuds Personnalisés",
     "totalNodes": "Total de Nœuds",
@@ -672,7 +787,52 @@
     "uninstalling": "Désinstallation",
     "update": "Mettre à jour",
     "updatingAllPacks": "Mise à jour de tous les paquets",
-    "version": "Version"
+    "version": "Version",
+    "failedToInstall": "Échec de l'installation",
+    "installError": "Erreur d'installation",
+    "importFailedGenericError": "Échec de l'importation du package. Vérifiez la console pour plus de détails.",
+    "applyChanges": "Appliquer les modifications",
+    "clickToFinishSetup": "Cliquez",
+    "toFinishSetup": "pour terminer la configuration",
+    "restartingBackend": "Redémarrage du backend pour appliquer les modifications...",
+    "extensionsSuccessfullyInstalled": "Extension(s) installée(s) avec succès et prête(s) à l'emploi !",
+    "installingDependencies": "Installation des dépendances...",
+    "updateSelected": "Mettre à jour la sélection",
+    "updateAll": "Tout mettre à jour",
+    "disabledNodesWontUpdate": "Les nœuds désactivés ne seront pas mis à jour",
+    "enablePackToChangeVersion": "Activez ce pack pour changer de version",
+    "gettingInfo": "Obtention des informations...",
+    "allMissingNodesInstalled": "Tous les nœuds manquants ont été installés avec succès",
+    "mixedSelectionMessage": "Impossible d'effectuer une action groupée sur une sélection mixte",
+    "notAvailable": "Non disponible",
+    "conflicts": {
+      "title": "Problèmes de pack de nœuds détectés !",
+      "description": "Nous avons détecté des conflits entre certaines de vos extensions et la nouvelle version de ComfyUI. En mettant à jour, vous risquez de casser des workflows qui dépendent de ces extensions.",
+      "info": "Si vous continuez avec la mise à jour, les extensions en conflit seront désactivées automatiquement. Vous pouvez les examiner et les gérer à tout moment dans le gestionnaire ComfyUI.",
+      "extensionAtRisk": "Extension à risque",
+      "conflicts": "Conflits",
+      "importFailedExtensions": "Extensions dont l'importation a échoué",
+      "conflictInfoTitle": "Pourquoi cela se produit-il ?",
+      "installAnyway": "Installer quand même",
+      "enableAnyway": "Activer quand même",
+      "understood": "Compris",
+      "warningBanner": {
+        "title": "Certaines extensions sont désactivées en raison d'incompatibilité avec votre configuration actuelle",
+        "message": "Ces extensions nécessitent des versions de packages système différentes de votre configuration actuelle. Les installer peut remplacer les dépendances principales et affecter d'autres extensions ou workflows.",
+        "button": "En savoir plus..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "Incompatibilité de version ComfyUI (actuelle : {current}, requise : {required})",
+        "frontend_version": "Incompatibilité de version du frontend (actuelle : {current}, requise : {required})",
+        "os": "Système d'exploitation non pris en charge (actuel : {current}, requis : {required})",
+        "accelerator": "GPU/Accélérateur non pris en charge (disponible : {current}, requis : {required})",
+        "generic": "Problème de compatibilité (actuel : {current}, requis : {required})",
+        "banned": "Ce package est banni pour des raisons de sécurité",
+        "pending": "Vérification de sécurité en attente - la compatibilité ne peut pas être vérifiée",
+        "import_failed": "Échec de l'importation"
+      },
+      "warningTooltip": "Ce package peut avoir des problèmes de compatibilité avec votre environnement actuel"
+    }
   },
   "maskEditor": {
     "Apply to Whole Image": "Appliquer à toute l'image",
@@ -726,7 +886,8 @@
     "settings": "Paramètres",
     "showMenu": "Afficher le menu",
     "theme": "Thème",
-    "toggleBottomPanel": "Basculer le panneau inférieur"
+    "toggleBottomPanel": "Basculer le panneau inférieur",
+    "queue": "Panneau de file d'attente"
   },
   "menuLabels": {
     "About ComfyUI": "À propos de ComfyUI",
@@ -832,7 +993,22 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l'écran"
+    "Zoom to fit": "Ajuster à l'écran",
+    "Open 3D Viewer (Beta) for Selected Node": "Ouvrir le visualiseur 3D (Bêta) pour le nœud sélectionné",
+    "Lock Canvas": "Verrouiller le canevas",
+    "Exit Subgraph": "Quitter le sous-graphe",
+    "Install Missing": "Installer les manquants",
+    "Publish": "Publier",
+    "Canvas Performance": "Performances du canevas",
+    "Help Center": "Centre d'aide",
+    "Focus Mode": "Mode focus",
+    "Model Library": "Bibliothèque de modèles",
+    "Node Library": "Bibliothèque de nœuds",
+    "Queue Panel": "Panneau de file d'attente",
+    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
+    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
+    "sideToolbar_queue": "sideToolbar.queue",
+    "sideToolbar_workflows": "sideToolbar.workflows"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",
@@ -961,7 +1137,10 @@
     "executeButton": {
       "disabledTooltip": "Aucun nœud de sortie sélectionné",
       "tooltip": "Exécuter vers les nœuds de sortie sélectionnés (surlignés avec une bordure orange)"
-    }
+    },
+    "Set Group Nodes to Never": "Définir les nœuds de groupe sur Jamais",
+    "Bypass Group Nodes": "Contourner les nœuds de groupe",
+    "Set Group Nodes to Always": "Définir les nœuds de groupe sur Toujours"
   },
   "serverConfig": {
     "modifiedConfigs": "Vous avez modifié les configurations suivantes du serveur. Redémarrez pour appliquer les modifications.",
@@ -1108,7 +1287,14 @@
     },
     "reportIssue": "Signaler un problème",
     "showTerminal": "Afficher le terminal",
-    "troubleshoot": "Dépannage"
+    "troubleshoot": "Dépannage",
+    "title": "Démarrage de ComfyUI",
+    "copySelectionTooltip": "Copier la sélection",
+    "copyAllTooltip": "Tout copier",
+    "errorMessage": "Impossible de démarrer ComfyUI Desktop",
+    "installation": {
+      "title": "Installation de ComfyUI"
+    }
   },
   "settingsCategories": {
     "3D": "3D",
@@ -1162,7 +1348,8 @@
     "Validation": "Validation",
     "Vue Nodes": "Nœuds Vue",
     "Window": "Fenêtre",
-    "Workflow": "Flux de Travail"
+    "Workflow": "Flux de Travail",
+    "3DViewer": "3DViewer"
   },
   "sideToolbar": {
     "browseTemplates": "Parcourir les modèles d'exemple",
@@ -1222,11 +1409,33 @@
         "open": "Ouvrir"
       }
     },
-    "workflows": "Flux de travail"
+    "workflows": "Flux de travail",
+    "themeToggle": "Basculer le thème",
+    "templates": "Modèles",
+    "labels": {
+      "queue": "File d'attente",
+      "nodes": "Nœuds",
+      "models": "Modèles",
+      "workflows": "Flux de travail",
+      "templates": "Modèles"
+    }
   },
   "subgraphStore": {
     "blueprintName": "Nom du sous-graphe",
-    "saveBlueprint": "Enregistrer le sous-graphe dans la bibliothèque"
+    "saveBlueprint": "Enregistrer le sous-graphe dans la bibliothèque",
+    "confirmDeleteTitle": "Supprimer le plan ?",
+    "confirmDelete": "Cette action supprimera définitivement le plan de votre bibliothèque",
+    "overwriteBlueprintTitle": "Écraser le plan existant ?",
+    "overwriteBlueprint": "L'enregistrement écrasera le plan actuel avec vos modifications",
+    "publish": "Publier le sous-graphe",
+    "publishSuccess": "Enregistré dans la bibliothèque de nœuds",
+    "publishSuccessMessage": "Vous pouvez trouver votre plan de sous-graphe dans la bibliothèque de nœuds sous \"Plans de sous-graphes\"",
+    "loadFailure": "Échec du chargement des plans de sous-graphes",
+    "shown": "Affiché sur le nœud",
+    "showAll": "Tout afficher",
+    "hidden": "Paramètres cachés / imbriqués",
+    "hideAll": "Tout masquer",
+    "showRecommended": "Afficher les widgets recommandés"
   },
   "tabMenu": {
     "addToBookmarks": "Ajouter aux Favoris",
@@ -1253,7 +1462,9 @@
       "LLM API": "API LLM",
       "Upscaling": "Mise à l'échelle",
       "Video": "Vidéo",
-      "Video API": "API vidéo"
+      "Video API": "API vidéo",
+      "GettingStarted": "Commencer",
+      "LLMs": "LLMs"
     },
     "template": {
       "3D": {
@@ -1559,7 +1770,27 @@
         "api_veo2_i2v": "Générez des vidéos à partir d'images avec l'API Google Veo2."
       }
     },
-    "title": "Commencez avec un modèle"
+    "title": "Commencez avec un modèle",
+    "loadingMore": "Chargement de plus de modèles...",
+    "searchPlaceholder": "Rechercher des modèles...",
+    "categories": "Catégories",
+    "resetFilters": "Effacer les filtres",
+    "sorting": "Trier par",
+    "activeFilters": "Filtres :",
+    "loading": "Chargement des modèles...",
+    "noResults": "Aucun modèle trouvé",
+    "noResultsHint": "Essayez d'ajuster votre recherche ou vos filtres",
+    "modelFilter": "Filtre de modèle",
+    "modelsSelected": "{count} Modèles",
+    "useCasesSelected": "{count} Cas d'usage",
+    "licensesSelected": "{count} Licences",
+    "resultsCount": "Affichage de {count} sur {total} modèles",
+    "sort": {
+      "recommended": "Recommandé",
+      "alphabetical": "A → Z",
+      "newest": "Plus récent",
+      "searchPlaceholder": "Rechercher..."
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",
@@ -1597,7 +1828,8 @@
     "unauthorizedDomain": "Votre domaine {domain} n'est pas autorisé à utiliser ce service. Veuillez contacter {email} pour ajouter votre domaine à la liste blanche.",
     "updateRequested": "Mise à jour demandée",
     "useApiKeyTip": "Astuce : Vous ne pouvez pas accéder à la connexion normale ? Utilisez l’option Clé API Comfy.",
-    "userNotAuthenticated": "Utilisateur non authentifié"
+    "userNotAuthenticated": "Utilisateur non authentifié",
+    "failedToInitializeLoad3dViewer": "Échec de l'initialisation du visualiseur 3D"
   },
   "userSelect": {
     "enterUsername": "Entrez un nom d'utilisateur",
@@ -1630,7 +1862,8 @@
     },
     "personalDataConsentRequired": "Vous devez accepter le traitement de vos données personnelles.",
     "prefix": "Doit commencer par {prefix}",
-    "required": "Requis"
+    "required": "Requis",
+    "descriptionRequired": "La description est requise"
   },
   "versionMismatchWarning": {
     "dismiss": "Ignorer",
@@ -1651,5 +1884,87 @@
     "enterFilename": "Entrez le nom du fichier",
     "exportWorkflow": "Exporter le flux de travail",
     "saveWorkflow": "Enregistrer le flux de travail"
+  },
+  "desktopStart": {
+    "initialising": "Initialisation..."
+  },
+  "shape": {
+    "default": "Par défaut",
+    "round": "Rond",
+    "CARD": "Carte",
+    "circle": "Cercle",
+    "arrow": "Flèche",
+    "box": "Boîte"
+  },
+  "zoomControls": {
+    "label": "Contrôles de zoom",
+    "zoomToFit": "Ajuster à l'écran",
+    "showMinimap": "Afficher la mini-carte",
+    "hideMinimap": "Masquer la mini-carte"
+  },
+  "commands": {
+    "runWorkflow": "Exécuter le workflow",
+    "runWorkflowFront": "Exécuter le workflow (Mettre en file d'attente en premier)",
+    "run": "Exécuter",
+    "execute": "Exécuter",
+    "interrupt": "Annuler l'exécution en cours",
+    "refresh": "Actualiser les définitions de nœud",
+    "clipspace": "Ouvrir Clipspace",
+    "resetView": "Réinitialiser la vue du canevas",
+    "clear": "Effacer le workflow",
+    "toggleBottomPanel": "Basculer le panneau inférieur",
+    "theme": "Thème",
+    "dark": "Sombre",
+    "light": "Clair",
+    "manageExtensions": "Gérer les extensions",
+    "settings": "Paramètres",
+    "help": "Aide",
+    "queue": "Panneau de file d'attente"
+  },
+  "widgets": {
+    "selectModel": "Sélectionner un modèle",
+    "uploadSelect": {
+      "placeholder": "Sélectionner...",
+      "placeholderImage": "Sélectionner une image...",
+      "placeholderAudio": "Sélectionner un audio...",
+      "placeholderVideo": "Sélectionner une vidéo...",
+      "placeholderModel": "Sélectionner un modèle...",
+      "placeholderUnknown": "Sélectionner un média..."
+    }
+  },
+  "shortcuts": {
+    "essentials": "Essentiel",
+    "viewControls": "Contrôles d'affichage",
+    "manageShortcuts": "Gérer les raccourcis",
+    "noKeybinding": "Aucun raccourci clavier",
+    "keyboardShortcuts": "Raccourcis clavier",
+    "subcategories": {
+      "workflow": "Flux de travail",
+      "node": "Nœud",
+      "queue": "File d'attente",
+      "view": "Affichage",
+      "panelControls": "Contrôles de panneau"
+    }
+  },
+  "assetBrowser": {
+    "assets": "Ressources",
+    "browseAssets": "Parcourir les ressources",
+    "noAssetsFound": "Aucune ressource trouvée",
+    "tryAdjustingFilters": "Essayez d'ajuster votre recherche ou vos filtres",
+    "loadingModels": "Chargement de {type}...",
+    "connectionError": "Veuillez vérifier votre connexion et réessayer",
+    "failedToCreateNode": "Échec de la création du nœud. Veuillez réessayer ou consulter la console pour plus de détails.",
+    "noModelsInFolder": "Aucun {type} disponible dans ce dossier",
+    "searchAssetsPlaceholder": "Rechercher des ressources...",
+    "allModels": "Tous les modèles",
+    "allCategory": "Tous les {category}",
+    "unknown": "Inconnu",
+    "fileFormats": "Formats de fichier",
+    "baseModels": "Modèles de base",
+    "sortBy": "Trier par",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "Récent",
+    "sortPopular": "Populaire"
   }
 }

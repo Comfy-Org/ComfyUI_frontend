@@ -95,7 +95,8 @@
     "clearWorkflow": "Очистить рабочий процесс",
     "deleteWorkflow": "Удалить рабочий процесс",
     "duplicate": "Дублировать",
-    "enterNewName": "Введите новое имя"
+    "enterNewName": "Введите новое имя",
+    "deleteBlueprint": "Удалить схему"
   },
   "chatHistory": {
     "cancelEdit": "Отмена",
@@ -150,7 +151,38 @@
     "Search": "Поиск",
     "Shapes": "Формы",
     "Title": "Заголовок",
-    "Unpin": "Открепить"
+    "Unpin": "Открепить",
+    "Open in Mask Editor": "Открыть в редакторе масок",
+    "Open Image": "Открыть изображение",
+    "Copy Image": "Копировать изображение",
+    "Save Image": "Сохранить изображение",
+    "Rename": "Переименовать",
+    "Copy": "Копировать",
+    "Duplicate": "Дублировать",
+    "Paste": "Вставить",
+    "Node Info": "Информация о ноде",
+    "Adjust Size": "Настроить размер",
+    "Minimize Node": "Свернуть ноду",
+    "Expand Node": "Развернуть ноду",
+    "Shape": "Форма",
+    "Color": "Цвет",
+    "Add Subgraph to Library": "Добавить подграф в библиотеку",
+    "Unpack Subgraph": "Распаковать подграф",
+    "Edit Subgraph Widgets": "Редактировать виджеты подграфа",
+    "Convert to Subgraph": "Преобразовать в подграф",
+    "Align Selected To": "Выровнять выделенные по",
+    "Distribute Nodes": "Распределить ноды",
+    "Remove Bypass": "Удалить обход",
+    "Run Branch": "Запустить ветку",
+    "Delete": "Удалить",
+    "Top": "Верх",
+    "Bottom": "Низ",
+    "Left": "Влево",
+    "Right": "Вправо",
+    "Horizontal": "Горизонтально",
+    "Vertical": "Вертикально",
+    "new": "новый",
+    "deprecated": "устаревший"
   },
   "credits": {
     "accountInitialized": "Аккаунт инициализирован",
@@ -418,7 +450,39 @@
     "versionMismatchWarning": "Предупреждение о несовместимости версий",
     "versionMismatchWarningMessage": "{warning}: {detail} Посетите https://docs.comfy.org/installation/update_comfyui#common-update-issues для инструкций по обновлению.",
     "videoFailedToLoad": "Не удалось загрузить видео",
-    "workflow": "Рабочий процесс"
+    "workflow": "Рабочий процесс",
+    "downloadImage": "Скачать изображение",
+    "downloadVideo": "Скачать видео",
+    "editOrMaskImage": "Редактировать или маскировать изображение",
+    "removeImage": "Удалить изображение",
+    "removeVideo": "Удалить видео",
+    "viewImageOfTotal": "Просмотр изображения {index} из {total}",
+    "viewVideoOfTotal": "Просмотр видео {index} из {total}",
+    "imagePreview": "Предварительный просмотр изображения - Используйте клавиши со стрелками для навигации между изображениями",
+    "videoPreview": "Предварительный просмотр видео - Используйте клавиши со стрелками для навигации между видео",
+    "galleryImage": "Изображение галереи",
+    "galleryThumbnail": "Миниатюра галереи",
+    "errorLoadingImage": "Ошибка загрузки изображения",
+    "errorLoadingVideo": "Ошибка загрузки видео",
+    "failedToDownloadImage": "Не удалось скачать изображение",
+    "failedToDownloadVideo": "Не удалось скачать видео",
+    "calculatingDimensions": "Расчёт размеров",
+    "logoAlt": "Логотип ComfyUI",
+    "refreshNode": "Обновить ноду",
+    "info": "Информация о ноде",
+    "bookmark": "Сохранить в библиотеку",
+    "moreOptions": "Больше опций",
+    "search": "Поиск",
+    "warning": "Предупреждение",
+    "multiSelectDropdown": "Выпадающий список множественного выбора",
+    "singleSelectDropdown": "Выпадающий список единичного выбора",
+    "seeTutorial": "Посмотреть руководство",
+    "nodeRenderError": "Ошибка рендеринга ноды",
+    "nodeContentError": "Ошибка содержимого ноды",
+    "nodeHeaderError": "Ошибка заголовка ноды",
+    "nodeSlotsError": "Ошибка слотов ноды",
+    "nodeWidgetsError": "Ошибка виджетов ноды",
+    "frameNodes": "Фреймовые ноды"
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",
@@ -428,7 +492,13 @@
     "toggleLinkVisibility": "Переключить видимость ссылок",
     "toggleMinimap": "Показать/скрыть миникарту",
     "zoomIn": "Увеличить",
-    "zoomOut": "Уменьшить"
+    "zoomOut": "Уменьшить",
+    "select": "Выбрать",
+    "hand": "Рука",
+    "zoomOptions": "Параметры масштабирования",
+    "focusMode": "Режим фокуса",
+    "hideLinks": "Скрыть связи",
+    "showLinks": "Показать связи"
   },
   "groupNode": {
     "create": "Создать ноду группы",
@@ -446,7 +516,8 @@
     "openDevTools": "Открыть инструменты разработчика",
     "reinstall": "Переустановить",
     "updateAvailable": "Обновить",
-    "whatsNew": "Что нового?"
+    "whatsNew": "Что нового?",
+    "managerExtension": "Расширение менеджера"
   },
   "icon": {
     "bookmark": "Закладка",
@@ -546,7 +617,28 @@
     },
     "systemLocations": "Системные места",
     "unhandledError": "Неизвестная ошибка",
-    "updateConsent": "Вы ранее согласились на отчётность об ошибках. Теперь мы отслеживаем метрики событий, чтобы помочь выявить ошибки и улучшить приложение. Личная идентифицируемая информация не собирается."
+    "updateConsent": "Вы ранее согласились на отчётность об ошибках. Теперь мы отслеживаем метрики событий, чтобы помочь выявить ошибки и улучшить приложение. Личная идентифицируемая информация не собирается.",
+    "gpuPicker": {
+      "title": "Выберите настройку оборудования",
+      "recommended": "РЕКОМЕНДУЕТСЯ",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "Режим CPU",
+      "manualSubtitle": "Ручная настройка",
+      "appleMetalDescription": "Использует GPU вашего Mac для более высокой скорости и улучшенного общего опыта",
+      "nvidiaDescription": "Используйте вашу видеокарту NVIDIA с ускорением CUDA для наилучшей производительности.",
+      "cpuDescription": "Используйте режим CPU для совместимости, когда ускорение GPU недоступно",
+      "manualDescription": "Настройте ComfyUI вручную для расширенных настроек или неподдерживаемого оборудования"
+    },
+    "locationPicker": {
+      "title": "Выберите место установки ComfyUI",
+      "subtitle": "Выберите папку для файлов ComfyUI. Мы также автоматически настроим Python там.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "Выберите существующую установку ComfyUI (необязательно)",
+      "migrateFromExisting": "Мигрировать из существующей установки",
+      "migrateDescription": "Скопируйте или свяжите ваши существующие модели, пользовательские ноды и конфигурации из предыдущей установки ComfyUI.",
+      "chooseDownloadServers": "Выбрать серверы загрузки вручную",
+      "downloadServersDescription": "Выберите конкретные зеркальные серверы для загрузки Python, пакетов PyPI и PyTorch в зависимости от вашего местоположения."
+    }
   },
   "issueReport": {
     "helpFix": "Помочь исправить это"
@@ -586,12 +678,33 @@
     "switchingMaterialMode": "Переключение режима материала...",
     "upDirection": "Направление Вверх",
     "uploadBackgroundImage": "Загрузить фоновое изображение",
-    "uploadTexture": "Загрузить текстуру"
+    "uploadTexture": "Загрузить текстуру",
+    "upDirections": {
+      "original": "Оригинал"
+    },
+    "cameraType": {
+      "perspective": "Перспектива",
+      "orthographic": "Ортографическая"
+    },
+    "viewer": {
+      "title": "3D Просмотрщик (Бета)",
+      "apply": "Применить",
+      "cancel": "Отмена",
+      "cameraType": "Тип камеры",
+      "sceneSettings": "Настройки сцены",
+      "cameraSettings": "Настройки камеры",
+      "lightSettings": "Настройки освещения",
+      "exportSettings": "Настройки экспорта",
+      "modelSettings": "Настройки модели"
+    },
+    "openIn3DViewer": "Открыть в 3D просмотрщике"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Требуется ComfyUI {version}:",
     "outdatedVersion": "Некоторые узлы требуют более новой версии ComfyUI (текущая: {version}). Пожалуйста, обновите, чтобы использовать все узлы.",
-    "outdatedVersionGeneric": "Некоторые узлы требуют более новой версии ComfyUI. Пожалуйста, обновите, чтобы использовать все узлы."
+    "outdatedVersionGeneric": "Некоторые узлы требуют более новой версии ComfyUI. Пожалуйста, обновите, чтобы использовать все узлы.",
+    "missingNodesTitle": "Некоторые ноды отсутствуют",
+    "missingNodesDescription": "При загрузке графа следующие типы нод не были найдены.\nЭто также может произойти, если ваша установленная версия ниже и этот тип ноды не может быть найден."
   },
   "maintenance": {
     "None": "Нет",
@@ -661,7 +774,9 @@
       "deleted": "Удалено",
       "flagged": "Отмечено",
       "pending": "В ожидании",
-      "unknown": "Неизвестно"
+      "unknown": "Неизвестно",
+      "conflicting": "Конфликтующий",
+      "importFailed": "Ошибка установки"
     },
     "title": "Менеджер Пользовательских Узлов",
     "totalNodes": "Всего Узлов",
@@ -672,7 +787,52 @@
     "uninstalling": "Удаление",
     "update": "Обновить",
     "updatingAllPacks": "Обновление всех пакетов",
-    "version": "Версия"
+    "version": "Версия",
+    "failedToInstall": "Не удалось установить",
+    "installError": "Ошибка установки",
+    "importFailedGenericError": "Не удалось импортировать пакет. Проверьте консоль для получения дополнительной информации.",
+    "applyChanges": "Применить изменения",
+    "clickToFinishSetup": "Нажмите",
+    "toFinishSetup": "чтобы завершить настройку",
+    "restartingBackend": "Перезапуск бэкенда для применения изменений...",
+    "extensionsSuccessfullyInstalled": "Расширение(я) успешно установлено и готово к использованию!",
+    "installingDependencies": "Установка зависимостей...",
+    "updateSelected": "Обновить выбранное",
+    "updateAll": "Обновить всё",
+    "disabledNodesWontUpdate": "Отключенные ноды не будут обновлены",
+    "enablePackToChangeVersion": "Включите этот пакет для изменения версий",
+    "gettingInfo": "Получение информации...",
+    "allMissingNodesInstalled": "Все отсутствующие ноды успешно установлены",
+    "mixedSelectionMessage": "Невозможно выполнить массовое действие для смешанного выбора",
+    "notAvailable": "Недоступно",
+    "conflicts": {
+      "title": "Обнаружены проблемы с пакетами нод!",
+      "description": "Мы обнаружили конфликты между некоторыми вашими расширениями и новой версией ComfyUI. При обновлении вы рискуете нарушить работу рабочих процессов, которые зависят от этих расширений.",
+      "info": "Если вы продолжите обновление, конфликтующие расширения будут автоматически отключены. Вы можете просмотреть и управлять ими в любое время в Менеджере ComfyUI.",
+      "extensionAtRisk": "Расширение под угрозой",
+      "conflicts": "Конфликты",
+      "importFailedExtensions": "Расширения с ошибками импорта",
+      "conflictInfoTitle": "Почему это происходит?",
+      "installAnyway": "Всё равно установить",
+      "enableAnyway": "Всё равно включить",
+      "understood": "Понятно",
+      "warningBanner": {
+        "title": "Некоторые расширения отключены из-за несовместимости с вашей текущей конфигурацией",
+        "message": "Эти расширения требуют версии системных пакетов, отличных от вашей текущей конфигурации. Их установка может переопределить основные зависимости и повлиять на другие расширения или рабочие процессы.",
+        "button": "Узнать больше..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "Несоответствие версии ComfyUI (текущая: {current}, требуется: {required})",
+        "frontend_version": "Несоответствие версии фронтенда (текущая: {current}, требуется: {required})",
+        "os": "Операционная система не поддерживается (текущая: {current}, требуется: {required})",
+        "accelerator": "GPU/Ускоритель не поддерживается (доступно: {current}, требуется: {required})",
+        "generic": "Проблема совместимости (текущая: {current}, требуется: {required})",
+        "banned": "Этот пакет заблокирован по соображениям безопасности",
+        "pending": "Ожидается проверка безопасности - совместимость не может быть проверена",
+        "import_failed": "Не удалось импортировать"
+      },
+      "warningTooltip": "Этот пакет может иметь проблемы совместимости с вашей текущей средой"
+    }
   },
   "maskEditor": {
     "Apply to Whole Image": "Применить ко всему изображению",
@@ -726,7 +886,8 @@
     "settings": "Настройки",
     "showMenu": "Показать меню",
     "theme": "Тема",
-    "toggleBottomPanel": "Переключить нижнюю панель"
+    "toggleBottomPanel": "Переключить нижнюю панель",
+    "queue": "Панель очереди"
   },
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
@@ -832,7 +993,22 @@
     "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить",
-    "Zoom to fit": "Масштабировать по размеру"
+    "Zoom to fit": "Масштабировать по размеру",
+    "Open 3D Viewer (Beta) for Selected Node": "Открыть 3D просмотрщик (Бета) для выбранного узла",
+    "Lock Canvas": "Заблокировать холст",
+    "Exit Subgraph": "Выйти из подграфа",
+    "Install Missing": "Установить отсутствующее",
+    "Publish": "Опубликовать",
+    "Canvas Performance": "Производительность холста",
+    "Help Center": "Центр помощи",
+    "Focus Mode": "Режим фокуса",
+    "Model Library": "Библиотека моделей",
+    "Node Library": "Библиотека узлов",
+    "Queue Panel": "Панель очереди",
+    "sideToolbar_modelLibrary": "sideToolbar.каталогМоделей",
+    "sideToolbar_nodeLibrary": "sideToolbar.каталогУзлов",
+    "sideToolbar_queue": "sideToolbar.очередь",
+    "sideToolbar_workflows": "sideToolbar.рабочиеПроцессы"
   },
   "minimap": {
     "nodeColors": "Цвета узлов",
@@ -960,7 +1136,10 @@
     "executeButton": {
       "disabledTooltip": "Выходные узлы не выбраны",
       "tooltip": "Выполнить для выбранных выходных узлов (выделены оранжевой рамкой)"
-    }
+    },
+    "Set Group Nodes to Never": "Никогда не использовать групповые узлы",
+    "Bypass Group Nodes": "Обойти групповые узлы",
+    "Set Group Nodes to Always": "Всегда использовать групповые узлы"
   },
   "serverConfig": {
     "modifiedConfigs": "Вы изменили следующие конфигурации сервера. Перезапустите, чтобы применить изменения.",
@@ -1107,7 +1286,14 @@
     },
     "reportIssue": "Сообщить о проблеме",
     "showTerminal": "Показать терминал",
-    "troubleshoot": "Устранение неполадок"
+    "troubleshoot": "Устранение неполадок",
+    "title": "Запуск ComfyUI",
+    "copySelectionTooltip": "Копировать выделение",
+    "copyAllTooltip": "Копировать всё",
+    "errorMessage": "Не удалось запустить ComfyUI Desktop",
+    "installation": {
+      "title": "Установка ComfyUI"
+    }
   },
   "settingsCategories": {
     "3D": "3D",
@@ -1161,7 +1347,8 @@
     "Validation": "Валидация",
     "Vue Nodes": "Vue Nodes",
     "Window": "Окно",
-    "Workflow": "Рабочий процесс"
+    "Workflow": "Рабочий процесс",
+    "3DViewer": "3DViewer"
   },
   "sideToolbar": {
     "browseTemplates": "Просмотреть примеры шаблонов",
@@ -1221,11 +1408,33 @@
         "open": "Открыть"
       }
     },
-    "workflows": "Рабочие процессы"
+    "workflows": "Рабочие процессы",
+    "themeToggle": "Переключить тему",
+    "templates": "Шаблоны",
+    "labels": {
+      "queue": "Очередь",
+      "nodes": "Узлы",
+      "models": "Модели",
+      "workflows": "Рабочие процессы",
+      "templates": "Шаблоны"
+    }
   },
   "subgraphStore": {
     "blueprintName": "Имя подграфа",
-    "saveBlueprint": "Сохранить подграф в библиотеку"
+    "saveBlueprint": "Сохранить подграф в библиотеку",
+    "confirmDeleteTitle": "Удалить подграф?",
+    "confirmDelete": "Это действие навсегда удалит подграф из вашей библиотеки",
+    "overwriteBlueprintTitle": "Перезаписать существующий подграф?",
+    "overwriteBlueprint": "Сохранение перезапишет текущий подграф вашими изменениями",
+    "publish": "Опубликовать подграф",
+    "publishSuccess": "Сохранено в библиотеку узлов",
+    "publishSuccessMessage": "Вы можете найти свой подграф в библиотеке узлов в разделе «Subgraph Blueprints»",
+    "loadFailure": "Не удалось загрузить схемы подграфов",
+    "shown": "Показано на узле",
+    "showAll": "Показать всё",
+    "hidden": "Скрытые / вложенные параметры",
+    "hideAll": "Скрыть всё",
+    "showRecommended": "Показать рекомендуемые виджеты"
   },
   "tabMenu": {
     "addToBookmarks": "Добавить в закладки",
@@ -1252,7 +1461,9 @@
       "LLM API": "LLM API",
       "Upscaling": "Увеличение разрешения",
       "Video": "Видео",
-      "Video API": "Video API"
+      "Video API": "Video API",
+      "GettingStarted": "Начало работы",
+      "LLMs": "Языковые модели"
     },
     "template": {
       "3D": {
@@ -1558,7 +1769,27 @@
         "api_veo2_i2v": "Генерируйте видео по изображениям с помощью Google Veo2 API."
       }
     },
-    "title": "Начните с шаблона"
+    "title": "Начните с шаблона",
+    "loadingMore": "Загрузка дополнительных шаблонов...",
+    "searchPlaceholder": "Поиск шаблонов...",
+    "categories": "Категории",
+    "resetFilters": "Очистить фильтры",
+    "sorting": "Сортировать по",
+    "activeFilters": "Фильтры:",
+    "loading": "Загрузка шаблонов...",
+    "noResults": "Шаблоны не найдены",
+    "noResultsHint": "Попробуйте изменить параметры поиска или фильтры",
+    "modelFilter": "Фильтр моделей",
+    "modelsSelected": "{count} моделей",
+    "useCasesSelected": "{count} вариантов использования",
+    "licensesSelected": "{count} лицензий",
+    "resultsCount": "Показано {count} из {total} шаблонов",
+    "sort": {
+      "recommended": "Рекомендуемые",
+      "alphabetical": "А → Я",
+      "newest": "Новейшие",
+      "searchPlaceholder": "Поиск..."
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Невозможно создать подграф",
@@ -1596,7 +1827,8 @@
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
     "updateRequested": "Запрошено обновление",
     "useApiKeyTip": "Совет: Нет доступа к обычному входу? Используйте опцию Comfy API Key.",
-    "userNotAuthenticated": "Пользователь не аутентифицирован"
+    "userNotAuthenticated": "Пользователь не аутентифицирован",
+    "failedToInitializeLoad3dViewer": "Не удалось инициализировать 3D просмотрщик"
   },
   "userSelect": {
     "enterUsername": "Введите имя пользователя",
@@ -1629,7 +1861,8 @@
     },
     "personalDataConsentRequired": "Вы должны согласиться на обработку ваших персональных данных.",
     "prefix": "Должно начинаться с {prefix}",
-    "required": "Обязательно"
+    "required": "Обязательно",
+    "descriptionRequired": "Описание обязательно"
   },
   "versionMismatchWarning": {
     "dismiss": "Закрыть",
@@ -1650,5 +1883,86 @@
     "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
+  },
+  "desktopStart": {
+    "initialising": "Инициализация..."
+  },
+  "shape": {
+    "default": "По умолчанию",
+    "round": "Круг",
+    "CARD": "Карточка",
+    "circle": "Круг",
+    "arrow": "Стрелка",
+    "box": "Коробка"
+  },
+  "zoomControls": {
+    "label": "Управление масштабом",
+    "zoomToFit": "Масштабировать по размеру",
+    "showMinimap": "Показать миникарту",
+    "hideMinimap": "Скрыть миникарту"
+  },
+  "commands": {
+    "runWorkflow": "Запустить рабочий процесс",
+    "runWorkflowFront": "Запустить рабочий процесс (в начало очереди)",
+    "run": "Запустить",
+    "execute": "Выполнить",
+    "interrupt": "Отменить текущий запуск",
+    "refresh": "Обновить определения узлов",
+    "clipspace": "Открыть Clipspace",
+    "resetView": "Сбросить вид холста",
+    "clear": "Очистить рабочий процесс",
+    "toggleBottomPanel": "Показать/скрыть нижнюю панель",
+    "theme": "Тема",
+    "dark": "Тёмная",
+    "light": "Светлая",
+    "manageExtensions": "Управление расширениями",
+    "settings": "Настройки",
+    "help": "Помощь",
+    "queue": "Панель очереди"
+  },
+  "widgets": {
+    "selectModel": "Выбрать модель",
+    "uploadSelect": {
+      "placeholder": "Выбрать...",
+      "placeholderImage": "Выбрать изображение...",
+      "placeholderAudio": "Выбрать аудио...",
+      "placeholderVideo": "Выбрать видео...",
+      "placeholderModel": "Выбрать модель...",
+      "placeholderUnknown": "Выбрать медиа..."
+    }
+  },
+  "shortcuts": {
+    "essentials": "Основные",
+    "viewControls": "Управление видом",
+    "manageShortcuts": "Управление горячими клавишами",
+    "noKeybinding": "Нет сочетания клавиш",
+    "keyboardShortcuts": "Горячие клавиши",
+    "subcategories": {
+      "workflow": "Рабочий процесс",
+      "node": "Узел",
+      "queue": "Очередь",
+      "view": "Вид",
+      "panelControls": "Управление панелями"
+    }
+  },
+  "assetBrowser": {
+    "assets": "Ресурсы",
+    "browseAssets": "Просмотр ресурсов",
+    "noAssetsFound": "Ресурсы не найдены",
+    "tryAdjustingFilters": "Попробуйте изменить поиск или фильтры",
+    "loadingModels": "Загрузка {type}...",
+    "connectionError": "Проверьте соединение и попробуйте снова",
+    "failedToCreateNode": "Не удалось создать узел. Попробуйте ещё раз или проверьте консоль для подробностей.",
+    "noModelsInFolder": "Нет {type} в этой папке",
+    "searchAssetsPlaceholder": "Поиск ресурсов...",
+    "allModels": "Все модели",
+    "allCategory": "Все {category}",
+    "unknown": "Неизвестно",
+    "fileFormats": "Форматы файлов",
+    "baseModels": "Базовые модели",
+    "sortBy": "Сортировать по",
+    "sortAZ": "А-Я",
+    "sortZA": "Я-А",
+    "sortRecent": "Недавние",
+    "sortPopular": "Популярные"
   }
-}

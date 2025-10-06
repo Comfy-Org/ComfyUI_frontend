@@ -11,7 +11,10 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Espejo de instalación Python",
-    "tooltip": "Las instalaciones de Python gestionadas se descargan del proyecto python-build-standalone de Astral. Esta variable puede establecerse en una URL de espejo para usar una fuente diferente para las instalaciones de Python. La URL proporcionada reemplazará https://github.com/astral-sh/python-build-standalone/releases/download en, por ejemplo, https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Las distribuciones pueden leerse desde un directorio local utilizando el esquema de URL file://."
+    "tooltip": "Las instalaciones de Python gestionadas se descargan del proyecto python-build-standalone de Astral. Esta variable puede establecerse en una URL de espejo para usar una fuente diferente para las instalaciones de Python. La URL proporcionada reemplazará https://github.com/astral-sh/python-build-standalone/releases/download en, por ejemplo, https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Las distribuciones pueden leerse desde un directorio local utilizando el esquema de URL file://.",
+    "urlFormatTitle": "Formato de URL del Espejo",
+    "urlDescription": "Este es un ejemplo de URL de descarga de python.\n\nLa URL del espejo es la primera mitad, incluyendo todo antes de la fecha (20250902):",
+    "fileUrlDescription": "Para instalar desde un archivo que descargaste anteriormente, puedes usar una URL de archivo:"
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "Espejo de instalación Torch",
@@ -420,5 +423,9 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Siempre ajustar a la cuadrícula"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "Nivel de Detalle del Nodo al Hacer Zoom - umbral de tamaño de fuente",
+    "tooltip": "Controla cuándo los nodos cambian a renderizado LOD de baja calidad. Usa el tamaño de fuente en píxeles para determinar cuándo cambiar. Establece en 0 para deshabilitar. Los valores 1-24 establecen el umbral mínimo de tamaño de fuente para LOD - valores más altos (24px) = cambiar nodos a renderizado simplificado más pronto al alejar, valores más bajos (1px) = mantener calidad completa del nodo por más tiempo."
   }
 }
