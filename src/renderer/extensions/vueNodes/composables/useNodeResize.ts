@@ -6,8 +6,6 @@ import type { TransformState } from '@/renderer/core/layout/injectionKeys'
 interface UseNodeResizeOptions {
   /** Transform state for coordinate conversion */
   transformState: TransformState
-  /** Callback when resize ends */
-  onEnd?: () => void
 }
 
 /**
@@ -116,7 +114,6 @@ export function useNodeResize(
         target.releasePointerCapture(upEvent.pointerId)
         stopMoveListen()
         stopUpListen()
-        options.onEnd?.()
       }
     }
 
