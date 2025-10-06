@@ -1944,7 +1944,7 @@
     "connectionError": "Please check your connection and try again",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
-    "searchAssetsPlaceholder": "Search assets...",
+    "searchAssetsPlaceholder": "Type to search...",
     "allModels": "All Models",
     "allCategory": "All {category}",
     "unknown": "Unknown",
