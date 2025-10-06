@@ -1,3 +1,7 @@
+import type {
+  TooltipDirectivePassThroughOptions,
+  TooltipPassThroughMethodOptions
+} from 'primevue/tooltip'
 import { type MaybeRef, computed, ref, unref } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
@@ -161,16 +165,15 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
           class:
             'border-sand-100 bg-pure-white dark-theme:bg-charcoal-800 border dark-theme:border-slate-300 rounded-md px-4 py-2 text-charcoal-700 dark-theme:text-pure-white text-sm font-normal leading-tight max-w-75 shadow-none'
         },
-        arrow: ({ context }: { context?: any }) => ({
+        arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
           class: cn(
-            context?.top && 'border-t-sand-100 dark-theme:border-t-slate-300',
-            context?.bottom &&
-              'border-b-sand-100 dark-theme:border-b-slate-300',
-            context?.left && 'border-l-sand-100 dark-theme:border-l-slate-300',
-            context?.right && 'border-r-sand-100 dark-theme:border-r-slate-300'
+            context.top && 'border-t-sand-100 dark-theme:border-t-slate-300',
+            context.bottom && 'border-b-sand-100 dark-theme:border-b-slate-300',
+            context.left && 'border-l-sand-100 dark-theme:border-l-slate-300',
+            context.right && 'border-r-sand-100 dark-theme:border-r-slate-300'
           )
         })
-      }
+      } as TooltipDirectivePassThroughOptions
     }
   }
 
