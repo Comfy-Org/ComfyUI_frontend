@@ -1,6 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragState'
+import {
+  type SlotDropCandidate,
+  useSlotLinkDragState
+} from '@/renderer/core/canvas/links/slotLinkDragState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLinkDragSession } from '@/renderer/extensions/vueNodes/composables/slotLinkDragSession'
@@ -13,8 +16,9 @@ interface DropResolutionContext {
 
 export const resolveSlotTargetCandidate = (
   target: EventTarget | null,
-  { adapter, graph, session }: DropResolutionContext
+  { adapter, graph }: DropResolutionContext
 ): SlotDropCandidate | null => {
+  const { state: dragState, setCompatibleForKey } = useSlotLinkDragState()
   if (!(target instanceof HTMLElement)) return null
 
   const elWithKey = target.closest<HTMLElement>('[data-slot-key]')
@@ -27,7 +31,7 @@ export const resolveSlotTargetCandidate = (
   const candidate: SlotDropCandidate = { layout, compatible: false }
 
   if (adapter && graph) {
-    const cached = session.compatCache.get(key)
+    const cached = dragState.compatible.get(key)
     if (cached != null) {
       candidate.compatible = cached
     } else {
@@ -37,7 +41,7 @@ export const resolveSlotTargetCandidate = (
           ? adapter.isInputValidDrop(nodeId, layout.index)
           : adapter.isOutputValidDrop(nodeId, layout.index)
 
-      session.compatCache.set(key, compatible)
+      setCompatibleForKey(key, compatible)
       candidate.compatible = compatible
     }
   }
@@ -49,6 +53,7 @@ export const resolveNodeSurfaceCandidate = (
   target: EventTarget | null,
   { adapter, graph, session }: DropResolutionContext
 ): SlotDropCandidate | null => {
+  const { setCompatibleForKey } = useSlotLinkDragState()
   if (!(target instanceof HTMLElement)) return null
 
   const elWithNode = target.closest<HTMLElement>('[data-node-id]')
@@ -99,7 +104,7 @@ export const resolveNodeSurfaceCandidate = (
     ? adapter.isInputValidDrop(nodeId, index)
     : adapter.isOutputValidDrop(nodeId, index)
 
-  session.compatCache.set(key, compatible)
+  setCompatibleForKey(key, compatible)
 
   if (!compatible) {
     session.nodePreferred.set(nodeId, null)

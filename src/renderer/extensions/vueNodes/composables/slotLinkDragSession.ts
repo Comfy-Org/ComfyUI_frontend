@@ -7,7 +7,6 @@ interface PendingMoveData {
 }
 
 export interface SlotLinkDragSession {
-  compatCache: Map<string, boolean>
   nodePreferred: Map<
     number,
     { index: number; key: string; layout: SlotLayout } | null
@@ -22,14 +21,12 @@ export interface SlotLinkDragSession {
 
 export function createSlotLinkDragSession(): SlotLinkDragSession {
   const state: SlotLinkDragSession = {
-    compatCache: new Map(),
     nodePreferred: new Map(),
     lastHoverSlotKey: null,
     lastHoverNodeId: null,
     lastCandidateKey: null,
     pendingMove: null,
     reset: () => {
-      state.compatCache = new Map()
       state.nodePreferred = new Map()
       state.lastHoverSlotKey = null
       state.lastHoverNodeId = null
