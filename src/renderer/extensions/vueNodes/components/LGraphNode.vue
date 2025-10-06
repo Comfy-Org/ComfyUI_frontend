@@ -116,7 +116,7 @@
 
     <!-- Resize handle -->
     <div
-      v-if="!readonly"
+      v-if="!isCollapsed"
       class="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-0 hover:opacity-20 hover:bg-white transition-opacity duration-200"
       @pointerdown.stop="startResize"
     />
