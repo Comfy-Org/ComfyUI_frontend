@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
@@ -109,11 +109,8 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
-  nodeData?.type || '',
-  tooltipContainer
+  nodeData?.type || ''
 )
 
 const tooltipConfig = computed(() => {

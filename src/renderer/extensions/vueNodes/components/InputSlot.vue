@@ -27,9 +27,7 @@
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
-  type Ref,
   computed,
-  inject,
   onErrorCaptured,
   ref,
   watchEffect
@@ -86,11 +84,8 @@ const labelClasses = computed(() =>
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || '',
-  tooltipContainer
+  props.nodeType || ''
 )
 
 const tooltipConfig = computed(() => {
