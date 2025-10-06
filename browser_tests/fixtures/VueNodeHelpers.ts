@@ -24,9 +24,7 @@ export class VueNodeHelpers {
    * Get locator for selected Vue node components (using visual selection indicators)
    */
   get selectedNodes(): Locator {
-    return this.page.locator(
-      '[data-node-id].outline-black, [data-node-id].outline-white'
-    )
+    return this.page.locator('[data-node-id].outline-node-component-outline')
   }
 
   /**

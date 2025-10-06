@@ -128,7 +128,7 @@
         <!-- Title -->
         <span
           v-if="isLoading"
-          class="inline-block h-8 w-48 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+          class="inline-block h-8 w-48 bg-dialog-surface rounded animate-pulse"
         ></span>
 
         <!-- Template Cards Grid -->
@@ -148,7 +148,7 @@
               <CardTop ratio="landscape">
                 <template #default>
                   <div
-                    class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
+                    class="w-full h-full bg-dialog-surface animate-pulse"
                   ></div>
                 </template>
               </CardTop>
@@ -157,10 +157,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="h-6 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse mb-2"
+                    class="h-6 bg-dialog-surface rounded animate-pulse mb-2"
                   ></div>
                   <div
-                    class="h-4 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+                    class="h-4 bg-dialog-surface rounded animate-pulse"
                   ></div>
                 </div>
               </CardBottom>
@@ -323,7 +323,7 @@
               <CardTop ratio="square">
                 <template #default>
                   <div
-                    class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
+                    class="w-full h-full bg-dialog-surface animate-pulse"
                   ></div>
                 </template>
               </CardTop>
@@ -332,10 +332,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="h-6 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse mb-2"
+                    class="h-6 bg-dialog-surface rounded animate-pulse mb-2"
                   ></div>
                   <div
-                    class="h-4 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+                    class="h-4 bg-dialog-surface rounded animate-pulse"
                   ></div>
                 </div>
               </CardBottom>
