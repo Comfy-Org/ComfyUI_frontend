@@ -131,7 +131,7 @@
 :root {
   --backdrop: var(--color-white);
   --dialog-surface: var(--color-neutral-200);
-  --node-component-border: var(--color-sand-100);
+  --node-component-border: var(--color-gray-400);
   --node-component-executing: var(--color-blue-500);
   --node-component-header: var(--fg-color);
   --node-component-header-icon: var(--color-stone-200);
@@ -158,7 +158,7 @@
 .dark-theme {
   --backdrop: var(--color-neutral-900);
   --dialog-surface: var(--color-neutral-700);
-  --node-component-border: var(--color-charcoal-600);
+  --node-component-border: var(--color-stone-200);
   --node-component-header-icon: var(--color-slate-300);
   --node-component-header-surface: var(--color-charcoal-800);
   --node-component-outline: var(--color-white);

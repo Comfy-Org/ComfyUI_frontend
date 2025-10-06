@@ -10,7 +10,7 @@
       cn(
         'bg-node-component-surface',
         'lg-node absolute rounded-2xl touch-none',
-        'border-2 border-solid border-node-component-border',
+        'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
