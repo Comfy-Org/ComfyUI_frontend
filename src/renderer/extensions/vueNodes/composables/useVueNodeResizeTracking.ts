@@ -131,9 +131,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // Flush per-type
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
-    if (config && updates.length) {
-      config.updateHandler(updates)
-    }
+    if (config && updates.length) config.updateHandler(updates)
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts
