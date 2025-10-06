@@ -10,7 +10,7 @@
       cn(
         'bg-white dark-theme:bg-charcoal-800',
         'lg-node absolute rounded-2xl touch-none',
-        'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
+        'border-1 border-solid border-gray-400 dark-theme:border-stone-200',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
