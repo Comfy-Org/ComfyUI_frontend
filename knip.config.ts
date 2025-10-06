@@ -24,7 +24,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'stylelint'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
@@ -33,7 +33,8 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@trivago/prettier-plugin-sort-imports',
+    'stylelint'
   ],
   ignore: [
     // Auto generated manager types
