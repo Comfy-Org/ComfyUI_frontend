@@ -157,7 +157,7 @@ const { timer } = timerControl
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 const { localValue, onChange } = useStringWidgetValue(
-  props.widget as SimplifiedWidget<string, Record<string, any>>,
+  props.widget as SimplifiedWidget<string, Record<string, string>>,
   props.modelValue,
   emit
 )
@@ -196,7 +196,8 @@ async function handleStartRecording() {
     waveform.initWaveform()
     waveform.updateWaveform(isWaveformActive)
   } catch (err) {
-    // Error already handled by recorder
+    console.error('Failed to start recording:', err)
+    // Error is also handled by recorder's onError callback
   }
 }
 
@@ -239,7 +240,7 @@ async function handlePlayRecording() {
   }, 100)
 
   // Store interval for cleanup
-  ;(playback as any)._playbackTimerInterval = timerInterval
+  playback._playbackTimerInterval.value = timerInterval
 }
 
 function handleStopPlayback() {
@@ -252,9 +253,9 @@ function handlePlaybackEnded() {
   waveform.stopWaveform()
 
   // Clear playback timer interval
-  if ((playback as any)._playbackTimerInterval) {
-    clearInterval((playback as any)._playbackTimerInterval)
-    ;(playback as any)._playbackTimerInterval = null
+  if (playback._playbackTimerInterval.value !== null) {
+    clearInterval(playback._playbackTimerInterval.value)
+    playback._playbackTimerInterval.value = null
   }
 
   const duration = playback.getDuration()
@@ -270,10 +271,14 @@ async function serializeValue() {
   if (isRecording.value && recorder.mediaRecorder.value) {
     recorder.mediaRecorder.value.stop()
 
-    await new Promise((resolve) => {
+    await new Promise((resolve, reject) => {
+      let attempts = 0
+      const maxAttempts = 50 // 5 seconds max (50 * 100ms)
       const checkRecording = () => {
         if (!isRecording.value && props.modelValue) {
           resolve(undefined)
+        } else if (++attempts >= maxAttempts) {
+          reject(new Error('Recording serialization timeout after 5 seconds'))
         } else {
           setTimeout(checkRecording, 100)
         }
@@ -302,8 +307,9 @@ onMounted(() => {
 onUnmounted(() => {
   recorder.dispose()
   waveform.dispose()
-  if ((playback as any)._playbackTimerInterval) {
-    clearInterval((playback as any)._playbackTimerInterval)
+  if (playback._playbackTimerInterval.value !== null) {
+    clearInterval(playback._playbackTimerInterval.value)
+    playback._playbackTimerInterval.value = null
   }
 })
 </script>

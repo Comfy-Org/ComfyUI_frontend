@@ -28,10 +28,10 @@ const props = defineProps<{
   nodeId: string
 }>()
 
-const modelValue = defineModel<any>('modelValue')
+const modelValue = defineModel<string>('modelValue')
 
 defineEmits<{
-  'update:modelValue': [value: any]
+  'update:modelValue': [value: string]
 }>()
 
 // Get litegraph node

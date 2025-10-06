@@ -11,13 +11,22 @@ export function useAudioPlayback(
 ) {
   const isPlaying = ref(false)
   const audioElementKey = ref(0)
+  const _playbackTimerInterval = ref<ReturnType<typeof setInterval> | null>(
+    null
+  )
 
   async function play() {
     if (!audioRef.value) return false
 
-    isPlaying.value = true
-    await audioRef.value.play()
-    return true
+    try {
+      await audioRef.value.play()
+      isPlaying.value = true
+      return true
+    } catch (error) {
+      console.warn('Audio playback failed:', error)
+      isPlaying.value = false
+      return false
+    }
   }
 
   function pause() {
@@ -74,6 +83,7 @@ export function useAudioPlayback(
     onMetadataLoaded,
     resetAudioElement,
     getCurrentTime,
-    getDuration
+    getDuration,
+    _playbackTimerInterval
   }
 }
