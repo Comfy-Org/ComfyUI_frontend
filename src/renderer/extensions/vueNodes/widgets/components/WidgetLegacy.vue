@@ -34,7 +34,7 @@ function draw() {
   if (!ctx) return
   const bgcolor = window.LiteGraph.WIDGET_BGCOLOR
   try {
-    
+    //zinc-500/10
     window.LiteGraph.WIDGET_BGCOLOR = "#71717A1A"
     const { width } = canvasEl.value
     const height = widget.computeSize ? widget.computeSize(width)[1] : 20
@@ -49,6 +49,7 @@ function draw() {
     window.LiteGraph.WIDGET_BGCOLOR = bgcolor
   }
 }
+//TODO: some nodes use onPointerDown
 let interactingMouse: boolean = false
 function handleMouse(e) {
   if (e.type == 'pointerup')
@@ -73,7 +74,7 @@ function handleMouse(e) {
 }
 </script>
 <template>
-  <canvas ref="canvasEl" class="ml-[-24px] mr-[-16px]"
+  <canvas ref="canvasEl" class="ml-[-24px] mr-[-16px] cursor-crosshair"
     @pointerdown="handleMouse"
     @pointermove="handleMouse"
     @pointerup="handleMouse"

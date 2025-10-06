@@ -39,6 +39,15 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
+  ['int', { component: WidgetInputNumber, aliases: ['INT'], essential: true }],
+  [
+    'float',
+    {
+      component: WidgetInputNumber,
+      aliases: ['FLOAT', 'number', 'slider'],
+      essential: true
+    }
+  ],
   [
     'boolean',
     {
