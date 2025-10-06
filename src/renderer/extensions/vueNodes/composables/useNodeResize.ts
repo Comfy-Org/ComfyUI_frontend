@@ -3,6 +3,16 @@ import { ref } from 'vue'
 
 import type { TransformState } from '@/renderer/core/layout/injectionKeys'
 
+interface Size {
+  width: number
+  height: number
+}
+
+interface Position {
+  x: number
+  y: number
+}
+
 interface UseNodeResizeOptions {
   /** Transform state for coordinate conversion */
   transformState: TransformState
@@ -15,18 +25,15 @@ interface UseNodeResizeOptions {
  * Handles pointer capture, coordinate calculations, and size constraints.
  */
 export function useNodeResize(
-  resizeCallback: (
-    size: { width: number; height: number },
-    element: HTMLElement
-  ) => void,
+  resizeCallback: (size: Size, element: HTMLElement) => void,
   options: UseNodeResizeOptions
 ) {
   const { transformState } = options
 
   const isResizing = ref(false)
-  const resizeStartPos = ref<{ x: number; y: number } | null>(null)
-  const resizeStartSize = ref<{ width: number; height: number } | null>(null)
-  const intrinsicMinSize = ref<{ width: number; height: number } | null>(null)
+  const resizeStartPos = ref<Position | null>(null)
+  const resizeStartSize = ref<Size | null>(null)
+  const intrinsicMinSize = ref<Size | null>(null)
 
   const startResize = (event: PointerEvent) => {
     event.preventDefault()
