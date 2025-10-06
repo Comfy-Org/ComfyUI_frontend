@@ -11,7 +11,7 @@
       <!-- Apple Metal / NVIDIA -->
       <HardwareOption
         v-if="platform === 'darwin'"
-        :image-path="'/assets/images/apple-mps-logo.png'"
+        :image-path="'assets/images/apple-mps-logo.png'"
         placeholder-text="Apple Metal"
         subtitle="Apple Metal"
         :value="'mps'"
@@ -21,7 +21,7 @@
       />
       <HardwareOption
         v-else
-        :image-path="'/assets/images/nvidia-logo-square.jpg'"
+        :image-path="'assets/images/nvidia-logo-square.jpg'"
         placeholder-text="NVIDIA"
         :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
         :value="'nvidia'"
