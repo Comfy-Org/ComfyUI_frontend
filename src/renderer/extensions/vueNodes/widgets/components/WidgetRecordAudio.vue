@@ -12,10 +12,10 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="bg-[#262729] rounded-lg px-4 h-14 flex items-center gap-4 w-[413px]"
+      class="bg-zinc-500/10 dark-theme:bg-node-component-surface rounded-lg px-4 text-zinc-400 dark-theme:text-white h-14 flex items-center gap-4 w-[413px]"
     >
       <!-- Recording Status -->
-      <div class="flex gap-2 items-center text-white min-w-[120px]">
+      <div class="flex gap-2 items-center min-w-[120px]">
         <span class="text-xs min-w-[80px]">
           {{
             isRecording
@@ -45,7 +45,7 @@
       <button
         v-if="isRecording"
         :title="t('g.stopRecording', 'Stop Recording')"
-        class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors animate-pulse"
+        class="size-8 rounded-full bg-gray-500/33 flex items-center justify-center transition-colors animate-pulse border-0"
         @click="handleStopRecording"
       >
         <div class="size-2.5 bg-[#C02323] rounded-sm" />
@@ -54,19 +54,23 @@
       <button
         v-else-if="!isRecording && recordedURL && !isPlaying"
         :title="t('g.playRecording') || 'Play Recording'"
-        class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+        class="size-8 rounded-full bg-gray-500/33 flex items-center justify-center transition-colors border-0"
         @click="handlePlayRecording"
       >
-        <i class="icon-[lucide--play] size-4 text-[#00D2D3]" />
+        <i
+          class="icon-[lucide--play] size-4 text-zinc-400 dark-theme:text-white"
+        />
       </button>
 
       <button
         v-else-if="isPlaying"
         :title="t('g.stopPlayback') || 'Stop Playback'"
-        class="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+        class="size-8 rounded-full bg-gray-500/33 flex items-center justify-center transition-colors border-0"
         @click="handleStopPlayback"
       >
-        <i class="icon-[lucide--square] size-4 text-[#00D2D3]" />
+        <i
+          class="icon-[lucide--square] size-4 text-zinc-400 dark-theme:text-white"
+        />
       </button>
     </div>
     <audio
