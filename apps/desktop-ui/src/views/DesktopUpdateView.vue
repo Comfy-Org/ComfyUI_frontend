@@ -70,7 +70,7 @@ onUnmounted(() => electron.Validation.dispose())
   right: 2rem;
   speak: none;
   font-style: normal;
-  font-weight: normal;
+  font-weight: 400;
   font-variant: normal;
   text-transform: none;
   line-height: 1;

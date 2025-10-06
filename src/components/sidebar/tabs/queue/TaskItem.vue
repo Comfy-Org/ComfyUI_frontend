@@ -66,7 +66,7 @@
           outlined
           @click="handleOutputLengthClick"
         >
-          <span style="font-weight: bold">{{ flatOutputs.length }}</span>
+          <span style="font-weight: 700">{{ flatOutputs.length }}</span>
         </Button>
       </div>
     </div>

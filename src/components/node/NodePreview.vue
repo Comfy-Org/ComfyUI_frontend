@@ -202,7 +202,6 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 ._sb_node_preview {
   background-color: var(--comfy-menu-bg);
   font-family: 'Open Sans', sans-serif;
-  font-size: small;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);
   min-width: 300px;
@@ -252,10 +251,8 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   border: 0 solid #000;
   display: flex;
   align-items: flex-end;
-  flex-direction: row-reverse;
-  flex-wrap: nowrap;
-  align-content: flex-start;
-  justify-content: flex-end;
+  flex-flow: row-reverse nowrap;
+  place-content: flex-start flex-end;
 }
 
 ._sb_inherit {
@@ -265,7 +262,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 ._long_field {
   background: var(--bg-color);
   border: 2px solid var(--border-color);
-  margin: 5px 5px 0 5px;
+  margin: 5px 5px 0;
   border-radius: 10px;
   line-height: 1.7;
   text-wrap: nowrap;
@@ -278,7 +275,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 ._sb_preview_badge {
   text-align: center;
   background: var(--comfy-input-bg);
-  font-weight: bold;
+  font-weight: 700;
   color: var(--error-text);
 }
 </style>

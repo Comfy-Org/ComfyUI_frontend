@@ -229,10 +229,10 @@ watch(
 </script>
 <style>
 .zoomInputContainer:focus-within {
-  border: 1px solid rgb(204, 204, 204);
+  border: 1px solid rgb(204 204 204);
 }
 
 .dark-theme .zoomInputContainer:focus-within {
-  border: 1px solid rgb(204, 204, 204);
+  border: 1px solid rgb(204 204 204);
 }
 </style>

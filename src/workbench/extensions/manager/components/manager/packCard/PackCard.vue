@@ -137,10 +137,7 @@ const formattedLatestVersionDate = computed(() => {
 .selected-card::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   border: 4px solid var(--p-primary-color);
   border-radius: 0.5rem;
   pointer-events: none;
