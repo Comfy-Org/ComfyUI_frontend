@@ -45,11 +45,11 @@
       <div class="flex items-center lod-toggle shrink-0">
         <IconButton
           v-if="isSubgraphNode"
+          v-tooltip.top="enterSubgraphTooltipConfig"
           size="sm"
           type="transparent"
           class="text-stone-200 dark-theme:text-slate-300"
           data-testid="subgraph-enter-button"
-          title="Enter Subgraph"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
@@ -121,6 +121,10 @@ const tooltipConfig = computed(() => {
   }
   const description = getNodeDescription.value
   return createTooltipConfig(description)
+})
+
+const enterSubgraphTooltipConfig = computed(() => {
+  return createTooltipConfig(st('enterSubgraph', 'Enter Subgraph'))
 })
 
 const headerStyle = computed(() => {
