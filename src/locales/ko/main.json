@@ -95,7 +95,8 @@
     "clearWorkflow": "워크플로 내용 지우기",
     "deleteWorkflow": "워크플로 삭제",
     "duplicate": "복제",
-    "enterNewName": "새 이름 입력"
+    "enterNewName": "새 이름 입력",
+    "deleteBlueprint": "블루프린트 삭제"
   },
   "chatHistory": {
     "cancelEdit": "취소",
@@ -150,7 +151,38 @@
     "Search": "검색",
     "Shapes": "형태",
     "Title": "제목",
-    "Unpin": "고정 해제"
+    "Unpin": "고정 해제",
+    "Open in Mask Editor": "마스크 편집기에서 열기",
+    "Open Image": "이미지 열기",
+    "Copy Image": "이미지 복사",
+    "Save Image": "이미지 저장",
+    "Rename": "이름 변경",
+    "Copy": "복사",
+    "Duplicate": "복제",
+    "Paste": "붙여넣기",
+    "Node Info": "노드 정보",
+    "Adjust Size": "크기 조정",
+    "Minimize Node": "노드 최소화",
+    "Expand Node": "노드 확장",
+    "Shape": "형태",
+    "Color": "색상",
+    "Add Subgraph to Library": "서브그래프를 라이브러리에 추가",
+    "Unpack Subgraph": "서브그래프 풀기",
+    "Edit Subgraph Widgets": "서브그래프 위젯 편집",
+    "Convert to Subgraph": "서브그래프로 변환",
+    "Align Selected To": "선택 항목 정렬",
+    "Distribute Nodes": "노드 배치",
+    "Remove Bypass": "우회 제거",
+    "Run Branch": "분기 실행",
+    "Delete": "삭제",
+    "Top": "위",
+    "Bottom": "아래",
+    "Left": "왼쪽",
+    "Right": "오른쪽",
+    "Horizontal": "수평",
+    "Vertical": "수직",
+    "new": "새로운",
+    "deprecated": "지원 중단됨"
   },
   "credits": {
     "accountInitialized": "계정이 초기화됨",
@@ -418,7 +450,39 @@
     "versionMismatchWarning": "버전 호환성 경고",
     "versionMismatchWarningMessage": "{warning}: {detail} 업데이트 지침은 https://docs.comfy.org/installation/update_comfyui#common-update-issues 를 방문하세요.",
     "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
-    "workflow": "워크플로"
+    "workflow": "워크플로",
+    "downloadImage": "이미지 다운로드",
+    "downloadVideo": "비디오 다운로드",
+    "editOrMaskImage": "이미지 편집 또는 마스크",
+    "removeImage": "이미지 제거",
+    "removeVideo": "비디오 제거",
+    "viewImageOfTotal": "이미지 {index}/{total} 보기",
+    "viewVideoOfTotal": "비디오 {index}/{total} 보기",
+    "imagePreview": "이미지 미리보기 - 화살표 키를 사용하여 이미지 간 이동",
+    "videoPreview": "비디오 미리보기 - 화살표 키를 사용하여 비디오 간 이동",
+    "galleryImage": "갤러리 이미지",
+    "galleryThumbnail": "갤러리 썸네일",
+    "errorLoadingImage": "이미지 로드 오류",
+    "errorLoadingVideo": "비디오 로드 오류",
+    "failedToDownloadImage": "이미지 다운로드 실패",
+    "failedToDownloadVideo": "비디오 다운로드 실패",
+    "calculatingDimensions": "크기 계산 중",
+    "logoAlt": "ComfyUI 로고",
+    "refreshNode": "노드 새로고침",
+    "info": "노드 정보",
+    "bookmark": "라이브러리에 저장",
+    "moreOptions": "추가 옵션",
+    "search": "검색",
+    "warning": "경고",
+    "multiSelectDropdown": "다중 선택 드롭다운",
+    "singleSelectDropdown": "단일 선택 드롭다운",
+    "seeTutorial": "튜토리얼 보기",
+    "nodeRenderError": "노드 렌더링 오류",
+    "nodeContentError": "노드 콘텐츠 오류",
+    "nodeHeaderError": "노드 헤더 오류",
+    "nodeSlotsError": "노드 슬롯 오류",
+    "nodeWidgetsError": "노드 위젯 오류",
+    "frameNodes": "노드 프레임"
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",
@@ -428,7 +492,13 @@
     "toggleLinkVisibility": "링크 가시성 전환",
     "toggleMinimap": "미니맵 전환",
     "zoomIn": "확대",
-    "zoomOut": "축소"
+    "zoomOut": "축소",
+    "select": "선택",
+    "hand": "손",
+    "zoomOptions": "줌 옵션",
+    "focusMode": "집중 모드",
+    "hideLinks": "링크 숨기기",
+    "showLinks": "링크 표시"
   },
   "groupNode": {
     "create": "그룹 노드 만들기",
@@ -446,7 +516,8 @@
     "openDevTools": "개발자 도구 열기",
     "reinstall": "재설치",
     "updateAvailable": "업데이트",
-    "whatsNew": "새로운 소식?"
+    "whatsNew": "새로운 소식?",
+    "managerExtension": "관리자 확장"
   },
   "icon": {
     "bookmark": "북마크",
@@ -546,7 +617,28 @@
     },
     "systemLocations": "시스템 위치",
     "unhandledError": "알 수 없는 오류",
-    "updateConsent": "이전에 충돌 보고에 동의하셨습니다. 이제 버그를 식별하고 앱을 개선하기 위해 이벤트 기반 통계 정보의 추적을 시작합니다. 개인을 식별할 수 있는 정보는 수집되지 않습니다."
+    "updateConsent": "이전에 충돌 보고에 동의하셨습니다. 이제 버그를 식별하고 앱을 개선하기 위해 이벤트 기반 통계 정보의 추적을 시작합니다. 개인을 식별할 수 있는 정보는 수집되지 않습니다.",
+    "gpuPicker": {
+      "title": "하드웨어 설정을 선택하세요",
+      "recommended": "권장",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "CPU 모드",
+      "manualSubtitle": "수동 설정",
+      "appleMetalDescription": "Mac의 GPU를 활용하여 더 빠른 속도와 더 나은 전반적인 경험을 제공합니다",
+      "nvidiaDescription": "최고의 성능을 위해 CUDA 가속과 함께 NVIDIA GPU를 사용하세요.",
+      "cpuDescription": "GPU 가속을 사용할 수 없을 때 호환성을 위해 CPU 모드를 사용하세요",
+      "manualDescription": "고급 설정이나 지원되지 않는 하드웨어를 위해 ComfyUI를 수동으로 구성하세요"
+    },
+    "locationPicker": {
+      "title": "ComfyUI를 설치할 위치를 선택하세요",
+      "subtitle": "ComfyUI 파일을 위한 폴더를 선택하세요. Python도 자동으로 설정됩니다.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "기존 ComfyUI 설치 선택 (선택사항)",
+      "migrateFromExisting": "기존 설치에서 마이그레이션",
+      "migrateDescription": "이전 ComfyUI 설치에서 기존 모델, 커스텀 노드 및 구성을 복사하거나 링크합니다.",
+      "chooseDownloadServers": "다운로드 서버 수동 선택",
+      "downloadServersDescription": "위치에 따라 Python, PyPI 패키지 및 PyTorch 다운로드를 위한 특정 미러 서버를 선택하세요."
+    }
   },
   "issueReport": {
     "helpFix": "이 문제 해결에 도움을 주세요"
@@ -586,12 +678,33 @@
     "switchingMaterialMode": "재질 모드 전환 중...",
     "upDirection": "위 방향",
     "uploadBackgroundImage": "배경 이미지 업로드",
-    "uploadTexture": "텍스처 업로드"
+    "uploadTexture": "텍스처 업로드",
+    "upDirections": {
+      "original": "원본"
+    },
+    "cameraType": {
+      "perspective": "원근법",
+      "orthographic": "직교법"
+    },
+    "viewer": {
+      "title": "3D 뷰어 (베타)",
+      "apply": "적용",
+      "cancel": "취소",
+      "cameraType": "카메라 유형",
+      "sceneSettings": "장면 설정",
+      "cameraSettings": "카메라 설정",
+      "lightSettings": "조명 설정",
+      "exportSettings": "내보내기 설정",
+      "modelSettings": "모델 설정"
+    },
+    "openIn3DViewer": "3D 뷰어에서 열기"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} 이상 필요:",
     "outdatedVersion": "일부 노드는 더 최신 버전의 ComfyUI가 필요합니다 (현재: {version}). 모든 노드를 사용하려면 업데이트해 주세요.",
-    "outdatedVersionGeneric": "일부 노드는 더 최신 버전의 ComfyUI가 필요합니다. 모든 노드를 사용하려면 업데이트해 주세요."
+    "outdatedVersionGeneric": "일부 노드는 더 최신 버전의 ComfyUI가 필요합니다. 모든 노드를 사용하려면 업데이트해 주세요.",
+    "missingNodesTitle": "일부 노드가 누락되었습니다",
+    "missingNodesDescription": "그래프를 로드할 때 다음 노드 유형을 찾을 수 없습니다.\n설치된 버전이 낮아 해당 노드 유형을 찾을 수 없는 경우에도 이런 일이 발생할 수 있습니다."
   },
   "maintenance": {
     "None": "없음",
@@ -661,7 +774,9 @@
       "deleted": "삭제됨",
       "flagged": "검토 대상",
       "pending": "대기 중",
-      "unknown": "알 수 없음"
+      "unknown": "알 수 없음",
+      "conflicting": "충돌",
+      "importFailed": "설치 오류"
     },
     "title": "커스텀 노드 관리자",
     "totalNodes": "총 노드",
@@ -672,7 +787,52 @@
     "uninstalling": "제거 중",
     "update": "업데이트",
     "updatingAllPacks": "모든 패키지 업데이트 중",
-    "version": "버전"
+    "version": "버전",
+    "failedToInstall": "설치 실패",
+    "installError": "설치 오류",
+    "importFailedGenericError": "패키지 가져오기에 실패했습니다. 자세한 내용은 콘솔을 확인하세요.",
+    "applyChanges": "변경사항 적용",
+    "clickToFinishSetup": "클릭",
+    "toFinishSetup": "하여 설정 완료",
+    "restartingBackend": "변경사항을 적용하기 위해 백엔드를 다시 시작하는 중...",
+    "extensionsSuccessfullyInstalled": "확장이 성공적으로 설치되어 사용할 준비가 되었습니다!",
+    "installingDependencies": "종속성 설치 중...",
+    "updateSelected": "선택 항목 업데이트",
+    "updateAll": "모두 업데이트",
+    "disabledNodesWontUpdate": "비활성화된 노드는 업데이트되지 않습니다",
+    "enablePackToChangeVersion": "버전을 변경하려면 이 팩을 활성화하세요",
+    "gettingInfo": "정보 가져오는 중...",
+    "allMissingNodesInstalled": "누락된 모든 노드가 성공적으로 설치되었습니다",
+    "mixedSelectionMessage": "혼합 선택에 대해 일괄 작업을 수행할 수 없습니다",
+    "notAvailable": "사용 불가",
+    "conflicts": {
+      "title": "노드 팩 문제 감지됨!",
+      "description": "일부 확장과 새 버전의 ComfyUI 간에 충돌이 감지되었습니다. 업데이트하면 해당 확장에 의존하는 워크플로가 중단될 위험이 있습니다.",
+      "info": "업데이트를 계속하면 충돌하는 확장이 자동으로 비활성화됩니다. ComfyUI 관리자에서 언제든지 확인하고 관리할 수 있습니다.",
+      "extensionAtRisk": "위험한 확장",
+      "conflicts": "충돌",
+      "importFailedExtensions": "가져오기 실패한 확장",
+      "conflictInfoTitle": "왜 이런 일이 발생하나요?",
+      "installAnyway": "그래도 설치",
+      "enableAnyway": "그래도 활성화",
+      "understood": "이해했습니다",
+      "warningBanner": {
+        "title": "현재 설정과 호환되지 않아 일부 확장이 비활성화되었습니다",
+        "message": "이러한 확장은 현재 설정과 다른 시스템 패키지 버전이 필요합니다. 설치하면 핵심 종속성이 재정의되어 다른 확장이나 워크플로에 영향을 미칠 수 있습니다.",
+        "button": "자세히 알아보기..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "ComfyUI 버전 불일치 (현재: {current}, 필요: {required})",
+        "frontend_version": "프론트엔드 버전 불일치 (현재: {current}, 필요: {required})",
+        "os": "운영 체제가 지원되지 않음 (현재: {current}, 필요: {required})",
+        "accelerator": "GPU/가속기가 지원되지 않음 (사용 가능: {current}, 필요: {required})",
+        "generic": "호환성 문제 (현재: {current}, 필요: {required})",
+        "banned": "이 패키지는 보안상의 이유로 차단되었습니다",
+        "pending": "보안 확인 대기 중 - 호환성을 확인할 수 없습니다",
+        "import_failed": "가져오기 실패"
+      },
+      "warningTooltip": "이 패키지는 현재 환경과 호환성 문제가 있을 수 있습니다"
+    }
   },
   "maskEditor": {
     "Apply to Whole Image": "전체 이미지에 적용",
@@ -726,7 +886,8 @@
     "settings": "설정",
     "showMenu": "메뉴 표시",
     "theme": "테마",
-    "toggleBottomPanel": "하단 패널 전환"
+    "toggleBottomPanel": "하단 패널 전환",
+    "queue": "큐 패널"
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUI에 대하여",
@@ -819,8 +980,6 @@
     "Toggle Search Box": "검색 상자 전환",
     "Toggle Terminal Bottom Panel": "터미널 하단 패널 전환",
     "Toggle Theme (Dark/Light)": "테마 전환 (어두운/밝은)",
-    "Toggle View Controls Bottom Panel": "뷰 컨트롤 하단 패널 전환",
-    "Toggle Workflows Sidebar": "워크플로 사이드바 전환",
     "Toggle the Custom Nodes Manager": "커스텀 노드 매니저 전환",
     "Toggle the Custom Nodes Manager Progress Bar": "커스텀 노드 매니저 진행률 표시줄 전환",
     "Undo": "실행 취소",
@@ -834,7 +993,22 @@
     "Workflows": "워크플로",
     "Zoom In": "확대",
     "Zoom Out": "축소",
-    "Zoom to fit": "화면에 맞추기"
+    "Zoom to fit": "화면에 맞추기",
+    "Open 3D Viewer (Beta) for Selected Node": "선택한 노드에 대한 3D 뷰어 (베타) 열기",
+    "Lock Canvas": "캔버스 잠금",
+    "Exit Subgraph": "서브그래프 나가기",
+    "Install Missing": "누락된 항목 설치",
+    "Publish": "게시",
+    "Canvas Performance": "캔버스 성능",
+    "Help Center": "도움말 센터",
+    "Focus Mode": "집중 모드",
+    "Model Library": "모델 라이브러리",
+    "Node Library": "노드 라이브러리",
+    "Queue Panel": "큐 패널",
+    "sideToolbar_modelLibrary": "사이드툴바.모델라이브러리",
+    "sideToolbar_nodeLibrary": "사이드툴바.노드라이브러리",
+    "sideToolbar_queue": "사이드툴바.큐",
+    "sideToolbar_workflows": "사이드툴바.워크플로"
   },
   "minimap": {
     "nodeColors": "노드 색상",
@@ -962,7 +1136,10 @@
     "executeButton": {
       "disabledTooltip": "선택된 출력 노드가 없습니다",
       "tooltip": "선택한 출력 노드에 실행 (주황색 테두리로 강조 표시됨)"
-    }
+    },
+    "Set Group Nodes to Never": "그룹 노드를 절대 실행 안함으로 설정",
+    "Bypass Group Nodes": "그룹 노드 우회",
+    "Set Group Nodes to Always": "그룹 노드를 항상 실행으로 설정"
   },
   "serverConfig": {
     "modifiedConfigs": "다음 서버 구성을 수정했습니다. 변경 사항을 적용하려면 다시 시작하세오.",
@@ -1109,7 +1286,14 @@
     },
     "reportIssue": "문제 보고",
     "showTerminal": "터미널 보기",
-    "troubleshoot": "문제 해결"
+    "troubleshoot": "문제 해결",
+    "title": "ComfyUI 시작 중",
+    "copySelectionTooltip": "선택 항목 복사",
+    "copyAllTooltip": "모두 복사",
+    "errorMessage": "ComfyUI Desktop을 시작할 수 없습니다",
+    "installation": {
+      "title": "ComfyUI 설치 중"
+    }
   },
   "settingsCategories": {
     "3D": "3D",
@@ -1163,7 +1347,8 @@
     "Validation": "검증",
     "Vue Nodes": "Vue 노드",
     "Window": "창",
-    "Workflow": "워크플로"
+    "Workflow": "워크플로",
+    "3DViewer": "3D 뷰어"
   },
   "sideToolbar": {
     "browseTemplates": "예제 템플릿 탐색",
@@ -1223,11 +1408,33 @@
         "open": "열기"
       }
     },
-    "workflows": "워크플로"
+    "workflows": "워크플로",
+    "themeToggle": "테마 전환",
+    "templates": "템플릿",
+    "labels": {
+      "queue": "큐",
+      "nodes": "노드",
+      "models": "모델",
+      "workflows": "워크플로",
+      "templates": "템플릿"
+    }
   },
   "subgraphStore": {
     "blueprintName": "서브그래프 이름",
-    "saveBlueprint": "서브그래프를 라이브러리에 저장"
+    "saveBlueprint": "서브그래프를 라이브러리에 저장",
+    "confirmDeleteTitle": "블루프린트를 삭제하시겠습니까?",
+    "confirmDelete": "이 작업은 라이브러리에서 블루프린트를 영구적으로 제거합니다",
+    "overwriteBlueprintTitle": "기존 블루프린트를 덮어쓰시겠습니까?",
+    "overwriteBlueprint": "저장하면 현재 블루프린트가 변경사항으로 덮어쓰여집니다",
+    "publish": "서브그래프 게시",
+    "publishSuccess": "노드 라이브러리에 저장됨",
+    "publishSuccessMessage": "노드 라이브러리의 \"서브그래프 블루프린트\" 아래에서 서브그래프 블루프린트를 찾을 수 있습니다",
+    "loadFailure": "서브그래프 블루프린트 로드 실패",
+    "shown": "노드에 표시됨",
+    "showAll": "모두 표시",
+    "hidden": "숨김 / 중첩 매개변수",
+    "hideAll": "모두 숨김",
+    "showRecommended": "권장 위젯 표시"
   },
   "tabMenu": {
     "addToBookmarks": "북마크에 추가",
@@ -1254,7 +1461,9 @@
       "LLM API": "LLM API",
       "Upscaling": "업스케일링",
       "Video": "비디오",
-      "Video API": "비디오 API"
+      "Video API": "비디오 API",
+      "GettingStarted": "시작하기",
+      "LLMs": "LLM"
     },
     "template": {
       "3D": {
@@ -1560,7 +1769,27 @@
         "api_veo2_i2v": "Google Veo2 API로 이미지에서 비디오를 생성합니다."
       }
     },
-    "title": "템플릿으로 시작하기"
+    "title": "템플릿으로 시작하기",
+    "loadingMore": "템플릿 더 불러오는 중...",
+    "searchPlaceholder": "템플릿 검색...",
+    "categories": "카테고리",
+    "resetFilters": "필터 초기화",
+    "sorting": "정렬 기준",
+    "activeFilters": "필터:",
+    "loading": "템플릿 불러오는 중...",
+    "noResults": "템플릿을 찾을 수 없습니다",
+    "noResultsHint": "검색 또는 필터를 조정해 보세요",
+    "modelFilter": "모델 필터",
+    "modelsSelected": "{count}개 모델",
+    "useCasesSelected": "{count}개 사용 사례",
+    "licensesSelected": "{count}개 라이선스",
+    "resultsCount": "{total}개 중 {count}개 템플릿 표시",
+    "sort": {
+      "recommended": "권장",
+      "alphabetical": "가나다순",
+      "newest": "최신순",
+      "searchPlaceholder": "검색..."
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "서브그래프를 생성할 수 없습니다",
@@ -1598,7 +1827,8 @@
     "unauthorizedDomain": "귀하의 도메인 {domain}은(는) 이 서비스를 사용할 수 있는 권한이 없습니다. 도메인을 허용 목록에 추가하려면 {email}로 문의해 주세요.",
     "updateRequested": "업데이트 요청됨",
     "useApiKeyTip": "팁: 일반 로그인을 사용할 수 없나요? Comfy API Key 옵션을 사용하세요.",
-    "userNotAuthenticated": "사용자가 인증되지 않았습니다"
+    "userNotAuthenticated": "사용자가 인증되지 않았습니다",
+    "failedToInitializeLoad3dViewer": "3D 뷰어 초기화 실패"
   },
   "userSelect": {
     "enterUsername": "사용자 이름 입력",
@@ -1631,7 +1861,8 @@
     },
     "personalDataConsentRequired": "개인 데이터 처리에 동의해야 합니다.",
     "prefix": "{prefix}(으)로 시작해야 합니다",
-    "required": "필수"
+    "required": "필수",
+    "descriptionRequired": "설명은 필수입니다"
   },
   "versionMismatchWarning": {
     "dismiss": "닫기",
@@ -1652,5 +1883,87 @@
     "enterFilename": "파일 이름 입력",
     "exportWorkflow": "워크플로 내보내기",
     "saveWorkflow": "워크플로 저장"
+  },
+  "desktopStart": {
+    "initialising": "초기화 중..."
+  },
+  "shape": {
+    "default": "기본",
+    "round": "둥근",
+    "CARD": "카드",
+    "circle": "원",
+    "arrow": "화살표",
+    "box": "상자"
+  },
+  "zoomControls": {
+    "label": "줌 컨트롤",
+    "zoomToFit": "화면에 맞추기",
+    "showMinimap": "미니맵 표시",
+    "hideMinimap": "미니맵 숨기기"
+  },
+  "commands": {
+    "runWorkflow": "워크플로 실행",
+    "runWorkflowFront": "워크플로 실행 (맨 앞에 대기열 추가)",
+    "run": "실행",
+    "execute": "실행",
+    "interrupt": "현재 실행 취소",
+    "refresh": "노드 정의 새로고침",
+    "clipspace": "클립스페이스 열기",
+    "resetView": "캔버스 보기 재설정",
+    "clear": "워크플로 지우기",
+    "toggleBottomPanel": "하단 패널 전환",
+    "theme": "테마",
+    "dark": "어두운",
+    "light": "밝은",
+    "manageExtensions": "확장 관리",
+    "settings": "설정",
+    "help": "도움말",
+    "queue": "큐 패널"
+  },
+  "widgets": {
+    "selectModel": "모델 선택",
+    "uploadSelect": {
+      "placeholder": "선택...",
+      "placeholderImage": "이미지 선택...",
+      "placeholderAudio": "오디오 선택...",
+      "placeholderVideo": "비디오 선택...",
+      "placeholderModel": "모델 선택...",
+      "placeholderUnknown": "미디어 선택..."
+    }
+  },
+  "shortcuts": {
+    "essentials": "필수",
+    "viewControls": "보기 컨트롤",
+    "manageShortcuts": "단축키 관리",
+    "noKeybinding": "키 바인딩 없음",
+    "keyboardShortcuts": "키보드 단축키",
+    "subcategories": {
+      "workflow": "워크플로",
+      "node": "노드",
+      "queue": "큐",
+      "view": "보기",
+      "panelControls": "패널 컨트롤"
+    }
+  },
+  "assetBrowser": {
+    "assets": "에셋",
+    "browseAssets": "에셋 탐색",
+    "noAssetsFound": "에셋을 찾을 수 없습니다",
+    "tryAdjustingFilters": "검색 또는 필터를 조정해 보세요",
+    "loadingModels": "{type} 불러오는 중...",
+    "connectionError": "연결을 확인하고 다시 시도하세요",
+    "failedToCreateNode": "노드 생성에 실패했습니다. 다시 시도하거나 콘솔에서 세부 정보를 확인하세요.",
+    "noModelsInFolder": "이 폴더에 사용 가능한 {type}이(가) 없습니다",
+    "searchAssetsPlaceholder": "에셋 검색...",
+    "allModels": "모든 모델",
+    "allCategory": "모든 {category}",
+    "unknown": "알 수 없음",
+    "fileFormats": "파일 형식",
+    "baseModels": "베이스 모델",
+    "sortBy": "정렬 기준",
+    "sortAZ": "가나다순",
+    "sortZA": "가나다 역순",
+    "sortRecent": "최근",
+    "sortPopular": "인기순"
   }
 }
