@@ -157,7 +157,33 @@
     "nodeContentError": "Düğüm İçerik Hatası",
     "nodeHeaderError": "Düğüm Başlık Hatası",
     "nodeSlotsError": "Düğüm Yuva Hatası",
-    "nodeWidgetsError": "Düğüm Widget Hatası"
+    "nodeWidgetsError": "Düğüm Widget Hatası",
+    "downloadImage": "Görüntüyü indir",
+    "downloadVideo": "Videoyu indir",
+    "editOrMaskImage": "Görüntüyü düzenle veya maskele",
+    "removeImage": "Görüntüyü kaldır",
+    "removeVideo": "Videoyu kaldır",
+    "viewImageOfTotal": "{total} görüntüden {index}. görüntüyü görüntüle",
+    "viewVideoOfTotal": "{total} videodan {index}. videoyu görüntüle",
+    "imagePreview": "Görüntü önizlemesi - Görüntüler arasında gezinmek için ok tuşlarını kullanın",
+    "videoPreview": "Video önizlemesi - Videolar arasında gezinmek için ok tuşlarını kullanın",
+    "galleryImage": "Galeri görüntüsü",
+    "galleryThumbnail": "Galeri küçük resmi",
+    "errorLoadingImage": "Görüntü yüklenirken hata",
+    "errorLoadingVideo": "Video yüklenirken hata",
+    "failedToDownloadImage": "Görüntü indirilemedi",
+    "failedToDownloadVideo": "Video indirilemedi",
+    "calculatingDimensions": "Boyutlar hesaplanıyor",
+    "logoAlt": "ComfyUI Logosu",
+    "refreshNode": "Düğümü Yenile",
+    "info": "Düğüm Bilgisi",
+    "bookmark": "Kütüphaneye Kaydet",
+    "moreOptions": "Daha Fazla Seçenek",
+    "search": "Ara",
+    "multiSelectDropdown": "Çoklu seçim açılır menüsü",
+    "singleSelectDropdown": "Tekli seçim açılır menüsü",
+    "seeTutorial": "Bir eğitim görün",
+    "frameNodes": "Çerçeve Düğümleri"
   },
   "manager": {
     "title": "Özel Düğüm Yöneticisi",
@@ -262,7 +288,10 @@
         "import_failed": "İçe Aktarılamadı"
       },
       "warningTooltip": "Bu paket, mevcut ortamınızla uyumluluk sorunları yaşayabilir"
-    }
+    },
+    "disabledNodesWontUpdate": "Devre dışı düğümler güncellenmeyecek",
+    "enablePackToChangeVersion": "Sürümleri değiştirmek için bu paketi etkinleştirin",
+    "allMissingNodesInstalled": "Tüm eksik düğümler başarıyla yüklendi"
   },
   "issueReport": {
     "helpFix": "Bunu Düzeltmeye Yardım Et"
@@ -308,7 +337,38 @@
     "Save Selected as Template": "Seçileni Şablon Olarak Kaydet",
     "Node Templates": "Düğüm Şablonları",
     "Manage": "Yönet",
-    "Search": "Ara"
+    "Search": "Ara",
+    "Open in Mask Editor": "Maske Düzenleyicide Aç",
+    "Open Image": "Görüntüyü Aç",
+    "Copy Image": "Görüntüyü Kopyala",
+    "Save Image": "Görüntüyü Kaydet",
+    "Rename": "Yeniden Adlandır",
+    "Copy": "Kopyala",
+    "Duplicate": "Çoğalt",
+    "Paste": "Yapıştır",
+    "Node Info": "Düğüm Bilgisi",
+    "Adjust Size": "Boyutu Ayarla",
+    "Minimize Node": "Düğümü Küçült",
+    "Expand Node": "Düğümü Genişlet",
+    "Shape": "Şekil",
+    "Color": "Renk",
+    "Add Subgraph to Library": "Alt Grafiği Kütüphaneye Ekle",
+    "Unpack Subgraph": "Alt Grafiği Aç",
+    "Edit Subgraph Widgets": "Alt Grafik Widget'larını Düzenle",
+    "Convert to Subgraph": "Alt Grafiğe Dönüştür",
+    "Align Selected To": "Seçiliyi Hizala",
+    "Distribute Nodes": "Düğümleri Dağıt",
+    "Remove Bypass": "Atlamayı Kaldır",
+    "Run Branch": "Dalı Çalıştır",
+    "Delete": "Sil",
+    "Top": "Üst",
+    "Bottom": "Alt",
+    "Left": "Sol",
+    "Right": "Sağ",
+    "Horizontal": "Yatay",
+    "Vertical": "Dikey",
+    "new": "yeni",
+    "deprecated": "kullanımdan kaldırıldı"
   },
   "icon": {
     "bookmark": "Yer İmi",
@@ -439,7 +499,28 @@
     "privacyPolicy": "gizlilik politikası",
     "metricsEnabled": "Metrikler Etkin",
     "metricsDisabled": "Metrikler Devre Dışı",
-    "updateConsent": "Daha önce çökmeleri bildirmeyi seçmiştiniz. Hataları belirlemeye ve uygulamayı iyileştirmeye yardımcı olmak için şimdi olay tabanlı metrikleri izliyoruz. Kişisel olarak tanımlanabilir hiçbir bilgi toplanmamaktadır."
+    "updateConsent": "Daha önce çökmeleri bildirmeyi seçmiştiniz. Hataları belirlemeye ve uygulamayı iyileştirmeye yardımcı olmak için şimdi olay tabanlı metrikleri izliyoruz. Kişisel olarak tanımlanabilir hiçbir bilgi toplanmamaktadır.",
+    "gpuPicker": {
+      "title": "Donanım kurulumunuzu seçin",
+      "recommended": "ÖNERİLEN",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "CPU Modu",
+      "manualSubtitle": "Manuel Kurulum",
+      "appleMetalDescription": "Daha hızlı hız ve daha iyi genel deneyim için Mac'inizin GPU'sunu kullanır",
+      "nvidiaDescription": "En iyi performans için CUDA hızlandırmalı NVIDIA GPU'nuzu kullanın.",
+      "cpuDescription": "GPU hızlandırma kullanılamadığında uyumluluk için CPU modunu kullanın",
+      "manualDescription": "Gelişmiş kurulumlar veya desteklenmeyen donanım için ComfyUI'yi manuel olarak yapılandırın"
+    },
+    "locationPicker": {
+      "title": "ComfyUI'yi nereye kuracağınızı seçin",
+      "subtitle": "ComfyUI'nin dosyaları için bir klasör seçin. Python'u da orada otomatik olarak kuracağız.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "Mevcut ComfyUI kurulumunu seçin (isteğe bağlı)",
+      "migrateFromExisting": "Mevcut kurulumdan taşı",
+      "migrateDescription": "Önceki bir ComfyUI kurulumundan mevcut modellerinizi, özel düğümlerinizi ve yapılandırmalarınızı kopyalayın veya bağlayın.",
+      "chooseDownloadServers": "İndirme sunucularını manuel olarak seçin",
+      "downloadServersDescription": "Konumunuza göre Python, PyPI paketleri ve PyTorch indirmek için belirli yansı sunucularını seçin."
+    }
   },
   "serverStart": {
     "troubleshoot": "Sorun Giderme",
@@ -452,6 +533,13 @@
       "starting-server": "ComfyUI sunucusu başlatılıyor...",
       "ready": "Bitiriliyor...",
       "error": "ComfyUI Desktop başlatılamıyor"
+    },
+    "title": "ComfyUI Başlatılıyor",
+    "copySelectionTooltip": "Seçimi kopyala",
+    "copyAllTooltip": "Tümünü kopyala",
+    "errorMessage": "ComfyUI Desktop başlatılamadı",
+    "installation": {
+      "title": "ComfyUI Yükleniyor"
     }
   },
   "serverConfig": {
@@ -607,7 +695,9 @@
       "Image API": "Görsel API",
       "Video API": "Video API",
       "LLM API": "LLM API",
-      "All": "Tüm Şablonlar"
+      "All": "Tüm Şablonlar",
+      "GettingStarted": "Başlarken",
+      "LLMs": "Dil Modelleri"
     },
     "templateDescription": {
       "Basics": {
@@ -912,6 +1002,24 @@
         "audio_ace_step_1_t2a_song": "ACE Step v1 Metinden Şarkıya",
         "audio_ace_step_1_m2m_editing": "ACE Step v1 M2M Düzenleme"
       }
+    },
+    "categories": "Kategoriler",
+    "resetFilters": "Filtreleri Temizle",
+    "sorting": "Sıralama ölçütü",
+    "activeFilters": "Filtreler:",
+    "loading": "Şablonlar yükleniyor...",
+    "noResults": "Şablon bulunamadı",
+    "noResultsHint": "Aramanızı veya filtrelerinizi ayarlamayı deneyin",
+    "modelFilter": "Model Filtresi",
+    "modelsSelected": "{count} Model",
+    "useCasesSelected": "{count} Kullanım Senaryosu",
+    "licensesSelected": "{count} Lisans",
+    "resultsCount": "{total} şablondan {count} tanesi gösteriliyor",
+    "sort": {
+      "recommended": "Önerilen",
+      "alphabetical": "A → Z",
+      "newest": "En Yeni",
+      "searchPlaceholder": "Ara..."
     }
   },
   "graphCanvasMenu": {
@@ -959,7 +1067,12 @@
     "publish": "Alt Grafiği Yayınla",
     "publishSuccess": "Düğüm Kütüphanesine Kaydedildi",
     "publishSuccessMessage": "Alt grafik taslağınızı düğüm kütüphanesinde \"Alt Grafik Taslakları\" altında bulabilirsiniz",
-    "loadFailure": "Alt grafik taslakları yüklenemedi"
+    "loadFailure": "Alt grafik taslakları yüklenemedi",
+    "shown": "Düğümde gösterilen",
+    "showAll": "Tümünü göster",
+    "hidden": "Gizli / iç içe parametreler",
+    "hideAll": "Tümünü gizle",
+    "showRecommended": "Önerilen widget'ları göster"
   },
   "electronFileDownload": {
     "inProgress": "Devam Ediyor",
@@ -1088,7 +1201,6 @@
     "Unload Models and Execution Cache": "Modelleri ve Yürütme Önbelleğini Boşalt",
     "New": "Yeni",
     "Clipspace": "Clipspace",
-    "Manager": "Yönetici",
     "Open": "Aç",
     "Publish": "Yayınla",
     "Queue Prompt": "İstemi Kuyruğa Al",
@@ -1472,7 +1584,9 @@
   "loadWorkflowWarning": {
     "outdatedVersion": "Bazı düğümler ComfyUI'nin daha yeni bir sürümünü gerektirir (mevcut: {version}). Tüm düğümleri kullanmak için lütfen güncelleyin.",
     "outdatedVersionGeneric": "Bazı düğümler ComfyUI'nin daha yeni bir sürümünü gerektirir. Tüm düğümleri kullanmak için lütfen güncelleyin.",
-    "coreNodesFromVersion": "ComfyUI {version} gerektirir:"
+    "coreNodesFromVersion": "ComfyUI {version} gerektirir:",
+    "missingNodesTitle": "Bazı Düğümler Eksik",
+    "missingNodesDescription": "Grafik yüklenirken aşağıdaki düğüm türleri bulunamadı.\nBu, yüklü sürümünüz daha düşükse ve bu düğüm türü bulunamazsa da olabilir."
   },
   "versionMismatchWarning": {
     "title": "Sürüm Uyumluluk Uyarısı",
@@ -1748,7 +1862,10 @@
     "executeButton": {
       "tooltip": "Seçili çıktı düğümlerine yürüt (Turuncu kenarlıkla vurgulanmış)",
       "disabledTooltip": "Çıktı düğümü seçilmedi"
-    }
+    },
+    "Set Group Nodes to Never": "Set Group Nodes to Never",
+    "Bypass Group Nodes": "Bypass Group Nodes",
+    "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "chatHistory": {
     "cancelEdit": "İptal",
@@ -1796,5 +1913,48 @@
     "showGroups": "Çerçeveleri/Grupları Göster",
     "renderBypassState": "Atlama Durumunu Oluştur",
     "renderErrorState": "Hata Durumunu Oluştur"
+  },
+  "desktopStart": {
+    "initialising": "Başlatılıyor..."
+  },
+  "shape": {
+    "default": "Varsayılan",
+    "round": "Yuvarlak",
+    "CARD": "Kart",
+    "circle": "Daire",
+    "arrow": "Ok",
+    "box": "Kutu"
+  },
+  "widgets": {
+    "selectModel": "Model seç",
+    "uploadSelect": {
+      "placeholder": "Seç...",
+      "placeholderImage": "Görsel seç...",
+      "placeholderAudio": "Ses seç...",
+      "placeholderVideo": "Video seç...",
+      "placeholderModel": "Model seç...",
+      "placeholderUnknown": "Medya seç..."
+    }
+  },
+  "assetBrowser": {
+    "assets": "Varlıklar",
+    "browseAssets": "Varlıklara Göz At",
+    "noAssetsFound": "Varlık bulunamadı",
+    "tryAdjustingFilters": "Aramanızı veya filtrelerinizi değiştirmeyi deneyin",
+    "loadingModels": "{type} yükleniyor...",
+    "connectionError": "Lütfen bağlantınızı kontrol edin ve tekrar deneyin",
+    "failedToCreateNode": "Düğüm oluşturulamadı. Lütfen tekrar deneyin veya ayrıntılar için konsolu kontrol edin.",
+    "noModelsInFolder": "Bu klasörde {type} mevcut değil",
+    "searchAssetsPlaceholder": "Varlık ara...",
+    "allModels": "Tüm Modeller",
+    "allCategory": "Tüm {category}",
+    "unknown": "Bilinmeyen",
+    "fileFormats": "Dosya formatları",
+    "baseModels": "Temel modeller",
+    "sortBy": "Sırala",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "En yeni",
+    "sortPopular": "Popüler"
   }
 }

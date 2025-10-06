@@ -11,7 +11,10 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Python 설치 미러",
-    "tooltip": "관리되는 Python 설치파일은 Astral python-build-standalone 프로젝트에서 다운로드됩니다. 이 변수는 Python 설치파일의 다른 출처를 사용하기 위해 미러 URL로 설정할 수 있습니다. 예를 들어, 제공된 URL은 https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz에서 https://github.com/astral-sh/python-build-standalone/releases/download 를 대체합니다. 배포판은 file:// URL 스키마를 사용하여 로컬 디렉토리에서 읽을 수 있습니다."
+    "tooltip": "관리되는 Python 설치파일은 Astral python-build-standalone 프로젝트에서 다운로드됩니다. 이 변수는 Python 설치파일의 다른 출처를 사용하기 위해 미러 URL로 설정할 수 있습니다. 예를 들어, 제공된 URL은 https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz에서 https://github.com/astral-sh/python-build-standalone/releases/download 를 대체합니다. 배포판은 file:// URL 스키마를 사용하여 로컬 디렉토리에서 읽을 수 있습니다.",
+    "urlFormatTitle": "미러 URL 형식",
+    "urlDescription": "다음은 Python 다운로드 URL의 예시입니다.\n\n미러 URL은 날짜(20250902) 이전의 모든 부분을 포함한 전반부입니다:",
+    "fileUrlDescription": "이전에 다운로드한 파일에서 설치하려면 파일 URL을 사용할 수 있습니다:"
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "torch 설치 미러",
@@ -420,5 +423,9 @@
   },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "줌 노드 상세 수준 - 글꼴 크기 임계값",
+    "tooltip": "노드가 저품질 LOD 렌더링으로 전환되는 시점을 제어합니다. 픽셀 단위의 글꼴 크기를 사용하여 전환 시점을 결정합니다. 0으로 설정하면 비활성화됩니다. 값 1-24는 LOD의 최소 글꼴 크기 임계값을 설정합니다 - 값이 높을수록(24px) 축소할 때 노드가 단순화된 렌더링으로 더 빨리 전환되고, 값이 낮을수록(1px) 전체 노드 품질이 더 오래 유지됩니다."
   }
 }

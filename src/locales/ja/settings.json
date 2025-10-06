@@ -10,11 +10,14 @@
     "tooltip": "デフォルトの pip インストールミラー"
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
-    "name": "Python Install Mirror",
-    "tooltip": "管理されたPythonのインストールは、Astral python-build-standaloneプロジェクトからダウンロードされます。この変数は、Pythonのインストールのための異なるソースを使用するためのミラーURLに設定することができます。提供されたURLは、例えば、https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gzの中でhttps://github.com/astral-sh/python-build-standalone/releases/downloadを置き換えます。ディストリビューションは、file:// URLスキームを使用してローカルディレクトリから読み取ることができます。"
+    "name": "Pythonインストールミラー",
+    "tooltip": "管理されたPythonのインストールは、Astral python-build-standaloneプロジェクトからダウンロードされます。この変数は、Pythonのインストールのための異なるソースを使用するためのミラーURLに設定することができます。提供されたURLは、例えば、https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gzの中でhttps://github.com/astral-sh/python-build-standalone/releases/downloadを置き換えます。ディストリビューションは、file:// URLスキームを使用してローカルディレクトリから読み取ることができます。",
+    "urlFormatTitle": "ミラーURL形式",
+    "urlDescription": "これはPythonダウンロードURLの例です。\n\nミラーURLは日付(20250902)の前の全てを含む前半部分です:",
+    "fileUrlDescription": "以前にダウンロードしたファイルからインストールする場合は、ファイルURLを使用できます:"
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
-    "name": "Torch Install Mirror",
+    "name": "Torchインストールミラー",
     "tooltip": "pytorchのpipインストールミラー"
   },
   "Comfy-Desktop_WindowStyle": {
@@ -420,5 +423,9 @@
   },
   "pysssss_SnapToGrid": {
     "name": "常にグリッドにスナップ"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "ズームノードの詳細レベル - フォントサイズしきい値",
+    "tooltip": "ノードが低品質LODレンダリングに切り替わるタイミングを制御します。ピクセル単位のフォントサイズを使用して切り替えタイミングを決定します。0に設定すると無効になります。値1-24はLODの最小フォントサイズしきい値を設定します - 値が高いほど(24px) ズームアウト時にノードが簡略化されたレンダリングに早く切り替わり、値が低いほど(1px) 完全なノード品質がより長く維持されます。"
   }
 }
