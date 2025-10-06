@@ -293,12 +293,6 @@ defineExpose({
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-/* Content Section */
-.popup-content {
-  display: flex;
-  flex-direction: column;
-}
-
 .content-text {
   color: white;
   font-size: 14px;

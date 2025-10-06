@@ -1004,9 +1004,6 @@ audio.comfy-audio.empty-audio-widget {
 .lg-node {
   /* Disable text selection on all nodes */
   user-select: none;
-  user-select: none;
-  user-select: none;
-  user-select: none;
 }
 
 .lg-node .lg-slot,
@@ -1033,7 +1030,6 @@ audio.comfy-audio.empty-audio-widget {
   filter: none;
   backdrop-filter: none;
   text-shadow: none;
-  mask-image: none;
   mask-image: none;
   clip-path: none;
   background-image: none;
