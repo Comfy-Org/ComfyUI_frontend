@@ -1,30 +1,16 @@
-name: Setup Frontend
-description: 'Setup ComfyUI frontend development environment'
+name: Build ComfyUI Frontend
+description: 'Install dependencies and build ComfyUI_frontend'
 inputs:
-  extra_server_params:
-    description: 'Additional parameters to pass to ComfyUI server'
+  build_frontend:
+    description: 'Whether to build the frontend'
     required: false
-    default: ''
+    default: 'true'
 runs:
   using: 'composite'
   steps:
-    - name: Checkout ComfyUI
-      uses: actions/checkout@v5
-      with:
-        repository: 'comfyanonymous/ComfyUI'
-        path: 'ComfyUI'
+    # Note: this workflow assume frontend repo is checked out in the root of the workspace
 
-    - name: Checkout ComfyUI_frontend
-      uses: actions/checkout@v5
-      with:
-        path: 'ComfyUI_frontend'
-
-    - name: Copy ComfyUI_devtools from frontend repo
-      shell: bash
-      run: |
-        mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
-        cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
-
+    # Install pnpm, Node.js, build frontend
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
@@ -35,32 +21,13 @@ runs:
       with:
         node-version: 'lts/*'
         cache: 'pnpm'
-        cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
+        cache-dependency-path: './pnpm-lock.yaml'
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Install Python requirements
+    - name: Install dependencies
       shell: bash
-      working-directory: ComfyUI
-      run: |
-        python -m pip install --upgrade pip
-        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-        pip install -r requirements.txt
-        pip install wait-for-it
+      run: pnpm install --frozen-lockfile
 
-    - name: Build & Install ComfyUI_frontend
+    - name: Build ComfyUI_frontend if needed
+      if: ${{ inputs.build_frontend == 'true' }}
       shell: bash
-      working-directory: ComfyUI_frontend
-      run: |
-        pnpm install --frozen-lockfile
-        pnpm build
-
-    - name: Start ComfyUI server
-      shell: bash
-      working-directory: ComfyUI
-      run: |
-        python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist ${{ inputs.extra_server_params }} &
-        wait-for-it --service 127.0.0.1:8188 -t 600
+      run: pnpm build
