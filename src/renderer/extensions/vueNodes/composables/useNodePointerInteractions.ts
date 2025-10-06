@@ -61,6 +61,17 @@ export function useNodePointerInteractions(
 
     if (forwardMiddlePointerIfNeeded(event)) return
 
+    const stopNodeDragTarget =
+      event.target instanceof HTMLElement
+        ? event.target.closest('[data-capture-node="true"]')
+        : null
+    if (stopNodeDragTarget) {
+      if (!shouldHandleNodePointerEvents.value) {
+        forwardEventToCanvas(event)
+      }
+      return
+    }
+
     // Only start drag on left-click (button 0)
     if (event.button !== 0) {
       return
