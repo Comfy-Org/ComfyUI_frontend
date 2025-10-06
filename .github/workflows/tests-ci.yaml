@@ -23,7 +23,6 @@ jobs:
       - name: Checkout ComfyUI_frontend
         uses: actions/checkout@v5
         with:
-          repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
 
       - name: Copy ComfyUI_devtools from frontend repo
@@ -88,7 +87,7 @@ jobs:
       - name: Wait for cache propagation
         run: sleep 10
 
-      - name: Restore cached setup
+      - name: Restore cached setup 
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           fail-on-cache-miss: true
@@ -217,7 +216,6 @@ jobs:
       - name: Checkout ComfyUI_frontend
         uses: actions/checkout@v5
         with:
-          repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
 
       - name: Install pnpm
