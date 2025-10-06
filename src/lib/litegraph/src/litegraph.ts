@@ -98,7 +98,11 @@ export type {
   Positionable,
   Size
 } from './interfaces'
-export { LGraph } from './LGraph'
+export {
+  LGraph,
+  type LGraphTriggerAction,
+  type LGraphTriggerParam
+} from './LGraph'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'

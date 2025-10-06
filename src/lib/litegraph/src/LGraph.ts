@@ -55,6 +55,11 @@ import {
 } from './subgraph/subgraphUtils'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
+  LGraphTriggerAction,
+  LGraphTriggerHandler,
+  LGraphTriggerParam
+} from './types/graphTriggers'
+import type {
   ExportedSubgraph,
   ExposedWidget,
   ISerialisedGraph,
@@ -64,6 +69,11 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+
+export type {
+  LGraphTriggerAction,
+  LGraphTriggerParam
+} from './types/graphTriggers'
 
 export interface LGraphState {
   lastGroupId: number
@@ -254,7 +264,7 @@ export class LGraph
   onExecuteStep?(): void
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
-  onTrigger?(action: string, param: unknown): void
+  onTrigger?: LGraphTriggerHandler
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
@@ -1180,6 +1190,11 @@ export class LGraph
   }
 
   // ********** GLOBALS *****************
+  trigger<A extends LGraphTriggerAction>(
+    action: A,
+    param: LGraphTriggerParam<A>
+  ): void
+  trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
     this.onTrigger?.(action, param)
   }
