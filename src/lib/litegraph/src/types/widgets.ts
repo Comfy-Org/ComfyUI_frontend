@@ -233,11 +233,6 @@ export interface IAudioRecordWidget extends IBaseWidget<string, 'audiorecord'> {
   value: string
 }
 
-export interface IAudioPlayerWidget extends IBaseWidget<string, 'audioplayer'> {
-  type: 'audioplayer'
-  value: string
-}
-
 export interface IAssetWidget
   extends IBaseWidget<string, 'asset', IWidgetOptions<string[]>> {
   type: 'asset'
