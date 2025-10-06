@@ -280,10 +280,10 @@ onMounted(() => {
 const { startResize } = useNodeResize(
   (newSize, element) => {
     // Apply size directly to DOM element - ResizeObserver will pick this up
-    if (!isCollapsed.value) {
-      element.style.width = `${newSize.width}px`
-      element.style.height = `${newSize.height}px`
-    }
+    if (isCollapsed.value) return
+
+    element.style.width = `${newSize.width}px`
+    element.style.height = `${newSize.height}px`
   },
   {
     transformState
