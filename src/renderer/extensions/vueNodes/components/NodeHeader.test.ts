@@ -101,9 +101,6 @@ const createMountConfig = () => {
           updated: vi.fn(),
           unmounted: vi.fn()
         }
-      },
-      provide: {
-        tooltipContainer: { value: document.createElement('div') }
       }
     }
   }
