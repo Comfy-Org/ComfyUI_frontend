@@ -73,7 +73,7 @@ jobs:
         id: playwright
         run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
         env:
-          PLAYWRIGHT_BLOB_OUTPUT_DIR: ../blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
       - name: Upload blob report
         uses: actions/upload-artifact@v4
@@ -143,7 +143,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # Setup Test Environment, we only need playwright here
+      # Setup Test Environment, we only need playwright to merge reports
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -152,7 +152,7 @@ jobs:
         uses: ./.github/actions/setup-playwright
 
       - name: Download blob reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4w
         with:
           path: ./all-blob-reports
           pattern: blob-report-chromium-*
