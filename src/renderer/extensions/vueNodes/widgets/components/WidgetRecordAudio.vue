@@ -240,7 +240,7 @@ async function handlePlayRecording() {
   }, 100)
 
   // Store interval for cleanup
-  playback._playbackTimerInterval.value = timerInterval
+  playback.playbackTimerInterval.value = timerInterval
 }
 
 function handleStopPlayback() {
@@ -253,9 +253,9 @@ function handlePlaybackEnded() {
   waveform.stopWaveform()
 
   // Clear playback timer interval
-  if (playback._playbackTimerInterval.value !== null) {
-    clearInterval(playback._playbackTimerInterval.value)
-    playback._playbackTimerInterval.value = null
+  if (playback.playbackTimerInterval.value !== null) {
+    clearInterval(playback.playbackTimerInterval.value)
+    playback.playbackTimerInterval.value = null
   }
 
   const duration = playback.getDuration()
@@ -307,9 +307,9 @@ onMounted(() => {
 onUnmounted(() => {
   recorder.dispose()
   waveform.dispose()
-  if (playback._playbackTimerInterval.value !== null) {
-    clearInterval(playback._playbackTimerInterval.value)
-    playback._playbackTimerInterval.value = null
+  if (playback.playbackTimerInterval.value !== null) {
+    clearInterval(playback.playbackTimerInterval.value)
+    playback.playbackTimerInterval.value = null
   }
 })
 </script>

@@ -11,9 +11,7 @@ export function useAudioPlayback(
 ) {
   const isPlaying = ref(false)
   const audioElementKey = ref(0)
-  const _playbackTimerInterval = ref<ReturnType<typeof setInterval> | null>(
-    null
-  )
+  const playbackTimerInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
   async function play() {
     if (!audioRef.value) return false
@@ -84,6 +82,6 @@ export function useAudioPlayback(
     resetAudioElement,
     getCurrentTime,
     getDuration,
-    _playbackTimerInterval
+    playbackTimerInterval
   }
 }
