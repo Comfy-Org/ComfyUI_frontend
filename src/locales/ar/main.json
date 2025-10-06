@@ -95,7 +95,8 @@
     "clearWorkflow": "مسح سير العمل",
     "deleteWorkflow": "حذف سير العمل",
     "duplicate": "تكرار",
-    "enterNewName": "أدخل اسمًا جديدًا"
+    "enterNewName": "أدخل اسمًا جديدًا",
+    "deleteBlueprint": "حذف المخطط"
   },
   "chatHistory": {
     "cancelEdit": "إلغاء",
@@ -150,7 +151,38 @@
     "Search": "بحث",
     "Shapes": "الأشكال",
     "Title": "العنوان",
-    "Unpin": "إلغاء التثبيت"
+    "Unpin": "إلغاء التثبيت",
+    "Open in Mask Editor": "افتح في محرر القناع",
+    "Open Image": "افتح الصورة",
+    "Copy Image": "نسخ الصورة",
+    "Save Image": "حفظ الصورة",
+    "Rename": "إعادة تسمية",
+    "Copy": "نسخ",
+    "Duplicate": "تكرار",
+    "Paste": "لصق",
+    "Node Info": "معلومات العقدة",
+    "Adjust Size": "تعديل الحجم",
+    "Minimize Node": "تصغير العقدة",
+    "Expand Node": "توسيع العقدة",
+    "Shape": "الشكل",
+    "Color": "اللون",
+    "Add Subgraph to Library": "إضافة الرسم البياني الفرعي إلى المكتبة",
+    "Unpack Subgraph": "فك الرسم البياني الفرعي",
+    "Edit Subgraph Widgets": "تعديل عناصر الرسم البياني الفرعي",
+    "Convert to Subgraph": "تحويل إلى رسم بياني فرعي",
+    "Align Selected To": "محاذاة المحدد إلى",
+    "Distribute Nodes": "توزيع العقد",
+    "Remove Bypass": "إزالة التجاوز",
+    "Run Branch": "تشغيل الفرع",
+    "Delete": "حذف",
+    "Top": "أعلى",
+    "Bottom": "أسفل",
+    "Left": "يسار",
+    "Right": "يمين",
+    "Horizontal": "أفقي",
+    "Vertical": "عمودي",
+    "new": "جديد",
+    "deprecated": "مهمل"
   },
   "credits": {
     "accountInitialized": "تم تهيئة الحساب",
@@ -415,7 +447,41 @@
     "versionMismatchWarning": "تحذير توافق الإصدارات",
     "versionMismatchWarningMessage": "{warning}: {detail} زر https://docs.comfy.org/installation/update_comfyui#common-update-issues للحصول على تعليمات التحديث.",
     "videoFailedToLoad": "فشل تحميل الفيديو",
-    "workflow": "سير العمل"
+    "workflow": "سير العمل",
+    "downloadImage": "تنزيل الصورة",
+    "downloadVideo": "تنزيل الفيديو",
+    "editOrMaskImage": "تعديل أو إخفاء الصورة",
+    "removeImage": "إزالة الصورة",
+    "removeVideo": "إزالة الفيديو",
+    "viewImageOfTotal": "عرض الصورة {index} من {total}",
+    "viewVideoOfTotal": "عرض الفيديو {index} من {total}",
+    "imagePreview": "معاينة الصورة - استخدم مفاتيح الأسهم للتنقل بين الصور",
+    "videoPreview": "معاينة الفيديو - استخدم مفاتيح الأسهم للتنقل بين الفيديوهات",
+    "galleryImage": "صورة المعرض",
+    "galleryThumbnail": "صورة مصغرة للمعرض",
+    "errorLoadingImage": "حدث خطأ أثناء تحميل الصورة",
+    "errorLoadingVideo": "حدث خطأ أثناء تحميل الفيديو",
+    "failedToDownloadImage": "فشل في تنزيل الصورة",
+    "failedToDownloadVideo": "فشل في تنزيل الفيديو",
+    "calculatingDimensions": "جارٍ حساب الأبعاد",
+    "logoAlt": "شعار ComfyUI",
+    "refreshNode": "تحديث العقدة",
+    "info": "معلومات العقدة",
+    "bookmark": "حفظ في المكتبة",
+    "moreOptions": "خيارات إضافية",
+    "dropYourFileOr": "أسقط ملفك أو",
+    "search": "بحث",
+    "warning": "تحذير",
+    "multiSelectDropdown": "قائمة منسدلة متعددة الاختيار",
+    "singleSelectDropdown": "قائمة منسدلة اختيار واحد",
+    "commandProhibited": "الأمر {command} محظور. يرجى التواصل مع المسؤول لمزيد من المعلومات.",
+    "seeTutorial": "شاهد الدليل",
+    "nodeRenderError": "خطأ في عرض العقدة",
+    "nodeContentError": "خطأ في محتوى العقدة",
+    "nodeHeaderError": "خطأ في رأس العقدة",
+    "nodeSlotsError": "خطأ في فتحات العقدة",
+    "nodeWidgetsError": "خطأ في عناصر واجهة العقدة",
+    "frameNodes": "تأطير العقد"
   },
   "graphCanvasMenu": {
     "fitView": "ملائمة العرض",
@@ -430,7 +496,8 @@
     "toggleMinimap": "تبديل الخريطة المصغرة",
     "zoomIn": "تكبير",
     "zoomOptions": "خيارات التكبير",
-    "zoomOut": "تصغير"
+    "zoomOut": "تصغير",
+    "toggleLinkVisibility": "تبديل إظهار الروابط"
   },
   "groupNode": {
     "create": "إنشاء عقدة مجموعة",
@@ -448,7 +515,8 @@
     "openDevTools": "فتح أدوات المطور",
     "reinstall": "إعادة التثبيت",
     "updateAvailable": "تحديث",
-    "whatsNew": "ما الجديد؟"
+    "whatsNew": "ما الجديد؟",
+    "managerExtension": "المدير الموسع"
   },
   "icon": {
     "bookmark": "إشارة مرجعية",
@@ -548,7 +616,28 @@
     },
     "systemLocations": "مواقع النظام",
     "unhandledError": "خطأ غير معروف",
-    "updateConsent": "لقد وافقت سابقًا على الإبلاغ عن الأعطال. نحن الآن نتتبع إحصائيات مبنية على الأحداث للمساعدة في تحديد الأخطاء وتحسين التطبيق. لا يتم جمع معلومات شخصية قابلة للتعريف."
+    "updateConsent": "لقد وافقت سابقًا على الإبلاغ عن الأعطال. نحن الآن نتتبع إحصائيات مبنية على الأحداث للمساعدة في تحديد الأخطاء وتحسين التطبيق. لا يتم جمع معلومات شخصية قابلة للتعريف.",
+    "gpuPicker": {
+      "title": "اختر إعداد الأجهزة الخاص بك",
+      "recommended": "موصى به",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "وضع المعالج",
+      "manualSubtitle": "إعداد يدوي",
+      "appleMetalDescription": "يستفيد من وحدة معالجة الرسومات في جهاز Mac الخاص بك لسرعة أكبر وتجربة أفضل بشكل عام",
+      "nvidiaDescription": "استخدم وحدة معالجة الرسومات NVIDIA الخاصة بك مع تسريع CUDA للحصول على أفضل أداء.",
+      "cpuDescription": "استخدم وضع المعالج لضمان التوافق عندما لا تتوفر تسريع GPU",
+      "manualDescription": "قم بإعداد ComfyUI يدويًا للإعدادات المتقدمة أو الأجهزة غير المدعومة"
+    },
+    "locationPicker": {
+      "title": "اختر مكان تثبيت ComfyUI",
+      "subtitle": "اختر مجلدًا لملفات ComfyUI. سنقوم أيضًا بإعداد Python هناك تلقائيًا.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "حدد تثبيت ComfyUI موجود (اختياري)",
+      "migrateFromExisting": "الترحيل من تثبيت موجود",
+      "migrateDescription": "انسخ أو اربط النماذج الحالية والعقد المخصصة والإعدادات من تثبيت ComfyUI سابق.",
+      "chooseDownloadServers": "اختر خوادم التنزيل يدويًا",
+      "downloadServersDescription": "حدد خوادم المرايا المحددة لتنزيل Python وحزم PyPI وPyTorch بناءً على موقعك."
+    }
   },
   "issueReport": {
     "helpFix": "المساعدة في الإصلاح"
@@ -612,7 +701,9 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "يتطلب ComfyUI {version}:",
     "outdatedVersion": "بعض العقد تتطلب إصدار أحدث من ComfyUI (الحالي: {version}). يرجى التحديث لاستخدام جميع العقد.",
-    "outdatedVersionGeneric": "بعض العقد تتطلب إصدار أحدث من ComfyUI. يرجى التحديث لاستخدام جميع العقد."
+    "outdatedVersionGeneric": "بعض العقد تتطلب إصدار أحدث من ComfyUI. يرجى التحديث لاستخدام جميع العقد.",
+    "missingNodesTitle": "بعض العقد مفقودة",
+    "missingNodesDescription": "عند تحميل الرسم البياني، لم يتم العثور على العقد التالية.\nقد يحدث هذا أيضًا إذا كانت إصدار التثبيت المثبت أقل وأن هذا النوع من العقد غير موجود."
   },
   "maintenance": {
     "None": "لا شيء",
@@ -679,7 +770,9 @@
       "deleted": "محذوف",
       "flagged": "معلم",
       "pending": "قيد الانتظار",
-      "unknown": "غير معروف"
+      "unknown": "غير معروف",
+      "conflicting": "متعارض",
+      "importFailed": "خطأ في التثبيت"
     },
     "title": "مدير العقد المخصصة",
     "totalNodes": "إجمالي العقد",
@@ -690,7 +783,55 @@
     "uninstalling": "جاري إلغاء التثبيت",
     "update": "تحديث",
     "updatingAllPacks": "تحديث جميع الحزم",
-    "version": "الإصدار"
+    "version": "الإصدار",
+    "legacyMenuNotAvailable": "قائمة مدير الإصدارات القديمة غير متوفرة، سيتم التبديل إلى القائمة الجديدة.",
+    "legacyManagerUI": "استخدام الواجهة القديمة",
+    "legacyManagerUIDescription": "لاستخدام واجهة مدير الإصدارات القديمة، ابدأ ComfyUI مع --enable-manager-legacy-ui",
+    "failedToInstall": "فشل في التثبيت",
+    "installError": "خطأ في التثبيت",
+    "importFailedGenericError": "فشل استيراد الحزمة. تحقق من وحدة التحكم لمزيد من التفاصيل.",
+    "applyChanges": "تطبيق التغييرات",
+    "clickToFinishSetup": "انقر",
+    "toFinishSetup": "لإكمال الإعداد",
+    "restartingBackend": "جاري إعادة تشغيل الخلفية لتطبيق التغييرات...",
+    "extensionsSuccessfullyInstalled": "تم تثبيت الإضافات بنجاح وهي جاهزة للاستخدام!",
+    "installingDependencies": "جاري تثبيت التبعيات...",
+    "updateSelected": "تحديث المحدد",
+    "updateAll": "تحديث الكل",
+    "disabledNodesWontUpdate": "العقد المعطلة لن يتم تحديثها",
+    "enablePackToChangeVersion": "فعّل هذه الحزمة لتغيير الإصدارات",
+    "gettingInfo": "جاري جلب المعلومات...",
+    "allMissingNodesInstalled": "تم تثبيت جميع العقد المفقودة بنجاح",
+    "mixedSelectionMessage": "لا يمكن تنفيذ إجراء جماعي على تحديد مختلط",
+    "notAvailable": "غير متوفر",
+    "conflicts": {
+      "title": "تم اكتشاف مشاكل في حزمة العقد!",
+      "description": "لقد اكتشفنا تعارضات بين بعض إضافاتك والإصدار الجديد من ComfyUI. عند التحديث قد تتعطل سير العمل التي تعتمد على هذه الإضافات.",
+      "info": "إذا واصلت التحديث، سيتم تعطيل الإضافات المتعارضة تلقائيًا. يمكنك مراجعتها وإدارتها في أي وقت من خلال مدير ComfyUI.",
+      "extensionAtRisk": "إضافة معرضة للخطر",
+      "conflicts": "تعارضات",
+      "importFailedExtensions": "إضافات فشل استيرادها",
+      "conflictInfoTitle": "لماذا يحدث هذا؟",
+      "installAnyway": "تثبيت على أي حال",
+      "enableAnyway": "تفعيل على أي حال",
+      "understood": "فهمت",
+      "warningBanner": {
+        "title": "تم تعطيل بعض الإضافات بسبب عدم التوافق مع إعدادك الحالي",
+        "message": "تتطلب هذه الإضافات إصدارات من حزم النظام تختلف عن إعدادك الحالي. قد يؤدي تثبيتها إلى تجاوز التبعيات الأساسية والتأثير على إضافات أو سير عمل أخرى.",
+        "button": "اعرف المزيد..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "عدم تطابق إصدار ComfyUI (الحالي: {current}، المطلوب: {required})",
+        "frontend_version": "عدم تطابق إصدار الواجهة (الحالي: {current}، المطلوب: {required})",
+        "os": "نظام التشغيل غير مدعوم (الحالي: {current}، المطلوب: {required})",
+        "accelerator": "المسرّع/GPU غير مدعوم (المتوفر: {current}، المطلوب: {required})",
+        "generic": "مشكلة توافق (الحالي: {current}، المطلوب: {required})",
+        "banned": "هذه الحزمة محظورة لأسباب أمنية",
+        "pending": "في انتظار التحقق الأمني - لا يمكن التحقق من التوافق",
+        "import_failed": "فشل الاستيراد"
+      },
+      "warningTooltip": "قد تواجه هذه الحزمة مشاكل توافق مع بيئتك الحالية"
+    }
   },
   "maskEditor": {
     "Apply to Whole Image": "تطبيق على كامل الصورة",
@@ -847,7 +988,28 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب"
+    "Zoom to fit": "تكبير لتناسب",
+    "Workflow": "سير العمل",
+    "Fit view to selected nodes": "تكييف العرض مع العقد المحددة",
+    "Canvas Toggle Link Visibility": "تبديل رؤية الروابط في اللوحة",
+    "Custom Nodes Manager": "مدير العقد المخصصة",
+    "Custom Nodes (Legacy)": "العقد المخصصة (قديم)",
+    "Manager Menu (Legacy)": "قائمة المدير (قديم)",
+    "Install Missing": "تثبيت المفقود",
+    "Install Missing Custom Nodes": "تثبيت العقد المخصصة المفقودة",
+    "Check for Custom Node Updates": "التحقق من تحديثات العقد المخصصة",
+    "Unload Models": "إلغاء تحميل النماذج",
+    "Unload Models and Execution Cache": "إلغاء تحميل النماذج وذاكرة التنفيذ المؤقتة",
+    "Toggle Bottom Panel": "تبديل اللوحة السفلية",
+    "Toggle Focus Mode": "تبديل وضع التركيز",
+    "Toggle Model Library Sidebar": "تبديل الشريط الجانبي لمكتبة النماذج",
+    "Toggle Node Library Sidebar": "تبديل الشريط الجانبي لمكتبة العقد",
+    "Toggle Queue Sidebar": "تبديل الشريط الجانبي لقائمة الانتظار",
+    "Toggle Workflows Sidebar": "تبديل الشريط الجانبي لسير العمل",
+    "sideToolbar_modelLibrary": "شريط الأدوات الجانبي.مكتبة النماذج",
+    "sideToolbar_nodeLibrary": "شريط الأدوات الجانبي.مكتبة العقد",
+    "sideToolbar_queue": "شريط الأدوات الجانبي.قائمة الانتظار",
+    "sideToolbar_workflows": "شريط الأدوات الجانبي.سير العمل"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
@@ -971,7 +1133,10 @@
     "executeButton": {
       "disabledTooltip": "لم يتم تحديد أي عقد إخراج",
       "tooltip": "تنفيذ على عقد الإخراج المحددة (مميزة بإطار برتقالي)"
-    }
+    },
+    "Set Group Nodes to Never": "تعيين عقد المجموعة إلى أبدًا",
+    "Bypass Group Nodes": "تجاوز عقد المجموعة",
+    "Set Group Nodes to Always": "تعيين عقد المجموعة إلى دائمًا"
   },
   "serverConfig": {
     "modifiedConfigs": "لقد قمت بتعديل إعدادات الخادم التالية. يرجى إعادة التشغيل لتطبيق التغييرات.",
@@ -1118,7 +1283,14 @@
     },
     "reportIssue": "الإبلاغ عن مشكلة",
     "showTerminal": "إظهار الطرفية",
-    "troubleshoot": "استكشاف الأخطاء"
+    "troubleshoot": "استكشاف الأخطاء",
+    "title": "جارٍ بدء ComfyUI",
+    "copySelectionTooltip": "نسخ التحديد",
+    "copyAllTooltip": "نسخ الكل",
+    "errorMessage": "غير قادر على بدء ComfyUI Desktop",
+    "installation": {
+      "title": "جارٍ تثبيت ComfyUI"
+    }
   },
   "settingsCategories": {
     "3D": "ثلاثي الأبعاد",
@@ -1172,7 +1344,8 @@
     "User": "المستخدم",
     "Validation": "التحقق",
     "Window": "النافذة",
-    "Workflow": "سير العمل"
+    "Workflow": "سير العمل",
+    "Vue Nodes": "عقد Vue"
   },
   "shortcuts": {
     "essentials": "أساسي",
@@ -1254,11 +1427,25 @@
         "open": "فتح"
       }
     },
-    "workflows": "سير العمل"
+    "workflows": "سير العمل",
+    "themeToggle": "تبديل المظهر"
   },
   "subgraphStore": {
     "blueprintName": "اسم المخطط الفرعي",
-    "saveBlueprint": "احفظ المخطط الفرعي في المكتبة"
+    "saveBlueprint": "احفظ المخطط الفرعي في المكتبة",
+    "confirmDeleteTitle": "حذف المخطط؟",
+    "confirmDelete": "سيؤدي هذا الإجراء إلى إزالة المخطط نهائيًا من مكتبتك",
+    "overwriteBlueprintTitle": "استبدال المخطط الحالي؟",
+    "overwriteBlueprint": "سيؤدي الحفظ إلى استبدال المخطط الحالي بالتغييرات الخاصة بك",
+    "publish": "نشر الرسم البياني الفرعي",
+    "publishSuccess": "تم الحفظ في مكتبة العقد",
+    "publishSuccessMessage": "يمكنك العثور على مخطط الرسم البياني الفرعي الخاص بك في مكتبة العقد ضمن \"مخططات الرسم البياني الفرعي\"",
+    "loadFailure": "فشل تحميل مخططات الرسم البياني الفرعي",
+    "shown": "معروض على العقدة",
+    "showAll": "إظهار الكل",
+    "hidden": "معاملات مخفية / متداخلة",
+    "hideAll": "إخفاء الكل",
+    "showRecommended": "إظهار العناصر الموصى بها"
   },
   "tabMenu": {
     "addToBookmarks": "إضافة إلى العلامات",
@@ -1285,7 +1472,9 @@
       "LLM API": "واجهة برمجة تطبيقات نماذج اللغة الكبيرة",
       "Upscaling": "تحسين الجودة",
       "Video": "فيديو",
-      "Video API": "واجهة برمجة تطبيقات الفيديو"
+      "Video API": "واجهة برمجة تطبيقات الفيديو",
+      "GettingStarted": "البدء",
+      "LLMs": "نماذج اللغة الكبيرة"
     },
     "loadingMore": "تحميل المزيد من القوالب...",
     "searchPlaceholder": "ابحث في القوالب...",
@@ -1593,7 +1782,25 @@
         "api_veo2_i2v": "إنشاء فيديوهات من الصور باستخدام Google Veo2 API."
       }
     },
-    "title": "ابدأ باستخدام قالب"
+    "title": "ابدأ باستخدام قالب",
+    "categories": "الفئات",
+    "resetFilters": "مسح المرشحات",
+    "sorting": "ترتيب حسب",
+    "activeFilters": "المرشحات:",
+    "loading": "جارٍ تحميل القوالب...",
+    "noResults": "لم يتم العثور على قوالب",
+    "noResultsHint": "حاول تعديل البحث أو المرشحات",
+    "modelFilter": "مرشح النماذج",
+    "modelsSelected": "{count} نماذج",
+    "useCasesSelected": "{count} حالات استخدام",
+    "licensesSelected": "{count} تراخيص",
+    "resultsCount": "عرض {count} من {total} قالب",
+    "sort": {
+      "recommended": "موصى به",
+      "alphabetical": "أ → ي",
+      "newest": "الأحدث",
+      "searchPlaceholder": "بحث..."
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
@@ -1665,7 +1872,8 @@
     },
     "personalDataConsentRequired": "يجب أن توافق على معالجة بياناتك الشخصية.",
     "prefix": "يجب أن يبدأ بـ {prefix}",
-    "required": "مطلوب"
+    "required": "مطلوب",
+    "descriptionRequired": "الوصف مطلوب"
   },
   "versionMismatchWarning": {
     "dismiss": "رفض",
@@ -1692,5 +1900,67 @@
     "label": "عناصر التحكم في التكبير",
     "showMinimap": "إظهار الخريطة المصغرة",
     "zoomToFit": "تكبير لتناسب الشاشة"
+  },
+  "desktopStart": {
+    "initialising": "جارٍ التهيئة..."
+  },
+  "shape": {
+    "default": "افتراضي",
+    "round": "دائري",
+    "CARD": "بطاقة",
+    "circle": "دائرة",
+    "arrow": "سهم",
+    "box": "صندوق"
+  },
+  "commands": {
+    "runWorkflow": "تشغيل سير العمل",
+    "runWorkflowFront": "تشغيل سير العمل (إضافة في المقدمة)",
+    "run": "تشغيل",
+    "execute": "تنفيذ",
+    "interrupt": "إلغاء التشغيل الحالي",
+    "refresh": "تحديث تعريفات العقد",
+    "clipspace": "فتح مساحة القص",
+    "resetView": "إعادة تعيين عرض اللوحة",
+    "clear": "مسح سير العمل",
+    "toggleBottomPanel": "تبديل اللوحة السفلية",
+    "theme": "المظهر",
+    "dark": "داكن",
+    "light": "فاتح",
+    "manageExtensions": "إدارة الإضافات",
+    "settings": "الإعدادات",
+    "help": "مساعدة",
+    "queue": "لوحة قائمة الانتظار"
+  },
+  "widgets": {
+    "selectModel": "اختر نموذج",
+    "uploadSelect": {
+      "placeholder": "اختر...",
+      "placeholderImage": "اختر صورة...",
+      "placeholderAudio": "اختر صوت...",
+      "placeholderVideo": "اختر فيديو...",
+      "placeholderModel": "اختر نموذج...",
+      "placeholderUnknown": "اختر وسائط..."
+    }
+  },
+  "assetBrowser": {
+    "assets": "الأصول",
+    "browseAssets": "تصفح الأصول",
+    "noAssetsFound": "لم يتم العثور على أصول",
+    "tryAdjustingFilters": "حاول تعديل البحث أو المرشحات",
+    "loadingModels": "جارٍ تحميل {type}...",
+    "connectionError": "يرجى التحقق من اتصالك والمحاولة مرة أخرى",
+    "failedToCreateNode": "فشل إنشاء العقدة. يرجى المحاولة مرة أخرى أو التحقق من وحدة التحكم للحصول على التفاصيل.",
+    "noModelsInFolder": "لا توجد {type} متاحة في هذا المجلد",
+    "searchAssetsPlaceholder": "البحث في الأصول...",
+    "allModels": "جميع النماذج",
+    "allCategory": "جميع {category}",
+    "unknown": "غير معروف",
+    "fileFormats": "تنسيقات الملفات",
+    "baseModels": "النماذج الأساسية",
+    "sortBy": "ترتيب حسب",
+    "sortAZ": "أ-ي",
+    "sortZA": "ي-أ",
+    "sortRecent": "الأحدث",
+    "sortPopular": "الأكثر شعبية"
   }
 }

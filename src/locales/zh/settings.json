@@ -11,7 +11,10 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Python安装镜像",
-    "tooltip": "管理的Python安装包从Astral python-build-standalone项目下载。此变量可以设置为镜像URL，以使用不同的Python安装源。提供的URL将替换https://github.com/astral-sh/python-build-standalone/releases/download，例如，在https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz中。可以通过使用file:// URL方案从本地目录读取分发包。"
+    "tooltip": "管理的Python安装包从Astral python-build-standalone项目下载。此变量可以设置为镜像URL，以使用不同的Python安装源。提供的URL将替换https://github.com/astral-sh/python-build-standalone/releases/download，例如，在https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz中。可以通过使用file:// URL方案从本地目录读取分发包。",
+    "urlFormatTitle": "镜像 URL 格式",
+    "urlDescription": "这是一个 Python 下载 URL 示例。\n\n镜像 URL 是前半部分，包括日期（20250902）之前的所有内容：",
+    "fileUrlDescription": "要从之前下载的文件安装，可以使用 file URL："
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "Torch安装镜像",
@@ -420,5 +423,9 @@
   },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "缩放节点细节级别 - 字体大小阈值",
+    "tooltip": "控制节点何时切换为低质量LOD渲染。使用字体像素大小来决定何时切换。设置为0可禁用。1-24的数值设置LOD的最小字体大小阈值——数值越高（24px），缩小时越早切换为简化渲染，数值越低（1px），则在缩小时更长时间保持完整节点质量。"
   }
 }
