@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -59,6 +60,11 @@ export function useCanvasInteractions() {
    * be forwarded to canvas (e.g., space+drag for panning)
    */
   const handlePointer = (event: PointerEvent) => {
+    if (isMiddlePointerInput(event)) {
+      forwardEventToCanvas(event)
+      return
+    }
+
     // Check if canvas exists using established pattern
     const canvas = getCanvas()
     if (!canvas) return
