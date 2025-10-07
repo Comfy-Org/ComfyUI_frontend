@@ -145,7 +145,7 @@
     :style="{ borderColor: '#262729' }"
   >
     <div
-      class="border border-dashed p-1 rounded-md transition-colors duration-200 hover:border-[#5B5E7D]"
+      class="border border-dashed p-1 rounded-md transition-colors duration-200 hover:border-slate-300"
       :style="{ borderColor: '#262729' }"
     >
       <div class="flex flex-col items-center gap-2 w-full py-4">

@@ -95,7 +95,8 @@
     "clearWorkflow": "ワークフローをクリア",
     "deleteWorkflow": "ワークフローを削除",
     "duplicate": "複製",
-    "enterNewName": "新しい名前を入力"
+    "enterNewName": "新しい名前を入力",
+    "deleteBlueprint": "ブループリントを削除"
   },
   "chatHistory": {
     "cancelEdit": "キャンセル",
@@ -150,7 +151,38 @@
     "Search": "検索",
     "Shapes": "形",
     "Title": "タイトル",
-    "Unpin": "ピンを解除"
+    "Unpin": "ピンを解除",
+    "Open in Mask Editor": "マスクエディタで開く",
+    "Open Image": "画像を開く",
+    "Copy Image": "画像をコピー",
+    "Save Image": "画像を保存",
+    "Rename": "名前を変更",
+    "Copy": "コピー",
+    "Duplicate": "複製",
+    "Paste": "貼り付け",
+    "Node Info": "ノード情報",
+    "Adjust Size": "サイズを調整",
+    "Minimize Node": "ノードを最小化",
+    "Expand Node": "ノードを展開",
+    "Shape": "形状",
+    "Color": "色",
+    "Add Subgraph to Library": "サブグラフをライブラリに追加",
+    "Unpack Subgraph": "サブグラフを展開",
+    "Edit Subgraph Widgets": "サブグラフウィジェットを編集",
+    "Convert to Subgraph": "サブグラフに変換",
+    "Align Selected To": "選択項目を揃える",
+    "Distribute Nodes": "ノードを分布",
+    "Remove Bypass": "バイパスを解除",
+    "Run Branch": "ブランチを実行",
+    "Delete": "削除",
+    "Top": "上",
+    "Bottom": "下",
+    "Left": "左",
+    "Right": "右",
+    "Horizontal": "水平",
+    "Vertical": "垂直",
+    "new": "新規",
+    "deprecated": "非推奨"
   },
   "credits": {
     "accountInitialized": "アカウントが初期化されました",
@@ -418,7 +450,39 @@
     "versionMismatchWarning": "バージョン互換性の警告",
     "versionMismatchWarningMessage": "{warning}: {detail} 更新手順については https://docs.comfy.org/installation/update_comfyui#common-update-issues をご覧ください。",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
-    "workflow": "ワークフロー"
+    "workflow": "ワークフロー",
+    "downloadImage": "画像をダウンロード",
+    "downloadVideo": "ビデオをダウンロード",
+    "editOrMaskImage": "画像を編集またはマスク",
+    "removeImage": "画像を削除",
+    "removeVideo": "ビデオを削除",
+    "viewImageOfTotal": "画像 {index} / {total} を表示",
+    "viewVideoOfTotal": "ビデオ {index} / {total} を表示",
+    "imagePreview": "画像プレビュー - 矢印キーで画像を切り替え",
+    "videoPreview": "ビデオプレビュー - 矢印キーでビデオを切り替え",
+    "galleryImage": "ギャラリー画像",
+    "galleryThumbnail": "ギャラリーサムネイル",
+    "errorLoadingImage": "画像の読み込みエラー",
+    "errorLoadingVideo": "ビデオの読み込みエラー",
+    "failedToDownloadImage": "画像のダウンロードに失敗しました",
+    "failedToDownloadVideo": "ビデオのダウンロードに失敗しました",
+    "calculatingDimensions": "寸法を計算中",
+    "logoAlt": "ComfyUIロゴ",
+    "refreshNode": "ノードを更新",
+    "info": "ノード情報",
+    "bookmark": "ライブラリに保存",
+    "moreOptions": "その他のオプション",
+    "search": "検索",
+    "warning": "警告",
+    "multiSelectDropdown": "複数選択ドロップダウン",
+    "singleSelectDropdown": "単一選択ドロップダウン",
+    "seeTutorial": "チュートリアルを見る",
+    "nodeRenderError": "ノード描画エラー",
+    "nodeContentError": "ノード内容エラー",
+    "nodeHeaderError": "ノードヘッダーエラー",
+    "nodeSlotsError": "ノードスロットエラー",
+    "nodeWidgetsError": "ノードウィジェットエラー",
+    "frameNodes": "ノードをフレーム化"
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
@@ -428,7 +492,13 @@
     "toggleLinkVisibility": "リンクの表示切り替え",
     "toggleMinimap": "ミニマップの切り替え",
     "zoomIn": "拡大",
-    "zoomOut": "縮小"
+    "zoomOut": "縮小",
+    "select": "選択",
+    "hand": "パンビュー",
+    "zoomOptions": "ズームオプション",
+    "focusMode": "フォーカスモード",
+    "hideLinks": "リンクを非表示",
+    "showLinks": "リンクを表示"
   },
   "groupNode": {
     "create": "グループノードを作成",
@@ -446,7 +516,8 @@
     "openDevTools": "開発者ツールを開く",
     "reinstall": "再インストール",
     "updateAvailable": "アップデート",
-    "whatsNew": "新着情報"
+    "whatsNew": "新着情報",
+    "managerExtension": "Manager Extension"
   },
   "icon": {
     "bookmark": "ブックマーク",
@@ -546,7 +617,28 @@
     },
     "systemLocations": "システムの場所",
     "unhandledError": "未知のエラー",
-    "updateConsent": "以前、クラッシュレポートを報告することに同意していました。現在、バグの特定とアプリの改善を助けるためにイベントベースのメトリクスを追跡しています。個人を特定できる情報は収集されません。"
+    "updateConsent": "以前、クラッシュレポートを報告することに同意していました。現在、バグの特定とアプリの改善を助けるためにイベントベースのメトリクスを追跡しています。個人を特定できる情報は収集されません。",
+    "gpuPicker": {
+      "title": "ハードウェア構成を選択",
+      "recommended": "推奨",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "CPUモード",
+      "manualSubtitle": "手動セットアップ",
+      "appleMetalDescription": "MacのGPUを活用して、より高速かつ快適な体験を実現します",
+      "nvidiaDescription": "NVIDIA GPUとCUDAアクセラレーションを使用して最高のパフォーマンスを得ます。",
+      "cpuDescription": "GPUアクセラレーションが利用できない場合は互換性のためにCPUモードを使用します",
+      "manualDescription": "高度なセットアップや未対応ハードウェア向けにComfyUIを手動で構成します"
+    },
+    "locationPicker": {
+      "title": "ComfyUIのインストール場所を選択",
+      "subtitle": "ComfyUIのファイル用フォルダを選択してください。Pythonも自動的にセットアップされます。",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "既存のComfyUIインストールを選択（任意）",
+      "migrateFromExisting": "既存のインストールから移行",
+      "migrateDescription": "以前のComfyUIインストールから既存のモデル、カスタムノード、設定をコピーまたはリンクします。",
+      "chooseDownloadServers": "ダウンロードサーバーを手動で選択",
+      "downloadServersDescription": "お住まいの地域に応じて、Python、PyPIパッケージ、PyTorchのダウンロード用ミラーサーバーを選択します。"
+    }
   },
   "issueReport": {
     "helpFix": "これを修正するのを助ける"
@@ -586,12 +678,33 @@
     "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "upDirection": "上方向",
     "uploadBackgroundImage": "背景画像をアップロード",
-    "uploadTexture": "テクスチャをアップロード"
+    "uploadTexture": "テクスチャをアップロード",
+    "upDirections": {
+      "original": "オリジナル"
+    },
+    "cameraType": {
+      "perspective": "パースペクティブ",
+      "orthographic": "オルソグラフィック"
+    },
+    "viewer": {
+      "title": "3Dビューア（ベータ）",
+      "apply": "適用",
+      "cancel": "キャンセル",
+      "cameraType": "カメラタイプ",
+      "sceneSettings": "シーン設定",
+      "cameraSettings": "カメラ設定",
+      "lightSettings": "ライト設定",
+      "exportSettings": "エクスポート設定",
+      "modelSettings": "モデル設定"
+    },
+    "openIn3DViewer": "3Dビューアで開く"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} が必要です：",
     "outdatedVersion": "一部のノードはより新しいバージョンのComfyUIが必要です（現在のバージョン：{version}）。すべてのノードを使用するにはアップデートしてください。",
-    "outdatedVersionGeneric": "一部のノードはより新しいバージョンのComfyUIが必要です。すべてのノードを使用するにはアップデートしてください。"
+    "outdatedVersionGeneric": "一部のノードはより新しいバージョンのComfyUIが必要です。すべてのノードを使用するにはアップデートしてください。",
+    "missingNodesTitle": "ノードが見つかりません",
+    "missingNodesDescription": "グラフを読み込む際、以下のノードタイプが見つかりませんでした。\nインストールされているバージョンが古く、そのノードタイプが存在しない場合にも発生することがあります。"
   },
   "maintenance": {
     "None": "なし",
@@ -661,7 +774,9 @@
       "deleted": "削除済み",
       "flagged": "フラグ付き",
       "pending": "保留中",
-      "unknown": "不明"
+      "unknown": "不明",
+      "conflicting": "競合",
+      "importFailed": "インストールエラー"
     },
     "title": "カスタムノードマネージャ",
     "totalNodes": "合計ノード数",
@@ -672,7 +787,52 @@
     "uninstalling": "アンインストール中",
     "update": "更新",
     "updatingAllPacks": "すべてのパッケージを更新中",
-    "version": "バージョン"
+    "version": "バージョン",
+    "failedToInstall": "インストールに失敗しました",
+    "installError": "インストールエラー",
+    "importFailedGenericError": "パッケージのインポートに失敗しました。詳細はコンソールを確認してください。",
+    "applyChanges": "変更を適用",
+    "clickToFinishSetup": "クリック",
+    "toFinishSetup": "してセットアップを完了",
+    "restartingBackend": "変更を適用するためにバックエンドを再起動しています...",
+    "extensionsSuccessfullyInstalled": "拡張機能のインストールが完了し、使用可能になりました！",
+    "installingDependencies": "依存関係をインストール中...",
+    "updateSelected": "選択したものを更新",
+    "updateAll": "すべて更新",
+    "disabledNodesWontUpdate": "無効なノードは更新されません",
+    "enablePackToChangeVersion": "このパックを有効にしてバージョンを変更してください",
+    "gettingInfo": "情報を取得中...",
+    "allMissingNodesInstalled": "すべての不足しているノードが正常にインストールされました",
+    "mixedSelectionMessage": "混在した選択では一括操作を実行できません",
+    "notAvailable": "利用不可",
+    "conflicts": {
+      "title": "ノードパックの問題が検出されました！",
+      "description": "一部の拡張機能と新しいComfyUIバージョンの間に競合が検出されました。アップデートを行うと、それらの拡張機能に依存するワークフローが壊れる可能性があります。",
+      "info": "アップデートを続行すると、競合している拡張機能は自動的に無効化されます。ComfyUIマネージャーでいつでも確認・管理できます。",
+      "extensionAtRisk": "リスクのある拡張機能",
+      "conflicts": "競合",
+      "importFailedExtensions": "インポートに失敗した拡張機能",
+      "conflictInfoTitle": "なぜこの問題が発生するのですか？",
+      "installAnyway": "それでもインストール",
+      "enableAnyway": "それでも有効化",
+      "understood": "理解しました",
+      "warningBanner": {
+        "title": "現在のセットアップと互換性がないため、一部の拡張機能が無効化されています",
+        "message": "これらの拡張機能は、現在のセットアップとは異なるバージョンのシステムパッケージを必要とします。インストールするとコア依存関係が上書きされ、他の拡張機能やワークフローに影響を与える可能性があります。",
+        "button": "詳細を見る..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "ComfyUIバージョンの不一致（現在: {current}、必要: {required}）",
+        "frontend_version": "フロントエンドバージョンの不一致（現在: {current}、必要: {required}）",
+        "os": "サポートされていないオペレーティングシステム（現在: {current}、必要: {required}）",
+        "accelerator": "GPU/アクセラレータがサポートされていません（利用可能: {current}、必要: {required}）",
+        "generic": "互換性の問題（現在: {current}、必要: {required}）",
+        "banned": "このパッケージはセキュリティ上の理由で禁止されています",
+        "pending": "セキュリティ検証が保留中 - 互換性を確認できません",
+        "import_failed": "インポートに失敗しました"
+      },
+      "warningTooltip": "このパッケージは現在の環境と互換性がない可能性があります"
+    }
   },
   "maskEditor": {
     "Apply to Whole Image": "全画像に適用",
@@ -726,7 +886,8 @@
     "settings": "設定",
     "showMenu": "メニューを表示",
     "theme": "テーマ",
-    "toggleBottomPanel": "下部パネルを切り替え"
+    "toggleBottomPanel": "下部パネルを切り替え",
+    "queue": "キューパネル"
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUIについて",
@@ -831,7 +992,23 @@
     "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト",
-    "Zoom to fit": "全体表示にズーム"
+    "Zoom to fit": "全体表示にズーム",
+    "Open 3D Viewer (Beta) for Selected Node": "選択したノードの3Dビューア（ベータ版）を開く",
+    "Lock Canvas": "キャンバスをロック",
+    "Exit Subgraph": "サブグラフを終了",
+    "Install Missing": "不足分をインストール",
+    "Publish": "公開",
+    "Canvas Performance": "キャンバスのパフォーマンス",
+    "Help Center": "ヘルプセンター",
+    "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
+    "Focus Mode": "フォーカスモード",
+    "Model Library": "モデルライブラリ",
+    "Node Library": "ノードライブラリ",
+    "Queue Panel": "キューパネル",
+    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
+    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
+    "sideToolbar_queue": "sideToolbar.queue",
+    "sideToolbar_workflows": "sideToolbar.workflows"
   },
   "minimap": {
     "nodeColors": "ノードの色",
@@ -959,7 +1136,10 @@
     "executeButton": {
       "disabledTooltip": "出力ノードが選択されていません",
       "tooltip": "選択した出力ノードに実行（オレンジ色の枠でハイライト表示）"
-    }
+    },
+    "Set Group Nodes to Never": "グループノードを常に無効にする",
+    "Bypass Group Nodes": "グループノードをバイパス",
+    "Set Group Nodes to Always": "グループノードを常に有効にする"
   },
   "serverConfig": {
     "modifiedConfigs": "以下のサーバー設定を変更しました。変更を適用するには再起動してください。",
@@ -1106,7 +1286,14 @@
     },
     "reportIssue": "問題を報告",
     "showTerminal": "ターミナルを表示",
-    "troubleshoot": "トラブルシューティング"
+    "troubleshoot": "トラブルシューティング",
+    "title": "ComfyUIを起動中",
+    "copySelectionTooltip": "選択範囲をコピー",
+    "copyAllTooltip": "すべてコピー",
+    "errorMessage": "ComfyUIデスクトップを起動できません",
+    "installation": {
+      "title": "ComfyUIをインストール中"
+    }
   },
   "settingsCategories": {
     "3D": "3D",
@@ -1160,12 +1347,34 @@
     "Validation": "検証",
     "Vue Nodes": "Vueノード",
     "Window": "ウィンドウ",
-    "Workflow": "ワークフロー"
+    "Workflow": "ワークフロー",
+    "3DViewer": "3Dビューア"
+  },
+  "shortcuts": {
+    "essentials": "必須",
+    "keyboardShortcuts": "キーボードショートカット",
+    "manageShortcuts": "ショートカットを管理",
+    "noKeybinding": "ショートカットなし",
+    "subcategories": {
+      "node": "ノード",
+      "panelControls": "パネルコントロール",
+      "queue": "キュー",
+      "view": "ビュー",
+      "workflow": "ワークフロー"
+    },
+    "viewControls": "ビューコントロール"
   },
   "sideToolbar": {
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
     "helpCenter": "ヘルプセンター",
+    "labels": {
+      "models": "モデル",
+      "nodes": "ノード",
+      "queue": "キュー",
+      "templates": "テンプレート",
+      "workflows": "ワークフロー"
+    },
     "logout": "ログアウト",
     "modelLibrary": "モデルライブラリ",
     "newBlankWorkflow": "新しい空のワークフローを作成",
@@ -1220,11 +1429,26 @@
         "open": "開く"
       }
     },
-    "workflows": "ワークフロー"
+    "workflows": "ワークフロー",
+    "themeToggle": "テーマを切り替え",
+    "templates": "テンプレート"
   },
   "subgraphStore": {
     "blueprintName": "サブグラフ名",
-    "saveBlueprint": "サブグラフをライブラリに保存"
+    "saveBlueprint": "サブグラフをライブラリに保存",
+    "confirmDeleteTitle": "サブグラフを削除しますか？",
+    "confirmDelete": "この操作により、ライブラリからサブグラフが完全に削除されます",
+    "overwriteBlueprintTitle": "既存のサブグラフを上書きしますか？",
+    "overwriteBlueprint": "保存すると、現在のサブグラフが変更内容で上書きされます",
+    "publish": "サブグラフを公開",
+    "publishSuccess": "ノードライブラリに保存されました",
+    "publishSuccessMessage": "サブグラフはノードライブラリの「サブグラフブループリント」で見つけることができます",
+    "loadFailure": "サブグラフの読み込みに失敗しました",
+    "shown": "ノード上で表示",
+    "showAll": "すべて表示",
+    "hidden": "非表示／ネストされたパラメータ",
+    "hideAll": "すべて非表示",
+    "showRecommended": "おすすめウィジェットを表示"
   },
   "tabMenu": {
     "addToBookmarks": "ブックマークに追加",
@@ -1251,7 +1475,9 @@
       "LLM API": "LLM API",
       "Upscaling": "アップスケーリング",
       "Video": "ビデオ",
-      "Video API": "動画API"
+      "Video API": "動画API",
+      "GettingStarted": "はじめに",
+      "LLMs": "LLMs"
     },
     "template": {
       "3D": {
@@ -1557,7 +1783,27 @@
         "api_veo2_i2v": "Google Veo2 APIで画像から動画を生成します。"
       }
     },
-    "title": "テンプレートを利用して開始"
+    "title": "テンプレートを利用して開始",
+    "loadingMore": "さらにテンプレートを読み込み中...",
+    "searchPlaceholder": "テンプレートを検索...",
+    "categories": "カテゴリ",
+    "resetFilters": "フィルターをクリア",
+    "sorting": "並び替え",
+    "activeFilters": "フィルター:",
+    "loading": "テンプレートを読み込み中...",
+    "noResults": "テンプレートが見つかりません",
+    "noResultsHint": "検索条件やフィルターを調整してみてください",
+    "modelFilter": "モデルフィルター",
+    "modelsSelected": "{count}件のモデル",
+    "useCasesSelected": "{count}件のユースケース",
+    "licensesSelected": "{count}件のライセンス",
+    "resultsCount": "{total}件中{count}件のテンプレートを表示中",
+    "sort": {
+      "recommended": "おすすめ",
+      "alphabetical": "A → Z",
+      "newest": "新着順",
+      "searchPlaceholder": "検索..."
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "サブグラフを作成できません",
@@ -1595,7 +1841,8 @@
     "unauthorizedDomain": "あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。",
     "updateRequested": "更新が要求されました",
     "useApiKeyTip": "ヒント：通常のログインにアクセスできませんか？Comfy APIキーオプションを使用してください。",
-    "userNotAuthenticated": "ユーザーが認証されていません"
+    "userNotAuthenticated": "ユーザーが認証されていません",
+    "failedToInitializeLoad3dViewer": "3Dビューアの初期化に失敗しました"
   },
   "userSelect": {
     "enterUsername": "ユーザー名を入力してください",
@@ -1628,7 +1875,8 @@
     },
     "personalDataConsentRequired": "個人データの処理に同意する必要があります。",
     "prefix": "{prefix}で始める必要があります",
-    "required": "必須"
+    "required": "必須",
+    "descriptionRequired": "説明が必要です"
   },
   "versionMismatchWarning": {
     "dismiss": "閉じる",
@@ -1649,5 +1897,73 @@
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
+  },
+  "desktopStart": {
+    "initialising": "初期化中..."
+  },
+  "shape": {
+    "default": "デフォルト",
+    "round": "ラウンド",
+    "CARD": "カード",
+    "circle": "サークル",
+    "arrow": "矢印",
+    "box": "ボックス"
+  },
+  "zoomControls": {
+    "label": "ズームコントロール",
+    "zoomToFit": "全体表示にズーム",
+    "showMinimap": "ミニマップを表示",
+    "hideMinimap": "ミニマップを非表示"
+  },
+  "commands": {
+    "runWorkflow": "ワークフローを実行",
+    "runWorkflowFront": "ワークフローを実行（先頭に追加）",
+    "run": "実行",
+    "execute": "実行",
+    "interrupt": "現在の実行をキャンセル",
+    "refresh": "ノード定義を更新",
+    "clipspace": "Clipspaceを開く",
+    "resetView": "キャンバスビューをリセット",
+    "clear": "ワークフローをクリア",
+    "toggleBottomPanel": "下部パネルの切り替え",
+    "theme": "テーマ",
+    "dark": "ダーク",
+    "light": "ライト",
+    "manageExtensions": "拡張機能を管理",
+    "settings": "設定",
+    "help": "ヘルプ",
+    "queue": "キューパネル"
+  },
+  "widgets": {
+    "selectModel": "モデルを選択",
+    "uploadSelect": {
+      "placeholder": "選択...",
+      "placeholderImage": "画像を選択...",
+      "placeholderAudio": "音声を選択...",
+      "placeholderVideo": "動画を選択...",
+      "placeholderModel": "モデルを選択...",
+      "placeholderUnknown": "メディアを選択..."
+    }
+  },
+  "assetBrowser": {
+    "assets": "アセット",
+    "browseAssets": "アセットを閲覧",
+    "noAssetsFound": "アセットが見つかりません",
+    "tryAdjustingFilters": "検索やフィルターを調整してみてください",
+    "loadingModels": "{type}を読み込み中...",
+    "connectionError": "接続を確認して再試行してください",
+    "failedToCreateNode": "ノードの作成に失敗しました。再試行するか、詳細はコンソールをご確認ください。",
+    "noModelsInFolder": "このフォルダには{type}がありません",
+    "searchAssetsPlaceholder": "アセットを検索...",
+    "allModels": "すべてのモデル",
+    "allCategory": "すべての{category}",
+    "unknown": "不明",
+    "fileFormats": "ファイル形式",
+    "baseModels": "ベースモデル",
+    "sortBy": "並び替え",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "最新",
+    "sortPopular": "人気"
   }
 }

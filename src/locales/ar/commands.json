@@ -290,5 +290,26 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "تبديل الشريط الجانبي لسير العمل",
     "tooltip": "سير العمل"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "مدير العقد المخصصة"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "العقد المخصصة (قديم)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "قائمة المدير (قديم)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "تثبيت العقد المخصصة المفقودة"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "التحقق من تحديثات العقد المخصصة"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "تفريغ النماذج"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "تفريغ النماذج وذاكرة التنفيذ المؤقتة"
   }
 }

@@ -87,8 +87,8 @@ jobs:
       - name: Wait for cache propagation
         run: sleep 10
 
-      - name: Restore cached setup 
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+      - name: Restore cached setup
+        uses: actions/cache/restore@v4
         with:
           fail-on-cache-miss: true
           path: |
@@ -154,7 +154,7 @@ jobs:
         run: sleep 10
 
       - name: Restore cached setup
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        uses: actions/cache/restore@v4
         with:
           fail-on-cache-miss: true
           path: |
