@@ -47,7 +47,7 @@ const canvasStore = useCanvasStore()
 const previousCanvasDraggable = ref(true)
 
 const onEdit = (newValue: string) => {
-  if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
+  if (titleEditorStore.titleEditorTarget && newValue?.trim()) {
     const trimmedTitle = newValue.trim()
     titleEditorStore.titleEditorTarget.title = trimmedTitle
 
