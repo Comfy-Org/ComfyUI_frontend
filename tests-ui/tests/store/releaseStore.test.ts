@@ -145,16 +145,22 @@ describe('useReleaseStore', () => {
 
       it('should show toast for medium/high attention releases', () => {
         vi.mocked(semverCompare).mockReturnValue(1)
-
-        // Need multiple releases for hasMediumOrHighAttention to work
-        const mediumRelease = {
-          ...mockRelease,
-          id: 2,
-          attention: 'medium' as const
-        }
-        store.releases = [mockRelease, mediumRelease]
+        store.releases = [mockRelease]
 
         expect(store.shouldShowToast).toBe(true)
+      })
+
+      it('should not show toast for low attention releases', () => {
+        vi.mocked(semverCompare).mockReturnValue(1)
+
+        const lowAttentionRelease = {
+          ...mockRelease,
+          attention: 'low' as const
+        }
+
+        store.releases = [lowAttentionRelease]
+
+        expect(store.shouldShowToast).toBe(false)
       })
 
       it('should show red dot for new versions', () => {
@@ -490,12 +496,7 @@ describe('useReleaseStore', () => {
 
       vi.mocked(semverCompare).mockReturnValue(1)
 
-      const mediumRelease = { ...mockRelease, attention: 'medium' as const }
-      store.releases = [
-        mockRelease,
-        mediumRelease,
-        { ...mockRelease, attention: 'low' as const }
-      ]
+      store.releases = [mockRelease]
 
       expect(store.shouldShowToast).toBe(true)
     })
@@ -578,14 +579,7 @@ describe('useReleaseStore', () => {
 
       it('should show toast when conditions are met', () => {
         vi.mocked(semverCompare).mockReturnValue(1)
-
-        // Need multiple releases for hasMediumOrHighAttention
-        const mediumRelease = {
-          ...mockRelease,
-          id: 2,
-          attention: 'medium' as const
-        }
-        store.releases = [mockRelease, mediumRelease]
+        store.releases = [mockRelease]
 
         expect(store.shouldShowToast).toBe(true)
       })
@@ -615,12 +609,7 @@ describe('useReleaseStore', () => {
         vi.mocked(semverCompare).mockReturnValue(1)
 
         // Set up all conditions that would normally show toast
-        const mediumRelease = {
-          ...mockRelease,
-          id: 2,
-          attention: 'medium' as const
-        }
-        store.releases = [mockRelease, mediumRelease]
+        store.releases = [mockRelease]
 
         expect(store.shouldShowToast).toBe(false)
       })
