@@ -27,9 +27,7 @@
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
-  type Ref,
   computed,
-  inject,
   onErrorCaptured,
   ref,
   watchEffect
@@ -75,24 +73,21 @@ const hasSlotError = computed(() => {
 
 const errorClassesDot = computed(() => {
   return hasSlotError.value
-    ? 'ring-2 ring-error dark-theme:ring-error ring-offset-0 rounded-full'
+    ? 'ring-2 ring-error ring-offset-0 rounded-full'
     : ''
 })
 
 const labelClasses = computed(() =>
   hasSlotError.value
-    ? 'text-error dark-theme:text-error font-medium'
-    : 'dark-theme:text-slate-200 text-stone-200'
+    ? 'text-error font-medium'
+    : 'text-node-component-slot-text'
 )
 
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || '',
-  tooltipContainer
+  props.nodeType || ''
 )
 
 const tooltipConfig = computed(() => {

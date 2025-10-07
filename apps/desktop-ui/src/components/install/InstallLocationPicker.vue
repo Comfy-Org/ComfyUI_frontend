@@ -106,6 +106,7 @@
 <script setup lang="ts">
 import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import { TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
+import { isInChina } from '@comfyorg/shared-frontend-utils/networkUtil'
 import Accordion from 'primevue/accordion'
 import AccordionContent from 'primevue/accordioncontent'
 import AccordionHeader from 'primevue/accordionheader'
@@ -125,7 +126,6 @@ import {
   type UVMirror
 } from '@/constants/uvMirrors'
 import { electronAPI } from '@/utils/envUtil'
-import { isInChina } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
 
 const { t } = useI18n()

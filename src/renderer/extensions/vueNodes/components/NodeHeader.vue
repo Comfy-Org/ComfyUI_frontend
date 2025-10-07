@@ -4,24 +4,37 @@
   </div>
   <div
     v-else
-    class="lg-node-header p-4 rounded-t-2xl cursor-move w-full"
+    :class="
+      cn(
+        'lg-node-header p-4 rounded-t-2xl cursor-move w-full bg-node-component-header-surface text-node-component-header',
+        collapsed && 'rounded-2xl'
+      )
+    "
     :style="headerStyle"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
     <div class="flex items-center justify-between gap-2.5 relative">
       <!-- Collapse/Expand Button -->
-      <button
-        class="bg-transparent border-transparent flex items-center lod-toggle"
-        data-testid="node-collapse-button"
-        @click.stop="handleCollapse"
-        @dblclick.stop
-      >
-        <i
-          :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-          class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
-        ></i>
-      </button>
+      <div class="flex items-center lod-toggle shrink-0 px-0.5">
+        <IconButton
+          size="fit-content"
+          type="transparent"
+          data-testid="node-collapse-button"
+          @click.stop="handleCollapse"
+          @dblclick.stop
+        >
+          <i
+            :class="
+              cn(
+                'icon-[lucide--chevron-down] size-5 transition-transform',
+                collapsed && '-rotate-90'
+              )
+            "
+            class="text-xs leading-none relative top-px text-node-component-header-icon"
+          ></i>
+        </IconButton>
+      </div>
 
       <!-- Node Title -->
       <div
@@ -38,22 +51,23 @@
         />
         <i-lucide:pin
           v-if="isPinned"
-          class="w-5 h-5 text-stone-200 dark-theme:text-slate-300"
+          class="size-5 text-node-component-header-icon"
           data-testid="node-pin-indicator"
         />
       </div>
       <div class="flex items-center lod-toggle shrink-0">
         <IconButton
           v-if="isSubgraphNode"
+          v-tooltip.top="enterSubgraphTooltipConfig"
           size="sm"
           type="transparent"
-          class="text-stone-200 dark-theme:text-slate-300"
           data-testid="subgraph-enter-button"
-          title="Enter Subgraph"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <i class="pi pi-external-link"></i>
+          <i
+            class="icon-[lucide--picture-in-picture] size-5 text-node-component-header-icon"
+          ></i>
         </IconButton>
       </div>
       <LODFallback />
@@ -62,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
@@ -79,6 +93,7 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
 
@@ -108,11 +123,8 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
-  nodeData?.type || '',
-  tooltipContainer
+  nodeData?.type || ''
 )
 
 const tooltipConfig = computed(() => {
@@ -121,6 +133,10 @@ const tooltipConfig = computed(() => {
   }
   const description = getNodeDescription.value
   return createTooltipConfig(description)
+})
+
+const enterSubgraphTooltipConfig = computed(() => {
+  return createTooltipConfig(st('enterSubgraph', 'Enter Subgraph'))
 })
 
 const headerStyle = computed(() => {

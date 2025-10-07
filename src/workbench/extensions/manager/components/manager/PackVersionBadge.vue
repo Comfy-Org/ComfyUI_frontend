@@ -6,7 +6,7 @@
       "
       class="inline-flex items-center gap-1 rounded-2xl text-xs py-1"
       :class="{
-        'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill,
+        'bg-dialog-surface px-1.5': fill,
         'cursor-pointer': !isDisabled,
         'cursor-not-allowed opacity-60': isDisabled
       }"

@@ -7,6 +7,7 @@ import {
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -302,13 +303,25 @@ export class LGraphNode
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
-    return this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+    const baseColor =
+      this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+    return adjustColor(baseColor, { lightness: LiteGraph.nodeLightness })
   }
 
   /** The bg color used to render the node. */
   get renderingBgColor(): string {
-    return (
+    const baseBgColor =
       this.bgcolor || this.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+    const adjustments: ColorAdjustOptions = {
+      opacity: LiteGraph.nodeOpacity,
+      lightness: LiteGraph.nodeLightness
+    }
+
+    return adjustColor(
+      this.mode === LGraphEventMode.BYPASS
+        ? LiteGraph.NODE_DEFAULT_BYPASS_COLOR
+        : baseBgColor,
+      adjustments
     )
   }
 

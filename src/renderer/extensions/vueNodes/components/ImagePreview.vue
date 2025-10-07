@@ -2,6 +2,7 @@
   <div
     v-if="imageUrls.length > 0"
     class="image-preview relative group flex flex-col items-center"
+    data-capture-node="true"
     tabindex="0"
     role="region"
     :aria-label="$t('g.imagePreview')"

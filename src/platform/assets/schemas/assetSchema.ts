@@ -42,6 +42,7 @@ export const assetFilenameSchema = z
   .trim()
 
 // Export schemas following repository patterns
+export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
 
 // Export types derived from Zod schemas

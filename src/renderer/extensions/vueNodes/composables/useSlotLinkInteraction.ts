@@ -475,6 +475,8 @@ export function useSlotLinkInteraction({
 
     raf.flush()
 
+    raf.flush()
+
     if (!state.source) {
       cleanupInteraction()
       app.canvas?.setDirty(true, true)
