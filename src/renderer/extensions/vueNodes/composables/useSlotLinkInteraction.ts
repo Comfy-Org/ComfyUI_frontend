@@ -20,7 +20,7 @@ import {
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import {
-  resolveNodeSurfaceCandidate,
+  resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
 import {
@@ -330,7 +330,7 @@ export function useSlotLinkInteraction({
       const slotCandidate = resolveSlotTargetCandidate(target, context)
       const nodeCandidate = slotCandidate
         ? null
-        : resolveNodeSurfaceCandidate(target, context)
+        : resolveNodeSurfaceSlotCandidate(target, context)
       candidate = slotCandidate ?? nodeCandidate
       dragContext.lastHoverSlotKey = hoveredSlotKey
       dragContext.lastHoverNodeId = hoveredNodeId
@@ -498,37 +498,14 @@ export function useSlotLinkInteraction({
       return
     }
 
-    // Prefer using the snapped candidate captured during hover for perf + consistency
     const snappedCandidate = state.candidate?.compatible
       ? state.candidate
       : null
 
-    let connected = tryConnectToCandidate(snappedCandidate)
+    const hasConnected = connectByPriority(canvasEvent.target, snappedCandidate)
 
-    // Fallback to DOM slot under pointer (if any), then node fallback, then reroute
-    if (!connected) {
-      const adapter = activeAdapter
-      const graph = app.canvas?.graph ?? null
-      const context = { adapter, graph, session: dragContext }
-      const domCandidate = resolveSlotTargetCandidate(
-        canvasEvent.target,
-        context
-      )
-      connected = tryConnectToCandidate(domCandidate)
-
-      if (!connected) {
-        const nodeCandidate = resolveNodeSurfaceCandidate(
-          canvasEvent.target,
-          context
-        )
-        connected = tryConnectToCandidate(nodeCandidate)
-      }
-    }
-
-    if (!connected) connected = tryConnectViaRerouteAtPointer() || connected
-
-    if (!connected) {
-      if (activeAdapter) activeAdapter.dropOnCanvas(canvasEvent)
+    if (!hasConnected) {
+      activeAdapter?.dropOnCanvas(canvasEvent)
     }
 
     cleanupInteraction()
@@ -546,6 +523,34 @@ export function useSlotLinkInteraction({
     toCanvasPointerEvent(event)
     cleanupInteraction()
     app.canvas?.setDirty(true, true)
+  }
+
+  function connectByPriority(
+    target: EventTarget | null,
+    snappedCandidate: SlotDropCandidate | null
+  ): boolean {
+    const adapter = activeAdapter
+    const graph = app.canvas?.graph ?? null
+    const context = { adapter, graph, session: dragContext }
+
+    const attemptSnapped = () => tryConnectToCandidate(snappedCandidate)
+
+    const domSlotCandidate = resolveSlotTargetCandidate(target, context)
+    const attemptDomSlot = () => tryConnectToCandidate(domSlotCandidate)
+
+    const nodeSurfaceSlotCandidate = resolveNodeSurfaceSlotCandidate(
+      target,
+      context
+    )
+    const attemptNodeSurface = () =>
+      tryConnectToCandidate(nodeSurfaceSlotCandidate)
+    const attemptReroute = () => tryConnectViaRerouteAtPointer()
+
+    if (attemptSnapped()) return true
+    if (attemptDomSlot()) return true
+    if (attemptNodeSurface()) return true
+    if (attemptReroute()) return true
+    return false
   }
 
   const onPointerDown = (event: PointerEvent) => {

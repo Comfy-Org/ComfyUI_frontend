@@ -50,7 +50,7 @@ export const resolveSlotTargetCandidate = (
   return candidate
 }
 
-export const resolveNodeSurfaceCandidate = (
+export const resolveNodeSurfaceSlotCandidate = (
   target: EventTarget | null,
   { adapter, graph, session }: DropResolutionContext
 ): SlotDropCandidate | null => {
@@ -65,10 +65,10 @@ export const resolveNodeSurfaceCandidate = (
 
   const nodeId: NodeId = nodeIdAttr
 
-  const cachedPreferred = session.preferredSlotForNode.get(nodeId)
-  if (cachedPreferred !== undefined) {
-    return cachedPreferred
-      ? { layout: cachedPreferred.layout, compatible: true }
+  const cachedPreferredSlotForNode = session.preferredSlotForNode.get(nodeId)
+  if (cachedPreferredSlotForNode !== undefined) {
+    return cachedPreferredSlotForNode
+      ? { layout: cachedPreferredSlotForNode.layout, compatible: true }
       : null
   }
 
