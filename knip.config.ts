@@ -32,10 +32,7 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
-    '@trivago/prettier-plugin-sort-imports',
-    // CSS imports that knip doesn't detect
-    'tw-animate-css',
-    'tailwindcss'
+    '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
     // Auto generated manager types
