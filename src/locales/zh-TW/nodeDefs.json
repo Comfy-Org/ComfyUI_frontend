@@ -7366,6 +7366,19 @@
       }
     }
   },
+  "SaveSVG": {
+    "description": "將 SVG 檔案儲存到磁碟。",
+    "display_name": "儲存 SVG",
+    "inputs": {
+      "filename_prefix": {
+        "name": "檔名前綴",
+        "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
+      },
+      "svg": {
+        "name": "svg"
+      }
+    }
+  },
   "SaveVideo": {
     "description": "將輸入的影像儲存到您的 ComfyUI 輸出目錄。",
     "display_name": "儲存影片",

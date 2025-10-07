@@ -122,6 +122,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Экспорт рабочего процесса (формат API)"
   },
+  "Comfy_Feedback": {
+    "label": "Обратная связь"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Преобразовать выделенное в подграф"
   },

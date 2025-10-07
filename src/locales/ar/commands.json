@@ -122,6 +122,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "تصدير سير العمل (تنسيق API)"
   },
+  "Comfy_Feedback": {
+    "label": "إرسال ملاحظات"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "تحويل التحديد إلى رسم فرعي"
   },
@@ -167,20 +170,8 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "تحميل سير العمل الافتراضي"
   },
-  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "مدير العقد المخصصة"
-  },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "العقد المخصصة (قديم)"
-  },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "قائمة المدير (قديم)"
-  },
-  "Comfy_Manager_ShowMissingPacks": {
-    "label": "تثبيت العقد المخصصة المفقودة"
-  },
-  "Comfy_Manager_ShowUpdateAvailablePacks": {
-    "label": "التحقق من تحديثات العقد المخصصة"
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "تبديل مدير العقد المخصصة"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "تبديل شريط تقدم مدير العقد المخصصة"
@@ -193,12 +184,6 @@
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "فتح محرر القناع للعقدة المحددة"
-  },
-  "Comfy_Memory_UnloadModels": {
-    "label": "تفريغ النماذج"
-  },
-  "Comfy_Memory_UnloadModelsAndExecutionCache": {
-    "label": "تفريغ النماذج وذاكرة التنفيذ المؤقتة"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "سير عمل جديد فارغ"
@@ -305,5 +290,26 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "تبديل الشريط الجانبي لسير العمل",
     "tooltip": "سير العمل"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "مدير العقد المخصصة"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "العقد المخصصة (قديم)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "قائمة المدير (قديم)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "تثبيت العقد المخصصة المفقودة"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "التحقق من تحديثات العقد المخصصة"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "تفريغ النماذج"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "تفريغ النماذج وذاكرة التنفيذ المؤقتة"
   }
 }
