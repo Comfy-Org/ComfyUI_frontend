@@ -89,8 +89,15 @@ export function useSlotLinkInteraction({
   index,
   type
 }: SlotInteractionOptions): SlotInteractionHandlers {
-  const { state, beginDrag, endDrag, updatePointerPosition, setCandidate } =
-    useSlotLinkDragState()
+  const {
+    state,
+    beginDrag,
+    endDrag,
+    updatePointerPosition,
+    setCandidate,
+    setCompatibleForKey,
+    clearCompatible
+  } = useSlotLinkDragState()
   const conversion = useSharedCanvasPositionConversion()
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
@@ -262,6 +269,7 @@ export function useSlotLinkInteraction({
     activeAdapter = null
     raf.cancel()
     dragSession.dispose()
+    clearCompatible()
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -319,6 +327,22 @@ export function useSlotLinkInteraction({
       candidate = slotCandidate ?? nodeCandidate
       dragSession.lastHoverSlotKey = hoveredSlotKey
       dragSession.lastHoverNodeId = hoveredNodeId
+
+      if (slotCandidate) {
+        const key = getSlotKey(
+          slotCandidate.layout.nodeId,
+          slotCandidate.layout.index,
+          slotCandidate.layout.type === 'input'
+        )
+        setCompatibleForKey(key, !!slotCandidate.compatible)
+      } else if (nodeCandidate) {
+        const key = getSlotKey(
+          nodeCandidate.layout.nodeId,
+          nodeCandidate.layout.index,
+          nodeCandidate.layout.type === 'input'
+        )
+        setCompatibleForKey(key, !!nodeCandidate.compatible)
+      }
     }
 
     const newCandidate = candidate?.compatible ? candidate : null
@@ -637,6 +661,20 @@ export function useSlotLinkInteraction({
         capture: true
       })
     )
+    const targetType: 'input' | 'output' = type === 'input' ? 'output' : 'input'
+    const allKeys = layoutStore.getAllSlotKeys()
+    clearCompatible()
+    for (const key of allKeys) {
+      const slotLayout = layoutStore.getSlotLayout(key)
+      if (!slotLayout) continue
+      if (slotLayout.type !== targetType) continue
+      const idx = slotLayout.index
+      const ok =
+        targetType === 'input'
+          ? activeAdapter.isInputValidDrop(slotLayout.nodeId, idx)
+          : activeAdapter.isOutputValidDrop(slotLayout.nodeId, idx)
+      setCompatibleForKey(key, ok)
+    }
     app.canvas?.setDirty(true, true)
     event.preventDefault()
     event.stopPropagation()

@@ -579,6 +579,14 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Returns all slot layout keys currently tracked by the store.
+   * Useful for global passes without relying on spatial queries.
+   */
+  getAllSlotKeys(): string[] {
+    return Array.from(this.slotLayouts.keys())
+  }
+
+  /**
    * Update link segment layout data
    */
   updateLinkSegmentLayout(
