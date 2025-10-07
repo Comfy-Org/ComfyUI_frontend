@@ -25,7 +25,12 @@ runs:
       shell: bash
       run: |
         mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
-        cp -r ./tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
+        if ! cp -r ./tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/; then
+          echo "::error::Failed to copy ComfyUI_devtools from ./tools/devtools/"
+          echo "::error::This action assumes the ComfyUI_frontend repository is checked out in the current working directory."
+          echo "::error::Please ensure you have run 'actions/checkout@v5' before calling this action."
+          exit 1
+        fi
 
     - name: Setup Python
       uses: actions/setup-python@v4
