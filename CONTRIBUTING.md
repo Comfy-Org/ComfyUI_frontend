@@ -255,7 +255,7 @@ pnpm format
 The project supports three types of icons, all with automatic imports (no manual imports needed):
 
 1. **PrimeIcons** - Built-in PrimeVue icons using CSS classes: `<i class="pi pi-plus" />`
-2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<iclass="icon-[mdi--folder]" />`
+2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<i class="icon-[mdi--folder]" />`
 3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
 
 Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Custom icons are stored in `packages/design-system/src/icons/` and processed by `packages/design-system/src/iconCollection.ts` with automatic validation.
