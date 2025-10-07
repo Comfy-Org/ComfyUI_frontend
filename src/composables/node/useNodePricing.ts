@@ -168,40 +168,92 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     ? minStr
     : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
 }
-const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
-  const modelW = node.widgets?.find((w) => w.name === 'model') as IComboWidget
+
+export const SORA720 = new Set<string>(['720x1280', '1280x720'])
+export const SORA_PRO_HIRES = new Set<string>(['1024x1792', '1792x1024'])
+export const ALL_SIZES = new Set<string>([...SORA720, ...SORA_PRO_HIRES])
+
+export const validateSora2Selection = (
+  modelRaw: string,
+  duration: number,
+  sizeRaw: string
+): string | undefined => {
+  const model = String(modelRaw ?? '').toLowerCase()
+  const size = String(sizeRaw ?? '').toLowerCase()
+
+  if (!duration || Number.isNaN(duration)) {
+    return 'Set duration (4/8/12)'
+  }
+
+  if (!size) {
+    return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
+  }
+
+  if (!ALL_SIZES.has(size)) {
+    return 'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
+  }
+
+  if (model.includes('sora-2-pro')) {
+    // pro is fine with either 720p or 1080; nothing else to validate
+    return undefined
+  }
+
+  if (model.includes('sora-2')) {
+    if (!SORA720.has(size)) {
+      return 'sora-2 supports only 720x1280 or 1280x720'
+    }
+    return undefined
+  }
+
+  return 'Unsupported model'
+}
+
+export const perSecForSora2 = (modelRaw: string, sizeRaw: string): number => {
+  const model = String(modelRaw ?? '').toLowerCase()
+  const size = String(sizeRaw ?? '').toLowerCase()
+
+  if (model.includes('sora-2-pro')) {
+    if (SORA_PRO_HIRES.has(size)) return 0.5
+    if (SORA720.has(size)) return 0.3
+  }
+  // plain sora-2 (validated to 720p already)
+  if (model.includes('sora-2')) {
+    return 0.1
+  }
+  return SORA_PRO_HIRES.has(size) ? 0.5 : 0.1
+}
+
+export const formatRunPrice = (perSec: number, duration: number) =>
+  `$${(perSec * duration).toFixed(2)}/Run`
+
+export const sora2PricingCalculator: PricingFunction = (
+  node: LGraphNode
+): string => {
+  const modelW = node.widgets?.find((w) => w.name === 'model') as
+    | IComboWidget
+    | undefined
   const durationW = node.widgets?.find(
     (w) => w.name === 'duration' || w.name === 'duration_s'
-  ) as IComboWidget
-  const sizeW = node.widgets?.find((w) => w.name === 'size') as IComboWidget
+  ) as IComboWidget | undefined
+  const sizeW = node.widgets?.find((w) => w.name === 'size') as
+    | IComboWidget
+    | undefined
 
-  // precise missing-widget messages (fixes the failing test)
   if (!modelW || !durationW) return 'Set model, duration & size'
   if (!sizeW) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
 
-  const model = String(modelW.value ?? '').toLowerCase()
+  const model = String(modelW.value ?? '')
   const duration = Number(durationW.value)
-  const size = String(sizeW.value ?? '').toLowerCase()
+  const size = String(sizeW.value ?? '')
 
-  if (!duration || Number.isNaN(duration)) return 'Set duration (4/8/12)'
-  if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
+  const validationError = validateSora2Selection(model, duration, size)
+  if (validationError) return validationError
 
-  const SORA720 = ['720x1280', '1280x720']
-  const SORA_PRO_HIRES = ['1024x1792', '1792x1024']
-
-  if (model.includes('sora-2-pro')) {
-    let perSec: number | null = null
-    if (SORA_PRO_HIRES.includes(size)) perSec = 0.5
-    else if (SORA720.includes(size)) perSec = 0.3
-    else return 'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
-    return `$${(perSec * duration).toFixed(2)}/Run`
-  }
-
-  // plain sora-2: 720p only
-  if (!SORA720.includes(size))
-    return 'sora-2 supports only 720x1280 or 1280x720'
-  return `$${(0.1 * duration).toFixed(2)}/Run`
+  const perSec = perSecForSora2(model, size)
+  return formatRunPrice(perSec, duration)
 }
+
+export default sora2PricingCalculator
 /**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
