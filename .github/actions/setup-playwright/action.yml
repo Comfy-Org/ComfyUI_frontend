@@ -26,15 +26,3 @@ runs:
       if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
       shell: bash
       run: pnpm exec playwright install-deps
-
-    - name: Cache tool outputs
-      uses: actions/cache@v4
-      with:
-        path: |
-          ./.cache
-          ./tsconfig.tsbuildinfo
-        key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('./pnpm-lock.yaml') }}-${{ hashFiles('./src/**/*.{ts,vue,js}', './*.config.*') }}
-        restore-keys: |
-          playwright-setup-cache-${{ runner.os }}-${{ hashFiles('./pnpm-lock.yaml') }}-
-          playwright-setup-cache-${{ runner.os }}-
-          playwright-tools-cache-${{ runner.os }}-

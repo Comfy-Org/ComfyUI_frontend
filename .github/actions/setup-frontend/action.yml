@@ -23,6 +23,18 @@ runs:
         cache: 'pnpm'
         cache-dependency-path: './pnpm-lock.yaml'
 
+    # Restore tool caches before running any build/lint operations
+    - name: Restore tool output cache
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ./.cache
+          ./tsconfig.tsbuildinfo
+        key: tool-cache-${{ runner.os }}-${{ hashFiles('./pnpm-lock.yaml') }}-${{ hashFiles('./src/**/*.{ts,vue,js,mts}', './*.config.*') }}
+        restore-keys: |
+          tool-cache-${{ runner.os }}-${{ hashFiles('./pnpm-lock.yaml') }}-
+          tool-cache-${{ runner.os }}-
+
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile
