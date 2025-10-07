@@ -50,17 +50,17 @@ test.describe('Vue Node Collapse', () => {
 
     // Check initial expanded state icon
     let iconClass = await vueNode.getCollapseIconClass()
-    expect(iconClass).toContain('pi-chevron-down')
+    expect(iconClass).not.toContain('-rotate-90')
 
     // Collapse and check icon
     await vueNode.toggleCollapse()
     iconClass = await vueNode.getCollapseIconClass()
-    expect(iconClass).toContain('pi-chevron-right')
+    expect(iconClass).toContain('-rotate-90')
 
     // Expand and check icon
     await vueNode.toggleCollapse()
     iconClass = await vueNode.getCollapseIconClass()
-    expect(iconClass).toContain('pi-chevron-down')
+    expect(iconClass).not.toContain('-rotate-90')
   })
 
   test('should preserve title when collapsing/expanding', async ({

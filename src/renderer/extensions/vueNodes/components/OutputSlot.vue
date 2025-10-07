@@ -5,7 +5,7 @@
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+        class="whitespace-nowrap text-sm font-normal text-node-component-slot-text lod-toggle"
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
@@ -24,9 +24,7 @@
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
-  type Ref,
   computed,
-  inject,
   onErrorCaptured,
   ref,
   watchEffect
@@ -60,11 +58,8 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || '',
-  tooltipContainer
+  props.nodeType || ''
 )
 
 const tooltipConfig = computed(() => {
