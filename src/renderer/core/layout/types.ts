@@ -309,6 +309,9 @@ export interface LayoutStore {
   getSlotLayout(key: string): SlotLayout | null
   getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
 
+  // Returns all slot layout keys currently tracked by the store
+  getAllSlotKeys(): string[]
+
   // Direct mutation API (CRDT-ready)
   applyOperation(operation: LayoutOperation): void
 
