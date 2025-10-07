@@ -4164,6 +4164,7 @@ class UIManager {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = reject
+      img.crossOrigin = 'anonymous'
       img.src = rgb_url.toString()
     })
 
@@ -4175,6 +4176,7 @@ class UIManager {
           const img = new Image()
           img.onload = () => resolve(img)
           img.onerror = reject
+          img.crossOrigin = 'anonymous'
           img.src = paintURL.toString()
         }
       )
@@ -4314,6 +4316,7 @@ class UIManager {
       image.onerror = function (error) {
         reject(error)
       }
+      image.crossOrigin = 'anonymous'
       image.src = imagePath.href
     })
   }
