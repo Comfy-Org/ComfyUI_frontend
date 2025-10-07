@@ -69,6 +69,8 @@
     "cross-env": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
+    "eslint-import-resolver-typescript": "catalog:",
+    "eslint-plugin-import": "catalog:",
     "eslint-plugin-prettier": "catalog:",
     "eslint-plugin-storybook": "catalog:",
     "eslint-plugin-unused-imports": "catalog:",
