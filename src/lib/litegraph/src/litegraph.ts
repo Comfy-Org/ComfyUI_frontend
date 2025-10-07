@@ -103,10 +103,7 @@ export {
   type LGraphTriggerAction,
   type LGraphTriggerParam
 } from './LGraph'
-export type {
-  LGraphTriggerHandler,
-  LGraphTriggerEvent
-} from './types/graphTriggers'
+export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'
