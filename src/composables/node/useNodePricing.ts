@@ -186,14 +186,15 @@ const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
 
   if (model.includes('sora-2-pro')) {
     let perSec: number | null = null
-    if (size.includes('1080')) perSec = 0.5
-    else if (size.includes('720')) perSec = 0.3
+    if (['1024x1792', '1792x1024'].includes(size)) perSec = 0.5
+    else if (['720x1280', '1280x720'].includes(size)) perSec = 0.3
     else return 'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
     return `$${(perSec * duration).toFixed(2)}/Run`
   }
 
   // sora-2 (non-pro) → 720p only
-  if (!size.includes('720')) return 'sora-2 supports only 720x1280 or 1280x720'
+  if (!['720x1280', '1280x720'].includes(size))
+    return 'sora-2 supports only 720x1280 or 1280x720'
   return `$${(0.1 * duration).toFixed(2)}/Run`
 }
 /**
