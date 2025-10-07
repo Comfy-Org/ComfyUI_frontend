@@ -169,46 +169,33 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
 }
 
-export const SORA720 = new Set<string>(['720x1280', '1280x720'])
-export const SORA_PRO_HIRES = new Set<string>(['1024x1792', '1792x1024'])
-export const ALL_SIZES = new Set<string>([...SORA720, ...SORA_PRO_HIRES])
+// ---- constants (file-local) ----
+const SORA720 = new Set<string>(['720x1280', '1280x720'])
+const SORA_PRO_HIRES = new Set<string>(['1024x1792', '1792x1024'])
+const ALL_SIZES = new Set<string>([...SORA720, ...SORA_PRO_HIRES])
 
-export const validateSora2Selection = (
+function validateSora2Selection(
   modelRaw: string,
   duration: number,
   sizeRaw: string
-): string | undefined => {
+): string | undefined {
   const model = String(modelRaw ?? '').toLowerCase()
   const size = String(sizeRaw ?? '').toLowerCase()
 
-  if (!duration || Number.isNaN(duration)) {
-    return 'Set duration (4/8/12)'
-  }
-
-  if (!size) {
-    return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
-  }
-
-  if (!ALL_SIZES.has(size)) {
+  if (!duration || Number.isNaN(duration)) return 'Set duration (4/8/12)'
+  if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
+  if (!ALL_SIZES.has(size))
     return 'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
-  }
-
-  if (model.includes('sora-2-pro')) {
-    // pro is fine with either 720p or 1080; nothing else to validate
-    return undefined
-  }
+  if (model.includes('sora-2-pro')) return undefined
 
   if (model.includes('sora-2')) {
-    if (!SORA720.has(size)) {
-      return 'sora-2 supports only 720x1280 or 1280x720'
-    }
+    if (!SORA720.has(size)) return 'sora-2 supports only 720x1280 or 1280x720'
     return undefined
   }
 
   return 'Unsupported model'
 }
-
-export const perSecForSora2 = (modelRaw: string, sizeRaw: string): number => {
+function perSecForSora2(modelRaw: string, sizeRaw: string): number {
   const model = String(modelRaw ?? '').toLowerCase()
   const size = String(sizeRaw ?? '').toLowerCase()
 
@@ -223,12 +210,11 @@ export const perSecForSora2 = (modelRaw: string, sizeRaw: string): number => {
   return SORA_PRO_HIRES.has(size) ? 0.5 : 0.1
 }
 
-export const formatRunPrice = (perSec: number, duration: number) =>
-  `$${(perSec * duration).toFixed(2)}/Run`
+function formatRunPrice(perSec: number, duration: number) {
+  return `$${(perSec * duration).toFixed(2)}/Run`
+}
 
-export const sora2PricingCalculator: PricingFunction = (
-  node: LGraphNode
-): string => {
+const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
   const modelW = node.widgets?.find((w) => w.name === 'model') as
     | IComboWidget
     | undefined
@@ -252,8 +238,6 @@ export const sora2PricingCalculator: PricingFunction = (
   const perSec = perSecForSora2(model, size)
   return formatRunPrice(perSec, duration)
 }
-
-export default sora2PricingCalculator
 /**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
