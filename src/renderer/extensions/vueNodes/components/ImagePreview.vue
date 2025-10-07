@@ -39,6 +39,16 @@
         @error="handleImageError"
       />
 
+      <!-- Hidden preloaded images for mask editor -->
+      <img
+        v-for="(url, i) in imageUrls"
+        v-show="false"
+        :key="i"
+        ref="imageEls"
+        :src="url"
+        alt=""
+      />
+
       <!-- Floating Action Buttons (appear on hover) -->
       <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
         <!-- Mask/Edit Button -->
@@ -118,6 +128,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
@@ -142,6 +153,8 @@ const isHovered = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const isLoading = ref(false)
+
+const imageEls = ref<HTMLImageElement[]>([])
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -182,7 +195,18 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
+// In vueNodes mode, we need to set them manually before opening the mask editor.
+const setupNodeForMaskEditor = () => {
+  if (!props.nodeId) return
+  const node = app.rootGraph?.getNodeById(props.nodeId)
+  if (!node) return
+  node.imageIndex = currentIndex.value
+  node.imgs = imageEls.value
+  app.canvas?.select(node)
+}
+
 const handleEditMask = () => {
+  setupNodeForMaskEditor()
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
 }
 
