@@ -14,7 +14,8 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { type CSSProperties, computed, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'

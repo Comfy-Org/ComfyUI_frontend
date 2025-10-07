@@ -25,13 +25,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type ComponentPublicInstance,
-  computed,
-  onErrorCaptured,
-  ref,
-  watchEffect
-} from 'vue'
+import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'

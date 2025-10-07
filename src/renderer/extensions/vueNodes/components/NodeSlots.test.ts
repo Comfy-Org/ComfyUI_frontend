@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
-import { type PropType, defineComponent } from 'vue'
+import { defineComponent } from 'vue'
+import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'

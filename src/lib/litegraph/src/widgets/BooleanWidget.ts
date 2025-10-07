@@ -1,10 +1,7 @@
 import type { IBooleanWidget } from '@/lib/litegraph/src/types/widgets'
 
-import {
-  BaseWidget,
-  type DrawWidgetOptions,
-  type WidgetEventOptions
-} from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
+import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class BooleanWidget
   extends BaseWidget<IBooleanWidget>

@@ -8,13 +8,8 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import {
-  type MaybeRefOrGetter,
-  getCurrentInstance,
-  onMounted,
-  onUnmounted,
-  toValue
-} from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'

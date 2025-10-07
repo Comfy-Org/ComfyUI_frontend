@@ -82,9 +82,11 @@ import PackCardFooter from '@/workbench/extensions/manager/components/manager/pa
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import {
   IsInstallingKey,
-  type MergedNodePack,
-  type RegistryPack,
   isMergedNodePack
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import type {
+  MergedNodePack,
+  RegistryPack
 } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { nodePack, isSelected = false } = defineProps<{

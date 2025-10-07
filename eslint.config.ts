@@ -106,6 +106,9 @@ export default defineConfig([
           allowInterfaces: 'always'
         }
       ],
+      'import/consistent-type-specifier-style': ['error', 'prefer-top-level'],
+      'import/no-useless-path-segments': 'error',
+      'import/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'vue/no-v-html': 'off',

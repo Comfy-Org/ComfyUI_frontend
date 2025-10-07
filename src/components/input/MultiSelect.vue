@@ -105,7 +105,8 @@
 </template>
 
 <script setup lang="ts">
-import { type UseFuseOptions, useFuse } from '@vueuse/integrations/useFuse'
+import { useFuse } from '@vueuse/integrations/useFuse'
+import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import Button from 'primevue/button'
 import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
 import MultiSelect from 'primevue/multiselect'

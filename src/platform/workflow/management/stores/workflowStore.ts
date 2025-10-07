@@ -1,6 +1,7 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import type { Raw } from 'vue'
 
 import { t } from '@/i18n'
 import type {

@@ -1,4 +1,5 @@
-import { type MaybeRefOrGetter, computed, onUnmounted, ref, toValue } from 'vue'
+import { computed, onUnmounted, ref, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
