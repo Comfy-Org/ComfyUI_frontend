@@ -93,9 +93,12 @@ catalog:
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
 
+cleanupUnusedCatalogs: true
+
 ignoredBuiltDependencies:
   - '@firebase/util'
   - protobufjs
+  - unrs-resolver
   - vue-demi
 
 onlyBuiltDependencies:
