@@ -72,14 +72,10 @@ export const useReleaseStore = defineStore('release', () => {
       ) === 0
   )
 
-  const hasMediumOrHighAttention = computed(() =>
-    recentReleases.value
-      .slice(0, -1)
-      .some(
-        (release) =>
-          release.attention === 'medium' || release.attention === 'high'
-      )
-  )
+  const hasMediumOrHighAttention = computed(() => {
+    const attention = recentRelease.value?.attention
+    return attention === 'medium' || attention === 'high'
+  })
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
