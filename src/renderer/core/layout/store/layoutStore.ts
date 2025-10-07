@@ -9,33 +9,31 @@ import { type ComputedRef, type Ref, computed, customRef, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-import type {
-  CreateLinkOperation,
-  CreateNodeOperation,
-  CreateRerouteOperation,
-  DeleteLinkOperation,
-  DeleteNodeOperation,
-  DeleteRerouteOperation,
-  LayoutOperation,
-  MoveNodeOperation,
-  MoveRerouteOperation,
-  NodeBoundsUpdate,
-  ResizeNodeOperation,
-  SetNodeZIndexOperation
-} from '@/renderer/core/layout/types'
 import {
   type Bounds,
+  type CreateLinkOperation,
+  type CreateNodeOperation,
+  type CreateRerouteOperation,
+  type DeleteLinkOperation,
+  type DeleteNodeOperation,
+  type DeleteRerouteOperation,
   type LayoutChange,
+  type LayoutOperation,
   LayoutSource,
   type LayoutStore,
   type LinkId,
   type LinkLayout,
   type LinkSegmentLayout,
+  type MoveNodeOperation,
+  type MoveRerouteOperation,
+  type NodeBoundsUpdate,
   type NodeId,
   type NodeLayout,
   type Point,
   type RerouteId,
   type RerouteLayout,
+  type ResizeNodeOperation,
+  type SetNodeZIndexOperation,
   type SlotLayout
 } from '@/renderer/core/layout/types'
 import {

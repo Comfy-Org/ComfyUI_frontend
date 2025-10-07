@@ -9,13 +9,11 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
   ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot,
   ItemLocator,
   LinkNetwork,
   LinkSegment
-} from '@/lib/litegraph/src/interfaces'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
