@@ -1,24 +1,25 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import {
   type SlotDropCandidate,
-  useSlotLinkDragState
-} from '@/renderer/core/canvas/links/slotLinkDragState'
+  useSlotLinkDragUIState
+} from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLinkDragSession } from '@/renderer/extensions/vueNodes/composables/slotLinkDragSession'
+import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 
 interface DropResolutionContext {
   adapter: LinkConnectorAdapter | null
   graph: LGraph | null
-  session: SlotLinkDragSession
+  session: SlotLinkDragContext
 }
 
 export const resolveSlotTargetCandidate = (
   target: EventTarget | null,
   { adapter, graph }: DropResolutionContext
 ): SlotDropCandidate | null => {
-  const { state: dragState, setCompatibleForKey } = useSlotLinkDragState()
+  const { state: dragState, setCompatibleForKey } = useSlotLinkDragUIState()
   if (!(target instanceof HTMLElement)) return null
 
   const elWithKey = target.closest<HTMLElement>('[data-slot-key]')
@@ -35,7 +36,7 @@ export const resolveSlotTargetCandidate = (
     if (cached != null) {
       candidate.compatible = cached
     } else {
-      const nodeId = Number(layout.nodeId)
+      const nodeId: NodeId = layout.nodeId
       const compatible =
         layout.type === 'input'
           ? adapter.isInputValidDrop(nodeId, layout.index)
@@ -53,18 +54,18 @@ export const resolveNodeSurfaceCandidate = (
   target: EventTarget | null,
   { adapter, graph, session }: DropResolutionContext
 ): SlotDropCandidate | null => {
-  const { setCompatibleForKey } = useSlotLinkDragState()
+  const { setCompatibleForKey } = useSlotLinkDragUIState()
   if (!(target instanceof HTMLElement)) return null
 
   const elWithNode = target.closest<HTMLElement>('[data-node-id]')
-  const nodeIdStr = elWithNode?.dataset['nodeId']
-  if (!nodeIdStr) return null
+  const nodeIdAttr = elWithNode?.dataset['nodeId']
+  if (!nodeIdAttr) return null
 
   if (!adapter || !graph) return null
 
-  const nodeId = Number(nodeIdStr)
+  const nodeId: NodeId = nodeIdAttr
 
-  const cachedPreferred = session.nodePreferred.get(nodeId)
+  const cachedPreferred = session.preferredSlotForNode.get(nodeId)
   if (cachedPreferred !== undefined) {
     return cachedPreferred
       ? { layout: cachedPreferred.layout, compatible: true }
@@ -89,14 +90,14 @@ export const resolveNodeSurfaceCandidate = (
 
   const index = result?.index
   if (index == null) {
-    session.nodePreferred.set(nodeId, null)
+    session.preferredSlotForNode.set(nodeId, null)
     return null
   }
 
   const key = getSlotKey(String(nodeId), index, isInput)
   const layout = layoutStore.getSlotLayout(key)
   if (!layout) {
-    session.nodePreferred.set(nodeId, null)
+    session.preferredSlotForNode.set(nodeId, null)
     return null
   }
 
@@ -107,12 +108,12 @@ export const resolveNodeSurfaceCandidate = (
   setCompatibleForKey(key, compatible)
 
   if (!compatible) {
-    session.nodePreferred.set(nodeId, null)
+    session.preferredSlotForNode.set(nodeId, null)
     return null
   }
 
   const preferred = { index, key, layout }
-  session.nodePreferred.set(nodeId, preferred)
+  session.preferredSlotForNode.set(nodeId, preferred)
 
   return { layout, compatible: true }
 }

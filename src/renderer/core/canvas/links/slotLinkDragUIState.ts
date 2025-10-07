@@ -5,6 +5,14 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point, SlotLayout } from '@/renderer/core/layout/types'
 
+/**
+ * Slot link drag UI state
+ *
+ * Reactive, shared state for a single drag interaction that UI components subscribe to.
+ * Tracks pointer position, source slot, and resolved drop candidate. Also exposes
+ * a compatibility map used to dim incompatible slots during drag.
+ */
+
 type SlotDragType = 'input' | 'output'
 
 interface SlotDragSource {
@@ -89,7 +97,7 @@ function getSlotLayout(nodeId: string, slotIndex: number, isInput: boolean) {
   return layoutStore.getSlotLayout(slotKey)
 }
 
-export function useSlotLinkDragState() {
+export function useSlotLinkDragUIState() {
   return {
     state: readonly(state),
     beginDrag,

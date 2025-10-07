@@ -4,6 +4,7 @@ import { onBeforeUnmount } from 'vue'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
@@ -24,13 +25,13 @@ import {
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
 import {
   type SlotDropCandidate,
-  useSlotLinkDragState
-} from '@/renderer/core/canvas/links/slotLinkDragState'
+  useSlotLinkDragUIState
+} from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
-import { createSlotLinkDragSession } from '@/renderer/extensions/vueNodes/composables/slotLinkDragSession'
+import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
 
@@ -97,13 +98,13 @@ export function useSlotLinkInteraction({
     setCandidate,
     setCompatibleForKey,
     clearCompatible
-  } = useSlotLinkDragState()
+  } = useSlotLinkDragUIState()
   const conversion = useSharedCanvasPositionConversion()
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
 
-  // Per-drag drag-state cache
-  const dragSession = createSlotLinkDragSession()
+  // Per-drag drag-state context (non-reactive caches + RAF batching)
+  const dragContext = createSlotLinkDragContext()
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
@@ -268,7 +269,7 @@ export function useSlotLinkInteraction({
     endDrag()
     activeAdapter = null
     raf.cancel()
-    dragSession.dispose()
+    dragContext.dispose()
     clearCompatible()
   }
 
@@ -284,9 +285,9 @@ export function useSlotLinkInteraction({
   }
 
   const processPointerMoveFrame = () => {
-    const data = dragSession.pendingMove
+    const data = dragContext.pendingPointerMove
     if (!data) return
-    dragSession.pendingMove = null
+    dragContext.pendingPointerMove = null
 
     const [canvasX, canvasY] = conversion.clientPosToCanvasPos([
       data.clientX,
@@ -297,36 +298,42 @@ export function useSlotLinkInteraction({
     syncRenderLinkOrigins()
 
     let hoveredSlotKey: string | null = null
-    let hoveredNodeId: number | null = null
+    let hoveredNodeId: NodeId | null = null
     const target = data.target
-    if (target instanceof HTMLElement) {
-      hoveredSlotKey =
-        target.closest<HTMLElement>('[data-slot-key]')?.dataset['slotKey'] ??
-        null
-      if (!hoveredSlotKey) {
-        const nodeIdStr =
-          target.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId']
-        hoveredNodeId = nodeIdStr != null ? Number(nodeIdStr) : null
-      }
+    if (target === dragContext.lastPointerEventTarget) {
+      hoveredSlotKey = dragContext.lastPointerTargetSlotKey
+      hoveredNodeId = dragContext.lastPointerTargetNodeId
+    } else if (target instanceof HTMLElement) {
+      const elWithSlot = target.closest<HTMLElement>('[data-slot-key]')
+      const elWithNode = elWithSlot
+        ? null
+        : target.closest<HTMLElement>('[data-node-id]')
+      hoveredSlotKey = elWithSlot?.dataset['slotKey'] ?? null
+      hoveredNodeId = hoveredSlotKey
+        ? null
+        : elWithNode?.dataset['nodeId'] ?? null
+      dragContext.lastPointerEventTarget = target
+      dragContext.lastPointerTargetSlotKey = hoveredSlotKey
+      dragContext.lastPointerTargetNodeId = hoveredNodeId
     }
 
     const hoverChanged =
-      hoveredSlotKey !== dragSession.lastHoverSlotKey ||
-      hoveredNodeId !== dragSession.lastHoverNodeId
+      hoveredSlotKey !== dragContext.lastHoverSlotKey ||
+      hoveredNodeId !== dragContext.lastHoverNodeId
 
     let candidate: SlotDropCandidate | null = state.candidate
 
     if (hoverChanged) {
       const adapter = activeAdapter
       const graph = app.canvas?.graph ?? null
-      const context = { adapter, graph, session: dragSession }
+      const context = { adapter, graph, session: dragContext }
       const slotCandidate = resolveSlotTargetCandidate(target, context)
       const nodeCandidate = slotCandidate
         ? null
         : resolveNodeSurfaceCandidate(target, context)
       candidate = slotCandidate ?? nodeCandidate
-      dragSession.lastHoverSlotKey = hoveredSlotKey
-      dragSession.lastHoverNodeId = hoveredNodeId
+      dragContext.lastHoverSlotKey = hoveredSlotKey
+      dragContext.lastHoverNodeId = hoveredNodeId
 
       if (slotCandidate) {
         const key = getSlotKey(
@@ -354,11 +361,13 @@ export function useSlotLinkInteraction({
         )
       : null
 
-    if (newCandidateKey !== dragSession.lastCandidateKey) {
+    const candidateChanged = newCandidateKey !== dragContext.lastCandidateKey
+    if (candidateChanged) {
       setCandidate(newCandidate)
-      dragSession.lastCandidateKey = newCandidateKey
+      dragContext.lastCandidateKey = newCandidateKey
     }
 
+    let snapPosChanged = false
     if (activeAdapter) {
       const snapX = newCandidate
         ? newCandidate.layout.position.x
@@ -366,16 +375,22 @@ export function useSlotLinkInteraction({
       const snapY = newCandidate
         ? newCandidate.layout.position.y
         : state.pointer.canvas.y
-      activeAdapter.linkConnector.state.snapLinksPos = [snapX, snapY]
+      const currentSnap = activeAdapter.linkConnector.state.snapLinksPos
+      snapPosChanged =
+        !currentSnap || currentSnap[0] !== snapX || currentSnap[1] !== snapY
+      if (snapPosChanged) {
+        activeAdapter.linkConnector.state.snapLinksPos = [snapX, snapY]
+      }
     }
 
-    app.canvas?.setDirty(true, true)
+    const shouldRedraw = candidateChanged || snapPosChanged
+    if (shouldRedraw) app.canvas?.setDirty(true, true)
   }
   const raf = createRafBatch(processPointerMoveFrame)
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
-    dragSession.pendingMove = {
+    dragContext.pendingPointerMove = {
       clientX: event.clientX,
       clientY: event.clientY,
       target: event.target
@@ -392,7 +407,7 @@ export function useSlotLinkInteraction({
     const adapter = activeAdapter
     if (!graph || !adapter) return false
 
-    const nodeId = Number(candidate.layout.nodeId)
+    const nodeId: NodeId = candidate.layout.nodeId
     const targetNode = graph.getNodeById(nodeId)
     if (!targetNode) return false
 
@@ -494,7 +509,7 @@ export function useSlotLinkInteraction({
     if (!connected) {
       const adapter = activeAdapter
       const graph = app.canvas?.graph ?? null
-      const context = { adapter, graph, session: dragSession }
+      const context = { adapter, graph, session: dragContext }
       const domCandidate = resolveSlotTargetCandidate(
         canvasEvent.target,
         context
@@ -545,18 +560,18 @@ export function useSlotLinkInteraction({
     activeAdapter = createLinkConnectorAdapter()
     if (!activeAdapter) return
     raf.cancel()
-    dragSession.reset()
+    dragContext.reset()
 
     const layout = layoutStore.getSlotLayout(
       getSlotKey(nodeId, index, type === 'input')
     )
     if (!layout) return
 
-    const numericNodeId = Number(nodeId)
+    const localNodeId: NodeId = nodeId
     const isInputSlot = type === 'input'
     const isOutputSlot = type === 'output'
 
-    const resolvedNode = graph.getNodeById(numericNodeId)
+    const resolvedNode = graph.getNodeById(localNodeId)
     const inputSlot = isInputSlot ? resolvedNode?.inputs?.[index] : undefined
     const outputSlot = isOutputSlot ? resolvedNode?.outputs?.[index] : undefined
 
@@ -603,11 +618,11 @@ export function useSlotLinkInteraction({
 
     if (activeAdapter) {
       if (isOutputSlot) {
-        activeAdapter.beginFromOutput(numericNodeId, index, {
+        activeAdapter.beginFromOutput(localNodeId, index, {
           moveExisting: shouldMoveExistingOutput
         })
       } else {
-        activeAdapter.beginFromInput(numericNodeId, index, {
+        activeAdapter.beginFromInput(localNodeId, index, {
           moveExisting: shouldMoveExistingInput
         })
       }
