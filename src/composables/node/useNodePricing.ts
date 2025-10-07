@@ -169,68 +169,66 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
 }
 
-// ---- constants (file-local) ----
-const SORA720 = new Set<string>(['720x1280', '1280x720'])
-const SORA_PRO_HIRES = new Set<string>(['1024x1792', '1792x1024'])
-const ALL_SIZES = new Set<string>([...SORA720, ...SORA_PRO_HIRES])
+// ---- constants ----
+const SORA_SIZES = {
+  BASIC: new Set(['720x1280', '1280x720']),
+  PRO: new Set(['1024x1792', '1792x1024'])
+}
+const ALL_SIZES = new Set([...SORA_SIZES.BASIC, ...SORA_SIZES.PRO])
 
+// ---- sora-2 pricing helpers ----
 function validateSora2Selection(
   modelRaw: string,
   duration: number,
   sizeRaw: string
 ): string | undefined {
-  const model = String(modelRaw ?? '').toLowerCase()
-  const size = String(sizeRaw ?? '').toLowerCase()
+  const model = modelRaw?.toLowerCase() ?? ''
+  const size = sizeRaw?.toLowerCase() ?? ''
 
-  if (!duration || Number.isNaN(duration)) return 'Set duration (4s /8s /12s)'
+  if (!duration || Number.isNaN(duration)) return 'Set duration (4s / 8s / 12s)'
   if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
   if (!ALL_SIZES.has(size))
-    return 'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
+    return 'Invalid size. Must be 720x1280, 1280x720, 1024x1792, or 1792x1024.'
+
   if (model.includes('sora-2-pro')) return undefined
 
-  if (model.includes('sora-2')) {
-    if (!SORA720.has(size)) return 'sora-2 supports only 720x1280 or 1280x720'
-    return undefined
-  }
+  if (model.includes('sora-2') && !SORA_SIZES.BASIC.has(size))
+    return 'sora-2 supports only 720x1280 or 1280x720'
 
-  return 'Unsupported model'
+  if (!model.includes('sora-2')) return 'Unsupported model'
+
+  return undefined
 }
+
 function perSecForSora2(modelRaw: string, sizeRaw: string): number {
-  const model = String(modelRaw ?? '').toLowerCase()
-  const size = String(sizeRaw ?? '').toLowerCase()
+  const model = modelRaw?.toLowerCase() ?? ''
+  const size = sizeRaw?.toLowerCase() ?? ''
 
   if (model.includes('sora-2-pro')) {
-    if (SORA_PRO_HIRES.has(size)) return 0.5
-    if (SORA720.has(size)) return 0.3
+    return SORA_SIZES.PRO.has(size) ? 0.5 : 0.3
   }
-  // plain sora-2 (validated to 720p already)
-  if (model.includes('sora-2')) {
-    return 0.1
-  }
-  return SORA_PRO_HIRES.has(size) ? 0.5 : 0.1
+  if (model.includes('sora-2')) return 0.1
+
+  return SORA_SIZES.PRO.has(size) ? 0.5 : 0.1
 }
 
 function formatRunPrice(perSec: number, duration: number) {
   return `$${(perSec * duration).toFixed(2)}/Run`
 }
 
+// ---- pricing calculator ----
 const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
-  const modelW = node.widgets?.find((w) => w.name === 'model') as
-    | IComboWidget
-    | undefined
-  const durationW = node.widgets?.find(
-    (w) => w.name === 'duration' || w.name === 'duration_s'
-  ) as IComboWidget | undefined
-  const sizeW = node.widgets?.find((w) => w.name === 'size') as
-    | IComboWidget
-    | undefined
+  const getWidgetValue = (name: string) =>
+    String(node.widgets?.find((w) => w.name === name)?.value ?? '')
 
-  if (!modelW || !durationW) return 'Set model, duration & size'
-  if (!sizeW) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
+  const model = getWidgetValue('model')
+  const size = getWidgetValue('size')
+  const duration = Number(
+    node.widgets?.find((w) => ['duration', 'duration_s'].includes(w.name))
+      ?.value
+  )
 
-  const model = String(modelW.value ?? '')
-  const duration = Number(durationW.value)
-  const size = String(sizeW.value ?? '')
+  if (!model || !size || !duration) return 'Set model, duration & size'
 
   const validationError = validateSora2Selection(model, duration, size)
   if (validationError) return validationError
@@ -238,6 +236,7 @@ const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
   const perSec = perSecForSora2(model, size)
   return formatRunPrice(perSec, duration)
 }
+
 /**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
