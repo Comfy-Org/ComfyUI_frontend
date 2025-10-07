@@ -173,30 +173,27 @@ const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
   const durationW = node.widgets?.find(
     (w) => w.name === 'duration' || w.name === 'duration_s'
   ) as IComboWidget
-  const resolutionW = node.widgets?.find(
-    (w) => w.name === 'resolution'
-  ) as IComboWidget
+  const sizeW = node.widgets?.find((w) => w.name === 'size') as IComboWidget
 
-  if (!modelW || !durationW || !resolutionW)
-    return 'Set model, duration & resolution'
+  if (!modelW || !durationW || !sizeW) return 'Set model, duration & size'
 
   const model = String(modelW.value).toLowerCase()
   const duration = Number(durationW.value)
-  const resolution = String(resolutionW.value || '').toLowerCase()
+  const size = String(sizeW.value || '').toLowerCase()
 
   if (!duration || Number.isNaN(duration)) return 'Set duration (4/8/12)'
-  if (!resolution) return 'Set resolution (720p or 1080p)'
+  if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
 
   if (model.includes('sora-2-pro')) {
     let perSec: number | null = null
-    if (resolution.includes('1080')) perSec = 0.5
-    else if (resolution.includes('720')) perSec = 0.3
-    else return 'Resolution must be 720p or 1080p'
+    if (size.includes('1080')) perSec = 0.5
+    else if (size.includes('720')) perSec = 0.3
+    else return 'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
     return `$${(perSec * duration).toFixed(2)}/Run`
   }
 
   // sora-2 (non-pro) → 720p only
-  if (!resolution.includes('720')) return 'sora-2 supports 720p only'
+  if (!size.includes('720')) return 'sora-2 supports only 720x1280 or 1280x720'
   return `$${(0.1 * duration).toFixed(2)}/Run`
 }
 /**
@@ -1622,7 +1619,7 @@ export const useNodePricing = () => {
       MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
-      OpenAIVideoSora2: ['model', 'resolution', 'duration'],
+      OpenAIVideoSora2: ['model', 'size', 'duration'],
       OpenAIGPTImage1: ['quality', 'n'],
       IdeogramV1: ['num_images', 'turbo'],
       IdeogramV2: ['num_images', 'turbo'],

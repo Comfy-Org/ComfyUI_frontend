@@ -269,103 +269,117 @@ describe('useNodePricing', () => {
       expect(price).toBe('$0.04-0.12/Run (varies with size & quality)')
     })
   })
-
+  // ============================== OpenAIVideoSora2 ==============================
   describe('dynamic pricing - OpenAIVideoSora2', () => {
-    it('should require model, duration & resolution when widgets are missing', () => {
+    it('should require model, duration & size when widgets are missing', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [])
-      expect(getNodeDisplayPrice(node)).toBe('Set model, duration & resolution')
+      expect(getNodeDisplayPrice(node)).toBe('Set model, duration & size')
     })
+
     it('should require duration when duration is invalid or zero', () => {
       const { getNodeDisplayPrice } = useNodePricing()
-      // invalid (NaN)
       const nodeNaN = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 'oops' },
-        { name: 'resolution', value: '1080p' }
+        { name: 'size', value: '720x1280' }
       ])
       expect(getNodeDisplayPrice(nodeNaN)).toBe('Set duration (4/8/12)')
-      // zero
+
       const nodeZero = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 0 },
-        { name: 'resolution', value: '1080p' }
+        { name: 'size', value: '720x1280' }
       ])
       expect(getNodeDisplayPrice(nodeZero)).toBe('Set duration (4/8/12)')
     })
-    it('should require resolution when resolution is missing', () => {
+
+    it('should require size when size is missing', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 8 }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('Set resolution (720p or 1080p)')
+      expect(getNodeDisplayPrice(node)).toBe(
+        'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
+      )
     })
-    it('should compute pricing for sora-2-pro at 1080p', () => {
+
+    it('should compute pricing for sora-2-pro with 1024x1792', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 8 },
-        { name: 'resolution', value: '1080p' }
+        { name: 'size', value: '1024x1792' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$4.00/Run') // 0.50 * 8
+      expect(getNodeDisplayPrice(node)).toBe('$4.00/Run') // 0.5 * 8
     })
-    it('should compute pricing for sora-2-pro at 720p', () => {
+
+    it('should compute pricing for sora-2-pro with 720x1280', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 12 },
-        { name: 'resolution', value: '720p' }
+        { name: 'size', value: '720x1280' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$3.60/Run') // 0.30 * 12
+      expect(getNodeDisplayPrice(node)).toBe('$3.60/Run') // 0.3 * 12
     })
-    it('should reject unsupported resolution for sora-2-pro', () => {
+
+    it('should reject unsupported size for sora-2-pro', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 8 },
-        { name: 'resolution', value: '4k' }
+        { name: 'size', value: '640x640' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('Resolution must be 720p or 1080p')
+      expect(getNodeDisplayPrice(node)).toBe(
+        'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
+      )
     })
-    it('should compute pricing for plain sora-2 (720p only)', () => {
+
+    it('should compute pricing for sora-2 (720x1280 only)', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2' },
         { name: 'duration', value: 10 },
-        { name: 'resolution', value: '720p' }
+        { name: 'size', value: '720x1280' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$1.00/Run') // 0.10 * 10
+      expect(getNodeDisplayPrice(node)).toBe('$1.00/Run') // 0.1 * 10
     })
-    it('should reject non-720p resolution for plain sora-2', () => {
+
+    it('should reject non-720 sizes for sora-2', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2' },
         { name: 'duration', value: 8 },
-        { name: 'resolution', value: '1080p' }
+        { name: 'size', value: '1024x1792' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('sora-2 supports 720p only')
+      expect(getNodeDisplayPrice(node)).toBe(
+        'sora-2 supports only 720x1280 or 1280x720'
+      )
     })
     it('should accept duration_s alias for duration', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration_s', value: 4 },
-        { name: 'resolution', value: '1080p' }
+        { name: 'size', value: '1792x1024' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$2.00/Run') // 0.50 * 4
+      expect(getNodeDisplayPrice(node)).toBe('$2.00/Run') // 0.5 * 4
     })
-    it('should be case-insensitive for model and resolution', () => {
+
+    it('should be case-insensitive for model and size', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'SoRa-2-PrO' },
         { name: 'duration', value: 12 },
-        { name: 'resolution', value: '1080P' }
+        { name: 'size', value: '1280x720' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$6.00/Run') // 0.50 * 12
+      expect(getNodeDisplayPrice(node)).toBe('$3.60/Run') // 0.3 * 12
     })
   })
 
+  // ============================== MinimaxHailuoVideoNode ==============================
   describe('dynamic pricing - MinimaxHailuoVideoNode', () => {
     it('should return $0.28 for 6s duration and 768P resolution', () => {
       const { getNodeDisplayPrice } = useNodePricing()
