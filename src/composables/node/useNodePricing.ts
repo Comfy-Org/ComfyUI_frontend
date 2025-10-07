@@ -182,7 +182,7 @@ function validateSora2Selection(
   const model = String(modelRaw ?? '').toLowerCase()
   const size = String(sizeRaw ?? '').toLowerCase()
 
-  if (!duration || Number.isNaN(duration)) return 'Set duration (4/8/12)'
+  if (!duration || Number.isNaN(duration)) return 'Set duration (4s /8s /12s)'
   if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
   if (!ALL_SIZES.has(size))
     return 'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
