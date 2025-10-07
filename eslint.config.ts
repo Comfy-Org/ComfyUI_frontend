@@ -1,6 +1,7 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import importPlugin from 'eslint-plugin-import'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
@@ -47,6 +48,12 @@ export default defineConfig([
         sourceType: 'module',
         extraFileExtensions
       }
+    },
+    settings: {
+      'import/resolver': {
+        typescript: true,
+        node: true
+      }
     }
   },
   {
@@ -65,6 +72,12 @@ export default defineConfig([
         sourceType: 'module',
         extraFileExtensions
       }
+    },
+    settings: {
+      'import/resolver': {
+        typescript: true,
+        node: true
+      }
     }
   },
   pluginJs.configs.recommended,
@@ -72,6 +85,8 @@ export default defineConfig([
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
+  importPlugin.flatConfigs.recommended,
+  importPlugin.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
