@@ -1,42 +1,13 @@
 @layer theme, base, primevue, components, utilities;
 
-@import url('./fonts.css');
-@import url('tailwindcss/theme') layer(theme);
-@import url('tailwindcss/utilities') layer(utilities);
-@import url('tw-animate-css');
+@import './fonts.css';
+@import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/utilities' layer(utilities);
+@import 'tw-animate-css';
 
 @plugin 'tailwindcss-primeui';
 
 @config '../../tailwind.config.ts';
-
-:root {
-  --fg-color: #000;
-  --bg-color: #fff;
-  --comfy-menu-bg: #353535;
-  --comfy-menu-secondary-bg: #292929;
-  --comfy-topbar-height: 2.5rem;
-  --comfy-input-bg: #222;
-  --input-text: #ddd;
-  --descrip-text: #999;
-  --drag-text: #ccc;
-  --error-text: #ff4444;
-  --border-color: #4e4e4e;
-  --tr-even-bg-color: #222;
-  --tr-odd-bg-color: #353535;
-  --primary-bg: #236692;
-  --primary-fg: #ffffff;
-  --primary-hover-bg: #3485bb;
-  --primary-hover-fg: #ffffff;
-  --content-bg: #e0e0e0;
-  --content-fg: #000;
-  --content-hover-bg: #adadad;
-  --content-hover-fg: #000;
-
-  /* Code styling colors for help menu*/
-  --code-text-color: rgb(0 122 255 / 1);
-  --code-bg-color: rgb(96 165 250 / 0.2);
-  --code-block-bg-color: rgb(60 60 60 / 0.12);
-}
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -129,6 +100,35 @@
 }
 
 :root {
+  --fg-color: #000;
+  --bg-color: #fff;
+  --comfy-menu-bg: #353535;
+  --comfy-menu-secondary-bg: #292929;
+  --comfy-topbar-height: 2.5rem;
+  --comfy-input-bg: #222;
+  --input-text: #ddd;
+  --descrip-text: #999;
+  --drag-text: #ccc;
+  --error-text: #ff4444;
+  --border-color: #4e4e4e;
+  --tr-even-bg-color: #222;
+  --tr-odd-bg-color: #353535;
+  --primary-bg: #236692;
+  --primary-fg: #ffffff;
+  --primary-hover-bg: #3485bb;
+  --primary-hover-fg: #ffffff;
+  --content-bg: #e0e0e0;
+  --content-fg: #000;
+  --content-hover-bg: #adadad;
+  --content-hover-fg: #000;
+
+  /* Code styling colors for help menu*/
+  --code-text-color: rgb(0 122 255 / 1);
+  --code-bg-color: rgb(96 165 250 / 0.2);
+  --code-block-bg-color: rgb(60 60 60 / 0.12);
+
+  /* --- */
+
   --backdrop: var(--color-white);
   --dialog-surface: var(--color-neutral-200);
   --node-component-border: var(--color-gray-400);
@@ -150,7 +150,9 @@
   --node-component-tooltip-border: var(--color-sand-100);
   --node-component-tooltip-surface: var(--color-white);
   --node-component-widget-input: var(--fg-color);
-  --node-component-widget-input-surface: rgb(from var(--color-zinc-500) r g b / 10%);
+  --node-component-widget-input-surface: rgb(
+    from var(--color-zinc-500) r g b / 10%
+  );
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
   --node-stroke: var(--color-stone-100);
 }

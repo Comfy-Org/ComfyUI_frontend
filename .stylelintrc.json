@@ -7,7 +7,7 @@
     }
   ],
   "rules": {
-    "import-notation": "url",
+    "import-notation": "string",
     "font-family-no-missing-generic-family-keyword": true,
     "declaration-block-no-redundant-longhand-properties": true,
     "declaration-property-value-no-unknown": [

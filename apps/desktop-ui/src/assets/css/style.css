@@ -1,4 +1,4 @@
-@import url('@comfyorg/design-system/css/style.css');
+@import '@comfyorg/design-system/css/style.css';
 
 #desktop-app {
   position: absolute;
