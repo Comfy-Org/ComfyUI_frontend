@@ -121,4 +121,24 @@ export class VueNodeHelpers {
       await this.page.waitForSelector('[data-node-id]')
     }
   }
+
+  /**
+   * Get a specific widget by node title and widget name
+   */
+  getWidgetByName(nodeTitle: string, widgetName: string): Locator {
+    return this.getNodeByTitle(nodeTitle).locator(
+      `_vue=[widget.name="${widgetName}"]`
+    )
+  }
+
+  /**
+   * Get controls for input number widgets (increment/decrement buttons and input)
+   */
+  getInputNumberControls(widget: Locator) {
+    return {
+      input: widget.locator('input'),
+      incrementButton: widget.locator('button').first(),
+      decrementButton: widget.locator('button').last()
+    }
+  }
 }
