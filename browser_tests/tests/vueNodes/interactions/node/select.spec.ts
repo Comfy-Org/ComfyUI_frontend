@@ -1,3 +1,5 @@
+import type { NodeReference } from 'browser_tests/fixtures/utils/litegraphUtils'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -49,4 +51,36 @@ test.describe('Vue Node Selection', () => {
       expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
     })
   }
+
+  test('should select pinned node without dragging', async ({ comfyPage }) => {
+    // Get a node and pin it
+    const node = (await comfyPage.getFirstNodeRef()) as NodeReference
+    await node.pin()
+
+    // Verify it's pinned
+    await expect(node).toBePinned()
+
+    // Click the node
+    await comfyPage.page.getByText('Load Checkpoint').click()
+
+    // Should be selected
+    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+
+    // Get initial position
+    const initialPos = await node.getPosition()
+
+    // Try to drag the node (should not move)
+    await comfyPage.dragAndDrop(
+      { x: initialPos.x, y: initialPos.y - 15 },
+      { x: initialPos.x + 100, y: initialPos.y + 100 }
+    )
+
+    // Position should remain the same
+    const finalPos = await node?.getPosition()
+    expect(finalPos.x).toBeCloseTo(initialPos.x, 0)
+    expect(finalPos.y).toBeCloseTo(initialPos.y, 0)
+
+    // Should still be selected
+    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+  })
 })

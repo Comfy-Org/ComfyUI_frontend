@@ -351,6 +351,20 @@ export class NodeReference {
   async isCollapsed() {
     return !!(await this.getFlags()).collapsed
   }
+  async pin() {
+    await this.comfyPage.page.evaluate((id) => {
+      const node = window['app'].canvas.graph.getNodeById(id)
+      if (!node) throw new Error('Node not found')
+      node.pin(true)
+    }, this.id)
+  }
+  async unpin() {
+    await this.comfyPage.page.evaluate((id) => {
+      const node = window['app'].canvas.graph.getNodeById(id)
+      if (!node) throw new Error('Node not found')
+      node.unpin()
+    }, this.id)
+  }
   async isBypassed() {
     return (await this.getProperty<number | null | undefined>('mode')) === 4
   }
