@@ -211,18 +211,17 @@ This Storybook setup includes:
 
 ## Icon Usage in Storybook
 
-In this project, the `<i class="icon-[lucide--folder]" />` syntax from unplugin-icons is not supported in Storybook.  
+In this project, only the `<i class="icon-[lucide--folder]" />` syntax from unplugin-icons is supported in Storybook.  
 
 **Example:**
 
 ```vue
 <script setup lang="ts">
-import { Trophy, Settings } from 'lucide-vue-next'
 </script>
 
 <template>
-  <Trophy :size="16" class="text-neutral" />
-  <Settings :size="16" class="text-neutral" />
+  <i class="icon-[lucide--trophy] text-neutral size-4" />
+  <i class="icon-[lucide--settings] text-neutral size-4" />
 </template>
 ```
 
