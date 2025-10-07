@@ -37,7 +37,7 @@ jobs:
       with:
         repository: Comfy-Org/ComfyUI_devtools
         path: ComfyUI/custom_nodes/ComfyUI_devtools
-
+        
     - name: Checkout custom node repository
       uses: actions/checkout@v4
       with:
