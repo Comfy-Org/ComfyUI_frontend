@@ -1,5 +1,3 @@
-import type { NodeReference } from 'browser_tests/fixtures/utils/litegraphUtils'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -53,34 +51,34 @@ test.describe('Vue Node Selection', () => {
   }
 
   test('should select pinned node without dragging', async ({ comfyPage }) => {
-    // Get a node and pin it
-    const node = (await comfyPage.getFirstNodeRef()) as NodeReference
-    await node.pin()
+    const PIN_HOTKEY = 'p'
+    const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
-    // Verify it's pinned
-    await expect(node).toBePinned()
+    // Select a node by clicking its title
+    const checkpointNodeHeader = comfyPage.page.getByText('Load Checkpoint')
+    await checkpointNodeHeader.click()
 
-    // Click the node
-    await comfyPage.page.getByText('Load Checkpoint').click()
+    // Pin it using the hotkey (as a user would)
+    await comfyPage.page.keyboard.press(PIN_HOTKEY)
 
-    // Should be selected
+    const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const pinIndicator = checkpointNode.locator(PIN_INDICATOR)
+    await expect(pinIndicator).toBeVisible()
+
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
 
-    // Get initial position
-    const initialPos = await node.getPosition()
+    const initialPos = await checkpointNodeHeader.boundingBox()
+    if (!initialPos) throw new Error('Failed to get header position')
 
-    // Try to drag the node (should not move)
     await comfyPage.dragAndDrop(
-      { x: initialPos.x, y: initialPos.y - 15 },
+      { x: initialPos.x + 10, y: initialPos.y + 10 },
       { x: initialPos.x + 100, y: initialPos.y + 100 }
     )
 
-    // Position should remain the same
-    const finalPos = await node?.getPosition()
-    expect(finalPos.x).toBeCloseTo(initialPos.x, 0)
-    expect(finalPos.y).toBeCloseTo(initialPos.y, 0)
+    const finalPos = await checkpointNodeHeader.boundingBox()
+    if (!finalPos) throw new Error('Failed to get header position after drag')
+    expect(finalPos).toEqual(initialPos)
 
-    // Should still be selected
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
   })
 })
