@@ -90,6 +90,7 @@ const buttonTooltip = computed(() => {
         :step="stepValue"
         :use-grouping="useGrouping"
         :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+        :aria-label="widget.name"
         :pt="{
           incrementButton:
             '!rounded-r-lg bg-transparent border-none hover:bg-zinc-500/30 active:bg-zinc-500/40',
