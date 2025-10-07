@@ -16,11 +16,79 @@ jobs:
       uses: ./.github/actions/setup-frontend
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
-    - name: Run Playwright tests and update snapshots
+    - name: Locate failed screenshot manifest artifact
+      id: locate-manifest
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const { owner, repo } = context.repo
+          const headSha = context.payload.pull_request.head.sha
+
+          const { data } = await github.rest.actions.listWorkflowRuns({
+            owner,
+            repo,
+            workflow_id: 'tests-ci.yaml',
+            head_sha: headSha,
+            event: 'pull_request',
+            per_page: 1,
+          })
+          const run = data.workflow_runs?.[0]
+
+          let has = 'false'
+          let runId = ''
+          if (run) {
+            runId = String(run.id)
+            const { data: { artifacts = [] } } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner,
+              repo,
+              run_id: run.id,
+              per_page: 100,
+            })
+            if (artifacts.some(a => a.name === 'failed-screenshot-tests' && !a.expired)) has = 'true'
+          }
+          core.setOutput('run_id', runId)
+          core.setOutput('has_manifest', has)
+
+    - name: Download failed screenshot manifest
+      if: steps.locate-manifest.outputs.has_manifest == 'true'
+      uses: actions/download-artifact@v4
+      with:
+        run-id: ${{ steps.locate-manifest.outputs.run_id }}
+        name: failed-screenshot-tests
+        path: ComfyUI_frontend/ci-rerun
+
+    - name: Re-run failed screenshot tests and update snapshots
       id: playwright-tests
-      run: pnpm exec playwright test --update-snapshots
-      continue-on-error: true
+      shell: bash
       working-directory: ComfyUI_frontend
+      run: |
+        set -euo pipefail
+        if [ ! -d ci-rerun ]; then
+          echo "No manifest found; running full suite as fallback"
+          pnpm exec playwright test --update-snapshots
+          exit 0
+        fi
+        shopt -s nullglob
+        files=(ci-rerun/*.txt)
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "Manifest is empty; running full suite as fallback"
+          pnpm exec playwright test --update-snapshots
+          exit 0
+        fi
+        for f in "${files[@]}"; do
+          project="$(basename "$f" .txt)"
+          mapfile -t lines < "$f"
+          # Filter out blank lines
+          filtered=( )
+          for l in "${lines[@]}"; do
+            [ -n "$l" ] && filtered+=("$l")
+          done
+          if [ ${#filtered[@]} -eq 0 ]; then
+            continue
+          fi
+          echo "Re-running ${#filtered[@]} tests for project $project"
+          pnpm exec playwright test --project="$project" --update-snapshots "${filtered[@]}"
+        done
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -28,17 +96,21 @@ jobs:
         path: ComfyUI_frontend/playwright-report/
         retention-days: 30
     - name: Debugging info
+      working-directory: ComfyUI_frontend
       run: |
         echo "Branch: ${{ github.head_ref }}"
         git status
-      working-directory: ComfyUI_frontend
     - name: Commit updated expectations
+      working-directory: ComfyUI_frontend
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
         git fetch origin ${{ github.head_ref }}
         git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
         git add browser_tests
-        git commit -m "[automated] Update test expectations"
-        git push origin HEAD:${{ github.head_ref }}
-      working-directory: ComfyUI_frontend
+        if git diff --cached --quiet; then
+          echo "No expectation updates detected; skipping commit."
+        else
+          git commit -m "[automated] Update test expectations"
+          git push origin HEAD:${{ github.head_ref }}
+        fi

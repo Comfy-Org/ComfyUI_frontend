@@ -212,7 +212,7 @@ jobs:
   merge-reports:
     needs: [playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
+    if: ${{ always() && !cancelled() }}
     steps:
       - name: Checkout ComfyUI_frontend
         uses: actions/checkout@v5
@@ -251,6 +251,22 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
           pnpm exec playwright merge-reports --reporter=json ./all-blob-reports
         working-directory: ComfyUI_frontend
+
+      - name: Build failed screenshot manifest
+        if: ${{ needs.playwright-tests-chromium-sharded.result == 'failure' }}
+        run: |
+          set -euo pipefail
+          pnpm tsx scripts/cicd/build-failed-screenshot-manifest.ts
+        working-directory: ComfyUI_frontend
+
+      - name: Upload failed screenshot manifest
+        if: ${{ needs.playwright-tests-chromium-sharded.result == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-screenshot-tests
+          path: ComfyUI_frontend/ci-rerun/*.txt
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
