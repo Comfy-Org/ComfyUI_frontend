@@ -379,11 +379,15 @@ export class ComfyApp {
     const paintedIndex = selectedIndex + 1
     const combinedIndex = selectedIndex + 2
 
+    // for vueNodes mode
+    const images =
+      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
-      images: node.images,
+      images: images,
       selectedIndex: selectedIndex,
       img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
       paintedIndex: paintedIndex,
@@ -410,7 +414,8 @@ export class ComfyApp {
           ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
       }
       if (ComfyApp.clipspace.imgs && node.imgs) {
-        if (node.images && ComfyApp.clipspace.images) {
+        // Update node.images even if it's initially undefined (vueNodes mode)
+        if (ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
             node.images = [
               ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
@@ -512,6 +517,8 @@ export class ComfyApp {
       }
 
       app.graph.setDirtyCanvas(true)
+
+      useNodeOutputStore().updateNodeImages(node)
     }
   }
 
