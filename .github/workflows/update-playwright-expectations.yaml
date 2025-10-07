@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       ( github.event_name == 'pull_request' && github.event.label.name == 'New Browser Test Expectations' ) ||
-      ( github.event.issue.pull_request && github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/update-playwright') ) }}
+      ( github.event.issue.pull_request && github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/update-playwright') )
     steps:
     - name: Checkout workflow repo
       uses: actions/checkout@v5
