@@ -56,6 +56,7 @@ import {
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
+  LGraphTriggerEvent,
   LGraphTriggerHandler,
   LGraphTriggerParam
 } from './types/graphTriggers'
@@ -1196,7 +1197,27 @@ export class LGraph
   ): void
   trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
-    this.onTrigger?.(action, param)
+    // Convert to discriminated union format for typed handlers
+    if (
+      action === 'node:slot-links:changed' &&
+      param &&
+      typeof param === 'object'
+    ) {
+      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+    } else if (
+      action === 'node:slot-errors:changed' &&
+      param &&
+      typeof param === 'object'
+    ) {
+      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+    } else if (
+      action === 'node:property:changed' &&
+      param &&
+      typeof param === 'object'
+    ) {
+      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+    }
+    // Don't handle unknown events - just ignore them
   }
 
   /** @todo Clean up - never implemented. */

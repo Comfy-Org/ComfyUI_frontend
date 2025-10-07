@@ -1,6 +1,7 @@
 import type { NodeSlotType } from './globalEnums'
 
 interface NodePropertyChangedEvent {
+  type: 'node:property:changed'
   nodeId: string | number
   property: string
   oldValue: unknown
@@ -8,10 +9,12 @@ interface NodePropertyChangedEvent {
 }
 
 interface NodeSlotErrorsChangedEvent {
+  type: 'node:slot-errors:changed'
   nodeId: string | number
 }
 
 interface NodeSlotLinksChangedEvent {
+  type: 'node:slot-links:changed'
   nodeId: string | number
   slotType: NodeSlotType
   slotIndex: number
@@ -19,18 +22,16 @@ interface NodeSlotLinksChangedEvent {
   linkId: number
 }
 
-type LGraphTriggerEventMap = {
-  'node:property:changed': NodePropertyChangedEvent
-  'node:slot-errors:changed': NodeSlotErrorsChangedEvent
-  'node:slot-links:changed': NodeSlotLinksChangedEvent
-}
+export type LGraphTriggerEvent =
+  | NodePropertyChangedEvent
+  | NodeSlotErrorsChangedEvent
+  | NodeSlotLinksChangedEvent
 
-export type LGraphTriggerAction = keyof LGraphTriggerEventMap
+export type LGraphTriggerAction = LGraphTriggerEvent['type']
 
-export type LGraphTriggerParam<A extends LGraphTriggerAction> =
-  A extends keyof LGraphTriggerEventMap ? LGraphTriggerEventMap[A] : unknown
+export type LGraphTriggerParam<A extends LGraphTriggerAction> = Extract<
+  LGraphTriggerEvent,
+  { type: A }
+>
 
-export type LGraphTriggerHandler = {
-  <A extends LGraphTriggerAction>(action: A, param: LGraphTriggerParam<A>): void
-  (action: string, param: unknown): void
-}
+export type LGraphTriggerHandler = (event: LGraphTriggerEvent) => void

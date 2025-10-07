@@ -17,6 +17,7 @@ import type {
   LGraph,
   LGraphNode,
   LGraphTriggerAction,
+  LGraphTriggerEvent,
   LGraphTriggerParam
 } from '../../lib/litegraph/src/litegraph'
 import { NodeSlotType } from '../../lib/litegraph/src/types/globalEnums'
@@ -413,7 +414,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const createCleanupFunction = (
     originalOnNodeAdded: ((node: LGraphNode) => void) | undefined,
     originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined,
-    originalOnTrigger: ((action: string, param: unknown) => void) | undefined
+    originalOnTrigger: ((event: LGraphTriggerEvent) => void) | undefined
   ) => {
     return () => {
       // Restore original callbacks
@@ -517,16 +518,21 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       }
     }
 
-    const isTriggerAction = (value: string): value is LGraphTriggerAction =>
-      Object.prototype.hasOwnProperty.call(triggerHandlers, value)
-
-    graph.onTrigger = (action: string, event: unknown) => {
-      if (isTriggerAction(action)) {
-        const handler = triggerHandlers[action] as (payload: unknown) => void
-        handler(event)
+    graph.onTrigger = (event: LGraphTriggerEvent) => {
+      switch (event.type) {
+        case 'node:property:changed':
+          triggerHandlers['node:property:changed'](event)
+          break
+        case 'node:slot-errors:changed':
+          triggerHandlers['node:slot-errors:changed'](event)
+          break
+        case 'node:slot-links:changed':
+          triggerHandlers['node:slot-links:changed'](event)
+          break
       }
 
-      originalOnTrigger?.(action, event)
+      // Chain to original handler
+      originalOnTrigger?.(event)
     }
 
     // Initialize state
