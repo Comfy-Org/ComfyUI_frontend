@@ -119,6 +119,7 @@ export default defineConfig([
       'vue/no-restricted-class': ['error', '/^dark:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
+      'vue/match-component-import-name': 'error',
       /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-properties': 'error',
