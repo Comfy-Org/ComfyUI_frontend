@@ -44,7 +44,7 @@ type Overlay = Partial<IBaseWidget> & {
  * on the linked widget
  */
 type ProxyWidget = IBaseWidget & { _overlay: Overlay }
-function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
+export function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
   return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
 }
 
@@ -75,13 +75,15 @@ const onConfigure = function (
   const canvasStore = useCanvasStore()
   //Must give value to proxyWidgets prior to defining or it won't serialize
   this.properties.proxyWidgets ??= []
-  let proxyWidgets = this.properties.proxyWidgets
 
   originalOnConfigure?.call(this, serialisedNode)
 
   Object.defineProperty(this.properties, 'proxyWidgets', {
     get: () => {
-      return proxyWidgets
+      return this.widgets.map((w) => {
+        if (!isProxyWidget(w)) return ['-1', w.name]
+        return [w._overlay.nodeId, w._overlay.widgetName]
+      })
     },
     set: (property: string) => {
       const parsed = parseProxyWidgets(property)
@@ -92,18 +94,29 @@ const onConfigure = function (
           if (w instanceof DOMWidgetImpl) deactivateWidget(w.id)
         }
       }
-      this.widgets = this.widgets.filter((w) => !isProxyWidget(w))
-      for (const [nodeId, widgetName] of parsed) {
+
+      const realIndexes: [number, IBaseWidget][] = []
+      const proxyItems: [string, string][] = []
+      for (let i = 0; i < parsed.length; i++) {
+        if (parsed[i][0] === '-1') {
+          const widget = this.widgets.find((w) => w.name === parsed[i][1])
+          if (!widget) continue
+          realIndexes.push([i, widget])
+        } else proxyItems.push(parsed[i])
+      }
+      this.widgets.length = 0
+      for (const [nodeId, widgetName] of proxyItems) {
         const w = addProxyWidget(this, `${nodeId}`, widgetName)
         if (isActiveGraph && w instanceof DOMWidgetImpl) setWidget(w)
       }
-      proxyWidgets = property
+      for (const [i, w] of realIndexes) this.widgets.splice(i, 0, w)
       canvasStore.canvas?.setDirty(true, true)
       this._setConcreteSlots()
       this.arrange()
     }
   })
-  this.properties.proxyWidgets = proxyWidgets
+  if (serialisedNode.properties?.proxyWidgets)
+    this.properties.proxyWidgets = serialisedNode.properties.proxyWidgets
 }
 
 function addProxyWidget(
@@ -132,7 +145,7 @@ function addProxyWidget(
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
-function resolveLinkedWidget(
+export function resolveLinkedWidget(
   overlay: Overlay
 ): [LGraphNode | undefined, IBaseWidget | undefined] {
   const { graph, nodeId, widgetName } = overlay

@@ -64,15 +64,21 @@ const activeNode = computed(() => {
 
 const activeWidgets = computed<WidgetItem[]>({
   get() {
+    if (!activeNode.value) return []
     const node = activeNode.value
-    if (!node) return []
-    return proxyWidgets.value.flatMap(([id, name]: [string, string]) => {
+    function mapWidgets([id, name]: [string, string]): WidgetItem[] {
+      if (id === '-1') {
+        const widget = node.widgets.find((w) => w.name === name)
+        if (!widget) return []
+        return [[{ id: -1, title: '(Linked)', type: '' }, widget]]
+      }
       const wNode = node.subgraph._nodes_by_id[id]
       if (!wNode?.widgets) return []
-      const w = wNode.widgets.find((w) => w.name === name)
-      if (!w) return []
-      return [[wNode, w]]
-    })
+      const widget = wNode.widgets.find((w) => w.name === name)
+      if (!widget) return []
+      return [[wNode, widget]]
+    }
+    return proxyWidgets.value.flatMap(mapWidgets)
   },
   set(value: WidgetItem[]) {
     const node = activeNode.value
@@ -80,9 +86,7 @@ const activeWidgets = computed<WidgetItem[]>({
       console.error('Attempted to toggle widgets with no node selected')
       return
     }
-    //map back to id/name
-    const widgets: ProxyWidgetsProperty = value.map(widgetItemToProperty)
-    proxyWidgets.value = widgets
+    proxyWidgets.value = value.map(widgetItemToProperty)
   }
 })
 
@@ -269,6 +273,7 @@ onBeforeUnmount(() => {
           :widget-name="widget.name"
           :is-shown="true"
           :is-draggable="!debouncedQuery"
+          :is-physical="node.id === -1"
           @toggle-visibility="demote([node, widget])"
         />
       </div>
