@@ -23,7 +23,6 @@ jobs:
       - name: Checkout ComfyUI_frontend
         uses: actions/checkout@v5
         with:
-          repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
 
       - name: Copy ComfyUI_devtools from frontend repo
@@ -217,7 +216,6 @@ jobs:
       - name: Checkout ComfyUI_frontend
         uses: actions/checkout@v5
         with:
-          repository: 'Comfy-Org/ComfyUI_frontend'
           path: 'ComfyUI_frontend'
 
       - name: Install pnpm
