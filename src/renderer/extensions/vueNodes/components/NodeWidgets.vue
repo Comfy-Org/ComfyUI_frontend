@@ -133,6 +133,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const slotMetadata = widget.slotMetadata
 
     let widgetOptions = widget.options
+    // Core feature: Disable Vue widgets when their input slots are connected
+    // This prevents conflicting input sources - when a slot is linked to another
+    // node's output, the widget should be read-only to avoid data conflicts
     if (slotMetadata?.linked) {
       widgetOptions = widget.options
         ? { ...widget.options, disabled: true }
