@@ -1,4 +1,7 @@
+import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+
+import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
 
 // Mock functions
 const mockExecute = vi.fn()
@@ -14,6 +17,12 @@ const mockSetAppZoom = vi.fn()
 const mockSettingGet = vi.fn().mockReturnValue(true)
 
 // Mock dependencies
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}))
+
 vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
   useMinimap: () => ({
     containerStyles: { value: { backgroundColor: '#fff', borderRadius: '8px' } }
@@ -41,6 +50,21 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
+const createWrapper = (props = {}) => {
+  return mount(ZoomControlsModal, {
+    props: {
+      visible: true,
+      ...props
+    },
+    global: {
+      stubs: {
+        Button: false,
+        InputNumber: false
+      }
+    }
+  })
+}
+
 describe('ZoomControlsModal', () => {
   it('should have proper props interface', () => {
     // Test that the component file structure and basic exports work
@@ -61,6 +85,36 @@ describe('ZoomControlsModal', () => {
 
     executeCommand('Comfy.Canvas.FitView')
     expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.FitView')
+  })
+
+  it('should emit close when minimap toggle button is clicked', async () => {
+    mockExecute.mockClear()
+    const wrapper = createWrapper()
+
+    const minimapButton = wrapper.find('[data-testid="toggle-minimap-button"]')
+    expect(minimapButton.exists()).toBe(true)
+
+    await minimapButton.trigger('click')
+
+    expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.ToggleMinimap')
+    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('should not emit close when other command buttons are clicked', async () => {
+    mockExecute.mockClear()
+    const wrapper = createWrapper()
+
+    const buttons = wrapper.findAll('button')
+    const fitViewButton = buttons.find((btn) =>
+      btn.text().includes('zoomControls.zoomToFit')
+    )
+
+    expect(fitViewButton).toBeDefined()
+    await fitViewButton!.trigger('click')
+
+    expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.FitView')
+    expect(wrapper.emitted('close')).toBeFalsy()
   })
 
   it('should validate zoom input ranges correctly', () => {
