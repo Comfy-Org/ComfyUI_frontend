@@ -20,6 +20,8 @@ jobs:
       uses: ./.github/actions/setup-comfyui-server
     - name: Setup frontend
       uses: ./.github/actions/setup-frontend
+      with:
+        build_frontend: 'true'
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
 
