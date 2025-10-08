@@ -9,11 +9,6 @@
       'overflowing-sidebar': isOverflowing
     }"
   >
-    <ComfyMenuButton
-      v-if="isOverflowing"
-      :is-small="isSmall"
-      :class="isOverflowing ? 'sticky top-0' : ''"
-    />
     <div
       ref="contentMeasureRef"
       :class="
@@ -22,8 +17,8 @@
           : 'flex flex-col h-full'
       "
     >
-      <div class="sidebar-item-group">
-        <ComfyMenuButton v-if="!isOverflowing" :is-small="isSmall" />
+      <div ref="topToolbarRef" class="sidebar-item-group">
+        <ComfyMenuButton :is-small="isSmall" />
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
@@ -40,7 +35,7 @@
         <SidebarTemplatesButton />
       </div>
 
-      <div class="sidebar-item-group mt-auto">
+      <div ref="bottomToolbarRef" class="sidebar-item-group mt-auto">
         <SidebarLogoutIcon
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
@@ -81,6 +76,8 @@ const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
 const contentMeasureRef = ref<HTMLElement>()
+const topToolbarRef = ref<HTMLElement>()
+const bottomToolbarRef = ref<HTMLElement>()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
@@ -107,17 +104,23 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 
 const isOverflowing = ref(false)
 
-const EXIT_OVERFLOW_MARGIN = 60
+const ENTER_OVERFLOW_MARGIN = 20
+const EXIT_OVERFLOW_MARGIN = 50
+
 const checkOverflow = debounce(() => {
-  if (!sideToolbarRef.value || !contentMeasureRef.value) return
+  if (!sideToolbarRef.value || !topToolbarRef.value || !bottomToolbarRef.value)
+    return
 
   const containerHeight = sideToolbarRef.value.clientHeight
-  const contentHeight = contentMeasureRef.value.scrollHeight
+  const topHeight = topToolbarRef.value.scrollHeight
+  const bottomHeight = bottomToolbarRef.value.scrollHeight
+  const contentHeight = topHeight + bottomHeight
 
   if (isOverflowing.value) {
     isOverflowing.value = containerHeight < contentHeight + EXIT_OVERFLOW_MARGIN
   } else {
-    isOverflowing.value = containerHeight < contentHeight
+    isOverflowing.value =
+      containerHeight < contentHeight + ENTER_OVERFLOW_MARGIN
   }
 }, 16)
 
@@ -225,9 +228,10 @@ onMounted(() => {
 
 .overflowing-sidebar {
   @apply mr-2;
+}
 
-  .sidebar-item-group {
-    @apply contents;
-  }
+.overflowing-sidebar :deep(.comfy-menu-button-wrapper) {
+  @apply sticky top-0 z-[1];
+  background-color: var(--comfy-menu-bg);
 }
 </style>
