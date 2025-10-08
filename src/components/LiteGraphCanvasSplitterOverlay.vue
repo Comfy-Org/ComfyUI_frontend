@@ -63,6 +63,7 @@
             </div>
 
             <div class="actionbar-container shadow-md">
+              <div ref="legacyCommandsContainerRef"></div>
               <slot name="actionbar" />
               <slot name="actionbar-end" />
             </div>
@@ -110,12 +111,22 @@
 <script setup lang="ts">
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { app } from '@/scripts/app'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isNativeWindow } from '@/utils/envUtil'
+
+// Maintain support for legacy topbar elements attached by custom scripts
+const legacyCommandsContainerRef = ref<HTMLElement>()
+onMounted(() => {
+  if (legacyCommandsContainerRef.value) {
+    app.menu.element.style.width = 'fit-content'
+    legacyCommandsContainerRef.value.appendChild(app.menu.element)
+  }
+})
 
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
