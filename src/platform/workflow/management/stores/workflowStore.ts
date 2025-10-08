@@ -8,6 +8,11 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import {
+  clearDraft,
+  readDraft,
+  writeDraft
+} from '@/platform/workflow/persistence/utils/workflowDraftStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -83,6 +88,20 @@ export class ComfyWorkflow extends UserFile {
   override async load({
     force = false
   }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
+    const draft = !force ? readDraft(this.path) : undefined
+    let draftState: ComfyWorkflowJSON | null = null
+    let draftContent: string | null = null
+
+    if (draft) {
+      try {
+        draftState = JSON.parse(draft.data)
+        draftContent = draft.data
+      } catch (err) {
+        console.warn('Failed to parse workflow draft, clearing it', err)
+        clearDraft(this.path)
+      }
+    }
+
     await super.load({ force })
     if (!force && this.isLoaded) return this as LoadedComfyWorkflow
 
@@ -90,13 +109,15 @@ export class ComfyWorkflow extends UserFile {
       throw new Error('[ASSERT] Workflow content should be loaded')
     }
 
-    // Note: originalContent is populated by super.load()
-    this.changeTracker = markRaw(
-      new ChangeTracker(
-        this,
-        /* initialState= */ JSON.parse(this.originalContent)
-      )
-    )
+    const initialState = JSON.parse(this.originalContent)
+    this.changeTracker = markRaw(new ChangeTracker(this, initialState))
+
+    if (draftState && draftContent) {
+      this.changeTracker.activeState = draftState
+      this.content = draftContent
+      this._isModified = true
+    }
+
     return this as LoadedComfyWorkflow
   }
 
@@ -112,6 +133,7 @@ export class ComfyWorkflow extends UserFile {
     const ret = await super.save({ force: true })
     this.changeTracker?.reset()
     this.isModified = false
+    clearDraft(this.path)
     return ret
   }
 
@@ -122,7 +144,9 @@ export class ComfyWorkflow extends UserFile {
    */
   override async saveAs(path: string) {
     this.content = JSON.stringify(this.activeState)
-    return await super.saveAs(path)
+    const result = await super.saveAs(path)
+    clearDraft(path)
+    return result
   }
 
   async promptSave(): Promise<string | null> {
@@ -449,12 +473,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
 
+      const draft = readDraft(oldPath)
       const openIndex = detachWorkflow(workflow)
       // Perform the actual rename operation first
       try {
         await workflow.rename(newPath)
       } finally {
         attachWorkflow(workflow, openIndex)
+      }
+
+      clearDraft(oldPath)
+      if (draft) {
+        writeDraft(newPath, { ...draft, name: workflow.key })
       }
 
       // Move thumbnail from old key to new key (using workflow keys, not full paths)
@@ -474,6 +504,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isBusy.value = true
     try {
       await workflow.delete()
+      clearDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
