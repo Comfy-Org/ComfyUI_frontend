@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex flex-col items-center"
+    class="image-preview group relative size-full min-w-16 min-h-16 flex flex-col"
     data-capture-node="true"
     tabindex="0"
     role="region"
@@ -12,12 +12,12 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative w-full max-w-[352px] overflow-hidden rounded-[5px] bg-[#262729]"
+      class="relative w-full overflow-hidden rounded-[5px] bg-node-component-surface h-88 grow"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex h-[352px] w-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
       >
         <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
@@ -29,7 +29,7 @@
       <!-- Loading State -->
       <Skeleton
         v-else-if="isLoading"
-        class="h-[352px] w-full"
+        class="size-full"
         border-radius="5px"
       />
 
@@ -38,7 +38,7 @@
         v-else
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block h-[352px] w-full object-contain"
+        class="block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
