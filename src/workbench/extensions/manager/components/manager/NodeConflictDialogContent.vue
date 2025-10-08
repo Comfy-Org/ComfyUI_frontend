@@ -19,6 +19,7 @@
         class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
       >
         <div
+          data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleImportFailedPanel"
         >
@@ -47,6 +48,7 @@
         <!-- Import failed list -->
         <div
           v-if="importFailedExpanded"
+          data-testid="conflict-dialog-panel-expanded"
           class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
@@ -66,6 +68,7 @@
         class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
       >
         <div
+          data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleConflictsPanel"
         >
@@ -94,6 +97,7 @@
         <!-- Conflicts list -->
         <div
           v-if="conflictsExpanded"
+          data-testid="conflict-dialog-panel-expanded"
           class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
@@ -114,6 +118,7 @@
         class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
       >
         <div
+          data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleExtensionsPanel"
         >
@@ -142,6 +147,7 @@
         <!-- Extension list -->
         <div
           v-if="extensionsExpanded"
+          data-testid="conflict-dialog-panel-expanded"
           class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
