@@ -1198,23 +1198,13 @@ export class LGraph
   trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
     // Convert to discriminated union format for typed handlers
-    if (
-      action === 'node:slot-links:changed' &&
-      param &&
-      typeof param === 'object'
-    ) {
-      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
-    } else if (
-      action === 'node:slot-errors:changed' &&
-      param &&
-      typeof param === 'object'
-    ) {
-      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
-    } else if (
-      action === 'node:property:changed' &&
-      param &&
-      typeof param === 'object'
-    ) {
+    const validEventTypes = new Set([
+      'node:slot-links:changed',
+      'node:slot-errors:changed',
+      'node:property:changed'
+    ])
+
+    if (validEventTypes.has(action) && param && typeof param === 'object') {
       this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
     }
     // Don't handle unknown events - just ignore them
