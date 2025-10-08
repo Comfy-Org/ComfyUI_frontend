@@ -40,16 +40,17 @@ jobs:
           retention-days: 30
       - name: Debugging info
         run: |
-          echo "Branch: ${{ github.head_ref }}"
+          echo "PR: ${{ github.event.issue.number }}"
           git status
         working-directory: ComfyUI_frontend
       - name: Commit updated expectations
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git fetch origin ${{ github.head_ref }}
-          git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
+          gh pr checkout ${{ github.event.issue.number }}
           git add browser_tests
           git commit -m "[automated] Update test expectations"
-          git push origin HEAD:${{ github.head_ref }}
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ComfyUI_frontend
