@@ -21,7 +21,7 @@ jobs:
     - name: Setup frontend
       uses: ./.github/actions/setup-frontend
       with:
-        build_frontend: 'true'
+        not_build: 'false'
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
 

@@ -24,7 +24,7 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
-          build_frontend: 'true'
+          not_build: 'false'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright # Setup Playwright and cache browsers
 
@@ -66,7 +66,7 @@ jobs:
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
         with:
-          build_frontend: 'false'
+          not_build: 'true'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
@@ -113,7 +113,7 @@ jobs:
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
         with:
-          build_frontend: 'false'
+          not_build: 'true'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
@@ -149,7 +149,7 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
-          build_frontend: 'false'
+          not_build: 'true'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 

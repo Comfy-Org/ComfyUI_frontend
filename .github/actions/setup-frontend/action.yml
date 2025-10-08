@@ -1,10 +1,10 @@
 name: Build ComfyUI Frontend
 description: 'Install dependencies and build ComfyUI_frontend'
 inputs:
-  build_frontend:
-    description: 'Whether to build the frontend'
+  not_build:
+    description: 'Skip building the frontend'
     required: false
-    default: 'true'
+    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -40,6 +40,6 @@ runs:
       run: pnpm install --frozen-lockfile
 
     - name: Build ComfyUI_frontend if needed
-      if: ${{ inputs.build_frontend == 'true' }}
+      if: ${{ inputs.not_build != 'true' }}
       shell: bash
       run: pnpm build
