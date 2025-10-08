@@ -3700,7 +3700,8 @@ export class LGraphCanvas
 
     let block_default = false
     // @ts-expect-error EventTarget.localName is not in standard types
-    if (e.target.localName == 'input') return
+    if (e.target.localName == 'input' || e.target.localName === 'textarea')
+      return
 
     if (e.type == 'keydown') {
       // TODO: Switch
