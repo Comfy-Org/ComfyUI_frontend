@@ -11,7 +11,20 @@
         ref="containerRef"
         class="absolute w-full h-full comfy-load-3d-viewer"
         @resize="viewer.handleResize"
+        @dragover.prevent.stop="handleDragOver"
+        @dragleave.stop="handleDragLeave"
+        @drop.prevent.stop="handleDrop"
       />
+      <div
+        v-if="isDragging"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none"
+      >
+        <div
+          class="px-6 py-4 bg-blue-500/20 border-2 border-dashed border-blue-400 rounded-lg text-blue-100 text-lg font-medium"
+        >
+          {{ dragMessage }}
+        </div>
+      </div>
     </div>
 
     <div class="w-72 flex flex-col">
@@ -77,12 +90,23 @@ import ModelControls from '@/components/load3d/controls/viewer/ViewerModelContro
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   node: LGraphNode
 }>()
+
+// Drag and drop state
+const isDragging = ref(false)
+const dragMessage = ref('')
+const SUPPORTED_EXTENSIONS = ['.gltf', '.glb', '.obj', '.fbx', '.stl']
+
+function isValidModelFile(file: File): boolean {
+  const fileName = file.name.toLowerCase()
+  return SUPPORTED_EXTENSIONS.some((ext) => fileName.endsWith(ext))
+}
 
 const viewerContentRef = ref<HTMLDivElement>()
 const containerRef = ref<HTMLDivElement>()
@@ -91,6 +115,45 @@ const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
 const viewer = useLoad3dService().getOrCreateViewer(toRaw(props.node))
+
+function handleDragOver(event: DragEvent) {
+  if (viewer.isPreview.value) return
+
+  if (!event.dataTransfer) return
+
+  const hasFiles = event.dataTransfer.types.includes('Files')
+
+  if (!hasFiles) return
+
+  isDragging.value = true
+
+  event.dataTransfer.dropEffect = 'copy'
+  dragMessage.value = t('load3d.dropToLoad')
+}
+
+function handleDragLeave() {
+  isDragging.value = false
+}
+
+async function handleDrop(event: DragEvent) {
+  isDragging.value = false
+
+  if (viewer.isPreview.value) return
+
+  if (!event.dataTransfer) return
+
+  const files = Array.from(event.dataTransfer.files)
+
+  if (files.length === 0) return
+
+  const modelFile = files.find(isValidModelFile)
+
+  if (modelFile) {
+    await viewer.handleModelDrop(modelFile)
+  } else {
+    useToastStore().addAlert(t('load3d.unsupportedFileType'))
+  }
+}
 
 onMounted(async () => {
   const source = useLoad3dService().getLoad3d(props.node)

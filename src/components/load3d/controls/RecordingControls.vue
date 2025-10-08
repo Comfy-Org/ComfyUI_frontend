@@ -3,18 +3,6 @@
     <div class="flex flex-col gap-2">
       <Button
         class="p-button-rounded p-button-text"
-        @click="resizeNodeMatchOutput"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.resizeNodeMatchOutput'),
-            showDelay: 300
-          }"
-          class="pi pi-window-maximize text-white text-lg"
-        />
-      </Button>
-      <Button
-        class="p-button-rounded p-button-text"
         :class="{
           'p-button-danger': isRecording,
           'recording-button-blink': isRecording
@@ -39,7 +27,7 @@
       <Button
         v-if="hasRecording && !isRecording"
         class="p-button-rounded p-button-text"
-        @click="exportRecording"
+        @click="handleExportRecording"
       >
         <i
           v-tooltip.right="{
@@ -53,7 +41,7 @@
       <Button
         v-if="hasRecording && !isRecording"
         class="p-button-rounded p-button-text"
-        @click="clearRecording"
+        @click="handleClearRecording"
       >
         <i
           v-tooltip.right="{
@@ -65,7 +53,7 @@
       </Button>
 
       <div
-        v-if="recordingDuration > 0 && !isRecording"
+        v-if="recordingDuration && recordingDuration > 0 && !isRecording"
         class="text-xs text-white text-center mt-1"
       >
         {{ formatDuration(recordingDuration) }}
@@ -79,17 +67,12 @@ import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLoad3dService } from '@/services/load3dService'
 
 const vTooltip = Tooltip
 
-const { hasRecording, isRecording, node, recordingDuration } = defineProps<{
-  hasRecording: boolean
-  isRecording: boolean
-  node: LGraphNode
-  recordingDuration: number
-}>()
+const hasRecording = defineModel<boolean>('hasRecording')
+const isRecording = defineModel<boolean>('isRecording')
+const recordingDuration = defineModel<number>('recordingDuration')
 
 const emit = defineEmits<{
   (e: 'startRecording'): void
@@ -98,49 +81,19 @@ const emit = defineEmits<{
   (e: 'clearRecording'): void
 }>()
 
-const resizeNodeMatchOutput = () => {
-  const outputWidth = node.widgets?.find((w) => w.name === 'width')
-  const outputHeight = node.widgets?.find((w) => w.name === 'height')
-
-  if (outputWidth && outputHeight && outputHeight.value && outputWidth.value) {
-    const [oldWidth, oldHeight] = node.size
-
-    const scene = node.widgets?.find((w) => w.name === 'image')
-
-    const sceneHeight = scene?.computedHeight
-
-    if (sceneHeight) {
-      const sceneWidth = oldWidth - 20
-
-      const outputRatio = Number(outputHeight.value) / Number(outputWidth.value)
-      const expectSceneHeight = sceneWidth * outputRatio
-
-      node.setSize([oldWidth, oldHeight + (expectSceneHeight - sceneHeight)])
-
-      node.graph?.setDirtyCanvas(true, true)
-
-      const load3d = useLoad3dService().getLoad3d(node as LGraphNode)
-
-      if (load3d) {
-        load3d.refreshViewport()
-      }
-    }
-  }
-}
-
 const toggleRecording = () => {
-  if (isRecording) {
+  if (isRecording.value) {
     emit('stopRecording')
   } else {
     emit('startRecording')
   }
 }
 
-const exportRecording = () => {
+const handleExportRecording = () => {
   emit('exportRecording')
 }
 
-const clearRecording = () => {
+const handleClearRecording = () => {
   emit('clearRecording')
 }
 
