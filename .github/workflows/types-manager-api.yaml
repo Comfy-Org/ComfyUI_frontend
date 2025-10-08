@@ -1,4 +1,4 @@
-name: Update ComfyUI-Manager API Types
+name: Types Manager API
 
 on:
   # Manual trigger
