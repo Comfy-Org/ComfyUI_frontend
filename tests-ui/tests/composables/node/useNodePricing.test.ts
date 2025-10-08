@@ -316,14 +316,14 @@ describe('useNodePricing', () => {
         { name: 'duration', value: 'oops' },
         { name: 'size', value: '720x1280' }
       ])
-      expect(getNodeDisplayPrice(nodeNaN)).toBe('Set duration (4/8/12)')
+      expect(getNodeDisplayPrice(nodeNaN)).toBe('Set model, duration & size')
 
       const nodeZero = createMockNode('OpenAIVideoSora2', [
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 0 },
         { name: 'size', value: '720x1280' }
       ])
-      expect(getNodeDisplayPrice(nodeZero)).toBe('Set duration (4/8/12)')
+      expect(getNodeDisplayPrice(nodeZero)).toBe('Set model, duration & size')
     })
 
     it('should require size when size is missing', () => {
@@ -332,9 +332,7 @@ describe('useNodePricing', () => {
         { name: 'model', value: 'sora-2-pro' },
         { name: 'duration', value: 8 }
       ])
-      expect(getNodeDisplayPrice(node)).toBe(
-        'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
-      )
+      expect(getNodeDisplayPrice(node)).toBe('Set model, duration & size')
     })
 
     it('should compute pricing for sora-2-pro with 1024x1792', () => {
@@ -365,7 +363,7 @@ describe('useNodePricing', () => {
         { name: 'size', value: '640x640' }
       ])
       expect(getNodeDisplayPrice(node)).toBe(
-        'Size must be 720x1280, 1280x720, 1024x1792, or 1792x1024'
+        'Invalid size. Must be 720x1280, 1280x720, 1024x1792, or 1792x1024.'
       )
     })
 
