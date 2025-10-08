@@ -3,7 +3,7 @@
     <i-lucide:search :class="iconColorStyle" />
     <InputText
       ref="input"
-      v-model="searchQuery"
+      v-model="internalSearchQuery"
       :aria-label="
         placeholder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
       "
@@ -18,8 +18,9 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
@@ -35,8 +36,29 @@ const {
   showBorder?: boolean
   size?: 'md' | 'lg'
 }>()
+
 // defineModel without arguments uses 'modelValue' as the prop name
 const searchQuery = defineModel<string>()
+
+// Internal search query state for immediate UI updates
+const internalSearchQuery = ref<string>(searchQuery.value || '')
+
+// Create debounced function to update the parent model
+const updateSearchQuery = useDebounceFn((value: string) => {
+  searchQuery.value = value
+}, 300)
+
+// Watch internal query changes and trigger debounced update
+watch(internalSearchQuery, (newValue) => {
+  void updateSearchQuery(newValue)
+})
+
+// Sync external changes back to internal state
+watch(searchQuery, (newValue) => {
+  if (newValue !== internalSearchQuery.value) {
+    internalSearchQuery.value = newValue || ''
+  }
+})
 
 const input = ref<{ $el: HTMLElement } | null>()
 const focusInput = () => {
