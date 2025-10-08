@@ -169,6 +169,74 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
 }
 
+// ---- constants ----
+const SORA_SIZES = {
+  BASIC: new Set(['720x1280', '1280x720']),
+  PRO: new Set(['1024x1792', '1792x1024'])
+}
+const ALL_SIZES = new Set([...SORA_SIZES.BASIC, ...SORA_SIZES.PRO])
+
+// ---- sora-2 pricing helpers ----
+function validateSora2Selection(
+  modelRaw: string,
+  duration: number,
+  sizeRaw: string
+): string | undefined {
+  const model = modelRaw?.toLowerCase() ?? ''
+  const size = sizeRaw?.toLowerCase() ?? ''
+
+  if (!duration || Number.isNaN(duration)) return 'Set duration (4s / 8s / 12s)'
+  if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
+  if (!ALL_SIZES.has(size))
+    return 'Invalid size. Must be 720x1280, 1280x720, 1024x1792, or 1792x1024.'
+
+  if (model.includes('sora-2-pro')) return undefined
+
+  if (model.includes('sora-2') && !SORA_SIZES.BASIC.has(size))
+    return 'sora-2 supports only 720x1280 or 1280x720'
+
+  if (!model.includes('sora-2')) return 'Unsupported model'
+
+  return undefined
+}
+
+function perSecForSora2(modelRaw: string, sizeRaw: string): number {
+  const model = modelRaw?.toLowerCase() ?? ''
+  const size = sizeRaw?.toLowerCase() ?? ''
+
+  if (model.includes('sora-2-pro')) {
+    return SORA_SIZES.PRO.has(size) ? 0.5 : 0.3
+  }
+  if (model.includes('sora-2')) return 0.1
+
+  return SORA_SIZES.PRO.has(size) ? 0.5 : 0.1
+}
+
+function formatRunPrice(perSec: number, duration: number) {
+  return `$${(perSec * duration).toFixed(2)}/Run`
+}
+
+// ---- pricing calculator ----
+const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
+  const getWidgetValue = (name: string) =>
+    String(node.widgets?.find((w) => w.name === name)?.value ?? '')
+
+  const model = getWidgetValue('model')
+  const size = getWidgetValue('size')
+  const duration = Number(
+    node.widgets?.find((w) => ['duration', 'duration_s'].includes(w.name))
+      ?.value
+  )
+
+  if (!model || !size || !duration) return 'Set model, duration & size'
+
+  const validationError = validateSora2Selection(model, duration, size)
+  if (validationError) return validationError
+
+  const perSec = perSecForSora2(model, size)
+  return formatRunPrice(perSec, duration)
+}
+
 /**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
@@ -194,6 +262,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     FluxProKontextMaxNode: {
       displayPrice: '$0.08/Run'
+    },
+    OpenAIVideoSora2: {
+      displayPrice: sora2PricingCalculator
     },
     IdeogramV1: {
       displayPrice: (node: LGraphNode): string => {
@@ -1657,6 +1728,7 @@ export const useNodePricing = () => {
       MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
+      OpenAIVideoSora2: ['model', 'size', 'duration'],
       OpenAIGPTImage1: ['quality', 'n'],
       IdeogramV1: ['num_images', 'turbo'],
       IdeogramV2: ['num_images', 'turbo'],
