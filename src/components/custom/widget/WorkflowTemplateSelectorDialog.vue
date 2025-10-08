@@ -87,7 +87,7 @@
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
-            class="w-[250px]"
+            class="w-62.5"
           >
             <template #icon>
               <i class="icon-[lucide--arrow-up-down]" />

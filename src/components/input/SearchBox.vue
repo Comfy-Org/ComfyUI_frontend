@@ -25,7 +25,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
-const SEARCH_DEBOUNCE_DELAY = 300 // 300 milliseconds
+const SEARCH_DEBOUNCE_DELAY_MS = 300
 
 const {
   autofocus = false,
@@ -48,7 +48,7 @@ const internalSearchQuery = ref<string>(searchQuery.value ?? '')
 // Create debounced function to update the parent model
 const updateSearchQuery = useDebounceFn((value: string) => {
   searchQuery.value = value
-}, SEARCH_DEBOUNCE_DELAY)
+}, SEARCH_DEBOUNCE_DELAY_MS)
 
 // Watch internal query changes and trigger debounced update
 watch(internalSearchQuery, (newValue) => {
