@@ -1223,6 +1223,7 @@ class MaskEditorDialog extends ComfyDialog {
         // Create and set new image
         const newImage = new Image()
         newImage.src = mkFileUrl({ ref: actualFilepath, preview: true })
+        newImage.crossOrigin = 'anonymous'
         ComfyApp.clipspace.imgs[paintedIndex] = newImage
 
         // Update images array - create if it doesn't exist
@@ -1275,6 +1276,7 @@ class MaskEditorDialog extends ComfyDialog {
       // Create and set new image
       const newImage = new Image()
       newImage.src = mkFileUrl({ ref: actualFilepath, preview: true })
+      newImage.crossOrigin = 'anonymous'
       ComfyApp.clipspace.imgs[indexToSaveTo] = newImage
 
       // Update images array - create if it doesn't exist
@@ -4291,6 +4293,7 @@ class UIManager {
 
     this.image = await new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new Image()
+      img.crossOrigin = 'anonymous'
       img.onload = () => resolve(img)
       img.onerror = reject
       img.src = rgb_url.toString()
@@ -4302,6 +4305,7 @@ class UIManager {
       this.paint_image = await new Promise<HTMLImageElement>(
         (resolve, reject) => {
           const img = new Image()
+          img.crossOrigin = 'anonymous'
           img.onload = () => resolve(img)
           img.onerror = reject
           img.src = paintURL.toString()
@@ -4437,6 +4441,7 @@ class UIManager {
   private loadImage(imagePath: URL): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const image = new Image() as HTMLImageElement
+      image.crossOrigin = 'anonymous'
       image.onload = function () {
         resolve(image)
       }
