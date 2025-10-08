@@ -1,4 +1,4 @@
-import { useRafFn } from '@vueuse/core'
+import { useElementBounding, useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -57,20 +57,10 @@ export function useSelectionToolboxPosition(
 
   const visible = ref(false)
 
-  // Cache canvas rect to avoid frequent getBoundingClientRect calls
-  let cachedCanvasRect: DOMRect | null = null
-  let resizeObserver: ResizeObserver | null = null
-
-  const updateCanvasRect = () => {
-    cachedCanvasRect = lgCanvas.canvas.getBoundingClientRect()
-  }
-
-  // Initialize cached rect and setup resize observer
-  updateCanvasRect()
-  resizeObserver = new ResizeObserver(() => {
-    updateCanvasRect()
-  })
-  resizeObserver.observe(lgCanvas.canvas)
+  // Use VueUse to reactively track canvas bounding rect
+  const { left: canvasLeft, top: canvasTop } = useElementBounding(
+    lgCanvas.canvas
+  )
 
   /**
    * Update position based on selection
@@ -126,14 +116,14 @@ export function useSelectionToolboxPosition(
   }
 
   const updateTransform = () => {
-    if (!visible.value || !cachedCanvasRect) return
+    if (!visible.value) return
 
     const { scale, offset } = lgCanvas.ds
 
     const screenX =
-      (worldPosition.value.x + offset[0]) * scale + cachedCanvasRect.left
+      (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
     const screenY =
-      (worldPosition.value.y + offset[1]) * scale + cachedCanvasRect.top
+      (worldPosition.value.y + offset[1]) * scale + canvasTop.value
 
     // Update CSS custom properties directly for best performance
     if (toolboxRef.value) {
@@ -255,11 +245,6 @@ export function useSelectionToolboxPosition(
 
   onUnmounted(() => {
     resetMoreOptionsState()
-    // Clean up resize observer
-    if (resizeObserver) {
-      resizeObserver.disconnect()
-      resizeObserver = null
-    }
   })
 
   return {
