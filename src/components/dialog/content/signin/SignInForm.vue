@@ -83,7 +83,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { type SignInData, signInSchema } from '@/schemas/signInSchema'
+import { signInSchema } from '@/schemas/signInSchema'
+import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const authStore = useFirebaseAuthStore()

@@ -12,7 +12,6 @@ import {
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
 import {
-  type WidgetItem,
   demoteWidget,
   isRecommendedWidget,
   matchesPropertyItem,
@@ -20,10 +19,9 @@ import {
   promoteWidget,
   widgetItemToProperty
 } from '@/core/graph/subgraph/proxyWidgetUtils'
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/core/schemas/proxyWidget'
+import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'

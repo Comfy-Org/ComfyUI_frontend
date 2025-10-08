@@ -1,5 +1,6 @@
 import { uniqWith } from 'es-toolkit'
-import { type MaybeRefOrGetter, computed, toValue } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import type { SelectOption } from '@/components/input/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'

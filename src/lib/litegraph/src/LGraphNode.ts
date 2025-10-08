@@ -1,18 +1,20 @@
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
-  type SlotPositionContext,
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
   calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@/utils/colorUtil'
+import type { ColorAdjustOptions } from '@/utils/colorUtil'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
-import { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
+import { LGraphButton } from './LGraphButton'
+import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
@@ -42,12 +44,8 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import {
-  type LGraphNodeConstructor,
-  LiteGraph,
-  type Subgraph,
-  type SubgraphNode
-} from './litegraph'
+import { LiteGraph } from './litegraph'
+import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
 import {
   createBounds,
   isInRect,
@@ -86,7 +84,8 @@ import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { toClass } from './utils/type'
 import { BaseWidget } from './widgets/BaseWidget'
-import { type WidgetTypeMap, toConcreteWidget } from './widgets/widgetMap'
+import { toConcreteWidget } from './widgets/widgetMap'
+import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 

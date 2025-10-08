@@ -156,8 +156,7 @@ import type {
   GroupingStrategyId,
   SortingStrategyId
 } from '@/types/nodeOrganizationTypes'
-import type { TreeNode } from '@/types/treeExplorerTypes'
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
