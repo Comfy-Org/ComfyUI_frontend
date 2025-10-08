@@ -6,8 +6,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import type { Point } from '@/renderer/core/layout/types'
+import { LayoutSource, type Point } from '@/renderer/core/layout/types'
+import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 
 /**
  * Composable for individual Vue node components
@@ -20,6 +20,9 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
 
   // Get transform utilities from TransformPane if available
   const transformState = inject(TransformStateKey)
+
+  // Snap-to-grid functionality
+  const { shouldSnap, applySnapToPosition } = useNodeSnap()
 
   // Get the customRef for this node (shared write access)
   const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
@@ -143,6 +146,29 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
    */
   function endDrag(event: PointerEvent) {
     if (!isDragging.value) return
+
+    // Apply snap to final position if snap was active (matches LiteGraph behavior)
+    if (shouldSnap(event)) {
+      const currentPos = position.value
+      const snappedPos = applySnapToPosition({ ...currentPos })
+      mutations.moveNode(nodeId, snappedPos)
+
+      // Also snap other selected nodes
+      if (
+        otherSelectedNodesStartPositions &&
+        otherSelectedNodesStartPositions.size > 0
+      ) {
+        for (const otherNodeId of otherSelectedNodesStartPositions.keys()) {
+          const nodeLayout = layoutStore.getNodeLayoutRef(otherNodeId).value
+          if (nodeLayout) {
+            const snappedOtherPos = applySnapToPosition({
+              ...nodeLayout.position
+            })
+            mutations.moveNode(otherNodeId, snappedOtherPos)
+          }
+        }
+      }
+    }
 
     isDragging.value = false
     dragStartPos = null

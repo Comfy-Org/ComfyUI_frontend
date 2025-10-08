@@ -1997,8 +1997,8 @@ export class LGraphCanvas
     // Keyboard
     this._key_callback = this.processKey.bind(this)
 
-    canvas.addEventListener('keydown', this._key_callback, true)
-    // keyup event must be bound on the document
+    // Both keydown and keyup on document to capture events even when Vue nodes have focus
+    document.addEventListener('keydown', this._key_callback, true)
     document.addEventListener('keyup', this._key_callback, true)
 
     canvas.addEventListener('dragover', this._doNothing, false)
@@ -2028,7 +2028,7 @@ export class LGraphCanvas
     canvas.removeEventListener('pointerup', this._mouseup_callback!)
     canvas.removeEventListener('pointerdown', this._mousedown_callback!)
     canvas.removeEventListener('wheel', this._mousewheel_callback!)
-    canvas.removeEventListener('keydown', this._key_callback!)
+    document.removeEventListener('keydown', this._key_callback!)
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
     canvas.removeEventListener('dragenter', this._doReturnTrue)
@@ -4696,7 +4696,9 @@ export class LGraphCanvas
 
       // draw nodes
       const { visible_nodes } = this
-      const drawSnapGuides = this.#snapToGrid && this.isDragging
+      const drawSnapGuides =
+        this.#snapToGrid &&
+        (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
       for (const node of visible_nodes) {
         ctx.save()
@@ -6074,7 +6076,9 @@ export class LGraphCanvas
 
     ctx.save()
     ctx.globalAlpha = 0.5 * this.editor_alpha
-    const drawSnapGuides = this.#snapToGrid && this.isDragging
+    const drawSnapGuides =
+      this.#snapToGrid &&
+      (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
     for (const group of groups) {
       // out of the visible area
