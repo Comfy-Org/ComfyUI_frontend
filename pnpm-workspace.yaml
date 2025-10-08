@@ -97,6 +97,9 @@ catalog:
 
 cleanupUnusedCatalogs: true
 
+overrides:
+  '@types/eslint': '-'
+
 ignoredBuiltDependencies:
   - '@firebase/util'
   - protobufjs
