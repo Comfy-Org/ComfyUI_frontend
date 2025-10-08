@@ -239,6 +239,6 @@ const toggleExtensionsPanel = () => {
 </script>
 <style scoped>
 .conflict-list-item:hover {
-  background-color: rgba(0, 122, 255, 0.2);
+  background-color: rgb(0 122 255 / 0.2);
 }
 </style>
