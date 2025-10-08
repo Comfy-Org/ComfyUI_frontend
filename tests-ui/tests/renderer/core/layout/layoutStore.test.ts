@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
@@ -165,13 +165,56 @@ describe('layoutStore CRDT operations', () => {
       actor: layoutStore.getCurrentActor()
     })
 
-    // Wait for async notification
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    // Wait for onChange callback to be called (uses setTimeout internally)
+    await vi.waitFor(() => {
+      expect(changes.length).toBeGreaterThanOrEqual(1)
+    })
 
-    expect(changes.length).toBeGreaterThanOrEqual(1)
     const lastChange = changes[changes.length - 1]
     expect(lastChange.source).toBe('vue')
     expect(lastChange.operation.actor).toBe('user-123')
+
+    unsubscribe()
+  })
+
+  it('should emit change when batch updating node bounds', async () => {
+    const nodeId = 'test-node-6'
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const changes: LayoutChange[] = []
+    const unsubscribe = layoutStore.onChange((change) => {
+      changes.push(change)
+    })
+
+    const newBounds = { x: 40, y: 60, width: 220, height: 120 }
+    layoutStore.batchUpdateNodeBounds([{ nodeId, bounds: newBounds }])
+
+    // Wait for onChange callback to be called (uses setTimeout internally)
+    await vi.waitFor(() => {
+      expect(changes.length).toBeGreaterThan(0)
+      const lastChange = changes[changes.length - 1]
+      expect(lastChange.operation.type).toBe('batchUpdateBounds')
+    })
+
+    const lastChange = changes[changes.length - 1]
+    if (lastChange.operation.type === 'batchUpdateBounds') {
+      expect(lastChange.nodeIds).toContain(nodeId)
+      expect(lastChange.operation.bounds[nodeId]?.bounds).toEqual(newBounds)
+    }
+
+    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    expect(nodeRef.value?.position).toEqual({ x: 40, y: 60 })
+    expect(nodeRef.value?.size).toEqual({ width: 220, height: 120 })
 
     unsubscribe()
   })

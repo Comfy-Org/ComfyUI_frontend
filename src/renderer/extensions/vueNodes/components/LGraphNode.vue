@@ -154,6 +154,7 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { useNodeResize } from '../composables/useNodeResize'
+import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -247,7 +248,7 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
@@ -269,13 +270,19 @@ const handleContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  if (size.value && transformState?.camera) {
-    const scale = transformState.camera.z
-    const screenSize = {
-      width: size.value.width * scale,
-      height: size.value.height * scale
-    }
-    resize(screenSize)
+  // Set initial DOM size from layout store, but respect intrinsic content minimum
+  if (size.value && nodeContainerRef.value && transformState) {
+    const intrinsicMin = calculateIntrinsicSize(
+      nodeContainerRef.value,
+      transformState.camera.z
+    )
+
+    // Use the larger of stored size or intrinsic minimum
+    const finalWidth = Math.max(size.value.width, intrinsicMin.width)
+    const finalHeight = Math.max(size.value.height, intrinsicMin.height)
+
+    nodeContainerRef.value.style.width = `${finalWidth}px`
+    nodeContainerRef.value.style.height = `${finalHeight}px`
   }
 })
 

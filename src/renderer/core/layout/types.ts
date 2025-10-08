@@ -122,7 +122,7 @@ type OperationType =
   | 'createNode'
   | 'deleteNode'
   | 'setNodeVisibility'
-  | 'batchUpdate'
+  | 'batchUpdateBounds'
   | 'createLink'
   | 'deleteLink'
   | 'createReroute'
@@ -184,10 +184,11 @@ interface SetNodeVisibilityOperation extends NodeOpBase {
 /**
  * Batch update operation for atomic multi-property changes
  */
-interface BatchUpdateOperation extends NodeOpBase {
-  type: 'batchUpdate'
-  updates: Partial<NodeLayout>
-  previousValues: Partial<NodeLayout>
+export interface BatchUpdateBoundsOperation extends OperationMeta {
+  entity: 'node'
+  type: 'batchUpdateBounds'
+  nodeIds: NodeId[]
+  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
 }
 
 /**
@@ -244,7 +245,7 @@ export type LayoutOperation =
   | CreateNodeOperation
   | DeleteNodeOperation
   | SetNodeVisibilityOperation
-  | BatchUpdateOperation
+  | BatchUpdateBoundsOperation
   | CreateLinkOperation
   | DeleteLinkOperation
   | CreateRerouteOperation

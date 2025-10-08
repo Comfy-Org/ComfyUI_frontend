@@ -267,6 +267,11 @@ export function useLinkLayoutSync() {
           case 'resizeNode':
             recomputeLinksForNode(parseInt(change.operation.nodeId))
             break
+          case 'batchUpdateBounds':
+            for (const nodeId of change.operation.nodeIds) {
+              recomputeLinksForNode(parseInt(nodeId))
+            }
+            break
           case 'createLink':
             recomputeLinkById(change.operation.linkId)
             break
