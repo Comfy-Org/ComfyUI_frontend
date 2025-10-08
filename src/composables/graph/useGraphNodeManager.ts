@@ -85,13 +85,28 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     if (!nodeRef || !currentData) return
 
-    const refreshedData = extractVueNodeData(nodeRef)
+    // Only extract slot-related data instead of full node re-extraction
+    const slotMetadata = new Map<string, WidgetSlotMetadata>()
+
+    nodeRef.inputs?.forEach((input, index) => {
+      if (!input?.widget?.name) return
+      slotMetadata.set(input.widget.name, {
+        index,
+        linked: input.link != null
+      })
+    })
+
+    // Update only widgets with new slot metadata, keeping other widget data intact
+    const updatedWidgets = currentData.widgets?.map((widget) => {
+      const slotInfo = slotMetadata.get(widget.name)
+      return slotInfo ? { ...widget, slotMetadata: slotInfo } : widget
+    })
 
     vueNodeData.set(nodeId, {
       ...currentData,
-      widgets: refreshedData.widgets,
-      inputs: refreshedData.inputs,
-      outputs: refreshedData.outputs
+      widgets: updatedWidgets,
+      inputs: nodeRef.inputs ? [...nodeRef.inputs] : undefined,
+      outputs: nodeRef.outputs ? [...nodeRef.outputs] : undefined
     })
   }
 
