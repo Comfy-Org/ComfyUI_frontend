@@ -135,10 +135,6 @@ export const getComponent = (type: string): Component | null => {
   return widgets.get(canonicalType)?.component || null
 }
 
-const isSupported = (type: string): boolean => {
-  const canonicalType = getCanonicalType(type)
-  return widgets.has(canonicalType)
-}
 
 export const isEssential = (type: string): boolean => {
   const canonicalType = getCanonicalType(type)
