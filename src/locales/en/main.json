@@ -2070,21 +2070,21 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
     },
-    "seed": {
-      "controlHeaderBefore": "Automatically update the seed value",
+    "numberControl": {
+      "controlHeaderBefore": "Automatically update the value",
       "controlHeaderAfter": "AFTER",
       "controlHeaderBefore2": "BEFORE", 
       "controlHeaderEnd": "running the workflow:",
       "linkToGlobal": "Link to",
-      "linkToGlobalSeed": "Global Seed",
-      "linkToGlobalDesc": "Unique seed linked to the Global Seed's control setting",
-      "randomize": "Randomize Seed",
-      "randomizeDesc": "Shuffles the seed randomly after each generation",
-      "increment": "Increment Seed", 
-      "incrementDesc": "Adds 1 to the seed number",
-      "decrement": "Decrement Seed",
-      "decrementDesc": "Subtracts 1 from the seed number",
-      "editSettings": "Edit seed control settings"
+      "linkToGlobalSeed": "Global Value",
+      "linkToGlobalDesc": "Unique value linked to the Global Value's control setting",
+      "randomize": "Randomize Value",
+      "randomizeDesc": "Shuffles the value randomly after each generation",
+      "increment": "Increment Value", 
+      "incrementDesc": "Adds 1 to the value number",
+      "decrement": "Decrement Value",
+      "decrementDesc": "Subtracts 1 from the value number",
+      "editSettings": "Edit control settings"
     }
   },
   "nodeHelpPage": {
