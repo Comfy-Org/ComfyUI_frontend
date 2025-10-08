@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import {
   type LGraphCanvas,
   LGraphNode,
@@ -66,14 +67,17 @@ describe('Subgraph proxyWidgets', () => {
       subgraphNode.widgets[1].name
     )
   })
-  test('Will not modify existing widgets', () => {
+  test('Will serialize existing widgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
-    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+    innerNodes[0].addWidget('text', 'istringWidget', 'value', () => {})
     subgraphNode.addWidget('text', 'stringWidget', 'value', () => {})
-    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
+    const proxyWidgets = parseProxyWidgets(subgraphNode.properties.proxyWidgets)
+    proxyWidgets.push(['1', 'istringWidget'])
+    subgraphNode.properties.proxyWidgets = proxyWidgets
     expect(subgraphNode.widgets.length).toBe(2)
-    subgraphNode.properties.proxyWidgets = []
-    expect(subgraphNode.widgets.length).toBe(1)
+    expect(subgraphNode.widgets[0].name).toBe('stringWidget')
+    subgraphNode.properties.proxyWidgets = [proxyWidgets[1], proxyWidgets[0]]
+    expect(subgraphNode.widgets[0].name).toBe('1: istringWidget')
   })
   test('Will mirror changes to value', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
