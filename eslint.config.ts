@@ -45,13 +45,17 @@ const commonParserOptions = {
 export default defineConfig([
   {
     ignores: [
-      'src/scripts/*',
-      'src/extensions/core/*',
-      'src/types/vue-shim.d.ts',
-      'packages/registry-types/src/comfyRegistryTypes.ts',
-      'src/types/generatedManagerTypes.ts',
+      '.i18nrc.cjs',
+      'components.d.ts',
+      'lint-staged.config.js',
+      'vitest.setup.ts',
       '**/vite.config.*.timestamp*',
-      '**/vitest.config.*.timestamp*'
+      '**/vitest.config.*.timestamp*',
+      'packages/registry-types/src/comfyRegistryTypes.ts',
+      'src/extensions/core/*',
+      'src/scripts/*',
+      'src/types/generatedManagerTypes.ts',
+      'src/types/vue-shim.d.ts'
     ]
   },
   {
