@@ -6,6 +6,8 @@ import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
+import { NumberControlMode } from '../composables/useNumberControl'
+
 type ControlSettings = {
   linkToGlobal: boolean
   randomize: boolean
@@ -60,25 +62,24 @@ const widgetControlMode = computed(() =>
   settingStore.get('Comfy.WidgetControlMode')
 )
 
-const controlSettings = ref<ControlSettings>({
-  linkToGlobal: false,
-  randomize: true,
-  increment: false,
-  decrement: false
-})
+const props = defineProps<{
+  controlMode: NumberControlMode
+}>()
+
+const emit = defineEmits<{
+  'update:controlMode': [mode: NumberControlMode]
+}>()
 
 const handleToggle = (key: keyof ControlSettings) => {
-  // If turning on, turn off all others first
-  if (!controlSettings.value[key]) {
-    controlSettings.value = {
-      linkToGlobal: false,
-      randomize: false,
-      increment: false,
-      decrement: false
-    }
-  }
-  // Toggle the clicked one
-  controlSettings.value[key] = !controlSettings.value[key]
+  const newMode =
+    props.controlMode === key
+      ? NumberControlMode.FIXED
+      : (key as NumberControlMode)
+  emit('update:controlMode', newMode)
+}
+
+const isActive = (key: keyof ControlSettings) => {
+  return props.controlMode === key
 }
 </script>
 
@@ -86,15 +87,15 @@ const handleToggle = (key: keyof ControlSettings) => {
   <Popover ref="popover">
     <div class="w-105 p-4 space-y-4">
       <p class="text-sm text-slate-100">
-        {{ $t('widgets.seed.controlHeaderBefore') }}
+        {{ $t('widgets.numberControl.controlHeaderBefore') }}
         <span class="text-white">
           {{
             widgetControlMode === 'before'
-              ? $t('widgets.seed.controlHeaderBefore2')
-              : $t('widgets.seed.controlHeaderAfter')
+              ? $t('widgets.numberControl.controlHeaderBefore2')
+              : $t('widgets.numberControl.controlHeaderAfter')
           }}
         </span>
-        {{ $t('widgets.seed.controlHeaderEnd') }}
+        {{ $t('widgets.numberControl.controlHeaderEnd') }}
       </p>
 
       <div class="space-y-2">
@@ -115,20 +116,20 @@ const handleToggle = (key: keyof ControlSettings) => {
             <div class="min-w-0 flex-1">
               <div class="text-sm font-normal">
                 <span v-if="option.key === 'linkToGlobal'">
-                  {{ $t('widgets.seed.linkToGlobal') }}
-                  <em>{{ $t('widgets.seed.linkToGlobalSeed') }}</em>
+                  {{ $t('widgets.numberControl.linkToGlobal') }}
+                  <em>{{ $t('widgets.numberControl.linkToGlobalSeed') }}</em>
                 </span>
                 <span v-else>
-                  {{ $t(`widgets.seed.${option.title}`) }}
+                  {{ $t(`widgets.numberControl.${option.title}`) }}
                 </span>
               </div>
               <div class="text-sm font-normal text-slate-100">
-                {{ $t(`widgets.seed.${option.description}`) }}
+                {{ $t(`widgets.numberControl.${option.description}`) }}
               </div>
             </div>
           </div>
           <ToggleSwitch
-            :model-value="controlSettings[option.key]"
+            :model-value="isActive(option.key)"
             class="flex-shrink-0"
             @update:model-value="handleToggle(option.key)"
           />
@@ -139,7 +140,7 @@ const handleToggle = (key: keyof ControlSettings) => {
 
       <Button severity="secondary" size="small" class="w-full">
         <i class="pi pi-cog mr-2 text-xs" />
-        {{ $t('widgets.seed.editSettings') }}
+        {{ $t('widgets.numberControl.editSettings') }}
       </Button>
     </div>
   </Popover>

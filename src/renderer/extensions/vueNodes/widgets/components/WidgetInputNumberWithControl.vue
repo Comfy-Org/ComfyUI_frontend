@@ -4,16 +4,19 @@ import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import SeedControlPopover from './SeedControlPopover.vue'
+import { useNumberControl } from '../composables/useNumberControl'
+import NumberControlPopover from './NumberControlPopover.vue'
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 
-defineProps<{
+const props = defineProps<{
   widget: SimplifiedWidget<number>
   readonly?: boolean
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
 const popover = ref()
+
+const { controlMode } = useNumberControl(modelValue, props.widget.options || {})
 
 const togglePopover = (event: Event) => {
   popover.value.toggle(event)
@@ -37,6 +40,10 @@ const togglePopover = (event: Event) => {
       <i class="icon-[lucide--shuffle] text-blue-100" />
     </Button>
 
-    <SeedControlPopover ref="popover" />
+    <NumberControlPopover
+      ref="popover"
+      :control-mode="controlMode"
+      @update:control-mode="controlMode = $event"
+    />
   </div>
 </template>
