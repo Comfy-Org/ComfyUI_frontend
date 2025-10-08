@@ -9,10 +9,38 @@ import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import {
+  configs as tseslintConfigs,
+  parser as tseslintParser
+} from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
 
 const extraFileExtensions = ['.vue']
+
+const commonGlobals = {
+  ...globals.browser,
+  __COMFYUI_FRONTEND_VERSION__: 'readonly'
+} as const
+
+const settings = {
+  'import/resolver': {
+    typescript: true,
+    node: true
+  },
+  tailwindcss: {
+    config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
+    functions: ['cn', 'clsx', 'tw']
+  }
+} as const
+
+const commonParserOptions = {
+  parser: tseslintParser,
+  projectService: true,
+  tsConfigRootDir: import.meta.dirname,
+  ecmaVersion: 2020,
+  sourceType: 'module',
+  extraFileExtensions
+} as const
 
 export default defineConfig([
   {
@@ -28,13 +56,11 @@ export default defineConfig([
   },
   {
     files: ['./**/*.{ts,mts}'],
+    settings,
     languageOptions: {
-      globals: {
-        ...globals.browser,
-        __COMFYUI_FRONTEND_VERSION__: 'readonly'
-      },
+      globals: commonGlobals,
       parserOptions: {
-        parser: tseslint.parser,
+        ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
             'vite.config.mts',
@@ -43,55 +69,22 @@ export default defineConfig([
             'playwright.config.ts',
             'playwright.i18n.config.ts'
           ]
-        },
-        tsConfigRootDir: import.meta.dirname,
-        ecmaVersion: 2020,
-        sourceType: 'module',
-        extraFileExtensions
-      }
-    },
-    settings: {
-      'import/resolver': {
-        typescript: true,
-        node: true
-      },
-      tailwindcss: {
-        config:
-          import.meta.dirname + '/packages/design-system/src/css/style.css'
+        }
       }
     }
   },
   {
     files: ['./**/*.vue'],
+    settings,
     languageOptions: {
-      globals: {
-        ...globals.browser,
-        __COMFYUI_FRONTEND_VERSION__: 'readonly'
-      },
+      globals: commonGlobals,
       parser: vueParser,
-      parserOptions: {
-        parser: tseslint.parser,
-        projectService: true,
-        tsConfigRootDir: import.meta.dirname,
-        ecmaVersion: 2020,
-        sourceType: 'module',
-        extraFileExtensions
-      }
-    },
-    settings: {
-      'import/resolver': {
-        typescript: true,
-        node: true
-      },
-      tailwindcss: {
-        config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
-        functions: ['cn', 'clsx', 'tw']
-      }
+      parserOptions: commonParserOptions
     }
   },
   pluginJs.configs.recommended,
-  // eslint-disable-next-line import-x/no-named-as-default-member
-  tseslint.configs.recommended,
+
+  tseslintConfigs.recommended,
   // @ts-expect-error Bad types in the plugin
   tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
