@@ -21,8 +21,13 @@ jobs:
         ) &&
         startsWith(github.event.comment.body, '/update-playwright') )
     steps:
-      - name: Checkout workflow repo
+      - name: Initial Checkout
         uses: actions/checkout@v5
+      - name: Pull Request Checkout
+        run: gh pr checkout ${{ github.event.issue.number }}
+        if: github.event.issue.pull_request && github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup Frontend
         uses: ./.github/actions/setup-frontend
       - name: Setup Playwright
@@ -47,7 +52,6 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          gh pr checkout ${{ github.event.issue.number }}
           git add browser_tests
           git commit -m "[automated] Update test expectations"
           git push
