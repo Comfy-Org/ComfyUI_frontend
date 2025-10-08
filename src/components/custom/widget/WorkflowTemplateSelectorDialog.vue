@@ -87,7 +87,7 @@
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
-            class="min-w-[270px]"
+            class="w-[250px]"
           >
             <template #icon>
               <i-lucide:arrow-up-down />
@@ -620,10 +620,7 @@ const sortOptions = computed(() => [
     value: 'default'
   },
   {
-    name: t(
-      'templateWorkflows.sort.vramLowToHigh',
-      'VRAM Utilization (Low to High)'
-    ),
+    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
     value: 'vram-low-to-high'
   },
   {
