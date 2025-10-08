@@ -53,7 +53,7 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git add browser_tests
-          git commit -m "[automated] Update test expectations"
+          git diff --cached --quiet || git commit -m "[automated] Update test expectations"
           git push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
