@@ -71,6 +71,10 @@ test.describe('Minimap', () => {
     await toggleButton.click()
     await comfyPage.nextFrame()
 
+    // Open zoom controls dropdown first
+    await zoomControlsButton.click()
+    await comfyPage.nextFrame()
+
     await expect(minimapContainer).toBeVisible()
     await expect(toggleButton).toContainText('Hide Minimap')
   })
