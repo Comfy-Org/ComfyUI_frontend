@@ -19,7 +19,7 @@
         v-if="imageError"
         class="w-full h-[352px] flex flex-col items-center justify-center text-white text-center bg-gray-800/50"
       >
-        <i-lucide:image-off class="w-12 h-12 mb-2 text-gray-400" />
+        <i class="icon-[lucide--image-off] w-12 h-12 mb-2 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
         <p class="text-xs text-gray-400 mt-1">
           {{ getImageFilename(currentImageUrl) }}
@@ -53,7 +53,7 @@
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i-lucide:venetian-mask class="w-4 h-4" />
+          <i class="icon-[lucide--venetian-mask] w-4 h-4" />
         </button>
 
         <!-- Download Button -->
@@ -63,7 +63,7 @@
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i-lucide:download class="w-4 h-4" />
+          <i class="icon-[lucide--download] w-4 h-4" />
         </button>
 
         <!-- Close Button -->
@@ -73,7 +73,7 @@
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
-          <i-lucide:x class="w-4 h-4" />
+          <i class="icon-[lucide--x] w-4 h-4" />
         </button>
       </div>
 

@@ -10,7 +10,7 @@
     @click="() => commandStore.execute('Comfy.PublishSubgraph')"
   >
     <template #icon>
-      <i-lucide:book-open />
+      <i class="icon-[lucide--book-open]" />
     </template>
   </Button>
 </template>
