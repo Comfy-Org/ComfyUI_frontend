@@ -1,4 +1,4 @@
-import { useRafFn } from '@vueuse/core'
+import { useElementBounding, useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -57,6 +57,11 @@ export function useSelectionToolboxPosition(
 
   const visible = ref(false)
 
+  // Use VueUse to reactively track canvas bounding rect
+  const { left: canvasLeft, top: canvasTop } = useElementBounding(
+    lgCanvas.canvas
+  )
+
   /**
    * Update position based on selection
    */
@@ -114,11 +119,11 @@ export function useSelectionToolboxPosition(
     if (!visible.value) return
 
     const { scale, offset } = lgCanvas.ds
-    const canvasRect = lgCanvas.canvas.getBoundingClientRect()
 
     const screenX =
-      (worldPosition.value.x + offset[0]) * scale + canvasRect.left
-    const screenY = (worldPosition.value.y + offset[1]) * scale + canvasRect.top
+      (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
+    const screenY =
+      (worldPosition.value.y + offset[1]) * scale + canvasTop.value
 
     // Update CSS custom properties directly for best performance
     if (toolboxRef.value) {

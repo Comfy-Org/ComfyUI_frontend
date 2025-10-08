@@ -9,12 +9,12 @@ import type {
   Point,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import {
-  type CanvasColour,
-  type CanvasPointer,
-  type CanvasPointerEvent,
-  type IContextMenuValue,
-  LiteGraph
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasColour,
+  CanvasPointer,
+  CanvasPointerEvent,
+  IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'

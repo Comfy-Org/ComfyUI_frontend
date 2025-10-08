@@ -1,7 +1,7 @@
 <template>
   <div class="relative inline-flex items-center">
     <IconButton @click="toggle">
-      <i-lucide:more-vertical class="text-sm" />
+      <i class="icon-[lucide--more-vertical] text-sm" />
     </IconButton>
 
     <Popover

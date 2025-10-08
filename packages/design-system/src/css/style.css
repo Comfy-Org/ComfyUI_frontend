@@ -9,35 +9,6 @@
 
 @config '../../tailwind.config.ts';
 
-:root {
-  --fg-color: #000;
-  --bg-color: #fff;
-  --comfy-menu-bg: #353535;
-  --comfy-menu-secondary-bg: #292929;
-  --comfy-topbar-height: 2.5rem;
-  --comfy-input-bg: #222;
-  --input-text: #ddd;
-  --descrip-text: #999;
-  --drag-text: #ccc;
-  --error-text: #ff4444;
-  --border-color: #4e4e4e;
-  --tr-even-bg-color: #222;
-  --tr-odd-bg-color: #353535;
-  --primary-bg: #236692;
-  --primary-fg: #ffffff;
-  --primary-hover-bg: #3485bb;
-  --primary-hover-fg: #ffffff;
-  --content-bg: #e0e0e0;
-  --content-fg: #000;
-  --content-hover-bg: #adadad;
-  --content-hover-fg: #000;
-
-  /* Code styling colors for help menu*/
-  --code-text-color: rgba(0, 122, 255, 1);
-  --code-bg-color: rgba(96, 165, 250, 0.2);
-  --code-block-bg-color: rgba(60, 60, 60, 0.12);
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
     --fg-color: #fff;
@@ -129,6 +100,35 @@
 }
 
 :root {
+  --fg-color: #000;
+  --bg-color: #fff;
+  --comfy-menu-bg: #353535;
+  --comfy-menu-secondary-bg: #292929;
+  --comfy-topbar-height: 2.5rem;
+  --comfy-input-bg: #222;
+  --input-text: #ddd;
+  --descrip-text: #999;
+  --drag-text: #ccc;
+  --error-text: #ff4444;
+  --border-color: #4e4e4e;
+  --tr-even-bg-color: #222;
+  --tr-odd-bg-color: #353535;
+  --primary-bg: #236692;
+  --primary-fg: #ffffff;
+  --primary-hover-bg: #3485bb;
+  --primary-hover-fg: #ffffff;
+  --content-bg: #e0e0e0;
+  --content-fg: #000;
+  --content-hover-bg: #adadad;
+  --content-hover-fg: #000;
+
+  /* Code styling colors for help menu*/
+  --code-text-color: rgb(0 122 255 / 1);
+  --code-bg-color: rgb(96 165 250 / 0.2);
+  --code-block-bg-color: rgb(60 60 60 / 0.12);
+
+  /* --- */
+
   --backdrop: var(--color-white);
   --dialog-surface: var(--color-neutral-200);
   --node-component-border: var(--color-gray-400);
@@ -150,7 +150,9 @@
   --node-component-tooltip-border: var(--color-sand-100);
   --node-component-tooltip-surface: var(--color-white);
   --node-component-widget-input: var(--fg-color);
-  --node-component-widget-input-surface: rgb(from var(--color-zinc-500) r g b / 10%);
+  --node-component-widget-input-surface: rgb(
+    from var(--color-zinc-500) r g b / 10%
+  );
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
   --node-stroke: var(--color-stone-100);
 }
@@ -496,7 +498,7 @@ body {
 
 /* Strong and emphasis */
 .comfy-markdown-content strong {
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .comfy-markdown-content em {
@@ -507,7 +509,7 @@ body {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
   z-index: 100; /* Sit on top */
-  padding: 30px 30px 10px 30px;
+  padding: 30px 30px 10px;
   background-color: var(--comfy-menu-bg); /* Modal background */
   color: var(--error-text);
   box-shadow: 0 0 20px #888888;
@@ -555,8 +557,8 @@ body {
   background-color: var(--comfy-menu-bg);
   font-family: sans-serif;
   padding: 10px;
-  border-radius: 0 8px 8px 8px;
-  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+  border-radius: 0 8px 8px;
+  box-shadow: 3px 3px 8px rgb(0 0 0 / 0.4);
 }
 
 .comfy-menu-header {
@@ -574,7 +576,7 @@ body {
 }
 
 .comfy-menu .comfy-menu-actions button {
-  background-color: rgba(0, 0, 0, 0);
+  background-color: rgb(0 0 0 / 0);
   padding: 0;
   border: none;
   cursor: pointer;
@@ -689,7 +691,7 @@ span.drag-handle::after {
   min-width: 160px;
   margin: 0;
   padding: 3px;
-  font-weight: normal;
+  font-weight: 400;
 }
 
 .comfy-list-items button {
@@ -806,7 +808,7 @@ dialog {
 }
 
 dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(0 0 0 / 0.5);
 }
 
 .comfy-dialog.comfyui-dialog.comfy-modal {
@@ -1012,9 +1014,6 @@ audio.comfy-audio.empty-audio-widget {
 .lg-node {
   /* Disable text selection on all nodes */
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
 }
 
 .lg-node .lg-slot,
@@ -1041,7 +1040,6 @@ audio.comfy-audio.empty-audio-widget {
   filter: none;
   backdrop-filter: none;
   text-shadow: none;
-  -webkit-mask-image: none;
   mask-image: none;
   clip-path: none;
   background-image: none;

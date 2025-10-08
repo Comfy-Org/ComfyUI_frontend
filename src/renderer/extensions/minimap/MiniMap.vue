@@ -28,7 +28,7 @@
         @click.stop="toggleOptionsPanel"
       >
         <template #icon>
-          <i-lucide:settings-2 />
+          <i class="icon-[lucide--settings-2]" />
         </template>
       </Button>
       <Button
@@ -40,7 +40,7 @@
         @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
         <template #icon>
-          <i-lucide:x />
+          <i class="icon-[lucide--x]" />
         </template>
       </Button>
 

@@ -17,7 +17,7 @@
 }
 
 .comfyui-button:active {
-  box-shadow: inset 1px 1px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 1px 1px 10px rgb(0 0 0 / 0.5);
 }
 
 .comfyui-button:disabled {
@@ -39,13 +39,13 @@
 /* Popup */
 .comfyui-popup {
   position: absolute;
-  left: var(--left);
-  right: var(--right);
   top: var(--top);
+  right: var(--right);
   bottom: var(--bottom);
+  left: var(--left);
   z-index: 2000;
   max-height: calc(100vh - var(--limit) - 10px);
-  box-shadow: 3px 3px 5px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 5px 0 rgb(0 0 0 / 0.3);
 }
 
 .comfyui-popup:not(.open) {

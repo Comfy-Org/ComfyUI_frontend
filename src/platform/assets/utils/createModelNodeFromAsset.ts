@@ -1,12 +1,7 @@
-import {
-  type LGraphNode,
-  LiteGraph,
-  type Point
-} from '@/lib/litegraph/src/litegraph'
-import {
-  type AssetItem,
-  assetItemSchema
-} from '@/platform/assets/schemas/assetSchema'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, Point } from '@/lib/litegraph/src/litegraph'
+import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   MISSING_TAG,
   MODELS_TAG

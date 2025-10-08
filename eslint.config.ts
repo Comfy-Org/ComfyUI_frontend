@@ -1,6 +1,7 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
@@ -47,6 +48,12 @@ export default defineConfig([
         sourceType: 'module',
         extraFileExtensions
       }
+    },
+    settings: {
+      'import/resolver': {
+        typescript: true,
+        node: true
+      }
     }
   },
   {
@@ -65,13 +72,24 @@ export default defineConfig([
         sourceType: 'module',
         extraFileExtensions
       }
+    },
+    settings: {
+      'import/resolver': {
+        typescript: true,
+        node: true
+      }
     }
   },
   pluginJs.configs.recommended,
+  // eslint-disable-next-line import-x/no-named-as-default-member
   tseslint.configs.recommended,
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
+  // @ts-expect-error Bad types in the plugin
+  importX.flatConfigs.recommended,
+  // @ts-expect-error Bad types in the plugin
+  importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
@@ -91,6 +109,9 @@ export default defineConfig([
           allowInterfaces: 'always'
         }
       ],
+      'import-x/consistent-type-specifier-style': ['error', 'prefer-top-level'],
+      'import-x/no-useless-path-segments': 'error',
+      'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'vue/no-v-html': 'off',
@@ -98,6 +119,7 @@ export default defineConfig([
       'vue/no-restricted-class': ['error', '/^dark:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
+      'vue/match-component-import-name': 'error',
       /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-properties': 'error',

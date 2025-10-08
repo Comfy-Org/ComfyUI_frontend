@@ -1,6 +1,6 @@
 <template>
   <div :class="wrapperStyle" @click="focusInput">
-    <i-lucide:search :class="iconColorStyle" />
+    <i class="icon-[lucide--search]" :class="iconColorStyle" />
     <InputText
       ref="input"
       v-model="internalSearchQuery"

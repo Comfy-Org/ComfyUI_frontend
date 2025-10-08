@@ -1,9 +1,11 @@
 import {
-  type ExecutableLGraphNode,
   ExecutableNodeDTO,
-  type ISlotType,
-  LGraphEventMode,
-  type LGraphNode
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  ExecutableLGraphNode,
+  ISlotType,
+  LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
 export const GROUP = Symbol()

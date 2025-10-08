@@ -15,10 +15,10 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import { t } from '@/i18n'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import {
-  type DialogComponentProps,
-  type ShowDialogOptions,
-  useDialogStore
+import { useDialogStore } from '@/stores/dialogStore'
+import type {
+  DialogComponentProps,
+  ShowDialogOptions
 } from '@/stores/dialogStore'
 import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
 import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'

@@ -46,10 +46,12 @@ import {
   restoreMoreOptionsSignal
 } from '@/composables/canvas/useSelectionToolboxPosition'
 import {
-  type MenuOption,
-  type SubMenuOption,
   registerNodeOptionsInstance,
   useMoreOptionsMenu
+} from '@/composables/graph/useMoreOptionsMenu'
+import type {
+  MenuOption,
+  SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'

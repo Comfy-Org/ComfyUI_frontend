@@ -2,7 +2,8 @@ import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type {
   ISubgraphInput,
@@ -27,11 +28,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 
-import {
-  type ExecutableLGraphNode,
-  ExecutableNodeDTO,
-  type ExecutionId
-} from './ExecutableNodeDTO'
+import { ExecutableNodeDTO } from './ExecutableNodeDTO'
+import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
 
 /**
