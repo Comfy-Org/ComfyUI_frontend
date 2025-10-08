@@ -16,11 +16,11 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import FormDropdown from './form/dropdown/FormDropdown.vue'
-import {
-  AssetKindKey,
-  type DropdownItem,
-  type FilterOption,
-  type SelectedKey
+import { AssetKindKey } from './form/dropdown/types'
+import type {
+  DropdownItem,
+  FilterOption,
+  SelectedKey
 } from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

@@ -33,9 +33,10 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import InputNumber, {
-  type InputNumberBlurEvent,
-  type InputNumberInputEvent
+import InputNumber from 'primevue/inputnumber'
+import type {
+  InputNumberBlurEvent,
+  InputNumberInputEvent
 } from 'primevue/inputnumber'
 import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'

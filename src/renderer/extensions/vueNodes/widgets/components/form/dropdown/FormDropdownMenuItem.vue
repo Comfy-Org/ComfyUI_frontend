@@ -4,7 +4,8 @@ import { computed, inject, ref } from 'vue'
 import LazyImage from '@/components/common/LazyImage.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-import { AssetKindKey, type LayoutMode } from './types'
+import { AssetKindKey } from './types'
+import type { LayoutMode } from './types'
 
 interface Props {
   index: number

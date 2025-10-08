@@ -1,4 +1,5 @@
-import { type Fn, useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
+import type { Fn } from '@vueuse/core'
 import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -14,10 +15,8 @@ import type {
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import {
-  type SlotDropCandidate,
-  useSlotLinkDragState
-} from '@/renderer/core/canvas/links/slotLinkDragState'
+import { useSlotLinkDragState } from '@/renderer/core/canvas/links/slotLinkDragState'
+import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'

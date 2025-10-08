@@ -56,8 +56,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import { highlightQuery } from '@/utils/formatUtil'
-import { formatNumberWithSuffix } from '@/utils/formatUtil'
+import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>

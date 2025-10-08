@@ -73,7 +73,8 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { useI18n } from 'vue-i18n'
 
-import { type SignUpData, signUpSchema } from '@/schemas/signInSchema'
+import { signUpSchema } from '@/schemas/signInSchema'
+import type { SignUpData } from '@/schemas/signInSchema'
 
 import PasswordFields from './PasswordFields.vue'
 

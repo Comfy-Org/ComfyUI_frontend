@@ -4,8 +4,10 @@ import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import {
   assetFilenameSchema,
@@ -14,20 +16,15 @@ import {
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  type InputSpec,
-  isComboInputSpec
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type {
+  ComboInputSpec,
+  InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  type BaseDOMWidget,
-  ComponentWidgetImpl,
-  addWidget
-} from '@/scripts/domWidget'
-import {
-  type ComfyWidgetConstructorV2,
-  addValueControlWidgets
-} from '@/scripts/widgets'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/scripts/domWidget'
+import { addValueControlWidgets } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { fileNameMappingService } from '@/services/fileNameMappingService'
 
 import { useRemoteWidget } from './useRemoteWidget'

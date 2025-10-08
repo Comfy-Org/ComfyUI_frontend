@@ -27,12 +27,8 @@ import ColorPicker from 'primevue/colorpicker'
 import { computed, ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  type ColorFormat,
-  type HSB,
-  isColorFormat,
-  toHexFromFormat
-} from '@/utils/colorUtil'
+import { isColorFormat, toHexFromFormat } from '@/utils/colorUtil'
+import type { ColorFormat, HSB } from '@/utils/colorUtil'
 import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,

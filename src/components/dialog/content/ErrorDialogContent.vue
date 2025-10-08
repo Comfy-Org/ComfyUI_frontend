@@ -65,10 +65,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import {
-  type ErrorReportData,
-  generateErrorReport
-} from '@/utils/errorReportUtil'
+import { generateErrorReport } from '@/utils/errorReportUtil'
+import type { ErrorReportData } from '@/utils/errorReportUtil'
 
 const { error } = defineProps<{
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
