@@ -251,8 +251,10 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   border: 0 solid #000;
   display: flex;
   align-items: flex-end;
-  flex-flow: row-reverse nowrap;
-  place-content: flex-start flex-end;
+  flex-direction: row-reverse;
+  flex-wrap: nowrap;
+  align-content: flex-start;
+  justify-content: flex-end;
 }
 
 ._sb_inherit {
