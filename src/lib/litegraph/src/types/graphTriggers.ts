@@ -1,8 +1,9 @@
+import type { NodeId } from '../LGraphNode'
 import type { NodeSlotType } from './globalEnums'
 
 interface NodePropertyChangedEvent {
   type: 'node:property:changed'
-  nodeId: string | number
+  nodeId: NodeId
   property: string
   oldValue: unknown
   newValue: unknown
@@ -10,12 +11,12 @@ interface NodePropertyChangedEvent {
 
 interface NodeSlotErrorsChangedEvent {
   type: 'node:slot-errors:changed'
-  nodeId: string | number
+  nodeId: NodeId
 }
 
 interface NodeSlotLinksChangedEvent {
   type: 'node:slot-links:changed'
-  nodeId: string | number
+  nodeId: NodeId
   slotType: NodeSlotType
   slotIndex: number
   connected: boolean
