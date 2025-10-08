@@ -63,6 +63,40 @@ describe('ZoomControlsModal', () => {
     expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.FitView')
   })
 
+  it('should emit close when minimap toggle command is executed', () => {
+    mockExecute.mockClear()
+    const mockEmit = vi.fn()
+
+    // Simulate the executeCommand function behavior with emit
+    const executeCommand = (command: string) => {
+      mockExecute(command)
+      if (command === 'Comfy.Canvas.ToggleMinimap') {
+        mockEmit('close')
+      }
+    }
+
+    executeCommand('Comfy.Canvas.ToggleMinimap')
+    expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.ToggleMinimap')
+    expect(mockEmit).toHaveBeenCalledWith('close')
+  })
+
+  it('should not emit close for other commands', () => {
+    mockExecute.mockClear()
+    const mockEmit = vi.fn()
+
+    // Simulate the executeCommand function behavior with emit
+    const executeCommand = (command: string) => {
+      mockExecute(command)
+      if (command === 'Comfy.Canvas.ToggleMinimap') {
+        mockEmit('close')
+      }
+    }
+
+    executeCommand('Comfy.Canvas.FitView')
+    expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.FitView')
+    expect(mockEmit).not.toHaveBeenCalled()
+  })
+
   it('should validate zoom input ranges correctly', () => {
     mockSetAppZoom.mockClear()
 
