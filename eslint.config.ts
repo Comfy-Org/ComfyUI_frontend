@@ -89,7 +89,9 @@ export default defineConfig([
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
-  // @ts-expect-error Bad types in the plugin
+  // Difference in typecheck on CI vs Local
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Bad types in the plugin
   tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
