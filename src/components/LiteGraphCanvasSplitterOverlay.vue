@@ -54,7 +54,10 @@
         </SplitterPanel>
 
         <SplitterPanel :size="80" class="flex flex-col">
-          <div class="flex pt-2 pointer-events-none">
+          <div
+            v-if="!workspaceStore.focusMode"
+            class="flex pt-2 pointer-events-none"
+          >
             <div
               class="flex-1 min-w-0 pointer-events-auto"
               :class="{ 'ml-2': sidebarPanelVisible }"
@@ -117,6 +120,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 
 // Maintain support for legacy topbar elements attached by custom scripts
@@ -128,6 +132,7 @@ onMounted(() => {
   }
 })
 
+const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
