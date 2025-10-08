@@ -9,7 +9,11 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -23,6 +27,8 @@ export function useWorkflowPersistence() {
   const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+  const workflowDraftStore = useWorkflowDraftStore()
+
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -44,6 +50,9 @@ export function useWorkflowPersistence() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return
+
     const workflow = JSON.stringify(comfyApp.rootGraph.serialize())
 
     try {
@@ -68,33 +77,31 @@ export function useWorkflowPersistence() {
       })
       throw error
     }
-  }
 
-  const loadWorkflowFromStorage = async (
-    json: string | null,
-    workflowName: string | null
-  ) => {
-    if (!json) return false
-    const workflow = JSON.parse(json)
-    await comfyApp.loadGraphData(workflow, true, true, workflowName)
-    return true
+    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
+      workflowDraftStore.removeDraft(activeWorkflow.path)
+      return
+    }
+
+    workflowDraftStore.saveDraft(activeWorkflow.path, {
+      data: workflow,
+      updatedAt: Date.now(),
+      name: activeWorkflow.key,
+      isTemporary: activeWorkflow.isTemporary
+    })
   }
 
   const loadPreviousWorkflowFromStorage = async () => {
     const workflowName = getStorageValue('Comfy.PreviousWorkflow')
-    const clientId = api.initialClientId ?? api.clientId
+    const preferredPath = workflowName
+      ? `${ComfyWorkflow.basePath}${workflowName}`
+      : null
 
-    // Try loading from session storage first
-    if (clientId) {
-      const sessionWorkflow = sessionStorage.getItem(`workflow:${clientId}`)
-      if (await loadWorkflowFromStorage(sessionWorkflow, workflowName)) {
-        return true
-      }
-    }
-
-    // Fall back to local storage
-    const localWorkflow = localStorage.getItem('workflow')
-    return await loadWorkflowFromStorage(localWorkflow, workflowName)
+    return await workflowDraftStore.loadPersistedWorkflow({
+      workflowName,
+      preferredPath,
+      fallbackToLatestDraft: !workflowName
+    })
   }
 
   const loadDefaultWorkflow = async () => {
@@ -158,11 +165,12 @@ export function useWorkflowPersistence() {
       }
 
       const paths = openWorkflows.value
-        .filter((workflow) => workflow?.isPersisted)
-        .map((workflow) => workflow.path)
-      const activeIndex = openWorkflows.value.findIndex(
-        (workflow) => workflow.path === activeWorkflow.value?.path
-      )
+        .map((workflow) => workflow?.path)
+        .filter(
+          (path): path is string =>
+            typeof path === 'string' && path.startsWith(ComfyWorkflow.basePath)
+        )
+      const activeIndex = paths.indexOf(activeWorkflow.value.path)
 
       return { paths, activeIndex }
     }
@@ -171,10 +179,10 @@ export function useWorkflowPersistence() {
   // Get storage values before setting watchers
   const storedWorkflows = JSON.parse(
     getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
-  )
+  ) as string[]
   const storedActiveIndex = JSON.parse(
     getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
-  )
+  ) as number
 
   watch(restoreState, ({ paths, activeIndex }) => {
     if (workflowPersistenceEnabled.value) {
@@ -186,12 +194,19 @@ export function useWorkflowPersistence() {
   const restoreWorkflowTabsState = () => {
     if (!workflowPersistenceEnabled.value) return
     const isRestorable = storedWorkflows?.length > 0 && storedActiveIndex >= 0
-    if (isRestorable) {
-      workflowStore.openWorkflowsInBackground({
-        left: storedWorkflows.slice(0, storedActiveIndex),
-        right: storedWorkflows.slice(storedActiveIndex)
-      })
-    }
+    if (!isRestorable) return
+
+    storedWorkflows.forEach((path: string) => {
+      if (workflowStore.getWorkflowByPath(path)) return
+      const draft = workflowDraftStore.getDraft(path)
+      if (!draft?.isTemporary) return
+      workflowStore.createTemporary(draft.name)
+    })
+
+    workflowStore.openWorkflowsInBackground({
+      left: storedWorkflows.slice(0, storedActiveIndex),
+      right: storedWorkflows.slice(storedActiveIndex)
+    })
   }
 
   return {
