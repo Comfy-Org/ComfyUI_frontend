@@ -8,7 +8,8 @@ import type {
   Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'

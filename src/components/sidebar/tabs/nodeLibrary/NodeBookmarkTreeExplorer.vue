@@ -34,11 +34,11 @@ import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { TreeNode } from '@/types/treeExplorerTypes'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,
-  TreeExplorerNode
+  TreeExplorerNode,
+  TreeNode
 } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{

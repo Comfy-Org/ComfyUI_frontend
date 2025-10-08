@@ -8,7 +8,8 @@ import {
   SliderTrack,
   useForwardPropsEmits
 } from 'reka-ui'
-import { type HTMLAttributes, ref } from 'vue'
+import { ref } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 

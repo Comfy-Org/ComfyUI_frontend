@@ -1,5 +1,5 @@
 <template>
   <div
-    class="lod-fallback absolute inset-0 w-full h-full bg-zinc-300 dark-theme:bg-zinc-800"
+    class="lod-fallback absolute inset-0 w-full h-full bg-node-component-widget-skeleton-surface"
   ></div>
 </template>

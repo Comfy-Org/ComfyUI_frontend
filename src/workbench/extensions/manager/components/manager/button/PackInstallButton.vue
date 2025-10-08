@@ -33,8 +33,10 @@ import type { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
-import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type {
+  ConflictDetail,
+  ConflictDetectionResult
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']

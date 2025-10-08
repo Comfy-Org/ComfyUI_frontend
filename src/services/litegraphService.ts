@@ -8,17 +8,19 @@ import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtil
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
-  type IContextMenuValue,
   LGraphBadge,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
-  type Point,
   RenderShape,
-  type Subgraph,
   SubgraphNode,
   createBounds
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  Point,
+  Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,
@@ -853,14 +855,14 @@ export const useLitegraphService = () => {
       return []
     }
   }
-  function updatePreviews(node: LGraphNode) {
+  function updatePreviews(node: LGraphNode, callback?: () => void) {
     try {
-      unsafeUpdatePreviews.call(node)
+      unsafeUpdatePreviews.call(node, callback)
     } catch (error) {
       console.error('Error drawing node background', error)
     }
   }
-  function unsafeUpdatePreviews(this: LGraphNode) {
+  function unsafeUpdatePreviews(this: LGraphNode, callback?: () => void) {
     if (this.flags.collapsed) return
 
     const nodeOutputStore = useNodeOutputStore()
@@ -891,9 +893,9 @@ export const useLitegraphService = () => {
         (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
         isVideoNode(this)
       if (isVideo) {
-        useNodeVideo(this).showPreview()
+        useNodeVideo(this, callback).showPreview()
       } else {
-        useNodeImage(this).showPreview()
+        useNodeImage(this, callback).showPreview()
       }
     }
 

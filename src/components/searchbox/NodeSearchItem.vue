@@ -56,8 +56,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import { highlightQuery } from '@/utils/formatUtil'
-import { formatNumberWithSuffix } from '@/utils/formatUtil'
+import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>
@@ -89,7 +88,7 @@ const props = defineProps<{
 :deep(.highlight) {
   background-color: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
-  font-weight: bold;
+  font-weight: 700;
   border-radius: 0.25rem;
   padding: 0 0.125rem;
   margin: -0.125rem 0.125rem;

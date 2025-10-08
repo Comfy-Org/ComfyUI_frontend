@@ -7,15 +7,15 @@
     }
   ],
   "rules": {
-    "import-notation": "url",
+    "import-notation": "string",
     "font-family-no-missing-generic-family-keyword": true,
-    "declaration-block-no-redundant-longhand-properties": true,
     "declaration-property-value-no-unknown": [
       true,
       {
         "ignoreProperties": {
           "speak": ["none"],
-          "app-region": ["drag", "no-drag"]
+          "app-region": ["drag", "no-drag"],
+          "/^(width|height)$/": ["/^v-bind/"]
         }
       }
     ],
@@ -35,7 +35,7 @@
     "selector-max-type": 2,
     "declaration-block-no-duplicate-properties": true,
     "block-no-empty": true,
-    "no-descending-specificity": true,
+    "no-descending-specificity": null,
     "no-duplicate-at-import-rules": true,
     "at-rule-no-unknown": [
       true,
@@ -57,7 +57,8 @@
       true,
       {
         "ignoreFunctions": [
-          "theme"
+          "theme",
+          "v-bind"
         ]
       }
     ]

@@ -42,6 +42,7 @@ export function isHostWhitelisted(rawHost: string): boolean {
   if (isLocalhostLabel(host)) return true
   if (isIPv4Loopback(host)) return true
   if (isIPv6Loopback(host)) return true
+  if (isComfyOrgHost(host)) return true
   const normalizedList = HOST_WHITELIST.map(normalizeHost)
   return normalizedList.includes(host)
 }
@@ -88,4 +89,10 @@ function isIPv6Loopback(h: string): boolean {
 
   // Require that at least one group was actually compressed: i.e., leftCount + rightCount ≤ 6.
   return leftCount + rightCount <= 6
+}
+
+const COMFY_ORG_HOST = /\.comfy\.org$/
+
+function isComfyOrgHost(h: string): boolean {
+  return COMFY_ORG_HOST.test(h)
 }

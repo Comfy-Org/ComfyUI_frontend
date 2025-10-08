@@ -12,7 +12,6 @@ import {
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
 import {
-  type WidgetItem,
   demoteWidget,
   isRecommendedWidget,
   matchesPropertyItem,
@@ -20,10 +19,9 @@ import {
   promoteWidget,
   widgetItemToProperty
 } from '@/core/graph/subgraph/proxyWidgetUtils'
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/core/schemas/proxyWidget'
+import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -246,7 +244,7 @@ onBeforeUnmount(() => {
   />
   <div
     v-if="filteredActive.length"
-    class="pt-1 pb-4 border-b-1 border-sand-100 dark-theme:border-charcoal-600"
+    class="pt-1 pb-4 border-b-1 border-node-component-border"
   >
     <div class="flex py-0 px-4 justify-between">
       <div class="text-slate-100 text-[9px] font-semibold uppercase">
@@ -302,7 +300,7 @@ onBeforeUnmount(() => {
   </div>
   <div
     v-if="recommendedWidgets.length"
-    class="justify-center flex py-4 border-t-1 border-sand-100 dark-theme:border-charcoal-600"
+    class="justify-center flex py-4 border-t-1 border-node-component-border"
   >
     <Button
       size="small"

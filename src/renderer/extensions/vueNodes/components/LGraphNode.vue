@@ -8,12 +8,12 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-white dark-theme:bg-charcoal-800',
+        'bg-node-component-surface',
         'lg-node absolute rounded-2xl touch-none',
-        'border-1 border-solid border-gray-400 dark-theme:border-stone-200',
+        'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
+          'hover:ring-7 ring-node-component-ring',
         'outline-transparent -outline-offset-2 outline-2',
         borderClass,
         outlineClass,
@@ -113,12 +113,19 @@
         </div>
       </div>
     </template>
+
+    <!-- Resize handle -->
+    <div
+      v-if="!isCollapsed"
+      class="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-0 hover:opacity-20 hover:bg-white transition-opacity duration-200"
+      @pointerdown.stop="startResize"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -145,6 +152,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useNodeResize } from '../composables/useNodeResize'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -173,6 +181,11 @@ const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
 // Inject transform state for coordinate conversion
 const transformState = inject(TransformStateKey)
+if (!transformState) {
+  throw new Error(
+    'TransformState must be provided for node resize functionality'
+  )
+}
 
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
@@ -264,6 +277,19 @@ onMounted(() => {
   }
 })
 
+const { startResize } = useNodeResize(
+  (newSize, element) => {
+    // Apply size directly to DOM element - ResizeObserver will pick this up
+    if (isCollapsed.value) return
+
+    element.style.width = `${newSize.width}px`
+    element.style.height = `${newSize.height}px`
+  },
+  {
+    transformState
+  }
+)
+
 // Track collapsed state
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 
@@ -274,8 +300,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses =
-  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full lod-toggle'
+const separatorClasses = 'bg-node-component-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
@@ -287,17 +312,17 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   return (
-    (hasAnyError.value && 'border-error dark-theme:border-error') ||
-    (executing.value && 'border-blue-500')
+    (hasAnyError.value && 'border-error') ||
+    (executing.value && 'border-node-executing')
   )
 })
 
 const outlineClass = computed(() => {
-  return (
+  return cn(
     isSelected.value &&
-    ((hasAnyError.value && 'outline-error dark-theme:outline-error') ||
-      (executing.value && 'outline-blue-500 dark-theme:outline-blue-500') ||
-      'outline-black dark-theme:outline-white')
+      ((hasAnyError.value && 'outline-error ') ||
+        (executing.value && 'outline-node-executing') ||
+        'outline-node-component-outline')
   )
 })
 
@@ -371,5 +396,4 @@ const nodeMedia = computed(() => {
 })
 
 const nodeContainerRef = ref()
-provide('tooltipContainer', nodeContainerRef)
 </script>

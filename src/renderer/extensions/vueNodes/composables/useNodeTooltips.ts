@@ -1,5 +1,9 @@
-import type { TooltipDirectivePassThroughOptions } from 'primevue'
-import { type MaybeRef, type Ref, computed, ref, unref } from 'vue'
+import type {
+  TooltipDirectivePassThroughOptions,
+  TooltipPassThroughMethodOptions
+} from 'primevue/tooltip'
+import { computed, ref, unref } from 'vue'
+import type { MaybeRef } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'
@@ -77,10 +81,7 @@ function setupGlobalTooltipHiding() {
  * Composable for managing Vue node tooltips
  * Provides tooltip text for node headers, slots, and widgets
  */
-export function useNodeTooltips(
-  nodeType: MaybeRef<string>,
-  containerRef?: Ref<HTMLElement | undefined>
-) {
+export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const nodeDefStore = useNodeDefStore()
   const settingsStore = useSettingStore()
 
@@ -151,14 +152,7 @@ export function useNodeTooltips(
     const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
     const tooltipText = text || ''
 
-    const config: {
-      value: string
-      showDelay: number
-      hideDelay: number
-      disabled: boolean
-      appendTo?: HTMLElement
-      pt?: TooltipDirectivePassThroughOptions
-    } = {
+    return {
       value: tooltipText,
       showDelay: tooltipDelay as number,
       hideDelay: 0, // Immediate hiding
@@ -170,26 +164,18 @@ export function useNodeTooltips(
       pt: {
         text: {
           class:
-            'border-sand-100 bg-pure-white dark-theme:bg-charcoal-800 border dark-theme:border-slate-300 rounded-md px-4 py-2 text-charcoal-700 dark-theme:text-pure-white text-sm font-normal leading-tight max-w-75 shadow-none'
+            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-75 shadow-none'
         },
-        arrow: ({ context }) => ({
+        arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
           class: cn(
-            context?.top && 'border-t-sand-100 dark-theme:border-t-slate-300',
-            context?.bottom &&
-              'border-b-sand-100 dark-theme:border-b-slate-300',
-            context?.left && 'border-l-sand-100 dark-theme:border-l-slate-300',
-            context?.right && 'border-r-sand-100 dark-theme:border-r-slate-300'
+            context.top && 'border-t-node-component-tooltip-border',
+            context.bottom && 'border-b-node-component-tooltip-border',
+            context.left && 'border-l-node-component-tooltip-border ',
+            context.right && 'border-r-node-component-tooltip-border'
           )
         })
-      }
+      } as TooltipDirectivePassThroughOptions
     }
-
-    // If we have a container reference, append tooltips to it
-    if (containerRef?.value) {
-      config.appendTo = containerRef.value
-    }
-
-    return config
   }
 
   return {

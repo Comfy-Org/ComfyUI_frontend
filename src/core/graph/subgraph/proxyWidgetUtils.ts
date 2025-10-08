@@ -1,7 +1,5 @@
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/core/schemas/proxyWidget'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type {
   IContextMenuValue,
   LGraphNode
@@ -119,9 +117,15 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
-    //NOTE: Since this operation is async, previews still don't exist after the single frame
-    //Add an onLoad callback to updatePreviews?
-    updatePreviews(node)
+    function checkWidgets() {
+      updatePreviews(node)
+      const widget = node.widgets?.find((w) => w.name.startsWith('$$'))
+      if (!widget) return
+      const pw = getProxyWidgets(subgraphNode)
+      if (pw.some(matchesPropertyItem([node, widget]))) return
+      promoteWidget(node, widget, [subgraphNode])
+    }
+    requestAnimationFrame(() => updatePreviews(node, checkWidgets))
   }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)

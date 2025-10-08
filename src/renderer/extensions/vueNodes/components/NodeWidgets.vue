@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, inject, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import type {
   SafeWidgetData,
@@ -98,11 +98,8 @@ onErrorCaptured((error) => {
 })
 
 const nodeType = computed(() => nodeData?.type || '')
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
-  nodeType.value,
-  tooltipContainer
+  nodeType.value
 )
 
 interface ProcessedWidget {
