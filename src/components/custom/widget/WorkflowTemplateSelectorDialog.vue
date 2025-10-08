@@ -29,7 +29,7 @@
           @click="resetFilters"
         >
           <template #icon>
-            <i-lucide:filter-x />
+            <i class="icon-[lucide--filter-x]" />
           </template>
         </IconTextButton>
       </div>
