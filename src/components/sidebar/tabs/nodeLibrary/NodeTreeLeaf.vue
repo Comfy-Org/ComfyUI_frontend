@@ -32,7 +32,7 @@
           @click.stop="editBlueprint"
         >
           <template #icon>
-            <i-lucide:square-pen />
+            <i class="icon-[lucide--square-pen]" />
           </template>
         </Button>
       </template>

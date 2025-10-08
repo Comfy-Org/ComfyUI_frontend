@@ -3,114 +3,165 @@ name: Update Playwright Expectations
 
 on:
   pull_request:
-    types: [ labeled ]
+    types: [labeled]
+  issue_comment:
+    types: [created]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    if: github.event.label.name == 'New Browser Test Expectations'
+    if: >
+      ( github.event_name == 'pull_request' && github.event.label.name == 'New Browser Test Expectations' ) ||
+      ( github.event.issue.pull_request && 
+        github.event_name == 'issue_comment' &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        ) &&
+        startsWith(github.event.comment.body, '/update-playwright') )
     steps:
-    - name: Checkout workflow repo
-      uses: actions/checkout@v5
-    - name: Setup Frontend
-      uses: ./.github/actions/setup-frontend
-    - name: Setup Playwright
-      uses: ./.github/actions/setup-playwright
-    - name: Locate failed screenshot manifest artifact
-      id: locate-manifest
-      uses: actions/github-script@v8
-      with:
-        script: |
-          const { owner, repo } = context.repo
-          const headSha = context.payload.pull_request.head.sha
+      - name: Initial Checkout
+        uses: actions/checkout@v5
 
-          const { data } = await github.rest.actions.listWorkflowRuns({
-            owner,
-            repo,
-            workflow_id: 'tests-ci.yaml',
-            head_sha: headSha,
-            event: 'pull_request',
-            per_page: 1,
-          })
-          const run = data.workflow_runs?.[0]
+      - name: Pull Request Checkout
+        if: github.event.issue.pull_request && github.event_name == 'issue_comment'
+        run: gh pr checkout ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          let has = 'false'
-          let runId = ''
-          if (run) {
-            runId = String(run.id)
-            const { data: { artifacts = [] } } = await github.rest.actions.listWorkflowRunArtifacts({
+      - name: Setup Frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Locate failed screenshot manifest artifact
+        id: locate-manifest
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            let headSha = ''
+            if (context.eventName === 'pull_request') {
+              headSha = context.payload.pull_request.head.sha
+            } else if (context.eventName === 'issue_comment') {
+              const prNumber = context.payload.issue.number
+              const pr = await github.rest.pulls.get({ owner, repo, pull_number: prNumber })
+              headSha = pr.data.head.sha
+            }
+
+            if (!headSha) {
+              core.setOutput('run_id', '')
+              core.setOutput('has_manifest', 'false')
+              return
+            }
+
+            const { data } = await github.rest.actions.listWorkflowRuns({
               owner,
               repo,
-              run_id: run.id,
-              per_page: 100,
+              workflow_id: 'tests-ci.yaml',
+              head_sha: headSha,
+              event: 'pull_request',
+              per_page: 1,
             })
-            if (artifacts.some(a => a.name === 'failed-screenshot-tests' && !a.expired)) has = 'true'
-          }
-          core.setOutput('run_id', runId)
-          core.setOutput('has_manifest', has)
+            const run = data.workflow_runs?.[0]
 
-    - name: Download failed screenshot manifest
-      if: steps.locate-manifest.outputs.has_manifest == 'true'
-      uses: actions/download-artifact@v4
-      with:
-        run-id: ${{ steps.locate-manifest.outputs.run_id }}
-        name: failed-screenshot-tests
-        path: ComfyUI_frontend/ci-rerun
+            let has = 'false'
+            let runId = ''
+            if (run) {
+              runId = String(run.id)
+              const { data: { artifacts = [] } } = await github.rest.actions.listWorkflowRunArtifacts({
+                owner,
+                repo,
+                run_id: run.id,
+                per_page: 100,
+              })
+              if (artifacts.some(a => a.name === 'failed-screenshot-tests' && !a.expired)) has = 'true'
+            }
+            core.setOutput('run_id', runId)
+            core.setOutput('has_manifest', has)
 
-    - name: Re-run failed screenshot tests and update snapshots
-      id: playwright-tests
-      shell: bash
-      working-directory: ComfyUI_frontend
-      run: |
-        set -euo pipefail
-        if [ ! -d ci-rerun ]; then
-          echo "No manifest found; running full suite as fallback"
-          pnpm exec playwright test --update-snapshots
-          exit 0
-        fi
-        shopt -s nullglob
-        files=(ci-rerun/*.txt)
-        if [ ${#files[@]} -eq 0 ]; then
-          echo "Manifest is empty; running full suite as fallback"
-          pnpm exec playwright test --update-snapshots
-          exit 0
-        fi
-        for f in "${files[@]}"; do
-          project="$(basename "$f" .txt)"
-          mapfile -t lines < "$f"
-          # Filter out blank lines
-          filtered=( )
-          for l in "${lines[@]}"; do
-            [ -n "$l" ] && filtered+=("$l")
-          done
-          if [ ${#filtered[@]} -eq 0 ]; then
-            continue
+      - name: Download failed screenshot manifest
+        if: steps.locate-manifest.outputs.has_manifest == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ steps.locate-manifest.outputs.run_id }}
+          name: failed-screenshot-tests
+          path: ComfyUI_frontend/ci-rerun
+
+      - name: Re-run failed screenshot tests and update snapshots
+        id: playwright-tests
+        shell: bash
+        working-directory: ComfyUI_frontend
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ ! -d ci-rerun ]; then
+            echo "No manifest found; running full suite as fallback"
+            PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+            pnpm exec playwright test --update-snapshots \
+              --reporter=line --reporter=html
+            exit 0
           fi
-          echo "Re-running ${#filtered[@]} tests for project $project"
-          pnpm exec playwright test --project="$project" --update-snapshots "${filtered[@]}"
-        done
-    - uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report
-        path: ComfyUI_frontend/playwright-report/
-        retention-days: 30
-    - name: Debugging info
-      working-directory: ComfyUI_frontend
-      run: |
-        echo "Branch: ${{ github.head_ref }}"
-        git status
-    - name: Commit updated expectations
-      working-directory: ComfyUI_frontend
-      run: |
-        git config --global user.name 'github-actions'
-        git config --global user.email 'github-actions@github.com'
-        git fetch origin ${{ github.head_ref }}
-        git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
-        git add browser_tests
-        if git diff --cached --quiet; then
-          echo "No expectation updates detected; skipping commit."
-        else
-          git commit -m "[automated] Update test expectations"
-          git push origin HEAD:${{ github.head_ref }}
-        fi
+          shopt -s nullglob
+          files=(ci-rerun/*.txt)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "Manifest is empty; running full suite as fallback"
+            PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+            pnpm exec playwright test --update-snapshots \
+              --reporter=line --reporter=html
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            project="$(basename "$f" .txt)"
+            mapfile -t lines < "$f"
+            filtered=( )
+            for l in "${lines[@]}"; do
+              [ -n "$l" ] && filtered+=("$l")
+            done
+            if [ ${#filtered[@]} -eq 0 ]; then
+              continue
+            fi
+            echo "Re-running ${#filtered[@]} tests for project $project"
+            PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+            pnpm exec playwright test --project="$project" --update-snapshots \
+              --reporter=line --reporter=html \
+              "${filtered[@]}"
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: ComfyUI_frontend/playwright-report/
+          retention-days: 30
+
+      - name: Debugging info
+        working-directory: ComfyUI_frontend
+        run: |
+          echo "Branch: ${{ github.head_ref }}"
+          git status
+
+      - name: Commit updated expectations
+        working-directory: ComfyUI_frontend
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            true
+          else
+            git fetch origin ${{ github.head_ref }}
+            git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
+          fi
+          git add browser_tests
+          if git diff --cached --quiet; then
+            echo "No expectation updates detected; skipping commit."
+          else
+            git commit -m "[automated] Update test expectations"
+            if [ "${{ github.event_name }}" = "issue_comment" ]; then
+              git push
+            else
+              git push origin HEAD:${{ github.head_ref }}
+            fi
+          fi
