@@ -25,7 +25,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.Unlock')"
       >
         <template #icon>
-          <i-lucide:mouse-pointer-2 />
+          <i class="icon-[lucide--mouse-pointer-2]" />
         </template>
       </Button>
 
@@ -39,7 +39,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.Lock')"
       >
         <template #icon>
-          <i-lucide:hand />
+          <i class="icon-[lucide--hand]" />
         </template>
       </Button>
 
@@ -56,7 +56,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <template #icon>
-          <i-lucide:focus />
+          <i class="icon-[lucide--focus]" />
         </template>
       </Button>
 
@@ -73,7 +73,7 @@
       >
         <span class="inline-flex text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i-lucide:chevron-down />
+          <i class="icon-[lucide--chevron-down]" />
         </span>
       </Button>
 
@@ -90,7 +90,7 @@
         @click="() => commandStore.execute('Workspace.ToggleFocusMode')"
       >
         <template #icon>
-          <i-lucide:lightbulb />
+          <i class="icon-[lucide--lightbulb]" />
         </template>
       </Button>
 
@@ -111,7 +111,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       >
         <template #icon>
-          <i-lucide:route-off />
+          <i class="icon-[lucide--route-off]" />
         </template>
       </Button>
     </ButtonGroup>

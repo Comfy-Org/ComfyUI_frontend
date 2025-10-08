@@ -14,10 +14,10 @@
     <span v-if="option.shortcut" class="text-xs opacity-60">
       {{ option.shortcut }}
     </span>
-    <i-lucide:chevron-right
+    <i
       v-if="option.hasSubmenu"
       :size="14"
-      class="opacity-60"
+      class="icon-[lucide--chevron-right] opacity-60"
     />
     <Badge
       v-if="option.badge"

@@ -75,7 +75,7 @@
 
     <!-- Chevron size identical to current -->
     <template #dropdownicon>
-      <i-lucide:chevron-down class="text-lg text-neutral-400" />
+      <i class="icon-[lucide--chevron-down] text-lg text-neutral-400" />
     </template>
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
@@ -89,9 +89,9 @@
               : 'bg-neutral-100 dark-theme:bg-zinc-700'
           "
         >
-          <i-lucide:check
+          <i
             v-if="slotProps.selected"
-            class="text-xs text-bold text-white"
+            class="icon-[lucide--check] text-xs text-bold text-white"
           />
         </div>
         <Button

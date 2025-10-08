@@ -73,9 +73,9 @@ const searchQuery = defineModel<string>('searchQuery')
           v-if="items.length === 0"
           class="flex justify-center items-center absolute inset-0"
         >
-          <i-lucide:circle-off
+          <i
             title="No items"
-            class="size-30 text-zinc-500/20"
+            class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
           />
         </div>
         <!-- Item -->

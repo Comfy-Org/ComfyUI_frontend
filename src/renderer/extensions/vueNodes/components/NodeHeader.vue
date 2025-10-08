@@ -50,9 +50,9 @@
             @edit="handleTitleEdit"
             @cancel="handleTitleCancel"
           />
-          <i-lucide:pin
+          <i
             v-if="isPinned"
-            class="size-5 text-node-component-header-icon"
+            class="icon-[lucide--pin] size-5 text-node-component-header-icon"
             data-testid="node-pin-indicator"
           />
         </div>

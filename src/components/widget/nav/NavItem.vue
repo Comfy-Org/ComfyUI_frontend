@@ -10,7 +10,7 @@
     @click="onClick"
   >
     <NavIcon v-if="icon" :icon="icon" />
-    <i-lucide:folder v-else class="text-xs text-neutral" />
+    <i v-else class="icon-[lucide--folder] text-xs text-neutral" />
     <span class="flex items-center">
       <slot></slot>
     </span>

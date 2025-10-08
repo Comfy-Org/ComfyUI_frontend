@@ -7,7 +7,7 @@
     data-testid="refresh-button"
     @click="refreshSelected"
   >
-    <i-lucide:refresh-cw class="w-4 h-4" />
+    <i class="icon-[lucide--refresh-cw] w-4 h-4" />
   </Button>
 </template>
 

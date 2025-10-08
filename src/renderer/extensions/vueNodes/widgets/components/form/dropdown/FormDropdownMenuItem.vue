@@ -93,7 +93,9 @@ function handleVideoLoad(event: Event) {
         v-if="selected"
         class="rounded-full bg-blue-500 border-1 border-white size-4 absolute top-1 left-1"
       >
-        <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
+        <i
+          class="icon-[lucide--check] size-3 text-white -translate-y-[0.5px]"
+        />
       </div>
       <video
         v-if="mediaSrc && isVideo"

@@ -3,7 +3,7 @@
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
-          <i-lucide:puzzle class="text-neutral" />
+          <i class="icon-[lucide--puzzle] text-neutral" />
         </template>
         <template #header-title>
           <span class="text-neutral text-base">{{ t('g.title') }}</span>
@@ -19,7 +19,7 @@
       <div class="flex gap-2">
         <IconTextButton type="primary" label="Upload Model" @click="() => {}">
           <template #icon>
-            <i-lucide:upload />
+            <i class="icon-[lucide--upload]" />
           </template>
         </IconTextButton>
         <MoreButton>
@@ -34,7 +34,7 @@
               "
             >
               <template #icon>
-                <i-lucide:download />
+                <i class="icon-[lucide--download]" />
               </template>
             </IconTextButton>
             <IconTextButton
@@ -47,7 +47,7 @@
               "
             >
               <template #icon>
-                <i-lucide:scroll />
+                <i class="icon-[lucide--scroll]" />
               </template>
             </IconTextButton>
           </template>
@@ -79,7 +79,7 @@
           class="w-[135px]"
         >
           <template #icon>
-            <i-lucide:filter />
+            <i class="icon-[lucide--filter]" />
           </template>
         </SingleSelect>
       </div>
@@ -99,7 +99,7 @@
                   class="!bg-white !text-neutral-900"
                   @click="() => {}"
                 >
-                  <i-lucide:info />
+                  <i class="icon-[lucide--info]" />
                 </IconButton>
               </template>
               <template #bottom-right>
@@ -107,7 +107,7 @@
                 <SquareChip label="1.2 MB" />
                 <SquareChip label="LoRA">
                   <template #icon>
-                    <i-lucide:folder />
+                    <i class="icon-[lucide--folder]" />
                   </template>
                 </SquareChip>
               </template>
