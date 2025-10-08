@@ -14,47 +14,51 @@
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2.5 relative">
+    <div class="flex items-center justify-between gap-2.5">
       <!-- Collapse/Expand Button -->
-      <div class="flex items-center lod-toggle shrink-0 px-0.5">
-        <IconButton
-          size="fit-content"
-          type="transparent"
-          data-testid="node-collapse-button"
-          @click.stop="handleCollapse"
-          @dblclick.stop
+      <div class="relative flex items-center gap-2.5">
+        <div class="flex items-center lod-toggle shrink-0 px-0.5">
+          <IconButton
+            size="fit-content"
+            type="transparent"
+            data-testid="node-collapse-button"
+            @click.stop="handleCollapse"
+            @dblclick.stop
+          >
+            <i
+              :class="
+                cn(
+                  'icon-[lucide--chevron-down] size-5 transition-transform',
+                  collapsed && '-rotate-90'
+                )
+              "
+              class="text-xs leading-none relative top-px text-node-component-header-icon"
+            ></i>
+          </IconButton>
+        </div>
+
+        <!-- Node Title -->
+        <div
+          v-tooltip.top="tooltipConfig"
+          class="text-sm font-bold truncate flex-1 lod-toggle flex items-center gap-2"
+          data-testid="node-title"
         >
+          <EditableText
+            :model-value="displayTitle"
+            :is-editing="isEditing"
+            :input-attrs="{ 'data-testid': 'node-title-input' }"
+            @edit="handleTitleEdit"
+            @cancel="handleTitleCancel"
+          />
           <i
-            :class="
-              cn(
-                'icon-[lucide--chevron-down] size-5 transition-transform',
-                collapsed && '-rotate-90'
-              )
-            "
-            class="text-xs leading-none relative top-px text-node-component-header-icon"
-          ></i>
-        </IconButton>
+            v-if="isPinned"
+            class="icon-[lucide--pin] size-5 text-node-component-header-icon"
+            data-testid="node-pin-indicator"
+          />
+        </div>
+        <LODFallback />
       </div>
 
-      <!-- Node Title -->
-      <div
-        v-tooltip.top="tooltipConfig"
-        class="text-sm font-bold truncate flex-1 lod-toggle flex items-center gap-2"
-        data-testid="node-title"
-      >
-        <EditableText
-          :model-value="displayTitle"
-          :is-editing="isEditing"
-          :input-attrs="{ 'data-testid': 'node-title-input' }"
-          @edit="handleTitleEdit"
-          @cancel="handleTitleCancel"
-        />
-        <i-lucide:pin
-          v-if="isPinned"
-          class="size-5 text-node-component-header-icon"
-          data-testid="node-pin-indicator"
-        />
-      </div>
       <div class="flex items-center lod-toggle shrink-0">
         <IconButton
           v-if="isSubgraphNode"
@@ -70,7 +74,6 @@
           ></i>
         </IconButton>
       </div>
-      <LODFallback />
     </div>
   </div>
 </template>
