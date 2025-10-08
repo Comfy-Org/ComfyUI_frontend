@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
 
@@ -16,12 +17,13 @@ const mockFormatKeySequence = vi.fn().mockReturnValue('Ctrl+')
 const mockSetAppZoom = vi.fn()
 const mockSettingGet = vi.fn().mockReturnValue(true)
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 // Mock dependencies
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
 
 vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
   useMinimap: () => ({
@@ -57,6 +59,7 @@ const createWrapper = (props = {}) => {
       ...props
     },
     global: {
+      plugins: [i18n],
       stubs: {
         Button: false,
         InputNumber: false
@@ -145,11 +148,11 @@ describe('ZoomControlsModal', () => {
     mockSetAppZoom.mockClear()
     const wrapper = createWrapper()
 
-    const input = wrapper.find('input[type="text"]')
-    expect(input.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent({ name: 'InputNumber' })
+    expect(inputNumber.exists()).toBe(true)
 
-    await input.setValue('150')
-    await input.trigger('input')
+    // Emit the input event with PrimeVue's InputNumberInputEvent structure
+    await inputNumber.vm.$emit('input', { value: 150 })
 
     expect(mockSetAppZoom).toHaveBeenCalledWith(150)
   })
@@ -158,16 +161,14 @@ describe('ZoomControlsModal', () => {
     mockSetAppZoom.mockClear()
     const wrapper = createWrapper()
 
-    const input = wrapper.find('input[type="text"]')
-    expect(input.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent({ name: 'InputNumber' })
+    expect(inputNumber.exists()).toBe(true)
 
     // Test out of range values
-    await input.setValue('0')
-    await input.trigger('input')
+    await inputNumber.vm.$emit('input', { value: 0 })
     expect(mockSetAppZoom).not.toHaveBeenCalled()
 
-    await input.setValue('1001')
-    await input.trigger('input')
+    await inputNumber.vm.$emit('input', { value: 1001 })
     expect(mockSetAppZoom).not.toHaveBeenCalled()
   })
 
