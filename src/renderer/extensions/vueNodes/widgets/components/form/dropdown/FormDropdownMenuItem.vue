@@ -95,7 +95,7 @@ function handleVideoLoad(event: Event) {
         class="absolute top-1 left-1 size-4 rounded-full border-1 border-white bg-blue-500"
       >
         <i
-          class="icon-[lucide--check] size-3 -translate-y-[0.5px] text-white"
+          class="icon-[lucide--check] size-3 translate-y-[-0.5px] text-white"
         />
       </div>
       <video

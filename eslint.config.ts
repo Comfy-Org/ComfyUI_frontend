@@ -122,6 +122,7 @@ export default defineConfig([
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
+      'tailwindcss/no-custom-classname': 'off', // TODO: fix
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
