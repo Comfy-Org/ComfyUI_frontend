@@ -4,6 +4,7 @@ import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
+import tailwind from 'eslint-plugin-tailwindcss'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -53,6 +54,10 @@ export default defineConfig([
       'import/resolver': {
         typescript: true,
         node: true
+      },
+      tailwindcss: {
+        config:
+          import.meta.dirname + '/packages/design-system/src/css/style.css'
       }
     }
   },
@@ -77,12 +82,18 @@ export default defineConfig([
       'import/resolver': {
         typescript: true,
         node: true
+      },
+      tailwindcss: {
+        config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
+        functions: ['cn', 'clsx', 'tw']
       }
     }
   },
   pluginJs.configs.recommended,
   // eslint-disable-next-line import-x/no-named-as-default-member
   tseslint.configs.recommended,
+  // @ts-expect-error Bad types in the plugin
+  tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
