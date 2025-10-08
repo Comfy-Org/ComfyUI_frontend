@@ -15,8 +15,11 @@
       :class="isOverflowing ? 'sticky top-0' : ''"
     />
     <div
+      ref="contentMeasureRef"
       :class="
-        isOverflowing ? 'side-tool-bar-container overflow-y-auto' : 'contents'
+        isOverflowing
+          ? 'side-tool-bar-container overflow-y-auto'
+          : 'flex flex-col h-full'
       "
     >
       <div class="sidebar-item-group">
@@ -37,7 +40,7 @@
         <SidebarTemplatesButton />
       </div>
 
-      <div ref="bottomToolbarRef" class="sidebar-item-group mt-auto">
+      <div class="sidebar-item-group mt-auto">
         <SidebarLogoutIcon
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
@@ -46,7 +49,6 @@
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
       </div>
-      <div ref="overflowCheckRef"></div>
     </div>
   </nav>
 </template>
@@ -60,8 +62,8 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -78,7 +80,7 @@ const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
-const overflowCheckRef = ref<HTMLElement>()
+const contentMeasureRef = ref<HTMLElement>()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
@@ -105,22 +107,22 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 
 const isOverflowing = ref(false)
 
-const buffer = 30 // Pixels of buffer zone
+const EXIT_OVERFLOW_MARGIN = 60
 const checkOverflow = debounce(() => {
-  if (!overflowCheckRef.value) return
+  if (!sideToolbarRef.value || !contentMeasureRef.value) return
 
-  const h = window.innerHeight
-  const b = overflowCheckRef.value.getBoundingClientRect().bottom + 7
+  const containerHeight = sideToolbarRef.value.clientHeight
+  const contentHeight = contentMeasureRef.value.scrollHeight
 
   if (isOverflowing.value) {
-    isOverflowing.value = h < b - buffer
+    isOverflowing.value = containerHeight < contentHeight + EXIT_OVERFLOW_MARGIN
   } else {
-    isOverflowing.value = h < b
+    isOverflowing.value = containerHeight < contentHeight
   }
-}, 10)
+}, 16)
 
 onMounted(() => {
-  if (!sideToolbarRef.value || !overflowCheckRef.value) return
+  if (!sideToolbarRef.value) return
 
   const overflowObserver = useResizeObserver(
     sideToolbarRef.value,
