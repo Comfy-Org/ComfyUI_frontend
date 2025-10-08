@@ -746,7 +746,10 @@ button.comfy-queue-btn {
 
 @media only screen and (max-height: 850px) {
   .comfy-menu {
-    inset: 0 0 0 auto !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: auto !important;
+    right: 0 !important;
     border-radius: 0;
   }
 
@@ -809,7 +812,10 @@ dialog::backdrop {
 }
 
 .comfy-dialog.comfyui-dialog.comfy-modal {
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   transform: none;
 }
 
@@ -821,7 +827,8 @@ dialog::backdrop {
 }
 
 .comfy-dialog .comfy-modal-content {
-  flex-flow: row wrap;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   color: var(--fg-color);
 }
@@ -893,7 +900,8 @@ dialog::backdrop {
   overflow: hidden;
   display: flex;
   flex-wrap: wrap;
-  place-content: flex-start center;
+  align-content: flex-start;
+  justify-content: center;
 }
 
 .comfy-img-preview img {

@@ -39,7 +39,10 @@
 /* Popup */
 .comfyui-popup {
   position: absolute;
-  inset: var(--top) var(--right) var(--bottom) var(--left);
+  top: var(--top);
+  right: var(--right);
+  bottom: var(--bottom);
+  left: var(--left);
   z-index: 2000;
   max-height: calc(100vh - var(--limit) - 10px);
   box-shadow: 3px 3px 5px 0 rgb(0 0 0 / 0.3);
