@@ -89,7 +89,7 @@ const props = defineProps<{
 :deep(.highlight) {
   background-color: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
-  font-weight: bold;
+  font-weight: 700;
   border-radius: 0.25rem;
   padding: 0 0.125rem;
   margin: -0.125rem 0.125rem;

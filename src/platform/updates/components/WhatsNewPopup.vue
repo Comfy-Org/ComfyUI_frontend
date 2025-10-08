@@ -218,7 +218,7 @@ defineExpose({
   width: 400px;
   outline: 1px solid #4e4e4e;
   outline-offset: -1px;
-  box-shadow: 0px 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.3);
   position: relative;
 }
 
@@ -291,12 +291,6 @@ defineExpose({
 
 .close-icon::after {
   transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-/* Content Section */
-.popup-content {
-  display: flex;
-  flex-direction: column;
 }
 
 .content-text {
