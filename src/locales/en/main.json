@@ -1029,7 +1029,10 @@
       "recommended": "Recommended",
       "alphabetical": "A → Z",
       "newest": "Newest",
-      "searchPlaceholder": "Search..."
+      "searchPlaceholder": "Search...",
+      "vramLowToHigh": "VRAM Usage (Low to High)",
+      "modelSizeLowToHigh": "Model Size (Low to High)",
+      "default": "Default"
     }
   },
   "graphCanvasMenu": {

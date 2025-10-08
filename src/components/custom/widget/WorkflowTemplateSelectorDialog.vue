@@ -17,7 +17,7 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" class="max-w-[384px]" />
+      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
     </template>
 
     <template #header-right-area>
@@ -87,7 +87,7 @@
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
-            class="min-w-[270px]"
+            class="w-62.5"
           >
             <template #icon>
               <i class="icon-[lucide--arrow-up-down]" />
@@ -620,10 +620,7 @@ const sortOptions = computed(() => [
     value: 'default'
   },
   {
-    name: t(
-      'templateWorkflows.sort.vramLowToHigh',
-      'VRAM Utilization (Low to High)'
-    ),
+    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
     value: 'vram-low-to-high'
   },
   {
