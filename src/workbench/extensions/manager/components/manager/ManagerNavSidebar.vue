@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="flex translate-x-0 max-w-[250px] w-3/12 z-5 transition-transform duration-300 ease-in-out"
+    class="z-5 flex w-3/12 max-w-[250px] translate-x-0 transition-transform duration-300 ease-in-out"
   >
     <ScrollPanel class="flex-1">
       <Listbox
@@ -16,8 +16,8 @@
         }"
       >
         <template #option="slotProps">
-          <div class="text-left flex items-center">
-            <i :class="['pi', slotProps.option.icon, 'text-sm mr-2']" />
+          <div class="flex items-center text-left">
+            <i :class="['pi', slotProps.option.icon, 'mr-2 text-sm']" />
             <span class="text-sm">{{ slotProps.option.label }}</span>
           </div>
         </template>

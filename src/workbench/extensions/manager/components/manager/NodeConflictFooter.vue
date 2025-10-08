@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center justify-between w-full px-3 py-4">
-    <div class="w-full flex items-center justify-between gap-2 pr-1">
+  <div class="flex w-full items-center justify-between px-3 py-4">
+    <div class="flex w-full items-center justify-between gap-2 pr-1">
       <Button
         :label="$t('manager.conflicts.conflictInfoTitle')"
         text

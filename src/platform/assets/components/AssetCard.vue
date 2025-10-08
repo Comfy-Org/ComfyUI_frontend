@@ -24,9 +24,9 @@
     @click="interactive && $emit('select', asset)"
     @keydown.enter="interactive && $emit('select', asset)"
   >
-    <div class="relative w-full aspect-square overflow-hidden">
+    <div class="relative aspect-square w-full overflow-hidden">
       <div
-        class="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600 flex items-center justify-center"
+        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>

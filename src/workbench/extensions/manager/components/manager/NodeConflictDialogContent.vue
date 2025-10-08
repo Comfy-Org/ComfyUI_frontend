@@ -1,11 +1,11 @@
 <template>
-  <div class="w-[552px] flex flex-col">
+  <div class="flex w-[552px] flex-col">
     <ContentDivider :width="1" />
-    <div class="px-4 py-6 w-full h-full flex flex-col gap-2">
+    <div class="flex h-full w-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
         <p
-          class="text-sm leading-4 text-neutral-800 dark-theme:text-white m-0 mb-4"
+          class="m-0 mb-4 text-sm leading-4 text-neutral-800 dark-theme:text-white"
         >
           {{ $t('manager.conflicts.description') }}
           <br /><br />
@@ -16,15 +16,15 @@
       <!-- Import Failed List Wrapper -->
       <div
         v-if="importFailedConflicts.length > 0"
-        class="w-full flex flex-col bg-neutral-200 dark-theme:bg-black min-h-8 rounded-lg"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
       >
         <div
-          class="w-full h-8 flex items-center justify-between gap-2 pl-4"
+          class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleImportFailedPanel"
         >
-          <div class="flex-1 flex">
+          <div class="flex flex-1">
             <span
-              class="text-xs font-bold text-yellow-600 dark-theme:text-yellow-400 mr-2"
+              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
               >{{ importFailedConflicts.length }}</span
             >
             <span
@@ -40,19 +40,19 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="text-neutral-600 dark-theme:text-neutral-300 !bg-transparent"
+              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
             />
           </div>
         </div>
         <!-- Import failed list -->
         <div
           v-if="importFailedExpanded"
-          class="py-2 px-4 flex flex-col gap-2.5 max-h-[142px] overflow-y-auto scrollbar-hide"
+          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
-            class="flex items-center justify-between h-6 px-4 flex-shrink-0 conflict-list-item"
+            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
               {{ packageName }}
@@ -63,15 +63,15 @@
       </div>
       <!-- Conflict List Wrapper -->
       <div
-        class="w-full flex flex-col bg-neutral-200 dark-theme:bg-black min-h-8 rounded-lg"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
       >
         <div
-          class="w-full h-8 flex items-center justify-between gap-2 pl-4"
+          class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleConflictsPanel"
         >
-          <div class="flex-1 flex">
+          <div class="flex flex-1">
             <span
-              class="text-xs font-bold text-yellow-600 dark-theme:text-yellow-400 mr-2"
+              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
               >{{ allConflictDetails.length }}</span
             >
             <span
@@ -87,19 +87,19 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="text-neutral-600 dark-theme:text-neutral-300 !bg-transparent"
+              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
             />
           </div>
         </div>
         <!-- Conflicts list -->
         <div
           v-if="conflictsExpanded"
-          class="py-2 px-4 flex flex-col gap-2.5 max-h-[142px] overflow-y-auto scrollbar-hide"
+          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
-            class="flex items-center justify-between h-6 px-4 flex-shrink-0 conflict-list-item"
+            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
             <span
               class="text-xs text-neutral-600 dark-theme:text-neutral-300"
@@ -111,15 +111,15 @@
       </div>
       <!-- Extension List Wrapper -->
       <div
-        class="w-full flex flex-col bg-neutral-200 dark-theme:bg-black min-h-8 rounded-lg"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
       >
         <div
-          class="w-full h-8 flex items-center justify-between gap-2 pl-4"
+          class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleExtensionsPanel"
         >
-          <div class="flex-1 flex">
+          <div class="flex flex-1">
             <span
-              class="text-xs font-bold text-yellow-600 dark-theme:text-yellow-400 mr-2"
+              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
               >{{ conflictData.length }}</span
             >
             <span
@@ -135,19 +135,19 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="text-neutral-600 dark-theme:text-neutral-300 !bg-transparent"
+              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
             />
           </div>
         </div>
         <!-- Extension list -->
         <div
           v-if="extensionsExpanded"
-          class="py-2 px-4 flex flex-col gap-2.5 max-h-[142px] overflow-y-auto scrollbar-hide"
+          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="flex items-center justify-between h-6 px-4 flex-shrink-0 conflict-list-item"
+            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
               {{ conflictResult.package_name }}

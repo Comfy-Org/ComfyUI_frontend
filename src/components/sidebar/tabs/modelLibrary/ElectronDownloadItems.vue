@@ -1,6 +1,6 @@
 <template>
   <div v-if="inProgressDownloads.length > 0" class="mx-6 mb-4">
-    <div class="text-lg my-4">
+    <div class="my-4 text-lg">
       {{ $t('electronFileDownload.inProgress') }}
     </div>
 

@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="progressDialogContent.isExpanded"
-    class="px-4 py-2 flex items-center"
+    class="flex items-center px-4 py-2"
   >
     <TabMenu
       v-model:active-index="activeTabIndex"

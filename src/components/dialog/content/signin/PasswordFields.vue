@@ -1,9 +1,9 @@
 <template>
   <!-- Password Field -->
   <FormField v-slot="$field" name="password" class="flex flex-col gap-2">
-    <div class="flex justify-between items-center mb-2">
+    <div class="mb-2 flex items-center justify-between">
       <label
-        class="opacity-80 text-base font-medium"
+        class="text-base font-medium opacity-80"
         for="comfy-org-sign-up-password"
       >
         {{ t('auth.signup.passwordLabel') }}
@@ -68,7 +68,7 @@
   <!-- Confirm Password Field -->
   <FormField v-slot="$field" name="confirmPassword" class="flex flex-col gap-2">
     <label
-      class="opacity-80 text-base font-medium mb-2"
+      class="mb-2 text-base font-medium opacity-80"
       for="comfy-org-sign-up-confirm-password"
     >
       {{ t('auth.login.confirmPasswordLabel') }}
