@@ -23,7 +23,9 @@ All workflow files follow a consistent naming pattern for improved organization 
 |--------|----------|---------|---------|
 | `ci-` | Continuous Integration | Testing, linting, validation workflows | `ci-tests-e2e.yaml` |
 | `release-` | Release Management | Version bumps, release branches, release drafts | `release-version-bump.yaml` |
-| `pr-` | PR Automation | PR-specific workflows triggered by labels | `pr-claude-review.yaml` |
+| `ci-` | Continuous Integration | Testing, linting, validation workflows | `ci-tests-e2e.yaml` |
+| `release-` | Release Management | Version bumps, release branches, release drafts | `release-version-bump.yaml` |
+| `pr-` | PR Automation | PR-specific workflows triggered by labels or comments | `pr-claude-review.yaml` |
 | `types-` | Type Generation | TypeScript type generation and updates | `types-registry-api.yaml` |
 | `i18n-` | Internationalization | Locale and translation updates | `i18n-update-core.yaml` |
 
