@@ -2,7 +2,7 @@ name: Setup ComfyUI Frontend
 description: 'Install nodejs/pnpm/dependencies and build ComfyUI_frontend'
 inputs:
   skip_build:
-    description: 'Skip building the frontend, just install dependencies, useful for CI jobs that do not need a built frontend'
+    description: 'Skip building the frontend, just install dependencies, useful for CI jobs that do not need a built frontend or already have a cached build'
     required: false
     default: 'false'
 runs:
