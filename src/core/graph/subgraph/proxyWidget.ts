@@ -44,7 +44,7 @@ type Overlay = Partial<IBaseWidget> & {
  * on the linked widget
  */
 type ProxyWidget = IBaseWidget & { _overlay: Overlay }
-export function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
+function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
   return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
 }
 
@@ -145,7 +145,7 @@ function addProxyWidget(
   }
   return addProxyFromOverlay(subgraphNode, overlay)
 }
-export function resolveLinkedWidget(
+function resolveLinkedWidget(
   overlay: Overlay
 ): [LGraphNode | undefined, IBaseWidget | undefined] {
   const { graph, nodeId, widgetName } = overlay
