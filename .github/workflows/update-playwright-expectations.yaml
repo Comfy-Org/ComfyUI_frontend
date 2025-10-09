@@ -7,6 +7,9 @@ on:
   issue_comment:
     types: [created]
 
+concurrency:
+  group: ${{ github.event.number || github.event.issue.number }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -21,12 +24,16 @@ jobs:
         ) &&
         startsWith(github.event.comment.body, '/update-playwright') )
     steps:
+      - id: "get-branch"
+        run: echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
+        env:
+          REPO: ${{ github.repository }}
+          PR_NO: ${{ github.event.number || github.event.issue.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Initial Checkout
         uses: actions/checkout@v5
-      - name: Pull Request Checkout (from comment)
-        run: gh pr checkout ${{ github.event.number || github.event.issue.number }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          ref: ${{ steps.get-branch.outputs.branch }}
       - name: Setup Frontend
         uses: ./.github/actions/setup-frontend
       - name: Setup Playwright
@@ -45,6 +52,7 @@ jobs:
       - name: Debugging info
         run: |
           echo "PR: ${{ github.event.issue.number }}"
+          echo "Branch: ${{ steps.get-branch.outputs.branch }}"
           git status
         working-directory: ComfyUI_frontend
       - name: Commit updated expectations
@@ -56,10 +64,9 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "[automated] Update test expectations"
-            git push
+            git push origin ${{ steps.get-branch.outputs.branch }}
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
         working-directory: ComfyUI_frontend
 
       - name: Remove New Browser Test Expectations label
