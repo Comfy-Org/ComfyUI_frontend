@@ -1,5 +1,5 @@
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 import { useAudioService } from '@/services/audioService'
 
@@ -91,6 +91,10 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
       recordedURL.value = null
     }
   }
+
+  onUnmounted(() => {
+    dispose()
+  })
 
   return {
     isRecording,

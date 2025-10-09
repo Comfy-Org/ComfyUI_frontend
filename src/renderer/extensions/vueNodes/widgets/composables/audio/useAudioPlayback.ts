@@ -27,13 +27,6 @@ export function useAudioPlayback(
     }
   }
 
-  function pause() {
-    if (audioRef.value) {
-      audioRef.value.pause()
-    }
-    isPlaying.value = false
-  }
-
   function stop() {
     if (audioRef.value) {
       audioRef.value.pause()
@@ -75,7 +68,6 @@ export function useAudioPlayback(
     isPlaying,
     audioElementKey,
     play,
-    pause,
     stop,
     onPlaybackEnded,
     onMetadataLoaded,
