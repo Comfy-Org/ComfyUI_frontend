@@ -15,8 +15,8 @@
       class="bg-zinc-500/10 dark-theme:bg-node-component-surface rounded-lg px-4 text-zinc-400 dark-theme:text-white h-14 flex items-center gap-4 w-[413px]"
     >
       <!-- Recording Status -->
-      <div class="flex gap-2 items-center min-w-[120px]">
-        <span class="text-xs min-w-[80px]">
+      <div class="flex gap-2 items-center min-w-30">
+        <span class="text-xs min-w-20">
           {{
             isRecording
               ? t('g.listening', 'Listening...')
@@ -27,7 +27,7 @@
                   : ''
           }}
         </span>
-        <span class="text-sm min-w-[40px]">{{ formatTime(timer) }}</span>
+        <span class="text-sm min-w-10">{{ formatTime(timer) }}</span>
       </div>
 
       <!-- Waveform Visualization -->
@@ -35,7 +35,7 @@
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
-          class="w-[3px] bg-[#9c9eab] rounded-[1.5px] transition-all duration-100 min-h-[4px] max-h-[32px]"
+          class="w-0.75 bg-slate-100 rounded-[1.5px] transition-all duration-100 min-h-1 max-h-8"
           :style="{ height: bar.height + 'px' }"
           :title="`Bar ${index + 1}: ${bar.height}px`"
         />
@@ -86,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+import { useIntervalFn } from '@vueuse/core'
 import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
@@ -101,7 +102,6 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
-import { useTimer } from '../composables/audio/useTimer'
 import { formatTime } from '../utils/audioUtils'
 
 const emit = defineEmits<{
@@ -141,18 +141,25 @@ const playback = useAudioPlayback(audioRef, {
   onPlaybackEnded: handlePlaybackEnded,
   onMetadataLoaded: (duration) => {
     if (!isPlaying.value && !isRecording.value) {
-      timerControl.setTime(Math.floor(duration))
+      timer.value = Math.floor(duration)
     }
   }
 })
 
-const timerControl = useTimer()
+// Timer for recording
+const timer = ref(0)
+const { pause: pauseTimer, resume: resumeTimer } = useIntervalFn(
+  () => {
+    timer.value += 1
+  },
+  1000,
+  { immediate: false }
+)
 
 // Destructure for template access
 const { isRecording, recordedURL } = recorder
 const { waveformBars } = waveform
 const { isPlaying, audioElementKey } = playback
-const { timer } = timerControl
 
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
@@ -192,25 +199,27 @@ async function handleStartRecording() {
       }
     }
 
-    timerControl.start(1000)
+    // Start timer
+    timer.value = 0
+    resumeTimer()
     waveform.initWaveform()
     waveform.updateWaveform(isWaveformActive)
   } catch (err) {
     console.error('Failed to start recording:', err)
-    // Error is also handled by recorder's onError callback
   }
 }
 
 function handleStopRecording() {
   recorder.stopRecording()
-  timerControl.stop()
+  pauseTimer()
   waveform.stopWaveform()
 }
 
 async function handlePlayRecording() {
   if (!recordedURL.value) return
 
-  timerControl.reset()
+  // Reset timer
+  timer.value = 0
 
   // Reset and setup audio element
   await playback.resetAudioElement()
@@ -227,16 +236,13 @@ async function handlePlayRecording() {
   // Start playback
   await playback.play()
 
-  // Start timer
-  timerControl.start(100)
-
   // Update waveform
   waveform.initWaveform()
   waveform.updateWaveform(isWaveformActive)
 
   // Update timer from audio current time
   const timerInterval = setInterval(() => {
-    timerControl.setTime(Math.floor(playback.getCurrentTime()))
+    timer.value = Math.floor(playback.getCurrentTime())
   }, 100)
 
   // Store interval for cleanup
@@ -249,7 +255,6 @@ function handleStopPlayback() {
 }
 
 function handlePlaybackEnded() {
-  timerControl.stop()
   waveform.stopWaveform()
 
   // Clear playback timer interval
@@ -260,9 +265,9 @@ function handlePlaybackEnded() {
 
   const duration = playback.getDuration()
   if (duration) {
-    timerControl.setTime(Math.floor(duration))
+    timer.value = Math.floor(duration)
   } else {
-    timerControl.reset()
+    timer.value = 0
   }
 }
 
@@ -305,8 +310,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  recorder.dispose()
-  waveform.dispose()
   if (playback.playbackTimerInterval.value !== null) {
     clearInterval(playback.playbackTimerInterval.value)
     playback.playbackTimerInterval.value = null

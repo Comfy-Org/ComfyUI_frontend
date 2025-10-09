@@ -1,13 +1,14 @@
 <template>
   <div class="w-full">
-    <WidgetSelect v-model="modelValue" :widget="props.widget" />
-    <p class="my-4"></p>
-    <AudioPreviewPlayer
-      :audio-url="audioUrlFromWidget"
-      :readonly="readonly"
-      :hide-when-empty="isOutputNode"
-      :show-options-button="true"
-    />
+    <WidgetSelect v-model="modelValue" :widget />
+    <div class="my-4">
+      <AudioPreviewPlayer
+        :audio-url="audioUrlFromWidget"
+        :readonly="readonly"
+        :hide-when-empty="isOutputNodeRef"
+        :show-options-button="true"
+      />
+    </div>
   </div>
 </template>
 
@@ -17,6 +18,7 @@ import { computed } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { isOutputNode } from '@/utils/nodeFilterUtil'
 
 import { getAudioUrlFromPath } from '../utils/audioUtils'
 import WidgetSelect from './WidgetSelect.vue'
@@ -41,22 +43,10 @@ const litegraphNode = computed(() => {
 })
 
 // Check if this is an output node (PreviewAudio, SaveAudio, etc)
-const isOutputNode = computed(() => {
+const isOutputNodeRef = computed(() => {
   const node = litegraphNode.value
   if (!node) return false
-
-  const fromNode = node.constructor.nodeData?.output_node === true
-
-  const nodeClass = node.constructor?.comfyClass || node.type || 'Unknown'
-
-  const isPreviewOrSaveNode = [
-    'PreviewAudio',
-    'SaveAudio',
-    'SaveAudioMP3',
-    'SaveAudioOpus'
-  ].includes(nodeClass)
-
-  return fromNode || isPreviewOrSaveNode
+  return isOutputNode(node)
 })
 
 const audioFilePath = computed(() => props.widget.value as string)
