@@ -114,6 +114,3 @@ onlyBuiltDependencies:
   - esbuild
   - nx
   - oxc-resolver
-
-overrides:
-  '@types/eslint': '-'
