@@ -30,6 +30,9 @@ export default defineConfig({
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
       ignored: [
+        './browser_tests/**',
+        './node_modules/**',
+        './tests-ui/**',
         '.eslintcache',
         '*.config.{ts,mts}',
         '**/.git/**',
@@ -39,8 +42,7 @@ export default defineConfig({
         '**/coverage/**',
         '**/dist/**',
         '**/playwright-report/**',
-        '**/test-results/**',
-        'node_modules/**'
+        '**/test-results/**'
       ]
     },
     proxy: {
