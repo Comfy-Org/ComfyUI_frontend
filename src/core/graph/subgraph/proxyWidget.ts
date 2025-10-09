@@ -109,7 +109,10 @@ const onConfigure = function (
         const w = addProxyWidget(this, `${nodeId}`, widgetName)
         if (isActiveGraph && w instanceof DOMWidgetImpl) setWidget(w)
       }
-      for (const [i, w] of realIndexes) this.widgets.splice(i, 0, w)
+      for (const [i, w] of realIndexes) {
+        w.value = serialisedNode.widgets_values?.[i] ?? w.value
+        this.widgets.splice(i, 0, w)
+      }
       canvasStore.canvas?.setDirty(true, true)
       this._setConcreteSlots()
       this.arrange()
