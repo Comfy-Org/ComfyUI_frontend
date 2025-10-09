@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header p-4 rounded-t-2xl cursor-move w-full bg-node-component-header-surface text-node-component-header',
+        'lg-node-header p-4 rounded-t-2xl w-full bg-node-component-header-surface text-node-component-header',
         collapsed && 'rounded-2xl'
       )
     "
