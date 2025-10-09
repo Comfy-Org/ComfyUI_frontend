@@ -26,9 +26,9 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 ```vue
 <template>
   <!-- Primary icon set: Lucide -->
-  <i-lucide:download />
-  <i-lucide:settings />
-  <i-lucide:workflow class="text-2xl" />
+  <i class="icon-[lucide--download]" />
+  <i class="icon-[lucide--settings]" />
+  <i class="icon-[lucide--workflow]" class="text-2xl" />
 
   <!-- Other popular icon sets -->
   <i-mdi:folder-open />
@@ -41,7 +41,7 @@ ComfyUI supports three types of icons that can be used throughout the interface.
   <!-- Carbon Icons -->
 
   <!-- With styling -->
-  <i-lucide:save class="w-6 h-6 text-blue-500" />
+  <i class="icon-[lucide--save]" class="w-6 h-6 text-blue-500" />
 </template>
 ```
 
@@ -77,7 +77,7 @@ ComfyUI supports three types of icons that can be used throughout the interface.
   <!-- Iconify/Custom in button (template) -->
   <Button>
     <template #icon>
-      <i-lucide:save />
+      <i class="icon-[lucide--save]" />
     </template>
     Save File
   </Button>
@@ -88,8 +88,8 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ```vue
 <template>
-  <i-lucide:eye v-if="isVisible" />
-  <i-lucide:eye-off v-else />
+  <i class="icon-[lucide--eye]" v-if="isVisible" />
+  <i class="icon-[lucide--eye-off]" v-else />
 
   <!-- Or with ternary -->
   <component :is="isLocked ? 'i-lucide:lock' : 'i-lucide:lock-open'" />
@@ -100,7 +100,7 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ```vue
 <template>
-  <i-lucide:info
+  <i class="icon-[lucide--info]"
     v-tooltip="'Click for more information'"
     class="cursor-pointer"
   />
@@ -174,20 +174,20 @@ No imports needed - icons are auto-discovered!
 ```vue
 <template>
   <!-- Size with Tailwind classes -->
-  <i-lucide:plus class="w-4 h-4" />
+  <i class="icon-[lucide--plus]" class="w-4 h-4" />
   <!-- 16px -->
-  <i-lucide:plus class="w-6 h-6" />
+  <i class="icon-[lucide--plus]" class="w-6 h-6" />
   <!-- 24px (default) -->
-  <i-lucide:plus class="w-8 h-8" />
+  <i class="icon-[lucide--plus]" class="w-8 h-8" />
   <!-- 32px -->
 
   <!-- Or text size -->
-  <i-lucide:plus class="text-sm" />
-  <i-lucide:plus class="text-2xl" />
+  <i class="icon-[lucide--plus]" class="text-sm" />
+  <i class="icon-[lucide--plus]" class="text-2xl" />
 
   <!-- Colors -->
-  <i-lucide:check class="text-green-500" />
-  <i-lucide:x class="text-red-500" />
+  <i class="icon-[lucide--check]" class="text-green-500" />
+  <i class="icon-[lucide--x]" class="text-red-500" />
 </template>
 ```
 
@@ -219,7 +219,7 @@ Always use `currentColor` in SVGs for automatic theme adaptation:
   <!-- After -->
   <Button>
     <template #icon>
-      <i-lucide:download />
+      <i class="icon-[lucide--download]" />
     </template>
   </Button>
 </template>

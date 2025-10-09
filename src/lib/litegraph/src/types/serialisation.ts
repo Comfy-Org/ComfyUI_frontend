@@ -16,8 +16,8 @@ import type {
   Size
 } from '../interfaces'
 import type { LiteGraph } from '../litegraph'
-import type { TWidgetValue } from '../types/widgets'
 import type { RenderShape } from './globalEnums'
+import type { TWidgetValue } from './widgets'
 
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.

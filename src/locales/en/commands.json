@@ -38,6 +38,9 @@
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Open 3D Viewer (Beta) for Selected Node"
   },
+  "Comfy_BrowseModelAssets": {
+    "label": "Experimental: Browse Model Assets"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
@@ -121,9 +124,6 @@
   },
   "Comfy_ExportWorkflowAPI": {
     "label": "Export Workflow (API Format)"
-  },
-  "Comfy_Feedback": {
-    "label": "Give Feedback"
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"
@@ -242,6 +242,9 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Show Settings Dialog"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Experimental: Enable AssetAPI"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Canvas Performance"
   },
@@ -259,6 +262,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "Sign Out"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Experimental: Enable Vue Nodes"
   },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"

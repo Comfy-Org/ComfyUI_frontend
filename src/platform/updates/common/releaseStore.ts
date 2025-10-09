@@ -8,7 +8,8 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
 import { stringToLocale } from '@/utils/formatUtil'
 
-import { type ReleaseNote, useReleaseService } from './releaseService'
+import { useReleaseService } from './releaseService'
+import type { ReleaseNote } from './releaseService'
 
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {
@@ -72,14 +73,10 @@ export const useReleaseStore = defineStore('release', () => {
       ) === 0
   )
 
-  const hasMediumOrHighAttention = computed(() =>
-    recentReleases.value
-      .slice(0, -1)
-      .some(
-        (release) =>
-          release.attention === 'medium' || release.attention === 'high'
-      )
-  )
+  const hasMediumOrHighAttention = computed(() => {
+    const attention = recentRelease.value?.attention
+    return attention === 'medium' || attention === 'high'
+  })
 
   // Show toast if needed
   const shouldShowToast = computed(() => {

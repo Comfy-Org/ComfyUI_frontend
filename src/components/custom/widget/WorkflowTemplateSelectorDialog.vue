@@ -17,7 +17,7 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" class="max-w-[384px]" />
+      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
     </template>
 
     <template #header-right-area>
@@ -29,7 +29,7 @@
           @click="resetFilters"
         >
           <template #icon>
-            <i-lucide:filter-x />
+            <i class="icon-[lucide--filter-x]" />
           </template>
         </IconTextButton>
       </div>
@@ -49,7 +49,7 @@
           :show-clear-button="true"
         >
           <template #icon>
-            <i-lucide:cpu />
+            <i class="icon-[lucide--cpu]" />
           </template>
         </MultiSelect>
 
@@ -63,7 +63,7 @@
           :show-clear-button="true"
         >
           <template #icon>
-            <i-lucide:target />
+            <i class="icon-[lucide--target]" />
           </template>
         </MultiSelect>
 
@@ -77,7 +77,7 @@
           :show-clear-button="true"
         >
           <template #icon>
-            <i-lucide:file-text />
+            <i class="icon-[lucide--file-text]" />
           </template>
         </MultiSelect>
 
@@ -87,10 +87,10 @@
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
-            class="min-w-[270px]"
+            class="w-62.5"
           >
             <template #icon>
-              <i-lucide:arrow-up-down />
+              <i class="icon-[lucide--arrow-up-down]" />
             </template>
           </SingleSelect>
         </div>
@@ -111,7 +111,7 @@
         v-if="!isLoading && filteredTemplates.length === 0"
         class="flex flex-col items-center justify-center h-64 text-neutral-500"
       >
-        <i-lucide:search class="w-12 h-12 mb-4 opacity-50" />
+        <i class="icon-[lucide--search] w-12 h-12 mb-4 opacity-50" />
         <p class="text-lg mb-2">
           {{ $t('templateWorkflows.noResults', 'No templates found') }}
         </p>
@@ -620,10 +620,7 @@ const sortOptions = computed(() => [
     value: 'default'
   },
   {
-    name: t(
-      'templateWorkflows.sort.vramLowToHigh',
-      'VRAM Utilization (Low to High)'
-    ),
+    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
     value: 'vram-low-to-high'
   },
   {

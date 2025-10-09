@@ -44,9 +44,9 @@ const config: KnipConfig = {
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
     css: (text: string) =>
-      [
-        ...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)
-      ].join('\n')
+      [...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)]
+        .map((match) => match[0].replace(/url\(['"]?([^'"()]+)['"]?\)/, '$1'))
+        .join('\n')
   },
   vite: {
     config: ['vite?(.*).config.mts']
