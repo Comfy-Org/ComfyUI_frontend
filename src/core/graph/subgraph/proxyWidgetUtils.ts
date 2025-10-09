@@ -1,6 +1,5 @@
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IContextMenuValue,
   LGraphNode
@@ -10,7 +9,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
-type PartialNode = { id: NodeId; title: string; type: string }
+type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [PartialNode, IBaseWidget]
 

@@ -18,12 +18,15 @@ function classes() {
   return cn(
     'flex py-1 pr-4 pl-0 break-all rounded items-center gap-1',
     'bg-node-component-surface',
-    props.isDraggable ? 'drag-handle cursor-grab' : ''
+    props.isDraggable && 'drag-handle cursor-grab'
   )
 }
 function getIcon() {
-  if (props.isPhysical) return 'icon-[lucide--link]'
-  return props.isDraggable ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
+  return props.isPhysical
+    ? 'icon-[lucide--link]'
+    : props.isDraggable
+      ? 'icon-[lucide--eye]'
+      : 'icon-[lucide--eye-off]'
 }
 </script>
 <template>
