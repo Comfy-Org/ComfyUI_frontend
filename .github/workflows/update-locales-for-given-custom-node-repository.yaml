@@ -21,90 +21,64 @@ jobs:
   update-locales:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout ComfyUI
+    - name: Checkout repository
       uses: actions/checkout@v5
+
+    # Setup playwright environment with custom node repository
+    - name: Setup ComfyUI Server (without launching)
+      uses: ./.github/actions/setup-comfyui-server
+    - name: Setup frontend
+      uses: ./.github/actions/setup-frontend
       with:
-        repository: comfyanonymous/ComfyUI
-        path: ComfyUI
-        ref: master
-    - name: Checkout ComfyUI_frontend
-      uses: actions/checkout@v5
-      with:
-        repository: Comfy-Org/ComfyUI_frontend
-        path: ComfyUI_frontend
-    - name: Copy ComfyUI_devtools from frontend repo
-      run: |
-        mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
-        cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
+        include_build_step: 'true'
+    - name: Setup Playwright
+      uses: ./.github/actions/setup-playwright
+
+    # Install the custom node repository
     - name: Checkout custom node repository
       uses: actions/checkout@v5
       with:
         repository: ${{ inputs.owner }}/${{ inputs.repository }}
         path: 'ComfyUI/custom_nodes/${{ inputs.repository }}'
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 10
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 'lts/*'
-        cache: 'pnpm'
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install ComfyUI requirements
-      run: |
-        python -m pip install --upgrade pip
-        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-        pip install -r requirements.txt
-        pip install wait-for-it
-      working-directory: ComfyUI
-    - name: Install custom node requirements
+    - name: Install custom node Python requirements
+      working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
       run: |
         if [ -f "requirements.txt" ]; then
           pip install -r requirements.txt
         fi
-      working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
-    - name: Build & Install ComfyUI_frontend
-      run: |
-        pnpm install --frozen-lockfile
-        pnpm build
-        rm -rf ../ComfyUI/web/*
-        mv dist/* ../ComfyUI/web/
-      working-directory: ComfyUI_frontend
-    - name: Start ComfyUI server
-      run: |
-        python main.py --cpu --multi-user &
-        wait-for-it --service 127.0.0.1:8188 -t 600
+
+    # Start ComfyUI Server
+    - name: Start ComfyUI Server
+      shell: bash
       working-directory: ComfyUI
-    - name: Setup Playwright
-      uses: ./ComfyUI_frontend/.github/actions/setup-playwright
+      run: |
+        python main.py --cpu --multi-user --front-end-root ../dist --custom-node-path ../ComfyUI/custom_nodes/${{ inputs.repository }} &
+        wait-for-it --service
+
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.
       run: pnpm dev:electron &
-      working-directory: ComfyUI_frontend
+      
     - name: Capture base i18n
       run: pnpm exec tsx scripts/diff-i18n capture
-      working-directory: ComfyUI_frontend
     - name: Update en.json
       run: pnpm collect-i18n
       env:
         PLAYWRIGHT_TEST_URL: http://localhost:5173
-      working-directory: ComfyUI_frontend
     - name: Update translations
       run: pnpm locale
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      working-directory: ComfyUI_frontend
     - name: Diff base vs updated i18n
       run: pnpm exec tsx scripts/diff-i18n diff
-      working-directory: ComfyUI_frontend
     - name: Update i18n in custom node repository
       run: |
         LOCALE_DIR=ComfyUI/custom_nodes/${{ inputs.repository }}/locales/
         install -d "$LOCALE_DIR"
         cp -rf ComfyUI_frontend/temp/diff/* "$LOCALE_DIR"
+    
+    # Git ops for pushing changes and creating PR
     - name: Check and create fork of custom node repository
       run: |
         # Try to fork the repository
