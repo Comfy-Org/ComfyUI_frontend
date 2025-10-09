@@ -1046,6 +1046,11 @@ audio.comfy-audio.empty-audio-widget {
   transition: none;
 }
 
+.isLOD .lg-node-header {
+  border-radius: 0px;
+  pointer-events: none;
+}
+
 .isLOD .lg-node-widgets {
   pointer-events: none;
 }

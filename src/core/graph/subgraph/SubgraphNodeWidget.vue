@@ -8,6 +8,7 @@ const props = defineProps<{
   widgetName: string
   isShown?: boolean
   isDraggable?: boolean
+  isPhysical?: boolean
 }>()
 defineEmits<{
   (e: 'toggleVisibility'): void
@@ -17,10 +18,16 @@ function classes() {
   return cn(
     'flex py-1 pr-4 pl-0 break-all rounded items-center gap-1',
     'bg-node-component-surface',
-    props.isDraggable
-      ? 'drag-handle cursor-grab [.is-draggable]:cursor-grabbing'
-      : ''
+    props.isDraggable &&
+      'draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing'
   )
+}
+function getIcon() {
+  return props.isPhysical
+    ? 'icon-[lucide--link]'
+    : props.isDraggable
+      ? 'icon-[lucide--eye]'
+      : 'icon-[lucide--eye-off]'
 }
 </script>
 <template>
@@ -40,7 +47,8 @@ function classes() {
     <Button
       size="small"
       text
-      :icon="isDraggable ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'"
+      :icon="getIcon()"
+      :disabled="isPhysical"
       severity="secondary"
       @click.stop="$emit('toggleVisibility')"
     />
