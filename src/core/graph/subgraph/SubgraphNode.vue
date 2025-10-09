@@ -262,21 +262,16 @@ onBeforeUnmount(() => {
       >
     </div>
     <div ref="draggableItems">
-      <div
+      <SubgraphNodeWidget
         v-for="[node, widget] in filteredActive"
         :key="toKey([node, widget])"
-        class="draggable-item w-full"
-        style=""
-      >
-        <SubgraphNodeWidget
-          :node-title="node.title"
-          :widget-name="widget.name"
-          :is-shown="true"
-          :is-draggable="!debouncedQuery"
-          :is-physical="node.id === -1"
-          @toggle-visibility="demote([node, widget])"
-        />
-      </div>
+        :node-title="node.title"
+        :widget-name="widget.name"
+        :is-shown="true"
+        :is-draggable="!debouncedQuery"
+        :is-physical="node.id === -1"
+        @toggle-visibility="demote([node, widget])"
+      />
     </div>
   </div>
   <div v-if="filteredCandidates.length" class="pt-1 pb-4">
@@ -291,17 +286,13 @@ onBeforeUnmount(() => {
         {{ $t('subgraphStore.showAll') }}</a
       >
     </div>
-    <div
+    <SubgraphNodeWidget
       v-for="[node, widget] in filteredCandidates"
       :key="toKey([node, widget])"
-      class="w-full"
-    >
-      <SubgraphNodeWidget
-        :node-title="node.title"
-        :widget-name="widget.name"
-        @toggle-visibility="promote([node, widget])"
-      />
-    </div>
+      :node-title="node.title"
+      :widget-name="widget.name"
+      @toggle-visibility="promote([node, widget])"
+    />
   </div>
   <div
     v-if="recommendedWidgets.length"
