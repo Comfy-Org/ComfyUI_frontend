@@ -1,8 +1,8 @@
 name: Setup ComfyUI Frontend
-description: 'Install nodejs/pnpm/dependencies and build ComfyUI_frontend'
+description: 'Install nodejs/pnpm/dependencies and optionally build ComfyUI_frontend'
 inputs:
-  skip_build:
-    description: 'Skip building the frontend, just install dependencies, useful for CI jobs that do not need a built frontend or already have a cached build'
+  include_build_step:
+    description: 'Include the build step to build the frontend. Set to true for workflows that need a built frontend'
     required: false
     default: 'false'
 runs:
@@ -40,6 +40,6 @@ runs:
       run: pnpm install --frozen-lockfile
 
     - name: Build ComfyUI_frontend
-      if: ${{ inputs.skip_build != 'true' }}
+      if: ${{ inputs.include_build_step == 'true' }}
       shell: bash
       run: pnpm build
