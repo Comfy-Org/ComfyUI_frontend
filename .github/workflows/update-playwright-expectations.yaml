@@ -24,12 +24,32 @@ jobs:
         ) &&
         startsWith(github.event.comment.body, '/update-playwright') )
     steps:
-      - id: "get-branch"
+      - name: Find Update Comment
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad
+        id: "find-update-comment"
+        with:
+          issue-number: ${{ github.event.number || github.event.issue.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Updating Playwright Expectations"
+
+      - name: Add Starting Reaction
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
+        with:
+          comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.number || github.event.issue.number }}
+          body: |
+            Updating Playwright Expectations
+          edit-mode: replace
+          reactions: eyes
+
+      - name: Get Branch SHA
+        id: "get-branch"
         run: echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
         env:
           REPO: ${{ github.repository }}
           PR_NO: ${{ github.event.number || github.event.issue.number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Initial Checkout
         uses: actions/checkout@v5
         with:
@@ -66,8 +86,16 @@ jobs:
             git commit -m "[automated] Update test expectations"
             git push origin ${{ steps.get-branch.outputs.branch }}
           fi
-
         working-directory: ComfyUI_frontend
+
+      - name: Add Done Reaction
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
+        if: github.event_name == 'issue_comment'
+        with:
+          comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.number || github.event.issue.number }}
+          reactions: +1
+          reactions-edit-mode: replace
 
       - name: Remove New Browser Test Expectations label
         if: always() && github.event_name == 'pull_request'
