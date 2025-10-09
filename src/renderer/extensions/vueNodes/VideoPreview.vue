@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview relative group flex flex-col items-center"
+    class="video-preview group relative flex flex-col items-center"
     tabindex="0"
     role="region"
     :aria-label="$t('g.videoPreview')"
@@ -12,16 +12,16 @@
   >
     <!-- Video Wrapper -->
     <div
-      class="relative rounded-[5px] overflow-hidden w-full max-w-[352px] bg-[#262729]"
+      class="relative w-full max-w-[352px] overflow-hidden rounded-[5px] bg-[#262729]"
     >
       <!-- Error State -->
       <div
         v-if="videoError"
-        class="w-full h-[352px] flex flex-col items-center justify-center text-white text-center bg-gray-800/50"
+        class="flex h-[352px] w-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
       >
-        <i class="icon-[lucide--video-off] w-12 h-12 mb-2 text-gray-400" />
+        <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.videoFailedToLoad') }}</p>
-        <p class="text-xs text-gray-400 mt-1">
+        <p class="mt-1 text-xs text-gray-400">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>
@@ -29,7 +29,7 @@
       <!-- Loading State -->
       <Skeleton
         v-else-if="isLoading"
-        class="w-full h-[352px]"
+        class="h-[352px] w-full"
         border-radius="5px"
       />
 
@@ -37,7 +37,7 @@
       <video
         v-else
         :src="currentVideoUrl"
-        class="w-full h-[352px] object-contain block"
+        class="block h-[352px] w-full object-contain"
         controls
         loop
         playsinline
@@ -49,29 +49,29 @@
       <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
         <!-- Download Button -->
         <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
           :title="$t('g.downloadVideo')"
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] w-4 h-4" />
+          <i class="icon-[lucide--download] h-4 w-4" />
         </button>
 
         <!-- Close Button -->
         <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
           :title="$t('g.removeVideo')"
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] w-4 h-4" />
+          <i class="icon-[lucide--x] h-4 w-4" />
         </button>
       </div>
 
       <!-- Multiple Videos Navigation -->
       <div
         v-if="hasMultipleVideos"
-        class="absolute bottom-2 left-2 right-2 flex justify-center gap-1"
+        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
       >
         <button
           v-for="(_, index) in imageUrls"
@@ -90,7 +90,7 @@
 
     <div class="relative">
       <!-- Video Dimensions -->
-      <div class="text-white text-xs text-center mt-2">
+      <div class="mt-2 text-center text-xs text-white">
         <span v-if="videoError" class="text-red-400">
           {{ $t('g.errorLoadingVideo') }}
         </span>

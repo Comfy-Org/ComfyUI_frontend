@@ -1,11 +1,11 @@
 <template>
   <div
-    class="option-container flex justify-between items-center px-2 py-0 cursor-pointer overflow-hidden w-full"
+    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden px-2 py-0"
   >
-    <div class="option-display-name font-semibold flex flex-col">
+    <div class="option-display-name flex flex-col font-semibold">
       <div>
         <span v-if="isBookmarked">
-          <i class="pi pi-bookmark-fill text-sm mr-1" />
+          <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
         <span v-html="highlightQuery(nodeDef.display_name, currentQuery)" />
         <span>&nbsp;</span>
@@ -15,7 +15,7 @@
       </div>
       <div
         v-if="showCategory"
-        class="option-category font-light text-sm text-muted overflow-hidden text-ellipsis whitespace-nowrap"
+        class="option-category truncate text-sm font-light text-muted"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>

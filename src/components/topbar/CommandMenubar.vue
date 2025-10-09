@@ -1,6 +1,6 @@
 <template>
   <div
-    class="comfyui-logo-wrapper p-1 flex justify-center items-center cursor-pointer rounded-md mr-2"
+    class="comfyui-logo-wrapper mr-2 flex cursor-pointer items-center justify-center rounded-md p-1"
     :class="{
       'comfyui-logo-menu-visible': menuRef?.visible
     }"
@@ -59,11 +59,11 @@
         />
         <span
           v-if="item?.comfyCommand?.keybinding"
-          class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
+          class="keybinding-tag ml-auto rounded border border-surface p-1 text-xs text-nowrap text-muted"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
-        <i v-if="item.items" class="ml-auto pi pi-angle-right" />
+        <i v-if="item.items" class="pi pi-angle-right ml-auto" />
       </a>
     </template>
   </TieredMenu>

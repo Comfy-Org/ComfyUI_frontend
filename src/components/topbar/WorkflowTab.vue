@@ -1,23 +1,23 @@
 <template>
   <div
     ref="workflowTabRef"
-    class="flex p-2 gap-2 workflow-tab group"
+    class="workflow-tab group flex gap-2 p-2"
     v-bind="$attrs"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @click="handleClick"
   >
-    <span class="workflow-label text-sm max-w-[150px] truncate inline-block">
+    <span class="workflow-label inline-block max-w-[150px] truncate text-sm">
       {{ workflowOption.workflow.filename }}
     </span>
     <div class="relative">
       <span
         v-if="shouldShowStatusIndicator"
-        class="group-hover:hidden absolute font-bold text-2xl top-1/2 left-1/2 -translate-1/2 z-10 bg-(--comfy-menu-bg) w-4"
+        class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
         >•</span
       >
       <Button
-        class="close-button p-0 w-auto invisible"
+        class="close-button invisible w-auto p-0"
         icon="pi pi-times"
         text
         severity="secondary"

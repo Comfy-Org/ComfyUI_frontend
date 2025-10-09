@@ -11,7 +11,7 @@
         icon="pi pi-exclamation-triangle"
         size="small"
         variant="outlined"
-        class="h-min my-2 px-1 max-w-xs"
+        class="my-2 h-min max-w-xs px-1"
         :title="props.error"
         :pt="{
           text: { class: 'overflow-hidden text-ellipsis' }

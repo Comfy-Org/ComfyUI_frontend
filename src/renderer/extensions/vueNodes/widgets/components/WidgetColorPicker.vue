@@ -9,7 +9,7 @@
       <ColorPicker
         v-model="localValue"
         v-bind="filteredProps"
-        class="w-8 h-4 !rounded-full overflow-hidden border-none"
+        class="h-4 w-8 overflow-hidden !rounded-full border-none"
         :pt="{
           preview: '!w-full !h-full !border-none'
         }"

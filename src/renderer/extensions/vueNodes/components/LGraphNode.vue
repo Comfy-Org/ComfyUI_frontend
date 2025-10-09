@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ $t('Node Render Error') }}
   </div>
   <div
@@ -70,7 +70,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="mb-4 relative">
+      <div class="relative mb-4">
         <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
         <div
@@ -108,7 +108,7 @@
           <img
             :src="latestPreviewUrl"
             alt="preview"
-            class="w-full max-h-64 object-contain"
+            class="max-h-64 w-full object-contain"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@
     <!-- Resize handle -->
     <div
       v-if="!isCollapsed"
-      class="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-0 hover:opacity-20 hover:bg-white transition-opacity duration-200"
+      class="absolute right-0 bottom-0 h-3 w-3 cursor-se-resize opacity-0 transition-opacity duration-200 hover:bg-white hover:opacity-20"
       @pointerdown.stop="startResize"
     />
   </div>

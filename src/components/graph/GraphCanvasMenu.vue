@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical p-1 absolute bottom-4 right-2 md:right-4"
+      class="p-buttongroup-vertical absolute right-2 bottom-4 p-1 md:right-4"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
@@ -44,7 +44,7 @@
       </Button>
 
       <!-- vertical line with bg E1DED5 -->
-      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
+      <div class="mx-2 my-1 w-px bg-[#E1DED5] dark-theme:bg-[#2E3037]" />
 
       <Button
         v-tooltip.top="fitViewTooltip"
@@ -52,7 +52,7 @@
         icon="pi pi-expand"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="dark-theme:hover:bg-[#444444]! hover:bg-[#E7E6E6]!"
+        class="hover:bg-[#E7E6E6]! dark-theme:hover:bg-[#444444]!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <template #icon>
@@ -77,7 +77,7 @@
         </span>
       </Button>
 
-      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
+      <div class="mx-2 my-1 w-px bg-[#E1DED5] dark-theme:bg-[#2E3037]" />
 
       <Button
         ref="focusButton"

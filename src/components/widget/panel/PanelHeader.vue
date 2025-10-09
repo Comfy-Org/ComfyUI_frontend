@@ -1,10 +1,10 @@
 <template>
-  <header class="flex items-center justify-between h-16 px-6">
+  <header class="flex h-16 items-center justify-between px-6">
     <div class="flex items-center gap-2 pl-1">
       <slot name="icon">
-        <i class="icon-[lucide--puzzle] text-neutral text-base" />
+        <i class="text-neutral icon-[lucide--puzzle] text-base" />
       </slot>
-      <h2 class="font-bold text-base text-neutral">
+      <h2 class="text-neutral text-base font-bold">
         <slot></slot>
       </h2>
     </div>

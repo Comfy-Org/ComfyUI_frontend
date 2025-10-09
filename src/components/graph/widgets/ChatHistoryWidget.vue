@@ -1,24 +1,24 @@
 <template>
   <ScrollPanel
     ref="scrollPanelRef"
-    class="w-full min-h-[400px] rounded-lg px-2 py-2 text-xs"
+    class="min-h-[400px] w-full rounded-lg px-2 py-2 text-xs"
     :pt="{ content: { id: 'chat-scroll-content' } }"
   >
     <div v-for="(item, i) in parsedHistory" :key="i" class="mb-4">
       <!-- Prompt (user, right) -->
       <span
         :class="{
-          'opacity-40 pointer-events-none': editIndex !== null && i > editIndex
+          'pointer-events-none opacity-40': editIndex !== null && i > editIndex
         }"
       >
-        <div class="flex justify-end mb-1">
+        <div class="mb-1 flex justify-end">
           <div
-            class="bg-gray-300 dark-theme:bg-gray-800 rounded-xl px-4 py-1 max-w-[80%] text-right"
+            class="max-w-[80%] rounded-xl bg-gray-300 px-4 py-1 text-right dark-theme:bg-gray-800"
           >
-            <div class="break-words text-[12px]">{{ item.prompt }}</div>
+            <div class="text-[12px] break-words">{{ item.prompt }}</div>
           </div>
         </div>
-        <div class="flex justify-end mb-2 mr-1">
+        <div class="mr-1 mb-2 flex justify-end">
           <CopyButton :text="item.prompt" />
           <Button
             v-tooltip="
@@ -26,7 +26,7 @@
             "
             text
             rounded
-            class="p-1! h-4! w-4! text-gray-400 hover:text-gray-600 hover:dark-theme:text-gray-200 transition"
+            class="h-4! w-4! p-1! text-gray-400 transition hover:text-gray-600 hover:dark-theme:text-gray-200"
             pt:icon:class="text-xs!"
             :icon="editIndex === i ? 'pi pi-times' : 'pi pi-pencil'"
             :aria-label="
@@ -40,7 +40,7 @@
       <ResponseBlurb
         :text="item.response"
         :class="{
-          'opacity-25 pointer-events-none': editIndex !== null && i >= editIndex
+          'pointer-events-none opacity-25': editIndex !== null && i >= editIndex
         }"
       >
         <div v-html="nl2br(linkifyHtml(item.response))" />

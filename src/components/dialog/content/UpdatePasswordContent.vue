@@ -1,6 +1,6 @@
 <template>
   <Form
-    class="flex flex-col gap-6 w-96"
+    class="flex w-96 flex-col gap-6"
     :resolver="zodResolver(updatePasswordSchema)"
     @submit="onSubmit"
   >
@@ -10,7 +10,7 @@
     <Button
       type="submit"
       :label="$t('userSettings.updatePassword')"
-      class="h-10 font-medium mt-4"
+      class="mt-4 h-10 font-medium"
       :loading="loading"
     />
   </Form>

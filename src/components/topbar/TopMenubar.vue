@@ -2,7 +2,7 @@
   <div>
     <div
       v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
-      class="w-full flex content-end z-1001 h-[38px]"
+      class="z-1001 flex h-[38px] w-full content-end"
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
@@ -14,7 +14,7 @@
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <CommandMenubar />
-      <div class="grow min-w-0 app-drag h-full"></div>
+      <div class="app-drag h-full min-w-0 grow"></div>
       <div
         ref="menuRight"
         class="comfyui-menu-right flex-shrink-1 overflow-auto"
@@ -26,7 +26,7 @@
     <!-- Virtual top menu for native window (drag handle) -->
     <div
       v-show="isNativeWindow() && !showTopMenu"
-      class="fixed top-0 left-0 app-drag w-full h-(--comfy-topbar-height)"
+      class="app-drag fixed top-0 left-0 h-(--comfy-topbar-height) w-full"
     />
   </div>
 </template>

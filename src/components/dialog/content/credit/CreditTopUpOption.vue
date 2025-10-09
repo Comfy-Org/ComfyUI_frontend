@@ -4,7 +4,7 @@
       severity="secondary"
       icon="pi pi-dollar"
       rounded
-      class="text-amber-400 p-1"
+      class="p-1 text-amber-400"
     />
     <InputNumber
       v-if="editable"
@@ -21,7 +21,7 @@
     />
     <span v-else class="text-xl">{{ amount }}</span>
   </div>
-  <ProgressSpinner v-if="loading" class="w-8 h-8" />
+  <ProgressSpinner v-if="loading" class="h-8 w-8" />
   <Button
     v-else
     :severity="preselected ? 'primary' : 'secondary'"

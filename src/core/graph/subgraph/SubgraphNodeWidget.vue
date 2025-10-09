@@ -33,8 +33,8 @@ function classes() {
         )
       "
     />
-    <div class="flex-1 pointer-events-none">
-      <div class="text-slate-100 text-[10px]">{{ nodeTitle }}</div>
+    <div class="pointer-events-none flex-1">
+      <div class="text-[10px] text-slate-100">{{ nodeTitle }}</div>
       <div class="text-xs">{{ widgetName }}</div>
     </div>
     <Button

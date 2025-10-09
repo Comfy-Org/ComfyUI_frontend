@@ -2,12 +2,12 @@
   <div
     ref="toolboxRef"
     style="transform: translate(var(--tb-x), var(--tb-y))"
-    class="fixed left-0 top-0 z-40 pointer-events-none"
+    class="pointer-events-none fixed top-0 left-0 z-40"
   >
     <Transition name="slide-up">
       <Panel
         v-if="visible"
-        class="rounded-lg selection-toolbox pointer-events-auto"
+        class="selection-toolbox pointer-events-auto rounded-lg"
         :style="`backgroundColor: ${containerStyles.backgroundColor};`"
         :pt="{
           header: 'hidden',

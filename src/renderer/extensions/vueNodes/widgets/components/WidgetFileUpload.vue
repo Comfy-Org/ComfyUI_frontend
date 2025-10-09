@@ -7,10 +7,10 @@
     style="width: calc(100% + 1rem)"
   >
     <!-- Select section above image -->
-    <div class="flex items-center justify-between gap-4 mb-2 px-2">
+    <div class="mb-2 flex items-center justify-between gap-4 px-2">
       <label
         v-if="widget.name"
-        class="text-xs opacity-80 min-w-[4em] truncate"
+        class="min-w-[4em] truncate text-xs opacity-80"
         >{{ widget.name }}</label
       >
       <!-- Group select and folder button together on the right -->
@@ -21,7 +21,7 @@
           :options="[selectedFile?.name || '']"
           :disabled="true"
           v-bind="transformCompatProps"
-          class="min-w-[8em] max-w-[20em] text-xs"
+          class="max-w-[20em] min-w-[8em] text-xs"
           size="small"
           :pt="{
             option: 'text-xs'
@@ -30,7 +30,7 @@
         <Button
           icon="pi pi-folder"
           size="small"
-          class="!w-8 !h-8"
+          class="!h-8 !w-8"
           @click="triggerFileInput"
         />
       </div>
@@ -38,31 +38,31 @@
 
     <!-- Image preview -->
     <!-- TODO: change hardcoded colors when design system incorporated -->
-    <div class="relative group">
-      <img :src="imageUrl" :alt="selectedFile?.name" class="w-full h-auto" />
+    <div class="group relative">
+      <img :src="imageUrl" :alt="selectedFile?.name" class="h-auto w-full" />
       <!-- Darkening overlay on hover -->
       <div
-        class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 pointer-events-none"
+        class="bg-opacity-0 group-hover:bg-opacity-20 pointer-events-none absolute inset-0 bg-black transition-all duration-200"
       />
       <!-- Control buttons in top right on hover -->
       <div
-        class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        class="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
       >
         <!-- Edit button -->
         <button
-          class="w-6 h-6 rounded flex items-center justify-center transition-all duration-150 focus:outline-none border-none"
+          class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
           style="background-color: #262729"
           @click="handleEdit"
         >
-          <i class="pi pi-pencil text-white text-xs"></i>
+          <i class="pi pi-pencil text-xs text-white"></i>
         </button>
         <!-- Delete button -->
         <button
-          class="w-6 h-6 rounded flex items-center justify-center transition-all duration-150 focus:outline-none border-none"
+          class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
           style="background-color: #262729"
           @click="clearFile"
         >
-          <i class="pi pi-times text-white text-xs"></i>
+          <i class="pi pi-times text-xs text-white"></i>
         </button>
       </div>
     </div>
@@ -75,10 +75,10 @@
     style="width: calc(100% + 1rem)"
   >
     <!-- Select section above audio player -->
-    <div class="flex items-center justify-between gap-4 mb-2 px-2">
+    <div class="mb-2 flex items-center justify-between gap-4 px-2">
       <label
         v-if="widget.name"
-        class="text-xs opacity-80 min-w-[4em] truncate"
+        class="min-w-[4em] truncate text-xs opacity-80"
         >{{ widget.name }}</label
       >
       <!-- Group select and folder button together on the right -->
@@ -88,7 +88,7 @@
           :options="[selectedFile?.name || '']"
           :disabled="true"
           v-bind="transformCompatProps"
-          class="min-w-[8em] max-w-[20em] text-xs"
+          class="max-w-[20em] min-w-[8em] text-xs"
           size="small"
           :pt="{
             option: 'text-xs'
@@ -97,16 +97,16 @@
         <Button
           icon="pi pi-folder"
           size="small"
-          class="!w-8 !h-8"
+          class="!h-8 !w-8"
           @click="triggerFileInput"
         />
       </div>
     </div>
 
     <!-- Audio player -->
-    <div class="relative group px-2">
+    <div class="group relative px-2">
       <div
-        class="bg-[#1a1b1e] rounded-lg p-4 flex items-center gap-4"
+        class="flex items-center gap-4 rounded-lg bg-[#1a1b1e] p-4"
         style="border: 1px solid #262729"
       >
         <!-- Audio icon -->
@@ -116,7 +116,7 @@
 
         <!-- File info and controls -->
         <div class="flex-1">
-          <div class="text-sm font-medium mb-1">{{ selectedFile?.name }}</div>
+          <div class="mb-1 text-sm font-medium">{{ selectedFile?.name }}</div>
           <div class="text-xs opacity-60">
             {{
               selectedFile ? (selectedFile.size / 1024).toFixed(1) + ' KB' : ''
@@ -128,10 +128,10 @@
         <div class="flex gap-1">
           <!-- Delete button -->
           <button
-            class="w-8 h-8 rounded flex items-center justify-center transition-all duration-150 focus:outline-none border-none hover:bg-[#262729]"
+            class="flex h-8 w-8 items-center justify-center rounded border-none transition-all duration-150 hover:bg-[#262729] focus:outline-none"
             @click="clearFile"
           >
-            <i class="pi pi-times text-white text-sm"></i>
+            <i class="pi pi-times text-sm text-white"></i>
           </button>
         </div>
       </div>
@@ -141,14 +141,14 @@
   <!-- Show normal file upload UI when no image or audio is loaded -->
   <div
     v-else
-    class="flex flex-col gap-1 w-full border border-solid p-1 rounded-lg"
+    class="flex w-full flex-col gap-1 rounded-lg border border-solid p-1"
     :style="{ borderColor: '#262729' }"
   >
     <div
-      class="border border-dashed p-1 rounded-md transition-colors duration-200 hover:border-slate-300"
+      class="rounded-md border border-dashed p-1 transition-colors duration-200 hover:border-slate-300"
       :style="{ borderColor: '#262729' }"
     >
-      <div class="flex flex-col items-center gap-2 w-full py-4">
+      <div class="flex w-full flex-col items-center gap-2 py-4">
         <span class="text-xs opacity-60"> {{ $t('Drop your file or') }} </span>
         <div>
           <Button

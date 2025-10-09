@@ -1,6 +1,6 @@
 <template>
-  <div class="h-full flex flex-col p-4">
-    <div class="flex-1 min-h-0 overflow-auto">
+  <div class="flex h-full flex-col p-4">
+    <div class="min-h-0 flex-1 overflow-auto">
       <ShortcutsList
         :commands="viewControlsCommands"
         :subcategories="viewControlsSubcategories"

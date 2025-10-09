@@ -1,18 +1,18 @@
 <template>
   <div class="flex flex-col">
-    <div class="relative show-up-direction">
+    <div class="show-up-direction relative">
       <Button class="p-button-rounded p-button-text" @click="toggleUpDirection">
         <i
           v-tooltip.right="{
             value: t('load3d.upDirection'),
             showDelay: 300
           }"
-          class="pi pi-arrow-up text-white text-lg"
+          class="pi pi-arrow-up text-lg text-white"
         />
       </Button>
       <div
         v-show="showUpDirection"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div class="relative show-material-mode">
+    <div class="show-material-mode relative">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleMaterialMode"
@@ -38,12 +38,12 @@
             value: t('load3d.materialMode'),
             showDelay: 300
           }"
-          class="pi pi-box text-white text-lg"
+          class="pi pi-box text-lg text-white"
         />
       </Button>
       <div
         v-show="showMaterialMode"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -59,7 +59,7 @@
       </div>
     </div>
 
-    <div v-if="materialMode === 'lineart'" class="relative show-edge-threshold">
+    <div v-if="materialMode === 'lineart'" class="show-edge-threshold relative">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleEdgeThreshold"
@@ -69,15 +69,15 @@
             value: t('load3d.edgeThreshold'),
             showDelay: 300
           }"
-          class="pi pi-sliders-h text-white text-lg"
+          class="pi pi-sliders-h text-lg text-white"
         />
       </Button>
       <div
         v-show="showEdgeThreshold"
-        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-black/50 p-4 shadow-lg"
         style="width: 150px"
       >
-        <label class="text-white text-xs mb-1 block"
+        <label class="mb-1 block text-xs text-white"
           >{{ t('load3d.edgeThreshold') }}: {{ edgeThreshold }}°</label
         >
         <Slider
