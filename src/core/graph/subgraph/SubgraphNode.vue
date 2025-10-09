@@ -169,10 +169,10 @@ function showAll() {
 function hideAll() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  //Not great from a nesting perspective, but path is cold
-  //and it cleans up potential error states
   proxyWidgets.value = proxyWidgets.value.filter(
-    (widgetItem) => !filteredActive.value.some(matchesWidgetItem(widgetItem))
+    (propertyItem) =>
+      !filteredActive.value.some(matchesWidgetItem(propertyItem)) ||
+      propertyItem[0] === '-1'
   )
 }
 function showRecommended() {
