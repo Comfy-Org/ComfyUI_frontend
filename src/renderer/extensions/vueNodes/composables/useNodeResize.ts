@@ -2,6 +2,8 @@ import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
 import type { TransformState } from '@/renderer/core/layout/injectionKeys'
+import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
+import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 
 interface Size {
   width: number
@@ -35,12 +37,21 @@ export function useNodeResize(
   const resizeStartSize = ref<Size | null>(null)
   const intrinsicMinSize = ref<Size | null>(null)
 
+  // Snap-to-grid functionality
+  const { shouldSnap, applySnapToSize } = useNodeSnap()
+
+  // Shift key sync for LiteGraph canvas preview
+  const { trackShiftKey } = useShiftKeySync()
+
   const startResize = (event: PointerEvent) => {
     event.preventDefault()
     event.stopPropagation()
 
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
+
+    // Track shift key state and sync to canvas for snap preview
+    const stopShiftSync = trackShiftKey(event)
 
     // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)
@@ -95,19 +106,26 @@ export function useNodeResize(
       const scaledDy = dy / scale
 
       // Apply constraints: only minimum size based on content, no maximum
-      const newWidth = Math.max(
-        intrinsicMinSize.value.width,
-        resizeStartSize.value.width + scaledDx
-      )
-      const newHeight = Math.max(
-        intrinsicMinSize.value.height,
-        resizeStartSize.value.height + scaledDy
-      )
+      const constrainedSize = {
+        width: Math.max(
+          intrinsicMinSize.value.width,
+          resizeStartSize.value.width + scaledDx
+        ),
+        height: Math.max(
+          intrinsicMinSize.value.height,
+          resizeStartSize.value.height + scaledDy
+        )
+      }
+
+      // Apply snap-to-grid if shift is held or always snap is enabled
+      const finalSize = shouldSnap(moveEvent)
+        ? applySnapToSize(constrainedSize)
+        : constrainedSize
 
       // Get the node element to apply size directly
       const nodeElement = target.closest('[data-node-id]')
       if (nodeElement instanceof HTMLElement) {
-        resizeCallback({ width: newWidth, height: newHeight }, nodeElement)
+        resizeCallback(finalSize, nodeElement)
       }
     }
 
@@ -117,6 +135,9 @@ export function useNodeResize(
         resizeStartPos.value = null
         resizeStartSize.value = null
         intrinsicMinSize.value = null
+
+        // Stop tracking shift key state
+        stopShiftSync()
 
         target.releasePointerCapture(upEvent.pointerId)
         stopMoveListen()
