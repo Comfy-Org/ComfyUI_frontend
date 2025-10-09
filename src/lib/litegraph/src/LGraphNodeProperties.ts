@@ -132,14 +132,14 @@ export class LGraphNodeProperties {
     oldValue: any,
     newValue: any
   ): void {
-    if (oldValue !== newValue && this.node.graph) {
-      this.node.graph.trigger('node:property:changed', {
-        nodeId: this.node.id,
-        property: propertyPath,
-        oldValue,
-        newValue
-      })
-    }
+    // if (oldValue !== newValue && this.node.graph) {
+    this.node.graph?.trigger('node:property:changed', {
+      nodeId: this.node.id,
+      property: propertyPath,
+      oldValue,
+      newValue
+    })
+    // }
   }
 
   /**
