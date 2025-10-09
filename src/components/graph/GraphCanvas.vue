@@ -4,7 +4,16 @@
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI && workflowTabsPosition === 'Topbar'" #workflow-tabs>
-      <WorkflowTabs />
+      <div
+        class="workflow-tabs-container w-full relative pointer-events-auto h-9"
+      >
+        <!-- Native drag area for Electron -->
+        <div
+          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
+          class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)] z-10"
+        />
+        <WorkflowTabs />
+      </div>
     </template>
     <template v-if="showUI" #side-toolbar>
       <SideToolbar />
@@ -138,6 +147,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isNativeWindow } from '@/utils/envUtil'
 
 const emit = defineEmits<{
   ready: []

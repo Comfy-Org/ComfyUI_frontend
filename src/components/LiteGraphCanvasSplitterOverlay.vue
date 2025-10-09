@@ -1,15 +1,6 @@
 <template>
   <div class="splitter-overlay-root flex flex-col">
-    <div
-      class="workflow-tabs-container w-full relative pointer-events-auto h-9"
-    >
-      <!-- Native drag area for Electron -->
-      <div
-        v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-        class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)] z-10"
-      />
-      <slot name="workflow-tabs" />
-    </div>
+    <slot name="workflow-tabs" />
 
     <div
       class="flex flex-1 pointer-events-none overflow-hidden"
@@ -103,14 +94,10 @@ import { computed } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { isNativeWindow } from '@/utils/envUtil'
 
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
-)
-const workflowTabsPosition = computed(() =>
-  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
 
 const unifiedWidth = computed(() =>

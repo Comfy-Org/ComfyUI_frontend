@@ -4,7 +4,11 @@
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
-    <div id="graph-canvas-container" class="graph-canvas-container">
+    <div
+      id="graph-canvas-container"
+      ref="graphCanvasContainerRef"
+      class="graph-canvas-container"
+    >
       <GraphCanvas @ready="onGraphReady" />
     </div>
   </div>
@@ -24,6 +28,7 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
+  ref,
   watch,
   watchEffect
 } from 'vue'
@@ -76,6 +81,7 @@ const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
+const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -214,6 +220,8 @@ onMounted(() => {
 
   try {
     init()
+    // Relocate the legacy menu container to the graph canvas container so it is below other elements
+    graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
