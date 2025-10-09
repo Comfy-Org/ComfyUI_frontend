@@ -12,11 +12,11 @@
     >
       <div class="flex items-center gap-1 px-0">
         <i
-          class="w-4 h-4 pi pi-circle-fill"
+          class="pi pi-circle-fill h-4 w-4"
           :style="{ color: currentColor ?? '' }"
         />
         <i
-          class="w-4 h-4 pi pi-chevron-down py-1"
+          class="pi pi-chevron-down h-4 w-4 py-1"
           :style="{ fontSize: '0.5rem' }"
         />
       </div>

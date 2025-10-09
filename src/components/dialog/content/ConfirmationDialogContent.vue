@@ -1,7 +1,7 @@
 <template>
-  <section class="prompt-dialog-content flex flex-col gap-6 m-2 mt-4">
+  <section class="prompt-dialog-content m-2 mt-4 flex flex-col gap-6">
     <span>{{ message }}</span>
-    <ul v-if="itemList?.length" class="pl-4 m-0 flex flex-col gap-2">
+    <ul v-if="itemList?.length" class="m-0 flex flex-col gap-2 pl-4">
       <li v-for="item of itemList" :key="item">
         {{ item }}
       </li>
@@ -15,14 +15,14 @@
     >
       {{ hint }}
     </Message>
-    <div class="flex gap-4 justify-end">
+    <div class="flex justify-end gap-4">
       <div
         v-if="type === 'overwriteBlueprint'"
-        class="flex gap-4 justify-start"
+        class="flex justify-start gap-4"
       >
         <Checkbox
           v-model="doNotAskAgain"
-          class="flex gap-4 justify-start"
+          class="flex justify-start gap-4"
           input-id="doNotAskAgain"
           binary
         />

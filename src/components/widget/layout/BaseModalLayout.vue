@@ -10,7 +10,7 @@
     <IconButton :class="closeButtonClasses" @click="closeDialog">
       <i class="pi pi-times text-sm"></i>
     </IconButton>
-    <div class="flex w-full h-full">
+    <div class="flex h-full w-full">
       <Transition name="slide-panel">
         <nav
           v-if="$slots.leftPanel && showLeftPanel"
@@ -25,9 +25,9 @@
       </Transition>
 
       <div :class="mainContainerClasses">
-        <div class="w-full h-full flex flex-col">
+        <div class="flex h-full w-full flex-col">
           <header v-if="$slots.header" :class="headerClasses">
-            <div class="flex-1 flex gap-2 shrink-0">
+            <div class="flex flex-1 shrink-0 gap-2">
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">
                 <i
                   v-if="!showLeftPanel"
@@ -48,12 +48,12 @@
             </div>
           </header>
 
-          <main class="flex flex-col flex-1 min-h-0">
+          <main class="flex min-h-0 flex-1 flex-col">
             <!-- Fallback title bar when no leftPanel is provided -->
             <slot name="contentFilter"></slot>
             <h2
               v-if="!$slots.leftPanel"
-              class="text-xxl px-6 pt-2 pb-6 m-0 capitalize"
+              class="text-xxl m-0 px-6 pt-2 pb-6 capitalize"
             >
               {{ contentTitle }}
             </h2>

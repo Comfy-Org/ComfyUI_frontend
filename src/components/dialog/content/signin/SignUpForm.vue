@@ -7,7 +7,7 @@
     <!-- Email Field -->
     <FormField v-slot="$field" name="email" class="flex flex-col gap-2">
       <label
-        class="opacity-80 text-base font-medium mb-2"
+        class="mb-2 text-base font-medium opacity-80"
         for="comfy-org-sign-up-email"
       >
         {{ t('auth.signup.emailLabel') }}
@@ -40,11 +40,11 @@
       />
       <label
         for="comfy-org-sign-up-personal-data-consent"
-        class="opacity-80 text-base font-medium"
+        class="text-base font-medium opacity-80"
       >
         {{ t('auth.signup.personalDataConsentLabel') }}
       </label>
-      <small v-if="$field.error" class="text-red-500 -mt-4">{{
+      <small v-if="$field.error" class="-mt-4 text-red-500">{{
         $field.error.message
       }}</small>
     </FormField>
@@ -53,7 +53,7 @@
     <Button
       type="submit"
       :label="t('auth.signup.signUpButton')"
-      class="h-10 font-medium mt-4"
+      class="mt-4 h-10 font-medium"
     />
   </Form>
 </template>

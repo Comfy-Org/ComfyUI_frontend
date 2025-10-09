@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ $t('Node Widgets Error') }}
   </div>
   <div
@@ -19,12 +19,12 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container flex items-center group"
+      class="lg-widget-container group flex items-center"
     >
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+        class="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       >
         <InputSlot
           :slot-data="{

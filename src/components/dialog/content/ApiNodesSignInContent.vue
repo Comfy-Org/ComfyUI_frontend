@@ -1,16 +1,16 @@
 <template>
-  <div class="flex flex-col gap-4 max-w-96 h-110 p-2">
-    <div class="text-2xl font-medium mb-2">
+  <div class="flex h-110 max-w-96 flex-col gap-4 p-2">
+    <div class="mb-2 text-2xl font-medium">
       {{ t('apiNodesSignInDialog.title') }}
     </div>
 
-    <div class="text-base mb-4">
+    <div class="mb-4 text-base">
       {{ t('apiNodesSignInDialog.message') }}
     </div>
 
     <ApiNodesList :node-names="apiNodeNames" />
 
-    <div class="flex justify-between items-center">
+    <div class="flex items-center justify-between">
       <Button :label="t('g.learnMore')" link @click="handleLearnMoreClick" />
       <div class="flex gap-2">
         <Button

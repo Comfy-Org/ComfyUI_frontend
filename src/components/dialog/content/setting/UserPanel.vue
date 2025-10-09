@@ -1,7 +1,7 @@
 <template>
   <TabPanel value="User" class="user-settings-container h-full">
-    <div class="flex flex-col h-full">
-      <h2 class="text-2xl font-bold mb-2">{{ $t('userSettings.title') }}</h2>
+    <div class="flex h-full flex-col">
+      <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
       <Divider class="mb-3" />
 
       <!-- Normal User Panel -->
@@ -35,7 +35,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.provider') }}
           </h3>
-          <div class="text-muted flex items-center gap-1">
+          <div class="flex items-center gap-1 text-muted">
             <i :class="providerIcon" />
             {{ providerName }}
             <Button
@@ -54,7 +54,7 @@
 
         <ProgressSpinner
           v-if="loading"
-          class="w-8 h-8 mt-4"
+          class="mt-4 h-8 w-8"
           style="--pc-spinner-color: #000"
         />
         <div v-else class="mt-4 flex flex-col gap-2">

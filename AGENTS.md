@@ -5,7 +5,7 @@
 - Routing/i18n/entry: `src/router.ts`, `src/i18n.ts`, `src/main.ts`.
 - Tests: unit/component in `tests-ui/` and `src/components/**/*.{test,spec}.ts`; E2E in `browser_tests/`.
 - Public assets: `public/`. Build output: `dist/`.
-- Config: `vite.config.mts`, `vitest.config.ts`, `playwright.config.ts`, `eslint.config.js`, `.prettierrc`.
+- Config: `vite.config.mts`, `vitest.config.ts`, `playwright.config.ts`, `eslint.config.ts`, `.prettierrc`.
 
 ## Build, Test, and Development Commands
 - `pnpm dev`: Start Vite dev server.

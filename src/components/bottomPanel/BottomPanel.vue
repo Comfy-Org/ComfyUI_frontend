@@ -1,17 +1,17 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex h-full flex-col">
     <Tabs
       :key="$i18n.locale"
       v-model:value="bottomPanelStore.activeBottomPanelTabId"
     >
       <TabList pt:tab-list="border-none">
-        <div class="w-full flex justify-between">
+        <div class="flex w-full justify-between">
           <div class="tabs-container">
             <Tab
               v-for="tab in bottomPanelStore.bottomPanelTabs"
               :key="tab.id"
               :value="tab.id"
-              class="p-3 border-none"
+              class="border-none p-3"
             >
               <span class="font-bold">
                 {{ getTabDisplayTitle(tab) }}
@@ -41,7 +41,7 @@
       </TabList>
     </Tabs>
     <!-- h-0 to force the div to grow -->
-    <div class="grow h-0">
+    <div class="h-0 grow">
       <ExtensionSlot
         v-if="
           bottomPanelStore.bottomPanelVisible &&

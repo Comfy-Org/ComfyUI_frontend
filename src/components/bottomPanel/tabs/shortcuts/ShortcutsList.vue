@@ -1,13 +1,13 @@
 <template>
   <div class="shortcuts-list flex justify-center">
-    <div class="grid gap-4 md:gap-24 h-full grid-cols-1 md:grid-cols-3 w-[90%]">
+    <div class="grid h-full w-[90%] grid-cols-1 gap-4 md:grid-cols-3 md:gap-24">
       <div
         v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
         :key="subcategory"
         class="flex flex-col"
       >
         <h3
-          class="subcategory-title text-xs font-bold uppercase tracking-wide text-surface-600 dark-theme:text-surface-400 mb-4"
+          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-surface-600 uppercase dark-theme:text-surface-400"
         >
           {{ getSubcategoryTitle(subcategory) }}
         </h3>
@@ -16,7 +16,7 @@
           <div
             v-for="command in subcategoryCommands"
             :key="command.id"
-            class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors duration-200"
+            class="shortcut-item flex items-center justify-between rounded py-2 transition-colors duration-200 hover:bg-surface-100 dark-theme:hover:bg-surface-700"
           >
             <div class="shortcut-info grow pr-4">
               <div class="shortcut-name text-sm font-medium">
@@ -32,7 +32,7 @@
                 <span
                   v-for="key in command.keybinding!.combo.getKeySequences()"
                   :key="key"
-                  class="key-badge px-2 py-1 text-xs font-mono bg-surface-200 dark-theme:bg-surface-600 rounded border min-w-6 text-center"
+                  class="key-badge min-w-6 rounded border bg-surface-200 px-2 py-1 text-center font-mono text-xs dark-theme:bg-surface-600"
                 >
                   {{ formatKey(key) }}
                 </span>

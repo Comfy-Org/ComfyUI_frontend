@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <div
-      class="p-4 border border-gray-300 dark-theme:border-gray-600 rounded max-h-[48rem]"
+      class="max-h-[48rem] rounded border border-gray-300 p-4 dark-theme:border-gray-600"
     >
       <Chart :type="chartType" :data="chartData" :options="chartOptions" />
     </div>

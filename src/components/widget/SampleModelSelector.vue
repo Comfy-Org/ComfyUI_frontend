@@ -3,7 +3,7 @@
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
-          <i class="icon-[lucide--puzzle] text-neutral" />
+          <i class="text-neutral icon-[lucide--puzzle]" />
         </template>
         <template #header-title>
           <span class="text-neutral text-base">{{ t('g.title') }}</span>
@@ -56,7 +56,7 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative px-6 pb-4 flex gap-2">
+      <div class="relative flex gap-2 px-6 pb-4">
         <MultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
@@ -92,7 +92,7 @@
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
-                <div class="w-full h-full bg-blue-500"></div>
+                <div class="h-full w-full bg-blue-500"></div>
               </template>
               <template #top-right>
                 <IconButton

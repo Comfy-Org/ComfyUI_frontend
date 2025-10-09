@@ -29,18 +29,18 @@
             item?.alt ||
             `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
           "
-          class="w-full h-auto max-h-64 object-contain"
+          class="h-auto max-h-64 w-full object-contain"
         />
       </template>
       <template #thumbnail="{ item }">
-        <div class="p-1 w-full h-full">
+        <div class="h-full w-full p-1">
           <img
             :src="item?.thumbnailImageSrc || item?.src || ''"
             :alt="
               item?.alt ||
               `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
             "
-            class="w-full h-full object-cover rounded-lg"
+            class="h-full w-full rounded-lg object-cover"
           />
         </div>
       </template>

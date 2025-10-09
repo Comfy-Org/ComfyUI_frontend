@@ -4,7 +4,7 @@
       v-tooltip.top="
         isDisabled ? $t('manager.enablePackToChangeVersion') : null
       "
-      class="inline-flex items-center gap-1 rounded-2xl text-xs py-1"
+      class="inline-flex items-center gap-1 rounded-2xl py-1 text-xs"
       :class="{
         'bg-dialog-surface px-1.5': fill,
         'cursor-pointer': !isDisabled,
@@ -19,7 +19,7 @@
     >
       <i
         v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-blue-600 text-xs"
+        class="pi pi-arrow-circle-up text-xs text-blue-600"
       />
       <span>{{ installedVersion }}</span>
       <i v-if="!isDisabled" class="pi pi-chevron-right text-xxs" />

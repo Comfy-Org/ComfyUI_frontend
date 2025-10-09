@@ -1,8 +1,8 @@
 <template>
   <Toast group="reroute-migration">
     <template #message>
-      <div class="flex flex-col items-start flex-auto">
-        <div class="font-medium text-lg my-4">
+      <div class="flex flex-auto flex-col items-start">
+        <div class="my-4 text-lg font-medium">
           {{ t('toastMessages.migrateToLitegraphReroute') }}
         </div>
         <Button

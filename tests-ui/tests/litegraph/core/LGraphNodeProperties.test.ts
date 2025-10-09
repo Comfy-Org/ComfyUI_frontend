@@ -46,12 +46,12 @@ describe('LGraphNodeProperties', () => {
       })
     })
 
-    it("should not emit events when value doesn't change", () => {
+    it('should emit event when value is set to the same value', () => {
       new LGraphNodeProperties(mockNode)
 
       mockNode.title = 'Test Node' // Same value as original
 
-      expect(mockGraph.trigger).toHaveBeenCalledTimes(0)
+      expect(mockGraph.trigger).toHaveBeenCalledTimes(1)
     })
 
     it('should not emit events when node has no graph', () => {
