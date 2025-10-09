@@ -344,8 +344,8 @@ export class LGraphNode
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
-      delete this.bgcolor
+      this.color = undefined
+      this.bgcolor = undefined
     } else {
       this.color = colorOption.color
       this.bgcolor = colorOption.bgcolor
@@ -495,7 +495,7 @@ export class LGraphNode
   set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
     switch (v) {
       case 'default':
-        delete this._shape
+        this._shape = undefined
         break
       case 'box':
         this._shape = RenderShape.BOX
@@ -943,7 +943,7 @@ export class LGraphNode
     }
 
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
-    delete data.id
+    data.id = undefined
 
     if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
 
@@ -1948,7 +1948,7 @@ export class LGraphNode
       for (const input of this.inputs) {
         if (input._widget === widget) {
           input._widget = undefined
-          delete input.widget
+          input.widget = undefined
         }
       }
     }
@@ -2857,7 +2857,7 @@ export class LGraphNode
     const reroutes = LLink.getReroutes(graph, link)
     for (const reroute of reroutes) {
       reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
+      if (reroute.floating) reroute.floating = undefined
       reroute._dragging = undefined
     }
 
@@ -2947,7 +2947,7 @@ export class LGraphNode
 
     reroute.floatingLinkIds.add(link.id)
     link.parentId = reroute.id
-    delete parentReroute.floating
+    parentReroute.floating = undefined
     return reroute
   }
 
