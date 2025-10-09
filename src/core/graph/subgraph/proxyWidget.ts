@@ -96,44 +96,33 @@ const onConfigure = function (
         }
       }
 
-      const realIndexes: [number, IBaseWidget][] = []
-      const proxyItems: [string, string][] = []
-      for (let i = 0; i < parsed.length; i++) {
-        if (parsed[i][0] === '-1') {
-          const widget = this.widgets.find((w) => w.name === parsed[i][1])
-          if (!widget) continue
-          realIndexes.push([i, widget])
-        } else proxyItems.push(parsed[i])
-      }
+      const newWidgets = parsed.flatMap(([nodeId, widgetName]) => {
+        if (nodeId === '-1') {
+          const widget = this.widgets.find((w) => w.name === widgetName)
+          return widget ? [widget] : []
+        }
+        const w = newProxyWidget(this, nodeId, widgetName)
+        if (isActiveGraph && w instanceof DOMWidgetImpl) setWidget(w)
+        return [w]
+      })
       this.widgets = this.widgets.filter(
         (w) => !isProxyWidget(w) && !parsed.some(([, name]) => w.name === name)
       )
-      for (const [nodeId, widgetName] of proxyItems) {
-        const w = addProxyWidget(this, `${nodeId}`, widgetName)
-        if (isActiveGraph && w instanceof DOMWidgetImpl) setWidget(w)
-      }
-      for (const [i, w] of realIndexes) this.widgets.splice(i, 0, w)
+      this.widgets.push(...newWidgets)
+
       canvasStore.canvas?.setDirty(true, true)
       this._setConcreteSlots()
       this.arrange()
     }
   })
-  if (serialisedNode.properties?.proxyWidgets) {
+  if (serialisedNode.properties?.proxyWidgets)
     this.properties.proxyWidgets = serialisedNode.properties.proxyWidgets
-    const realIndexes: [number, IBaseWidget][] = parseProxyWidgets(
-      serialisedNode.properties.proxyWidgets
-    ).flatMap(([nodeId, widgetName], i) => {
-      if (nodeId !== '-1') return []
-      const widget = this.widgets.find((w) => w.name === widgetName)
-      if (!widget) return []
-      return [[i, widget]]
-    })
-    for (const [i, w] of realIndexes)
-      w.value = serialisedNode.widgets_values?.[i] ?? w.value
-  }
+  serialisedNode.widgets_values?.forEach((v, index) => {
+    if (v !== null) this.widgets[index].value = v
+  })
 }
 
-function addProxyWidget(
+function newProxyWidget(
   subgraphNode: SubgraphNode,
   nodeId: string,
   widgetName: string
@@ -157,7 +146,7 @@ function addProxyWidget(
     width: undefined,
     y: 0
   }
-  return addProxyFromOverlay(subgraphNode, overlay)
+  return newProxyFromOverlay(subgraphNode, overlay)
 }
 function resolveLinkedWidget(
   overlay: Overlay
@@ -168,7 +157,7 @@ function resolveLinkedWidget(
   return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
 }
 
-function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
+function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
   const { updatePreviews } = useLitegraphService()
   let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
   let backingWidget = linkedWidget ?? disconnectedWidget
@@ -240,6 +229,5 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
     }
   }
   const w = new Proxy(disconnectedWidget, handler)
-  subgraphNode.widgets.push(w)
   return w
 }
