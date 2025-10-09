@@ -7366,19 +7366,6 @@
       }
     }
   },
-  "SaveSVG": {
-    "description": "SVGファイルをディスクに保存します。",
-    "display_name": "SVGを保存",
-    "inputs": {
-      "filename_prefix": {
-        "name": "ファイル名プレフィックス",
-        "tooltip": "保存するファイルのプレフィックスです。%date:yyyy-MM-dd% や %Empty Latent Image.width% など、ノードからの値を含めるフォーマット情報を指定できます。"
-      },
-      "svg": {
-        "name": "svg"
-      }
-    }
-  },
   "SaveVideo": {
     "description": "入力画像をComfyUIの出力ディレクトリに保存します。",
     "display_name": "ビデオを保存",

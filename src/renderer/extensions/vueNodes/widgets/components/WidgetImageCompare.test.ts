@@ -5,9 +5,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetImageCompare, {
-  type ImageCompareValue
-} from './WidgetImageCompare.vue'
+import WidgetImageCompare from './WidgetImageCompare.vue'
+import type { ImageCompareValue } from './WidgetImageCompare.vue'
 
 describe('WidgetImageCompare Display', () => {
   const createMockWidget = (

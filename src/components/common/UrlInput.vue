@@ -12,9 +12,9 @@
       :class="{
         'pi pi-spin pi-spinner text-neutral-400':
           validationState === ValidationState.LOADING,
-        'pi pi-check text-green-500 cursor-pointer':
+        'pi pi-check cursor-pointer text-green-500':
           validationState === ValidationState.VALID,
-        'pi pi-times text-red-500 cursor-pointer':
+        'pi pi-times cursor-pointer text-red-500':
           validationState === ValidationState.INVALID
       }"
       @click="validateUrl(props.modelValue)"

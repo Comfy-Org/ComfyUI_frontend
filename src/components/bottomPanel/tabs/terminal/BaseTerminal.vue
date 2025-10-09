@@ -1,10 +1,10 @@
 <template>
   <div
     ref="rootEl"
-    class="relative overflow-hidden h-full w-full bg-neutral-900"
+    class="relative h-full w-full overflow-hidden bg-neutral-900"
   >
-    <div class="p-terminal rounded-none h-full w-full p-2">
-      <div ref="terminalEl" class="h-full terminal-host" />
+    <div class="p-terminal h-full w-full rounded-none p-2">
+      <div ref="terminalEl" class="terminal-host h-full" />
     </div>
     <Button
       v-tooltip.left="{

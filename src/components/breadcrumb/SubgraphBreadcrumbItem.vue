@@ -6,7 +6,7 @@
       showDelay: 512
     }"
     href="#"
-    class="cursor-pointer p-breadcrumb-item-link"
+    class="p-breadcrumb-item-link cursor-pointer"
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
@@ -37,7 +37,7 @@
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
-    class="fixed z-10000 text-[.8rem] px-2 py-2"
+    class="fixed z-10000 px-2 py-2 text-[.8rem]"
     @blur="inputBlur(true)"
     @click.stop
     @keydown.enter="inputBlur(true)"

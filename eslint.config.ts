@@ -1,38 +1,70 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
+import tailwind from 'eslint-plugin-tailwindcss'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import {
+  configs as tseslintConfigs,
+  parser as tseslintParser
+} from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
 
 const extraFileExtensions = ['.vue']
 
+const commonGlobals = {
+  ...globals.browser,
+  __COMFYUI_FRONTEND_VERSION__: 'readonly'
+} as const
+
+const settings = {
+  'import/resolver': {
+    typescript: true,
+    node: true
+  },
+  tailwindcss: {
+    config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
+    functions: ['cn', 'clsx', 'tw']
+  }
+} as const
+
+const commonParserOptions = {
+  parser: tseslintParser,
+  projectService: true,
+  tsConfigRootDir: import.meta.dirname,
+  ecmaVersion: 2020,
+  sourceType: 'module',
+  extraFileExtensions
+} as const
+
 export default defineConfig([
   {
     ignores: [
-      'src/scripts/*',
-      'src/extensions/core/*',
-      'src/types/vue-shim.d.ts',
-      'packages/registry-types/src/comfyRegistryTypes.ts',
-      'src/types/generatedManagerTypes.ts',
+      '.i18nrc.cjs',
+      'components.d.ts',
+      'lint-staged.config.js',
+      'vitest.setup.ts',
       '**/vite.config.*.timestamp*',
-      '**/vitest.config.*.timestamp*'
+      '**/vitest.config.*.timestamp*',
+      'packages/registry-types/src/comfyRegistryTypes.ts',
+      'src/extensions/core/*',
+      'src/scripts/*',
+      'src/types/generatedManagerTypes.ts',
+      'src/types/vue-shim.d.ts'
     ]
   },
   {
     files: ['./**/*.{ts,mts}'],
+    settings,
     languageOptions: {
-      globals: {
-        ...globals.browser,
-        __COMFYUI_FRONTEND_VERSION__: 'readonly'
-      },
+      globals: commonGlobals,
       parserOptions: {
-        parser: tseslint.parser,
+        ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
             'vite.config.mts',
@@ -41,37 +73,33 @@ export default defineConfig([
             'playwright.config.ts',
             'playwright.i18n.config.ts'
           ]
-        },
-        tsConfigRootDir: import.meta.dirname,
-        ecmaVersion: 2020,
-        sourceType: 'module',
-        extraFileExtensions
+        }
       }
     }
   },
   {
     files: ['./**/*.vue'],
+    settings,
     languageOptions: {
-      globals: {
-        ...globals.browser,
-        __COMFYUI_FRONTEND_VERSION__: 'readonly'
-      },
+      globals: commonGlobals,
       parser: vueParser,
-      parserOptions: {
-        parser: tseslint.parser,
-        projectService: true,
-        tsConfigRootDir: import.meta.dirname,
-        ecmaVersion: 2020,
-        sourceType: 'module',
-        extraFileExtensions
-      }
+      parserOptions: commonParserOptions
     }
   },
   pluginJs.configs.recommended,
-  tseslint.configs.recommended,
+
+  tseslintConfigs.recommended,
+  // Difference in typecheck on CI vs Local
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Bad types in the plugin
+  tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
+  // @ts-expect-error Bad types in the plugin
+  importX.flatConfigs.recommended,
+  // @ts-expect-error Bad types in the plugin
+  importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
@@ -91,13 +119,18 @@ export default defineConfig([
           allowInterfaces: 'always'
         }
       ],
+      'import-x/consistent-type-specifier-style': ['error', 'prefer-top-level'],
+      'import-x/no-useless-path-segments': 'error',
+      'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
+      'tailwindcss/no-custom-classname': 'off', // TODO: fix
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
+      'vue/match-component-import-name': 'error',
       /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-properties': 'error',

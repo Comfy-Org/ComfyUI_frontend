@@ -9,7 +9,7 @@
     severity="secondary"
     @click="frameNodes"
   >
-    <i-lucide:frame class="w-4 h-4" />
+    <i class="icon-[lucide--frame] h-4 w-4" />
   </Button>
 </template>
 

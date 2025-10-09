@@ -4,7 +4,8 @@ import { computed, inject, ref } from 'vue'
 import LazyImage from '@/components/common/LazyImage.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-import { AssetKindKey, type LayoutMode } from './types'
+import { AssetKindKey } from './types'
+import type { LayoutMode } from './types'
 
 interface Props {
   index: number
@@ -91,9 +92,11 @@ function handleVideoLoad(event: Event) {
       <!-- Selected Icon -->
       <div
         v-if="selected"
-        class="rounded-full bg-blue-500 border-1 border-white size-4 absolute top-1 left-1"
+        class="absolute top-1 left-1 size-4 rounded-full border-1 border-white bg-blue-500"
       >
-        <i-lucide:check class="size-3 text-white -translate-y-[0.5px]" />
+        <i
+          class="icon-[lucide--check] size-3 translate-y-[-0.5px] text-white"
+        />
       </div>
       <video
         v-if="mediaSrc && isVideo"

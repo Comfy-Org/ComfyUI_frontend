@@ -9,7 +9,7 @@
     @click="collapsible && toggleCollapse()"
   >
     <h3
-      class="text-xs font-bold uppercase text-neutral-400 dark-theme:text-neutral-400"
+      class="text-xs font-bold text-neutral-400 uppercase dark-theme:text-neutral-400"
     >
       {{ title }}
     </h3>

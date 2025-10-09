@@ -2,7 +2,8 @@ import { t } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import { type DialogComponentProps, useDialogStore } from '@/stores/dialogStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import type { DialogComponentProps } from '@/stores/dialogStore'
 
 interface ShowOptions {
   /** ComfyUI node type for context (e.g., 'CheckpointLoaderSimple') */

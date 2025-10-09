@@ -89,7 +89,7 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 
 .side-bar-button-selected .side-bar-button-icon {
   font-size: var(--sidebar-icon-size) !important;
-  font-weight: bold;
+  font-weight: 700;
 }
 </style>
 

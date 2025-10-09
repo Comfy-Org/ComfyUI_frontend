@@ -24,9 +24,7 @@ export class VueNodeHelpers {
    * Get locator for selected Vue node components (using visual selection indicators)
    */
   get selectedNodes(): Locator {
-    return this.page.locator(
-      '[data-node-id].outline-black, [data-node-id].outline-white'
-    )
+    return this.page.locator('[data-node-id].outline-node-component-outline')
   }
 
   /**
@@ -119,6 +117,26 @@ export class VueNodeHelpers {
       )
     } else {
       await this.page.waitForSelector('[data-node-id]')
+    }
+  }
+
+  /**
+   * Get a specific widget by node title and widget name
+   */
+  getWidgetByName(nodeTitle: string, widgetName: string): Locator {
+    return this.getNodeByTitle(nodeTitle).locator(
+      `_vue=[widget.name="${widgetName}"]`
+    )
+  }
+
+  /**
+   * Get controls for input number widgets (increment/decrement buttons and input)
+   */
+  getInputNumberControls(widget: Locator) {
+    return {
+      input: widget.locator('input'),
+      incrementButton: widget.locator('button').first(),
+      decrementButton: widget.locator('button').last()
     }
   }
 }

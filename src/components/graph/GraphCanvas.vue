@@ -10,7 +10,7 @@
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
-      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
+      <div class="pointer-events-auto absolute top-0 left-0 w-auto max-w-full">
         <SecondRowWorkflowTabs
           v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
         />

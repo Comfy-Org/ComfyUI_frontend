@@ -9,7 +9,7 @@
       <ColorPicker
         v-model="localValue"
         v-bind="filteredProps"
-        class="w-8 h-4 !rounded-full overflow-hidden border-none"
+        class="h-4 w-8 overflow-hidden !rounded-full border-none"
         :pt="{
           preview: '!w-full !h-full !border-none'
         }"
@@ -27,12 +27,8 @@ import ColorPicker from 'primevue/colorpicker'
 import { computed, ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  type ColorFormat,
-  type HSB,
-  isColorFormat,
-  toHexFromFormat
-} from '@/utils/colorUtil'
+import { isColorFormat, toHexFromFormat } from '@/utils/colorUtil'
+import type { ColorFormat, HSB } from '@/utils/colorUtil'
 import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,

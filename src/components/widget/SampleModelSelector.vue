@@ -3,7 +3,7 @@
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
-          <i-lucide:puzzle class="text-neutral" />
+          <i class="text-neutral icon-[lucide--puzzle]" />
         </template>
         <template #header-title>
           <span class="text-neutral text-base">{{ t('g.title') }}</span>
@@ -19,7 +19,7 @@
       <div class="flex gap-2">
         <IconTextButton type="primary" label="Upload Model" @click="() => {}">
           <template #icon>
-            <i-lucide:upload />
+            <i class="icon-[lucide--upload]" />
           </template>
         </IconTextButton>
         <MoreButton>
@@ -34,7 +34,7 @@
               "
             >
               <template #icon>
-                <i-lucide:download />
+                <i class="icon-[lucide--download]" />
               </template>
             </IconTextButton>
             <IconTextButton
@@ -47,7 +47,7 @@
               "
             >
               <template #icon>
-                <i-lucide:scroll />
+                <i class="icon-[lucide--scroll]" />
               </template>
             </IconTextButton>
           </template>
@@ -56,7 +56,7 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative px-6 pb-4 flex gap-2">
+      <div class="relative flex gap-2 px-6 pb-4">
         <MultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
@@ -79,7 +79,7 @@
           class="w-[135px]"
         >
           <template #icon>
-            <i-lucide:filter />
+            <i class="icon-[lucide--filter]" />
           </template>
         </SingleSelect>
       </div>
@@ -92,14 +92,14 @@
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
-                <div class="w-full h-full bg-blue-500"></div>
+                <div class="h-full w-full bg-blue-500"></div>
               </template>
               <template #top-right>
                 <IconButton
                   class="!bg-white !text-neutral-900"
                   @click="() => {}"
                 >
-                  <i-lucide:info />
+                  <i class="icon-[lucide--info]" />
                 </IconButton>
               </template>
               <template #bottom-right>
@@ -107,7 +107,7 @@
                 <SquareChip label="1.2 MB" />
                 <SquareChip label="LoRA">
                   <template #icon>
-                    <i-lucide:folder />
+                    <i class="icon-[lucide--folder]" />
                   </template>
                 </SquareChip>
               </template>

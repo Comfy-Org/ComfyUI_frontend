@@ -119,5 +119,27 @@ describe('hostWhitelist utils', () => {
         expect(isHostWhitelisted('   ')).toBe(false)
       })
     })
+
+    describe('comfy.org hosts', () => {
+      it.each([
+        'staging.comfy.org',
+        'stagingcloud.comfy.org',
+        'pr-123.testingcloud.comfy.org',
+        'api.v2.staging.comfy.org'
+      ])('should allow %o', (input) => {
+        expect(isHostWhitelisted(input)).toBe(true)
+      })
+
+      it.each([
+        'comfy.org.evil.com',
+        'evil-comfy.org',
+        'comfy.organization',
+        'notcomfy.org',
+        'comfy.org.hacker.net',
+        'mycomfy.org.example.com'
+      ])('should NOT allow %o', (input) => {
+        expect(isHostWhitelisted(input)).toBe(false)
+      })
+    })
   })
 })

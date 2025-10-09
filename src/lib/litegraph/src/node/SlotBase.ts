@@ -8,8 +8,10 @@ import type {
   IWidgetLocator,
   Point
 } from '@/lib/litegraph/src/interfaces'
-import type { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type {
+  LinkDirection,
+  RenderShape
+} from '@/lib/litegraph/src/types/globalEnums'
 
 /** Base class for all input & output slots. */
 

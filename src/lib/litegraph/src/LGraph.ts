@@ -12,10 +12,13 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode, type NodeId } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
+import { LGraphNode } from './LGraphNode'
+import type { NodeId } from './LGraphNode'
+import { LLink } from './LLink'
+import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
-import { Reroute, type RerouteId } from './Reroute'
+import { Reroute } from './Reroute'
+import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
@@ -55,6 +58,12 @@ import {
 } from './subgraph/subgraphUtils'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
+  LGraphTriggerAction,
+  LGraphTriggerEvent,
+  LGraphTriggerHandler,
+  LGraphTriggerParam
+} from './types/graphTriggers'
+import type {
   ExportedSubgraph,
   ExposedWidget,
   ISerialisedGraph,
@@ -64,6 +73,11 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+
+export type {
+  LGraphTriggerAction,
+  LGraphTriggerParam
+} from './types/graphTriggers'
 
 export interface LGraphState {
   lastGroupId: number
@@ -254,7 +268,7 @@ export class LGraph
   onExecuteStep?(): void
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
-  onTrigger?(action: string, param: unknown): void
+  onTrigger?: LGraphTriggerHandler
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
@@ -1180,8 +1194,23 @@ export class LGraph
   }
 
   // ********** GLOBALS *****************
+  trigger<A extends LGraphTriggerAction>(
+    action: A,
+    param: LGraphTriggerParam<A>
+  ): void
+  trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
-    this.onTrigger?.(action, param)
+    // Convert to discriminated union format for typed handlers
+    const validEventTypes = new Set([
+      'node:slot-links:changed',
+      'node:slot-errors:changed',
+      'node:property:changed'
+    ])
+
+    if (validEventTypes.has(action) && param && typeof param === 'object') {
+      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+    }
+    // Don't handle unknown events - just ignore them
   }
 
   /** @todo Clean up - never implemented. */

@@ -1,18 +1,20 @@
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
-  type SlotPositionContext,
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
   calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@/utils/colorUtil'
+import type { ColorAdjustOptions } from '@/utils/colorUtil'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
-import { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
+import { LGraphButton } from './LGraphButton'
+import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
@@ -42,12 +44,8 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import {
-  type LGraphNodeConstructor,
-  LiteGraph,
-  type Subgraph,
-  type SubgraphNode
-} from './litegraph'
+import { LiteGraph } from './litegraph'
+import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
 import {
   createBounds,
   isInRect,
@@ -86,7 +84,8 @@ import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { toClass } from './utils/type'
 import { BaseWidget } from './widgets/BaseWidget'
-import { type WidgetTypeMap, toConcreteWidget } from './widgets/widgetMap'
+import { toConcreteWidget } from './widgets/widgetMap'
+import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
@@ -345,8 +344,8 @@ export class LGraphNode
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
-      delete this.bgcolor
+      this.color = undefined
+      this.bgcolor = undefined
     } else {
       this.color = colorOption.color
       this.bgcolor = colorOption.bgcolor
@@ -496,7 +495,7 @@ export class LGraphNode
   set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
     switch (v) {
       case 'default':
-        delete this._shape
+        this._shape = undefined
         break
       case 'box':
         this._shape = RenderShape.BOX
@@ -944,7 +943,7 @@ export class LGraphNode
     }
 
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
-    delete data.id
+    data.id = undefined
 
     if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
 
@@ -1949,7 +1948,7 @@ export class LGraphNode
       for (const input of this.inputs) {
         if (input._widget === widget) {
           input._widget = undefined
-          delete input.widget
+          input.widget = undefined
         }
       }
     }
@@ -2852,13 +2851,23 @@ export class LGraphNode
     output.links ??= []
     output.links.push(link.id)
     // connect in input
-    inputNode.inputs[inputIndex].link = link.id
+    const targetInput = inputNode.inputs[inputIndex]
+    targetInput.link = link.id
+    if (targetInput.widget) {
+      graph.trigger('node:slot-links:changed', {
+        nodeId: inputNode.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: inputIndex,
+        connected: true,
+        linkId: link.id
+      })
+    }
 
     // Reroutes
     const reroutes = LLink.getReroutes(graph, link)
     for (const reroute of reroutes) {
       reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
+      if (reroute.floating) reroute.floating = undefined
       reroute._dragging = undefined
     }
 
@@ -2948,7 +2957,7 @@ export class LGraphNode
 
     reroute.floatingLinkIds.add(link.id)
     link.parentId = reroute.id
-    delete parentReroute.floating
+    parentReroute.floating = undefined
     return reroute
   }
 
@@ -3009,6 +3018,15 @@ export class LGraphNode
         const input = target.inputs[link_info.target_slot]
         // remove there
         input.link = null
+        if (input.widget) {
+          graph.trigger('node:slot-links:changed', {
+            nodeId: target.id,
+            slotType: NodeSlotType.INPUT,
+            slotIndex: link_info.target_slot,
+            connected: false,
+            linkId: link_info.id
+          })
+        }
 
         // remove the link from the links pool
         link_info.disconnect(graph, 'input')
@@ -3045,6 +3063,15 @@ export class LGraphNode
           const input = target.inputs[link_info.target_slot]
           // remove other side link
           input.link = null
+          if (input.widget) {
+            graph.trigger('node:slot-links:changed', {
+              nodeId: target.id,
+              slotType: NodeSlotType.INPUT,
+              slotIndex: link_info.target_slot,
+              connected: false,
+              linkId: link_info.id
+            })
+          }
 
           // link_info hasn't been modified so its ok
           target.onConnectionsChange?.(
@@ -3114,6 +3141,15 @@ export class LGraphNode
     const link_id = this.inputs[slot].link
     if (link_id != null) {
       this.inputs[slot].link = null
+      if (input.widget) {
+        graph.trigger('node:slot-links:changed', {
+          nodeId: this.id,
+          slotType: NodeSlotType.INPUT,
+          slotIndex: slot,
+          connected: false,
+          linkId: link_id
+        })
+      }
 
       // remove other side
       const link_info = graph._links.get(link_id)

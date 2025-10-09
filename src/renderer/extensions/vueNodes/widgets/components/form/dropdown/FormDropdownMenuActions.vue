@@ -44,7 +44,7 @@ function handleSortSelected(item: SortOption) {
 </script>
 
 <template>
-  <div class="flex gap-2 text-zinc-400 px-4">
+  <div class="flex gap-2 px-4 text-zinc-400">
     <label
       :class="
         cn(
@@ -56,11 +56,11 @@ function handleSortSelected(item: SortOption) {
         )
       "
     >
-      <i-lucide:loader-circle
+      <i
         v-if="isQuerying"
-        class="mr-2 size-4 animate-spin"
+        class="mr-2 icon-[lucide--loader-circle] size-4 animate-spin"
       />
-      <i-lucide:search v-else class="mr-2 size-4" />
+      <i v-else class="mr-2 icon-[lucide--search] size-4" />
       <input
         v-model="searchQuery"
         type="text"
@@ -85,9 +85,9 @@ function handleSortSelected(item: SortOption) {
     >
       <div
         v-if="sortSelected !== 'default'"
-        class="size-2 absolute top-[-2px] left-[-2px] bg-blue-500 rounded-full"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-blue-500"
       />
-      <i-lucide:arrow-up-down class="size-4" />
+      <i class="icon-[lucide--arrow-up-down] size-4" />
     </button>
     <!-- Sort Popover -->
     <Popover
@@ -127,7 +127,10 @@ function handleSortSelected(item: SortOption) {
           @click="handleSortSelected(item)"
         >
           <span>{{ item.name }}</span>
-          <i-lucide:check v-if="sortSelected === item.id" class="size-4" />
+          <i
+            v-if="sortSelected === item.id"
+            class="icon-[lucide--check] size-4"
+          />
         </button>
       </div>
     </Popover>
@@ -153,7 +156,7 @@ function handleSortSelected(item: SortOption) {
         "
         @click="layoutMode = 'list'"
       >
-        <i-lucide:list class="size-4" />
+        <i class="icon-[lucide--list] size-4" />
       </button>
       <button
         :class="
@@ -167,7 +170,7 @@ function handleSortSelected(item: SortOption) {
         "
         @click="layoutMode = 'grid'"
       >
-        <i-lucide:layout-grid class="size-4" />
+        <i class="icon-[lucide--layout-grid] size-4" />
       </button>
     </div>
   </div>

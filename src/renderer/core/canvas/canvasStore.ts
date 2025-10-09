@@ -1,6 +1,7 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { type Raw, computed, markRaw, ref, shallowRef } from 'vue'
+import { computed, markRaw, ref, shallowRef } from 'vue'
+import type { Raw } from 'vue'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {

@@ -343,14 +343,6 @@
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
   },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Vue 노드 렌더링 활성화",
-    "tooltip": "노드를 캔버스 요소 대신 Vue 컴포넌트로 렌더링합니다. 실험적인 기능입니다."
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "Vue 위젯 활성화",
-    "tooltip": "Vue 노드 내에서 위젯을 Vue 컴포넌트로 렌더링합니다."
-  },
   "Comfy_WidgetControlMode": {
     "name": "위젯 제어 모드",
     "options": {
@@ -396,13 +388,13 @@
       "Topbar (2nd-row)": "상단바 (2번째 행)"
     }
   },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "저품질 렌더링 줌 임계값",
-    "tooltip": "줌 아웃시 저품질 도형 렌더링"
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "최대 FPS",
     "tooltip": "캔버스가 렌더링할 수 있는 최대 프레임 수입니다. 부드럽게 동작하도록 GPU 사용률을 제한 합니다. 0이면 화면 주사율로 작동 합니다. 기본값: 0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "줌 노드 상세 수준 - 글꼴 크기 임계값",
+    "tooltip": "노드가 저품질 LOD 렌더링으로 전환되는 시점을 제어합니다. 픽셀 단위의 글꼴 크기를 사용하여 전환 시점을 결정합니다. 0으로 설정하면 비활성화됩니다. 값 1-24는 LOD의 최소 글꼴 크기 임계값을 설정합니다 - 값이 높을수록(24px) 축소할 때 노드가 단순화된 렌더링으로 더 빨리 전환되고, 값이 낮을수록(1px) 전체 노드 품질이 더 오래 유지됩니다."
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"

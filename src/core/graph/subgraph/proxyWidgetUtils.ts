@@ -1,7 +1,5 @@
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/core/schemas/proxyWidget'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type {
   IContextMenuValue,
   LGraphNode
@@ -11,13 +9,15 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
-export type WidgetItem = [LGraphNode, IBaseWidget]
+type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
+
+export type WidgetItem = [PartialNode, IBaseWidget]
 
 function getProxyWidgets(node: SubgraphNode) {
   return parseProxyWidgets(node.properties.proxyWidgets)
 }
 export function promoteWidget(
-  node: LGraphNode,
+  node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
@@ -32,7 +32,7 @@ export function promoteWidget(
 }
 
 export function demoteWidget(
-  node: LGraphNode,
+  node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
@@ -119,9 +119,15 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
-    //NOTE: Since this operation is async, previews still don't exist after the single frame
-    //Add an onLoad callback to updatePreviews?
-    updatePreviews(node)
+    function checkWidgets() {
+      updatePreviews(node)
+      const widget = node.widgets?.find((w) => w.name.startsWith('$$'))
+      if (!widget) return
+      const pw = getProxyWidgets(subgraphNode)
+      if (pw.some(matchesPropertyItem([node, widget]))) return
+      promoteWidget(node, widget, [subgraphNode])
+    }
+    requestAnimationFrame(() => updatePreviews(node, checkWidgets))
   }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)

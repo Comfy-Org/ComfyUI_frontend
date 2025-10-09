@@ -18,10 +18,8 @@
 import { computed } from 'vue'
 
 import type { ResultItemType } from '@/schemas/apiSchema'
-import {
-  type ComboInputSpec,
-  isComboInputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 

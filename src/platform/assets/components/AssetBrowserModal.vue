@@ -23,6 +23,7 @@
     <template #header>
       <SearchBox
         v-model="searchQuery"
+        :autofocus="true"
         size="lg"
         :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
         class="max-w-96"

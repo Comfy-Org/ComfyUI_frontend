@@ -1,11 +1,11 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
+  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <div class="relative">
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+        class="lod-toggle text-sm font-normal whitespace-nowrap text-node-component-slot-text"
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
@@ -22,15 +22,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type ComponentPublicInstance,
-  type Ref,
-  computed,
-  inject,
-  onErrorCaptured,
-  ref,
-  watchEffect
-} from 'vue'
+import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
@@ -60,11 +53,8 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || '',
-  tooltipContainer
+  props.nodeType || ''
 )
 
 const tooltipConfig = computed(() => {

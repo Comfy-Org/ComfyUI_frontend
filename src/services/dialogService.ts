@@ -15,10 +15,10 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import { t } from '@/i18n'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import {
-  type DialogComponentProps,
-  type ShowDialogOptions,
-  useDialogStore
+import { useDialogStore } from '@/stores/dialogStore'
+import type {
+  DialogComponentProps,
+  ShowDialogOptions
 } from '@/stores/dialogStore'
 import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
 import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
@@ -121,8 +121,7 @@ export const useDialogService = () => {
         pt: {
           pcCloseButton: {
             root: {
-              class:
-                'bg-gray-500 dark-theme:bg-neutral-700 w-9 h-9 p-1.5 rounded-full text-white'
+              class: 'bg-dialog-surface w-9 h-9 p-1.5 rounded-full text-white'
             }
           },
           header: { class: 'py-0! px-6 m-0! h-[68px]' },
@@ -469,7 +468,7 @@ export const useDialogService = () => {
           pcCloseButton: {
             root: {
               class:
-                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-gray-500 dark-theme:bg-neutral-700 text-white'
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-dialog-surface text-white'
             }
           }
         },

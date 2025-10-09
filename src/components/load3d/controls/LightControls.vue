@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div v-if="showLightIntensityButton" class="relative show-light-intensity">
+    <div v-if="showLightIntensityButton" class="show-light-intensity relative">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleLightIntensity"
@@ -10,12 +10,12 @@
             value: t('load3d.lightIntensity'),
             showDelay: 300
           }"
-          class="pi pi-sun text-white text-lg"
+          class="pi pi-sun text-lg text-white"
         />
       </Button>
       <div
         v-show="showLightIntensity"
-        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-black/50 p-4 shadow-lg"
         style="width: 150px"
       >
         <Slider

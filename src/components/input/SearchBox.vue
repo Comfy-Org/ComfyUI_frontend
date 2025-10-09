@@ -1,14 +1,14 @@
 <template>
   <div :class="wrapperStyle" @click="focusInput">
-    <i-lucide:search :class="iconColorStyle" />
+    <i class="icon-[lucide--search]" :class="iconColorStyle" />
     <InputText
       ref="input"
-      v-model="searchQuery"
+      v-model="internalSearchQuery"
       :aria-label="
-        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+        placeholder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
       "
       :placeholder="
-        placeHolder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+        placeholder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
       "
       type="text"
       unstyled
@@ -18,23 +18,49 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
+const SEARCH_DEBOUNCE_DELAY_MS = 300
+
 const {
-  placeHolder,
+  autofocus = false,
+  placeholder,
   showBorder = false,
   size = 'md'
 } = defineProps<{
-  placeHolder?: string
+  autofocus?: boolean
+  placeholder?: string
   showBorder?: boolean
   size?: 'md' | 'lg'
 }>()
+
 // defineModel without arguments uses 'modelValue' as the prop name
 const searchQuery = defineModel<string>()
+
+// Internal search query state for immediate UI updates
+const internalSearchQuery = ref<string>(searchQuery.value ?? '')
+
+// Create debounced function to update the parent model
+const updateSearchQuery = useDebounceFn((value: string) => {
+  searchQuery.value = value
+}, SEARCH_DEBOUNCE_DELAY_MS)
+
+// Watch internal query changes and trigger debounced update
+watch(internalSearchQuery, (newValue) => {
+  void updateSearchQuery(newValue)
+})
+
+// Sync external changes back to internal state
+watch(searchQuery, (newValue) => {
+  if (newValue !== internalSearchQuery.value) {
+    internalSearchQuery.value = newValue || ''
+  }
+})
 
 const input = ref<{ $el: HTMLElement } | null>()
 const focusInput = () => {
@@ -42,6 +68,8 @@ const focusInput = () => {
     input.value.$el.focus()
   }
 }
+
+onMounted(() => autofocus && focusInput())
 
 const wrapperStyle = computed(() => {
   const baseClasses = [

@@ -23,7 +23,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3', 'stylelint'],
+  ignoreBinaries: ['python3'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
@@ -32,8 +32,7 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
-    '@trivago/prettier-plugin-sort-imports',
-    'stylelint'
+    '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
     // Auto generated manager types
@@ -45,9 +44,9 @@ const config: KnipConfig = {
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
     css: (text: string) =>
-      [
-        ...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)
-      ].join('\n')
+      [...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)]
+        .map((match) => match[0].replace(/url\(['"]?([^'"()]+)['"]?\)/, '$1'))
+        .join('\n')
   },
   vite: {
     config: ['vite?(.*).config.mts']

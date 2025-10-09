@@ -36,7 +36,7 @@ const searchQuery = defineModel<string>('searchQuery')
 
 <template>
   <div
-    class="w-103 h-[640px] pt-4 bg-white dark-theme:bg-charcoal-800 rounded-lg outline outline-offset-[-1px] outline-sand-100 dark-theme:outline-zinc-800 flex flex-col"
+    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-node-component-surface pt-4 outline outline-offset-[-1px] outline-node-component-border"
   >
     <!-- Filter -->
     <FormDropdownMenuFilter
@@ -53,7 +53,7 @@ const searchQuery = defineModel<string>('searchQuery')
       :is-querying="isQuerying"
     />
     <!-- List -->
-    <div class="flex overflow-hidden relative h-full">
+    <div class="relative flex h-full overflow-hidden">
       <div
         :class="
           cn(
@@ -67,15 +67,15 @@ const searchQuery = defineModel<string>('searchQuery')
         "
       >
         <div
-          class="absolute top-0 inset-x-3 h-5 bg-gradient-to-b from-white dark-theme:from-neutral-900 to-transparent pointer-events-none z-10"
+          class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5 bg-gradient-to-b from-backdrop to-transparent"
         />
         <div
           v-if="items.length === 0"
-          class="flex justify-center items-center absolute inset-0"
+          class="absolute inset-0 flex items-center justify-center"
         >
-          <i-lucide:circle-off
+          <i
             title="No items"
-            class="size-30 text-zinc-500/20"
+            class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
           />
         </div>
         <!-- Item -->

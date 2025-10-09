@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative w-full h-full"
+    class="relative h-full w-full"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
@@ -59,14 +59,14 @@
     />
     <div
       v-if="enable3DViewer"
-      class="absolute top-12 right-2 z-20 pointer-events-auto"
+      class="pointer-events-auto absolute top-12 right-2 z-20"
     >
       <ViewerControls :node="node" />
     </div>
 
     <div
       v-if="showRecordingControls"
-      class="absolute right-2 z-20 pointer-events-auto"
+      class="pointer-events-auto absolute right-2 z-20"
       :class="{
         'top-12': !enable3DViewer,
         'top-24': enable3DViewer

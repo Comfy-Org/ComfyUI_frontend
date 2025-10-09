@@ -7,7 +7,7 @@
   >
     <!-- Email Field -->
     <div class="flex flex-col gap-2">
-      <label class="opacity-80 text-base font-medium mb-2" :for="emailInputId">
+      <label class="mb-2 text-base font-medium opacity-80" :for="emailInputId">
         {{ t('auth.login.emailLabel') }}
       </label>
       <InputText
@@ -26,15 +26,15 @@
 
     <!-- Password Field -->
     <div class="flex flex-col gap-2">
-      <div class="flex justify-between items-center mb-2">
+      <div class="mb-2 flex items-center justify-between">
         <label
-          class="opacity-80 text-base font-medium"
+          class="text-base font-medium opacity-80"
           for="comfy-org-sign-in-password"
         >
           {{ t('auth.login.passwordLabel') }}
         </label>
         <span
-          class="text-muted text-base font-medium cursor-pointer select-none"
+          class="cursor-pointer text-base font-medium text-muted select-none"
           :class="{
             'text-link-disabled': !$form.email?.value || $form.email?.invalid
           }"
@@ -60,12 +60,12 @@
     </div>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="w-8 h-8" />
+    <ProgressSpinner v-if="loading" class="h-8 w-8" />
     <Button
       v-else
       type="submit"
       :label="t('auth.login.loginButton')"
-      class="h-10 font-medium mt-4"
+      class="mt-4 h-10 font-medium"
     />
   </Form>
 </template>
@@ -83,7 +83,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { type SignInData, signInSchema } from '@/schemas/signInSchema'
+import { signInSchema } from '@/schemas/signInSchema'
+import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const authStore = useFirebaseAuthStore()

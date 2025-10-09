@@ -6,7 +6,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
-import WidgetTreeSelect, { type TreeNode } from './WidgetTreeSelect.vue'
+import WidgetTreeSelect from './WidgetTreeSelect.vue'
+import type { TreeNode } from './WidgetTreeSelect.vue'
 
 const createTreeData = (): TreeNode[] => [
   {
