@@ -118,7 +118,7 @@ test.describe('Actionbar', () => {
       '.actionbar .drag-handle',
       '.actionbar-container',
       {
-        targetPosition: { x: 10, y: 10 },
+        targetPosition: { x: 50, y: 20 },
         force: true
       }
     )

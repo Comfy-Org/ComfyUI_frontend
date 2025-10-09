@@ -37,8 +37,7 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
-import type { Ref } from 'vue'
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -48,10 +47,9 @@ import ComfyQueueButton from './ComfyQueueButton.vue'
 const settingsStore = useSettingStore()
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
-
 const visible = computed(() => position.value !== 'Disabled')
 
-const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
+const tabContainer = document.querySelector('.workflow-tabs-container')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
@@ -70,7 +68,7 @@ const {
   containerElement: document.body,
   onMove: (event) => {
     // Prevent dragging the menu over the top of the tabs
-    const minY = topMenuRef?.value?.getBoundingClientRect().top ?? 40
+    const minY = tabContainer?.getBoundingClientRect().bottom ?? 40
     if (event.y < minY) {
       event.y = minY
     }
