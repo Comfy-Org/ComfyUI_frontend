@@ -1,20 +1,38 @@
-import { tryOnScopeDispose } from '@vueuse/core'
+import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import { shallowRef } from 'vue'
 
 import { app } from '@/scripts/app'
 
 /**
- * Composable for syncing shift key state from Vue pointer events to LiteGraph canvas.
- * This enables snap-to-grid preview rendering in LiteGraph when dragging/resizing Vue nodes.
+ * Composable for synchronizing shift key state from Vue nodes to LiteGraph canvas.
  *
- * @returns Object containing trackShiftKey for automatic shift state synchronization
+ * Enables snap-to-grid preview rendering in LiteGraph during Vue node drag/resize operations
+ * by dispatching synthetic keyboard events to the canvas element.
+ *
+ * @returns Object containing trackShiftKey function for shift state synchronization lifecycle
+ *
+ * @example
+ * ```ts
+ * const { trackShiftKey } = useShiftKeySync()
+ *
+ * function startDrag(event: PointerEvent) {
+ *   const stopTracking = trackShiftKey(event)
+ *   // ... drag logic
+ *   // Call stopTracking() on pointerup to cleanup listeners
+ * }
+ * ```
  */
 export function useShiftKeySync() {
   const shiftKeyState = shallowRef(false)
   let canvasEl: HTMLCanvasElement | null = null
 
   /**
-   * Syncs shift key state to LiteGraph canvas for snap-to-grid preview rendering
+   * Synchronizes shift key state to LiteGraph canvas by dispatching synthetic keyboard events.
+   *
+   * Only dispatches events when shift state actually changes to minimize overhead.
+   * Canvas reference is lazily initialized on first sync.
+   *
+   * @param isShiftPressed - Current shift key state to synchronize
    */
   function syncShiftState(isShiftPressed: boolean) {
     if (isShiftPressed === shiftKeyState.value) return
@@ -36,17 +54,23 @@ export function useShiftKeySync() {
   }
 
   /**
-   * Track shift key state during drag/resize operations and sync to canvas.
-   * Call at the start of pointer operations to enable continuous synchronization.
+   * Tracks shift key state during drag/resize operations and synchronizes to canvas.
    *
-   * @param initialEvent - The initial pointer event (pointerdown)
-   * @returns Cleanup function to stop tracking - must be called when operation ends
+   * Attaches window-level keyboard event listeners for the duration of the operation.
+   * Listeners are automatically cleaned up when the returned function is called.
+   *
+   * @param initialEvent - Initial pointer event containing shift key state at drag/resize start
+   * @returns Cleanup function that removes event listeners - must be called when operation ends
    *
    * @example
    * ```ts
-   * const stopTracking = trackShiftKey(event)
-   * // ... drag/resize happens, shift state syncs automatically ...
-   * stopTracking() // Call on pointerup
+   * function startDrag(event: PointerEvent) {
+   *   const stopTracking = trackShiftKey(event)
+   *
+   *   const handlePointerUp = () => {
+   *     stopTracking() // Cleanup listeners
+   *   }
+   * }
    * ```
    */
   function trackShiftKey(initialEvent: PointerEvent): () => void {
@@ -59,13 +83,17 @@ export function useShiftKeySync() {
       syncShiftState(e.shiftKey)
     }
 
-    window.addEventListener('keydown', handleKeyEvent, { passive: true })
-    window.addEventListener('keyup', handleKeyEvent, { passive: true })
+    const stopKeydown = useEventListener(window, 'keydown', handleKeyEvent, {
+      passive: true
+    })
+    const stopKeyup = useEventListener(window, 'keyup', handleKeyEvent, {
+      passive: true
+    })
 
-    // Return cleanup function
+    // Return cleanup function that stops both listeners
     return () => {
-      window.removeEventListener('keydown', handleKeyEvent)
-      window.removeEventListener('keyup', handleKeyEvent)
+      stopKeydown()
+      stopKeyup()
     }
   }
 
