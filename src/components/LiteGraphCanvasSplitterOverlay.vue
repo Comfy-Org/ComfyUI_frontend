@@ -12,7 +12,7 @@
     </div>
 
     <div
-      class="flex flex-1 pointer-events-none h-[calc(100vh-9*var(--spacing))]"
+      class="flex flex-1 pointer-events-none overflow-hidden"
       :class="{
         'flex-row': sidebarLocation === 'left',
         'flex-row-reverse': sidebarLocation === 'right'
@@ -54,23 +54,7 @@
         </SplitterPanel>
 
         <SplitterPanel :size="80" class="flex flex-col">
-          <div
-            v-if="!workspaceStore.focusMode"
-            class="flex pt-2 pointer-events-none"
-          >
-            <div
-              class="flex-1 min-w-0 pointer-events-auto"
-              :class="{ 'ml-2': sidebarPanelVisible }"
-            >
-              <slot name="breadcrumbs" />
-            </div>
-
-            <div class="actionbar-container shadow-md">
-              <div ref="legacyCommandsContainerRef"></div>
-              <slot name="actionbar" />
-              <slot name="actionbar-end" />
-            </div>
-          </div>
+          <slot name="topmenu" :sidebar-panel-visible="sidebarPanelVisible" />
 
           <Splitter
             class="splitter-overlay splitter-overlay-bottom flex-1 mb-2 mr-2"
@@ -114,25 +98,13 @@
 <script setup lang="ts">
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 
-// Maintain support for legacy topbar elements attached by custom scripts
-const legacyCommandsContainerRef = ref<HTMLElement>()
-onMounted(() => {
-  if (legacyCommandsContainerRef.value) {
-    app.menu.element.style.width = 'fit-content'
-    legacyCommandsContainerRef.value.appendChild(app.menu.element)
-  }
-})
-
-const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -207,11 +179,5 @@ const sidebarStateKey = computed(() => {
   999 should be sufficient to make sure splitter overlays on node's DOM
   widgets */
   z-index: 999;
-}
-
-.actionbar-container {
-  @apply flex mx-2 pointer-events-auto items-center h-12 rounded-lg px-2;
-  background-color: var(--comfy-menu-bg);
-  border: 1px solid var(--p-panel-border-color);
 }
 </style>

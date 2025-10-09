@@ -2,42 +2,32 @@
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
-    <template
-      v-if="!workspaceStore.focusMode && workflowTabsPosition === 'Topbar'"
-      #workflow-tabs
-    >
+  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
+    <template v-if="showUI && workflowTabsPosition === 'Topbar'" #workflow-tabs>
       <WorkflowTabs />
     </template>
-    <template v-if="!workspaceStore.focusMode" #side-toolbar>
+    <template v-if="showUI" #side-toolbar>
       <SideToolbar />
     </template>
-    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
+    <template v-if="showUI" #side-bar-panel>
       <div
         class="sidebar-content-container h-full w-full overflow-y-auto overflow-x-hidden"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
     </template>
-    <template v-if="!workspaceStore.focusMode" #breadcrumbs>
-      <SubgraphBreadcrumb />
+    <template v-if="showUI" #topmenu="{ sidebarPanelVisible }">
+      <TopMenuSection :sidebar-panel-visible="sidebarPanelVisible" />
     </template>
-    <template v-if="!workspaceStore.focusMode" #actionbar>
-      <ComfyActionbar />
-    </template>
-    <template v-if="!workspaceStore.focusMode" #bottom-panel>
+    <template v-if="showUI" #bottom-panel>
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
       <MiniMap
-        v-if="comfyAppReady && minimapEnabled"
+        v-if="comfyAppReady && minimapEnabled && showUI"
         class="pointer-events-auto"
       />
-    </template>
-    <template #actionbar-end>
-      <LoginButton v-if="!isLoggedIn" />
-      <CurrentUserButton v-else class="shrink-0" />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <canvas
@@ -97,9 +87,8 @@ import {
 } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
-import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
+import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
-import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
@@ -109,10 +98,7 @@ import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeOptions from '@/components/graph/selectionToolbox/NodeOptions.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
@@ -169,7 +155,6 @@ const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
-const { isLoggedIn } = useCurrentUser()
 
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
@@ -187,6 +172,9 @@ const selectionToolboxEnabled = computed(() =>
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab
 })
+const showUI = computed(
+  () => !workspaceStore.focusMode && betaMenuEnabled.value
+)
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
