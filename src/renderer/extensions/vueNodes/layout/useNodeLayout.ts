@@ -27,7 +27,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   const { shouldSnap, applySnapToPosition } = useNodeSnap()
 
   // Shift key sync for LiteGraph canvas preview
-  const { syncShiftKeyToCanvas } = useShiftKeySync()
+  const { trackShiftKey } = useShiftKeySync()
 
   // Get the customRef for this node (shared write access)
   const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
@@ -59,6 +59,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
   let rafId: number | null = null
+  let stopShiftSync: (() => void) | null = null
 
   /**
    * Start dragging the node
@@ -66,8 +67,8 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   function startDrag(event: PointerEvent) {
     if (!layoutRef.value || !transformState) return
 
-    // Sync shift key state to canvas for snap preview
-    syncShiftKeyToCanvas(event)
+    // Track shift key state and sync to canvas for snap preview
+    stopShiftSync = trackShiftKey(event)
 
     isDragging.value = true
     dragStartPos = { ...position.value }
@@ -111,9 +112,6 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     ) {
       return
     }
-
-    // Sync shift key state to canvas for snap preview
-    syncShiftKeyToCanvas(event)
 
     // Throttle position updates using requestAnimationFrame for better performance
     if (rafId !== null) return // Skip if frame already scheduled
@@ -170,9 +168,6 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
    */
   function endDrag(event: PointerEvent) {
     if (!isDragging.value) return
-
-    // Sync shift key state to canvas for snap preview
-    syncShiftKeyToCanvas(event)
 
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
     if (shouldSnap(event)) {
@@ -239,6 +234,10 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
+
+    // Stop tracking shift key state
+    stopShiftSync?.()
+    stopShiftSync = null
 
     // Cancel any pending animation frame
     if (rafId !== null) {

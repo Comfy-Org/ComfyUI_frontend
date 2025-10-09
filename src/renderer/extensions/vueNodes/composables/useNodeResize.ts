@@ -41,7 +41,7 @@ export function useNodeResize(
   const { shouldSnap, applySnapToSize } = useNodeSnap()
 
   // Shift key sync for LiteGraph canvas preview
-  const { syncShiftKeyToCanvas } = useShiftKeySync()
+  const { trackShiftKey } = useShiftKeySync()
 
   const startResize = (event: PointerEvent) => {
     event.preventDefault()
@@ -50,8 +50,8 @@ export function useNodeResize(
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
 
-    // Sync shift key state to canvas for snap preview
-    syncShiftKeyToCanvas(event)
+    // Track shift key state and sync to canvas for snap preview
+    const stopShiftSync = trackShiftKey(event)
 
     // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)
@@ -97,9 +97,6 @@ export function useNodeResize(
       )
         return
 
-      // Sync shift key state to canvas for snap preview
-      syncShiftKeyToCanvas(moveEvent)
-
       const dx = moveEvent.clientX - resizeStartPos.value.x
       const dy = moveEvent.clientY - resizeStartPos.value.y
 
@@ -134,13 +131,13 @@ export function useNodeResize(
 
     const handlePointerUp = (upEvent: PointerEvent) => {
       if (isResizing.value) {
-        // Sync shift key state to canvas for snap preview
-        syncShiftKeyToCanvas(upEvent)
-
         isResizing.value = false
         resizeStartPos.value = null
         resizeStartSize.value = null
         intrinsicMinSize.value = null
+
+        // Stop tracking shift key state
+        stopShiftSync()
 
         target.releasePointerCapture(upEvent.pointerId)
         stopMoveListen()
