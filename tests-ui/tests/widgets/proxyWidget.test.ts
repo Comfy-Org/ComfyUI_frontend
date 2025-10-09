@@ -2,11 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import {
-  type LGraphCanvas,
-  LGraphNode,
-  type SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
@@ -71,9 +68,11 @@ describe('Subgraph proxyWidgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'istringWidget', 'value', () => {})
     subgraphNode.addWidget('text', 'stringWidget', 'value', () => {})
+
     const proxyWidgets = parseProxyWidgets(subgraphNode.properties.proxyWidgets)
     proxyWidgets.push(['1', 'istringWidget'])
     subgraphNode.properties.proxyWidgets = proxyWidgets
+
     expect(subgraphNode.widgets.length).toBe(2)
     expect(subgraphNode.widgets[0].name).toBe('stringWidget')
     subgraphNode.properties.proxyWidgets = [proxyWidgets[1], proxyWidgets[0]]
