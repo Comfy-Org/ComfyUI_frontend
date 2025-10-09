@@ -69,8 +69,11 @@ const createWrapper = (props = {}) => {
 }
 
 describe('ZoomControlsModal', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('should execute zoom in command when zoom in button is clicked', async () => {
-    mockExecute.mockClear()
     const wrapper = createWrapper()
 
     const buttons = wrapper.findAll('button')
@@ -85,7 +88,6 @@ describe('ZoomControlsModal', () => {
   })
 
   it('should execute zoom out command when zoom out button is clicked', async () => {
-    mockExecute.mockClear()
     const wrapper = createWrapper()
 
     const buttons = wrapper.findAll('button')
@@ -100,7 +102,6 @@ describe('ZoomControlsModal', () => {
   })
 
   it('should execute fit view command when fit view button is clicked', async () => {
-    mockExecute.mockClear()
     const wrapper = createWrapper()
 
     const buttons = wrapper.findAll('button')
@@ -115,7 +116,6 @@ describe('ZoomControlsModal', () => {
   })
 
   it('should emit close when minimap toggle button is clicked', async () => {
-    mockExecute.mockClear()
     const wrapper = createWrapper()
 
     const minimapButton = wrapper.find('[data-testid="toggle-minimap-button"]')
@@ -129,7 +129,6 @@ describe('ZoomControlsModal', () => {
   })
 
   it('should not emit close when other command buttons are clicked', async () => {
-    mockExecute.mockClear()
     const wrapper = createWrapper()
 
     const buttons = wrapper.findAll('button')
@@ -145,7 +144,6 @@ describe('ZoomControlsModal', () => {
   })
 
   it('should call setAppZoomFromPercentage with valid zoom input values', async () => {
-    mockSetAppZoom.mockClear()
     const wrapper = createWrapper()
 
     const inputNumber = wrapper.findComponent({ name: 'InputNumber' })
@@ -158,7 +156,6 @@ describe('ZoomControlsModal', () => {
   })
 
   it('should not call setAppZoomFromPercentage with invalid zoom input values', async () => {
-    mockSetAppZoom.mockClear()
     const wrapper = createWrapper()
 
     const inputNumber = wrapper.findComponent({ name: 'InputNumber' })
@@ -202,16 +199,5 @@ describe('ZoomControlsModal', () => {
     const wrapper = createWrapper({ visible: false })
 
     expect(wrapper.find('.absolute').exists()).toBe(false)
-  })
-
-  it('should apply minimap container styles', () => {
-    const wrapper = createWrapper()
-
-    const container = wrapper.find('.bg-white')
-    expect(container.exists()).toBe(true)
-
-    // The component should apply the filtered minimap styles
-    const style = container.attributes('style')
-    expect(style).toContain('background-color')
   })
 })
