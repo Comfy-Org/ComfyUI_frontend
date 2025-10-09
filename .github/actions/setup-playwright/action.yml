@@ -6,7 +6,6 @@ runs:
     - name: Detect Playwright version
       id: detect-version
       shell: bash
-      working-directory: ComfyUI_frontend
       run: |
         PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
         echo "playwright-version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
@@ -22,10 +21,8 @@ runs:
       if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
       shell: bash
       run: pnpm exec playwright install chromium --with-deps
-      working-directory: ComfyUI_frontend
 
     - name: Install Playwright Browsers (operating system dependencies)
       if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
       shell: bash
       run: pnpm exec playwright install-deps
-      working-directory: ComfyUI_frontend
