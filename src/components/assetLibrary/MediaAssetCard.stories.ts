@@ -2,18 +2,15 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { AssetMeta } from '@/types/media.types'
 
-import QueueAssetCard from './MediaAssetCard.vue'
+import MediaAssetCard from './MediaAssetCard.vue'
 
-const meta: Meta<typeof QueueAssetCard> = {
-  title: 'AssetLibrary/QueueAssetCard',
-  component: QueueAssetCard,
+const meta: Meta<typeof MediaAssetCard> = {
+  title: 'AssetLibrary/MediaAssetCard',
+  component: MediaAssetCard,
   argTypes: {
     context: {
       control: 'select',
       options: ['input', 'output']
-    },
-    dense: {
-      control: 'boolean'
     },
     loading: {
       control: 'boolean'
@@ -31,7 +28,7 @@ type Story = StoryObj<typeof meta>
 
 // Public sample media URLs
 const SAMPLE_MEDIA = {
-  image: 'https://picsum.photos/400/300',
+  image: 'https://picsum.photos/300/300',
   video:
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   videoThumbnail:
@@ -45,7 +42,7 @@ const sampleAsset: AssetMeta = {
   kind: 'image',
   size: 2048576,
   timestamp: Date.now(),
-  thumbnailUrl: SAMPLE_MEDIA.image,
+  src: SAMPLE_MEDIA.image,
   dimensions: {
     width: 1920,
     height: 1080
@@ -56,8 +53,7 @@ export const ImageAsset: Story = {
   args: {
     context: 'input',
     asset: sampleAsset,
-    loading: false,
-    dense: false
+    loading: false
   }
 }
 
@@ -72,11 +68,27 @@ export const VideoAsset: Story = {
       size: 10485760,
       duration: 125,
       thumbnailUrl: SAMPLE_MEDIA.videoThumbnail, // Poster image
-      videoUrl: SAMPLE_MEDIA.video, // Actual video file
+      src: SAMPLE_MEDIA.video, // Actual video file
       dimensions: {
         width: 1280,
         height: 720
       }
+    }
+  }
+}
+
+export const Model3DAsset: Story = {
+  args: {
+    context: 'input',
+    asset: {
+      ...sampleAsset,
+      id: 'asset-3',
+      name: 'Asset-3d-model.glb',
+      kind: '3D',
+      size: 7340032,
+      src: '',
+      dimensions: undefined,
+      duration: 180
     }
   }
 }
@@ -90,49 +102,9 @@ export const AudioAsset: Story = {
       name: 'SoundHelix-Song.mp3',
       kind: 'audio',
       size: 5242880,
-      thumbnailUrl: SAMPLE_MEDIA.audio,
+      src: SAMPLE_MEDIA.audio,
       dimensions: undefined,
       duration: 180
-    }
-  }
-}
-
-export const TextAsset: Story = {
-  args: {
-    context: 'input',
-    asset: {
-      ...sampleAsset,
-      id: 'asset-4',
-      name: 'prompt-text.txt',
-      kind: 'text',
-      size: 1024,
-      thumbnailUrl: undefined,
-      dimensions: undefined
-    }
-  }
-}
-
-export const OtherAsset: Story = {
-  args: {
-    context: 'input',
-    asset: {
-      ...sampleAsset,
-      id: 'asset-5',
-      name: 'model.safetensors', // cspell:ignore safetensors
-      kind: 'other',
-      size: 4294967296,
-      thumbnailUrl: undefined,
-      dimensions: undefined
-    }
-  }
-}
-
-export const OutputWithJobId: Story = {
-  args: {
-    context: 'output',
-    asset: {
-      ...sampleAsset,
-      jobId: 'job-123-456'
     }
   }
 }
@@ -142,21 +114,6 @@ export const LoadingState: Story = {
     context: 'input',
     asset: sampleAsset,
     loading: true
-  }
-}
-
-export const ErrorState: Story = {
-  args: {
-    context: 'input',
-    asset: sampleAsset
-  }
-}
-
-export const DenseMode: Story = {
-  args: {
-    context: 'input',
-    asset: sampleAsset,
-    dense: true
   }
 }
 
@@ -170,17 +127,25 @@ export const LongFileName: Story = {
   }
 }
 
+export const SelectedState: Story = {
+  args: {
+    context: 'output',
+    asset: sampleAsset,
+    selected: true
+  }
+}
+
 export const WebMVideo: Story = {
   args: {
     context: 'input',
     asset: {
       id: 'asset-webm',
       name: 'animated-clip.webm',
-      kind: 'webm',
+      kind: 'video',
       size: 3145728,
       timestamp: Date.now(),
       thumbnailUrl: 'https://picsum.photos/640/360?random=webm', // Poster image
-      videoUrl: 'https://www.w3schools.com/html/movie.mp4', // Actual video
+      src: 'https://www.w3schools.com/html/movie.mp4', // Actual video
       duration: 60,
       dimensions: {
         width: 640,
@@ -196,11 +161,10 @@ export const GifAnimation: Story = {
     asset: {
       id: 'asset-gif',
       name: 'animation.gif',
-      kind: 'gif',
+      kind: 'image',
       size: 1572864,
       timestamp: Date.now(),
-      thumbnailUrl:
-        'https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/giphy.gif',
+      src: 'https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/giphy.gif',
       dimensions: {
         width: 480,
         height: 270
@@ -209,27 +173,9 @@ export const GifAnimation: Story = {
   }
 }
 
-export const WebPImage: Story = {
-  args: {
-    context: 'input',
-    asset: {
-      id: 'asset-webp',
-      name: 'optimized-image.webp',
-      kind: 'webp',
-      size: 524288,
-      timestamp: Date.now(),
-      thumbnailUrl: 'https://www.gstatic.com/webp/gallery/1.webp',
-      dimensions: {
-        width: 550,
-        height: 368
-      }
-    }
-  }
-}
-
 export const GridLayout: Story = {
   render: () => ({
-    components: { QueueAssetCard },
+    components: { MediaAssetCard },
     setup() {
       const assets: AssetMeta[] = [
         {
@@ -238,7 +184,7 @@ export const GridLayout: Story = {
           kind: 'image',
           size: 2097152,
           timestamp: Date.now(),
-          thumbnailUrl: 'https://picsum.photos/400/300?random=1',
+          src: 'https://picsum.photos/400/300?random=1',
           dimensions: { width: 1920, height: 1080 }
         },
         {
@@ -248,7 +194,7 @@ export const GridLayout: Story = {
           size: 10485760,
           timestamp: Date.now(),
           thumbnailUrl: SAMPLE_MEDIA.videoThumbnail, // Poster image
-          videoUrl: SAMPLE_MEDIA.video, // Actual video
+          src: SAMPLE_MEDIA.video, // Actual video
           duration: 120,
           dimensions: { width: 1280, height: 720 }
         },
@@ -258,17 +204,16 @@ export const GridLayout: Story = {
           kind: 'audio',
           size: 5242880,
           timestamp: Date.now(),
-          thumbnailUrl: SAMPLE_MEDIA.audio,
+          src: SAMPLE_MEDIA.audio,
           duration: 180
         },
         {
           id: 'grid-4',
           name: 'animation.gif',
-          kind: 'gif',
+          kind: 'image',
           size: 3145728,
           timestamp: Date.now(),
-          thumbnailUrl:
-            'https://media.giphy.com/media/l0HlNaQ6gWfllcjDO/giphy.gif',
+          src: 'https://media.giphy.com/media/l0HlNaQ6gWfllcjDO/giphy.gif',
           dimensions: { width: 480, height: 360 }
         }
       ]
@@ -276,7 +221,7 @@ export const GridLayout: Story = {
     },
     template: `
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; padding: 16px;">
-        <QueueAssetCard
+        <MediaAssetCard
           v-for="asset in assets"
           :key="asset.id"
           context="output"

@@ -1,10 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import QueueAssetCard from '@/components/assetLibrary/MediaAssetCard.vue'
+import MediaAssetCard from '@/components/assetLibrary/MediaAssetCard.vue'
 import type { AssetMeta } from '@/types/media.types'
 
-describe('QueueAssetCard', () => {
+describe('MediaAssetCard', () => {
   const mockAsset: AssetMeta = {
     id: 'test-asset-1',
     name: 'test-image.png',
@@ -19,7 +19,7 @@ describe('QueueAssetCard', () => {
   }
 
   it('renders loading skeleton when loading prop is true', () => {
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: mockAsset,
@@ -33,7 +33,7 @@ describe('QueueAssetCard', () => {
 
   it('renders error state when error prop is provided', () => {
     const errorMessage = 'Failed to load asset'
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: mockAsset,
@@ -46,7 +46,7 @@ describe('QueueAssetCard', () => {
   })
 
   it('renders asset information correctly', () => {
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: mockAsset
@@ -65,7 +65,7 @@ describe('QueueAssetCard', () => {
     }
 
     // Test input context - no job ID
-    const inputWrapper = mount(QueueAssetCard, {
+    const inputWrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: assetWithJob
@@ -75,7 +75,7 @@ describe('QueueAssetCard', () => {
     expect(inputWrapper.find('.pi-copy').exists()).toBe(false)
 
     // Test output context - has job ID
-    const outputWrapper = mount(QueueAssetCard, {
+    const outputWrapper = mount(MediaAssetCard, {
       props: {
         context: 'output',
         asset: assetWithJob
@@ -86,7 +86,7 @@ describe('QueueAssetCard', () => {
   })
 
   it('emits download event when download button is clicked', async () => {
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: mockAsset
@@ -106,7 +106,7 @@ describe('QueueAssetCard', () => {
       jobId: 'job-456'
     }
 
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'output',
         asset: assetWithJob
@@ -123,7 +123,7 @@ describe('QueueAssetCard', () => {
   })
 
   it('emits openDetail event when card is clicked', async () => {
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: mockAsset
@@ -137,7 +137,7 @@ describe('QueueAssetCard', () => {
   })
 
   it('handles keyboard activation with Enter and Space keys', async () => {
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: mockAsset
@@ -154,7 +154,7 @@ describe('QueueAssetCard', () => {
   })
 
   it('applies dense mode correctly', () => {
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: mockAsset,
@@ -173,7 +173,7 @@ describe('QueueAssetCard', () => {
       thumbnailUrl: undefined
     }
 
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: assetWithoutThumbnail
@@ -192,7 +192,7 @@ describe('QueueAssetCard', () => {
       dimensions: undefined
     }
 
-    const wrapper = mount(QueueAssetCard, {
+    const wrapper = mount(MediaAssetCard, {
       props: {
         context: 'input',
         asset: audioAsset

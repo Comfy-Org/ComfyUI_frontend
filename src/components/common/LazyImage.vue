@@ -2,6 +2,7 @@
   <div
     ref="containerRef"
     class="relative flex h-full w-full items-center justify-center overflow-hidden"
+    :class="containerClass"
   >
     <Skeleton
       v-if="!isImageLoaded"
@@ -45,12 +46,14 @@ import { useMediaCache } from '@/services/mediaCacheService'
 const {
   src,
   alt = '',
+  containerClass = '',
   imageClass = '',
   imageStyle,
   rootMargin = '300px'
 } = defineProps<{
   src: string
   alt?: string
+  containerClass?: string | string[] | Record<string, boolean>
   imageClass?: string | string[] | Record<string, boolean>
   imageStyle?: Record<string, any>
   rootMargin?: string

@@ -1,79 +1,111 @@
 <template>
-  <!-- Loading State -->
   <CardContainer
-    v-if="loading"
-    :ratio="dense ? 'smallSquare' : 'square'"
-    type="asset-card"
+    size="mini"
+    variant="ghost"
+    rounded="lg"
+    :class="containerClasses"
+    @click="handleCardClick"
+    @keydown.enter="handleCardClick"
+    @keydown.space.prevent="handleCardClick"
   >
     <template #top>
       <CardTop ratio="square">
-        <div
-          class="h-full w-full animate-pulse bg-gray-200 dark-theme:bg-gray-700"
-        />
+        <!-- Loading State -->
+        <template v-if="loading">
+          <div
+            class="h-full w-full animate-pulse rounded-lg bg-zinc-200 dark-theme:bg-zinc-700"
+          />
+        </template>
+        <!-- Content based on asset type -->
+        <template v-else-if="asset">
+          <component
+            :is="getTopComponent(asset.kind)"
+            :asset="asset"
+            :context="context"
+            @view="emit('view', $event)"
+            @download="emit('download', $event)"
+            @copy="emit('copy', $event)"
+            @more="emit('more', $event)"
+            @copy-job-id="emit('copyJobId', $event)"
+            @play="emit('play', $event)"
+          />
+        </template>
       </CardTop>
     </template>
+
     <template #bottom>
       <CardBottom>
-        <div class="px-4 py-3">
-          <div
-            class="mb-2 h-4 animate-pulse rounded bg-gray-300 dark-theme:bg-gray-600"
+        <!-- Loading State -->
+        <template v-if="loading">
+          <div class="flex flex-col items-center gap-2 p-2">
+            <div
+              class="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+            />
+            <div
+              class="h-3 w-1/2 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+            />
+          </div>
+        </template>
+
+        <!-- Content based on asset type -->
+        <template v-else-if="asset">
+          <component
+            :is="getBottomComponent(asset.kind)"
+            :asset="asset"
+            :context="context"
           />
-          <div
-            class="h-3 w-1/2 animate-pulse rounded bg-gray-300 dark-theme:bg-gray-600"
-          />
-        </div>
+        </template>
       </CardBottom>
     </template>
   </CardContainer>
-
-  <!-- Type-specific cards based on media kind -->
-  <component
-    :is="getCardComponent(asset.kind)"
-    v-else-if="asset"
-    :context="context"
-    :asset="asset"
-    :dense="dense"
-    @download="emit('download', $event)"
-    @copy-job-id="emit('copyJobId', $event)"
-    @open-detail="emit('openDetail', $event)"
-    @play="emit('play', $event)"
-    @view="emit('view', $event)"
-    @copy="emit('copy', $event)"
-  />
 </template>
 
 <script setup lang="ts">
-import QueueAudioCard from '@/components/assetLibrary/cards/MediaAudioCard.vue'
-import QueueImageCard from '@/components/assetLibrary/cards/MediaImageCard.vue'
-import QueueTextCard from '@/components/assetLibrary/cards/MediaTextCard.vue'
-import QueueVideoCard from '@/components/assetLibrary/cards/MediaVideoCard.vue'
+import { computed } from 'vue'
+
+import Media3DBottom from '@/components/assetLibrary/cards/Media3DBottom.vue'
+import Media3DTop from '@/components/assetLibrary/cards/Media3DTop.vue'
+import MediaAudioBottom from '@/components/assetLibrary/cards/MediaAudioBottom.vue'
+import MediaAudioTop from '@/components/assetLibrary/cards/MediaAudioTop.vue'
+import MediaImageBottom from '@/components/assetLibrary/cards/MediaImageBottom.vue'
+import MediaImageTop from '@/components/assetLibrary/cards/MediaImageTop.vue'
+import MediaVideoBottom from '@/components/assetLibrary/cards/MediaVideoBottom.vue'
+import MediaVideoTop from '@/components/assetLibrary/cards/MediaVideoTop.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import type { AssetContext, AssetMeta, MediaKind } from '@/types/media.types'
+import { cn } from '@/utils/tailwindUtil'
 
-// Map media types to their specific card components
-const cardComponents = {
-  video: QueueVideoCard,
-  webm: QueueVideoCard,
-  audio: QueueAudioCard,
-  image: QueueImageCard,
-  webp: QueueImageCard,
-  gif: QueueImageCard,
-  text: QueueTextCard,
-  pose: QueueImageCard,
-  other: QueueImageCard
+// Map media types to their specific top components
+const topComponents = {
+  video: MediaVideoTop,
+  audio: MediaAudioTop,
+  image: MediaImageTop,
+  '3D': Media3DTop
 }
 
-function getCardComponent(kind: MediaKind) {
-  return cardComponents[kind] || QueueImageCard
+// Map media types to their specific bottom components
+const bottomComponents = {
+  video: MediaVideoBottom,
+  audio: MediaAudioBottom,
+  image: MediaImageBottom,
+  '3D': Media3DBottom
 }
 
-defineProps<{
+function getTopComponent(kind: MediaKind) {
+  return topComponents[kind] || MediaImageTop
+}
+
+function getBottomComponent(kind: MediaKind) {
+  return bottomComponents[kind] || MediaImageBottom
+}
+
+const props = defineProps<{
   context: AssetContext
-  asset: AssetMeta
+  asset?: AssetMeta
   loading?: boolean
-  dense?: boolean
+  selected?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -83,5 +115,20 @@ const emit = defineEmits<{
   play: [assetId: string]
   view: [assetId: string]
   copy: [assetId: string]
+  more: [assetId: string]
 }>()
+
+const containerClasses = computed(() => {
+  return cn(
+    'gap-1',
+    props.selected &&
+      'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
+  )
+})
+
+function handleCardClick() {
+  if (props.asset) {
+    emit('openDetail', props.asset.id)
+  }
+}
 </script>

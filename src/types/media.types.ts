@@ -2,16 +2,7 @@
  * Media types for Asset Library
  */
 
-export type MediaKind =
-  | 'video'
-  | 'webm'
-  | 'webp'
-  | 'gif'
-  | 'audio'
-  | 'image'
-  | 'pose'
-  | 'text'
-  | 'other'
+export type MediaKind = 'video' | 'audio' | 'image' | '3D'
 
 export type AssetContext = 'input' | 'output'
 
@@ -22,7 +13,7 @@ export interface AssetMeta {
   size: number
   timestamp: number
   thumbnailUrl?: string
-  videoUrl?: string // Actual video URL for video types
+  src: string // Actual media URL for video/audio/image types
   jobId?: string // Only for output context
   duration?: number // For video/audio
   isMulti?: boolean // indicates multiple files grouped as one

@@ -82,7 +82,7 @@ export function formatSize(value?: number) {
  * - filename: 'file'
  * - suffix: 'txt'
  */
-function getFilenameDetails(fullFilename: string) {
+export function getFilenameDetails(fullFilename: string) {
   if (fullFilename.includes('.')) {
     return {
       filename: fullFilename.split('.').slice(0, -1).join('.'),
