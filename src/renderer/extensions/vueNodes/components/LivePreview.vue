@@ -2,7 +2,7 @@
   <div v-if="imageUrl" class="w-full h-full min-w-16 min-h-16 flex flex-col">
     <!-- Image Container -->
     <div
-      class="relative rounded-[5px] overflow-hidden bg-node-component-surface w-full max-h-64 grow"
+      class="relative rounded-[5px] overflow-hidden bg-node-component-surface w-full h-88 grow"
     >
       <!-- Error State -->
       <div

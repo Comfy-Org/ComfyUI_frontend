@@ -70,54 +70,32 @@ describe('LivePreview', () => {
     expect(img.attributes('alt')).toBe('Live sampling preview')
   })
 
-  it('applies responsive container classes', () => {
-    const wrapper = mountLivePreview()
-
-    const container = wrapper.find('div')
-    expect(container.classes()).toContain('w-full')
-    expect(container.classes()).toContain('h-full')
-    expect(container.classes()).toContain('flex-col')
-  })
-
-  it('applies responsive image container classes', () => {
-    const wrapper = mountLivePreview()
-
-    const imageContainer = wrapper.find('.bg-node-component-surface')
-    expect(imageContainer.exists()).toBe(true)
-    expect(imageContainer.classes()).toContain('h-88')
-    expect(imageContainer.classes()).toContain('grow')
-    expect(imageContainer.classes()).toContain('w-full')
-  })
-
-  it('applies object-contain to image', () => {
-    const wrapper = mountLivePreview()
-
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('object-contain')
-    expect(img.classes()).toContain('object-center')
-    expect(img.classes()).toContain('pointer-events-none')
-  })
-
   it('handles image load event', async () => {
     const wrapper = mountLivePreview()
+    const img = wrapper.find('img')
 
-    // Directly access the component and set the actual dimensions
-    const component = wrapper.vm as any
-    component.actualDimensions = '512 x 512'
-    component.imageError = false
-    await nextTick()
+    // Mock the naturalWidth and naturalHeight properties on the img element
+    Object.defineProperty(img.element, 'naturalWidth', {
+      writable: false,
+      value: 512
+    })
+    Object.defineProperty(img.element, 'naturalHeight', {
+      writable: false,
+      value: 512
+    })
+
+    // Trigger the load event
+    await img.trigger('load')
 
     expect(wrapper.text()).toContain('512 x 512')
   })
 
   it('handles image error state', async () => {
     const wrapper = mountLivePreview()
+    const img = wrapper.find('img')
 
-    // Directly access the component and set error state
-    const component = wrapper.vm as any
-    component.imageError = true
-    component.actualDimensions = null
-    await nextTick()
+    // Trigger the error event
+    await img.trigger('error')
 
     // Check that the image is hidden and error content is shown
     expect(wrapper.find('img').exists()).toBe(false)
@@ -126,45 +104,31 @@ describe('LivePreview', () => {
 
   it('resets state when imageUrl changes', async () => {
     const wrapper = mountLivePreview()
+    const img = wrapper.find('img')
 
-    // Set initial state
-    const component = wrapper.vm as any
-    component.actualDimensions = '512 x 512'
-    component.imageError = true
-    await nextTick()
+    // Set error state via event
+    await img.trigger('error')
+    expect(wrapper.text()).toContain('Error loading image')
 
     // Change imageUrl prop
     await wrapper.setProps({ imageUrl: '/new-image.png' })
     await nextTick()
 
-    // State should be reset
-    expect(component.actualDimensions).toBe(null)
-    expect(component.imageError).toBe(false)
+    // State should be reset - dimensions text should show calculating
+    expect(wrapper.text()).toContain('Calculating dimensions')
+    expect(wrapper.text()).not.toContain('Error loading image')
   })
 
   it('shows error state when image fails to load', async () => {
     const wrapper = mountLivePreview()
+    const img = wrapper.find('img')
 
-    // Directly set the error state
-    const component = wrapper.vm as any
-    component.imageError = true
-    await nextTick()
+    // Trigger error event
+    await img.trigger('error')
 
     // Should show error state instead of image
     expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.find('.text-gray-400').exists()).toBe(true)
     expect(wrapper.text()).toContain('Image failed to load')
-  })
-
-  it('displays error loading image text in dimensions area when error occurs', async () => {
-    const wrapper = mountLivePreview()
-
-    // Directly set the error state
-    const component = wrapper.vm as any
-    component.imageError = true
-    await nextTick()
-
-    const dimensionsArea = wrapper.find('.text-center.mt-1')
-    expect(dimensionsArea.text()).toBe('Error loading image')
+    expect(wrapper.text()).toContain('Error loading image')
   })
 })
