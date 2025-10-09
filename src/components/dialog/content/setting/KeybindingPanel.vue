@@ -51,10 +51,7 @@
         class="max-w-64 2xl:max-w-full"
       >
         <template #body="slotProps">
-          <div
-            class="overflow-hidden text-ellipsis whitespace-nowrap"
-            :title="slotProps.data.id"
-          >
+          <div class="truncate" :title="slotProps.data.id">
             {{ slotProps.data.label }}
           </div>
         </template>

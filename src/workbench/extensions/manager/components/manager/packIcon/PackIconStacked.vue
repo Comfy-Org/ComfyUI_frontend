@@ -1,16 +1,16 @@
 <template>
-  <div class="relative w-[224px] h-[104px] shadow-xl">
+  <div class="relative h-[104px] w-[224px] shadow-xl">
     <div
       v-for="(pack, index) in nodePacks.slice(0, maxVisible)"
       :key="pack.id"
-      class="absolute w-[210px] h-[90px]"
+      class="absolute h-[90px] w-[210px]"
       :style="{
         bottom: `${index * offset}px`,
         right: `${index * offset}px`,
         zIndex: maxVisible - index
       }"
     >
-      <div class="border rounded-lg shadow-lg p-0.5">
+      <div class="rounded-lg border p-0.5 shadow-lg">
         <PackIcon :node-pack="pack" />
       </div>
     </div>

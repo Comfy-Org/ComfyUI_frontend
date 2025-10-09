@@ -1,13 +1,13 @@
 <template>
-  <div v-if="nodePacks?.length" class="flex flex-col h-full">
-    <div class="p-6 flex-1 overflow-auto">
+  <div v-if="nodePacks?.length" class="flex h-full flex-col">
+    <div class="flex-1 overflow-auto p-6">
       <InfoPanelHeader :node-packs>
         <template #thumbnail>
           <PackIconStacked :node-packs="nodePacks" />
         </template>
         <template #title>
           <div class="mt-5">
-            <span class="inline-block mr-2 text-blue-500 text-base">{{
+            <span class="mr-2 inline-block text-base text-blue-500">{{
               nodePacks.length
             }}</span>
             <span class="text-base">{{ $t('manager.packsSelected') }}</span>
@@ -48,7 +48,7 @@
       </div>
     </div>
   </div>
-  <div v-else class="mt-4 mx-8 flex-1 overflow-hidden text-sm">
+  <div v-else class="mx-8 mt-4 flex-1 overflow-hidden text-sm">
     {{ $t('manager.infoPanelEmpty') }}
   </div>
 </template>

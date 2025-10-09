@@ -1,7 +1,7 @@
 <template>
   <template v-if="nodePack">
-    <div class="flex flex-col h-full z-40 overflow-hidden relative">
-      <div class="top-0 z-10 px-6 pt-6 w-full">
+    <div class="relative z-40 flex h-full flex-col overflow-hidden">
+      <div class="top-0 z-10 w-full px-6 pt-6">
         <InfoPanelHeader
           :node-packs="[nodePack]"
           :has-conflict="hasCompatibilityIssues"
@@ -9,7 +9,7 @@
       </div>
       <div
         ref="scrollContainer"
-        class="p-6 pt-2 overflow-y-auto flex-1 text-sm scrollbar-hide"
+        class="scrollbar-hide flex-1 overflow-y-auto p-6 pt-2 text-sm"
       >
         <div class="mb-6">
           <MetadataRow
@@ -53,7 +53,7 @@
     </div>
   </template>
   <template v-else>
-    <div class="pt-4 px-8 flex-1 overflow-hidden text-sm">
+    <div class="flex-1 overflow-hidden px-8 pt-4 text-sm">
       {{ $t('manager.infoPanelEmpty') }}
     </div>
   </template>

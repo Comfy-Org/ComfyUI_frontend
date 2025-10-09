@@ -1,31 +1,31 @@
 <template>
   <div :class="topStyle">
-    <slot class="absolute top-0 left-0 w-full h-full"></slot>
+    <slot class="absolute top-0 left-0 h-full w-full"></slot>
 
     <div
       v-if="slots['top-left']"
-      class="absolute top-2 left-2 flex gap-2 flex-wrap justify-start"
+      class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
     >
       <slot name="top-left"></slot>
     </div>
 
     <div
       v-if="slots['top-right']"
-      class="absolute top-2 right-2 flex gap-2 flex-wrap justify-end"
+      class="absolute top-2 right-2 flex flex-wrap justify-end gap-2"
     >
       <slot name="top-right"></slot>
     </div>
 
     <div
       v-if="slots['bottom-left']"
-      class="absolute bottom-2 left-2 flex gap-2 flex-wrap justify-start"
+      class="absolute bottom-2 left-2 flex flex-wrap justify-start gap-2"
     >
       <slot name="bottom-left"></slot>
     </div>
 
     <div
       v-if="slots['bottom-right']"
-      class="absolute bottom-2 right-2 flex gap-2 flex-wrap justify-end"
+      class="absolute right-2 bottom-2 flex flex-wrap justify-end gap-2"
     >
       <slot name="bottom-right"></slot>
     </div>

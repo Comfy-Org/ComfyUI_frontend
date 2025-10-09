@@ -1,9 +1,9 @@
 <template>
   <div class="settings-container">
-    <ScrollPanel class="settings-sidebar shrink-0 p-2 w-48 2xl:w-64">
+    <ScrollPanel class="settings-sidebar w-48 shrink-0 p-2 2xl:w-64">
       <SearchBox
         v-model:model-value="searchQuery"
-        class="settings-search-box w-full mb-2"
+        class="settings-search-box mb-2 w-full"
         :placeholder="$t('g.searchSettings') + '...'"
         :debounce-time="128"
         autofocus
@@ -20,14 +20,14 @@
           (option: SettingTreeNode) =>
             !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
         "
-        class="border-none w-full"
+        class="w-full border-none"
       >
         <template #optiongroup>
           <Divider class="my-0" />
         </template>
       </Listbox>
     </ScrollPanel>
-    <Divider layout="vertical" class="mx-1 2xl:mx-4 hidden md:flex" />
+    <Divider layout="vertical" class="mx-1 hidden md:flex 2xl:mx-4" />
     <Divider layout="horizontal" class="flex md:hidden" />
     <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
       <TabPanels class="settings-tab-panels h-full w-full pr-0">

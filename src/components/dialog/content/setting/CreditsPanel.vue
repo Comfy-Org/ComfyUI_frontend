@@ -1,7 +1,7 @@
 <template>
   <TabPanel value="Credits" class="credits-container h-full">
-    <div class="flex flex-col h-full">
-      <h2 class="text-2xl font-bold mb-2">
+    <div class="flex h-full flex-col">
+      <h2 class="mb-2 text-2xl font-bold">
         {{ $t('credits.credits') }}
       </h2>
 
@@ -11,7 +11,7 @@
         <h3 class="text-sm font-medium text-muted">
           {{ $t('credits.yourCreditBalance') }}
         </h3>
-        <div class="flex justify-between items-center">
+        <div class="flex items-center justify-between">
           <UserCredit text-class="text-3xl font-bold" />
           <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
@@ -41,7 +41,7 @@
         </div>
       </div>
 
-      <div class="flex justify-between items-center">
+      <div class="flex items-center justify-between">
         <h3>{{ $t('credits.activity') }}</h3>
         <Button
           :label="$t('credits.invoiceHistory')"
@@ -66,7 +66,7 @@
               <template #body="{ data }">
                 <div
                   :class="[
-                    'text-base font-medium text-center',
+                    'text-center text-base font-medium',
                     data.isPositive ? 'text-sky-500' : 'text-red-400'
                   ]"
                 >

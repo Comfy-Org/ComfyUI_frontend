@@ -7,7 +7,7 @@
     >
       <i
         v-tooltip.right="{ value: t('load3d.showGrid'), showDelay: 300 }"
-        class="pi pi-table text-white text-lg"
+        class="pi pi-table text-lg text-white"
       />
     </Button>
 
@@ -18,13 +18,13 @@
             value: t('load3d.backgroundColor'),
             showDelay: 300
           }"
-          class="pi pi-palette text-white text-lg"
+          class="pi pi-palette text-lg text-white"
         />
         <input
           ref="colorPickerRef"
           type="color"
           :value="backgroundColor"
-          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+          class="pointer-events-none absolute m-0 h-0 w-0 p-0 opacity-0"
           @input="
             updateBackgroundColor(($event.target as HTMLInputElement).value)
           "
@@ -39,13 +39,13 @@
             value: t('load3d.uploadBackgroundImage'),
             showDelay: 300
           }"
-          class="pi pi-image text-white text-lg"
+          class="pi pi-image text-lg text-white"
         />
         <input
           ref="imagePickerRef"
           type="file"
           accept="image/*"
-          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+          class="pointer-events-none absolute m-0 h-0 w-0 p-0 opacity-0"
           @change="uploadBackgroundImage"
         />
       </Button>
@@ -61,7 +61,7 @@
             value: t('load3d.removeBackgroundImage'),
             showDelay: 300
           }"
-          class="pi pi-times text-white text-lg"
+          class="pi pi-times text-lg text-white"
         />
       </Button>
     </div>

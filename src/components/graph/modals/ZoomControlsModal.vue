@@ -1,10 +1,10 @@
 <template>
   <div
     v-if="visible"
-    class="w-[250px] absolute flex justify-center right-2 md:right-11 z-1300 bottom-[66px] bg-inherit! border-0!"
+    class="absolute right-2 bottom-[66px] z-1300 flex w-[250px] justify-center border-0! bg-inherit! md:right-11"
   >
     <div
-      class="bg-white dark-theme:bg-[#2b2b2b] border border-gray-200 dark-theme:border-gray-700 rounded-lg shadow-lg p-4 w-4/5"
+      class="w-4/5 rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark-theme:border-gray-700 dark-theme:bg-[#2b2b2b]"
       :style="filteredMinimapStyles"
       @click.stop
     >
@@ -26,10 +26,10 @@
           @mouseleave="stopRepeat"
         >
           <template #default>
-            <span class="text-sm font-medium block">{{
+            <span class="block text-sm font-medium">{{
               $t('graphCanvasMenu.zoomIn')
             }}</span>
-            <span class="text-sm text-gray-500 block">{{
+            <span class="block text-sm text-gray-500">{{
               zoomInCommandText
             }}</span>
           </template>
@@ -52,10 +52,10 @@
           @mouseleave="stopRepeat"
         >
           <template #default>
-            <span class="text-sm font-medium block">{{
+            <span class="block text-sm font-medium">{{
               $t('graphCanvasMenu.zoomOut')
             }}</span>
-            <span class="text-sm text-gray-500 block">{{
+            <span class="block text-sm text-gray-500">{{
               zoomOutCommandText
             }}</span>
           </template>
@@ -76,15 +76,15 @@
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
           <template #default>
-            <span class="text-sm font-medium block">{{
+            <span class="block text-sm font-medium">{{
               $t('zoomControls.zoomToFit')
             }}</span>
-            <span class="text-sm text-gray-500 block">{{
+            <span class="block text-sm text-gray-500">{{
               zoomToFitCommandText
             }}</span>
           </template>
         </Button>
-        <hr class="border-[#E1DED5] mb-1 dark-theme:border-[#2E3037]" />
+        <hr class="mb-1 border-[#E1DED5] dark-theme:border-[#2E3037]" />
         <Button
           severity="secondary"
           text
@@ -101,18 +101,18 @@
           @click="executeCommand('Comfy.Canvas.ToggleMinimap')"
         >
           <template #default>
-            <span class="text-sm font-medium block">{{
+            <span class="block text-sm font-medium">{{
               minimapToggleText
             }}</span>
-            <span class="text-sm text-gray-500 block">{{
+            <span class="block text-sm text-gray-500">{{
               showMinimapCommandText
             }}</span>
           </template>
         </Button>
-        <hr class="border-[#E1DED5] mt-1 dark-theme:border-[#2E3037]" />
+        <hr class="mt-1 border-[#E1DED5] dark-theme:border-[#2E3037]" />
         <div
           ref="zoomInputContainer"
-          class="flex items-center px-2 bg-[#E7E6E6] focus-within:bg-[#F3F3F3] dark-theme:bg-[#8282821A] rounded p-2 zoomInputContainer"
+          class="zoomInputContainer flex items-center rounded bg-[#E7E6E6] p-2 px-2 focus-within:bg-[#F3F3F3] dark-theme:bg-[#8282821A]"
         >
           <InputNumber
             ref="zoomInput"
@@ -127,7 +127,7 @@
             @input="applyZoom"
             @keyup.enter="applyZoom"
           />
-          <span class="text-sm text-gray-500 -ml-4">%</span>
+          <span class="-ml-4 text-sm text-gray-500">%</span>
         </div>
       </div>
     </div>

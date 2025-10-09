@@ -2,21 +2,21 @@
   <div class="flex flex-col gap-3">
     <button
       v-if="importFailedInfo"
-      class="cursor-pointer outline-none border-none inline-flex items-center justify-end bg-transparent gap-1"
+      class="inline-flex cursor-pointer items-center justify-end gap-1 border-none bg-transparent outline-none"
       @click="showImportFailedDialog"
     >
       <i class="pi pi-code text-base"></i>
-      <span class="dark-theme:text-white text-sm">{{
+      <span class="text-sm dark-theme:text-white">{{
         t('serverStart.openLogs')
       }}</span>
     </button>
     <div
       v-for="(conflict, index) in conflictResult?.conflicts || []"
       :key="index"
-      class="p-3 bg-yellow-800/20 rounded-md"
+      class="rounded-md bg-yellow-800/20 p-3"
     >
-      <div class="flex justify-between items-center">
-        <div class="text-sm break-words flex-1">
+      <div class="flex items-center justify-between">
+        <div class="flex-1 text-sm break-words">
           {{ getConflictMessage(conflict, $t) }}
         </div>
       </div>

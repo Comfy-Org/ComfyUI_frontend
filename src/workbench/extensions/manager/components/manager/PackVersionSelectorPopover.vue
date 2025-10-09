@@ -1,15 +1,15 @@
 <template>
   <div class="w-64 pt-1">
     <div class="py-2">
-      <span class="pl-3 text-md font-semibold text-neutral-500">
+      <span class="text-md pl-3 font-semibold text-neutral-500">
         {{ $t('manager.selectVersion') }}
       </span>
     </div>
     <div
       v-if="isLoadingVersions || isQueueing"
-      class="text-center text-muted py-4 flex flex-col items-center"
+      class="flex flex-col items-center py-4 text-center text-muted"
     >
-      <ProgressSpinner class="w-8 h-8 mb-2" />
+      <ProgressSpinner class="mb-2 h-8 w-8" />
       {{ $t('manager.loadingVersions') }}
     </div>
     <div v-else-if="versionOptions.length === 0" class="py-2">
@@ -27,13 +27,13 @@
       option-value="value"
       :options="processedVersionOptions"
       :highlight-on-select="false"
-      class="w-full max-h-[50vh] border-none shadow-none rounded-md"
+      class="max-h-[50vh] w-full rounded-md border-none shadow-none"
       :pt="{
         listContainer: { class: 'scrollbar-hide' }
       }"
     >
       <template #option="slotProps">
-        <div class="flex justify-between items-center w-full p-1">
+        <div class="flex w-full items-center justify-between p-1">
           <div class="flex items-center gap-2">
             <template v-if="slotProps.option.value === 'nightly'">
               <div class="w-4"></div>
@@ -59,7 +59,7 @@
       </template>
     </Listbox>
     <ContentDivider class="my-2" />
-    <div class="flex justify-end gap-2 py-1 px-3">
+    <div class="flex justify-end gap-2 px-3 py-1">
       <Button
         text
         class="text-sm"
@@ -71,7 +71,7 @@
       <Button
         severity="secondary"
         :label="$t('g.install')"
-        class="py-2.5 px-4 text-sm dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
+        class="dark-theme:bg-unset dark-theme:text-unset rounded-lg bg-black/80 px-4 py-2.5 text-sm text-neutral-100"
         :disabled="isQueueing"
         @click="handleSubmit"
       />
