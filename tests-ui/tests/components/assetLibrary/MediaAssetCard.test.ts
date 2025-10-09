@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import QueueAssetCard from '@/components/assetLibrary/QueueAssetCard.vue'
+import QueueAssetCard from '@/components/assetLibrary/MediaAssetCard.vue'
 import type { AssetMeta } from '@/types/media.types'
 
 describe('QueueAssetCard', () => {

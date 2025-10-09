@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { AssetMeta } from '@/types/media.types'
 
-import QueueAssetCard from './QueueAssetCard.vue'
+import QueueAssetCard from './MediaAssetCard.vue'
 
 const meta: Meta<typeof QueueAssetCard> = {
   title: 'AssetLibrary/QueueAssetCard',
@@ -17,9 +17,6 @@ const meta: Meta<typeof QueueAssetCard> = {
     },
     loading: {
       control: 'boolean'
-    },
-    error: {
-      control: 'text'
     }
   },
   decorators: [
@@ -60,7 +57,6 @@ export const ImageAsset: Story = {
     context: 'input',
     asset: sampleAsset,
     loading: false,
-    error: null,
     dense: false
   }
 }
@@ -152,8 +148,7 @@ export const LoadingState: Story = {
 export const ErrorState: Story = {
   args: {
     context: 'input',
-    asset: sampleAsset,
-    error: 'Failed to load asset'
+    asset: sampleAsset
   }
 }
 

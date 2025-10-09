@@ -26,30 +26,6 @@
     </template>
   </CardContainer>
 
-  <!-- Error State -->
-  <CardContainer
-    v-else-if="error"
-    :ratio="dense ? 'smallSquare' : 'square'"
-    type="asset-card"
-  >
-    <template #top>
-      <CardTop ratio="square">
-        <div
-          class="flex h-full w-full items-center justify-center bg-gray-50 dark-theme:bg-gray-900"
-        >
-          <i class="pi pi-exclamation-triangle text-2xl text-red-500" />
-        </div>
-      </CardTop>
-    </template>
-    <template #bottom>
-      <CardBottom>
-        <div class="px-4 py-3">
-          <p class="m-0 text-sm text-red-500">{{ error }}</p>
-        </div>
-      </CardBottom>
-    </template>
-  </CardContainer>
-
   <!-- Type-specific cards based on media kind -->
   <component
     :is="getCardComponent(asset.kind)"
@@ -67,10 +43,10 @@
 </template>
 
 <script setup lang="ts">
-import QueueAudioCard from '@/components/assetLibrary/cards/QueueAudioCard.vue'
-import QueueImageCard from '@/components/assetLibrary/cards/QueueImageCard.vue'
-import QueueTextCard from '@/components/assetLibrary/cards/QueueTextCard.vue'
-import QueueVideoCard from '@/components/assetLibrary/cards/QueueVideoCard.vue'
+import QueueAudioCard from '@/components/assetLibrary/cards/MediaAudioCard.vue'
+import QueueImageCard from '@/components/assetLibrary/cards/MediaImageCard.vue'
+import QueueTextCard from '@/components/assetLibrary/cards/MediaTextCard.vue'
+import QueueVideoCard from '@/components/assetLibrary/cards/MediaVideoCard.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -97,7 +73,6 @@ defineProps<{
   context: AssetContext
   asset: AssetMeta
   loading?: boolean
-  error?: string | null
   dense?: boolean
 }>()
 

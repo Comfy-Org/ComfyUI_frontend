@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import QueueAssetThumbnail from '@/components/assetLibrary/QueueAssetThumbnail.vue'
+import QueueAssetThumbnail from '@/components/assetLibrary/MediaAssetThumbnail.vue'
 import JobIdSection from '@/components/assetLibrary/common/JobIdSection.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'

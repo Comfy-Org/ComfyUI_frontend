@@ -4,7 +4,7 @@
       :ratio="dense ? 'smallSquare' : 'square'"
       tabindex="0"
       role="button"
-      :aria-label="`Audio: ${asset.name}`"
+      :aria-label="`Text: ${asset.name}`"
       :class="cardClasses"
       @click="handleCardClick"
       @keydown.enter="handleCardClick"
@@ -27,10 +27,6 @@
 
             <div :class="metaTextClasses">
               <span>{{ formatSize(asset.size) }}</span>
-              <span v-if="asset.duration">
-                <i class="pi pi-clock mr-1 text-xs" />
-                {{ formatDuration(asset.duration) }}
-              </span>
             </div>
 
             <JobIdSection
@@ -42,21 +38,21 @@
             <div :class="actionButtonsClasses">
               <IconButton
                 :class="actionButtonClasses"
-                aria-label="Play audio"
+                aria-label="View text"
                 size="sm"
                 type="transparent"
-                :on-click="handlePlay"
+                :on-click="handleView"
               >
-                <i :class="iconClasses('pi-play')" />
+                <i :class="iconClasses('pi-eye')" />
               </IconButton>
               <IconButton
                 :class="actionButtonClasses"
-                aria-label="Download audio"
+                aria-label="Copy text"
                 size="sm"
                 type="transparent"
-                :on-click="handleDownload"
+                :on-click="handleCopy"
               >
-                <i :class="iconClasses('pi-download')" />
+                <i :class="iconClasses('pi-copy')" />
               </IconButton>
             </div>
           </div>
@@ -67,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import QueueAssetThumbnail from '@/components/assetLibrary/QueueAssetThumbnail.vue'
+import QueueAssetThumbnail from '@/components/assetLibrary/MediaAssetThumbnail.vue'
 import JobIdSection from '@/components/assetLibrary/common/JobIdSection.vue'
 import IconButton from '@/components/button/IconButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
@@ -84,8 +80,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  play: [assetId: string]
-  download: [assetId: string]
+  view: [assetId: string]
+  copy: [assetId: string]
   copyJobId: [jobId: string]
   openDetail: [assetId: string]
 }>()
@@ -117,24 +113,18 @@ const actionButtonClasses = cn(
 const iconClasses = (iconName: string) =>
   cn('pi', iconName, 'text-gray-500 dark-theme:text-gray-400')
 
-function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
 function handleCardClick() {
   emit('openDetail', props.asset.id)
 }
 
-function handlePlay(event: Event) {
+function handleView(event: Event) {
   event.stopPropagation()
-  emit('play', props.asset.id)
+  emit('view', props.asset.id)
 }
 
-function handleDownload(event: Event) {
+function handleCopy(event: Event) {
   event.stopPropagation()
-  emit('download', props.asset.id)
+  emit('copy', props.asset.id)
 }
 
 function handleCopyJobId() {
