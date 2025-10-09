@@ -28,11 +28,11 @@
       >
         <i
           v-if="!isPlaying"
-          class="icon-[lucide--play] size-4 text-gray-600 dark-theme:text-[#8a8a8a]"
+          class="icon-[lucide--play] size-4 text-gray-600 dark-theme:text-gray-800"
         />
         <i
           v-else
-          class="icon-[lucide--pause] size-4 text-gray-600 dark-theme:text-[#8a8a8a]"
+          class="icon-[lucide--pause] size-4 text-gray-600 dark-theme:text-gray-800"
         />
       </div>
 
@@ -46,7 +46,7 @@
 
     <!-- Progress Bar -->
     <div
-      class="flex-1 h-0.5 bg-gray-300 dark-theme:bg-[#444444] rounded-full relative"
+      class="flex-1 h-0.5 bg-gray-300 dark-theme:bg-stone-200 rounded-full relative"
     >
       <div
         class="absolute left-0 top-0 h-full bg-gray-600 dark-theme:bg-white/50 rounded-full transition-all"
@@ -74,16 +74,16 @@
         @click="toggleMute"
       >
         <i
-          v-if="!isMuted && volume > 0.5"
-          class="icon-[lucide--volume-2] size-4 text-gray-600 dark-theme:text-[#8a8a8a]"
+          v-if="showVolumeTwo"
+          class="icon-[lucide--volume-2] size-4 text-gray-600 dark-theme:text-gray-800"
         />
         <i
-          v-else-if="!isMuted && volume > 0"
-          class="icon-[lucide--volume-1] size-4 text-gray-600 dark-theme:text-[#8a8a8a]"
+          v-else-if="showVolumeOne"
+          class="icon-[lucide--volume-1] size-4 text-gray-600 dark-theme:text-gray-800"
         />
         <i
           v-else
-          class="icon-[lucide--volume-x] size-4 text-gray-600 dark-theme:text-[#8a8a8a]"
+          class="icon-[lucide--volume-x] size-4 text-gray-600 dark-theme:text-gray-800"
         />
       </div>
 
@@ -98,7 +98,7 @@
         @click="toggleOptionsMenu"
       >
         <i
-          class="icon-[lucide--more-vertical] size-4 text-gray-600 dark-theme:text-[#8a8a8a]"
+          class="icon-[lucide--more-vertical] size-4 text-gray-600 dark-theme:text-gray-800"
         />
       </div>
     </div>
@@ -154,20 +154,26 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
+import { isOutputNode } from '@/utils/nodeFilterUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { formatTime, getResourceURL } from '../../utils/audioUtils'
 
 const { t } = useI18n()
 
-const props = defineProps<{
-  readonly?: boolean
-  hideWhenEmpty?: boolean
-  showOptionsButton?: boolean
-  modelValue?: string
-  nodeId?: string
-  audioUrl?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    readonly?: boolean
+    hideWhenEmpty?: boolean
+    showOptionsButton?: boolean
+    modelValue?: string
+    nodeId?: string
+    audioUrl?: string
+  }>(),
+  {
+    hideWhenEmpty: true
+  }
+)
 
 // Refs
 const audioRef = ref<HTMLAudioElement>()
@@ -187,6 +193,9 @@ const progressPercentage = computed(() => {
   return (currentTime.value / duration.value) * 100
 })
 
+const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
+const showVolumeOne = computed(() => isMuted.value && volume.value > 0)
+
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.rootGraph) return null
   return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
@@ -201,10 +210,9 @@ const hidden = computed(() => {
 })
 
 // Check if this is an output node
-const isOutputNode = computed(() => {
+const isOutputNodeRef = computed(() => {
   const node = litegraphNode.value
-  if (!node) return false
-  return node.constructor.nodeData?.output_node === true
+  return !!node && isOutputNode(node)
 })
 
 const nodeLocatorId = computed(() => {
@@ -217,7 +225,7 @@ const nodeOutputStore = useNodeOutputStore()
 
 // Computed audio URL from node output (for output nodes)
 const audioUrlFromOutput = computed(() => {
-  if (!isOutputNode.value || !nodeLocatorId.value) return ''
+  if (!isOutputNodeRef.value || !nodeLocatorId.value) return ''
 
   const nodeOutput = nodeOutputStore.nodeOutputs[nodeLocatorId.value]
   if (!nodeOutput?.audio || nodeOutput.audio.length === 0) return ''
@@ -274,7 +282,6 @@ const handleSeek = (event: Event) => {
 const handleLoadedMetadata = () => {
   if (audioRef.value) {
     duration.value = audioRef.value.duration
-    hasAudio.value = true
   }
 }
 
@@ -347,7 +354,7 @@ const loadAudioFromUrl = (url: string) => {
   audioRef.value.pause()
   audioRef.value.src = url
   void audioRef.value.load()
-  hasAudio.value = true
+  hasAudio.value = !!url
 }
 
 // Watch for finalAudioUrl changes
