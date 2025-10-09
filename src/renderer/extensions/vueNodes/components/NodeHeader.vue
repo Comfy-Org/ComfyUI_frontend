@@ -1,12 +1,12 @@
 <template>
-  <div v-if="renderError" class="node-error p-4 text-red-500 text-sm">
+  <div v-if="renderError" class="node-error p-4 text-sm text-red-500">
     {{ $t('Node Header Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-header p-4 rounded-t-2xl cursor-move w-full bg-node-component-header-surface text-node-component-header',
+        'lg-node-header p-4 rounded-t-2xl w-full bg-node-component-header-surface text-node-component-header',
         collapsed && 'rounded-2xl'
       )
     "
@@ -17,7 +17,7 @@
     <div class="flex items-center justify-between gap-2.5">
       <!-- Collapse/Expand Button -->
       <div class="relative flex items-center gap-2.5">
-        <div class="flex items-center lod-toggle shrink-0 px-0.5">
+        <div class="lod-toggle flex shrink-0 items-center px-0.5">
           <IconButton
             size="fit-content"
             type="transparent"
@@ -32,7 +32,7 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="text-xs leading-none relative top-px text-node-component-header-icon"
+              class="relative top-px text-xs leading-none text-node-component-header-icon"
             ></i>
           </IconButton>
         </div>
@@ -40,7 +40,7 @@
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="text-sm font-bold truncate flex-1 lod-toggle flex items-center gap-2"
+          class="lod-toggle flex flex-1 items-center gap-2 truncate text-sm font-bold"
           data-testid="node-title"
         >
           <EditableText
@@ -59,7 +59,7 @@
         <LODFallback />
       </div>
 
-      <div class="flex items-center lod-toggle shrink-0">
+      <div class="lod-toggle flex shrink-0 items-center">
         <IconButton
           v-if="isSubgraphNode"
           v-tooltip.top="enterSubgraphTooltipConfig"

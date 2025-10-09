@@ -13,7 +13,7 @@
       @hide="onPopoverHide"
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
-      <div class="flex flex-col p-2 min-w-48">
+      <div class="flex min-w-48 flex-col p-2">
         <MenuOptionItem
           v-for="(option, index) in menuOptions"
           :key="option.label || `divider-${index}`"
@@ -46,10 +46,12 @@ import {
   restoreMoreOptionsSignal
 } from '@/composables/canvas/useSelectionToolboxPosition'
 import {
-  type MenuOption,
-  type SubMenuOption,
   registerNodeOptionsInstance,
   useMoreOptionsMenu
+} from '@/composables/graph/useMoreOptionsMenu'
+import type {
+  MenuOption,
+  SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'

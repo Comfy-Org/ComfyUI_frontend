@@ -95,19 +95,19 @@ export function useSlotLayoutSync() {
       }
     }
 
-    graph.onTrigger = (action: string, param: any) => {
+    graph.onTrigger = (event) => {
       if (
-        action === 'node:property:changed' &&
-        param?.property === 'flags.collapsed'
+        event.type === 'node:property:changed' &&
+        event.property === 'flags.collapsed'
       ) {
-        const node = graph.getNodeById(parseInt(String(param.nodeId)))
+        const node = graph.getNodeById(parseInt(String(event.nodeId)))
         if (node) {
           computeAndRegisterSlots(node)
         }
       }
-      if (origTrigger) {
-        origTrigger.call(graph, action, param)
-      }
+
+      // Chain to original handler
+      origTrigger?.(event)
     }
 
     graph.onAfterChange = (graph: any, node?: any) => {

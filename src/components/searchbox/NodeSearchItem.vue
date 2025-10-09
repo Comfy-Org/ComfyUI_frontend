@@ -1,11 +1,11 @@
 <template>
   <div
-    class="option-container flex justify-between items-center px-2 py-0 cursor-pointer overflow-hidden w-full"
+    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden px-2 py-0"
   >
-    <div class="option-display-name font-semibold flex flex-col">
+    <div class="option-display-name flex flex-col font-semibold">
       <div>
         <span v-if="isBookmarked">
-          <i class="pi pi-bookmark-fill text-sm mr-1" />
+          <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
         <span v-html="highlightQuery(nodeDef.display_name, currentQuery)" />
         <span>&nbsp;</span>
@@ -15,7 +15,7 @@
       </div>
       <div
         v-if="showCategory"
-        class="option-category font-light text-sm text-muted overflow-hidden text-ellipsis whitespace-nowrap"
+        class="option-category truncate text-sm font-light text-muted"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>
@@ -56,8 +56,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import { highlightQuery } from '@/utils/formatUtil'
-import { formatNumberWithSuffix } from '@/utils/formatUtil'
+import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>
@@ -89,7 +88,7 @@ const props = defineProps<{
 :deep(.highlight) {
   background-color: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
-  font-weight: bold;
+  font-weight: 700;
   border-radius: 0.25rem;
   padding: 0 0.125rem;
   margin: -0.125rem 0.125rem;

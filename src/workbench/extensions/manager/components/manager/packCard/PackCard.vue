@@ -1,6 +1,6 @@
 <template>
   <Card
-    class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-lg shadow-elevation-3 dark-theme:bg-dark-elevation-2 transition-all duration-200"
+    class="shadow-elevation-3 inline-flex h-full w-full flex-col items-start justify-between overflow-hidden rounded-lg transition-all duration-200 dark-theme:bg-dark-elevation-2"
     :class="{
       'selected-card': isSelected,
       'opacity-60': isDisabled
@@ -21,21 +21,21 @@
       <PackBanner :node-pack="nodePack" />
     </template>
     <template #content>
-      <div class="pt-4 px-4 pb-3 w-full h-full">
-        <div class="flex flex-col gap-y-1 w-full h-full">
+      <div class="h-full w-full px-4 pt-4 pb-3">
+        <div class="flex h-full w-full flex-col gap-y-1">
           <span
-            class="text-sm font-bold truncate overflow-hidden text-ellipsis"
+            class="truncate overflow-hidden text-sm font-bold text-ellipsis"
           >
             {{ nodePack.name }}
           </span>
           <p
             v-if="nodePack.description"
-            class="flex-1 text-muted text-xs font-medium break-words overflow-hidden min-h-12 line-clamp-3 my-0 leading-4 mb-1 overflow-hidden"
+            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs leading-4 font-medium break-words text-muted"
           >
             {{ nodePack.description }}
           </p>
           <div class="flex flex-col gap-y-2">
-            <div class="flex-1 flex items-center gap-2">
+            <div class="flex flex-1 items-center gap-2">
               <div v-if="nodesCount" class="p-2 pl-0 text-xs">
                 {{ nodesCount }} {{ $t('g.nodes') }}
               </div>
@@ -47,7 +47,7 @@
               />
               <div
                 v-if="formattedLatestVersionDate"
-                class="px-2 py-1 flex justify-center items-center gap-1 text-xs text-muted font-medium"
+                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted"
               >
                 {{ formattedLatestVersionDate }}
               </div>
@@ -55,7 +55,7 @@
             <div class="flex">
               <span
                 v-if="publisherName"
-                class="text-xs text-muted font-medium leading-3 max-w-40 truncate"
+                class="max-w-40 truncate text-xs leading-3 font-medium text-muted"
               >
                 {{ publisherName }}
               </span>
@@ -82,9 +82,11 @@ import PackCardFooter from '@/workbench/extensions/manager/components/manager/pa
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import {
   IsInstallingKey,
-  type MergedNodePack,
-  type RegistryPack,
   isMergedNodePack
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import type {
+  MergedNodePack,
+  RegistryPack
 } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { nodePack, isSelected = false } = defineProps<{

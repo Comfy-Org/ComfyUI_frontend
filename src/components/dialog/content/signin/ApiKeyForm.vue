@@ -1,17 +1,17 @@
 <template>
   <div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-4 mb-8">
-      <h1 class="text-2xl font-medium leading-normal my-0">
+    <div class="mb-8 flex flex-col gap-4">
+      <h1 class="my-0 text-2xl leading-normal font-medium">
         {{ t('auth.apiKey.title') }}
       </h1>
       <div class="flex flex-col gap-2">
-        <p class="text-base my-0 text-muted">
+        <p class="my-0 text-base text-muted">
           {{ t('auth.apiKey.description') }}
         </p>
         <a
           href="https://docs.comfy.org/interface/user#logging-in-with-an-api-key"
           target="_blank"
-          class="text-blue-500 cursor-pointer"
+          class="cursor-pointer text-blue-500"
         >
           {{ t('g.learnMore') }}
         </a>
@@ -30,7 +30,7 @@
 
       <div class="flex flex-col gap-2">
         <label
-          class="opacity-80 text-base font-medium mb-2"
+          class="mb-2 text-base font-medium opacity-80"
           for="comfy-org-api-key"
         >
           {{ t('auth.apiKey.label') }}
@@ -50,7 +50,7 @@
             <a
               :href="`${COMFY_PLATFORM_BASE_URL}/login`"
               target="_blank"
-              class="text-blue-500 cursor-pointer"
+              class="cursor-pointer text-blue-500"
             >
               {{ t('auth.apiKey.generateKey') }}
             </a>
@@ -58,7 +58,7 @@
             <a
               href="https://docs.comfy.org/tutorials/api-nodes/overview#log-in-with-api-key-on-non-whitelisted-websites"
               target="_blank"
-              class="text-blue-500 cursor-pointer"
+              class="cursor-pointer text-blue-500"
             >
               {{ t('auth.apiKey.whitelistInfo') }}
             </a>
@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <div class="flex justify-between items-center mt-4">
+      <div class="mt-4 flex items-center justify-between">
         <Button type="button" link @click="$emit('back')">
           {{ t('g.back') }}
         </Button>

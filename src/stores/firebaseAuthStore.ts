@@ -1,11 +1,8 @@
 import { FirebaseError } from 'firebase/app'
 import {
-  type Auth,
   AuthErrorCodes,
   GithubAuthProvider,
   GoogleAuthProvider,
-  type User,
-  type UserCredential,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
@@ -17,6 +14,7 @@ import {
   signOut,
   updatePassword
 } from 'firebase/auth'
+import type { Auth, User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'

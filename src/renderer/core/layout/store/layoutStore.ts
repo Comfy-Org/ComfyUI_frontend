@@ -5,38 +5,37 @@
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
 import log from 'loglevel'
-import { type ComputedRef, type Ref, computed, customRef, ref } from 'vue'
+import { computed, customRef, ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
+  Bounds,
   CreateLinkOperation,
   CreateNodeOperation,
   CreateRerouteOperation,
   DeleteLinkOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
+  LayoutChange,
   LayoutOperation,
+  LayoutStore,
+  LinkId,
+  LinkLayout,
+  LinkSegmentLayout,
   MoveNodeOperation,
   MoveRerouteOperation,
   NodeBoundsUpdate,
+  NodeId,
+  NodeLayout,
+  Point,
+  RerouteId,
+  RerouteLayout,
   ResizeNodeOperation,
-  SetNodeZIndexOperation
-} from '@/renderer/core/layout/types'
-import {
-  type Bounds,
-  type LayoutChange,
-  LayoutSource,
-  type LayoutStore,
-  type LinkId,
-  type LinkLayout,
-  type LinkSegmentLayout,
-  type NodeId,
-  type NodeLayout,
-  type Point,
-  type RerouteId,
-  type RerouteLayout,
-  type SlotLayout
+  SetNodeZIndexOperation,
+  SlotLayout
 } from '@/renderer/core/layout/types'
 import {
   isBoundsEqual,
@@ -49,10 +48,10 @@ import {
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
-  type NodeLayoutMap,
   layoutToYNode,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
+import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {

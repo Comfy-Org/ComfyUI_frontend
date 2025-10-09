@@ -12,7 +12,6 @@ import {
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
 import {
-  type WidgetItem,
   demoteWidget,
   isRecommendedWidget,
   matchesPropertyItem,
@@ -20,10 +19,9 @@ import {
   promoteWidget,
   widgetItemToProperty
 } from '@/core/graph/subgraph/proxyWidgetUtils'
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/core/schemas/proxyWidget'
+import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -246,14 +244,14 @@ onBeforeUnmount(() => {
   />
   <div
     v-if="filteredActive.length"
-    class="pt-1 pb-4 border-b-1 border-node-component-border"
+    class="border-b-1 border-node-component-border pt-1 pb-4"
   >
-    <div class="flex py-0 px-4 justify-between">
-      <div class="text-slate-100 text-[9px] font-semibold uppercase">
+    <div class="flex justify-between px-4 py-0">
+      <div class="text-[9px] font-semibold text-slate-100 uppercase">
         {{ $t('subgraphStore.shown') }}
       </div>
       <a
-        class="cursor-pointer text-right text-blue-100 text-[11px] font-normal"
+        class="cursor-pointer text-right text-[11px] font-normal text-blue-100"
         @click.stop="hideAll"
       >
         {{ $t('subgraphStore.hideAll') }}</a
@@ -263,7 +261,7 @@ onBeforeUnmount(() => {
       <div
         v-for="[node, widget] in filteredActive"
         :key="toKey([node, widget])"
-        class="w-full draggable-item"
+        class="draggable-item w-full"
         style=""
       >
         <SubgraphNodeWidget
@@ -277,12 +275,12 @@ onBeforeUnmount(() => {
     </div>
   </div>
   <div v-if="filteredCandidates.length" class="pt-1 pb-4">
-    <div class="flex py-0 px-4 justify-between">
-      <div class="text-slate-100 text-[9px] font-semibold uppercase">
+    <div class="flex justify-between px-4 py-0">
+      <div class="text-[9px] font-semibold text-slate-100 uppercase">
         {{ $t('subgraphStore.hidden') }}
       </div>
       <a
-        class="cursor-pointer text-right text-blue-100 text-[11px] font-normal"
+        class="cursor-pointer text-right text-[11px] font-normal text-blue-100"
         @click.stop="showAll"
       >
         {{ $t('subgraphStore.showAll') }}</a
@@ -302,7 +300,7 @@ onBeforeUnmount(() => {
   </div>
   <div
     v-if="recommendedWidgets.length"
-    class="justify-center flex py-4 border-t-1 border-node-component-border"
+    class="flex justify-center border-t-1 border-node-component-border py-4"
   >
     <Button
       size="small"

@@ -1,4 +1,5 @@
-import { type Fn, useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
+import type { Fn } from '@vueuse/core'
 import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -23,10 +24,8 @@ import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
-import {
-  type SlotDropCandidate,
-  useSlotLinkDragUIState
-} from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'

@@ -14,10 +14,10 @@
         />
 
         <!-- User Details -->
-        <h3 class="text-lg font-semibold truncate my-0 mb-1">
+        <h3 class="my-0 mb-1 truncate text-lg font-semibold">
           {{ userDisplayName || $t('g.user') }}
         </h3>
-        <p v-if="userEmail" class="text-sm text-muted truncate my-0">
+        <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
           {{ userEmail }}
         </p>
       </div>
@@ -61,11 +61,11 @@
 
     <Divider class="my-2" />
 
-    <div class="w-full flex flex-col gap-2 p-2">
-      <div class="text-muted text-sm">
+    <div class="flex w-full flex-col gap-2 p-2">
+      <div class="text-sm text-muted">
         {{ $t('credits.yourCreditBalance') }}
       </div>
-      <div class="flex justify-between items-center">
+      <div class="flex items-center justify-between">
         <UserCredit text-class="text-2xl" />
         <Button :label="$t('credits.topUp.topUp')" @click="handleTopUp" />
       </div>

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
+  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div v-else v-tooltip.left="tooltipConfig" :class="slotWrapperClass">
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -25,13 +25,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type ComponentPublicInstance,
-  computed,
-  onErrorCaptured,
-  ref,
-  watchEffect
-} from 'vue'
+import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'

@@ -1,16 +1,16 @@
 <template>
   <div class="image-upload-wrapper">
-    <div class="flex gap-2 items-center">
+    <div class="flex items-center gap-2">
       <div
-        class="preview-box border rounded p-2 w-16 h-16 flex items-center justify-center"
+        class="preview-box flex h-16 w-16 items-center justify-center rounded border p-2"
         :class="{ 'bg-gray-100 dark-theme:bg-gray-800': !modelValue }"
       >
         <img
           v-if="modelValue"
           :src="modelValue"
-          class="max-w-full max-h-full object-contain"
+          class="max-h-full max-w-full object-contain"
         />
-        <i v-else class="pi pi-image text-gray-400 text-xl" />
+        <i v-else class="pi pi-image text-xl text-gray-400" />
       </div>
 
       <div class="flex flex-col gap-2">

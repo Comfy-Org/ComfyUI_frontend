@@ -11,6 +11,10 @@ on:
   pull_request:
     types: [labeled]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   wait-for-ci:
     runs-on: ubuntu-latest
@@ -73,10 +77,10 @@ jobs:
         with:
           label_trigger: "claude-review"
           prompt: |
-            Read the file .claude/commands/comprehensive-pr-review.md and follow ALL the instructions exactly. 
-            
-            CRITICAL: You must post individual inline comments using the gh api commands shown in the file. 
-            DO NOT create a summary comment. 
+            Read the file .claude/commands/comprehensive-pr-review.md and follow ALL the instructions exactly.
+
+            CRITICAL: You must post individual inline comments using the gh api commands shown in the file.
+            DO NOT create a summary comment.
             Each issue must be posted as a separate inline comment on the specific line of code.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 256 --allowedTools 'Bash(git:*),Bash(gh api:*),Bash(gh pr:*),Bash(gh repo:*),Bash(jq:*),Bash(echo:*),Read,Write,Edit,Glob,Grep,WebFetch'"
@@ -86,3 +90,9 @@ jobs:
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           REPOSITORY: ${{ github.repository }}
+
+      - name: Remove claude-review label
+        if: always()
+        run: gh pr edit ${{ github.event.pull_request.number }} --remove-label "claude-review"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

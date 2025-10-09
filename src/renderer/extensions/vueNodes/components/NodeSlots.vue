@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ $t('Node Slots Error') }}
   </div>
   <div v-else class="lg-node-slots flex justify-between">
@@ -14,7 +14,7 @@
       />
     </div>
 
-    <div v-if="nodeData?.outputs?.length" class="flex flex-col gap-1 ml-auto">
+    <div v-if="nodeData?.outputs?.length" class="ml-auto flex flex-col gap-1">
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"
         :key="`output-${index}`"

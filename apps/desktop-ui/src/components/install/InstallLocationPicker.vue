@@ -286,6 +286,12 @@ const onFocus = async () => {
     .p-accordionheader {
       @apply rounded-t-xl rounded-b-none;
     }
+
+    .p-accordionheader-toggle-icon {
+      &::before {
+        content: '\e902';
+      }
+    }
   }
 
   .p-accordioncontent {
@@ -300,14 +306,6 @@ const onFocus = async () => {
   .p-accordionheader-toggle-icon {
     &::before {
       content: '\e933';
-    }
-  }
-
-  .p-accordionpanel-active {
-    .p-accordionheader-toggle-icon {
-      &::before {
-        content: '\e902';
-      }
     }
   }
 }

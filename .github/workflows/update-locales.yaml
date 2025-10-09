@@ -16,36 +16,33 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v5
-    
-    - name: Setup Frontend
-      uses: ./.github/actions/setup-frontend
-    
-    - name: Cache tool outputs
-      uses: actions/cache@v4
+
+    # Setup playwright environment
+    - name: Setup ComfyUI Server
+      uses: ./.github/actions/setup-comfyui-server
       with:
-        path: |
-          ComfyUI_frontend/.cache
-          ComfyUI_frontend/.cache
-        key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
-        restore-keys: |
-          i18n-tools-cache-${{ runner.os }}-
+        launch_server: true
+    - name: Setup ComfyUI Frontend
+      uses: ./.github/actions/setup-frontend
+      with:
+        include_build_step: true
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
+
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.
       run: pnpm dev:electron &
-      working-directory: ComfyUI_frontend
+
+    # Update locales, collect new strings and update translations using OpenAI, then commit changes
     - name: Update en.json
       run: pnpm collect-i18n
       env:
         PLAYWRIGHT_TEST_URL: http://localhost:5173
-      working-directory: ComfyUI_frontend
     - name: Update translations
       run: pnpm locale
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      working-directory: ComfyUI_frontend
     - name: Commit updated locales
       run: |
         git config --global user.name 'github-actions'
@@ -59,4 +56,3 @@ jobs:
         git add src/locales/
         git diff --staged --quiet || git commit -m "Update locales [skip ci]"
         git push origin HEAD:${{ github.head_ref }}
-      working-directory: ComfyUI_frontend

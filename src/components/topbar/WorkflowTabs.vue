@@ -1,6 +1,6 @@
 <template>
   <div
-    class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
+    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
     <Button
@@ -14,7 +14,7 @@
     />
     <ScrollPanel
       ref="scrollPanelRef"
-      class="overflow-hidden no-drag"
+      class="no-drag overflow-hidden"
       :pt:content="{
         class: 'p-0 w-full flex',
         onwheel: handleWheel
@@ -55,7 +55,7 @@
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button shrink-0 no-drag rounded-none"
+      class="new-blank-workflow-button no-drag shrink-0 rounded-none"
       icon="pi pi-plus"
       text
       severity="secondary"
@@ -65,7 +65,7 @@
     <ContextMenu ref="menu" :model="contextMenuItems" />
     <div
       v-if="menuSetting !== 'Bottom' && isDesktop"
-      class="window-actions-spacer shrink-0 app-drag"
+      class="window-actions-spacer app-drag shrink-0"
     />
   </div>
 </template>
@@ -84,8 +84,10 @@ import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  useWorkflowBookmarkStore,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'

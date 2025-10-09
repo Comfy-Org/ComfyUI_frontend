@@ -9,7 +9,7 @@
     text
     @click="openMaskEditor"
   >
-    <i-comfy:mask class="!w-4 !h-4" />
+    <i-comfy:mask class="!h-4 !w-4" />
   </Button>
 </template>
 

@@ -1,21 +1,21 @@
 <template>
-  <div class="flex flex-col w-96 p-2 gap-10">
+  <div class="flex w-96 flex-col gap-10 p-2">
     <div v-if="isInsufficientCredits" class="flex flex-col gap-4">
-      <h1 class="text-2xl font-medium leading-normal my-0">
+      <h1 class="my-0 text-2xl leading-normal font-medium">
         {{ $t('credits.topUp.insufficientTitle') }}
       </h1>
-      <p class="text-base my-0">
+      <p class="my-0 text-base">
         {{ $t('credits.topUp.insufficientMessage') }}
       </p>
     </div>
 
     <!-- Balance Section -->
-    <div class="flex justify-between items-center">
-      <div class="flex flex-col gap-2 w-full">
-        <div class="text-muted text-base">
+    <div class="flex items-center justify-between">
+      <div class="flex w-full flex-col gap-2">
+        <div class="text-base text-muted">
           {{ $t('credits.yourCreditBalance') }}
         </div>
-        <div class="flex items-center justify-between w-full">
+        <div class="flex w-full items-center justify-between">
           <UserCredit text-class="text-2xl" />
           <Button
             outlined
@@ -30,7 +30,7 @@
 
     <!-- Amount Input Section -->
     <div class="flex flex-col gap-2">
-      <span class="text-muted text-sm"
+      <span class="text-sm text-muted"
         >{{ $t('credits.topUp.quickPurchase') }}:</span
       >
       <div class="grid grid-cols-[2fr_1fr] gap-2">

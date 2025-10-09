@@ -25,7 +25,7 @@
   </teleport>
   <div
     v-if="selectedTab"
-    class="sidebar-content-container h-full overflow-y-auto overflow-x-hidden"
+    class="sidebar-content-container h-full overflow-x-hidden overflow-y-auto"
   >
     <ExtensionSlot :extension="selectedTab" />
   </div>

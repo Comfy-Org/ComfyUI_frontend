@@ -26,7 +26,7 @@
       >
         <img
           :src="thumbnailUrl"
-          class="block h-[200px] object-cover rounded-lg p-2"
+          class="block h-[200px] rounded-lg object-cover p-2"
           :style="{ width: `${POPOVER_WIDTH}px` }"
         />
       </div>
@@ -223,8 +223,8 @@ defineExpose({
   @apply shadow-2xl;
 }
 
-.workflow-popover-fade.p-popover:after,
-.workflow-popover-fade.p-popover:before {
+.workflow-popover-fade.p-popover::after,
+.workflow-popover-fade.p-popover::before {
   --p-popover-border-color: var(--comfy-menu-secondary-bg);
   left: 50%;
   transform: translateX(calc(-50% + var(--shift)));

@@ -1,10 +1,8 @@
 import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import {
-  type LinkRenderContext,
-  LitegraphLinkAdapter
-} from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -12,12 +10,16 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
-import { type AnimationOptions, DragAndScale } from './DragAndScale'
+import { DragAndScale } from './DragAndScale'
+import type { AnimationOptions } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
-import { Reroute, type RerouteId } from './Reroute'
+import { LGraphNode } from './LGraphNode'
+import type { NodeId, NodeProperty } from './LGraphNode'
+import { LLink } from './LLink'
+import type { LinkId } from './LLink'
+import { Reroute } from './Reroute'
+import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
@@ -85,8 +87,7 @@ import {
   TitleMode
 } from './types/globalEnums'
 import type { ClipboardItems, SubgraphIO } from './types/serialisation'
-import type { NeverNever } from './types/utility'
-import type { PickNevers } from './types/utility'
+import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
@@ -4707,7 +4708,9 @@ export class LGraphCanvas
 
       // draw nodes
       const { visible_nodes } = this
-      const drawSnapGuides = this.#snapToGrid && this.isDragging
+      const drawSnapGuides =
+        this.#snapToGrid &&
+        (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
       for (const node of visible_nodes) {
         ctx.save()
@@ -6089,7 +6092,9 @@ export class LGraphCanvas
 
     ctx.save()
     ctx.globalAlpha = 0.5 * this.editor_alpha
-    const drawSnapGuides = this.#snapToGrid && this.isDragging
+    const drawSnapGuides =
+      this.#snapToGrid &&
+      (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
     for (const group of groups) {
       // out of the visible area

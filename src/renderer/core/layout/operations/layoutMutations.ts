@@ -8,8 +8,8 @@ import log from 'loglevel'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutSource } from '@/renderer/core/layout/types'
 import type {
+  LayoutSource,
   LinkId,
   NodeLayout,
   Point,

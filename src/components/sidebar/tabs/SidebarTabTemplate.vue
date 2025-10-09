@@ -1,18 +1,18 @@
 <template>
   <div
-    class="comfy-vue-side-bar-container flex flex-col h-full group/sidebar-tab"
+    class="comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col"
     :class="props.class"
   >
     <div class="comfy-vue-side-bar-header">
-      <Toolbar class="border-x-0 border-t-0 rounded-none px-2 py-1 min-h-8">
+      <Toolbar class="min-h-8 rounded-none border-x-0 border-t-0 px-2 py-1">
         <template #start>
-          <span class="text-xs 2xl:text-sm truncate" :title="props.title">
+          <span class="truncate text-xs 2xl:text-sm" :title="props.title">
             {{ props.title.toUpperCase() }}
           </span>
         </template>
         <template #end>
           <div
-            class="flex flex-row motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 transition-all duration-200"
+            class="touch:w-auto touch:opacity-100 flex flex-row transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100"
           >
             <slot name="tool-buttons" />
           </div>
@@ -21,7 +21,7 @@
       <slot name="header" />
     </div>
     <!-- h-0 to force scrollpanel to grow -->
-    <ScrollPanel class="comfy-vue-side-bar-body grow h-0">
+    <ScrollPanel class="comfy-vue-side-bar-body h-0 grow">
       <slot name="body" />
     </ScrollPanel>
   </div>

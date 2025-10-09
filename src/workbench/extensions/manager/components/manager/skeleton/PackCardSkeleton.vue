@@ -1,12 +1,12 @@
 <template>
   <div
-    class="rounded-lg shadow-sm h-full overflow-hidden flex flex-col"
+    class="flex h-full flex-col overflow-hidden rounded-lg shadow-sm"
     data-virtual-grid-item
   >
     <!-- Card header - flush with top, approximately 15% of height -->
-    <div class="w-full px-4 py-3 flex justify-between items-center">
+    <div class="flex w-full items-center justify-between px-4 py-3">
       <div class="flex items-center">
-        <div class="w-6 h-6 flex items-center justify-center">
+        <div class="flex h-6 w-6 items-center justify-center">
           <Skeleton shape="circle" width="1.5rem" height="1.5rem" />
         </div>
         <Skeleton width="5rem" height="1rem" class="ml-2" />
@@ -15,14 +15,14 @@
     </div>
 
     <!-- Card content with icon on left and text on right -->
-    <div class="flex-1 p-4 flex">
+    <div class="flex flex-1 p-4">
       <!-- Left icon - 64x64 -->
-      <div class="shrink-0 mr-4">
+      <div class="mr-4 shrink-0">
         <Skeleton width="4rem" height="4rem" border-radius="0.5rem" />
       </div>
 
       <!-- Right content -->
-      <div class="flex-1 flex flex-col overflow-hidden">
+      <div class="flex flex-1 flex-col overflow-hidden">
         <!-- Title -->
         <Skeleton width="80%" height="1rem" class="mb-2" />
 
@@ -42,7 +42,7 @@
     </div>
 
     <!-- Card footer - similar to header -->
-    <div class="w-full px-5 py-4 flex justify-between items-center">
+    <div class="flex w-full items-center justify-between px-5 py-4">
       <Skeleton width="4rem" height="0.8rem" />
       <Skeleton width="6rem" height="0.8rem" />
     </div>

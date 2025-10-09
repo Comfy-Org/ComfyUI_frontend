@@ -1,8 +1,12 @@
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
 import { LiteGraphGlobal } from './LiteGraphGlobal'
-import type { ConnectingLink, Point } from './interfaces'
-import type { IContextMenuOptions, Size } from './interfaces'
+import type {
+  ConnectingLink,
+  IContextMenuOptions,
+  Point,
+  Size
+} from './interfaces'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
 import type { RenderShape, TitleMode } from './types/globalEnums'
@@ -98,7 +102,12 @@ export type {
   Positionable,
   Size
 } from './interfaces'
-export { LGraph } from './LGraph'
+export {
+  LGraph,
+  type LGraphTriggerAction,
+  type LGraphTriggerParam
+} from './LGraph'
+export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'
