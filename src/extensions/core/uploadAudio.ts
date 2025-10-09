@@ -100,7 +100,6 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
-        // audioUIWidget.options.canvasOnly = true
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 
@@ -176,6 +175,7 @@ app.registerExtension({
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
+        audioUIWidget.options.canvasOnly = true
 
         const onAudioWidgetUpdate = () => {
           audioUIWidget.element.src = api.apiURL(
@@ -251,7 +251,6 @@ app.registerExtension({
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          // node.addDOMWidget(inputName, /* name=*/ type, audio)
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.options.canvasOnly = true
 
