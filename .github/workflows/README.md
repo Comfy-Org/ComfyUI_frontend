@@ -48,6 +48,8 @@ These workflows are triggered when specific labels are added to PRs:
 
 ## Workflow Triggers
 
+For more details on workflow triggers, see [GitHub's workflow trigger documentation](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).
+
 ### Common Trigger Patterns
 
 | Trigger Type | Use Case | Example |
