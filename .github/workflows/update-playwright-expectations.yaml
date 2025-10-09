@@ -23,11 +23,16 @@ jobs:
     steps:
       - name: Initial Checkout
         uses: actions/checkout@v5
-      - name: Pull Request Checkout
+      - name: Pull Request Checkout (from comment)
         run: gh pr checkout ${{ github.event.issue.number }}
-        if: github.event.issue.pull_request && github.event_name == 'issue_comment'
+        if: github.event_name == 'issue_comment'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull Request Checkout (from label)
+        run: |
+          git fetch origin ${{ github.head_ref }}
+          git checkout ${{ github.head_ref }}
+        if: github.event_name == 'pull_request'
       - name: Setup Frontend
         uses: ./.github/actions/setup-frontend
       - name: Setup Playwright
@@ -53,8 +58,16 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git add browser_tests
-          git diff --cached --quiet || git commit -m "[automated] Update test expectations"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "[automated] Update test expectations"
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              git push origin HEAD:${{ github.head_ref }}
+            else
+              git push
+            fi
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ComfyUI_frontend
