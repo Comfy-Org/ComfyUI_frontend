@@ -6,8 +6,10 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource, type Point } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
+import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 
 /**
  * Composable for individual Vue node components
@@ -23,6 +25,9 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
 
   // Snap-to-grid functionality
   const { shouldSnap, applySnapToPosition } = useNodeSnap()
+
+  // Shift key sync for LiteGraph canvas preview
+  const { syncShiftKeyToCanvas } = useShiftKeySync()
 
   // Get the customRef for this node (shared write access)
   const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
@@ -53,12 +58,16 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
+  let rafId: number | null = null
 
   /**
    * Start dragging the node
    */
   function startDrag(event: PointerEvent) {
     if (!layoutRef.value || !transformState) return
+
+    // Sync shift key state to canvas for snap preview
+    syncShiftKeyToCanvas(event)
 
     isDragging.value = true
     dragStartPos = { ...position.value }
@@ -103,42 +112,57 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
       return
     }
 
-    // Calculate mouse delta in screen coordinates
-    const mouseDelta = {
-      x: event.clientX - dragStartMouse.x,
-      y: event.clientY - dragStartMouse.y
-    }
+    // Sync shift key state to canvas for snap preview
+    syncShiftKeyToCanvas(event)
 
-    // Convert to canvas coordinates
-    const canvasOrigin = transformState.screenToCanvas({ x: 0, y: 0 })
-    const canvasWithDelta = transformState.screenToCanvas(mouseDelta)
-    const canvasDelta = {
-      x: canvasWithDelta.x - canvasOrigin.x,
-      y: canvasWithDelta.y - canvasOrigin.y
-    }
+    // Throttle position updates using requestAnimationFrame for better performance
+    if (rafId !== null) return // Skip if frame already scheduled
 
-    // Calculate new position for the current node
-    const newPosition = {
-      x: dragStartPos.x + canvasDelta.x,
-      y: dragStartPos.y + canvasDelta.y
-    }
+    rafId = requestAnimationFrame(() => {
+      rafId = null
 
-    // Apply mutation through the layout system
-    mutations.moveNode(nodeId, newPosition)
+      if (!dragStartPos || !dragStartMouse || !transformState) return
 
-    // If we're dragging multiple selected nodes, move them all together
-    if (
-      otherSelectedNodesStartPositions &&
-      otherSelectedNodesStartPositions.size > 0
-    ) {
-      for (const [otherNodeId, startPos] of otherSelectedNodesStartPositions) {
-        const newOtherPosition = {
-          x: startPos.x + canvasDelta.x,
-          y: startPos.y + canvasDelta.y
-        }
-        mutations.moveNode(otherNodeId, newOtherPosition)
+      // Calculate mouse delta in screen coordinates
+      const mouseDelta = {
+        x: event.clientX - dragStartMouse.x,
+        y: event.clientY - dragStartMouse.y
       }
-    }
+
+      // Convert to canvas coordinates
+      const canvasOrigin = transformState.screenToCanvas({ x: 0, y: 0 })
+      const canvasWithDelta = transformState.screenToCanvas(mouseDelta)
+      const canvasDelta = {
+        x: canvasWithDelta.x - canvasOrigin.x,
+        y: canvasWithDelta.y - canvasOrigin.y
+      }
+
+      // Calculate new position for the current node
+      const newPosition = {
+        x: dragStartPos.x + canvasDelta.x,
+        y: dragStartPos.y + canvasDelta.y
+      }
+
+      // Apply mutation through the layout system (Vue batches DOM updates automatically)
+      mutations.moveNode(nodeId, newPosition)
+
+      // If we're dragging multiple selected nodes, move them all together
+      if (
+        otherSelectedNodesStartPositions &&
+        otherSelectedNodesStartPositions.size > 0
+      ) {
+        for (const [
+          otherNodeId,
+          startPos
+        ] of otherSelectedNodesStartPositions) {
+          const newOtherPosition = {
+            x: startPos.x + canvasDelta.x,
+            y: startPos.y + canvasDelta.y
+          }
+          mutations.moveNode(otherNodeId, newOtherPosition)
+        }
+      }
+    })
   }
 
   /**
@@ -147,13 +171,35 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   function endDrag(event: PointerEvent) {
     if (!isDragging.value) return
 
+    // Sync shift key state to canvas for snap preview
+    syncShiftKeyToCanvas(event)
+
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
     if (shouldSnap(event)) {
-      const currentPos = position.value
-      const snappedPos = applySnapToPosition({ ...currentPos })
-      mutations.moveNode(nodeId, snappedPos)
+      const boundsUpdates: NodeBoundsUpdate[] = []
+
+      // Snap main node
+      const currentLayout = layoutStore.getNodeLayoutRef(nodeId).value
+      if (currentLayout) {
+        const currentPos = currentLayout.position
+        const snappedPos = applySnapToPosition({ ...currentPos })
+
+        // Only add update if position actually changed
+        if (snappedPos.x !== currentPos.x || snappedPos.y !== currentPos.y) {
+          boundsUpdates.push({
+            nodeId,
+            bounds: {
+              x: snappedPos.x,
+              y: snappedPos.y,
+              width: currentLayout.size.width,
+              height: currentLayout.size.height
+            }
+          })
+        }
+      }
 
       // Also snap other selected nodes
+      // Capture all positions at the start to ensure consistent state
       if (
         otherSelectedNodesStartPositions &&
         otherSelectedNodesStartPositions.size > 0
@@ -161,12 +207,31 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
         for (const otherNodeId of otherSelectedNodesStartPositions.keys()) {
           const nodeLayout = layoutStore.getNodeLayoutRef(otherNodeId).value
           if (nodeLayout) {
-            const snappedOtherPos = applySnapToPosition({
-              ...nodeLayout.position
-            })
-            mutations.moveNode(otherNodeId, snappedOtherPos)
+            const currentPos = { ...nodeLayout.position }
+            const snappedPos = applySnapToPosition(currentPos)
+
+            // Only add update if position actually changed
+            if (
+              snappedPos.x !== currentPos.x ||
+              snappedPos.y !== currentPos.y
+            ) {
+              boundsUpdates.push({
+                nodeId: otherNodeId,
+                bounds: {
+                  x: snappedPos.x,
+                  y: snappedPos.y,
+                  width: nodeLayout.size.width,
+                  height: nodeLayout.size.height
+                }
+              })
+            }
           }
         }
+      }
+
+      // Apply all snap updates in a single batched transaction
+      if (boundsUpdates.length > 0) {
+        layoutStore.batchUpdateNodeBounds(boundsUpdates)
       }
     }
 
@@ -174,6 +239,12 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
+
+    // Cancel any pending animation frame
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
 
     // Release pointer
     if (!(event.target instanceof HTMLElement)) return

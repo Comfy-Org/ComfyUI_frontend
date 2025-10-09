@@ -28,41 +28,39 @@ export function useNodeSnap() {
   /**
    * Applies snap-to-grid to a position
    * @param position - Position object with x, y coordinates
-   * @returns The snapped position (mutates input and returns it)
+   * @returns The snapped position as a new object
    */
   function applySnapToPosition(position: { x: number; y: number }): {
     x: number
     y: number
   } {
     const size = gridSize.value
-    if (!size) return position
+    if (!size) return { ...position }
 
     const posArray: [number, number] = [position.x, position.y]
     if (snapPoint(posArray, size)) {
-      position.x = posArray[0]
-      position.y = posArray[1]
+      return { x: posArray[0], y: posArray[1] }
     }
-    return position
+    return { ...position }
   }
 
   /**
    * Applies snap-to-grid to a size (width/height)
    * @param size - Size object with width, height
-   * @returns The snapped size (mutates input and returns it)
+   * @returns The snapped size as a new object
    */
   function applySnapToSize(size: { width: number; height: number }): {
     width: number
     height: number
   } {
     const gridSizeValue = gridSize.value
-    if (!gridSizeValue) return size
+    if (!gridSizeValue) return { ...size }
 
     const sizeArray: [number, number] = [size.width, size.height]
     if (snapPoint(sizeArray, gridSizeValue)) {
-      size.width = sizeArray[0]
-      size.height = sizeArray[1]
+      return { width: sizeArray[0], height: sizeArray[1] }
     }
-    return size
+    return { ...size }
   }
 
   return {

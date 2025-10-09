@@ -1997,8 +1997,8 @@ export class LGraphCanvas
     // Keyboard
     this._key_callback = this.processKey.bind(this)
 
-    // Both keydown and keyup on document to capture events even when Vue nodes have focus
-    document.addEventListener('keydown', this._key_callback, true)
+    canvas.addEventListener('keydown', this._key_callback, true)
+    // keyup event must be bound on the document
     document.addEventListener('keyup', this._key_callback, true)
 
     canvas.addEventListener('dragover', this._doNothing, false)
@@ -2028,7 +2028,7 @@ export class LGraphCanvas
     canvas.removeEventListener('pointerup', this._mouseup_callback!)
     canvas.removeEventListener('pointerdown', this._mousedown_callback!)
     canvas.removeEventListener('wheel', this._mousewheel_callback!)
-    document.removeEventListener('keydown', this._key_callback!)
+    canvas.removeEventListener('keydown', this._key_callback!)
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
     canvas.removeEventListener('dragenter', this._doReturnTrue)
@@ -3700,8 +3700,7 @@ export class LGraphCanvas
 
     let block_default = false
     // @ts-expect-error EventTarget.localName is not in standard types
-    if (e.target.localName == 'input' || e.target.localName === 'textarea')
-      return
+    if (e.target.localName == 'input') return
 
     if (e.type == 'keydown') {
       // TODO: Switch
