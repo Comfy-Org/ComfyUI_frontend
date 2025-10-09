@@ -1,8 +1,8 @@
 <template>
-  <div class="">
+  <div class="relative">
     <div class="mb-4">
       <Button
-        class="w-[413px] border-0 bg-zinc-500/10 text-zinc-400 dark-theme:bg-node-component-surface dark-theme:text-white"
+        class="w-[413px] border-0 bg-zinc-500/10 text-zinc-400 dark-theme:bg-charcoal-600 dark-theme:text-white"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -82,6 +82,7 @@
       @ended="playback.onPlaybackEnded"
       @loadedmetadata="playback.onMetadataLoaded"
     />
+    <LODFallback />
   </div>
 </template>
 
@@ -95,6 +96,7 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
