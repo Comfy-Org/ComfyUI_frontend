@@ -8,7 +8,7 @@ inputs:
   launch_server:
     description: 'Whether to launch the server after setup'
     required: false
-    default: 'true'
+    default: 'false'
 runs:
   using: 'composite'
   steps:
