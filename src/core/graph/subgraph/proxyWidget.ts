@@ -79,12 +79,12 @@ const onConfigure = function (
   originalOnConfigure?.call(this, serialisedNode)
 
   Object.defineProperty(this.properties, 'proxyWidgets', {
-    get: () => {
-      return this.widgets.map((w) => {
-        if (!isProxyWidget(w)) return ['-1', w.name]
-        return [w._overlay.nodeId, w._overlay.widgetName]
-      })
-    },
+    get: () =>
+      this.widgets.map((w) =>
+        isProxyWidget(w)
+          ? [w._overlay.nodeId, w._overlay.widgetName]
+          : ['-1', w.name]
+      ),
     set: (property: string) => {
       const parsed = parseProxyWidgets(property)
       const { deactivateWidget, setWidget } = useDomWidgetStore()
@@ -104,7 +104,7 @@ const onConfigure = function (
           realIndexes.push([i, widget])
         } else proxyItems.push(parsed[i])
       }
-      this.widgets.length = 0
+      this.widgets.length -= Math.min(this.widgets.length, parsed.length)
       for (const [nodeId, widgetName] of proxyItems) {
         const w = addProxyWidget(this, `${nodeId}`, widgetName)
         if (isActiveGraph && w instanceof DOMWidgetImpl) setWidget(w)
