@@ -124,6 +124,7 @@
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 
@@ -211,6 +212,7 @@ const hasAnyError = computed((): boolean => {
   )
 })
 
+const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed((): boolean => nodeData.mode === 4)
 const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 
@@ -290,8 +292,12 @@ const { startResize } = useNodeResize(
   }
 )
 
-// Track collapsed state
-const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+whenever(isCollapsed, () => {
+  const element = nodeContainerRef.value
+  if (!element) return
+  element.style.width = ''
+  element.style.height = ''
+})
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
@@ -395,5 +401,5 @@ const nodeMedia = computed(() => {
   return { type, urls } as const
 })
 
-const nodeContainerRef = ref()
+const nodeContainerRef = ref<HTMLDivElement>()
 </script>
