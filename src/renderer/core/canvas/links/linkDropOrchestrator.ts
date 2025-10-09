@@ -1,10 +1,8 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import {
-  type SlotDropCandidate,
-  useSlotLinkDragUIState
-} from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
