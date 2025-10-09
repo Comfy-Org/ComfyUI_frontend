@@ -8,7 +8,8 @@ on:
     types: [created]
 
 concurrency:
-  group: ${{ github.event.number || github.event.issue.number }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:

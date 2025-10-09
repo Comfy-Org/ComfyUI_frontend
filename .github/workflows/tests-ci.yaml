@@ -7,6 +7,10 @@ on:
     branches-ignore:
       [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -22,7 +26,7 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
-          include_build_step: 'true'
+          include_build_step: true
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright # Setup Playwright and cache browsers
 
