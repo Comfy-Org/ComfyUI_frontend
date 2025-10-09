@@ -24,7 +24,7 @@
       v-if="showSearchBox || showSelectedCount || showClearButton"
       #header
     >
-      <div class="pt-2 pb-0 px-2 flex flex-col">
+      <div class="flex flex-col px-2 pt-2 pb-0">
         <SearchBox
           v-if="showSearchBox"
           v-model="searchQuery"
@@ -39,7 +39,7 @@
         >
           <span
             v-if="showSelectedCount"
-            class="text-sm text-neutral-400 dark-theme:text-zinc-500 px-1"
+            class="px-1 text-sm text-neutral-400 dark-theme:text-zinc-500"
           >
             {{
               selectedCount > 0
@@ -67,7 +67,7 @@
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 dark-theme:bg-blue-500 text-xs font-semibold text-white"
+        class="pointer-events-none absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-xs font-semibold text-white dark-theme:bg-blue-500"
       >
         {{ selectedCount }}
       </span>
@@ -82,7 +82,7 @@
     <template #option="slotProps">
       <div class="flex items-center gap-2" :style="popoverStyle">
         <div
-          class="flex h-4 w-4 p-0.5 shrink-0 items-center justify-center rounded transition-all duration-200"
+          class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
           :class="
             slotProps.selected
               ? 'bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
@@ -91,11 +91,11 @@
         >
           <i
             v-if="slotProps.selected"
-            class="icon-[lucide--check] text-xs text-bold text-white"
+            class="text-bold icon-[lucide--check] text-xs text-white"
           />
         </div>
         <Button
-          class="border-none outline-none bg-transparent text-left"
+          class="border-none bg-transparent text-left outline-none"
           unstyled
           >{{ slotProps.option.name }}</Button
         >

@@ -1,15 +1,15 @@
 <template>
   <div
     v-if="option.type === 'divider'"
-    class="h-px bg-gray-200 dark-theme:bg-zinc-700 my-1"
+    class="my-1 h-px bg-gray-200 dark-theme:bg-zinc-700"
   />
   <div
     v-else
     role="button"
-    class="flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer"
+    class="flex cursor-pointer items-center gap-2 rounded px-3 py-1.5 text-left text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
     @click="handleClick"
   >
-    <i v-if="option.icon" :class="[option.icon, 'w-4 h-4']" />
+    <i v-if="option.icon" :class="[option.icon, 'h-4 w-4']" />
     <span class="flex-1">{{ option.label }}</span>
     <span v-if="option.shortcut" class="text-xs opacity-60">
       {{ option.shortcut }}
@@ -24,11 +24,11 @@
       :severity="option.badge === 'new' ? 'info' : 'secondary'"
       :value="t(option.badge)"
       :class="{
-        'bg-[#31B9F4] dark-theme:bg-[#0B8CE9] rounded-4xl':
+        'rounded-4xl bg-[#31B9F4] dark-theme:bg-[#0B8CE9]':
           option.badge === 'new',
-        'bg-[#9C9EAB] dark-theme:bg-[#000] rounded-4xl':
+        'rounded-4xl bg-[#9C9EAB] dark-theme:bg-[#000]':
           option.badge === 'deprecated',
-        'text-white uppercase text-[9px] h-4 px-1 gap-2.5': true
+        'h-4 gap-2.5 px-1 text-[9px] text-white uppercase': true
       }"
     />
   </div>

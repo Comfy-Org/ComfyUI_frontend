@@ -4705,7 +4705,9 @@ export class LGraphCanvas
 
       // draw nodes
       const { visible_nodes } = this
-      const drawSnapGuides = this.#snapToGrid && this.isDragging
+      const drawSnapGuides =
+        this.#snapToGrid &&
+        (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
       for (const node of visible_nodes) {
         ctx.save()
@@ -6083,7 +6085,9 @@ export class LGraphCanvas
 
     ctx.save()
     ctx.globalAlpha = 0.5 * this.editor_alpha
-    const drawSnapGuides = this.#snapToGrid && this.isDragging
+    const drawSnapGuides =
+      this.#snapToGrid &&
+      (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
     for (const group of groups) {
       // out of the visible area

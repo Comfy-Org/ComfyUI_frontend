@@ -54,3 +54,10 @@
 
 # Translations
 /src/locales/                                     @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer
+
+# LLM Instructions (blank on purpose)
+.claude/
+.cursor/
+.cursorrules
+**/AGENTS.md
+**/CLAUDE.md

@@ -5,7 +5,7 @@
     :title="t('missingModelsDialog.missingModels')"
     :message="t('missingModelsDialog.missingModelsMessage')"
   />
-  <div class="flex gap-1 mb-4">
+  <div class="mb-4 flex gap-1">
     <Checkbox v-model="doNotAskAgain" binary input-id="doNotAskAgain" />
     <label for="doNotAskAgain">{{
       t('missingModelsDialog.doNotAskAgain')

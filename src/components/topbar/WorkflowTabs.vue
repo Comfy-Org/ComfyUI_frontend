@@ -1,6 +1,6 @@
 <template>
   <div
-    class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
+    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
     <Button
@@ -14,7 +14,7 @@
     />
     <ScrollPanel
       ref="scrollPanelRef"
-      class="overflow-hidden no-drag"
+      class="no-drag overflow-hidden"
       :pt:content="{
         class: 'p-0 w-full flex',
         onwheel: handleWheel
@@ -55,7 +55,7 @@
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button shrink-0 no-drag rounded-none"
+      class="new-blank-workflow-button no-drag shrink-0 rounded-none"
       icon="pi pi-plus"
       text
       severity="secondary"
@@ -63,7 +63,7 @@
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     />
     <ContextMenu ref="menu" :model="contextMenuItems" />
-    <div v-if="isDesktop" class="window-actions-spacer shrink-0 app-drag" />
+    <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
 </template>
 

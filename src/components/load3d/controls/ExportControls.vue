@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div class="relative show-export-formats">
+    <div class="show-export-formats relative">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleExportFormats"
@@ -10,12 +10,12 @@
             value: t('load3d.exportModel'),
             showDelay: 300
           }"
-          class="pi pi-download text-white text-lg"
+          class="pi pi-download text-lg text-white"
         />
       </Button>
       <div
         v-show="showExportFormats"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
       >
         <div class="flex flex-col">
           <Button

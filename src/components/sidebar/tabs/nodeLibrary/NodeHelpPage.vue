@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col h-full bg-(--p-tree-background) overflow-auto">
+  <div class="flex h-full flex-col overflow-auto bg-(--p-tree-background)">
     <div
-      class="px-3 py-2 flex items-center border-b border-(--p-divider-color)"
+      class="flex items-center border-b border-(--p-divider-color) px-3 py-2"
     >
       <Button
         v-tooltip.bottom="$t('g.back')"
@@ -12,7 +12,7 @@
       />
       <span class="ml-2 font-semibold">{{ node.display_name }}</span>
     </div>
-    <div class="p-4 grow node-help-content w-full mx-auto">
+    <div class="node-help-content mx-auto w-full grow p-4">
       <ProgressSpinner
         v-if="isLoading"
         class="m-auto"
@@ -25,7 +25,7 @@
         v-html="renderedHelpHtml"
       />
       <!-- Fallback: markdown not found or fetch error -->
-      <div v-else class="text-sm space-y-6 fallback-content">
+      <div v-else class="fallback-content space-y-6 text-sm">
         <p v-if="node.description">
           <strong>{{ $t('g.description') }}:</strong> {{ node.description }}
         </p>

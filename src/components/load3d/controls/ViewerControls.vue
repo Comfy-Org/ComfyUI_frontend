@@ -1,5 +1,5 @@
 <template>
-  <div class="relative bg-gray-700/30 rounded-lg">
+  <div class="relative rounded-lg bg-gray-700/30">
     <div class="flex flex-col gap-2">
       <Button class="p-button-rounded p-button-text" @click="openIn3DViewer">
         <i
@@ -7,7 +7,7 @@
             value: t('load3d.openIn3DViewer'),
             showDelay: 300
           }"
-          class="pi pi-expand text-white text-lg"
+          class="pi pi-expand text-lg text-white"
         />
       </Button>
     </div>

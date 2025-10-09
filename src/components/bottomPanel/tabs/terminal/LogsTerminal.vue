@@ -5,7 +5,7 @@
     </p>
     <ProgressSpinner
       v-else-if="loading"
-      class="relative inset-0 flex justify-center items-center h-full z-10"
+      class="relative inset-0 z-10 flex h-full items-center justify-center"
     />
     <BaseTerminal v-show="!loading" @created="terminalCreated" />
   </div>

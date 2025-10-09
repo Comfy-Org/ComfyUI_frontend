@@ -5,7 +5,7 @@
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI && workflowTabsPosition === 'Topbar'" #workflow-tabs>
       <div
-        class="workflow-tabs-container w-full relative pointer-events-auto h-9"
+        class="workflow-tabs-container pointer-events-auto w-full relative h-9"
       >
         <!-- Native drag area for Electron -->
         <div

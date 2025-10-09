@@ -4,7 +4,7 @@
       v-if="nodePack?.description"
       :sections="descriptionSections"
     />
-    <p v-else class="text-muted italic text-sm">
+    <p v-else class="text-sm text-muted italic">
       {{ $t('manager.noDescription') }}
     </p>
     <div v-if="nodePack?.latest_version?.dependencies?.length">
@@ -14,7 +14,7 @@
       <div
         v-for="(dep, index) in nodePack.latest_version.dependencies"
         :key="index"
-        class="text-muted break-words"
+        class="break-words text-muted"
       >
         {{ dep }}
       </div>

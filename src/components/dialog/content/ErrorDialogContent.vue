@@ -13,7 +13,7 @@
       <span class="font-bold">{{ error.extensionFile }}</span>
     </template>
 
-    <div class="flex gap-2 justify-center">
+    <div class="flex justify-center gap-2">
       <Button
         v-show="!reportOpen"
         text
@@ -29,12 +29,12 @@
     </div>
     <template v-if="reportOpen">
       <Divider />
-      <ScrollPanel class="w-full h-[400px] max-w-[80vw]">
-        <pre class="whitespace-pre-wrap break-words">{{ reportContent }}</pre>
+      <ScrollPanel class="h-[400px] w-full max-w-[80vw]">
+        <pre class="break-words whitespace-pre-wrap">{{ reportContent }}</pre>
       </ScrollPanel>
       <Divider />
     </template>
-    <div class="flex gap-4 justify-end">
+    <div class="flex justify-end gap-4">
       <FindIssueButton
         :error-message="error.exceptionMessage"
         :repo-owner="repoOwner"

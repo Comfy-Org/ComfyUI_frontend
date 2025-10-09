@@ -4,7 +4,7 @@
       <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
     </slot>
     <h2
-      class="text-2xl font-bold text-center mt-4 mb-2"
+      class="mt-4 mb-2 text-center text-2xl font-bold"
       style="word-break: break-all"
     >
       <slot name="title">
@@ -13,7 +13,7 @@
     </h2>
     <div
       v-if="!importFailed"
-      class="mt-2 mb-4 w-full max-w-xs flex justify-center"
+      class="mt-2 mb-4 flex w-full max-w-xs justify-center"
     >
       <slot name="install-button">
         <PackUninstallButton

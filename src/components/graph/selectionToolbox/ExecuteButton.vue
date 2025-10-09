@@ -4,13 +4,13 @@
       value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
-    class="dark-theme:bg-[#0B8CE9] bg-[#31B9F4] size-8 !p-0"
+    class="size-8 bg-[#31B9F4] !p-0 dark-theme:bg-[#0B8CE9]"
     text
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
   >
-    <i class="icon-[lucide--play] fill-path-white w-4 h-4" />
+    <i class="icon-[lucide--play] size-4 text-white" />
   </Button>
 </template>
 
@@ -64,9 +64,3 @@ const handleClick = async () => {
   await commandStore.execute('Comfy.QueueSelectedOutputNodes')
 }
 </script>
-<style scoped>
-:deep.fill-path-white > path {
-  fill: white;
-  stroke: unset;
-}
-</style>

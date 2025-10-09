@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="relative overflow-hidden w-full h-full flex items-center justify-center"
+    class="relative flex h-full w-full items-center justify-center overflow-hidden"
   >
     <Skeleton
       v-if="!isImageLoaded"
@@ -22,7 +22,7 @@
     />
     <div
       v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 dark-theme:bg-surface-800 text-muted"
+      class="absolute inset-0 flex items-center justify-center bg-surface-50 text-muted dark-theme:bg-surface-800"
     >
       <img
         src="/assets/images/default-template.png"

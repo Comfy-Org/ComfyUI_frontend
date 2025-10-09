@@ -21,7 +21,15 @@
         ref="panelRef"
         class="actionbar-content flex items-center select-none"
       >
-        <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
+        <span
+          ref="dragHandleRef"
+          :class="
+            cn(
+              'drag-handle cursor-grab w-3 h-max mr-2',
+              isDragging && 'cursor-grabbing'
+            )
+          "
+        />
         <ComfyQueueButton />
       </div>
     </Panel>
@@ -41,6 +49,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
@@ -284,9 +293,5 @@ watch(isDragging, (dragging) => {
 
 :deep(.p-panel-header) {
   display: none;
-}
-
-.drag-handle {
-  @apply w-3 h-max;
 }
 </style>
