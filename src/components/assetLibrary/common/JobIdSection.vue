@@ -2,7 +2,7 @@
   <div class="flex items-center gap-1">
     <span class="text-xs text-muted">{{ `Job: ${jobId}` }}</span>
     <button
-      class="p-1 hover:bg-gray-200 dark-theme:hover:bg-gray-700 rounded transition-colors"
+      class="rounded p-1 transition-colors hover:bg-gray-200 dark-theme:hover:bg-gray-700"
       :aria-label="`Copy job ID ${jobId}`"
       @click.stop="handleCopy"
     >

@@ -19,7 +19,7 @@
         <CardBottom>
           <div class="flex flex-col gap-2 pt-3">
             <h3
-              class="line-clamp-1 text-sm m-0 font-medium"
+              class="m-0 line-clamp-1 text-sm font-medium"
               :title="asset.name"
             >
               {{ asset.name }}
@@ -28,7 +28,7 @@
             <div :class="metaTextClasses">
               <span>{{ formatSize(asset.size) }}</span>
               <span v-if="asset.duration">
-                <i class="pi pi-clock text-xs mr-1" />
+                <i class="pi pi-clock mr-1 text-xs" />
                 {{ formatDuration(asset.duration) }}
               </span>
             </div>

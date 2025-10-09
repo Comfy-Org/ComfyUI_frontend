@@ -8,7 +8,7 @@
     <template #top>
       <CardTop ratio="square">
         <div
-          class="w-full h-full bg-gray-200 dark-theme:bg-gray-700 animate-pulse"
+          class="h-full w-full animate-pulse bg-gray-200 dark-theme:bg-gray-700"
         />
       </CardTop>
     </template>
@@ -16,10 +16,10 @@
       <CardBottom>
         <div class="px-4 py-3">
           <div
-            class="h-4 bg-gray-300 dark-theme:bg-gray-600 rounded animate-pulse mb-2"
+            class="mb-2 h-4 animate-pulse rounded bg-gray-300 dark-theme:bg-gray-600"
           />
           <div
-            class="h-3 bg-gray-300 dark-theme:bg-gray-600 rounded animate-pulse w-1/2"
+            class="h-3 w-1/2 animate-pulse rounded bg-gray-300 dark-theme:bg-gray-600"
           />
         </div>
       </CardBottom>
@@ -35,7 +35,7 @@
     <template #top>
       <CardTop ratio="square">
         <div
-          class="w-full h-full flex items-center justify-center bg-gray-50 dark-theme:bg-gray-900"
+          class="flex h-full w-full items-center justify-center bg-gray-50 dark-theme:bg-gray-900"
         >
           <i class="pi pi-exclamation-triangle text-2xl text-red-500" />
         </div>
@@ -44,7 +44,7 @@
     <template #bottom>
       <CardBottom>
         <div class="px-4 py-3">
-          <p class="text-sm text-red-500 m-0">{{ error }}</p>
+          <p class="m-0 text-sm text-red-500">{{ error }}</p>
         </div>
       </CardBottom>
     </template>

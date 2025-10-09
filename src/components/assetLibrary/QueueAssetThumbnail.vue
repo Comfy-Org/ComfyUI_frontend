@@ -1,11 +1,11 @@
 <template>
-  <div class="relative w-full h-full">
+  <div class="relative h-full w-full">
     <!-- Audio type - use AudioThumbnail pattern -->
     <template v-if="asset.kind === 'audio'">
       <AudioThumbnail v-if="asset.thumbnailUrl" :src="asset.thumbnailUrl" />
       <div
         v-else
-        class="w-full h-full flex items-center justify-center p-4 bg-gray-100 dark-theme:bg-gray-800 rounded-t-lg"
+        class="flex h-full w-full items-center justify-center rounded-t-lg bg-gray-100 p-4 dark-theme:bg-gray-800"
         :style="{
           backgroundImage: 'url(/assets/images/default-template.png)',
           backgroundRepeat: 'round'
@@ -26,7 +26,7 @@
         <video
           controls
           autoplay
-          class="w-full h-full object-cover"
+          class="h-full w-full object-cover"
           :poster="asset.thumbnailUrl"
           @click.stop
         >
@@ -43,20 +43,20 @@
         />
         <!-- Clickable play icon overlay -->
         <div
-          class="absolute inset-0 flex items-center justify-center cursor-pointer hover:bg-black/10 transition-colors"
+          class="absolute inset-0 flex cursor-pointer items-center justify-center transition-colors hover:bg-black/10"
           @click="handlePlayClick"
         >
           <div
-            class="w-12 h-12 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center transition-colors"
+            class="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 transition-colors hover:bg-black/80"
           >
-            <i class="pi pi-play text-white text-xl ml-1" />
+            <i class="pi pi-play ml-1 text-xl text-white" />
           </div>
         </div>
       </div>
       <!-- Fallback when no video URL -->
       <BaseThumbnail v-else>
         <div
-          class="w-full h-full flex items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
+          class="flex h-full w-full items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
         >
           <i class="pi pi-video text-3xl text-gray-400" />
         </div>
@@ -74,7 +74,7 @@
       <!-- Fallback when no thumbnail -->
       <BaseThumbnail v-else>
         <div
-          class="w-full h-full flex items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
+          class="flex h-full w-full items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
         >
           <i :class="iconClass" class="text-3xl text-gray-400" />
         </div>
@@ -85,7 +85,7 @@
     <template v-else>
       <BaseThumbnail>
         <div
-          class="w-full h-full flex items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
+          class="flex h-full w-full items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
         >
           <i :class="iconClass" class="text-3xl text-gray-400" />
         </div>
@@ -97,7 +97,7 @@
       <!-- PRIMARY-MULTI badge for multiple files -->
       <div
         v-if="asset.isMulti"
-        class="inline-flex justify-center items-center gap-1 shrink-0 py-1 px-2 text-xs bg-purple-600 rounded font-medium text-white"
+        class="inline-flex shrink-0 items-center justify-center gap-1 rounded bg-purple-600 px-2 py-1 text-xs font-medium text-white"
       >
         <i class="pi pi-copy text-xs" />
         <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->

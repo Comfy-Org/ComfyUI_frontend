@@ -13,13 +13,13 @@
       <template #top>
         <CardTop ratio="square">
           <!-- Thumbnail image -->
-          <div class="w-full h-full">
+          <div class="h-full w-full">
             <QueueAssetThumbnail :asset="asset" :show-badge="false" />
           </div>
 
           <template #top-left>
             <div
-              class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
             >
               <IconButton
                 :class="iconButtonClasses"
@@ -28,7 +28,7 @@
                 type="transparent"
                 :on-click="handleView"
               >
-                <i class="pi pi-eye text-white text-xs" />
+                <i class="pi pi-eye text-xs text-white" />
               </IconButton>
               <IconButton
                 :class="iconButtonClasses"
@@ -37,7 +37,7 @@
                 type="transparent"
                 :on-click="handleCopy"
               >
-                <i class="pi pi-copy text-white text-xs" />
+                <i class="pi pi-copy text-xs text-white" />
               </IconButton>
               <IconButton
                 :class="iconButtonClasses"
@@ -46,30 +46,30 @@
                 type="transparent"
                 :on-click="handleMore"
               >
-                <i class="pi pi-ellipsis-h text-white text-xs" />
+                <i class="pi pi-ellipsis-h text-xs text-white" />
               </IconButton>
             </div>
           </template>
 
           <template #top-right>
             <IconButton
-              class="opacity-0 group-hover:opacity-100 transition-opacity"
+              class="opacity-0 transition-opacity group-hover:opacity-100"
               :class="iconButtonClasses"
               aria-label="Download"
               size="sm"
               type="transparent"
               :on-click="handleDownload"
             >
-              <i class="pi pi-download text-white text-xs" />
+              <i class="pi pi-download text-xs text-white" />
             </IconButton>
           </template>
 
           <template #bottom-left>
             <div v-if="asset.dimensions">
               <div
-                class="px-2 py-1 bg-zinc-300/40 backdrop-blur-[2px] rounded flex items-center"
+                class="flex items-center rounded bg-zinc-300/40 px-2 py-1 backdrop-blur-[2px]"
               >
-                <span class="text-white text-xs font-bold">
+                <span class="text-xs font-bold text-white">
                   {{ asset.dimensions.width }}×{{ asset.dimensions.height }}
                 </span>
               </div>
@@ -87,23 +87,23 @@
       </template>
 
       <template #bottom>
-        <CardBottom class="pt-1 px-0 pb-0">
-          <div class="flex flex-col justify-start items-start gap-1">
+        <CardBottom class="px-0 pt-1 pb-0">
+          <div class="flex flex-col items-start justify-start gap-1">
             <div
-              class="self-stretch rounded inline-flex justify-start items-center gap-2.5"
+              class="inline-flex items-center justify-start gap-2.5 self-stretch rounded"
             >
               <h3
-                class="flex-1 text-gray-900 dark-theme:text-gray-100 text-sm font-bold line-clamp-1"
+                class="line-clamp-1 flex-1 text-sm font-bold text-gray-900 dark-theme:text-gray-100"
                 :title="asset.name"
               >
                 {{ asset.name }}
               </h3>
             </div>
             <div
-              class="self-stretch inline-flex justify-start items-center gap-2"
+              class="inline-flex items-center justify-start gap-2 self-stretch"
             >
               <span
-                class="flex-1 text-gray-600 dark-theme:text-gray-400 text-xs font-normal"
+                class="flex-1 text-xs font-normal text-gray-600 dark-theme:text-gray-400"
               >
                 {{ formatSize(asset.size) }}
               </span>
