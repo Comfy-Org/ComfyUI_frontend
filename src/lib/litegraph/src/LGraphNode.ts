@@ -2851,7 +2851,17 @@ export class LGraphNode
     output.links ??= []
     output.links.push(link.id)
     // connect in input
-    inputNode.inputs[inputIndex].link = link.id
+    const targetInput = inputNode.inputs[inputIndex]
+    targetInput.link = link.id
+    if (targetInput.widget) {
+      graph.trigger('node:slot-links:changed', {
+        nodeId: inputNode.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: inputIndex,
+        connected: true,
+        linkId: link.id
+      })
+    }
 
     // Reroutes
     const reroutes = LLink.getReroutes(graph, link)
@@ -3008,6 +3018,15 @@ export class LGraphNode
         const input = target.inputs[link_info.target_slot]
         // remove there
         input.link = null
+        if (input.widget) {
+          graph.trigger('node:slot-links:changed', {
+            nodeId: target.id,
+            slotType: NodeSlotType.INPUT,
+            slotIndex: link_info.target_slot,
+            connected: false,
+            linkId: link_info.id
+          })
+        }
 
         // remove the link from the links pool
         link_info.disconnect(graph, 'input')
@@ -3044,6 +3063,15 @@ export class LGraphNode
           const input = target.inputs[link_info.target_slot]
           // remove other side link
           input.link = null
+          if (input.widget) {
+            graph.trigger('node:slot-links:changed', {
+              nodeId: target.id,
+              slotType: NodeSlotType.INPUT,
+              slotIndex: link_info.target_slot,
+              connected: false,
+              linkId: link_info.id
+            })
+          }
 
           // link_info hasn't been modified so its ok
           target.onConnectionsChange?.(
@@ -3113,6 +3141,15 @@ export class LGraphNode
     const link_id = this.inputs[slot].link
     if (link_id != null) {
       this.inputs[slot].link = null
+      if (input.widget) {
+        graph.trigger('node:slot-links:changed', {
+          nodeId: this.id,
+          slotType: NodeSlotType.INPUT,
+          slotIndex: slot,
+          connected: false,
+          linkId: link_id
+        })
+      }
 
       // remove other side
       const link_info = graph._links.get(link_id)

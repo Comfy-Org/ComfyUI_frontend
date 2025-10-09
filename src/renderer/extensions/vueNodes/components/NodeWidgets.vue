@@ -33,7 +33,7 @@
             boundingRect: [0, 0, 0, 0]
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="getWidgetInputIndex(widget)"
+          :index="widget.slotMetadata?.index ?? 0"
           :dot-only="true"
         />
       </div>
@@ -56,12 +56,12 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type {
   SafeWidgetData,
-  VueNodeData
+  VueNodeData,
+  WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-// Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
   getComponent,
@@ -110,6 +110,7 @@ interface ProcessedWidget {
   value: WidgetValue
   updateHandler: (value: unknown) => void
   tooltipConfig: any
+  slotMetadata?: WidgetSlotMetadata
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
@@ -126,12 +127,24 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const vueComponent = getComponent(widget.type) || WidgetInputText
 
+    const slotMetadata = widget.slotMetadata
+
+    let widgetOptions = widget.options
+    // Core feature: Disable Vue widgets when their input slots are connected
+    // This prevents conflicting input sources - when a slot is linked to another
+    // node's output, the widget should be read-only to avoid data conflicts
+    if (slotMetadata?.linked) {
+      widgetOptions = widget.options
+        ? { ...widget.options, disabled: true }
+        : { disabled: true }
+    }
+
     const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
       value: widget.value,
       label: widget.label,
-      options: widget.options,
+      options: widgetOptions,
       callback: widget.callback,
       spec: widget.spec
     }
@@ -152,25 +165,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       simplified,
       value: widget.value,
       updateHandler,
-      tooltipConfig
+      tooltipConfig,
+      slotMetadata
     })
   }
 
   return result
 })
-
-// TODO: Refactor to avoid O(n) lookup - consider storing input index on widget creation
-// or restructuring data model to unify widgets and inputs
-// Map a widget to its corresponding input slot index
-const getWidgetInputIndex = (widget: ProcessedWidget): number => {
-  const inputs = nodeData?.inputs
-  if (!inputs) return 0
-
-  const idx = inputs.findIndex((input: any) => {
-    if (!input || typeof input !== 'object') return false
-    if (!('name' in input && 'type' in input)) return false
-    return 'widget' in input && input.widget?.name === widget.name
-  })
-  return idx >= 0 ? idx : 0
-}
 </script>
