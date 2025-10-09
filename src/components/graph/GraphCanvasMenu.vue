@@ -1,6 +1,6 @@
 <template>
   <div>
-    <ZoomControlsModal :visible="isModalVisible" />
+    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
 
     <!-- Backdrop -->
     <div

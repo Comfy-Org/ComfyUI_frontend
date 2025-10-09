@@ -158,6 +158,10 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  close: []
+}>()
+
 const interval = ref<number | null>(null)
 
 // Computed properties for reactive states
@@ -177,6 +181,9 @@ const applyZoom = (val: InputNumberInputEvent) => {
 
 const executeCommand = (command: string) => {
   void commandStore.execute(command)
+  if (command === 'Comfy.Canvas.ToggleMinimap') {
+    emit('close')
+  }
 }
 
 const startRepeat = (command: string) => {
