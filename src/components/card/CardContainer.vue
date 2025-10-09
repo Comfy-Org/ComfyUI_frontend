@@ -18,7 +18,7 @@ const containerClasses = computed(() => {
     'cursor-pointer flex flex-col bg-white dark-theme:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden'
 
   if (type === 'workflow-template-card') {
-    return `cursor-pointer p-2 flex flex-col hover:bg-white dark-theme:hover:bg-zinc-800 rounded-lg transition-background duration-200 ease-in-out`
+    return `cursor-pointer flex flex-col bg-white dark-theme:bg-zinc-900 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden hover:bg-white dark-theme:hover:bg-zinc-800 transition-background duration-200 ease-in-out`
   }
 
   const ratioClasses = {
