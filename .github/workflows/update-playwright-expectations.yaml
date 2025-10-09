@@ -71,3 +71,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ComfyUI_frontend
+
+      - name: Remove New Browser Test Expectations label
+        if: always() && github.event_name == 'pull_request'
+        run: gh pr edit ${{ github.event.pull_request.number }} --remove-label "New Browser Test Expectations"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
