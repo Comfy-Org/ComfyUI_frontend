@@ -26,7 +26,7 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
-          include_build_step: "true"
+          include_build_step: true
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright # Setup Playwright and cache browsers
 
