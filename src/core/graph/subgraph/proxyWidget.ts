@@ -1,5 +1,6 @@
 import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type {
   LGraph,
   LGraphCanvas,
@@ -85,7 +86,7 @@ const onConfigure = function (
           ? [w._overlay.nodeId, w._overlay.widgetName]
           : ['-1', w.name]
       ),
-    set: (property: string) => {
+    set: (property: NodeProperty) => {
       const parsed = parseProxyWidgets(property)
       const { deactivateWidget, setWidget } = useDomWidgetStore()
       const isActiveGraph = useCanvasStore().canvas?.graph === this.graph
@@ -104,22 +105,32 @@ const onConfigure = function (
           realIndexes.push([i, widget])
         } else proxyItems.push(parsed[i])
       }
-      this.widgets.length -= Math.min(this.widgets.length, parsed.length)
+      this.widgets = this.widgets.filter(
+        (w) => !isProxyWidget(w) && !parsed.some(([, name]) => w.name === name)
+      )
       for (const [nodeId, widgetName] of proxyItems) {
         const w = addProxyWidget(this, `${nodeId}`, widgetName)
         if (isActiveGraph && w instanceof DOMWidgetImpl) setWidget(w)
       }
-      for (const [i, w] of realIndexes) {
-        w.value = serialisedNode.widgets_values?.[i] ?? w.value
-        this.widgets.splice(i, 0, w)
-      }
+      for (const [i, w] of realIndexes) this.widgets.splice(i, 0, w)
       canvasStore.canvas?.setDirty(true, true)
       this._setConcreteSlots()
       this.arrange()
     }
   })
-  if (serialisedNode.properties?.proxyWidgets)
+  if (serialisedNode.properties?.proxyWidgets) {
     this.properties.proxyWidgets = serialisedNode.properties.proxyWidgets
+    const realIndexes: [number, IBaseWidget][] = parseProxyWidgets(
+      serialisedNode.properties.proxyWidgets
+    ).flatMap(([nodeId, widgetName], i) => {
+      if (nodeId !== '-1') return []
+      const widget = this.widgets.find((w) => w.name === widgetName)
+      if (!widget) return []
+      return [[i, widget]]
+    })
+    for (const [i, w] of realIndexes)
+      w.value = serialisedNode.widgets_values?.[i] ?? w.value
+  }
 }
 
 function addProxyWidget(
