@@ -1630,6 +1630,18 @@ export class GroupNodeHandler {
   }
 }
 
+/**
+ * LEGACY COMPATIBILITY TEST CASE
+ *
+ * This extension uses the old monkey-patching approach to modifying context menus.
+ * It is kept as-is to test backward compatibility with the new context menu API.
+ *
+ * New extensions should use the new ComfyExtension interface methods:
+ * - getCanvasMenuItems(canvas): IContextMenuValue[]
+ * - getNodeMenuItems(node): IContextMenuValue[]
+ *
+ * See nodeTemplates.ts and groupOptions.ts for examples of the new API.
+ */
 function addConvertToGroupOptions() {
   // @ts-expect-error fixme ts strict error
   function addConvertOption(options, index) {
