@@ -10,11 +10,11 @@
     "tooltip": "デフォルトの pip インストールミラー"
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
-    "name": "Python Install Mirror",
+    "name": "Pythonインストールミラー",
     "tooltip": "管理されたPythonのインストールは、Astral python-build-standaloneプロジェクトからダウンロードされます。この変数は、Pythonのインストールのための異なるソースを使用するためのミラーURLに設定することができます。提供されたURLは、例えば、https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gzの中でhttps://github.com/astral-sh/python-build-standalone/releases/downloadを置き換えます。ディストリビューションは、file:// URLスキームを使用してローカルディレクトリから読み取ることができます。"
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
-    "name": "Torch Install Mirror",
+    "name": "Torchインストールミラー",
     "tooltip": "pytorchのpipインストールミラー"
   },
   "Comfy-Desktop_WindowStyle": {
@@ -343,14 +343,6 @@
   "Comfy_Validation_Workflows": {
     "name": "ワークフローを検証"
   },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Vueノードレンダリングを有効化",
-    "tooltip": "ノードをキャンバス要素の代わりにVueコンポーネントとしてレンダリングします。実験的な機能です。"
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "Vueウィジェットを有効化",
-    "tooltip": "ウィジェットをVueノード内のVueコンポーネントとしてレンダリングします。"
-  },
   "Comfy_WidgetControlMode": {
     "name": "ウィジェット制御モード",
     "options": {
@@ -396,13 +388,13 @@
       "Topbar (2nd-row)": "トップバー（2行目）"
     }
   },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "低品質レンダリングズーム閾値",
-    "tooltip": "ズームアウト時に低品質の形状をレンダリングする"
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "キャンバスがレンダリングできる最大フレーム数です。スムーズさの代わりにGPU使用量を制限します。0の場合、画面のリフレッシュレートが使用されます。デフォルト：0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "ズームノードの詳細レベル - フォントサイズしきい値",
+    "tooltip": "ノードが低品質LODレンダリングに切り替わるタイミングを制御します。ピクセル単位のフォントサイズを使用して切り替えタイミングを決定します。0に設定すると無効になります。値1-24はLODの最小フォントサイズしきい値を設定します - 値が高いほど(24px) ズームアウト時にノードが簡略化されたレンダリングに早く切り替わり、値が低いほど(1px) 完全なノード品質がより長く維持されます。"
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"

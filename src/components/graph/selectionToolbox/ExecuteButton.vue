@@ -10,7 +10,7 @@
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
   >
-    <i-lucide:play class="fill-path-white w-4 h-4" />
+    <i class="icon-[lucide--play] text-white size-4" />
   </Button>
 </template>
 
@@ -64,9 +64,3 @@ const handleClick = async () => {
   await commandStore.execute('Comfy.QueueSelectedOutputNodes')
 }
 </script>
-<style scoped>
-:deep.fill-path-white > path {
-  fill: white;
-  stroke: unset;
-}
-</style>

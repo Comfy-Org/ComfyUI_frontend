@@ -4,66 +4,82 @@
   </div>
   <div
     v-else
-    class="lg-node-header p-4 rounded-t-2xl cursor-move"
+    :class="
+      cn(
+        'lg-node-header p-4 rounded-t-2xl w-full bg-node-component-header-surface text-node-component-header',
+        collapsed && 'rounded-2xl'
+      )
+    "
     :style="headerStyle"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2.5 relative">
+    <div class="flex items-center justify-between gap-2.5">
       <!-- Collapse/Expand Button -->
-      <button
-        v-show="!readonly"
-        class="bg-transparent border-transparent flex items-center lod-toggle"
-        data-testid="node-collapse-button"
-        @click.stop="handleCollapse"
-        @dblclick.stop
-      >
-        <i
-          :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-          class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
-        ></i>
-      </button>
+      <div class="relative flex items-center gap-2.5">
+        <div class="flex items-center lod-toggle shrink-0 px-0.5">
+          <IconButton
+            size="fit-content"
+            type="transparent"
+            data-testid="node-collapse-button"
+            @click.stop="handleCollapse"
+            @dblclick.stop
+          >
+            <i
+              :class="
+                cn(
+                  'icon-[lucide--chevron-down] size-5 transition-transform',
+                  collapsed && '-rotate-90'
+                )
+              "
+              class="text-xs leading-none relative top-px text-node-component-header-icon"
+            ></i>
+          </IconButton>
+        </div>
 
-      <!-- Node Title -->
-      <div
-        v-tooltip.top="tooltipConfig"
-        class="text-sm font-bold truncate flex-1 lod-toggle flex items-center gap-2"
-        data-testid="node-title"
-      >
-        <EditableText
-          :model-value="displayTitle"
-          :is-editing="isEditing"
-          :input-attrs="{ 'data-testid': 'node-title-input' }"
-          @edit="handleTitleEdit"
-          @cancel="handleTitleCancel"
-        />
-        <i-lucide:pin
-          v-if="isPinned"
-          class="w-5 h-5 text-stone-200 dark-theme:text-slate-300"
-          data-testid="node-pin-indicator"
-        />
+        <!-- Node Title -->
+        <div
+          v-tooltip.top="tooltipConfig"
+          class="text-sm font-bold truncate flex-1 lod-toggle flex items-center gap-2"
+          data-testid="node-title"
+        >
+          <EditableText
+            :model-value="displayTitle"
+            :is-editing="isEditing"
+            :input-attrs="{ 'data-testid': 'node-title-input' }"
+            @edit="handleTitleEdit"
+            @cancel="handleTitleCancel"
+          />
+          <i
+            v-if="isPinned"
+            class="icon-[lucide--pin] size-5 text-node-component-header-icon"
+            data-testid="node-pin-indicator"
+          />
+        </div>
+        <LODFallback />
       </div>
-      <div v-if="!readonly" class="flex items-center lod-toggle shrink-0">
+
+      <div class="flex items-center lod-toggle shrink-0">
         <IconButton
           v-if="isSubgraphNode"
+          v-tooltip.top="enterSubgraphTooltipConfig"
           size="sm"
           type="transparent"
-          class="text-stone-200 dark-theme:text-slate-300"
           data-testid="subgraph-enter-button"
-          title="Enter Subgraph"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <i class="pi pi-external-link"></i>
+          <i
+            class="icon-[lucide--picture-in-picture] size-5 text-node-component-header-icon"
+          ></i>
         </IconButton>
       </div>
-      <LODFallback />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
@@ -80,16 +96,16 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
 
 interface NodeHeaderProps {
   nodeData?: VueNodeData
-  readonly?: boolean
   collapsed?: boolean
 }
 
-const { nodeData, readonly, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -110,19 +126,20 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
-  nodeData?.type || '',
-  tooltipContainer
+  nodeData?.type || ''
 )
 
 const tooltipConfig = computed(() => {
-  if (readonly || isEditing.value) {
+  if (isEditing.value) {
     return { value: '', disabled: true }
   }
   const description = getNodeDescription.value
   return createTooltipConfig(description)
+})
+
+const enterSubgraphTooltipConfig = computed(() => {
+  return createTooltipConfig(st('enterSubgraph', 'Enter Subgraph'))
 })
 
 const headerStyle = computed(() => {
@@ -189,9 +206,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
-  if (!readonly) {
-    isEditing.value = true
-  }
+  isEditing.value = true
 }
 
 const handleTitleEdit = (newTitle: string) => {

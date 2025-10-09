@@ -172,7 +172,7 @@ onMounted(async () => {
   width: 448px;
   padding: 16px 16px 8px;
   background: #353535;
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 4px rgb(0 0 0 / 0.25);
   border-radius: 12px;
   outline: 1px solid #4e4e4e;
   outline-offset: -1px;
@@ -193,7 +193,7 @@ onMounted(async () => {
   width: 42px;
   height: 42px;
   padding: 10px;
-  background: rgba(0, 122, 255, 0.2);
+  background: rgb(0 122 255 / 0.2);
   border-radius: 8px;
   display: flex;
   justify-content: center;

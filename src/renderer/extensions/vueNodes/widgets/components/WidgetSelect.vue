@@ -18,10 +18,8 @@
 import { computed } from 'vue'
 
 import type { ResultItemType } from '@/schemas/apiSchema'
-import {
-  type ComboInputSpec,
-  isComboInputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 
@@ -31,7 +29,6 @@ import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -84,6 +81,7 @@ const specDescriptor = computed<{
   const allowUpload =
     image_upload === true ||
     animated_image_upload === true ||
+    video_upload === true ||
     audio_upload === true
   return {
     kind,

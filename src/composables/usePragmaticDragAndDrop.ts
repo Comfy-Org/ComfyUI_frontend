@@ -2,8 +2,8 @@ import {
   draggable,
   dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { toValue } from 'vue'
-import { type MaybeRefOrGetter, onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 export function usePragmaticDroppable(
   dropTargetElement: MaybeRefOrGetter<HTMLElement | null>,

@@ -9,35 +9,6 @@
 
 @config '../../tailwind.config.ts';
 
-:root {
-  --fg-color: #000;
-  --bg-color: #fff;
-  --comfy-menu-bg: #353535;
-  --comfy-menu-secondary-bg: #292929;
-  --comfy-topbar-height: 2.5rem;
-  --comfy-input-bg: #222;
-  --input-text: #ddd;
-  --descrip-text: #999;
-  --drag-text: #ccc;
-  --error-text: #ff4444;
-  --border-color: #4e4e4e;
-  --tr-even-bg-color: #222;
-  --tr-odd-bg-color: #353535;
-  --primary-bg: #236692;
-  --primary-fg: #ffffff;
-  --primary-hover-bg: #3485bb;
-  --primary-hover-fg: #ffffff;
-  --content-bg: #e0e0e0;
-  --content-fg: #000;
-  --content-hover-bg: #adadad;
-  --content-hover-fg: #000;
-
-  /* Code styling colors for help menu*/
-  --code-text-color: rgba(0, 122, 255, 1);
-  --code-bg-color: rgba(96, 165, 250, 0.2);
-  --code-block-bg-color: rgba(60, 60, 60, 0.12);
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
     --fg-color: #fff;
@@ -68,8 +39,8 @@
 
   --color-neutral-550: #636363;
 
-  --color-stone-100: #444444;
-  --color-stone-200: #828282;
+  --color-stone-100: #828282;
+  --color-stone-200: #444444;
   --color-stone-300: #bbbbbb;
 
   --color-ivory-100: #fdfbfa;
@@ -128,12 +99,121 @@
   --color-dark-elevation-2: rgba(from white r g b / 0.03);
 }
 
+:root {
+  --fg-color: #000;
+  --bg-color: #fff;
+  --comfy-menu-bg: #353535;
+  --comfy-menu-secondary-bg: #292929;
+  --comfy-topbar-height: 2.5rem;
+  --comfy-input-bg: #222;
+  --input-text: #ddd;
+  --descrip-text: #999;
+  --drag-text: #ccc;
+  --error-text: #ff4444;
+  --border-color: #4e4e4e;
+  --tr-even-bg-color: #222;
+  --tr-odd-bg-color: #353535;
+  --primary-bg: #236692;
+  --primary-fg: #ffffff;
+  --primary-hover-bg: #3485bb;
+  --primary-hover-fg: #ffffff;
+  --content-bg: #e0e0e0;
+  --content-fg: #000;
+  --content-hover-bg: #adadad;
+  --content-hover-fg: #000;
+
+  /* Code styling colors for help menu*/
+  --code-text-color: rgb(0 122 255 / 1);
+  --code-bg-color: rgb(96 165 250 / 0.2);
+  --code-block-bg-color: rgb(60 60 60 / 0.12);
+
+  /* --- */
+
+  --backdrop: var(--color-white);
+  --dialog-surface: var(--color-neutral-200);
+  --node-component-border: var(--color-gray-400);
+  --node-component-executing: var(--color-blue-500);
+  --node-component-header: var(--fg-color);
+  --node-component-header-icon: var(--color-stone-200);
+  --node-component-header-surface: var(--color-white);
+  --node-component-outline: var(--color-black);
+  --node-component-ring: rgb(from var(--color-gray-500) r g b / 50%);
+  --node-component-slot-dot-outline-opacity-mult: 1;
+  --node-component-slot-dot-outline-opacity: 5%;
+  --node-component-slot-dot-outline: var(--color-black);
+  --node-component-slot-text: var(--color-stone-200);
+  --node-component-surface-highlight: var(--color-stone-100);
+  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-selected: var(--color-charcoal-200);
+  --node-component-surface: var(--color-white);
+  --node-component-tooltip: var(--color-charcoal-700);
+  --node-component-tooltip-border: var(--color-sand-100);
+  --node-component-tooltip-surface: var(--color-white);
+  --node-component-widget-input: var(--fg-color);
+  --node-component-widget-input-surface: rgb(
+    from var(--color-zinc-500) r g b / 10%
+  );
+  --node-component-widget-skeleton-surface: var(--color-zinc-300);
+  --node-stroke: var(--color-stone-100);
+}
+
+.dark-theme {
+  --backdrop: var(--color-neutral-900);
+  --dialog-surface: var(--color-neutral-700);
+  --node-component-border: var(--color-stone-200);
+  --node-component-header-icon: var(--color-slate-300);
+  --node-component-header-surface: var(--color-charcoal-800);
+  --node-component-outline: var(--color-white);
+  --node-component-ring: rgb(var(--color-gray-500) / 20%);
+  --node-component-slot-dot-outline-opacity: 10%;
+  --node-component-slot-dot-outline: var(--color-white);
+  --node-component-slot-text: var(--color-slate-200);
+  --node-component-surface-highlight: var(--color-slate-100);
+  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-selected: var(--color-charcoal-200);
+  --node-component-surface: var(--color-charcoal-800);
+  --node-component-tooltip: var(--color-white);
+  --node-component-tooltip-border: var(--color-slate-300);
+  --node-component-tooltip-surface: var(--color-charcoal-800);
+  --node-component-widget-skeleton-surface: var(--color-zinc-800);
+  --node-stroke: var(--color-slate-100);
+}
+
 @theme inline {
-  --color-node-component-surface: var(--color-charcoal-600);
-  --color-node-component-surface-highlight: var(--color-slate-100);
-  --color-node-component-surface-hovered: var(--color-charcoal-400);
-  --color-node-component-surface-selected: var(--color-charcoal-200);
-  --color-node-stroke: var(--color-stone-100);
+  --color-backdrop: var(--backdrop);
+  --color-dialog-surface: var(--dialog-surface);
+  --color-node-component-border: var(--node-component-border);
+  --color-node-component-executing: var(--node-component-executing);
+  --color-node-component-header: var(--node-component-header);
+  --color-node-component-header-icon: var(--node-component-header-icon);
+  --color-node-component-header-surface: var(--node-component-header-surface);
+  --color-node-component-outline: var(--node-component-outline);
+  --color-node-component-ring: var(--node-component-ring);
+  --color-node-component-slot-dot-outline: rgb(
+    from var(--node-component-slot-dot-outline) r g b /
+      calc(
+        var(--node-component-slot-dot-outline-opacity) *
+          var(--node-component-slot-dot-outline-opacity-mult)
+      )
+  );
+  --color-node-component-slot-text: var(--node-component-slot-text);
+  --color-node-component-surface-highlight: var(
+    --node-component-surface-highlight
+  );
+  --color-node-component-surface-hovered: var(--node-component-surface-hovered);
+  --color-node-component-surface-selected: var(--component-surface-selected);
+  --color-node-component-surface: var(--node-component-surface);
+  --color-node-component-tooltip: var(--node-component-tooltip);
+  --color-node-component-tooltip-border: var(--node-component-tooltip-border);
+  --color-node-component-tooltip-surface: var(--node-component-tooltip-surface);
+  --color-node-component-widget-input: var(--node-component-widget-input);
+  --color-node-component-widget-input-surface: var(
+    --node-component-widget-input-surface
+  );
+  --color-node-component-widget-skeleton-surface: var(
+    --node-component-widget-skeleton-surface
+  );
+  --color-node-stroke: var(--node-stroke);
 }
 
 @custom-variant dark-theme {
@@ -418,7 +498,7 @@ body {
 
 /* Strong and emphasis */
 .comfy-markdown-content strong {
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .comfy-markdown-content em {
@@ -429,7 +509,7 @@ body {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
   z-index: 100; /* Sit on top */
-  padding: 30px 30px 10px 30px;
+  padding: 30px 30px 10px;
   background-color: var(--comfy-menu-bg); /* Modal background */
   color: var(--error-text);
   box-shadow: 0 0 20px #888888;
@@ -477,8 +557,8 @@ body {
   background-color: var(--comfy-menu-bg);
   font-family: sans-serif;
   padding: 10px;
-  border-radius: 0 8px 8px 8px;
-  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+  border-radius: 0 8px 8px;
+  box-shadow: 3px 3px 8px rgb(0 0 0 / 0.4);
 }
 
 .comfy-menu-header {
@@ -496,7 +576,7 @@ body {
 }
 
 .comfy-menu .comfy-menu-actions button {
-  background-color: rgba(0, 0, 0, 0);
+  background-color: rgb(0 0 0 / 0);
   padding: 0;
   border: none;
   cursor: pointer;
@@ -565,13 +645,10 @@ button.comfy-close-menu-btn {
 }
 
 span.drag-handle {
-  width: 10px;
-  height: 20px;
   display: inline-block;
   overflow: hidden;
   line-height: 5px;
   padding: 3px 4px;
-  cursor: move;
   vertical-align: middle;
   margin-top: -0.4em;
   margin-left: -0.2em;
@@ -611,7 +688,7 @@ span.drag-handle::after {
   min-width: 160px;
   margin: 0;
   padding: 3px;
-  font-weight: normal;
+  font-weight: 400;
 }
 
 .comfy-list-items button {
@@ -728,7 +805,7 @@ dialog {
 }
 
 dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(0 0 0 / 0.5);
 }
 
 .comfy-dialog.comfyui-dialog.comfy-modal {
@@ -934,9 +1011,6 @@ audio.comfy-audio.empty-audio-widget {
 .lg-node {
   /* Disable text selection on all nodes */
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
 }
 
 .lg-node .lg-slot,
@@ -963,7 +1037,6 @@ audio.comfy-audio.empty-audio-widget {
   filter: none;
   backdrop-filter: none;
   text-shadow: none;
-  -webkit-mask-image: none;
   mask-image: none;
   clip-path: none;
   background-image: none;

@@ -1,20 +1,29 @@
 import { describe, expect, test, vi } from 'vitest'
 
-import '@/core/graph/subgraph/proxyWidget'
-//import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
-
-import { LGraphNode, type SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+import {
+  type LGraphCanvas,
+  LGraphNode,
+  type SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '../litegraph/subgraph/fixtures/subgraphHelpers'
 
+const canvasEl: Partial<HTMLCanvasElement> = { addEventListener() {} }
+const canvas: Partial<LGraphCanvas> = { canvas: canvasEl as HTMLCanvasElement }
+registerProxyWidgets(canvas as LGraphCanvas)
+
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
 }))
 vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => ({ widgetStates: new Map() })
+}))
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
 function setupSubgraph(
@@ -38,22 +47,20 @@ describe('Subgraph proxyWidgets', () => {
   test('Can add simple widget', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    subgraphNode.properties.proxyWidgets = JSON.stringify([
+    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
+    expect(subgraphNode.widgets.length).toBe(1)
+    expect(subgraphNode.properties.proxyWidgets).toStrictEqual([
       ['1', 'stringWidget']
     ])
-    expect(subgraphNode.widgets.length).toBe(1)
-    expect(subgraphNode.properties.proxyWidgets).toBe(
-      JSON.stringify([['1', 'stringWidget']])
-    )
   })
   test('Can add multiple widgets with same name', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(2)
     for (const innerNode of innerNodes)
       innerNode.addWidget('text', 'stringWidget', 'value', () => {})
-    subgraphNode.properties.proxyWidgets = JSON.stringify([
+    subgraphNode.properties.proxyWidgets = [
       ['1', 'stringWidget'],
       ['2', 'stringWidget']
-    ])
+    ]
     expect(subgraphNode.widgets.length).toBe(2)
     expect(subgraphNode.widgets[0].name).not.toEqual(
       subgraphNode.widgets[1].name
@@ -63,19 +70,15 @@ describe('Subgraph proxyWidgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     subgraphNode.addWidget('text', 'stringWidget', 'value', () => {})
-    subgraphNode.properties.proxyWidgets = JSON.stringify([
-      ['1', 'stringWidget']
-    ])
+    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
     expect(subgraphNode.widgets.length).toBe(2)
-    subgraphNode.properties.proxyWidgets = JSON.stringify([])
+    subgraphNode.properties.proxyWidgets = []
     expect(subgraphNode.widgets.length).toBe(1)
   })
   test('Will mirror changes to value', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    subgraphNode.properties.proxyWidgets = JSON.stringify([
-      ['1', 'stringWidget']
-    ])
+    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
     expect(subgraphNode.widgets.length).toBe(1)
     expect(subgraphNode.widgets[0].value).toBe('value')
     innerNodes[0].widgets![0].value = 'test'
@@ -86,9 +89,7 @@ describe('Subgraph proxyWidgets', () => {
   test('Will not modify position or sizing of existing widgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    subgraphNode.properties.proxyWidgets = JSON.stringify([
-      ['1', 'stringWidget']
-    ])
+    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
     if (!innerNodes[0].widgets) throw new Error('node has no widgets')
     innerNodes[0].widgets[0].y = 10
     innerNodes[0].widgets[0].last_y = 11
@@ -103,9 +104,7 @@ describe('Subgraph proxyWidgets', () => {
   test('Can detach and re-attach widgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    subgraphNode.properties.proxyWidgets = JSON.stringify([
-      ['1', 'stringWidget']
-    ])
+    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
     if (!innerNodes[0].widgets) throw new Error('node has no widgets')
     expect(subgraphNode.widgets[0].value).toBe('value')
     const poppedWidget = innerNodes[0].widgets.pop()

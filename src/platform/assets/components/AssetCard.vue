@@ -66,15 +66,15 @@
         "
       >
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
-          <i-lucide:star class="size-3" />
+          <i class="icon-[lucide--star] size-3" />
           {{ asset.stats.stars }}
         </span>
         <span v-if="asset.stats.downloadCount" class="flex items-center gap-1">
-          <i-lucide:download class="size-3" />
+          <i class="icon-[lucide--download] size-3" />
           {{ asset.stats.downloadCount }}
         </span>
         <span v-if="asset.stats.formattedDate" class="flex items-center gap-1">
-          <i-lucide:clock class="size-3" />
+          <i class="icon-[lucide--clock] size-3" />
           {{ asset.stats.formattedDate }}
         </span>
       </div>

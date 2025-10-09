@@ -194,7 +194,7 @@ export interface LinkSegment {
   /** The last canvas 2D path that was used to render this segment */
   path?: Path2D
   /** Centre point of the {@link path}.  Calculated during render only - can be inaccurate */
-  readonly _pos: Float32Array
+  readonly _pos: Point
   /**
    * Y-forward along the {@link path} from its centre point, in radians.
    * `undefined` if using circles for link centres.
@@ -226,52 +226,25 @@ export interface IFoundSlot extends IInputOrOutput {
 }
 
 /** A point represented as `[x, y]` co-ordinates */
-export type Point = [x: number, y: number] | Float32Array | Float64Array
+export type Point = [x: number, y: number]
 
 /** A size represented as `[width, height]` */
-export type Size = [width: number, height: number] | Float32Array | Float64Array
-
-/** A very firm array */
-type ArRect = [x: number, y: number, width: number, height: number]
+export type Size = [width: number, height: number]
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` */
-export type Rect = ArRect | Float32Array | Float64Array
-
-/** A point represented as `[x, y]` co-ordinates that will not be modified */
-export type ReadOnlyPoint =
-  | readonly [x: number, y: number]
-  | ReadOnlyTypedArray<Float32Array>
-  | ReadOnlyTypedArray<Float64Array>
-
-/** A size represented as `[width, height]` that will not be modified */
-export type ReadOnlySize =
-  | readonly [width: number, height: number]
-  | ReadOnlyTypedArray<Float32Array>
-  | ReadOnlyTypedArray<Float64Array>
+export type Rect =
+  | [x: number, y: number, width: number, height: number]
+  | Float64Array
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` that will not be modified */
 export type ReadOnlyRect =
   | readonly [x: number, y: number, width: number, height: number]
-  | ReadOnlyTypedArray<Float32Array>
   | ReadOnlyTypedArray<Float64Array>
 
-type TypedArrays =
-  | Int8Array
-  | Uint8Array
-  | Uint8ClampedArray
-  | Int16Array
-  | Uint16Array
-  | Int32Array
-  | Uint32Array
-  | Float32Array
-  | Float64Array
-
-type TypedBigIntArrays = BigInt64Array | BigUint64Array
-export type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =
-  Omit<
-    Readonly<T>,
-    'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
-  >
+export type ReadOnlyTypedArray<T extends Float64Array> = Omit<
+  Readonly<T>,
+  'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
+>
 
 /** Union of property names that are of type Match */
 type KeysOfType<T, Match> = Exclude<
@@ -330,7 +303,7 @@ export interface INodeSlot extends HasBoundingRect {
   nameLocked?: boolean
   pos?: Point
   /** @remarks Automatically calculated; not included in serialisation. */
-  boundingRect: Rect
+  boundingRect: ReadOnlyRect
   /**
    * A list of floating link IDs that are connected to this slot.
    * This is calculated at runtime; it is **not** serialized.

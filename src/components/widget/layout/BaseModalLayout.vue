@@ -5,7 +5,7 @@
       :class="rightPanelButtonClasses"
       @click="toggleRightPanel"
     >
-      <i-lucide:panel-right class="text-sm" />
+      <i class="icon-[lucide--panel-right] text-sm" />
     </IconButton>
     <IconButton :class="closeButtonClasses" @click="closeDialog">
       <i class="pi pi-times text-sm"></i>
@@ -29,8 +29,11 @@
           <header v-if="$slots.header" :class="headerClasses">
             <div class="flex-1 flex gap-2 shrink-0">
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">
-                <i-lucide:panel-left v-if="!showLeftPanel" class="text-sm" />
-                <i-lucide:panel-left-close v-else class="text-sm" />
+                <i
+                  v-if="!showLeftPanel"
+                  class="icon-[lucide--panel-left] text-sm"
+                />
+                <i v-else class="icon-[lucide--panel-left-close] text-sm" />
               </IconButton>
               <slot name="header"></slot>
             </div>
@@ -40,7 +43,7 @@
                 v-if="isRightPanelOpen && hasRightPanel"
                 @click="toggleRightPanel"
               >
-                <i-lucide:panel-right-close class="text-sm" />
+                <i class="icon-[lucide--panel-right-close] text-sm" />
               </IconButton>
             </div>
           </header>
@@ -48,7 +51,10 @@
           <main class="flex flex-col flex-1 min-h-0">
             <!-- Fallback title bar when no leftPanel is provided -->
             <slot name="contentFilter"></slot>
-            <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
+            <h2
+              v-if="!$slots.leftPanel"
+              class="text-xxl px-6 pt-2 pb-6 m-0 capitalize"
+            >
               {{ contentTitle }}
             </h2>
             <div :class="contentContainerClasses">

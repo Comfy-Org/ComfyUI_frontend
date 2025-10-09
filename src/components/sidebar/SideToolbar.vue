@@ -38,6 +38,7 @@ import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -51,6 +52,7 @@ import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
+const commandStore = useCommandStore()
 
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.Sidebar.Location') === 'left'
@@ -64,9 +66,12 @@ const isSmall = computed(
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
-const onTabClick = (item: SidebarTabExtension) => {
-  workspaceStore.sidebarTab.toggleSidebarTab(item.id)
-}
+
+const onTabClick = async (item: SidebarTabExtension) =>
+  await commandStore.commands
+    .find((cmd) => cmd.id === `Workspace.ToggleSidebarTab.${item.id}`)
+    ?.function?.()
+
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   const keybinding = keybindingStore.getKeybindingByCommandId(

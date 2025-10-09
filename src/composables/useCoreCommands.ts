@@ -5,6 +5,7 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
+import { promoteRecommendedWidgets } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { t } from '@/i18n'
 import {
   LGraphEventMode,
@@ -14,13 +15,13 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import {
-  type ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useCanvasStore,
   useTitleEditorStore
@@ -909,6 +910,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const { node } = res
         canvas.select(node)
+        promoteRecommendedWidgets(node)
         canvasStore.updateSelectedItems()
       }
     },
@@ -1059,6 +1061,60 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         await api.freeMemory({ freeExecutionCache: true })
+      }
+    },
+    {
+      id: 'Comfy.BrowseModelAssets',
+      icon: 'pi pi-folder-open',
+      label: 'Experimental: Browse Model Assets',
+      versionAdded: '1.28.3',
+      function: async () => {
+        if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) {
+          const confirmed = await dialogService.confirm({
+            title: 'Enable Asset API',
+            message:
+              'The Asset API is currently disabled. Would you like to enable it?',
+            type: 'default'
+          })
+
+          if (!confirmed) return
+
+          const settingStore = useSettingStore()
+          await settingStore.set('Comfy.Assets.UseAssetAPI', true)
+          await workflowService.reloadCurrentWorkflow()
+        }
+        const assetBrowserDialog = useAssetBrowserDialog()
+        await assetBrowserDialog.browse({
+          assetType: 'models',
+          title: t('sideToolbar.modelLibrary'),
+          onAssetSelected: (asset) => {
+            const result = createModelNodeFromAsset(asset)
+            if (!result.success) {
+              toastStore.add({
+                severity: 'error',
+                summary: t('g.error'),
+                detail: t('assetBrowser.failedToCreateNode')
+              })
+              console.error('Node creation failed:', result.error)
+            }
+          }
+        })
+      }
+    },
+    {
+      id: 'Comfy.ToggleAssetAPI',
+      icon: 'pi pi-database',
+      label: () =>
+        `Experimental: ${
+          useSettingStore().get('Comfy.Assets.UseAssetAPI')
+            ? 'Disable'
+            : 'Enable'
+        } AssetAPI`,
+      function: async () => {
+        const settingStore = useSettingStore()
+        const current = settingStore.get('Comfy.Assets.UseAssetAPI') ?? false
+        await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
+        await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
     }
   ]

@@ -1,17 +1,20 @@
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
-  type SlotPositionContext,
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
   calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { adjustColor } from '@/utils/colorUtil'
+import type { ColorAdjustOptions } from '@/utils/colorUtil'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
-import { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
+import { LGraphButton } from './LGraphButton'
+import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
@@ -37,17 +40,12 @@ import type {
   ISlotType,
   Point,
   Positionable,
-  ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
   Size
 } from './interfaces'
-import {
-  type LGraphNodeConstructor,
-  LiteGraph,
-  type Subgraph,
-  type SubgraphNode
-} from './litegraph'
+import { LiteGraph } from './litegraph'
+import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
 import {
   createBounds,
   isInRect,
@@ -86,7 +84,8 @@ import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { toClass } from './utils/type'
 import { BaseWidget } from './widgets/BaseWidget'
-import { type WidgetTypeMap, toConcreteWidget } from './widgets/widgetMap'
+import { toConcreteWidget } from './widgets/widgetMap'
+import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
@@ -303,13 +302,25 @@ export class LGraphNode
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
-    return this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+    const baseColor =
+      this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+    return adjustColor(baseColor, { lightness: LiteGraph.nodeLightness })
   }
 
   /** The bg color used to render the node. */
   get renderingBgColor(): string {
-    return (
+    const baseBgColor =
       this.bgcolor || this.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+    const adjustments: ColorAdjustOptions = {
+      opacity: LiteGraph.nodeOpacity,
+      lightness: LiteGraph.nodeLightness
+    }
+
+    return adjustColor(
+      this.mode === LGraphEventMode.BYPASS
+        ? LiteGraph.NODE_DEFAULT_BYPASS_COLOR
+        : baseBgColor,
+      adjustments
     )
   }
 
@@ -413,7 +424,7 @@ export class LGraphNode
   }
 
   /** @inheritdoc {@link renderArea} */
-  #renderArea: Float32Array = new Float32Array(4)
+  #renderArea = new Rectangle()
   /**
    * Rect describing the node area, including shadows and any protrusions.
    * Determines if the node is visible.  Calculated once at the start of every frame.
@@ -434,7 +445,7 @@ export class LGraphNode
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
-  get boundingOffset(): ReadOnlyPoint {
+  get boundingOffset(): Readonly<Point> {
     const {
       pos: [posX, posY],
       boundingRect: [bX, bY]
@@ -442,10 +453,10 @@ export class LGraphNode
     return [posX - bX, posY - bY]
   }
 
-  /** {@link pos} and {@link size} values are backed by this {@link Rect}. */
-  _posSize: Float32Array = new Float32Array(4)
-  _pos: Point = this._posSize.subarray(0, 2)
-  _size: Size = this._posSize.subarray(2, 4)
+  /** {@link pos} and {@link size} values are backed by this {@link Rectangle}. */
+  _posSize = new Rectangle()
+  _pos: Point = this._posSize.pos
+  _size: Size = this._posSize.size
 
   public get pos() {
     return this._pos
@@ -1653,7 +1664,7 @@ export class LGraphNode
       inputs ? inputs.filter((input) => !isWidgetInputSlot(input)).length : 1,
       outputs ? outputs.length : 1
     )
-    const size = out || new Float32Array([0, 0])
+    const size = out ?? [0, 0]
     rows = Math.max(rows, 1)
     // although it should be graphcanvas.inner_text_font size
     const font_size = LiteGraph.NODE_TEXT_SIZE
@@ -2004,13 +2015,13 @@ export class LGraphNode
 
   /**
    * returns the bounding of the object, used for rendering purposes
-   * @param out {Float32Array[4]?} [optional] a place to store the output, to free garbage
+   * @param out {Rect?} [optional] a place to store the output, to free garbage
    * @param includeExternal {boolean?} [optional] set to true to
    * include the shadow and connection points in the bounding calculation
    * @returns the bounding box in format of [topleft_cornerx, topleft_cornery, width, height]
    */
   getBounding(out?: Rect, includeExternal?: boolean): Rect {
-    out ||= new Float32Array(4)
+    out ||= [0, 0, 0, 0]
 
     const rect = includeExternal ? this.renderArea : this.boundingRect
     out[0] = rect[0]
@@ -3169,7 +3180,7 @@ export class LGraphNode
    * @returns the position
    */
   getConnectionPos(is_input: boolean, slot_number: number, out?: Point): Point {
-    out ||= new Float32Array(2)
+    out ||= [0, 0]
 
     const {
       pos: [nodeX, nodeY],
@@ -3749,6 +3760,13 @@ export class LGraphNode
     return !isHidden
   }
 
+  updateComputedDisabled() {
+    if (!this.widgets) return
+    for (const widget of this.widgets)
+      widget.computedDisabled =
+        widget.disabled || this.getSlotFromWidget(widget)?.link != null
+  }
+
   drawWidgets(
     ctx: CanvasRenderingContext2D,
     { lowQuality = false, editorAlpha = 1 }: DrawWidgetsOptions
@@ -3762,6 +3780,7 @@ export class LGraphNode
     ctx.save()
     ctx.globalAlpha = editorAlpha
 
+    this.updateComputedDisabled()
     for (const widget of widgets) {
       if (!this.isWidgetVisible(widget)) continue
 
@@ -3771,9 +3790,6 @@ export class LGraphNode
         : LiteGraph.WIDGET_OUTLINE_COLOR
 
       widget.last_y = y
-      // Disable widget if it is disabled or if the value is passed from socket connection.
-      widget.computedDisabled =
-        widget.disabled || this.getSlotFromWidget(widget)?.link != null
 
       ctx.strokeStyle = outlineColour
       ctx.fillStyle = '#222'

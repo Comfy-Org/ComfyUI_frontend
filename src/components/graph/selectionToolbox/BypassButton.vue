@@ -11,7 +11,7 @@
     @click="toggleBypass"
   >
     <template #icon>
-      <i-lucide:ban class="w-4 h-4" />
+      <i class="icon-[lucide--ban] w-4 h-4" />
     </template>
   </Button>
 </template>

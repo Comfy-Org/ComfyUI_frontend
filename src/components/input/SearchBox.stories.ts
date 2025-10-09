@@ -8,7 +8,7 @@ const meta: Meta<typeof SearchBox> = {
   component: SearchBox,
   tags: ['autodocs'],
   argTypes: {
-    placeHolder: {
+    placeholder: {
       control: 'text'
     },
     showBorder: {
@@ -22,7 +22,7 @@ const meta: Meta<typeof SearchBox> = {
     }
   },
   args: {
-    placeHolder: 'Search...',
+    placeholder: 'Search...',
     showBorder: false,
     size: 'md'
   }

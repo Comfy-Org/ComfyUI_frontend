@@ -11,7 +11,7 @@
     severity="secondary"
     @click="handleClick"
   >
-    <i-lucide:more-vertical class="w-4 h-4" />
+    <i class="icon-[lucide--more-vertical] w-4 h-4" />
   </Button>
 </template>
 
