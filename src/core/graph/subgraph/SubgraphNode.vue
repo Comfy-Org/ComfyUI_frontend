@@ -64,15 +64,21 @@ const activeNode = computed(() => {
 
 const activeWidgets = computed<WidgetItem[]>({
   get() {
+    if (!activeNode.value) return []
     const node = activeNode.value
-    if (!node) return []
-    return proxyWidgets.value.flatMap(([id, name]: [string, string]) => {
+    function mapWidgets([id, name]: [string, string]): WidgetItem[] {
+      if (id === '-1') {
+        const widget = node.widgets.find((w) => w.name === name)
+        if (!widget) return []
+        return [[{ id: -1, title: '(Linked)', type: '' }, widget]]
+      }
       const wNode = node.subgraph._nodes_by_id[id]
       if (!wNode?.widgets) return []
-      const w = wNode.widgets.find((w) => w.name === name)
-      if (!w) return []
-      return [[wNode, w]]
-    })
+      const widget = wNode.widgets.find((w) => w.name === name)
+      if (!widget) return []
+      return [[wNode, widget]]
+    }
+    return proxyWidgets.value.flatMap(mapWidgets)
   },
   set(value: WidgetItem[]) {
     const node = activeNode.value
@@ -80,9 +86,7 @@ const activeWidgets = computed<WidgetItem[]>({
       console.error('Attempted to toggle widgets with no node selected')
       return
     }
-    //map back to id/name
-    const widgets: ProxyWidgetsProperty = value.map(widgetItemToProperty)
-    proxyWidgets.value = widgets
+    proxyWidgets.value = value.map(widgetItemToProperty)
   }
 })
 
@@ -165,10 +169,10 @@ function showAll() {
 function hideAll() {
   const node = activeNode.value
   if (!node) return //Not reachable
-  //Not great from a nesting perspective, but path is cold
-  //and it cleans up potential error states
   proxyWidgets.value = proxyWidgets.value.filter(
-    (widgetItem) => !filteredActive.value.some(matchesWidgetItem(widgetItem))
+    (propertyItem) =>
+      !filteredActive.value.some(matchesWidgetItem(propertyItem)) ||
+      propertyItem[0] === '-1'
   )
 }
 function showRecommended() {
@@ -258,20 +262,16 @@ onBeforeUnmount(() => {
       >
     </div>
     <div ref="draggableItems">
-      <div
+      <SubgraphNodeWidget
         v-for="[node, widget] in filteredActive"
         :key="toKey([node, widget])"
-        class="draggable-item w-full"
-        style=""
-      >
-        <SubgraphNodeWidget
-          :node-title="node.title"
-          :widget-name="widget.name"
-          :is-shown="true"
-          :is-draggable="!debouncedQuery"
-          @toggle-visibility="demote([node, widget])"
-        />
-      </div>
+        :node-title="node.title"
+        :widget-name="widget.name"
+        :is-shown="true"
+        :is-draggable="!debouncedQuery"
+        :is-physical="node.id === -1"
+        @toggle-visibility="demote([node, widget])"
+      />
     </div>
   </div>
   <div v-if="filteredCandidates.length" class="pt-1 pb-4">
@@ -286,17 +286,13 @@ onBeforeUnmount(() => {
         {{ $t('subgraphStore.showAll') }}</a
       >
     </div>
-    <div
+    <SubgraphNodeWidget
       v-for="[node, widget] in filteredCandidates"
       :key="toKey([node, widget])"
-      class="w-full"
-    >
-      <SubgraphNodeWidget
-        :node-title="node.title"
-        :widget-name="widget.name"
-        @toggle-visibility="promote([node, widget])"
-      />
-    </div>
+      :node-title="node.title"
+      :widget-name="widget.name"
+      @toggle-visibility="promote([node, widget])"
+    />
   </div>
   <div
     v-if="recommendedWidgets.length"
