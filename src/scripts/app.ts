@@ -7,6 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
   LGraphCanvas,
@@ -1665,6 +1666,56 @@ export class ComfyApp {
    */
   registerExtension(extension: ComfyExtension) {
     useExtensionService().registerExtension(extension)
+  }
+
+  /**
+   * Collects context menu items from all extensions for canvas menus
+   * @param canvas The canvas instance
+   * @returns Array of context menu items from all extensions
+   */
+  collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
+    const items: IContextMenuValue[] = []
+
+    for (const ext of this.extensions) {
+      if (ext.getCanvasMenuItems) {
+        try {
+          const extItems = ext.getCanvasMenuItems(canvas)
+          items.push(...extItems)
+        } catch (error) {
+          console.error(
+            `[Context Menu] Extension "${ext.name}" failed to provide canvas menu items:`,
+            error
+          )
+        }
+      }
+    }
+
+    return items
+  }
+
+  /**
+   * Collects context menu items from all extensions for node menus
+   * @param node The node being right-clicked
+   * @returns Array of context menu items from all extensions
+   */
+  collectNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
+    const items: IContextMenuValue[] = []
+
+    for (const ext of this.extensions) {
+      if (ext.getNodeMenuItems) {
+        try {
+          const extItems = ext.getNodeMenuItems(node)
+          items.push(...extItems)
+        } catch (error) {
+          console.error(
+            `[Context Menu] Extension "${ext.name}" failed to provide node menu items:`,
+            error
+          )
+        }
+      }
+    }
+
+    return items
   }
 
   /**
