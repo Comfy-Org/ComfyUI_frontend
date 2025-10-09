@@ -24,7 +24,7 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
-          not_build: 'false'
+          include_build_step: 'true'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright # Setup Playwright and cache browsers
 
@@ -65,8 +65,6 @@ jobs:
         uses: ./.github/actions/setup-comfyui-server
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
-        with:
-          not_build: 'true'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
@@ -112,8 +110,6 @@ jobs:
         uses: ./.github/actions/setup-comfyui-server
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
-        with:
-          not_build: 'true'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
@@ -148,8 +144,6 @@ jobs:
       # Setup Test Environment, we only need playwright to merge reports
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
-        with:
-          not_build: 'true'
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
