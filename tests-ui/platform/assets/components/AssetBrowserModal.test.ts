@@ -1,10 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
-import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 // Mock @/i18n for useAssetBrowser and AssetFilterBar
@@ -57,6 +55,9 @@ vi.mock('@/components/widget/layout/BaseModalLayout.vue', () => ({
         <div data-testid="header">
           <slot name="header" />
         </div>
+        <div v-if="$slots.contentFilter" data-testid="content-filter">
+          <slot name="contentFilter" />
+        </div>
         <div data-testid="content">
           <slot name="content" />
         </div>
@@ -72,6 +73,9 @@ vi.mock('@/components/widget/panel/LeftSidePanel.vue', () => ({
     emits: ['update:modelValue'],
     template: `
       <div data-testid="left-side-panel">
+        <div v-if="$slots['header-title']" data-testid="header-title">
+          <slot name="header-title" />
+        </div>
         <button
           v-for="item in navItems"
           :key="item.id"
@@ -81,6 +85,19 @@ vi.mock('@/components/widget/panel/LeftSidePanel.vue', () => ({
         >
           {{ item.label }}
         </button>
+      </div>
+    `
+  }
+}))
+
+vi.mock('@/platform/assets/components/AssetFilterBar.vue', () => ({
+  default: {
+    name: 'AssetFilterBar',
+    props: ['assets'],
+    emits: ['filter-change'],
+    template: `
+      <div data-testid="asset-filter-bar">
+        Filter bar with {{ assets?.length ?? 0 }} assets
       </div>
     `
   }
@@ -169,99 +186,33 @@ describe('AssetBrowserModal', () => {
     })
   }
 
-  describe('Search Functionality', () => {
-    it('filters assets when search query changes', async () => {
+  describe('Integration with useAssetBrowser', () => {
+    it('passes filteredAssets from composable to AssetGrid', () => {
       const assets = [
-        createTestAsset('asset1', 'Checkpoint Model A', 'checkpoints'),
-        createTestAsset('asset2', 'Checkpoint Model B', 'checkpoints'),
-        createTestAsset('asset3', 'LoRA Model C', 'loras')
+        createTestAsset('asset1', 'Model A', 'checkpoints'),
+        createTestAsset('asset2', 'Model B', 'loras')
       ]
       const wrapper = createWrapper(assets)
-
-      const searchBox = wrapper.find('[data-testid="search-box"]')
-
-      // Search for "Checkpoint"
-      await searchBox.setValue('Checkpoint')
-      await nextTick()
-
-      // Should filter to only checkpoint assets
-      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const filteredAssets = assetGrid.props('assets') as AssetDisplayItem[]
-
-      expect(filteredAssets.length).toBe(2)
-      expect(
-        filteredAssets.every((asset: AssetDisplayItem) =>
-          asset.name.includes('Checkpoint')
-        )
-      ).toBe(true)
-    })
-
-    it('search is case insensitive', async () => {
-      const assets = [
-        createTestAsset('asset1', 'LoRA Model C', 'loras'),
-        createTestAsset('asset2', 'Checkpoint Model', 'checkpoints')
-      ]
-      const wrapper = createWrapper(assets)
-
-      const searchBox = wrapper.find('[data-testid="search-box"]')
-
-      // Search with different case
-      await searchBox.setValue('lora')
-      await nextTick()
 
       const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const filteredAssets = assetGrid.props('assets') as AssetDisplayItem[]
+      const gridAssets = assetGrid.props('assets')
 
-      expect(filteredAssets.length).toBe(1)
-      expect(filteredAssets[0].name).toContain('LoRA')
+      expect(gridAssets).toHaveLength(2)
+      expect(gridAssets[0].id).toBe('asset1')
     })
 
-    it('shows empty state when search has no results', async () => {
+    it('passes categoryFilteredAssets to AssetFilterBar', () => {
       const assets = [
-        createTestAsset('asset1', 'Checkpoint Model', 'checkpoints')
-      ]
-      const wrapper = createWrapper(assets)
-
-      const searchBox = wrapper.find('[data-testid="search-box"]')
-
-      // Search for something that doesn't exist
-      await searchBox.setValue('nonexistent')
-      await nextTick()
-
-      expect(wrapper.find('[data-testid="empty-state"]').exists()).toBe(true)
-    })
-  })
-
-  describe('Category Navigation', () => {
-    it('filters assets by selected category', async () => {
-      const assets = [
-        createTestAsset('asset1', 'Checkpoint Model A', 'checkpoints'),
-        createTestAsset('asset2', 'LoRA Model C', 'loras'),
-        createTestAsset('asset3', 'VAE Model D', 'vae')
+        createTestAsset('c1', 'model.safetensors', 'checkpoints'),
+        createTestAsset('l1', 'lora.pt', 'loras')
       ]
       const wrapper = createWrapper(assets, { showLeftPanel: true })
 
-      // Wait for Vue reactivity and component mounting
-      await nextTick()
+      const filterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
+      const filterBarAssets = filterBar.props('assets')
 
-      // Check if left panel exists first (since we have multiple categories)
-      const leftPanel = wrapper.find('[data-testid="left-panel"]')
-      expect(leftPanel.exists()).toBe(true)
-
-      // Check if the nav item exists before clicking
-      const lorasNavItem = wrapper.find('[data-testid="nav-item-loras"]')
-      expect(lorasNavItem.exists()).toBe(true)
-
-      // Click the loras category
-      await lorasNavItem.trigger('click')
-      await nextTick()
-
-      // Should filter to only LoRA assets
-      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const filteredAssets = assetGrid.props('assets') as AssetDisplayItem[]
-
-      expect(filteredAssets.length).toBe(1)
-      expect(filteredAssets[0].name).toContain('LoRA')
+      // Should initially show all assets
+      expect(filterBarAssets).toHaveLength(2)
     })
   })
 
@@ -277,7 +228,7 @@ describe('AssetBrowserModal', () => {
       expect(emitted).toBeDefined()
       expect(emitted).toHaveLength(1)
 
-      const emittedAsset = emitted![0][0] as AssetDisplayItem
+      const emittedAsset = emitted![0][0] as AssetItem
       expect(emittedAsset.id).toBe('asset1')
     })
 
@@ -289,7 +240,12 @@ describe('AssetBrowserModal', () => {
       // Click on first asset
       await wrapper.find('[data-testid="asset-asset1"]').trigger('click')
 
-      expect(onSelectSpy).toHaveBeenCalledWith('Test Model')
+      expect(onSelectSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'asset1',
+          name: 'Test Model'
+        })
+      )
     })
   })
 
@@ -325,6 +281,58 @@ describe('AssetBrowserModal', () => {
         showLeftPanel: false
       })
       expect(wrapper2.find('[data-testid="left-panel"]').exists()).toBe(false)
+    })
+  })
+
+  describe('Filter Options Reactivity', () => {
+    it('updates filter options when category changes', async () => {
+      const assets = [
+        createTestAsset('c1', 'model.safetensors', 'checkpoints'),
+        createTestAsset('c2', 'another.safetensors', 'checkpoints'),
+        createTestAsset('l1', 'lora.pt', 'loras')
+      ]
+      const wrapper = createWrapper(assets, { showLeftPanel: true })
+
+      // Initially on "all" category - should have both .safetensors and .pt
+      const filterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
+      expect(filterBar.exists()).toBe(true)
+
+      // Switch to checkpoints category
+      const checkpointsNav = wrapper.find(
+        '[data-testid="nav-item-checkpoints"]'
+      )
+      expect(checkpointsNav.exists()).toBe(true)
+      await checkpointsNav.trigger('click')
+
+      // Filter bar should receive only checkpoint assets now
+      const updatedFilterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
+      const filterBarAssets = updatedFilterBar.props('assets')
+
+      expect(filterBarAssets).toHaveLength(2)
+      expect(
+        filterBarAssets.every((a: AssetItem) => a.tags.includes('checkpoints'))
+      ).toBe(true)
+    })
+  })
+
+  describe('Title Management', () => {
+    it('passes custom title to BaseModalLayout when title prop provided', () => {
+      const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
+      const customTitle = 'Model Library'
+      const wrapper = createWrapper(assets, { title: customTitle })
+
+      const baseModal = wrapper.findComponent({ name: 'BaseModalLayout' })
+      expect(baseModal.props('contentTitle')).toBe(customTitle)
+    })
+
+    it('passes computed contentTitle to BaseModalLayout when no title prop', () => {
+      const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
+      const wrapper = createWrapper(assets)
+
+      const baseModal = wrapper.findComponent({ name: 'BaseModalLayout' })
+      // Should use contentTitle from useAssetBrowser (e.g., "All Models")
+      expect(baseModal.props('contentTitle')).toBeTruthy()
+      expect(baseModal.props('contentTitle')).not.toBe('')
     })
   })
 })

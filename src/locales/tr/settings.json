@@ -11,7 +11,10 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Python Yükleme Yansısı",
-    "tooltip": "Yönetilen Python kurulumları Astral python-build-standalone projesinden indirilir. Bu değişken, Python kurulumları için farklı bir kaynak kullanmak üzere bir yansıma URL'sine ayarlanabilir. Sağlanan URL, örneğin https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz'deki https://github.com/astral-sh/python-build-standalone/releases/download'ın yerini alacaktır. Dağıtımlar, file:// URL şeması kullanılarak yerel bir dizinden okunabilir."
+    "tooltip": "Yönetilen Python kurulumları Astral python-build-standalone projesinden indirilir. Bu değişken, Python kurulumları için farklı bir kaynak kullanmak üzere bir yansıma URL'sine ayarlanabilir. Sağlanan URL, örneğin https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz'deki https://github.com/astral-sh/python-build-standalone/releases/download'ın yerini alacaktır. Dağıtımlar, file:// URL şeması kullanılarak yerel bir dizinden okunabilir.",
+    "urlFormatTitle": "Yansı URL Formatı",
+    "urlDescription": "Bu örnek bir python indirme URL'sidir.\n\nYansı URL'si, tarihten (20250902) önceki her şeyi içeren ilk yarıdır:",
+    "fileUrlDescription": "Daha önce indirdiğiniz bir dosyadan yüklemek için bir dosya URL'si kullanabilirsiniz:"
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "Torch Yükleme Yansısı",

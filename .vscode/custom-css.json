@@ -1,0 +1,50 @@
+{
+  "version": 1.1,
+  "properties": [
+    {
+      "name": "app-region",
+      "description": "Electron-specific CSS property that defines draggable regions in custom title bar windows. Setting 'drag' marks a rectangular area as draggable for moving the window; 'no-drag' excludes areas from the draggable region.",
+      "values": [
+        {
+          "name": "drag",
+          "description": "Marks the element as draggable for moving the Electron window"
+        },
+        {
+          "name": "no-drag",
+          "description": "Excludes the element from being used to drag the Electron window"
+        }
+      ],
+      "references": [
+        {
+          "name": "Electron Window Customization",
+          "url": "https://www.electronjs.org/docs/latest/tutorial/window-customization"
+        }
+      ]
+    },
+    {
+      "name": "speak",
+      "description": "Deprecated CSS2 aural stylesheet property for controlling screen reader speech. Use ARIA attributes instead.",
+      "values": [
+        {
+          "name": "auto",
+          "description": "Content is read aurally if element is not a block and is visible"
+        },
+        {
+          "name": "never",
+          "description": "Content will not be read aurally"
+        },
+        {
+          "name": "always",
+          "description": "Content will be read aurally regardless of display settings"
+        }
+      ],
+      "references": [
+        {
+          "name": "CSS-Tricks Reference",
+          "url": "https://css-tricks.com/almanac/properties/s/speak/"
+        }
+      ],
+      "status": "obsolete"
+    }
+  ]
+}

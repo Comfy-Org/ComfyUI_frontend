@@ -1,4 +1,3 @@
-import '@/core/graph/subgraph/proxyWidget'
 import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -134,7 +133,8 @@ export function addValueControlWidgets(
     function () {},
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
-      serialize: false // Don't include this in prompt.
+      serialize: false, // Don't include this in prompt.
+      canvasOnly: true
     }
   ) as IComboWidget
 

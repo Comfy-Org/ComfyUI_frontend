@@ -6,7 +6,7 @@
       ref="connectionDotRef"
       :color="slotColor"
       :class="cn('-translate-x-1/2', errorClassesDot)"
-      v-on="readonly ? {} : { pointerdown: onPointerDown }"
+      @pointerdown="onPointerDown"
     />
 
     <!-- Slot Name -->
@@ -27,9 +27,7 @@
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
-  type Ref,
   computed,
-  inject,
   onErrorCaptured,
   ref,
   watchEffect
@@ -54,7 +52,6 @@ interface InputSlotProps {
   index: number
   connected?: boolean
   compatible?: boolean
-  readonly?: boolean
   dotOnly?: boolean
 }
 
@@ -74,24 +71,21 @@ const hasSlotError = computed(() => {
 
 const errorClassesDot = computed(() => {
   return hasSlotError.value
-    ? 'ring-2 ring-error dark-theme:ring-error ring-offset-0 rounded-full'
+    ? 'ring-2 ring-error ring-offset-0 rounded-full'
     : ''
 })
 
 const labelClasses = computed(() =>
   hasSlotError.value
-    ? 'text-error dark-theme:text-error font-medium'
-    : 'dark-theme:text-slate-200 text-stone-200'
+    ? 'text-error font-medium'
+    : 'text-node-component-slot-text'
 )
 
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || '',
-  tooltipContainer
+  props.nodeType || ''
 )
 
 const tooltipConfig = computed(() => {
@@ -117,7 +111,7 @@ const slotColor = computed(() => {
 const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--input flex items-center group rounded-r-lg h-6',
-    props.readonly ? 'cursor-default opacity-70' : 'cursor-crosshair',
+    'cursor-crosshair',
     props.dotOnly
       ? 'lg-slot--dot-only'
       : 'pr-6 hover:bg-black/5 hover:dark:bg-white/5',
@@ -148,7 +142,6 @@ useSlotElementTracking({
 const { onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
-  type: 'input',
-  readonly: props.readonly
+  type: 'input'
 })
 </script>

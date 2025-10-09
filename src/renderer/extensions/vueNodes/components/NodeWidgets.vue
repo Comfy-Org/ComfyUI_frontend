@@ -34,7 +34,6 @@
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="getWidgetInputIndex(widget)"
-          :readonly="readonly"
           :dot-only="true"
         />
       </div>
@@ -44,7 +43,7 @@
         v-tooltip.left="widget.tooltipConfig"
         :widget="widget.simplified"
         :model-value="widget.value"
-        :readonly="readonly"
+        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         class="flex-1"
         @update:model-value="widget.updateHandler"
       />
@@ -53,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, inject, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import type {
   SafeWidgetData,
@@ -75,10 +74,9 @@ import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
-  readonly?: boolean
 }
 
-const { nodeData, readonly } = defineProps<NodeWidgetsProps>()
+const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -100,11 +98,8 @@ onErrorCaptured((error) => {
 })
 
 const nodeType = computed(() => nodeData?.type || '')
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
-  nodeType.value,
-  tooltipContainer
+  nodeType.value
 )
 
 interface ProcessedWidget {

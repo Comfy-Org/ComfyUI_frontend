@@ -29,7 +29,6 @@ const DialogDemoComponent = {
     }
 
     const handleAssetSelected = (assetPath: string) => {
-      console.log('Asset selected:', assetPath)
       alert(`Selected asset: ${assetPath}`)
       isDialogOpen.value = false // Auto-close like the real composable
     }

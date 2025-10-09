@@ -15,6 +15,7 @@ interface Props {
   maxSelectable: number
   uploadable: boolean
   disabled: boolean
+  accept?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,14 +38,13 @@ const chevronClass = computed(() =>
   })
 )
 
-const theButtonStyle = computed(() => [
-  'bg-transparent border-0 outline-none text-zinc-400',
-  {
-    'hover:bg-zinc-500/30 hover:text-black hover:dark-theme:text-white cursor-pointer':
+const theButtonStyle = computed(() =>
+  cn('bg-transparent border-0 outline-none text-zinc-400', {
+    'hover:bg-node-component-widget-input-surface/30 cursor-pointer':
       !props.disabled,
     'cursor-not-allowed': props.disabled
-  }
-])
+  })
+)
 </script>
 
 <template>
@@ -92,6 +92,7 @@ const theButtonStyle = computed(() => [
         class="opacity-0 absolute inset-0 -z-1"
         :multiple="maxSelectable > 1"
         :disabled="disabled"
+        :accept="accept"
         @change="emit('file-change', $event)"
       />
     </label>

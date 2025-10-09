@@ -18,7 +18,7 @@ export default defineConfig([
       'src/scripts/*',
       'src/extensions/core/*',
       'src/types/vue-shim.d.ts',
-      'src/types/comfyRegistryTypes.ts',
+      'packages/registry-types/src/comfyRegistryTypes.ts',
       'src/types/generatedManagerTypes.ts',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
@@ -52,8 +52,10 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'vite.config.mts',
+            'vite.electron.config.mts',
             'vite.types.config.mts',
-            'vitest.litegraph.config.ts'
+            'playwright.config.ts',
+            'playwright.i18n.config.ts'
           ]
         },
         tsConfigRootDir: import.meta.dirname,
@@ -106,6 +108,7 @@ export default defineConfig([
         }
       ],
       'unused-imports/no-unused-imports': 'error',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
@@ -222,6 +225,12 @@ export default defineConfig([
             '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
         }
       ]
+    }
+  },
+  {
+    files: ['**/*.{test,spec,stories}.ts', '**/*.stories.vue'],
+    rules: {
+      'no-console': 'off'
     }
   }
 ])

@@ -11,6 +11,7 @@ import type {
 import type { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 export interface RenderLink {
@@ -37,6 +38,17 @@ export interface RenderLink {
   readonly fromSlotIndex: number
   /** The reroute that the link is being connected from. */
   readonly fromReroute?: Reroute
+
+  /**
+   * Capability checks used for hit-testing and validation during drag.
+   * Implementations should return `false` when a connection is not possible
+   * rather than throwing.
+   */
+  canConnectToInput(node: NodeLike, input: INodeInputSlot): boolean
+  canConnectToOutput(node: NodeLike, output: INodeOutputSlot): boolean
+  /** Optional: only some links support validating subgraph IO or reroutes. */
+  canConnectToSubgraphInput?(input: SubgraphInput): boolean
+  canConnectToReroute?(reroute: Reroute): boolean
 
   connectToInput(
     node: LGraphNode,

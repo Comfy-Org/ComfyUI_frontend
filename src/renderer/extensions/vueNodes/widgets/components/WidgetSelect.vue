@@ -31,7 +31,6 @@ import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -84,6 +83,7 @@ const specDescriptor = computed<{
   const allowUpload =
     image_upload === true ||
     animated_image_upload === true ||
+    video_upload === true ||
     audio_upload === true
   return {
     kind,

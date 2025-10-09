@@ -15,7 +15,6 @@
       v-show="isEditing"
       ref="textareaRef"
       v-model="localValue"
-      :disabled="readonly"
       class="w-full min-h-[60px] absolute inset-0 resize-none"
       :pt="{
         root: {
@@ -23,6 +22,7 @@
           onBlur: handleBlur
         }
       }"
+      data-capture-wheel="true"
       @update:model-value="onChange"
       @click.stop
       @keydown.stop
@@ -44,7 +44,6 @@ import LODFallback from '../../components/LODFallback.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string>
   modelValue: string
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -69,7 +68,7 @@ const renderedHtml = computed(() => {
 
 // Methods
 const startEditing = async () => {
-  if (props.readonly || isEditing.value) return
+  if (isEditing.value) return
 
   isEditing.value = true
   await nextTick()

@@ -300,9 +300,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
         const durationValue = String(durationWidget.value)
         const modelValue = String(modelWidget.value)
-        console.log('modelValue', modelValue)
-        console.log('modeValue', modeValue)
-        console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
         if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
@@ -356,12 +353,14 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
         const durationValue = String(durationWidget.value)
         const modelValue = String(modelWidget.value)
-        console.log('modelValue', modelValue)
-        console.log('modeValue', modeValue)
-        console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (
+        if (modelValue.includes('v2-5-turbo')) {
+          if (durationValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (
           modelValue.includes('v2-1-master') ||
           modelValue.includes('v2-master')
         ) {
@@ -511,7 +510,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Pricing matrix from CSV data based on mode string content
-        if (modeValue.includes('v2-1-master')) {
+        if (modeValue.includes('v2-5-turbo')) {
+          if (modeValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (modeValue.includes('v2-1-master')) {
           if (modeValue.includes('10s')) {
             return '$2.80/Run' // price is the same as for v2-master model
           }
@@ -564,9 +568,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const model = String(modelWidget.value)
         const resolution = String(resolutionWidget.value).toLowerCase()
         const duration = String(durationWidget.value)
-        console.log('model', model)
-        console.log('resolution', resolution)
-        console.log('duration', duration)
 
         if (model.includes('ray-flash-2')) {
           if (duration.includes('5s')) {

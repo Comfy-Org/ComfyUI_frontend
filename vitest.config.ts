@@ -30,13 +30,15 @@ export default defineConfig({
       '**/dist/**',
       '**/cypress/**',
       '**/.{idea,git,cache,output,temp}/**',
-      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
-      'src/lib/litegraph/test/**'
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*'
     ],
     silent: 'passed-only'
   },
   resolve: {
     alias: {
+      '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
+      '@/utils/networkUtil':
+        '/packages/shared-frontend-utils/src/networkUtil.ts',
       '@': '/src'
     }
   },

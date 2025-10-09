@@ -1,16 +1,17 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/test/subgraph/fixtures/subgraphHelpers'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '../litegraph/subgraph/fixtures/subgraphHelpers'
 
 // Add mock for api at the top of the file
 vi.mock('@/scripts/api', () => ({

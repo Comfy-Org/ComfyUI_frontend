@@ -252,11 +252,15 @@ export default defineConfig({
 
   resolve: {
     alias: {
+      '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
+      '@/utils/networkUtil':
+        '/packages/shared-frontend-utils/src/networkUtil.ts',
       '@': '/src'
     }
   },
 
   optimizeDeps: {
-    exclude: ['@comfyorg/comfyui-electron-types']
+    exclude: ['@comfyorg/comfyui-electron-types'],
+    entries: ['index.html']
   }
 }) satisfies UserConfig as UserConfig

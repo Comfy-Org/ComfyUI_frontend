@@ -11,13 +11,11 @@ import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const ASSETS_ENDPOINT = '/assets'
-const MODELS_TAG = 'models'
-const MISSING_TAG = 'missing'
+const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
+const DEFAULT_LIMIT = 300
 
-/**
- * Input names that are eligible for asset browser
- */
-const WHITELISTED_INPUTS = new Set(['ckpt_name', 'lora_name', 'vae_name'])
+export const MODELS_TAG = 'models'
+export const MISSING_TAG = 'missing'
 
 /**
  * Validates asset response data using Zod schema
@@ -27,7 +25,9 @@ function validateAssetResponse(data: unknown): AssetResponse {
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
-  throw new Error(`Invalid asset response against zod schema:\n${error}`)
+  throw new Error(
+    `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
+  )
 }
 
 /**
@@ -45,7 +45,7 @@ function createAssetService() {
     const res = await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
-        `Unable to load ${context}: Server returned ${res.status}. Please try again.`
+        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -63,7 +63,7 @@ function createAssetService() {
    */
   async function getAssetModelFolders(): Promise<ModelFolder[]> {
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG}`,
+      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG}&limit=${DEFAULT_LIMIT}`,
       'model folders'
     )
 
@@ -92,7 +92,7 @@ function createAssetService() {
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${folder}`,
+      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${folder}&limit=${DEFAULT_LIMIT}`,
       `models for ${folder}`
     )
 
@@ -112,19 +112,12 @@ function createAssetService() {
   /**
    * Checks if a widget input should use the asset browser based on both input name and node comfyClass
    *
-   * @param inputName - The input name (e.g., 'ckpt_name', 'lora_name')
    * @param nodeType - The ComfyUI node comfyClass (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
    * @returns true if this input should use asset browser
    */
-  function isAssetBrowserEligible(
-    inputName: string,
-    nodeType: string
-  ): boolean {
+  function isAssetBrowserEligible(nodeType: string = ''): boolean {
     return (
-      // Must be an approved input name
-      WHITELISTED_INPUTS.has(inputName) &&
-      // Must be a registered node type
-      useModelToNodeStore().getRegisteredNodeTypes().has(nodeType)
+      !!nodeType && useModelToNodeStore().getRegisteredNodeTypes().has(nodeType)
     )
   }
 
@@ -150,7 +143,7 @@ function createAssetService() {
 
     // Fetch assets for this category using same API pattern as getAssetModels
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${category}`,
+      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${category}&limit=${DEFAULT_LIMIT}`,
       `assets for ${nodeType}`
     )
 
@@ -174,7 +167,7 @@ function createAssetService() {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
     if (!res.ok) {
       throw new Error(
-        `Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
+        `${EXPERIMENTAL_WARNING}Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -188,7 +181,26 @@ function createAssetService() {
     const error = result.error
       ? fromZodError(result.error)
       : 'Unknown validation error'
-    throw new Error(`Invalid asset response against zod schema:\n${error}`)
+    throw new Error(
+      `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
+    )
+  }
+
+  /**
+   * Gets assets filtered by a specific tag
+   *
+   * @param tag - The tag to filter by (e.g., 'models')
+   * @returns Promise<AssetItem[]> - Full asset objects filtered by tag, excluding missing assets
+   */
+  async function getAssetsByTag(tag: string): Promise<AssetItem[]> {
+    const data = await handleAssetRequest(
+      `${ASSETS_ENDPOINT}?include_tags=${tag}&limit=${DEFAULT_LIMIT}`,
+      `assets for tag ${tag}`
+    )
+
+    return (
+      data?.assets?.filter((asset) => !asset.tags.includes(MISSING_TAG)) ?? []
+    )
   }
 
   return {
@@ -196,7 +208,8 @@ function createAssetService() {
     getAssetModels,
     isAssetBrowserEligible,
     getAssetsForNodeType,
-    getAssetDetails
+    getAssetDetails,
+    getAssetsByTag
   }
 }
 

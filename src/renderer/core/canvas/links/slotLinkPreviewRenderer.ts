@@ -1,16 +1,13 @@
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  ReadOnlyPoint
-} from '@/lib/litegraph/src/interfaces'
+import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveConnectingLinkColor } from '@/lib/litegraph/src/utils/linkColors'
-import {
-  type SlotDragSource,
-  useSlotLinkDragState
-} from '@/renderer/core/canvas/links/slotLinkDragState'
+import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
+import { useSlotLinkDragState } from '@/renderer/core/canvas/links/slotLinkDragState'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 function buildContext(canvas: LGraphCanvas): LinkRenderContext {
   return {
@@ -39,57 +36,75 @@ export function attachSlotLinkPreviewRenderer(canvas: LGraphCanvas) {
     originalOnDrawForeground?.(ctx, area)
 
     const { state } = useSlotLinkDragState()
+    // If LiteGraph's own connector is active, let it handle rendering to avoid double-draw
+    if (canvas.linkConnector?.isConnecting) return
     if (!state.active || !state.source) return
 
-    const { pointer, source } = state
-    const start = source.position
-    const sourceSlot = resolveSourceSlot(canvas, source)
+    const { pointer } = state
 
     const linkRenderer = canvas.linkRenderer
     if (!linkRenderer) return
-
     const context = buildContext(canvas)
 
-    const from: ReadOnlyPoint = [start.x, start.y]
-    const to: ReadOnlyPoint = [pointer.canvas.x, pointer.canvas.y]
+    const renderLinks = createLinkConnectorAdapter()?.renderLinks
+    if (!renderLinks || renderLinks.length === 0) return
 
-    const startDir = source.direction ?? LinkDirection.RIGHT
-    const endDir = LinkDirection.CENTER
-
-    const colour = resolveConnectingLinkColor(sourceSlot?.type)
-
+    const to: Readonly<Point> = state.candidate?.compatible
+      ? [state.candidate.layout.position.x, state.candidate.layout.position.y]
+      : [pointer.canvas.x, pointer.canvas.y]
     ctx.save()
+    for (const link of renderLinks) {
+      const startDir = link.fromDirection ?? LinkDirection.RIGHT
+      const endDir = link.dragDirection ?? LinkDirection.CENTER
+      const colour = resolveConnectingLinkColor(link.fromSlot.type)
 
-    linkRenderer.renderDraggingLink(
-      ctx,
-      from,
-      to,
-      colour,
-      startDir,
-      endDir,
-      context
-    )
+      const fromPoint = resolveRenderLinkOrigin(link)
 
+      linkRenderer.renderDraggingLink(
+        ctx,
+        fromPoint,
+        to,
+        colour,
+        startDir,
+        endDir,
+        context
+      )
+    }
     ctx.restore()
   }
 
   canvas.onDrawForeground = patched
 }
 
-function resolveSourceSlot(
-  canvas: LGraphCanvas,
-  source: SlotDragSource
-): INodeInputSlot | INodeOutputSlot | undefined {
-  const graph = canvas.graph
-  if (!graph) return undefined
+function resolveRenderLinkOrigin(link: RenderLink): Readonly<Point> {
+  if (link.fromReroute) {
+    const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
+    if (rerouteLayout) {
+      return [rerouteLayout.position.x, rerouteLayout.position.y]
+    }
 
-  const nodeId = Number(source.nodeId)
-  if (!Number.isFinite(nodeId)) return undefined
+    const [x, y] = link.fromReroute.pos
+    return [x, y]
+  }
 
-  const node = graph.getNodeById(nodeId)
-  if (!node) return undefined
+  const nodeId = getRenderLinkNodeId(link)
+  if (nodeId != null) {
+    const isInputFrom = link.toType === 'output'
+    const key = getSlotKey(String(nodeId), link.fromSlotIndex, isInputFrom)
+    const layout = layoutStore.getSlotLayout(key)
+    if (layout) {
+      return [layout.position.x, layout.position.y]
+    }
+  }
 
-  return source.type === 'output'
-    ? node.outputs?.[source.slotIndex]
-    : node.inputs?.[source.slotIndex]
+  return link.fromPos
+}
+
+function getRenderLinkNodeId(link: RenderLink): number | null {
+  const node = link.node
+  if (typeof node === 'object' && node !== null && 'id' in node) {
+    const maybeId = node.id
+    if (typeof maybeId === 'number') return maybeId
+  }
+  return null
 }

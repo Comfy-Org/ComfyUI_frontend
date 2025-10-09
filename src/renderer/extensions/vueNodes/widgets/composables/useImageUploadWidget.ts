@@ -10,7 +10,7 @@ import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { fileNameMappingService } from '@/services/fileNameMappingService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
-import { createAnnotatedPath } from '@/utils/formatUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
@@ -117,7 +117,8 @@ export const useImageUploadWidget = () => {
       'image',
       () => openFileSelection(),
       {
-        serialize: false
+        serialize: false,
+        canvasOnly: true
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')
@@ -131,7 +132,7 @@ export const useImageUploadWidget = () => {
     }
 
     // On load if we have a value then render the image
-    // The value isnt set immediately so we need to wait a moment
+    // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {

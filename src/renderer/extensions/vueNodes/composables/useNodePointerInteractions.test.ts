@@ -4,10 +4,12 @@ import { nextTick, ref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 
+const forwardEventToCanvasMock = vi.fn()
+
 // Mock the dependencies
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
   useCanvasInteractions: () => ({
-    forwardEventToCanvas: vi.fn(),
+    forwardEventToCanvas: forwardEventToCanvasMock,
     shouldHandleNodePointerEvents: ref(true)
   })
 }))
@@ -69,6 +71,7 @@ const createMouseEvent = (
 describe('useNodePointerInteractions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    forwardEventToCanvasMock.mockClear()
   })
 
   it('should only start drag on left-click', async () => {
@@ -98,6 +101,34 @@ describe('useNodePointerInteractions', () => {
       mockNodeData,
       false // wasDragging = false (same position)
     )
+  })
+
+  it('forwards middle mouse interactions to the canvas', () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnPointerUp = vi.fn()
+
+    const { pointerHandlers } = useNodePointerInteractions(
+      ref(mockNodeData),
+      mockOnPointerUp
+    )
+
+    const middlePointerDown = createPointerEvent('pointerdown', { button: 1 })
+    pointerHandlers.onPointerdown(middlePointerDown)
+    expect(forwardEventToCanvasMock).toHaveBeenCalledWith(middlePointerDown)
+
+    forwardEventToCanvasMock.mockClear()
+
+    const middlePointerMove = createPointerEvent('pointermove', { buttons: 4 })
+    pointerHandlers.onPointermove(middlePointerMove)
+    expect(forwardEventToCanvasMock).toHaveBeenCalledWith(middlePointerMove)
+
+    forwardEventToCanvasMock.mockClear()
+
+    const middlePointerUp = createPointerEvent('pointerup', { button: 1 })
+    pointerHandlers.onPointerup(middlePointerUp)
+    expect(forwardEventToCanvasMock).toHaveBeenCalledWith(middlePointerUp)
+
+    expect(mockOnPointerUp).not.toHaveBeenCalled()
   })
 
   it('should distinguish drag from click based on distance threshold', async () => {

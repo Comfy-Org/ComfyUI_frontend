@@ -13,11 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -69,7 +67,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "[auto-fix] Apply ESLint and Prettier fixes"
+          git commit -m "[automated] Apply ESLint and Prettier fixes"
           git push
 
       - name: Final validation

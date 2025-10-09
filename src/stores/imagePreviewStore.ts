@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,
@@ -38,7 +37,7 @@ interface SetOutputOptions {
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  const { nodeIdToNodeLocatorId } = useWorkflowStore()
+  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
 
@@ -63,11 +62,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function getNodeOutputs(
     node: LGraphNode
   ): ExecutedWsMessage['output'] | undefined {
-    return app.nodeOutputs[nodeIdToNodeLocatorId(node.id)]
+    return app.nodeOutputs[nodeToNodeLocatorId(node)]
   }
 
   function getNodePreviews(node: LGraphNode): string[] | undefined {
-    return app.nodePreviewImages[nodeIdToNodeLocatorId(node.id)]
+    return app.nodePreviewImages[nodeToNodeLocatorId(node)]
   }
 
   /**
@@ -164,10 +163,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!filenames || !node) return
 
-    const locatorId =
-      node.graph instanceof Subgraph
-        ? nodeIdToNodeLocatorId(node.id, node.graph ?? undefined)
-        : `${node.id}`
+    const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
     if (typeof filenames === 'string') {
       setOutputsByLocatorId(

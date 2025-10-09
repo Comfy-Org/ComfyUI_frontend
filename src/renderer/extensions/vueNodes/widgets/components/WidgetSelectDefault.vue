@@ -4,12 +4,12 @@
       v-model="localValue"
       :options="selectOptions"
       v-bind="combinedProps"
-      :disabled="readonly"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       size="small"
       :pt="{
         option: 'text-xs'
       }"
+      data-capture-wheel="true"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>
@@ -34,7 +34,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

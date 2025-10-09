@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -30,6 +31,15 @@ export function useCanvasInteractions() {
    * when appropriate (e.g., Ctrl+wheel for zoom in standard mode)
    */
   const handleWheel = (event: WheelEvent) => {
+    // Check if the wheel event is from an element that wants to capture wheel events
+    const target = event.target as HTMLElement
+    const captureElement = target?.closest('[data-capture-wheel="true"]')
+
+    if (captureElement) {
+      // Element wants to capture wheel events, don't forward to canvas
+      return
+    }
+
     // In standard mode, Ctrl+wheel should go to canvas for zoom
     if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
       forwardEventToCanvas(event)
@@ -50,6 +60,11 @@ export function useCanvasInteractions() {
    * be forwarded to canvas (e.g., space+drag for panning)
    */
   const handlePointer = (event: PointerEvent) => {
+    if (isMiddlePointerInput(event)) {
+      forwardEventToCanvas(event)
+      return
+    }
+
     // Check if canvas exists using established pattern
     const canvas = getCanvas()
     if (!canvas) return
@@ -72,6 +87,15 @@ export function useCanvasInteractions() {
   const forwardEventToCanvas = (
     event: WheelEvent | PointerEvent | MouseEvent
   ) => {
+    // Check if the wheel event is from an element that wants to capture wheel events
+    const target = event.target as HTMLElement
+    const captureElement = target?.closest('[data-capture-wheel="true"]')
+
+    if (captureElement) {
+      // Element wants to capture wheel events, don't forward to canvas
+      return
+    }
+
     const canvasEl = app.canvas?.canvas
     if (!canvasEl) return
     event.preventDefault()

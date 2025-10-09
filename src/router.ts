@@ -1,5 +1,5 @@
-import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import {
+  type RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
   createWebHistory
@@ -49,18 +49,6 @@ function getBasePath(): string {
 
 const basePath = getBasePath()
 
-const guardElectronAccess = (
-  _to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) => {
-  if (isElectron()) {
-    next()
-  } else {
-    next('/')
-  }
-}
-
 const router = createRouter({
   history: isFileProtocol
     ? createWebHashHistory()
@@ -94,72 +82,6 @@ const router = createRouter({
           path: 'user-select',
           name: 'UserSelectView',
           component: () => import('@/views/UserSelectView.vue')
-        },
-        {
-          path: 'server-start',
-          name: 'ServerStartView',
-          component: () => import('@/views/ServerStartView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'install',
-          name: 'InstallView',
-          component: () => import('@/views/InstallView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'welcome',
-          name: 'WelcomeView',
-          component: () => import('@/views/WelcomeView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'not-supported',
-          name: 'NotSupportedView',
-          component: () => import('@/views/NotSupportedView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'download-git',
-          name: 'DownloadGitView',
-          component: () => import('@/views/DownloadGitView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'manual-configuration',
-          name: 'ManualConfigurationView',
-          component: () => import('@/views/ManualConfigurationView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: '/metrics-consent',
-          name: 'MetricsConsentView',
-          component: () => import('@/views/MetricsConsentView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'desktop-start',
-          name: 'DesktopStartView',
-          component: () => import('@/views/DesktopStartView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'maintenance',
-          name: 'MaintenanceView',
-          component: () => import('@/views/MaintenanceView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'desktop-update',
-          name: 'DesktopUpdateView',
-          component: () => import('@/views/DesktopUpdateView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'desktop-dialog/:dialogId',
-          name: 'DesktopDialogView',
-          component: () => import('@/views/DesktopDialogView.vue'),
-          beforeEnter: guardElectronAccess
         }
       ]
     },

@@ -36,7 +36,7 @@ const searchQuery = defineModel<string>('searchQuery')
 
 <template>
   <div
-    class="w-103 h-[640px] pt-4 bg-white dark-theme:bg-charcoal-800 rounded-lg outline outline-offset-[-1px] outline-sand-100 dark-theme:outline-zinc-800 flex flex-col"
+    class="w-103 max-h-[640px] pt-4 bg-node-component-surface rounded-lg outline outline-offset-[-1px] outline-node-component-border flex flex-col"
   >
     <!-- Filter -->
     <FormDropdownMenuFilter
@@ -67,7 +67,7 @@ const searchQuery = defineModel<string>('searchQuery')
         "
       >
         <div
-          class="absolute top-0 inset-x-3 h-5 bg-gradient-to-b from-white dark-theme:from-neutral-900 to-transparent pointer-events-none z-10"
+          class="absolute top-0 inset-x-3 h-5 bg-gradient-to-b from-backdrop to-transparent pointer-events-none z-10"
         />
         <div
           v-if="items.length === 0"
@@ -84,7 +84,7 @@ const searchQuery = defineModel<string>('searchQuery')
           :key="item.id"
           :index="index"
           :selected="isSelected(item, index)"
-          :image-src="item.imageSrc"
+          :media-src="item.mediaSrc"
           :name="item.name"
           :metadata="item.metadata"
           :layout="layoutMode"

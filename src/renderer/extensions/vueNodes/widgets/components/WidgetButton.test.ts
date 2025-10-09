@@ -50,16 +50,6 @@ describe('WidgetButton Interactions', () => {
       expect(mockCallback).toHaveBeenCalledTimes(1)
     })
 
-    it('does not call callback when button is readonly', async () => {
-      const mockCallback = vi.fn()
-      const widget = createMockWidget({}, mockCallback)
-      const wrapper = mountComponent(widget, true)
-
-      await clickButton(wrapper)
-
-      expect(mockCallback).not.toHaveBeenCalled()
-    })
-
     it('handles missing callback gracefully', async () => {
       const widget = createMockWidget({}, undefined)
       const wrapper = mountComponent(widget)
@@ -75,7 +65,6 @@ describe('WidgetButton Interactions', () => {
 
       const numClicks = 8
 
-      await clickButton(wrapper)
       for (let i = 0; i < numClicks; i++) {
         await clickButton(wrapper)
       }
@@ -131,26 +120,6 @@ describe('WidgetButton Interactions', () => {
       expect(button.props('label')).toBe('Custom Label')
       expect(button.props('icon')).toBe('pi pi-check')
       expect(button.props('severity')).toBe('success')
-    })
-  })
-
-  describe('Readonly Mode', () => {
-    it('disables button when readonly', () => {
-      const widget = createMockWidget()
-      const wrapper = mountComponent(widget, true)
-
-      // Test the actual DOM button element instead of the Vue component props
-      const buttonElement = wrapper.find('button')
-      expect(buttonElement.element.disabled).toBe(true)
-    })
-
-    it('enables button when not readonly', () => {
-      const widget = createMockWidget()
-      const wrapper = mountComponent(widget, false)
-
-      // Test the actual DOM button element instead of the Vue component props
-      const buttonElement = wrapper.find('button')
-      expect(buttonElement.element.disabled).toBe(false)
     })
   })
 

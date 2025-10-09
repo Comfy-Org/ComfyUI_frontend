@@ -17,19 +17,17 @@ import {
   isSizeEqual
 } from '@/renderer/core/layout/utils/geometry'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
+import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
 const pendingNodes = new Set<string>()
-let rafId: number | null = null
+const raf = createRafBatch(() => {
+  flushScheduledSlotLayoutSync()
+})
 
 function scheduleSlotLayoutSync(nodeId: string) {
   pendingNodes.add(nodeId)
-  if (rafId == null) {
-    rafId = requestAnimationFrame(() => {
-      rafId = null
-      flushScheduledSlotLayoutSync()
-    })
-  }
+  raf.schedule()
 }
 
 function flushScheduledSlotLayoutSync() {

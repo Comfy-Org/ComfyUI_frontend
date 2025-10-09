@@ -95,7 +95,8 @@
     "clearWorkflow": "清除工作流程",
     "deleteWorkflow": "刪除工作流程",
     "duplicate": "複製",
-    "enterNewName": "輸入新名稱"
+    "enterNewName": "輸入新名稱",
+    "deleteBlueprint": "刪除藍圖"
   },
   "chatHistory": {
     "cancelEdit": "取消",
@@ -150,7 +151,38 @@
     "Search": "搜尋",
     "Shapes": "形狀",
     "Title": "標題",
-    "Unpin": "取消釘選"
+    "Unpin": "取消釘選",
+    "Open in Mask Editor": "在遮罩編輯器中開啟",
+    "Open Image": "開啟圖片",
+    "Copy Image": "複製圖片",
+    "Save Image": "儲存圖片",
+    "Rename": "重新命名",
+    "Copy": "複製",
+    "Duplicate": "複製",
+    "Paste": "貼上",
+    "Node Info": "節點資訊",
+    "Adjust Size": "調整大小",
+    "Minimize Node": "最小化節點",
+    "Expand Node": "展開節點",
+    "Shape": "形狀",
+    "Color": "顏色",
+    "Add Subgraph to Library": "將子圖加入程式庫",
+    "Unpack Subgraph": "解包子圖",
+    "Edit Subgraph Widgets": "編輯子圖小工具",
+    "Convert to Subgraph": "轉換為子圖",
+    "Align Selected To": "對齊選取項目至",
+    "Distribute Nodes": "分佈節點",
+    "Remove Bypass": "移除繞過",
+    "Run Branch": "執行分支",
+    "Delete": "刪除",
+    "Top": "頂部",
+    "Bottom": "底部",
+    "Left": "左側",
+    "Right": "右側",
+    "Horizontal": "水平",
+    "Vertical": "垂直",
+    "new": "新",
+    "deprecated": "已棄用"
   },
   "credits": {
     "accountInitialized": "帳戶已初始化",
@@ -418,7 +450,39 @@
     "versionMismatchWarning": "版本相容性警告",
     "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
     "videoFailedToLoad": "無法載入影片",
-    "workflow": "工作流程"
+    "workflow": "工作流程",
+    "downloadImage": "下載圖片",
+    "downloadVideo": "下載影片",
+    "editOrMaskImage": "編輯或遮罩圖片",
+    "removeImage": "移除圖片",
+    "removeVideo": "移除影片",
+    "viewImageOfTotal": "檢視第 {index} 張圖片（共 {total} 張）",
+    "viewVideoOfTotal": "檢視第 {index} 個影片（共 {total} 個）",
+    "imagePreview": "圖片預覽 - 使用方向鍵在圖片間導航",
+    "videoPreview": "影片預覽 - 使用方向鍵在影片間導航",
+    "galleryImage": "圖庫圖片",
+    "galleryThumbnail": "圖庫縮圖",
+    "errorLoadingImage": "載入圖片時發生錯誤",
+    "errorLoadingVideo": "載入影片時發生錯誤",
+    "failedToDownloadImage": "下載圖片失敗",
+    "failedToDownloadVideo": "下載影片失敗",
+    "calculatingDimensions": "計算尺寸中",
+    "logoAlt": "ComfyUI 標誌",
+    "refreshNode": "重新整理節點",
+    "info": "節點資訊",
+    "bookmark": "儲存至程式庫",
+    "moreOptions": "更多選項",
+    "search": "搜尋",
+    "warning": "警告",
+    "multiSelectDropdown": "多選下拉式選單",
+    "singleSelectDropdown": "單選下拉式選單",
+    "seeTutorial": "查看教學",
+    "nodeRenderError": "節點渲染錯誤",
+    "nodeContentError": "節點內容錯誤",
+    "nodeHeaderError": "節點標頭錯誤",
+    "nodeSlotsError": "節點插槽錯誤",
+    "nodeWidgetsError": "節點小工具錯誤",
+    "frameNodes": "框架節點"
   },
   "graphCanvasMenu": {
     "fitView": "適合視窗",
@@ -428,7 +492,13 @@
     "toggleLinkVisibility": "切換連結顯示",
     "toggleMinimap": "切換小地圖",
     "zoomIn": "放大",
-    "zoomOut": "縮小"
+    "zoomOut": "縮小",
+    "select": "選取",
+    "hand": "手形",
+    "zoomOptions": "縮放選項",
+    "focusMode": "專注模式",
+    "hideLinks": "隱藏連結",
+    "showLinks": "顯示連結"
   },
   "groupNode": {
     "create": "建立群組節點",
@@ -446,7 +516,8 @@
     "openDevTools": "開啟開發者工具",
     "reinstall": "重新安裝",
     "updateAvailable": "有更新",
-    "whatsNew": "有什麼新功能？"
+    "whatsNew": "有什麼新功能？",
+    "managerExtension": "管理器擴充功能"
   },
   "icon": {
     "bookmark": "書籤",
@@ -546,7 +617,28 @@
     },
     "systemLocations": "系統位置",
     "unhandledError": "未知錯誤",
-    "updateConsent": "您先前已選擇回報當機。現在我們會追蹤事件型統計資料，以協助找出錯誤並改進應用程式。不會收集任何可識別個人身分的資訊。"
+    "updateConsent": "您先前已選擇回報當機。現在我們會追蹤事件型統計資料，以協助找出錯誤並改進應用程式。不會收集任何可識別個人身分的資訊。",
+    "gpuPicker": {
+      "title": "選擇您的硬體設定",
+      "recommended": "建議",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "cpuSubtitle": "CPU 模式",
+      "manualSubtitle": "手動設定",
+      "appleMetalDescription": "利用您 Mac 的 GPU 提升速度並獲得更好的整體體驗",
+      "nvidiaDescription": "使用您的 NVIDIA GPU 與 CUDA 加速以獲得最佳效能。",
+      "cpuDescription": "當 GPU 加速不可用時，使用 CPU 模式以取得相容性",
+      "manualDescription": "為進階設定或不支援的硬體手動設定 ComfyUI"
+    },
+    "locationPicker": {
+      "title": "選擇 ComfyUI 安裝位置",
+      "subtitle": "為 ComfyUI 的檔案選擇一個資料夾。我們也會自動在該處設定 Python。",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "選取現有的 ComfyUI 安裝（選填）",
+      "migrateFromExisting": "從現有安裝遷移",
+      "migrateDescription": "從先前的 ComfyUI 安裝複製或連結您現有的模型、自訂節點與設定。",
+      "chooseDownloadServers": "手動選擇下載伺服器",
+      "downloadServersDescription": "根據您的位置選擇特定的鏡像伺服器來下載 Python、PyPI 套件與 PyTorch。"
+    }
   },
   "issueReport": {
     "helpFix": "協助修復此問題"
@@ -586,12 +678,33 @@
     "switchingMaterialMode": "正在切換材質模式...",
     "upDirection": "上方方向",
     "uploadBackgroundImage": "上傳背景圖片",
-    "uploadTexture": "上傳材質貼圖"
+    "uploadTexture": "上傳材質貼圖",
+    "upDirections": {
+      "original": "原始"
+    },
+    "cameraType": {
+      "perspective": "透視",
+      "orthographic": "正交"
+    },
+    "viewer": {
+      "title": "3D 檢視器（測試版）",
+      "apply": "套用",
+      "cancel": "取消",
+      "cameraType": "相機類型",
+      "sceneSettings": "場景設定",
+      "cameraSettings": "相機設定",
+      "lightSettings": "燈光設定",
+      "exportSettings": "匯出設定",
+      "modelSettings": "模型設定"
+    },
+    "openIn3DViewer": "在 3D 檢視器中開啟"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "需要 ComfyUI {version}：",
     "outdatedVersion": "部分節點需要較新版本的 ComfyUI（目前版本：{version}）。請更新以使用所有節點。",
-    "outdatedVersionGeneric": "部分節點需要較新版本的 ComfyUI。請更新以使用所有節點。"
+    "outdatedVersionGeneric": "部分節點需要較新版本的 ComfyUI。請更新以使用所有節點。",
+    "missingNodesTitle": "部分節點缺少",
+    "missingNodesDescription": "載入圖形時，找不到以下節點類型。\n如果您安裝的版本較舊，找不到該節點類型，也可能發生這種情況。"
   },
   "maintenance": {
     "None": "無",
@@ -661,7 +774,9 @@
       "deleted": "已刪除",
       "flagged": "已標記",
       "pending": "待處理",
-      "unknown": "未知"
+      "unknown": "未知",
+      "conflicting": "衝突",
+      "importFailed": "安裝錯誤"
     },
     "title": "自訂節點管理器",
     "totalNodes": "節點總數",
@@ -672,7 +787,52 @@
     "uninstalling": "正在解除安裝",
     "update": "更新",
     "updatingAllPacks": "正在更新所有套件",
-    "version": "版本"
+    "version": "版本",
+    "failedToInstall": "安裝失敗",
+    "installError": "安裝錯誤",
+    "importFailedGenericError": "套件匯入失敗。請查看主控台以取得更多詳細資訊。",
+    "applyChanges": "套用變更",
+    "clickToFinishSetup": "點擊",
+    "toFinishSetup": "完成設定",
+    "restartingBackend": "正在重新啟動後端以套用變更...",
+    "extensionsSuccessfullyInstalled": "擴充功能已成功安裝並可使用！",
+    "installingDependencies": "正在安裝相依套件...",
+    "updateSelected": "更新所選項目",
+    "updateAll": "全部更新",
+    "disabledNodesWontUpdate": "已停用的節點將不會更新",
+    "enablePackToChangeVersion": "啟用此套件以變更版本",
+    "gettingInfo": "正在取得資訊...",
+    "allMissingNodesInstalled": "所有缺少的節點已成功安裝",
+    "mixedSelectionMessage": "無法對混合選取執行批次操作",
+    "notAvailable": "不可用",
+    "conflicts": {
+      "title": "偵測到節點套件問題！",
+      "description": "我們偵測到部分擴充功能與新版 ComfyUI 之間存在衝突。更新後，依賴這些擴充功能的工作流程可能會失效。",
+      "info": "若您繼續更新，衝突的擴充功能將自動停用。您可以隨時在 ComfyUI 管理器中查看和管理它們。",
+      "extensionAtRisk": "有風險的擴充功能",
+      "conflicts": "衝突",
+      "importFailedExtensions": "匯入失敗的擴充功能",
+      "conflictInfoTitle": "為什麼會發生這種情況？",
+      "installAnyway": "仍然安裝",
+      "enableAnyway": "仍然啟用",
+      "understood": "了解",
+      "warningBanner": {
+        "title": "部分擴充功能因與您目前的設定不相容而被停用",
+        "message": "這些擴充功能需要與您目前設定不同的系統套件版本。安裝它們可能會覆蓋核心相依套件，並影響其他擴充功能或工作流程。",
+        "button": "了解更多..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "ComfyUI 版本不符（目前：{current}，需要：{required}）",
+        "frontend_version": "前端版本不符（目前：{current}，需要：{required}）",
+        "os": "不支援的作業系統（目前：{current}，需要：{required}）",
+        "accelerator": "不支援的 GPU/加速器（可用：{current}，需要：{required}）",
+        "generic": "相容性問題（目前：{current}，需要：{required}）",
+        "banned": "此套件因安全原因被禁用",
+        "pending": "安全性驗證待處理 - 無法驗證相容性",
+        "import_failed": "匯入失敗"
+      },
+      "warningTooltip": "此套件可能與您目前的環境存在相容性問題"
+    }
   },
   "maskEditor": {
     "Apply to Whole Image": "套用至整張圖片",
@@ -726,7 +886,8 @@
     "settings": "設定",
     "showMenu": "顯示選單",
     "theme": "主題",
-    "toggleBottomPanel": "切換下方面板"
+    "toggleBottomPanel": "切換下方面板",
+    "queue": "佇列面板"
   },
   "menuLabels": {
     "About ComfyUI": "關於 ComfyUI",
@@ -831,7 +992,23 @@
     "Workflow": "工作流程",
     "Workflows": "工作流程",
     "Zoom In": "放大",
-    "Zoom Out": "縮小"
+    "Zoom Out": "縮小",
+    "Open 3D Viewer (Beta) for Selected Node": "為選取節點開啟 3D 檢視器（測試版）",
+    "Zoom to fit": "縮放至適合大小",
+    "Lock Canvas": "鎖定畫布",
+    "Exit Subgraph": "退出子圖",
+    "Install Missing": "安裝缺少項目",
+    "Publish": "發佈",
+    "Canvas Performance": "畫布效能",
+    "Help Center": "幫助中心",
+    "Focus Mode": "專注模式",
+    "Model Library": "模型庫",
+    "Node Library": "節點庫",
+    "Queue Panel": "佇列面板",
+    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
+    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
+    "sideToolbar_queue": "sideToolbar.queue",
+    "sideToolbar_workflows": "sideToolbar.workflows"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不要再顯示此訊息",
@@ -948,7 +1125,10 @@
     "executeButton": {
       "disabledTooltip": "未選取任何輸出節點",
       "tooltip": "執行至選取的輸出節點（以橙色邊框標示）"
-    }
+    },
+    "Set Group Nodes to Never": "將群組節點設為永不",
+    "Bypass Group Nodes": "繞過群組節點",
+    "Set Group Nodes to Always": "將群組節點設為總是"
   },
   "serverConfig": {
     "modifiedConfigs": "您已修改以下伺服器設定。請重新啟動以套用變更。",
@@ -1095,7 +1275,14 @@
     },
     "reportIssue": "回報問題",
     "showTerminal": "顯示終端機",
-    "troubleshoot": "疑難排解"
+    "troubleshoot": "疑難排解",
+    "title": "正在啟動 ComfyUI",
+    "copySelectionTooltip": "複製所選內容",
+    "copyAllTooltip": "複製全部",
+    "errorMessage": "無法啟動 ComfyUI Desktop",
+    "installation": {
+      "title": "正在安裝 ComfyUI"
+    }
   },
   "settingsCategories": {
     "3D": "3D",
@@ -1149,7 +1336,8 @@
     "Validation": "驗證",
     "Vue Nodes": "Vue 節點",
     "Window": "視窗",
-    "Workflow": "工作流程"
+    "Workflow": "工作流程",
+    "3DViewer": "3DViewer"
   },
   "sideToolbar": {
     "browseTemplates": "瀏覽範例模板",
@@ -1209,11 +1397,33 @@
         "open": "開啟"
       }
     },
-    "workflows": "工作流程"
+    "workflows": "工作流程",
+    "themeToggle": "切換主題",
+    "templates": "範本",
+    "labels": {
+      "queue": "佇列",
+      "nodes": "節點",
+      "models": "模型",
+      "workflows": "工作流程",
+      "templates": "範本"
+    }
   },
   "subgraphStore": {
     "blueprintName": "子圖名稱",
-    "saveBlueprint": "將子圖儲存到資料庫"
+    "saveBlueprint": "將子圖儲存到資料庫",
+    "confirmDeleteTitle": "刪除藍圖？",
+    "confirmDelete": "此操作將永久從您的程式庫中移除藍圖",
+    "overwriteBlueprintTitle": "覆蓋現有藍圖？",
+    "overwriteBlueprint": "儲存將以您的變更覆蓋目前的藍圖",
+    "publish": "發佈子圖",
+    "publishSuccess": "已儲存至節點庫",
+    "publishSuccessMessage": "您可以在節點庫的「子圖藍圖」中找到您的子圖藍圖",
+    "loadFailure": "載入子圖藍圖失敗",
+    "shown": "在節點上顯示",
+    "showAll": "顯示全部",
+    "hidden": "隱藏 / 巢狀參數",
+    "hideAll": "全部隱藏",
+    "showRecommended": "顯示建議的小工具"
   },
   "tabMenu": {
     "addToBookmarks": "加入書籤",
@@ -1240,7 +1450,9 @@
       "LLM API": "LLM API",
       "Upscaling": "放大",
       "Video": "影片",
-      "Video API": "影片 API"
+      "Video API": "影片 API",
+      "GettingStarted": "入門指南",
+      "LLMs": "LLMs"
     },
     "template": {
       "3D": {
@@ -1546,7 +1758,27 @@
         "api_veo2_i2v": "使用 Google Veo2 API 由圖片產生影片。"
       }
     },
-    "title": "從範本開始"
+    "title": "從範本開始",
+    "loadingMore": "載入更多範本...",
+    "searchPlaceholder": "搜尋範本...",
+    "categories": "分類",
+    "resetFilters": "清除篩選",
+    "sorting": "排序依據",
+    "activeFilters": "篩選條件：",
+    "loading": "正在載入範本...",
+    "noResults": "找不到範本",
+    "noResultsHint": "請嘗試調整您的搜尋或篩選條件",
+    "modelFilter": "模型篩選",
+    "modelsSelected": "{count} 個模型",
+    "useCasesSelected": "{count} 個使用案例",
+    "licensesSelected": "{count} 個授權",
+    "resultsCount": "顯示 {count} 個範本（共 {total} 個）",
+    "sort": {
+      "recommended": "推薦",
+      "alphabetical": "A → Z",
+      "newest": "最新",
+      "searchPlaceholder": "搜尋..."
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "無法建立子圖",
@@ -1584,7 +1816,8 @@
     "unauthorizedDomain": "您的網域 {domain} 未被授權使用此服務。請聯絡 {email} 以將您的網域加入白名單。",
     "updateRequested": "已請求更新",
     "useApiKeyTip": "提示：無法正常登入？請使用 Comfy API 金鑰選項。",
-    "userNotAuthenticated": "使用者未驗證"
+    "userNotAuthenticated": "使用者未驗證",
+    "failedToInitializeLoad3dViewer": "無法初始化 3D 檢視器"
   },
   "userSelect": {
     "enterUsername": "輸入用戶名稱",
@@ -1617,7 +1850,8 @@
     },
     "personalDataConsentRequired": "您必須同意我們處理您的個人資料。",
     "prefix": "必須以 {prefix} 開頭",
-    "required": "必填"
+    "required": "必填",
+    "descriptionRequired": "說明為必填項目"
   },
   "versionMismatchWarning": {
     "dismiss": "關閉",
@@ -1676,5 +1910,94 @@
   "cloudSurvey_steps_familiarity": "您對 ComfyUI 的熟悉程度如何？",
   "cloudSurvey_steps_purpose": "您使用 ComfyUI 的主要用途是？",
   "cloudSurvey_steps_industry": "您的主要行業是什麼？",
-  "cloudSurvey_steps_making": "您計劃創作哪些內容？"
+  "cloudSurvey_steps_making": "您計劃創作哪些內容？",
+  "desktopStart": {
+    "initialising": "初始化中..."
+  },
+  "shape": {
+    "default": "預設",
+    "round": "圓角",
+    "CARD": "卡片",
+    "circle": "圓形",
+    "arrow": "箭頭",
+    "box": "方框"
+  },
+  "zoomControls": {
+    "label": "縮放控制",
+    "zoomToFit": "縮放至適合大小",
+    "showMinimap": "顯示小地圖",
+    "hideMinimap": "隱藏小地圖"
+  },
+  "commands": {
+    "runWorkflow": "執行工作流程",
+    "runWorkflowFront": "執行工作流程（在前方排隊）",
+    "run": "執行",
+    "execute": "執行",
+    "interrupt": "取消目前執行",
+    "refresh": "重新整理節點定義",
+    "clipspace": "開啟 Clipspace",
+    "resetView": "重設畫布視圖",
+    "clear": "清除工作流程",
+    "toggleBottomPanel": "切換底部面板",
+    "theme": "主題",
+    "dark": "深色",
+    "light": "淺色",
+    "manageExtensions": "管理擴充功能",
+    "settings": "設定",
+    "help": "說明",
+    "queue": "佇列面板"
+  },
+  "widgets": {
+    "selectModel": "選擇模型",
+    "uploadSelect": {
+      "placeholder": "選擇...",
+      "placeholderImage": "選擇圖片...",
+      "placeholderAudio": "選擇音訊...",
+      "placeholderVideo": "選擇影片...",
+      "placeholderModel": "選擇模型...",
+      "placeholderUnknown": "選擇媒體..."
+    }
+  },
+  "shortcuts": {
+    "essentials": "基本功能",
+    "viewControls": "檢視控制",
+    "manageShortcuts": "管理快捷鍵",
+    "noKeybinding": "無快捷鍵綁定",
+    "keyboardShortcuts": "鍵盤快捷鍵",
+    "subcategories": {
+      "workflow": "工作流程",
+      "node": "節點",
+      "queue": "佇列",
+      "view": "檢視",
+      "panelControls": "面板控制"
+    }
+  },
+  "minimap": {
+    "nodeColors": "節點顏色",
+    "showLinks": "顯示連結",
+    "showGroups": "顯示框架/群組",
+    "renderBypassState": "渲染繞過狀態",
+    "renderErrorState": "渲染錯誤狀態"
+  },
+  "assetBrowser": {
+    "assets": "資產",
+    "browseAssets": "瀏覽資產",
+    "noAssetsFound": "找不到資產",
+    "tryAdjustingFilters": "請嘗試調整您的搜尋或篩選條件",
+    "loadingModels": "正在載入 {type}...",
+    "connectionError": "請檢查您的連線並重試",
+    "failedToCreateNode": "無法建立節點。請重試或查看主控台以取得詳細資訊。",
+    "noModelsInFolder": "此資料夾中沒有可用的 {type}",
+    "searchAssetsPlaceholder": "搜尋資產...",
+    "allModels": "所有模型",
+    "allCategory": "所有 {category}",
+    "unknown": "未知",
+    "fileFormats": "檔案格式",
+    "baseModels": "基礎模型",
+    "sortBy": "排序依據",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "sortRecent": "最近",
+    "sortPopular": "熱門"
+  }
 }

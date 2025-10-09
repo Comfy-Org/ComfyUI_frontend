@@ -106,7 +106,8 @@ app.registerExtension({
       'button',
       'waiting for camera...',
       'capture',
-      capture
+      capture,
+      { canvasOnly: true }
     )
     btn.disabled = true
     btn.serializeValue = () => undefined
@@ -146,7 +147,7 @@ app.registerExtension({
     // @ts-expect-error fixme ts strict error
     node[WEBCAM_READY].then((v) => {
       video = v
-      // If width isnt specified then use video output resolution
+      // If width isn't specified then use video output resolution
       // @ts-expect-error fixme ts strict error
       if (!w.value) {
         // @ts-expect-error fixme ts strict error

@@ -18,8 +18,13 @@ const config: KnipConfig = {
     'packages/design-system': {
       entry: ['src/**/*.ts'],
       project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
+    },
+    'packages/registry-types': {
+      entry: ['src/comfyRegistryTypes.ts'],
+      project: ['src/**/*.{js,ts}']
     }
   },
+  ignoreBinaries: ['python3'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
@@ -33,7 +38,7 @@ const config: KnipConfig = {
   ignore: [
     // Auto generated manager types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
-    'src/types/comfyRegistryTypes.ts',
+    'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts'
   ],

@@ -1,0 +1,15 @@
+name: Validate JSON
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  json-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate JSON syntax
+        run: ./scripts/cicd/check-json.sh

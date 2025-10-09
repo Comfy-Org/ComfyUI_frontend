@@ -12,8 +12,7 @@
 - `pnpm dev:electron`: Dev server with Electron API mocks.
 - `pnpm build`: Type-check then production build to `dist/`.
 - `pnpm preview`: Preview the production build locally.
-- `pnpm test:unit`: Run Vitest unit tests (`tests-ui/`).
-- `pnpm test:component`: Run component tests (`src/components/`).
+- `pnpm test:unit`: Run Vitest unit tests.
 - `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`).
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint). `pnpm format` / `format:check`: Prettier.
 - `pnpm typecheck`: Vue TSC type checking.
@@ -31,10 +30,9 @@
 - Playwright: place tests in `browser_tests/`; optional tags like `@mobile`, `@2x` are respected by config.
 
 ## Commit & Pull Request Guidelines
-- Commits: Prefer Conventional Commits (e.g., `feat(ui): add sidebar`), `refactor(litegraph): …`. Use `[skip ci]` for locale-only updates when appropriate.
-- PRs: Include clear description, linked issues (`Fixes #123`), and screenshots/GIFs for UI changes. Add/adjust tests and i18n strings when applicable.
+- Commits: Use `[skip ci]` for locale-only updates when appropriate.
+- PRs: Include clear description, linked issues (`- Fixes #123`), and screenshots/GIFs for UI changes.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, and relevant tests must pass. Keep PRs focused and small.
 
 ## Security & Configuration Tips
 - Secrets: Use `.env` (see `.env_example`); do not commit secrets.
-- Backend: Dev server expects ComfyUI backend at `localhost:8188` by default; configure via `.env`.
