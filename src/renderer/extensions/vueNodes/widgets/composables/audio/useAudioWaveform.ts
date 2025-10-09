@@ -1,4 +1,5 @@
-import { type Ref, onUnmounted, ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
+import type { Ref } from 'vue'
 
 interface WaveformBar {
   height: number

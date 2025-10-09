@@ -17,13 +17,13 @@
     />
 
     <!-- Left Actions -->
-    <div class="flex gap-2 items-center justify-start relative shrink-0">
+    <div class="relative flex shrink-0 items-center justify-start gap-2">
       <!-- Play/Pause Button -->
       <div
         role="button"
         :tabindex="0"
         aria-label="Play/Pause"
-        class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+        class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
         @click="togglePlayPause"
       >
         <i
@@ -38,7 +38,7 @@
 
       <!-- Time Display -->
       <div
-        class="text-sm font-normal text-black dark-theme:text-white text-nowrap"
+        class="text-sm font-normal text-nowrap text-black dark-theme:text-white"
       >
         {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
       </div>
@@ -46,10 +46,10 @@
 
     <!-- Progress Bar -->
     <div
-      class="flex-1 h-0.5 bg-gray-300 dark-theme:bg-stone-200 rounded-full relative"
+      class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-stone-200"
     >
       <div
-        class="absolute left-0 top-0 h-full bg-gray-600 dark-theme:bg-white/50 rounded-full transition-all"
+        class="absolute top-0 left-0 h-full rounded-full bg-gray-600 transition-all dark-theme:bg-white/50"
         :style="{ width: `${progressPercentage}%` }"
       />
       <input
@@ -58,19 +58,19 @@
         min="0"
         max="100"
         step="0.1"
-        class="absolute inset-0 w-full opacity-0 cursor-pointer"
+        class="absolute inset-0 w-full cursor-pointer opacity-0"
         @input="handleSeek"
       />
     </div>
 
     <!-- Right Actions -->
-    <div class="flex gap-2 items-center justify-start relative shrink-0">
+    <div class="relative flex shrink-0 items-center justify-start gap-2">
       <!-- Volume Button -->
       <div
         role="button"
         :tabindex="0"
         aria-label="Volume"
-        class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+        class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
         @click="toggleMute"
       >
         <i
@@ -94,7 +94,7 @@
         role="button"
         :tabindex="0"
         aria-label="More Options"
-        class="size-6 flex items-center justify-center cursor-pointer rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+        class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
         @click="toggleOptionsMenu"
       >
         <i
@@ -113,8 +113,8 @@
       pt:submenu:class="!bg-white dark-theme:!bg-charcoal-800"
     >
       <template #item="{ item }">
-        <div v-if="item.key === 'volume'" class="px-4 py-2 w-48">
-          <label class="text-xs text-black dark-theme:text-white mb-2 block">{{
+        <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
+          <label class="mb-2 block text-xs text-black dark-theme:text-white">{{
             item.label
           }}</label>
           <Slider
@@ -128,13 +128,13 @@
         </div>
         <div
           v-else
-          class="flex items-center px-4 py-2 cursor-pointer hover:bg-white/10 text-xs"
+          class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
           @click="item.onClick?.()"
         >
           <span class="text-black dark-theme:text-white">{{ item.label }}</span>
           <i
             v-if="item.selected"
-            class="icon-[lucide--check] size-4 text-black dark-theme:text-white ml-auto"
+            class="ml-auto icon-[lucide--check] size-4 text-black dark-theme:text-white"
           />
         </div>
       </template>
@@ -145,8 +145,7 @@
 <script setup lang="ts">
 import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
-import { computed, onUnmounted, ref, watch } from 'vue'
-import { nextTick } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

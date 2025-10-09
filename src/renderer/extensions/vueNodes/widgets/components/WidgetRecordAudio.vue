@@ -2,7 +2,7 @@
   <div class="">
     <div class="mb-4">
       <Button
-        class="bg-zinc-500/10 dark-theme:bg-node-component-surface text-zinc-400 dark-theme:text-white border-0 w-[413px]"
+        class="w-[413px] border-0 bg-zinc-500/10 text-zinc-400 dark-theme:bg-node-component-surface dark-theme:text-white"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,11 +12,11 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="bg-zinc-500/10 dark-theme:bg-node-component-surface rounded-lg px-4 text-zinc-400 dark-theme:text-white h-14 flex items-center gap-4 w-[413px]"
+      class="flex h-14 w-[413px] items-center gap-4 rounded-lg bg-zinc-500/10 px-4 text-zinc-400 dark-theme:bg-node-component-surface dark-theme:text-white"
     >
       <!-- Recording Status -->
-      <div class="flex gap-2 items-center min-w-30">
-        <span class="text-xs min-w-20">
+      <div class="flex min-w-30 items-center gap-2">
+        <span class="min-w-20 text-xs">
           {{
             isRecording
               ? t('g.listening', 'Listening...')
@@ -27,15 +27,15 @@
                   : ''
           }}
         </span>
-        <span class="text-sm min-w-10">{{ formatTime(timer) }}</span>
+        <span class="min-w-10 text-sm">{{ formatTime(timer) }}</span>
       </div>
 
       <!-- Waveform Visualization -->
-      <div class="flex-1 flex gap-2 items-center h-8 overflow-x-clip">
+      <div class="flex h-8 flex-1 items-center gap-2 overflow-x-clip">
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
-          class="w-0.75 bg-slate-100 rounded-[1.5px] transition-all duration-100 min-h-1 max-h-8"
+          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-slate-100 transition-all duration-100"
           :style="{ height: bar.height + 'px' }"
           :title="`Bar ${index + 1}: ${bar.height}px`"
         />
@@ -45,16 +45,16 @@
       <button
         v-if="isRecording"
         :title="t('g.stopRecording', 'Stop Recording')"
-        class="size-8 rounded-full bg-gray-500/33 flex items-center justify-center transition-colors animate-pulse border-0"
+        class="flex size-8 animate-pulse items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
         @click="handleStopRecording"
       >
-        <div class="size-2.5 bg-[#C02323] rounded-sm" />
+        <div class="size-2.5 rounded-sm bg-[#C02323]" />
       </button>
 
       <button
         v-else-if="!isRecording && recordedURL && !isPlaying"
         :title="t('g.playRecording') || 'Play Recording'"
-        class="size-8 rounded-full bg-gray-500/33 flex items-center justify-center transition-colors border-0"
+        class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
         @click="handlePlayRecording"
       >
         <i
@@ -65,7 +65,7 @@
       <button
         v-else-if="isPlaying"
         :title="t('g.stopPlayback') || 'Stop Playback'"
-        class="size-8 rounded-full bg-gray-500/33 flex items-center justify-center transition-colors border-0"
+        class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
         @click="handleStopPlayback"
       >
         <i
