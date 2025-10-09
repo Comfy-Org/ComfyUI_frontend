@@ -1,6 +1,6 @@
 <template>
   <div
-    class="comfy-menu-button-wrapper flex flex-col shrink-0 items-center justify-center p-2 cursor-pointer rounded-t-md transition-colors"
+    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center rounded-t-md p-2 transition-colors"
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
@@ -8,12 +8,12 @@
   >
     <ComfyLogoTransparent
       alt="ComfyUI Logo"
-      class="comfyui-logo w-[18px] h-[18px]"
+      class="comfyui-logo h-[18px] w-[18px]"
     />
 
     <span
       v-if="!isSmall"
-      class="side-bar-button-label text-[10px] text-center mt-1"
+      class="side-bar-button-label mt-1 text-center text-[10px]"
       >{{ t('sideToolbar.labels.menu') }}</span
     >
   </div>

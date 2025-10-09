@@ -6,7 +6,7 @@
       showDelay: 512
     }"
     href="#"
-    class="p-breadcrumb-item-link h-12 px-2 cursor-pointer"
+    class="p-breadcrumb-item-link h-12 cursor-pointer px-2"
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,

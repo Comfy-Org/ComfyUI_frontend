@@ -1,14 +1,14 @@
 <template>
-  <div v-if="!workspaceStore.focusMode" class="flex pt-2 pointer-events-none">
+  <div v-if="!workspaceStore.focusMode" class="pointer-events-none flex pt-2">
     <div
-      class="flex-1 min-w-0 pointer-events-auto"
+      class="pointer-events-auto min-w-0 flex-1"
       :class="{ 'ml-2': sidebarPanelVisible }"
     >
       <SubgraphBreadcrumb />
     </div>
 
     <div
-      class="actionbar-container shadow-md mx-2 flex pointer-events-auto items-center h-12 rounded-lg px-2"
+      class="actionbar-container pointer-events-auto mx-2 flex h-12 items-center rounded-lg px-2 shadow-md"
     >
       <div ref="legacyCommandsContainerRef"></div>
       <ComfyActionbar />

@@ -15,7 +15,7 @@
               v-for="tab in bottomPanelStore.bottomPanelTabs"
               :key="tab.id"
               :value="tab.id"
-              class="border-none m-1 mx-2"
+              class="m-1 mx-2 border-none"
               :class="{
                 'tab-list-single-item':
                   bottomPanelStore.bottomPanelTabs.length === 1

@@ -3,7 +3,7 @@
     <slot name="workflow-tabs" />
 
     <div
-      class="flex flex-1 pointer-events-none overflow-hidden"
+      class="pointer-events-none flex flex-1 overflow-hidden"
       :class="{
         'flex-row': sidebarLocation === 'left',
         'flex-row-reverse': sidebarLocation === 'right'
@@ -21,7 +21,7 @@
 
       <Splitter
         key="main-splitter-stable"
-        class="flex-1 splitter-overlay overflow-hidden"
+        class="splitter-overlay flex-1 overflow-hidden"
         :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
         :state-key="sidebarStateKey || 'main-splitter'"
         state-storage="local"
@@ -48,7 +48,7 @@
           <slot name="topmenu" :sidebar-panel-visible="sidebarPanelVisible" />
 
           <Splitter
-            class="splitter-overlay splitter-overlay-bottom flex-1 mb-2 mr-2"
+            class="splitter-overlay splitter-overlay-bottom mr-2 mb-2 flex-1"
             :class="{ 'ml-2': sidebarPanelVisible }"
             layout="vertical"
             :pt:gutter="bottomPanelVisible ? '' : 'hidden'"

@@ -1,7 +1,7 @@
 <template>
   <div
     ref="positionRef"
-    class="absolute left-1/2 -translate-x-1/2 bottom-0"
+    class="absolute bottom-0 left-1/2 -translate-x-1/2"
   ></div>
   <Popover
     ref="popoverRef"

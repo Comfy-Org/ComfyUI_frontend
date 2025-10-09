@@ -5,12 +5,12 @@
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI && workflowTabsPosition === 'Topbar'" #workflow-tabs>
       <div
-        class="workflow-tabs-container pointer-events-auto w-full relative h-9"
+        class="workflow-tabs-container pointer-events-auto relative h-9 w-full"
       >
         <!-- Native drag area for Electron -->
         <div
           v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)] z-10"
+          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
         />
         <WorkflowTabs />
       </div>
@@ -20,7 +20,7 @@
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
-        class="sidebar-content-container h-full w-full overflow-y-auto overflow-x-hidden"
+        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>

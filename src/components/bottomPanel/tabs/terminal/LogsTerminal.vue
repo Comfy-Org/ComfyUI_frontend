@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-transparent h-full w-full">
+  <div class="h-full w-full bg-transparent">
     <p v-if="errorMessage" class="p-4 text-center">
       {{ errorMessage }}
     </p>

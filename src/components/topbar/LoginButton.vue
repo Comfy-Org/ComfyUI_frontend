@@ -4,7 +4,7 @@
     :label="t('auth.login.loginButton')"
     outlined
     severity="secondary"
-    class="px-4 text-neutral dark-theme:text-white capitalize border-black/50 dark-theme:border-white/50"
+    class="text-neutral border-black/50 px-4 capitalize dark-theme:border-white/50 dark-theme:text-white"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"

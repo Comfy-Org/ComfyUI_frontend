@@ -15,7 +15,7 @@
   >
     <Breadcrumb
       ref="breadcrumbRef"
-      class="p-0 w-fit rounded-lg"
+      class="w-fit rounded-lg p-0"
       :model="items"
       aria-label="Graph navigation"
     >

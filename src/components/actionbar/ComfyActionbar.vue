@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex items-center">
+  <div class="flex h-full items-center">
     <div
       v-if="isDragging && !isDocked"
       class="actionbar-drop-zone self-stretch"
