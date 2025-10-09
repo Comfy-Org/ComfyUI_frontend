@@ -27,8 +27,6 @@ jobs:
     # Setup playwright environment with custom node repository
     - name: Setup ComfyUI Server (without launching)
       uses: ./.github/actions/setup-comfyui-server
-      with:
-        launch_server: 'false'
     - name: Setup frontend
       uses: ./.github/actions/setup-frontend
       with:

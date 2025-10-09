@@ -19,8 +19,6 @@ jobs:
       # Setup Test Environment, build frontend but do not start server yet
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
-        with:
-          launch_server: 'false'
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -63,6 +61,8 @@ jobs:
       # Setup Test Environment for this runner, start server, use cached built frontend ./dist from 'setup' job
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: true
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
       - name: Setup Playwright
@@ -108,6 +108,8 @@ jobs:
       # Setup Test Environment for this runner, start server, use cached built frontend ./dist from 'setup' job
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: true
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
       - name: Setup Playwright
