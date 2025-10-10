@@ -37,7 +37,7 @@
       <CardBottom>
         <!-- Loading State -->
         <template v-if="loading">
-          <div class="flex flex-col items-center gap-2 p-2">
+          <div class="flex flex-col items-center justify-between gap-1">
             <div
               class="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
             />
@@ -121,8 +121,9 @@ const emit = defineEmits<{
 const containerClasses = computed(() => {
   return cn(
     'gap-1',
-    props.selected &&
-      'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
+    props.selected
+      ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
+      : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
   )
 })
 

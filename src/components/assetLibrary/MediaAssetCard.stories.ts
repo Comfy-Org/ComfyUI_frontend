@@ -15,12 +15,7 @@ const meta: Meta<typeof MediaAssetCard> = {
     loading: {
       control: 'boolean'
     }
-  },
-  decorators: [
-    () => ({
-      template: '<div style="max-width: 280px;"><story /></div>'
-    })
-  ]
+  }
 }
 
 export default meta
@@ -50,6 +45,11 @@ const sampleAsset: AssetMeta = {
 }
 
 export const ImageAsset: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: sampleAsset,
@@ -58,6 +58,11 @@ export const ImageAsset: Story = {
 }
 
 export const VideoAsset: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: {
@@ -78,6 +83,11 @@ export const VideoAsset: Story = {
 }
 
 export const Model3DAsset: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: {
@@ -94,6 +104,11 @@ export const Model3DAsset: Story = {
 }
 
 export const AudioAsset: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: {
@@ -110,6 +125,11 @@ export const AudioAsset: Story = {
 }
 
 export const LoadingState: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: sampleAsset,
@@ -118,6 +138,11 @@ export const LoadingState: Story = {
 }
 
 export const LongFileName: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: {
@@ -128,6 +153,11 @@ export const LongFileName: Story = {
 }
 
 export const SelectedState: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'output',
     asset: sampleAsset,
@@ -136,6 +166,11 @@ export const SelectedState: Story = {
 }
 
 export const WebMVideo: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: {
@@ -156,6 +191,11 @@ export const WebMVideo: Story = {
 }
 
 export const GifAnimation: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
   args: {
     context: 'input',
     asset: {
@@ -220,7 +260,7 @@ export const GridLayout: Story = {
       return { assets }
     },
     template: `
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; padding: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 16px;">
         <MediaAssetCard
           v-for="asset in assets"
           :key="asset.id"

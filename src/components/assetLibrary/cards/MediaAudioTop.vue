@@ -1,21 +1,21 @@
 <template>
   <div class="relative h-full w-full overflow-hidden rounded">
     <div
-      v-if="asset.src"
-      class="flex h-full w-full items-center justify-center p-4"
-      :style="{
-        backgroundImage: 'url(/assets/images/default-template.png)',
-        backgroundRepeat: 'round'
-      }"
+      class="flex h-full w-full flex-col items-center justify-center gap-2 bg-zinc-200 dark-theme:bg-zinc-700"
     >
-      <audio controls class="relative w-full" :src="asset.src" @click.stop />
+      <i
+        class="icon-[lucide--music] text-3xl text-zinc-600 dark-theme:text-zinc-200"
+      />
+      <span class="text-zinc-600 dark-theme:text-zinc-200">{{
+        $t('Audio')
+      }}</span>
     </div>
-    <div
-      v-else
-      class="flex h-full w-full items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
-    >
-      <i class="pi pi-audio text-3xl text-gray-400" />
-    </div>
+    <audio
+      controls
+      class="absolute bottom-0 left-0 w-full p-2"
+      :src="asset.src"
+      @click.stop
+    />
   </div>
 </template>
 
