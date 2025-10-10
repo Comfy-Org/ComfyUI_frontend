@@ -81,9 +81,9 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import type { AssetContext, AssetMeta, MediaKind } from '@/types/media.types'
+import { formatDuration } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import { formatDuration } from '../../utils/formatUtil'
 import SquareChip from '../chip/SquareChip.vue'
 
 // Map media types to their specific top components
