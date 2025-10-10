@@ -1,5 +1,8 @@
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
@@ -105,6 +108,20 @@ export interface ComfyExtension {
    * @returns An array of command ids to add to the selection toolbox
    */
   getSelectionToolboxCommands?(selectedItem: Positionable): string[]
+
+  /**
+   * Allows the extension to add context menu items to canvas right-click menus
+   * @param canvas The canvas instance
+   * @returns An array of context menu items to add
+   */
+  getCanvasMenuItems?(canvas: LGraphCanvas): IContextMenuValue[]
+
+  /**
+   * Allows the extension to add context menu items to node right-click menus
+   * @param node The node being right-clicked
+   * @returns An array of context menu items to add
+   */
+  getNodeMenuItems?(node: LGraphNode): IContextMenuValue[]
 
   /**
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**
