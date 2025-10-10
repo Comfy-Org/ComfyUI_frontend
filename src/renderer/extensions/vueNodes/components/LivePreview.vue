@@ -1,15 +1,15 @@
 <template>
-  <div v-if="imageUrl" class="w-full h-full min-w-16 min-h-16 flex flex-col">
+  <div v-if="imageUrl" class="flex h-full min-h-16 w-full min-w-16 flex-col">
     <!-- Image Container -->
     <div
-      class="relative rounded-[5px] overflow-hidden bg-node-component-surface w-full h-88 grow"
+      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="w-full h-full flex flex-col items-center justify-center text-pure-white text-center"
+        class="flex h-full w-full flex-col items-center justify-center text-center text-pure-white"
       >
-        <i-lucide:image-off class="size-8 mb-1 text-gray-500" />
+        <i-lucide:image-off class="mb-1 size-8 text-gray-500" />
         <p class="text-xs text-gray-400">{{ $t('g.imageFailedToLoad') }}</p>
       </div>
 
@@ -18,14 +18,14 @@
         v-else
         :src="imageUrl"
         :alt="$t('g.liveSamplingPreview')"
-        class="w-full h-full object-contain object-center pointer-events-none"
+        class="pointer-events-none h-full w-full object-contain object-center"
         @load="handleImageLoad"
         @error="handleImageError"
       />
     </div>
 
     <!-- Image Dimensions -->
-    <div class="text-node-component-header-text text-xs text-center mt-1">
+    <div class="text-node-component-header-text mt-1 text-center text-xs">
       {{
         imageError
           ? $t('g.errorLoadingImage')

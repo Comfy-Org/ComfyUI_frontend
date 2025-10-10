@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative size-full min-w-16 min-h-16 flex flex-col"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col"
     data-capture-node="true"
     tabindex="0"
     role="region"
@@ -12,7 +12,7 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative w-full overflow-hidden rounded-[5px] bg-node-component-surface h-88 grow"
+      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
@@ -27,11 +27,7 @@
       </div>
 
       <!-- Loading State -->
-      <Skeleton
-        v-else-if="isLoading"
-        class="size-full"
-        border-radius="5px"
-      />
+      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
 
       <!-- Main Image -->
       <img

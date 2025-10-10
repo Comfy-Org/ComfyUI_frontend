@@ -88,7 +88,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex flex-col gap-4 pb-4 flex-1 min-h-0"
+        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -98,11 +98,11 @@
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
-        <div v-if="hasCustomContent" class="flex-1 min-h-0">
+        <div v-if="hasCustomContent" class="min-h-0 flex-1">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
-        <div v-if="shouldShowPreviewImg" class="px-4 flex-1 min-h-0">
+        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
           <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
       </div>
