@@ -35,6 +35,7 @@ const sampleAsset: AssetMeta = {
   id: 'asset-1',
   name: 'sample-image.png',
   kind: 'image',
+  duration: 3345,
   size: 2048576,
   timestamp: Date.now(),
   src: SAMPLE_MEDIA.image,
@@ -71,7 +72,7 @@ export const VideoAsset: Story = {
       name: 'Big_Buck_Bunny.mp4',
       kind: 'video',
       size: 10485760,
-      duration: 125,
+      duration: 13425,
       thumbnailUrl: SAMPLE_MEDIA.videoThumbnail, // Poster image
       src: SAMPLE_MEDIA.video, // Actual video file
       dimensions: {
@@ -98,7 +99,7 @@ export const Model3DAsset: Story = {
       size: 7340032,
       src: '',
       dimensions: undefined,
-      duration: 180
+      duration: 18023
     }
   }
 }
@@ -119,7 +120,7 @@ export const AudioAsset: Story = {
       size: 5242880,
       src: SAMPLE_MEDIA.audio,
       dimensions: undefined,
-      duration: 180
+      duration: 23180
     }
   }
 }
@@ -181,7 +182,7 @@ export const WebMVideo: Story = {
       timestamp: Date.now(),
       thumbnailUrl: 'https://picsum.photos/640/360?random=webm', // Poster image
       src: 'https://www.w3schools.com/html/movie.mp4', // Actual video
-      duration: 60,
+      duration: 620,
       dimensions: {
         width: 640,
         height: 360
@@ -203,6 +204,7 @@ export const GifAnimation: Story = {
       name: 'animation.gif',
       kind: 'image',
       size: 1572864,
+      duration: 1345,
       timestamp: Date.now(),
       src: 'https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/giphy.gif',
       dimensions: {
@@ -223,6 +225,7 @@ export const GridLayout: Story = {
           name: 'image-file.jpg',
           kind: 'image',
           size: 2097152,
+          duration: 4500,
           timestamp: Date.now(),
           src: 'https://picsum.photos/400/300?random=1',
           dimensions: { width: 1920, height: 1080 }
@@ -232,10 +235,10 @@ export const GridLayout: Story = {
           name: 'video-file.mp4',
           kind: 'video',
           size: 10485760,
+          duration: 13425,
           timestamp: Date.now(),
           thumbnailUrl: SAMPLE_MEDIA.videoThumbnail, // Poster image
           src: SAMPLE_MEDIA.video, // Actual video
-          duration: 120,
           dimensions: { width: 1280, height: 720 }
         },
         {
@@ -243,15 +246,16 @@ export const GridLayout: Story = {
           name: 'audio-file.mp3',
           kind: 'audio',
           size: 5242880,
+          duration: 180,
           timestamp: Date.now(),
-          src: SAMPLE_MEDIA.audio,
-          duration: 180
+          src: SAMPLE_MEDIA.audio
         },
         {
           id: 'grid-4',
           name: 'animation.gif',
           kind: 'image',
           size: 3145728,
+          duration: 1345,
           timestamp: Date.now(),
           src: 'https://media.giphy.com/media/l0HlNaQ6gWfllcjDO/giphy.gif',
           dimensions: { width: 480, height: 360 }

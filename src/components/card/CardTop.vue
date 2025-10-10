@@ -17,6 +17,20 @@
     </div>
 
     <div
+      v-if="slots['center-left']"
+      class="absolute top-1/2 left-2 flex -translate-y-1/2 flex-wrap justify-start gap-2"
+    >
+      <slot name="center-left"></slot>
+    </div>
+
+    <div
+      v-if="slots['center-right']"
+      class="absolute top-1/2 right-2 flex -translate-y-1/2 flex-wrap justify-end gap-2"
+    >
+      <slot name="center-right"></slot>
+    </div>
+
+    <div
       v-if="slots['bottom-left']"
       class="absolute bottom-2 left-2 flex flex-wrap justify-start gap-2"
     >

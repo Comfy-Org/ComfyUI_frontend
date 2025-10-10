@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
@@ -57,10 +57,16 @@ const emit = defineEmits<{
   view: [assetId: string]
   copy: [assetId: string]
   copyJobId: [jobId: string]
+  videoPlayingStateChanged: [isPlaying: boolean]
 }>()
 
 // State for showing video player
 const showVideoPlayer = ref(false)
+
+// Emit playing state changes
+watch(showVideoPlayer, (isPlaying) => {
+  emit('videoPlayingStateChanged', isPlaying)
+})
 
 // Handle play button click
 function handlePlayClick() {

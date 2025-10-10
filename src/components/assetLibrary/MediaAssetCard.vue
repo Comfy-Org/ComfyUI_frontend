@@ -28,7 +28,13 @@
             @more="emit('more', $event)"
             @copy-job-id="emit('copyJobId', $event)"
             @play="emit('play', $event)"
+            @video-playing-state-changed="isVideoPlaying = $event"
           />
+        </template>
+        <template v-if="asset?.duration" #bottom-left>
+          <div :class="durationChipClasses">
+            <SquareChip variant="light" :label="formattedDuration" />
+          </div>
         </template>
       </CardTop>
     </template>
@@ -61,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import Media3DBottom from '@/components/assetLibrary/cards/Media3DBottom.vue'
 import Media3DTop from '@/components/assetLibrary/cards/Media3DTop.vue'
@@ -76,6 +82,9 @@ import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import type { AssetContext, AssetMeta, MediaKind } from '@/types/media.types'
 import { cn } from '@/utils/tailwindUtil'
+
+import { formatDuration } from '../../utils/formatUtil'
+import SquareChip from '../chip/SquareChip.vue'
 
 // Map media types to their specific top components
 const topComponents = {
@@ -101,12 +110,15 @@ function getBottomComponent(kind: MediaKind) {
   return bottomComponents[kind] || MediaImageBottom
 }
 
-const props = defineProps<{
+const { context, asset, loading, selected } = defineProps<{
   context: AssetContext
   asset?: AssetMeta
   loading?: boolean
   selected?: boolean
 }>()
+
+// State for video playing
+const isVideoPlaying = ref(false)
 
 const emit = defineEmits<{
   download: [assetId: string]
@@ -116,20 +128,36 @@ const emit = defineEmits<{
   view: [assetId: string]
   copy: [assetId: string]
   more: [assetId: string]
+  select: [asset: AssetMeta]
 }>()
 
 const containerClasses = computed(() => {
   return cn(
     'gap-1',
-    props.selected
+    selected
       ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
       : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
   )
 })
 
-function handleCardClick() {
-  if (props.asset) {
-    emit('openDetail', props.asset.id)
+const formattedDuration = computed(() => {
+  if (!asset?.duration) return ''
+  return formatDuration(asset.duration)
+})
+
+const durationChipClasses = computed(() => {
+  if (asset?.kind === 'audio') {
+    return '-translate-y-11'
+  }
+  if (asset?.kind === 'video' && isVideoPlaying.value) {
+    return '-translate-y-16'
+  }
+  return ''
+})
+
+const handleCardClick = () => {
+  if (asset) {
+    emit('select', asset)
   }
 }
 </script>
