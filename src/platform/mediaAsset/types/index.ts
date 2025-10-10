@@ -29,6 +29,15 @@ export interface AssetMeta {
   }
 }
 
+// Emit types for MediaAssetCard component
+export type MediaAssetEmits = {
+  select: [asset: AssetMeta]
+  view: [assetId: string]
+  download: [assetId: string]
+  delete: [assetId: string]
+  play: [assetId: string]
+}
+
 // Injection key for MediaAsset provide/inject pattern
 interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>

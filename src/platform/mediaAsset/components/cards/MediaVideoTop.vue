@@ -8,12 +8,12 @@
       @mouseleave="showControls = false"
     >
       <video
+        ref="videoRef"
         :controls="showControls"
-        autoplay
         class="relative h-full w-full object-contain"
         @click.stop
       >
-        <source :src="asset.src || asset.thumbnailUrl || ''" />
+        <source :src="asset.src || ''" />
       </video>
     </div>
 
@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
@@ -57,20 +57,28 @@ const emit = defineEmits<{
   videoPlayingStateChanged: [isPlaying: boolean]
 }>()
 
-// State for showing video player
+const videoRef = ref<HTMLVideoElement>()
+
 const showVideoPlayer = ref(false)
 const showControls = ref(false)
 
-// Emit when controls visibility changes
 watch(showControls, (controlsVisible) => {
   if (showVideoPlayer.value) {
     emit('videoPlayingStateChanged', controlsVisible)
   }
 })
 
-// Handle play button click
 const handlePlayClick = () => {
   showVideoPlayer.value = true
   emit('play', asset.id)
 }
+
+// Cleanup on unmount to prevent memory leaks
+onBeforeUnmount(() => {
+  if (videoRef.value) {
+    videoRef.value.pause()
+    videoRef.value.src = ''
+    videoRef.value.load()
+  }
+})
 </script>

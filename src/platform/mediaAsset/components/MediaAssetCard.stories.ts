@@ -22,7 +22,9 @@ type Story = StoryObj<typeof meta>
 
 // Public sample media URLs
 const SAMPLE_MEDIA = {
-  image: 'https://picsum.photos/300/300',
+  image1: 'https://i.imgur.com/OB0y6MR.jpg',
+  image2: 'https://i.imgur.com/CzXTtJV.jpg',
+  image3: 'https://farm9.staticflickr.com/8505/8441256181_4e98d8bff5_z_d.jpg',
   video:
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   videoThumbnail:
@@ -37,7 +39,7 @@ const sampleAsset: AssetMeta = {
   duration: 3345,
   size: 2048576,
   timestamp: Date.now(),
-  src: SAMPLE_MEDIA.image,
+  src: SAMPLE_MEDIA.image1,
   dimensions: {
     width: 1920,
     height: 1080
@@ -179,7 +181,7 @@ export const WebMVideo: Story = {
       kind: 'video',
       size: 3145728,
       timestamp: Date.now(),
-      thumbnailUrl: SAMPLE_MEDIA.image, // Poster image
+      thumbnailUrl: SAMPLE_MEDIA.image1, // Poster image
       src: 'https://www.w3schools.com/html/movie.mp4', // Actual video
       duration: 620,
       dimensions: {
@@ -226,11 +228,21 @@ export const GridLayout: Story = {
           size: 2097152,
           duration: 4500,
           timestamp: Date.now(),
-          src: SAMPLE_MEDIA.image,
+          src: SAMPLE_MEDIA.image1,
           dimensions: { width: 1920, height: 1080 }
         },
         {
           id: 'grid-2',
+          name: 'image-file.jpg',
+          kind: 'image',
+          size: 2097152,
+          duration: 4500,
+          timestamp: Date.now(),
+          src: SAMPLE_MEDIA.image2,
+          dimensions: { width: 1920, height: 1080 }
+        },
+        {
+          id: 'grid-3',
           name: 'video-file.mp4',
           kind: 'video',
           size: 10485760,
@@ -241,7 +253,7 @@ export const GridLayout: Story = {
           dimensions: { width: 1280, height: 720 }
         },
         {
-          id: 'grid-3',
+          id: 'grid-4',
           name: 'audio-file.mp3',
           kind: 'audio',
           size: 5242880,
@@ -250,7 +262,7 @@ export const GridLayout: Story = {
           src: SAMPLE_MEDIA.audio
         },
         {
-          id: 'grid-4',
+          id: 'grid-5',
           name: 'animation.gif',
           kind: 'image',
           size: 3145728,
@@ -260,7 +272,7 @@ export const GridLayout: Story = {
           dimensions: { width: 480, height: 360 }
         },
         {
-          id: 'grid-5',
+          id: 'grid-6',
           name: 'Asset-3d-model.glb',
           kind: '3D',
           size: 7340032,
@@ -268,6 +280,16 @@ export const GridLayout: Story = {
           dimensions: undefined,
           duration: 18023,
           timestamp: 0
+        },
+        {
+          id: 'grid-7',
+          name: 'image-file.jpg',
+          kind: 'image',
+          size: 2097152,
+          duration: 4500,
+          timestamp: Date.now(),
+          src: SAMPLE_MEDIA.image3,
+          dimensions: { width: 1920, height: 1080 }
         }
       ]
       return { assets }

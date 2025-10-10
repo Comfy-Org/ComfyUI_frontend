@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import type { AssetMeta } from '../types'
+import type { AssetMeta, MediaAssetEmits } from '../types'
 
 export interface MediaAssetActions {
   onSelect: (asset: AssetMeta) => void
@@ -17,7 +17,12 @@ export interface MediaAssetActions {
   onOutputCountClick: (assetId: string) => void
 }
 
-export function useMediaAssetActions(emit: any): MediaAssetActions {
+export function useMediaAssetActions(
+  emit: <K extends keyof MediaAssetEmits>(
+    event: K,
+    ...args: MediaAssetEmits[K]
+  ) => void
+): MediaAssetActions {
   return {
     // Actions that emit to parent
     onSelect: (asset: AssetMeta) => emit('select', asset),

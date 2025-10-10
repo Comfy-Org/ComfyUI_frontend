@@ -1,6 +1,11 @@
 <template>
   <CardContainer
     ref="cardContainerRef"
+    role="button"
+    :aria-label="
+      asset ? `${asset.name} - ${asset.kind} asset` : 'Loading asset'
+    "
+    :tabindex="loading ? -1 : 0"
     size="mini"
     variant="ghost"
     rounded="lg"
@@ -98,7 +103,7 @@
 
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
-import { computed, provide, ref, toRef } from 'vue'
+import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -112,38 +117,29 @@ import { cn } from '@/utils/tailwindUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetContext, AssetMeta, MediaKind } from '../types'
 import { MediaAssetKey } from '../types'
-import Media3DBottom from './cards/Media3DBottom.vue'
-import Media3DTop from './cards/Media3DTop.vue'
 import MediaAssetActions from './cards/MediaAssetActions.vue'
-import MediaAudioBottom from './cards/MediaAudioBottom.vue'
-import MediaAudioTop from './cards/MediaAudioTop.vue'
-import MediaImageBottom from './cards/MediaImageBottom.vue'
-import MediaImageTop from './cards/MediaImageTop.vue'
-import MediaVideoBottom from './cards/MediaVideoBottom.vue'
-import MediaVideoTop from './cards/MediaVideoTop.vue'
 
-// Map media types to their specific top components
-const topComponents = {
-  video: MediaVideoTop,
-  audio: MediaAudioTop,
-  image: MediaImageTop,
-  '3D': Media3DTop
-}
-
-// Map media types to their specific bottom components
-const bottomComponents = {
-  video: MediaVideoBottom,
-  audio: MediaAudioBottom,
-  image: MediaImageBottom,
-  '3D': Media3DBottom
+const mediaComponents = {
+  top: {
+    video: defineAsyncComponent(() => import('./cards/MediaVideoTop.vue')),
+    audio: defineAsyncComponent(() => import('./cards/MediaAudioTop.vue')),
+    image: defineAsyncComponent(() => import('./cards/MediaImageTop.vue')),
+    '3D': defineAsyncComponent(() => import('./cards/Media3DTop.vue'))
+  },
+  bottom: {
+    video: defineAsyncComponent(() => import('./cards/MediaVideoBottom.vue')),
+    audio: defineAsyncComponent(() => import('./cards/MediaAudioBottom.vue')),
+    image: defineAsyncComponent(() => import('./cards/MediaImageBottom.vue')),
+    '3D': defineAsyncComponent(() => import('./cards/Media3DBottom.vue'))
+  }
 }
 
 function getTopComponent(kind: MediaKind) {
-  return topComponents[kind] || MediaImageTop
+  return mediaComponents.top[kind] || mediaComponents.top.image
 }
 
 function getBottomComponent(kind: MediaKind) {
-  return bottomComponents[kind] || MediaImageBottom
+  return mediaComponents.bottom[kind] || mediaComponents.bottom.image
 }
 
 const { context, asset, loading, selected } = defineProps<{
