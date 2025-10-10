@@ -82,18 +82,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     },
     commandId: 'Comfy.ShowSettingsDialog'
   },
-  {
-    combo: {
-      key: '['
-    },
-    commandId: 'Comfy.MaskEditor.BrushSize.Decrease'
-  },
-  {
-    combo: {
-      key: ']'
-    },
-    commandId: 'Comfy.MaskEditor.BrushSize.Increase'
-  },
   // For '=' both holding shift and not holding shift
   {
     combo: {
