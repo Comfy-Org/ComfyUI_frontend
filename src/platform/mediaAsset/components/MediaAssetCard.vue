@@ -40,9 +40,9 @@
           />
         </template>
 
-        <!-- Actions overlay (top-left) - show on hover -->
+        <!-- Actions overlay (top-left) - show on hover or when menu is open -->
         <template v-if="showHoverActions" #top-left>
-          <MediaAssetActions />
+          <MediaAssetActions @menu-state-changed="isMenuOpen = $event" />
         </template>
 
         <!-- Zoom button (top-right) - show on hover -->
@@ -160,11 +160,12 @@ const emit = defineEmits<{
 const cardContainerRef = ref<HTMLElement>()
 
 const isVideoPlaying = ref(false)
+const isMenuOpen = ref(false)
 
 const isHovered = useElementHover(cardContainerRef)
 
 const showHoverActions = computed(() => {
-  return !loading && !!asset && isHovered.value
+  return !loading && !!asset && (isHovered.value || isMenuOpen.value)
 })
 
 const actions = useMediaAssetActions(emit)

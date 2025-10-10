@@ -14,6 +14,8 @@
       :close-on-escape="true"
       unstyled
       :pt="pt"
+      @show="$emit('menuOpened')"
+      @hide="$emit('menuClosed')"
     >
       <div class="flex min-w-40 flex-col gap-2 p-2">
         <slot :close="hide" />
@@ -37,6 +39,11 @@ const { size, isVertical = false } = defineProps<{
   size?: ButtonSize
   isVertical?: boolean
   containerClass?: string
+}>()
+
+defineEmits<{
+  menuOpened: []
+  menuClosed: []
 }>()
 
 const toggle = (event: Event) => {

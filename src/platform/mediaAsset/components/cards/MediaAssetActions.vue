@@ -6,7 +6,11 @@
     <IconButton size="sm" @click="handleDownload">
       <i class="icon-[lucide--download] size-4" />
     </IconButton>
-    <MoreButton size="sm">
+    <MoreButton
+      size="sm"
+      @menu-opened="emit('menuStateChanged', true)"
+      @menu-closed="emit('menuStateChanged', false)"
+    >
       <template #default="{ close }">
         <MediaAssetMoreMenu :close="close" />
       </template>
@@ -23,6 +27,10 @@ import MoreButton from '@/components/button/MoreButton.vue'
 
 import { MediaAssetKey } from '../../types'
 import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
+
+const emit = defineEmits<{
+  menuStateChanged: [isOpen: boolean]
+}>()
 
 const { asset, actions } = inject(MediaAssetKey)!
 
