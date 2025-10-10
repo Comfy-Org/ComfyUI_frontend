@@ -30,7 +30,7 @@ export interface AssetMeta {
 }
 
 // Injection key for MediaAsset provide/inject pattern
-export interface MediaAssetProviderValue {
+interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>
   context: Ref<AssetContext>
   isVideoPlaying: Ref<boolean>
