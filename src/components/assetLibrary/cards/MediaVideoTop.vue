@@ -19,24 +19,21 @@
         :src="asset.thumbnailUrl"
         :alt="asset.name"
         :container-class="'aspect-square'"
+        :image-class="'object-cover w-full h-full'"
       />
-      <div
-        v-else
-        class="flex h-full w-full items-center justify-center bg-gray-100 dark-theme:bg-gray-800"
-      >
-        <i class="icon-[lucide--play] text-white" />
-      </div>
 
       <!-- Simple play button overlay -->
       <div
-        class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/10 hover:bg-black/20"
-        @click="handlePlayClick"
+        class="absolute inset-0 flex items-center justify-center bg-black/30"
       >
-        <div
-          class="flex h-12 w-12 items-center justify-center rounded-full bg-black/60"
+        <IconButton
+          type="secondary"
+          size="md"
+          class="bg-zinc-700"
+          @click="handlePlayClick"
         >
-          <i class="icon-[lucide--play] text-white" />
-        </div>
+          <i class="icon-[comfy--play] size-4" />
+        </IconButton>
       </div>
     </div>
   </div>
@@ -45,6 +42,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import IconButton from '@/components/button/IconButton.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
 import type { AssetContext, AssetMeta } from '@/types/media.types'
 

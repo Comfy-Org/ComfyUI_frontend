@@ -18,7 +18,7 @@ import { computed } from 'vue'
 import type { AssetContext, AssetMeta } from '@/types/media.types'
 import { getFilenameDetails } from '@/utils/formatUtil'
 
-const { asset, context } = defineProps<{
+const { asset } = defineProps<{
   asset: AssetMeta
   context: AssetContext
 }>()
