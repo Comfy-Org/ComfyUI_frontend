@@ -1,5 +1,6 @@
 <template>
   <CardContainer
+    ref="cardContainerRef"
     size="mini"
     variant="ghost"
     rounded="lg"
@@ -34,14 +35,14 @@
           />
         </template>
 
-        <!-- Actions overlay (top-left) -->
-        <template v-if="!loading && asset" #top-left>
+        <!-- Actions overlay (top-left) - show on hover -->
+        <template v-if="showHoverActions" #top-left>
           <MediaAssetActions />
         </template>
 
-        <!-- Zoom button (top-right) -->
-        <template v-if="!loading && asset && showZoomButton" #top-right>
-          <IconButton size="sm" @click="actions.onView(asset.id)">
+        <!-- Zoom button (top-right) - show on hover -->
+        <template v-if="showHoverActions && showZoomButton" #top-right>
+          <IconButton size="sm" @click="actions.onView(asset!.id)">
             <i class="icon-[lucide--zoom-in] size-4" />
           </IconButton>
         </template>
@@ -96,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { useElementHover } from '@vueuse/core'
 import { computed, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -159,13 +161,18 @@ const emit = defineEmits<{
   play: [assetId: string]
 }>()
 
-// State for video playing
+const cardContainerRef = ref<HTMLElement>()
+
 const isVideoPlaying = ref(false)
 
-// Create actions using composable
+const isHovered = useElementHover(cardContainerRef)
+
+const showHoverActions = computed(() => {
+  return !loading && !!asset && isHovered.value
+})
+
 const actions = useMediaAssetActions(emit)
 
-// Provide for child components
 provide(MediaAssetKey, {
   asset: toRef(() => asset),
   context: toRef(() => context),
@@ -173,7 +180,6 @@ provide(MediaAssetKey, {
   actions
 })
 
-// Computed properties
 const containerClasses = computed(() => {
   return cn(
     'gap-1',
