@@ -76,8 +76,8 @@
 import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import { MediaAssetKey } from '@/types/media.types'
 
+import { MediaAssetKey } from '../../types'
 import Divider from './Divider.vue'
 
 const { close } = defineProps<{

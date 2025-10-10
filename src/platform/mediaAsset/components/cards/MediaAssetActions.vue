@@ -20,8 +20,8 @@ import { inject } from 'vue'
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
-import { MediaAssetKey } from '@/types/media.types'
 
+import { MediaAssetKey } from '../../types'
 import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
 
 const { asset, actions } = inject(MediaAssetKey)!

@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AssetContext, AssetMeta } from '@/types/media.types'
+import type { AssetContext, AssetMeta } from '../../types'
 
 const { asset } = defineProps<{
   asset: AssetMeta

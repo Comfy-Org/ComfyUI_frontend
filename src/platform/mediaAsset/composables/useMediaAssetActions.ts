@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import type { AssetMeta } from '@/types/media.types'
+import type { AssetMeta } from '../types'
 
 export interface MediaAssetActions {
   onSelect: (asset: AssetMeta) => void

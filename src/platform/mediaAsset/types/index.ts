@@ -1,9 +1,9 @@
 /**
- * Media types for Asset Library
+ * Media Asset domain types
  */
 import type { InjectionKey, Ref } from 'vue'
 
-import type { MediaAssetActions } from '@/platform/mediaAsset/composables/useMediaAssetActions'
+import type { MediaAssetActions } from '../composables/useMediaAssetActions'
 
 export type MediaKind = 'video' | 'audio' | 'image' | '3D'
 
@@ -30,7 +30,7 @@ export interface AssetMeta {
 }
 
 // Injection key for MediaAsset provide/inject pattern
-interface MediaAssetProviderValue {
+export interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>
   context: Ref<AssetContext>
   isVideoPlaying: Ref<boolean>

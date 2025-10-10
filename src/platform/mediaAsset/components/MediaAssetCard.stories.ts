@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { AssetMeta } from '@/types/media.types'
-
+import type { AssetMeta } from '../types'
 import MediaAssetCard from './MediaAssetCard.vue'
 
 const meta: Meta<typeof MediaAssetCard> = {

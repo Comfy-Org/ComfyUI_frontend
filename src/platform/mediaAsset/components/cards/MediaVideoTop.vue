@@ -44,7 +44,8 @@ import { ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
-import type { AssetContext, AssetMeta } from '@/types/media.types'
+
+import type { AssetContext, AssetMeta } from '../../types'
 
 const { asset } = defineProps<{
   asset: AssetMeta
