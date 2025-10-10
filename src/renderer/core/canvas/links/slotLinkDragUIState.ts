@@ -1,7 +1,6 @@
 import { reactive, readonly } from 'vue'
 
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point, SlotLayout } from '@/renderer/core/layout/types'
 
@@ -41,7 +40,10 @@ interface SlotDragState {
   source: SlotDragSource | null
   pointer: PointerPosition
   candidate: SlotDropCandidate | null
-  compatible: Map<string, boolean>
+  compatible: Map<
+    string,
+    { input: Map<number, boolean>; output: Map<number, boolean> }
+  >
 }
 
 const state = reactive<SlotDragState>({
@@ -53,7 +55,7 @@ const state = reactive<SlotDragState>({
     canvas: { x: 0, y: 0 }
   },
   candidate: null,
-  compatible: new Map<string, boolean>()
+  compatible: new Map()
 })
 
 function updatePointerPosition(
@@ -93,8 +95,45 @@ function endDrag() {
 }
 
 function getSlotLayout(nodeId: string, slotIndex: number, isInput: boolean) {
-  const slotKey = getSlotKey(nodeId, slotIndex, isInput)
-  return layoutStore.getSlotLayout(slotKey)
+  return layoutStore.getSlotLayoutBy(
+    nodeId,
+    isInput ? 'input' : 'output',
+    slotIndex
+  )
+}
+
+function ensureCompatibleNode(nodeId: string) {
+  let entry = state.compatible.get(nodeId)
+  if (!entry) {
+    entry = {
+      input: reactive(new Map<number, boolean>()),
+      output: reactive(new Map<number, boolean>())
+    }
+    state.compatible.set(nodeId, entry)
+  }
+  return entry
+}
+
+function getCompatible(
+  nodeId: string,
+  type: 'input' | 'output',
+  index: number
+): boolean | undefined {
+  const nodeEntry = state.compatible.get(nodeId)
+  if (!nodeEntry) return undefined
+  const map = type === 'input' ? nodeEntry.input : nodeEntry.output
+  return map.get(index)
+}
+
+function setCompatibleFor(
+  nodeId: string,
+  type: 'input' | 'output',
+  index: number,
+  value: boolean
+) {
+  const nodeEntry = ensureCompatibleNode(nodeId)
+  const map = type === 'input' ? nodeEntry.input : nodeEntry.output
+  map.set(index, value)
 }
 
 export function useSlotLinkDragUIState() {
@@ -105,13 +144,8 @@ export function useSlotLinkDragUIState() {
     updatePointerPosition,
     setCandidate,
     getSlotLayout,
-    setCompatibleMap: (entries: Iterable<[string, boolean]>) => {
-      state.compatible.clear()
-      for (const [key, value] of entries) state.compatible.set(key, value)
-    },
-    setCompatibleForKey: (key: string, value: boolean) => {
-      state.compatible.set(key, value)
-    },
+    getCompatible,
+    setCompatibleFor,
     clearCompatible: () => state.compatible.clear()
   }
 }

@@ -13,7 +13,6 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 export interface SlotPositionContext {
@@ -139,8 +138,11 @@ export function getSlotPosition(
   isInput: boolean
 ): Point {
   // Try to get precise position from slot layout (DOM-registered)
-  const slotKey = getSlotKey(String(node.id), slotIndex, isInput)
-  const slotLayout = layoutStore.getSlotLayout(slotKey)
+  const slotLayout = layoutStore.getSlotLayoutBy(
+    String(node.id),
+    isInput ? 'input' : 'output',
+    slotIndex
+  )
   if (slotLayout) {
     return [slotLayout.position.x, slotLayout.position.y]
   }

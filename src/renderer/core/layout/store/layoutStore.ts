@@ -35,6 +35,7 @@ import type {
   RerouteLayout,
   ResizeNodeOperation,
   SetNodeZIndexOperation,
+  SlotIdentity,
   SlotLayout
 } from '@/renderer/core/layout/types'
 import {
@@ -124,7 +125,11 @@ class LayoutStoreImpl implements LayoutStore {
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
-  private slotLayouts = new Map<string, SlotLayout>()
+  private slotLayoutsByNode = new Map<
+    NodeId,
+    { input: Map<number, SlotLayout>; output: Map<number, SlotLayout> }
+  >()
+  private slotIndexKeyToIdentity = new Map<string, SlotIdentity>()
   private rerouteLayouts = new Map<RerouteId, RerouteLayout>()
 
   // Spatial index managers
@@ -431,66 +436,82 @@ class LayoutStoreImpl implements LayoutStore {
     }
   }
 
-  /**
-   * Update slot layout data
-   */
-  updateSlotLayout(key: string, layout: SlotLayout): void {
-    const existing = this.slotLayouts.get(key)
+  private makeSlotIndexKey(
+    nodeId: NodeId,
+    type: 'input' | 'output',
+    index: number
+  ): string {
+    return `${nodeId}::${type}::${index}`
+  }
+
+  private getOrCreateNodeSlotMaps(nodeId: NodeId) {
+    let entry = this.slotLayoutsByNode.get(nodeId)
+    if (!entry) {
+      entry = { input: new Map(), output: new Map() }
+      this.slotLayoutsByNode.set(nodeId, entry)
+    }
+    return entry
+  }
+
+  updateSlotLayoutBy(
+    nodeId: NodeId,
+    type: 'input' | 'output',
+    index: number,
+    layout: SlotLayout
+  ): void {
+    const indexKey = this.makeSlotIndexKey(nodeId, type, index)
+
+    const nodeMaps = this.getOrCreateNodeSlotMaps(nodeId)
+    const map = type === 'input' ? nodeMaps.input : nodeMaps.output
+    const existing = map.get(index)
 
     if (existing) {
-      // Short-circuit if geometry is unchanged
       if (
         isPointEqual(existing.position, layout.position) &&
         isBoundsEqual(existing.bounds, layout.bounds)
       ) {
         return
       }
-      // Update spatial index
-      this.slotSpatialIndex.update(key, layout.bounds)
+      this.slotSpatialIndex.update(indexKey, layout.bounds)
     } else {
-      // Insert into spatial index
-      this.slotSpatialIndex.insert(key, layout.bounds)
+      this.slotSpatialIndex.insert(indexKey, layout.bounds)
     }
 
-    this.slotLayouts.set(key, layout)
+    map.set(index, layout)
+    this.slotIndexKeyToIdentity.set(indexKey, { nodeId, type, index })
   }
 
   /**
    * Batch update slot layouts and spatial index in one pass
    */
-  batchUpdateSlotLayouts(
-    updates: Array<{ key: string; layout: SlotLayout }>
+
+  batchUpdateSlotLayoutsBy(
+    updates: Array<{
+      nodeId: NodeId
+      type: 'input' | 'output'
+      index: number
+      layout: SlotLayout
+    }>
   ): void {
     if (!updates.length) return
-
-    // Update spatial index and map entries (skip unchanged)
-    for (const { key, layout } of updates) {
-      const existing = this.slotLayouts.get(key)
-
-      if (existing) {
-        // Short-circuit if geometry is unchanged
-        if (
-          isPointEqual(existing.position, layout.position) &&
-          isBoundsEqual(existing.bounds, layout.bounds)
-        ) {
-          continue
-        }
-        this.slotSpatialIndex.update(key, layout.bounds)
-      } else {
-        this.slotSpatialIndex.insert(key, layout.bounds)
-      }
-      this.slotLayouts.set(key, layout)
+    for (const { nodeId, type, index, layout } of updates) {
+      this.updateSlotLayoutBy(nodeId, type, index, layout)
     }
   }
 
-  /**
-   * Delete slot layout data
-   */
-  deleteSlotLayout(key: string): void {
-    const deleted = this.slotLayouts.delete(key)
+  deleteSlotLayoutBy(
+    nodeId: NodeId,
+    type: 'input' | 'output',
+    index: number
+  ): void {
+    const indexKey = this.makeSlotIndexKey(nodeId, type, index)
+    const nodeMaps = this.slotLayoutsByNode.get(nodeId)
+    if (!nodeMaps) return
+    const map = type === 'input' ? nodeMaps.input : nodeMaps.output
+    const deleted = map.delete(index)
     if (deleted) {
-      // Remove from spatial index
-      this.slotSpatialIndex.remove(key)
+      this.slotSpatialIndex.remove(indexKey)
+      this.slotIndexKeyToIdentity.delete(indexKey)
     }
   }
 
@@ -498,17 +519,21 @@ class LayoutStoreImpl implements LayoutStore {
    * Delete all slot layouts for a node
    */
   deleteNodeSlotLayouts(nodeId: NodeId): void {
-    const keysToDelete: string[] = []
-    for (const [key, layout] of this.slotLayouts) {
-      if (layout.nodeId === nodeId) {
-        keysToDelete.push(key)
-      }
+    const nodeMaps = this.slotLayoutsByNode.get(nodeId)
+    if (!nodeMaps) return
+    for (const [idx] of nodeMaps.input) {
+      const indexKey = this.makeSlotIndexKey(nodeId, 'input', idx)
+      this.slotSpatialIndex.remove(indexKey)
+      this.slotIndexKeyToIdentity.delete(indexKey)
     }
-    for (const key of keysToDelete) {
-      this.slotLayouts.delete(key)
-      // Remove from spatial index
-      this.slotSpatialIndex.remove(key)
+    for (const [idx] of nodeMaps.output) {
+      const indexKey = this.makeSlotIndexKey(nodeId, 'output', idx)
+      this.slotSpatialIndex.remove(indexKey)
+      this.slotIndexKeyToIdentity.delete(indexKey)
     }
+    nodeMaps.input.clear()
+    nodeMaps.output.clear()
+    this.slotLayoutsByNode.delete(nodeId)
   }
 
   /**
@@ -516,7 +541,8 @@ class LayoutStoreImpl implements LayoutStore {
    * Used when switching rendering modes (Vue ↔ LiteGraph)
    */
   clearAllSlotLayouts(): void {
-    this.slotLayouts.clear()
+    this.slotLayoutsByNode.clear()
+    this.slotIndexKeyToIdentity.clear()
     this.slotSpatialIndex.clear()
   }
 
@@ -563,11 +589,15 @@ class LayoutStoreImpl implements LayoutStore {
     return this.linkLayouts.get(linkId) || null
   }
 
-  /**
-   * Get slot layout data
-   */
-  getSlotLayout(key: string): SlotLayout | null {
-    return this.slotLayouts.get(key) || null
+  getSlotLayoutBy(
+    nodeId: NodeId,
+    type: 'input' | 'output',
+    index: number
+  ): SlotLayout | null {
+    const nodeMaps = this.slotLayoutsByNode.get(nodeId)
+    if (!nodeMaps) return null
+    const map = type === 'input' ? nodeMaps.input : nodeMaps.output
+    return map.get(index) || null
   }
 
   /**
@@ -581,8 +611,13 @@ class LayoutStoreImpl implements LayoutStore {
    * Returns all slot layout keys currently tracked by the store.
    * Useful for global passes without relying on spatial queries.
    */
-  getAllSlotKeys(): string[] {
-    return Array.from(this.slotLayouts.keys())
+  getAllSlots(): ReadonlyArray<SlotLayout> {
+    const result: SlotLayout[] = []
+    for (const [, maps] of this.slotLayoutsByNode) {
+      for (const [, layout] of maps.input) result.push(layout)
+      for (const [, layout] of maps.output) result.push(layout)
+    }
+    return result
   }
 
   /**
@@ -740,9 +775,14 @@ class LayoutStoreImpl implements LayoutStore {
     }
     const candidateSlotKeys = this.slotSpatialIndex.query(searchArea)
 
-    // Check precise bounds for candidates
     for (const key of candidateSlotKeys) {
-      const slotLayout = this.slotLayouts.get(key)
+      const identity = this.slotIndexKeyToIdentity.get(key)
+      if (!identity) continue
+      const slotLayout = this.getSlotLayoutBy(
+        identity.nodeId,
+        identity.type,
+        identity.index
+      )
       if (slotLayout && pointInBounds(point, slotLayout.bounds)) {
         return slotLayout
       }
@@ -799,7 +839,7 @@ class LayoutStoreImpl implements LayoutStore {
   queryItemsInBounds(bounds: Bounds): {
     nodes: NodeId[]
     links: LinkId[]
-    slots: string[]
+    slots: SlotIdentity[]
     reroutes: RerouteId[]
   } {
     // Query segments and union their linkIds
@@ -812,10 +852,15 @@ class LayoutStoreImpl implements LayoutStore {
       }
     }
 
+    const slotIdentities: SlotIdentity[] = this.slotSpatialIndex
+      .query(bounds)
+      .map((key) => this.slotIndexKeyToIdentity.get(key))
+      .filter((v): v is SlotIdentity => !!v)
+
     return {
       nodes: this.queryNodesInBounds(bounds),
       links: Array.from(linkIds),
-      slots: this.slotSpatialIndex.query(bounds),
+      slots: slotIdentities,
       reroutes: this.rerouteSpatialIndex
         .query(bounds)
         .map((key) => asRerouteId(key))
@@ -958,10 +1003,12 @@ class LayoutStoreImpl implements LayoutStore {
       this.spatialIndex.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
+      // Clear slot identity maps to avoid stale entries when re-initializing
+      this.slotLayoutsByNode.clear()
+      this.slotIndexKeyToIdentity.clear()
       this.rerouteSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
-      this.slotLayouts.clear()
       this.rerouteLayouts.clear()
 
       nodes.forEach((node, index) => {

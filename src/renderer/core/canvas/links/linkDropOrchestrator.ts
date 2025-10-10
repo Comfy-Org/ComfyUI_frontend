@@ -3,7 +3,6 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 
@@ -17,30 +16,39 @@ export const resolveSlotTargetCandidate = (
   target: EventTarget | null,
   { adapter, graph }: DropResolutionContext
 ): SlotDropCandidate | null => {
-  const { state: dragState, setCompatibleForKey } = useSlotLinkDragUIState()
+  const { setCompatibleFor, getCompatible } = useSlotLinkDragUIState()
   if (!(target instanceof HTMLElement)) return null
 
-  const elWithKey = target.closest<HTMLElement>('[data-slot-key]')
-  const key = elWithKey?.dataset['slotKey']
-  if (!key) return null
+  const elWithSlot = target.closest<HTMLElement>(
+    '[data-node-id][data-slot-type][data-slot-index]'
+  )
+  const nodeId = elWithSlot?.dataset['nodeId']
+  const typeAttr = elWithSlot?.dataset['slotType'] as
+    | 'input'
+    | 'output'
+    | undefined
+  const indexAttr = elWithSlot?.dataset['slotIndex']
+  if (!nodeId || !typeAttr || indexAttr == null) return null
+  const index = Number.parseInt(indexAttr, 10)
+  if (!Number.isFinite(index)) return null
 
-  const layout = layoutStore.getSlotLayout(key)
+  const layout = layoutStore.getSlotLayoutBy(nodeId, typeAttr, index)
   if (!layout) return null
 
   const candidate: SlotDropCandidate = { layout, compatible: false }
 
   if (adapter && graph) {
-    const cached = dragState.compatible.get(key)
+    const cached = getCompatible(nodeId, layout.type, layout.index)
     if (cached != null) {
       candidate.compatible = cached
     } else {
-      const nodeId: NodeId = layout.nodeId
+      const layoutNodeId: NodeId = layout.nodeId
       const compatible =
         layout.type === 'input'
-          ? adapter.isInputValidDrop(nodeId, layout.index)
-          : adapter.isOutputValidDrop(nodeId, layout.index)
+          ? adapter.isInputValidDrop(layoutNodeId, layout.index)
+          : adapter.isOutputValidDrop(layoutNodeId, layout.index)
 
-      setCompatibleForKey(key, compatible)
+      setCompatibleFor(layoutNodeId, layout.type, layout.index, compatible)
       candidate.compatible = compatible
     }
   }
@@ -52,7 +60,7 @@ export const resolveNodeSurfaceSlotCandidate = (
   target: EventTarget | null,
   { adapter, graph, session }: DropResolutionContext
 ): SlotDropCandidate | null => {
-  const { setCompatibleForKey } = useSlotLinkDragUIState()
+  const { setCompatibleFor } = useSlotLinkDragUIState()
   if (!(target instanceof HTMLElement)) return null
 
   const elWithNode = target.closest<HTMLElement>('[data-node-id]')
@@ -92,8 +100,11 @@ export const resolveNodeSurfaceSlotCandidate = (
     return null
   }
 
-  const key = getSlotKey(String(nodeId), index, isInput)
-  const layout = layoutStore.getSlotLayout(key)
+  const layout = layoutStore.getSlotLayoutBy(
+    String(nodeId),
+    isInput ? 'input' : 'output',
+    index
+  )
   if (!layout) {
     session.preferredSlotForNode.set(nodeId, null)
     return null
@@ -103,14 +114,18 @@ export const resolveNodeSurfaceSlotCandidate = (
     ? adapter.isInputValidDrop(nodeId, index)
     : adapter.isOutputValidDrop(nodeId, index)
 
-  setCompatibleForKey(key, compatible)
+  setCompatibleFor(layout.nodeId, layout.type, layout.index, compatible)
 
   if (!compatible) {
     session.preferredSlotForNode.set(nodeId, null)
     return null
   }
 
-  const preferred = { index, key, layout }
+  const preferred = {
+    index,
+    identity: { nodeId: layout.nodeId, type: layout.type, index },
+    layout
+  }
   session.preferredSlotForNode.set(nodeId, preferred)
 
   return { layout, compatible: true }

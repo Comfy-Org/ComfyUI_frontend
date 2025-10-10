@@ -10,7 +10,7 @@ import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+// Slot keys migrated to identity attributes
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import {
@@ -50,9 +50,14 @@ export function syncNodeSlotLayoutsFromDOM(
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const batch: Array<{
+    nodeId: string
+    type: 'input' | 'output'
+    index: number
+    layout: SlotLayout
+  }> = []
 
-  for (const [slotKey, entry] of node.slots) {
+  for (const [index, entry] of node.slots.input) {
     const rect = entry.el.getBoundingClientRect()
     const screenCenter: [number, number] = [
       rect.left + rect.width / 2,
@@ -73,7 +78,9 @@ export function syncNodeSlotLayoutsFromDOM(
     const size = LiteGraph.NODE_SLOT_HEIGHT
     const half = size / 2
     batch.push({
-      key: slotKey,
+      nodeId,
+      type: 'input',
+      index,
       layout: {
         nodeId,
         index: entry.index,
@@ -88,7 +95,43 @@ export function syncNodeSlotLayoutsFromDOM(
       }
     })
   }
-  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
+  for (const [index, entry] of node.slots.output) {
+    const rect = entry.el.getBoundingClientRect()
+    const screenCenter: [number, number] = [
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2
+    ]
+    const [x, y] = (
+      conv ?? useSharedCanvasPositionConversion()
+    ).clientPosToCanvasPos(screenCenter)
+    const centerCanvas = { x, y }
+
+    entry.cachedOffset = {
+      x: centerCanvas.x - nodeLayout.position.x,
+      y: centerCanvas.y - nodeLayout.position.y
+    }
+
+    const size = LiteGraph.NODE_SLOT_HEIGHT
+    const half = size / 2
+    batch.push({
+      nodeId,
+      type: 'output',
+      index,
+      layout: {
+        nodeId,
+        index: entry.index,
+        type: entry.type,
+        position: { x: centerCanvas.x, y: centerCanvas.y },
+        bounds: {
+          x: centerCanvas.x - half,
+          y: centerCanvas.y - half,
+          width: size,
+          height: size
+        }
+      }
+    })
+  }
+  if (batch.length) layoutStore.batchUpdateSlotLayoutsBy(batch)
 }
 
 function updateNodeSlotsFromCache(nodeId: string) {
@@ -98,9 +141,14 @@ function updateNodeSlotsFromCache(nodeId: string) {
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const batch: Array<{
+    nodeId: string
+    type: 'input' | 'output'
+    index: number
+    layout: SlotLayout
+  }> = []
 
-  for (const [slotKey, entry] of node.slots) {
+  for (const [index, entry] of node.slots.input) {
     if (!entry.cachedOffset) {
       // schedule a sync to seed offset
       scheduleSlotLayoutSync(nodeId)
@@ -114,7 +162,39 @@ function updateNodeSlotsFromCache(nodeId: string) {
     const size = LiteGraph.NODE_SLOT_HEIGHT
     const half = size / 2
     batch.push({
-      key: slotKey,
+      nodeId,
+      type: 'input',
+      index,
+      layout: {
+        nodeId,
+        index: entry.index,
+        type: entry.type,
+        position: { x: centerCanvas.x, y: centerCanvas.y },
+        bounds: {
+          x: centerCanvas.x - half,
+          y: centerCanvas.y - half,
+          width: size,
+          height: size
+        }
+      }
+    })
+  }
+  for (const [index, entry] of node.slots.output) {
+    if (!entry.cachedOffset) {
+      scheduleSlotLayoutSync(nodeId)
+      continue
+    }
+
+    const centerCanvas = {
+      x: nodeLayout.position.x + entry.cachedOffset.x,
+      y: nodeLayout.position.y + entry.cachedOffset.y
+    }
+    const size = LiteGraph.NODE_SLOT_HEIGHT
+    const half = size / 2
+    batch.push({
+      nodeId,
+      type: 'output',
+      index,
       layout: {
         nodeId,
         index: entry.index,
@@ -130,7 +210,7 @@ function updateNodeSlotsFromCache(nodeId: string) {
     })
   }
 
-  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
+  if (batch.length) layoutStore.batchUpdateSlotLayoutsBy(batch)
 }
 
 export function useSlotElementTracking(options: {
@@ -180,11 +260,14 @@ export function useSlotElementTracking(options: {
           }
         }
 
-        // Register slot
-        const slotKey = getSlotKey(nodeId, index, type === 'input')
-
-        el.dataset.slotKey = slotKey
-        node.slots.set(slotKey, { el, index, type })
+        el.dataset.nodeId = nodeId
+        el.dataset.slotType = type
+        el.dataset.slotIndex = String(index)
+        if (type === 'input') {
+          node.slots.input.set(index, { el, index, type })
+        } else {
+          node.slots.output.set(index, { el, index, type })
+        }
 
         // Seed initial sync from DOM
         scheduleSlotLayoutSync(nodeId)
@@ -201,17 +284,18 @@ export function useSlotElementTracking(options: {
     const node = nodeSlotRegistryStore.getNode(nodeId)
     if (!node) return
 
-    // Remove this slot from registry and layout
-    const slotKey = getSlotKey(nodeId, index, type === 'input')
-    const entry = node.slots.get(slotKey)
+    const collection = type === 'input' ? node.slots.input : node.slots.output
+    const entry = collection.get(index)
     if (entry) {
-      delete entry.el.dataset.slotKey
-      node.slots.delete(slotKey)
+      delete entry.el.dataset.nodeId
+      delete entry.el.dataset.slotType
+      delete entry.el.dataset.slotIndex
+      collection.delete(index)
     }
-    layoutStore.deleteSlotLayout(slotKey)
+    layoutStore.deleteSlotLayoutBy(nodeId, type, index)
 
     // If node has no more slots, clean up
-    if (node.slots.size === 0) {
+    if (node.slots.input.size === 0 && node.slots.output.size === 0) {
       if (node.stopWatch) node.stopWatch()
       nodeSlotRegistryStore.deleteNode(nodeId)
     }

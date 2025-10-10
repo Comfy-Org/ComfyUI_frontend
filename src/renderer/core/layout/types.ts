@@ -59,6 +59,12 @@ export interface SlotLayout {
   bounds: Bounds
 }
 
+export interface SlotIdentity {
+  nodeId: NodeId
+  type: 'input' | 'output'
+  index: number
+}
+
 export interface LinkLayout {
   id: LinkId
   path: Path2D
@@ -282,7 +288,7 @@ export interface LayoutStore {
   queryItemsInBounds(bounds: Bounds): {
     nodes: NodeId[]
     links: LinkId[]
-    slots: string[]
+    slots: SlotIdentity[]
     reroutes: RerouteId[]
   }
 
@@ -293,24 +299,37 @@ export interface LayoutStore {
     rerouteId: RerouteId | null,
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void
-  updateSlotLayout(key: string, layout: SlotLayout): void
+  updateSlotLayoutBy(
+    nodeId: NodeId,
+    type: 'input' | 'output',
+    index: number,
+    layout: SlotLayout
+  ): void
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
 
   // Delete methods for cleanup
   deleteLinkLayout(linkId: LinkId): void
   deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
-  deleteSlotLayout(key: string): void
+  deleteSlotLayoutBy(
+    nodeId: NodeId,
+    type: 'input' | 'output',
+    index: number
+  ): void
   deleteNodeSlotLayouts(nodeId: NodeId): void
   deleteRerouteLayout(rerouteId: RerouteId): void
   clearAllSlotLayouts(): void
 
   // Get layout data
   getLinkLayout(linkId: LinkId): LinkLayout | null
-  getSlotLayout(key: string): SlotLayout | null
+  getSlotLayoutBy(
+    nodeId: NodeId,
+    type: 'input' | 'output',
+    index: number
+  ): SlotLayout | null
   getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
 
-  // Returns all slot layout keys currently tracked by the store
-  getAllSlotKeys(): string[]
+  // Returns all slot layouts currently tracked by the store
+  getAllSlots(): ReadonlyArray<SlotLayout>
 
   // Direct mutation API (CRDT-ready)
   applyOperation(operation: LayoutOperation): void
@@ -334,7 +353,12 @@ export interface LayoutStore {
     updates: Array<{ nodeId: NodeId; bounds: Bounds }>
   ): void
 
-  batchUpdateSlotLayouts(
-    updates: Array<{ key: string; layout: SlotLayout }>
+  batchUpdateSlotLayoutsBy(
+    updates: Array<{
+      nodeId: NodeId
+      type: 'input' | 'output'
+      index: number
+      layout: SlotLayout
+    }>
   ): void
 }
