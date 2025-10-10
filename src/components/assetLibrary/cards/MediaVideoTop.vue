@@ -1,9 +1,14 @@
 <template>
   <div class="relative h-full w-full overflow-hidden rounded">
     <!-- Show video player if playing -->
-    <div v-if="showVideoPlayer" class="h-full w-full bg-black">
+    <div
+      v-if="showVideoPlayer"
+      class="h-full w-full bg-black"
+      @mouseenter="showControls = true"
+      @mouseleave="showControls = false"
+    >
       <video
-        controls
+        :controls="showControls"
         autoplay
         class="relative h-full w-full object-contain"
         @click.stop
@@ -62,10 +67,13 @@ const emit = defineEmits<{
 
 // State for showing video player
 const showVideoPlayer = ref(false)
+const showControls = ref(false)
 
-// Emit playing state changes
-watch(showVideoPlayer, (isPlaying) => {
-  emit('videoPlayingStateChanged', isPlaying)
+// Emit when controls visibility changes
+watch(showControls, (controlsVisible) => {
+  if (showVideoPlayer.value) {
+    emit('videoPlayingStateChanged', controlsVisible)
+  }
 })
 
 // Handle play button click
