@@ -1,7 +1,8 @@
 <template>
   <div class="flex flex-col">
     <IconTextButton
-      type="secondary"
+      type="transparent"
+      class="dark-theme:text-white"
       label="Inspect asset"
       @click="handleInspect"
     >
@@ -11,7 +12,8 @@
     </IconTextButton>
 
     <IconTextButton
-      type="secondary"
+      type="transparent"
+      class="dark-theme:text-white"
       label="Add to current workflow"
       @click="handleAddToWorkflow"
     >
@@ -20,7 +22,12 @@
       </template>
     </IconTextButton>
 
-    <IconTextButton type="secondary" label="Download" @click="handleDownload">
+    <IconTextButton
+      type="transparent"
+      class="dark-theme:text-white"
+      label="Download"
+      @click="handleDownload"
+    >
       <template #icon>
         <i class="icon-[lucide--download] size-4" />
       </template>
@@ -30,7 +37,8 @@
 
     <IconTextButton
       v-if="showWorkflowOptions"
-      type="secondary"
+      type="transparent"
+      class="dark-theme:text-white"
       label="Open as workflow in new tab"
       @click="handleOpenWorkflow"
     >
@@ -41,7 +49,8 @@
 
     <IconTextButton
       v-if="showWorkflowOptions"
-      type="secondary"
+      type="transparent"
+      class="dark-theme:text-white"
       label="Export workflow"
       @click="handleExportWorkflow"
     >
@@ -53,7 +62,8 @@
     <Divider v-if="showWorkflowOptions" />
 
     <IconTextButton
-      type="secondary"
+      type="transparent"
+      class="dark-theme:text-white"
       label="Copy job ID"
       @click="handleCopyJobId"
     >
@@ -64,7 +74,12 @@
 
     <Divider />
 
-    <IconTextButton type="secondary" label="Delete" @click="handleDelete">
+    <IconTextButton
+      type="transparent"
+      class="dark-theme:text-white"
+      label="Delete"
+      @click="handleDelete"
+    >
       <template #icon>
         <i class="icon-[lucide--trash-2] size-4" />
       </template>
