@@ -55,6 +55,7 @@
           <div :class="durationChipClasses">
             <IconTextButton
               type="secondary"
+              size="sm"
               :label="context.outputCount.toString()"
               @click="actions.onOutputCountClick(asset?.id || '')"
             >
@@ -105,6 +106,7 @@ import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import { useMediaAssetActions } from '@/composables/useMediaAssetActions'
 import type { AssetContext, AssetMeta, MediaKind } from '@/types/media.types'
+import { MediaAssetKey } from '@/types/media.types'
 import { formatDuration } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -117,7 +119,6 @@ import MediaImageBottom from './cards/MediaImageBottom.vue'
 import MediaImageTop from './cards/MediaImageTop.vue'
 import MediaVideoBottom from './cards/MediaVideoBottom.vue'
 import MediaVideoTop from './cards/MediaVideoTop.vue'
-import { mediaAssetKey } from './cards/mediaAssetProvider'
 
 // Map media types to their specific top components
 const topComponents = {
@@ -165,7 +166,7 @@ const isVideoPlaying = ref(false)
 const actions = useMediaAssetActions(emit)
 
 // Provide for child components
-provide(mediaAssetKey, {
+provide(MediaAssetKey, {
   asset: toRef(() => asset),
   context: toRef(() => context),
   isVideoPlaying,

@@ -76,15 +76,15 @@
 import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import { MediaAssetKey } from '@/types/media.types'
 
 import Divider from './Divider.vue'
-import { mediaAssetKey } from './mediaAssetProvider'
 
 const { close } = defineProps<{
   close: () => void
 }>()
 
-const { asset, context, actions } = inject(mediaAssetKey)!
+const { asset, context, actions } = inject(MediaAssetKey)!
 
 const showWorkflowOptions = computed(() => {
   return context.value.type

@@ -20,11 +20,11 @@ import { inject } from 'vue'
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
+import { MediaAssetKey } from '@/types/media.types'
 
 import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
-import { mediaAssetKey } from './mediaAssetProvider'
 
-const { asset, actions } = inject(mediaAssetKey)!
+const { asset, actions } = inject(MediaAssetKey)!
 
 const handleDelete = () => {
   if (asset.value) {

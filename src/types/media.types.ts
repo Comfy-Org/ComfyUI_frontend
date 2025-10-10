@@ -1,6 +1,9 @@
 /**
  * Media types for Asset Library
  */
+import type { InjectionKey, Ref } from 'vue'
+
+import type { MediaAssetActions } from '@/composables/useMediaAssetActions'
 
 export type MediaKind = 'video' | 'audio' | 'image' | '3D'
 
@@ -25,3 +28,14 @@ export interface AssetMeta {
     height: number
   }
 }
+
+// Injection key for MediaAsset provide/inject pattern
+export interface MediaAssetProviderValue {
+  asset: Ref<AssetMeta | undefined>
+  context: Ref<AssetContext>
+  isVideoPlaying: Ref<boolean>
+  actions: MediaAssetActions
+}
+
+export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
+  Symbol('mediaAsset')

@@ -45,11 +45,10 @@ import { computed, inject } from 'vue'
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
+import { MediaAssetKey } from '@/types/media.types'
 import { formatDuration } from '@/utils/formatUtil'
 
-import { mediaAssetKey } from './mediaAssetProvider'
-
-const { asset, context, isVideoPlaying, actions } = inject(mediaAssetKey)!
+const { asset, context, isVideoPlaying, actions } = inject(MediaAssetKey)!
 
 const showDurationChips = computed(() => {
   return asset.value?.duration !== undefined
