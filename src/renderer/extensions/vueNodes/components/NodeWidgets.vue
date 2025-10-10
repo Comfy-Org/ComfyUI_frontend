@@ -120,12 +120,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const result: ProcessedWidget[] = []
 
   for (const widget of widgets) {
+    // Skip if widget is in the hidden list for this node type
     if (widget.options?.hidden) continue
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    const vueComponent = getComponent(widget.type) || WidgetInputText
+    const vueComponent =
+      getComponent(widget.type, widget.name) || WidgetInputText
 
     const slotMetadata = widget.slotMetadata
 
@@ -150,6 +152,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     const updateHandler = (value: unknown) => {
+      // Update the widget value directly
+      widget.value = value as WidgetValue
+
       if (widget.callback) {
         widget.callback(value)
       }
