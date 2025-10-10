@@ -52,11 +52,7 @@ const { asset } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  download: [assetId: string]
   play: [assetId: string]
-  view: [assetId: string]
-  copy: [assetId: string]
-  copyJobId: [jobId: string]
   videoPlayingStateChanged: [isPlaying: boolean]
 }>()
 
@@ -72,7 +68,7 @@ watch(showControls, (controlsVisible) => {
 })
 
 // Handle play button click
-function handlePlayClick() {
+const handlePlayClick = () => {
   showVideoPlayer.value = true
   emit('play', asset.id)
 }

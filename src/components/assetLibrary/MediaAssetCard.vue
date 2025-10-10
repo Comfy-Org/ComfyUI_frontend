@@ -16,155 +16,47 @@
             class="h-full w-full animate-pulse rounded-lg bg-zinc-200 dark-theme:bg-zinc-700"
           />
         </template>
+
         <!-- Content based on asset type -->
         <template v-else-if="asset">
           <component
             :is="getTopComponent(asset.kind)"
             :asset="asset"
             :context="context"
-            @view="emit('view', $event)"
-            @download="emit('download', $event)"
-            @copy="emit('copy', $event)"
-            @more="emit('more', $event)"
-            @copy-job-id="emit('copyJobId', $event)"
-            @play="emit('play', $event)"
+            @view="actions.onView"
+            @download="actions.onDownload"
+            @play="actions.onPlay"
             @video-playing-state-changed="isVideoPlaying = $event"
           />
         </template>
-        <template #top-left>
-          <IconGroup>
-            <IconButton size="sm" @click="console.log('delete')">
-              <i class="icon-[lucide--trash-2] size-4" />
-            </IconButton>
-            <IconButton size="sm" @click="console.log('download')">
-              <i class="icon-[lucide--download] size-4" />
-            </IconButton>
-            <MoreButton size="sm">
-              <template #default="{ close }">
-                <IconTextButton
-                  type="secondary"
-                  label="Inspect asset"
-                  @click="
-                    () => {
-                      close()
-                    }
-                  "
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--zoom-in] size-4" />
-                  </template>
-                </IconTextButton>
-                <IconTextButton
-                  type="secondary"
-                  label="Add to current workflow"
-                  @click="
-                    () => {
-                      close()
-                    }
-                  "
-                >
-                  <template #icon>
-                    <i class="icon-[comfy--node] size-4" />
-                  </template>
-                </IconTextButton>
-                <IconTextButton
-                  type="secondary"
-                  label="Download"
-                  @click="
-                    () => {
-                      close()
-                    }
-                  "
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--download] size-4" />
-                  </template>
-                </IconTextButton>
-                <div
-                  class="h-[1px] bg-neutral-200 dark-theme:bg-neutral-700"
-                ></div>
-                <IconTextButton
-                  type="secondary"
-                  label="Open as workflow in new tab"
-                  @click="
-                    () => {
-                      close()
-                    }
-                  "
-                >
-                  <template #icon>
-                    <i class="icon-[comfy--workflow] size-4" />
-                  </template>
-                </IconTextButton>
-                <IconTextButton
-                  type="secondary"
-                  label="Export workflow"
-                  @click="
-                    () => {
-                      close()
-                    }
-                  "
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--file-output] size-4" />
-                  </template>
-                </IconTextButton>
-                <div
-                  class="h-[1px] bg-neutral-200 dark-theme:bg-neutral-700"
-                ></div>
-                <IconTextButton
-                  type="secondary"
-                  label="Copy job ID"
-                  @click="
-                    () => {
-                      close()
-                    }
-                  "
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--copy] size-4" />
-                  </template>
-                </IconTextButton>
-                <div
-                  class="h-[1px] bg-neutral-200 dark-theme:bg-neutral-700"
-                ></div>
-                <IconTextButton
-                  type="secondary"
-                  label="Delete"
-                  @click="
-                    () => {
-                      close()
-                    }
-                  "
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--trash-2] size-4" />
-                  </template>
-                </IconTextButton>
-              </template>
-            </MoreButton>
-          </IconGroup>
+
+        <!-- Actions overlay (top-left) -->
+        <template v-if="!loading && asset" #top-left>
+          <MediaAssetActions />
         </template>
-        <template #top-right>
-          <IconButton size="sm" @click="console.log('zoom in')">
+
+        <!-- Zoom button (top-right) -->
+        <template v-if="!loading && asset && showZoomButton" #top-right>
+          <IconButton size="sm" @click="actions.onView(asset.id)">
             <i class="icon-[lucide--zoom-in] size-4" />
           </IconButton>
         </template>
-        <template v-if="asset?.duration" #bottom-left>
+
+        <!-- Duration/Format chips (bottom-left) -->
+        <template v-if="!loading && asset?.duration" #bottom-left>
           <div class="flex gap-1" :class="durationChipClasses">
             <SquareChip variant="light" :label="formattedDuration" />
             <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
           </div>
         </template>
-        <template v-if="context?.outputCount" #bottom-right>
+
+        <!-- Output count (bottom-right) -->
+        <template v-if="!loading && context?.outputCount" #bottom-right>
           <div :class="durationChipClasses">
             <IconTextButton
-              :label="context?.outputCount.toString() ?? '0'"
-              @click="
-                () => {
-                  console.log('Output count clicked')
-                }
-              "
+              type="secondary"
+              :label="context.outputCount.toString()"
+              @click="actions.onOutputCountClick(asset?.id || '')"
             >
               <template #icon>
                 <i class="icon-[lucide--layers] size-4" />
@@ -203,28 +95,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, provide, ref, toRef } from 'vue'
 
-import Media3DBottom from '@/components/assetLibrary/cards/Media3DBottom.vue'
-import Media3DTop from '@/components/assetLibrary/cards/Media3DTop.vue'
-import MediaAudioBottom from '@/components/assetLibrary/cards/MediaAudioBottom.vue'
-import MediaAudioTop from '@/components/assetLibrary/cards/MediaAudioTop.vue'
-import MediaImageBottom from '@/components/assetLibrary/cards/MediaImageBottom.vue'
-import MediaImageTop from '@/components/assetLibrary/cards/MediaImageTop.vue'
-import MediaVideoBottom from '@/components/assetLibrary/cards/MediaVideoBottom.vue'
-import MediaVideoTop from '@/components/assetLibrary/cards/MediaVideoTop.vue'
+import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
+import SquareChip from '@/components/chip/SquareChip.vue'
+import { useMediaAssetActions } from '@/composables/useMediaAssetActions'
 import type { AssetContext, AssetMeta, MediaKind } from '@/types/media.types'
-import { formatDuration, getFilenameDetails } from '@/utils/formatUtil'
+import { formatDuration } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import IconButton from '../button/IconButton.vue'
-import IconGroup from '../button/IconGroup.vue'
-import IconTextButton from '../button/IconTextButton.vue'
-import MoreButton from '../button/MoreButton.vue'
-import SquareChip from '../chip/SquareChip.vue'
+import Media3DBottom from './cards/Media3DBottom.vue'
+import Media3DTop from './cards/Media3DTop.vue'
+import MediaAssetActions from './cards/MediaAssetActions.vue'
+import MediaAudioBottom from './cards/MediaAudioBottom.vue'
+import MediaAudioTop from './cards/MediaAudioTop.vue'
+import MediaImageBottom from './cards/MediaImageBottom.vue'
+import MediaImageTop from './cards/MediaImageTop.vue'
+import MediaVideoBottom from './cards/MediaVideoBottom.vue'
+import MediaVideoTop from './cards/MediaVideoTop.vue'
+import { mediaAssetKey } from './cards/mediaAssetProvider'
 
 // Map media types to their specific top components
 const topComponents = {
@@ -257,20 +150,29 @@ const { context, asset, loading, selected } = defineProps<{
   selected?: boolean
 }>()
 
+const emit = defineEmits<{
+  select: [asset: AssetMeta]
+  view: [assetId: string]
+  download: [assetId: string]
+  delete: [assetId: string]
+  play: [assetId: string]
+}>()
+
 // State for video playing
 const isVideoPlaying = ref(false)
 
-const emit = defineEmits<{
-  download: [assetId: string]
-  copyJobId: [jobId: string]
-  openDetail: [assetId: string]
-  play: [assetId: string]
-  view: [assetId: string]
-  copy: [assetId: string]
-  more: [assetId: string]
-  select: [asset: AssetMeta]
-}>()
+// Create actions using composable
+const actions = useMediaAssetActions(emit)
 
+// Provide for child components
+provide(mediaAssetKey, {
+  asset: toRef(() => asset),
+  context: toRef(() => context),
+  isVideoPlaying,
+  actions
+})
+
+// Computed properties
 const containerClasses = computed(() => {
   return cn(
     'gap-1',
@@ -285,6 +187,12 @@ const formattedDuration = computed(() => {
   return formatDuration(asset.duration)
 })
 
+const fileFormat = computed(() => {
+  if (!asset?.name) return ''
+  const parts = asset.name.split('.')
+  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : ''
+})
+
 const durationChipClasses = computed(() => {
   if (asset?.kind === 'audio') {
     return '-translate-y-11'
@@ -295,16 +203,13 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-const fileFormat = computed(() => {
-  if (context.outputCount && asset?.name) {
-    return getFilenameDetails(asset.name).suffix
-  }
-  return undefined
+const showZoomButton = computed(() => {
+  return asset?.kind === 'image' || asset?.kind === '3D'
 })
 
 const handleCardClick = () => {
   if (asset) {
-    emit('select', asset)
+    actions.onSelect(asset)
   }
 }
 </script>
