@@ -9,7 +9,11 @@
     @keydown.space.prevent="handleCardClick"
   >
     <template #top>
-      <CardTop ratio="square">
+      <CardTop
+        ratio="square"
+        :bottom-left-class="durationChipClasses"
+        :bottom-right-class="durationChipClasses"
+      >
         <!-- Loading State -->
         <template v-if="loading">
           <div
@@ -44,26 +48,22 @@
 
         <!-- Duration/Format chips (bottom-left) -->
         <template v-if="!loading && asset?.duration" #bottom-left>
-          <div class="flex gap-1" :class="durationChipClasses">
-            <SquareChip variant="light" :label="formattedDuration" />
-            <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
-          </div>
+          <SquareChip variant="light" :label="formattedDuration" />
+          <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
         </template>
 
         <!-- Output count (bottom-right) -->
         <template v-if="!loading && context?.outputCount" #bottom-right>
-          <div :class="durationChipClasses">
-            <IconTextButton
-              type="secondary"
-              size="sm"
-              :label="context.outputCount.toString()"
-              @click="actions.onOutputCountClick(asset?.id || '')"
-            >
-              <template #icon>
-                <i class="icon-[lucide--layers] size-4" />
-              </template>
-            </IconTextButton>
-          </div>
+          <IconTextButton
+            type="secondary"
+            size="sm"
+            :label="context.outputCount.toString()"
+            @click="actions.onOutputCountClick(asset?.id || '')"
+          >
+            <template #icon>
+              <i class="icon-[lucide--layers] size-4" />
+            </template>
+          </IconTextButton>
         </template>
       </CardTop>
     </template>

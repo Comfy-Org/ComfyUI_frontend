@@ -180,7 +180,7 @@ export const WebMVideo: Story = {
       kind: 'video',
       size: 3145728,
       timestamp: Date.now(),
-      thumbnailUrl: 'https://picsum.photos/640/360?random=webm', // Poster image
+      thumbnailUrl: SAMPLE_MEDIA.image, // Poster image
       src: 'https://www.w3schools.com/html/movie.mp4', // Actual video
       duration: 620,
       dimensions: {
@@ -227,7 +227,7 @@ export const GridLayout: Story = {
           size: 2097152,
           duration: 4500,
           timestamp: Date.now(),
-          src: 'https://picsum.photos/400/300?random=1',
+          src: SAMPLE_MEDIA.image,
           dimensions: { width: 1920, height: 1080 }
         },
         {
