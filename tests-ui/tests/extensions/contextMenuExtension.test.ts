@@ -99,7 +99,7 @@ describe('Context Menu Extension API', () => {
             ]
           }
         },
-        null as any,
+        null as unknown as IContextMenuValue,
         { content: 'After Separator', callback: () => {} }
       ])
 
