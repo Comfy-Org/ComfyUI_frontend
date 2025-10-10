@@ -3,6 +3,8 @@
  */
 import type { Component } from 'vue'
 
+import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+
 import WidgetAudioUI from '../components/WidgetAudioUI.vue'
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
@@ -169,11 +171,9 @@ export const isEssential = (type: string): boolean => {
   return widgets.get(canonicalType)?.essential || false
 }
 
-export const shouldRenderAsVue = (widget: {
-  type?: string
-  options?: Record<string, unknown>
-}): boolean => {
+export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   if (widget.options?.canvasOnly) return false
+  if (widget.isDOMWidget) return true
   if (!widget.type) return false
   return isSupported(widget.type)
 }
