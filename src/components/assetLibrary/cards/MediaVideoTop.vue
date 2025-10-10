@@ -31,12 +31,7 @@
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/30"
       >
-        <IconButton
-          type="secondary"
-          size="md"
-          class="bg-zinc-700"
-          @click="handlePlayClick"
-        >
+        <IconButton type="secondary" size="md" @click="handlePlayClick">
           <i class="icon-[comfy--play] size-4" />
         </IconButton>
       </div>

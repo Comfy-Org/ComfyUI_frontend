@@ -1,7 +1,8 @@
 <template>
   <div class="relative inline-flex items-center">
-    <IconButton @click="toggle">
-      <i class="icon-[lucide--more-vertical] text-sm" />
+    <IconButton :size="size" @click="toggle">
+      <i v-if="!isVertical" class="icon-[lucide--ellipsis] text-sm" />
+      <i v-else class="icon-[lucide--more-vertical] text-sm" />
     </IconButton>
 
     <Popover
@@ -25,11 +26,18 @@
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
+import type { ButtonSize } from '@/types/buttonTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 import IconButton from './IconButton.vue'
 
 const popover = ref<InstanceType<typeof Popover>>()
+
+const { size, isVertical = false } = defineProps<{
+  size?: ButtonSize
+  isVertical?: boolean
+  containerClass?: string
+}>()
 
 const toggle = (event: Event) => {
   popover.value?.toggle(event)
@@ -45,7 +53,7 @@ const pt = computed(() => ({
   },
   content: {
     class: cn(
-      'mt-2 rounded-lg',
+      'mt-1 rounded-lg',
       'bg-white dark-theme:bg-zinc-800',
       'text-neutral dark-theme:text-white',
       'shadow-lg',

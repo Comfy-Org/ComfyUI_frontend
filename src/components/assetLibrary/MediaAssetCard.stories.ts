@@ -52,7 +52,7 @@ export const ImageAsset: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'output', outputCount: 3 },
     asset: sampleAsset,
     loading: false
   }
@@ -65,7 +65,7 @@ export const VideoAsset: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'input' },
     asset: {
       ...sampleAsset,
       id: 'asset-2',
@@ -90,7 +90,7 @@ export const Model3DAsset: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'input' },
     asset: {
       ...sampleAsset,
       id: 'asset-3',
@@ -111,7 +111,7 @@ export const AudioAsset: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'input' },
     asset: {
       ...sampleAsset,
       id: 'asset-3',
@@ -132,7 +132,7 @@ export const LoadingState: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'input' },
     asset: sampleAsset,
     loading: true
   }
@@ -145,7 +145,7 @@ export const LongFileName: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'input' },
     asset: {
       ...sampleAsset,
       name: 'very-long-file-name-that-should-be-truncated-in-the-ui-to-prevent-overflow.png'
@@ -160,7 +160,7 @@ export const SelectedState: Story = {
     })
   ],
   args: {
-    context: 'output',
+    context: { type: 'output', outputCount: 2 },
     asset: sampleAsset,
     selected: true
   }
@@ -173,7 +173,7 @@ export const WebMVideo: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'input' },
     asset: {
       id: 'asset-webm',
       name: 'animated-clip.webm',
@@ -198,7 +198,7 @@ export const GifAnimation: Story = {
     })
   ],
   args: {
-    context: 'input',
+    context: { type: 'input' },
     asset: {
       id: 'asset-gif',
       name: 'animation.gif',
@@ -259,6 +259,16 @@ export const GridLayout: Story = {
           timestamp: Date.now(),
           src: 'https://media.giphy.com/media/l0HlNaQ6gWfllcjDO/giphy.gif',
           dimensions: { width: 480, height: 360 }
+        },
+        {
+          id: 'grid-5',
+          name: 'Asset-3d-model.glb',
+          kind: '3D',
+          size: 7340032,
+          src: '',
+          dimensions: undefined,
+          duration: 18023,
+          timestamp: 0
         }
       ]
       return { assets }
@@ -268,7 +278,7 @@ export const GridLayout: Story = {
         <MediaAssetCard
           v-for="asset in assets"
           :key="asset.id"
-          context="output"
+          :context="{ type: Math.random() > 0.5 ? 'input' : 'output', outputCount: Math.floor(Math.random() * 5) }"
           :asset="asset"
         />
       </div>

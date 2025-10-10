@@ -20,7 +20,7 @@ const chipClasses = computed(() => {
 
   const variantStyles = {
     dark: 'bg-zinc-500/40 text-white/90',
-    light: 'backdrop-blur-[2px] bg-white/40 text-zinc-900 dark-theme:text-white'
+    light: 'backdrop-blur-[2px] bg-white/50 text-zinc-900 dark-theme:text-white'
   }
 
   return cn(baseClasses, variantStyles[variant])

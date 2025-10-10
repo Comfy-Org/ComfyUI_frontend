@@ -4,7 +4,10 @@
 
 export type MediaKind = 'video' | 'audio' | 'image' | '3D'
 
-export type AssetContext = 'input' | 'output'
+export type AssetContext = {
+  type: 'input' | 'output'
+  outputCount?: number // Only for output context
+}
 
 export interface AssetMeta {
   id: string
