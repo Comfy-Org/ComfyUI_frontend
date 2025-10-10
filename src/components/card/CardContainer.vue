@@ -66,7 +66,7 @@ const containerClasses = computed(() => {
   const aspectRatio = customAspectRatio
     ? `aspect-[${customAspectRatio}]`
     : {
-        mini: 'aspect-100/115',
+        mini: 'aspect-100/120',
         compact: 'aspect-240/311',
         regular: 'aspect-256/308',
         portrait: 'aspect-256/325',
