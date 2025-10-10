@@ -127,9 +127,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    const vueComponent = widget.isDOMWidget
-      ? WidgetDOM
-      : getComponent(widget.type, widget.name) || WidgetInputText
+    const vueComponent =
+      getComponent(widget.type, widget.name) ||
+      (widget.isDOMWidget ? WidgetDOM : WidgetInputText)
 
     const slotMetadata = widget.slotMetadata
 
