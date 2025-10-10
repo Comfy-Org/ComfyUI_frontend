@@ -2,10 +2,11 @@
   <div>
     <div
       v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
-      class="w-full flex content-end z-1001 h-[38px]"
+      class="w-full flex content-end z-1001 h-9.5"
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
+      <CloudBar />
     </div>
     <div
       v-show="showTopMenu"
@@ -43,6 +44,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
+import CloudBar from './CloudBar.vue'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
