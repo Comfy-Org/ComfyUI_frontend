@@ -12,6 +12,7 @@ import type {
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
@@ -38,6 +39,7 @@ export interface SafeWidgetData {
   callback?: ((value: unknown) => void) | undefined
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
+  isDOMWidget?: boolean
 }
 
 export interface VueNodeData {
@@ -156,7 +158,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           options: widget.options ? { ...widget.options } : undefined,
           callback: widget.callback,
           spec,
-          slotMetadata: slotInfo
+          slotMetadata: slotInfo,
+          isDOMWidget: isDOMWidget(widget)
         }
       } catch (error) {
         return {

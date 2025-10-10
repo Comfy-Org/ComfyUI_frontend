@@ -62,6 +62,7 @@ import type {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
   getComponent,
@@ -127,7 +128,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!shouldRenderAsVue(widget)) continue
 
     const vueComponent =
-      getComponent(widget.type, widget.name) || WidgetInputText
+      getComponent(widget.type, widget.name) ||
+      (widget.isDOMWidget ? WidgetDOM : WidgetInputText)
 
     const slotMetadata = widget.slotMetadata
 
