@@ -85,6 +85,34 @@ export const graphToPrompt = async (
     const inputs: ComfyApiWorkflow[string]['inputs'] = {}
     const { widgets } = node
 
+    // Sync widget values from widgets_values array ONLY for old clipspace filenames
+    // This ensures we use the latest hash-based filenames from clipspace
+    // without breaking normal image selection
+    const graphNode = (node as any).node || node // Access underlying LGraph node from DTO wrapper
+
+    if (widgets && graphNode.widgets_values) {
+      for (const [i, widget] of widgets.entries()) {
+        // Only apply to image widgets to avoid affecting other widget types
+        if (
+          widget.name === 'image' &&
+          graphNode.widgets_values[i] !== undefined
+        ) {
+          const currentValue = String(widget.value)
+          const newValue = String(graphNode.widgets_values[i])
+
+          // Only sync if current value is an old clipspace friendly filename
+          const isOldClipspaceFilename =
+            /clipspace\/clipspace-(painted-masked|painted|mask|paint)-\d+\.png(\s+\[input\])?/.test(
+              currentValue
+            )
+
+          if (isOldClipspaceFilename && currentValue !== newValue) {
+            widget.value = graphNode.widgets_values[i]
+          }
+        }
+      }
+    }
+
     // Store all widget values
     if (widgets) {
       for (const [i, widget] of widgets.entries()) {

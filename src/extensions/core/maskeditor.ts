@@ -996,9 +996,13 @@ class MaskEditorDialog extends ComfyDialog {
     const image = this.uiManager.getImage()
 
     try {
-      await ensureImageFullyLoaded(maskCanvas.toDataURL())
+      const maskDataURL = maskCanvas.toDataURL()
+      await ensureImageFullyLoaded(maskDataURL)
     } catch (error) {
-      console.error('Error loading mask image:', error)
+      console.error('[MaskEditor] Error loading mask image:', error)
+      if (error instanceof Error) {
+        console.error('[MaskEditor] Error details:', error.message, error.stack)
+      }
       return
     }
 
@@ -1036,22 +1040,41 @@ class MaskEditorDialog extends ComfyDialog {
       paint: paintCanvas
     })
 
-    replaceClipspaceImages(refs.paintedMaskedImage, [refs.paint])
+    // Don't set clipspace widgets here - wait until after uploads complete
+    // replaceClipspaceImages will be called after we have the actual hash-based filenames
 
     const originalImageUrl = new URL(image.src)
 
     this.uiManager.setBrushOpacity(0)
 
-    const originalImageFilename = originalImageUrl.searchParams.get('filename')
-    if (!originalImageFilename)
-      throw new Error(
-        "Expected original image URL to have a `filename` query parameter, but couldn't find it."
-      )
+    // Try to get the actual hash-based filename from clipspace.images first
+    // This ensures we use the hash returned from upload, not the friendly name
+    let originalImageRef: Partial<Ref>
 
-    const originalImageRef: Partial<Ref> = {
-      filename: originalImageFilename,
-      subfolder: originalImageUrl.searchParams.get('subfolder') ?? undefined,
-      type: originalImageUrl.searchParams.get('type') ?? undefined
+    const paintedIndex = ComfyApp.clipspace?.paintedIndex
+    const storedImageRef = ComfyApp.clipspace?.images?.[paintedIndex ?? 0]
+
+    if (
+      storedImageRef &&
+      typeof storedImageRef === 'object' &&
+      'filename' in storedImageRef
+    ) {
+      // Use the stored reference which has the hash-based filename
+      originalImageRef = storedImageRef
+    } else {
+      // Fallback to URL parsing (legacy behavior)
+      const originalImageFilename =
+        originalImageUrl.searchParams.get('filename')
+      if (!originalImageFilename)
+        throw new Error(
+          "Expected original image URL to have a `filename` query parameter, but couldn't find it."
+        )
+
+      originalImageRef = {
+        filename: originalImageFilename,
+        subfolder: originalImageUrl.searchParams.get('subfolder') ?? undefined,
+        type: originalImageUrl.searchParams.get('type') ?? undefined
+      }
     }
 
     const mkFormData = (
@@ -1105,7 +1128,22 @@ class MaskEditorDialog extends ComfyDialog {
         'selectedIndex'
       )
       await this.uploadImage(refs.paint, formDatas.paint)
-      await this.uploadImage(refs.paintedImage, formDatas.paintedImage, false)
+      const uploadedPaintedRef = await this.uploadImage(
+        refs.paintedImage,
+        formDatas.paintedImage,
+        false
+      )
+
+      // Update the formData for paintedMaskedImage to use the actual hash returned from backend
+      // This is critical - without this, original_ref points to timestamp-based filename that doesn't exist
+      console.log(
+        '[MaskEditor] Updating painted_masked original_ref to:',
+        uploadedPaintedRef
+      )
+      formDatas.paintedMaskedImage.set(
+        'original_ref',
+        JSON.stringify(uploadedPaintedRef)
+      )
 
       // IMPORTANT: We using `uploadMask` here, because the backend combines the mask with the painted image during the upload process. We do NOT want to combine the mask with the original image on the frontend, because the spec for CanvasRenderingContext2D does not allow for setting pixels to transparent while preserving their RGB values.
       // See: <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/putImageData#data_loss_due_to_browser_optimization>
@@ -1117,10 +1155,42 @@ class MaskEditorDialog extends ComfyDialog {
         'combinedIndex'
       )
 
+      // Now update clipspace widgets with the actual hash-based filenames
+      // that were stored in clipspace.images during upload
+      if (ComfyApp.clipspace?.images) {
+        const actualPaintedMasked =
+          ComfyApp.clipspace.images[ComfyApp.clipspace.combinedIndex ?? 2]
+        const actualPaint =
+          ComfyApp.clipspace.images[ComfyApp.clipspace.paintedIndex ?? 1]
+
+        console.log('[MaskEditor] Clipspace state after uploads:', {
+          combinedIndex: ComfyApp.clipspace.combinedIndex,
+          paintedIndex: ComfyApp.clipspace.paintedIndex,
+          actualPaintedMasked,
+          actualPaint,
+          allImages: ComfyApp.clipspace.images
+        })
+
+        if (actualPaintedMasked) {
+          // Update widgets with actual uploaded refs (with hash filenames)
+          replaceClipspaceImages(
+            actualPaintedMasked,
+            actualPaint ? [actualPaint] : undefined
+          )
+          console.log(
+            '[MaskEditor] Updated clipspace widgets with hash-based filenames'
+          )
+        } else {
+          console.error(
+            '[MaskEditor] actualPaintedMasked is undefined - widget not updated!'
+          )
+        }
+      }
+
       ComfyApp.onClipspaceEditorSave()
       this.destroy()
     } catch (error) {
-      console.error('Error during upload:', error)
+      console.error('[MaskEditor] Error during upload:', error)
       this.uiManager.setSaveButtonText(t('g.save'))
       this.uiManager.setSaveButtonEnabled(true)
       this.keyboardManager.addListeners()
@@ -1149,7 +1219,7 @@ class MaskEditorDialog extends ComfyDialog {
     formData: FormData,
     isPaintLayer = true
   ) {
-    const success = await requestWithRetries(() =>
+    const { success, data } = await requestWithRetries(() =>
       api.fetchApi('/upload/image', {
         method: 'POST',
         body: formData
@@ -1159,27 +1229,38 @@ class MaskEditorDialog extends ComfyDialog {
       throw new Error('Upload failed.')
     }
 
+    // Use actual response data if available, otherwise fall back to filepath
+    const actualFilepath: Ref = data?.name
+      ? {
+          filename: data.name,
+          subfolder: data.subfolder || filepath.subfolder,
+          type: data.type || filepath.type
+        }
+      : filepath
+
     if (!isPaintLayer) {
       ClipspaceDialog.invalidatePreview()
-      return success
+      return actualFilepath
     }
     try {
       const paintedIndex = ComfyApp.clipspace?.paintedIndex
       if (ComfyApp.clipspace?.imgs && paintedIndex !== undefined) {
         // Create and set new image
         const newImage = new Image()
-        newImage.src = mkFileUrl({ ref: filepath, preview: true })
+        newImage.src = mkFileUrl({ ref: actualFilepath, preview: true })
         ComfyApp.clipspace.imgs[paintedIndex] = newImage
 
-        // Update images array if it exists
-        if (ComfyApp.clipspace.images) {
-          ComfyApp.clipspace.images[paintedIndex] = filepath
+        // Update images array - create if it doesn't exist
+        if (!ComfyApp.clipspace.images) {
+          ComfyApp.clipspace.images = []
         }
+        ComfyApp.clipspace.images[paintedIndex] = actualFilepath
       }
     } catch (err) {
       console.warn('Failed to update clipspace image:', err)
     }
     ClipspaceDialog.invalidatePreview()
+    return actualFilepath
   }
 
   private async uploadMask(
@@ -1187,7 +1268,7 @@ class MaskEditorDialog extends ComfyDialog {
     formData: FormData,
     clipspaceLocation: 'selectedIndex' | 'combinedIndex'
   ) {
-    const success = await requestWithRetries(() =>
+    const { success, data } = await requestWithRetries(() =>
       api.fetchApi('/upload/mask', {
         method: 'POST',
         body: formData
@@ -1196,6 +1277,15 @@ class MaskEditorDialog extends ComfyDialog {
     if (!success) {
       throw new Error('Upload failed.')
     }
+
+    // Use actual response data if available, otherwise fall back to filepath
+    const actualFilepath: Ref = data?.name
+      ? {
+          filename: data.name,
+          subfolder: data.subfolder || filepath.subfolder,
+          type: data.type || filepath.type
+        }
+      : filepath
 
     try {
       const nameOfIndexToSaveTo = (
@@ -1209,13 +1299,14 @@ class MaskEditorDialog extends ComfyDialog {
       if (!ComfyApp.clipspace?.imgs || indexToSaveTo === undefined) return
       // Create and set new image
       const newImage = new Image()
-      newImage.src = mkFileUrl({ ref: filepath, preview: true })
+      newImage.src = mkFileUrl({ ref: actualFilepath, preview: true })
       ComfyApp.clipspace.imgs[indexToSaveTo] = newImage
 
-      // Update images array if it exists
-      if (ComfyApp.clipspace.images) {
-        ComfyApp.clipspace.images[indexToSaveTo] = filepath
+      // Update images array - create if it doesn't exist
+      if (!ComfyApp.clipspace.images) {
+        ComfyApp.clipspace.images = []
       }
+      ComfyApp.clipspace.images[indexToSaveTo] = actualFilepath
     } catch (err) {
       console.warn('Failed to update clipspace image:', err)
     }
@@ -4132,20 +4223,83 @@ class UIManager {
       combinedImageFilename = undefined
     }
 
-    const imageLayerFilenames =
+    let imageLayerFilenames =
       mainImageFilename !== undefined
         ? imageLayerFilenamesIfApplicable(
             combinedImageFilename ?? mainImageFilename
           )
         : undefined
 
+    // Try to get paint layer - API first (for cloud), then pattern matching (for OSS ComfyUI)
+    let paintLayerUrl: string | undefined
+
+    // Check widget value to see if it has a mask file (from previous edit)
+    let widgetFilename: string | undefined
+    if (ComfyApp.clipspace?.widgets) {
+      const imageWidget = ComfyApp.clipspace.widgets.find(
+        (w) => w.name === 'image'
+      )
+      if (
+        imageWidget &&
+        typeof imageWidget.value === 'object' &&
+        imageWidget.value &&
+        'filename' in imageWidget.value
+      ) {
+        const widgetValue = imageWidget.value as { filename?: string }
+        widgetFilename = widgetValue.filename
+      }
+    }
+
+    // Prefer widget filename (most recent), then combined, then main image
+    const fileToQuery =
+      widgetFilename || combinedImageFilename || mainImageFilename
+
+    // ALWAYS try API first for cloud (works with hash-based filenames)
+    if (fileToQuery) {
+      try {
+        const response = await api.fetchApi(
+          `/mask-layers?filename=${fileToQuery}`
+        )
+        if (response.ok) {
+          const apiMaskLayers = await response.json()
+
+          // Use the painted_masked file as the base image (has all previous edits)
+          if (apiMaskLayers.painted_masked || apiMaskLayers.painted) {
+            const baseFile =
+              apiMaskLayers.painted_masked || apiMaskLayers.painted
+
+            // Override maskedImage to use the composite from previous edit
+            if (!imageLayerFilenames) {
+              imageLayerFilenames = {
+                maskedImage: baseFile,
+                paint: apiMaskLayers.paint || '',
+                paintedImage: apiMaskLayers.painted || '',
+                paintedMaskedImage: apiMaskLayers.painted_masked || baseFile
+              }
+            } else {
+              imageLayerFilenames.maskedImage = baseFile
+              imageLayerFilenames.paint = apiMaskLayers.paint || ''
+            }
+
+            if (apiMaskLayers.paint) {
+              paintLayerUrl = mkFileUrl({ ref: toRef(apiMaskLayers.paint) })
+            }
+          }
+        }
+      } catch (err) {
+        // Fallback to pattern matching (for OSS ComfyUI)
+      }
+    }
+
     const inputUrls = {
       baseImagePlusMask: imageLayerFilenames?.maskedImage
         ? mkFileUrl({ ref: toRef(imageLayerFilenames.maskedImage) })
         : mainImageUrl,
-      paintLayer: imageLayerFilenames?.paint
-        ? mkFileUrl({ ref: toRef(imageLayerFilenames.paint) })
-        : undefined
+      paintLayer:
+        paintLayerUrl ||
+        (imageLayerFilenames?.paint
+          ? mkFileUrl({ ref: toRef(imageLayerFilenames.paint) })
+          : undefined)
     }
 
     const alpha_url = new URL(inputUrls.baseImagePlusMask)
@@ -5535,28 +5689,33 @@ const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
 const requestWithRetries = async (
   mkRequest: () => Promise<Response>,
   maxRetries: number = 3
-): Promise<{ success: boolean }> => {
+): Promise<{ success: boolean; data?: any }> => {
   let attempt = 0
   let success = false
+  let responseData: any = undefined
   while (attempt < maxRetries && !success) {
     try {
       const response = await mkRequest()
       if (response.ok) {
         success = true
+        // Try to parse JSON response
+        try {
+          responseData = await response.json()
+        } catch (error) {
+          // Response not JSON, that's okay
+        }
       } else {
-        console.log('Failed to upload mask:', response)
+        attempt++
       }
     } catch (error) {
-      console.error(`Upload attempt ${attempt + 1} failed:`, error)
+      console.error(
+        `[requestWithRetries] Upload attempt ${attempt + 1} failed:`,
+        error
+      )
       attempt++
-      if (attempt < maxRetries) {
-        console.log('Retrying upload...')
-      } else {
-        console.log('Max retries reached. Upload failed.')
-      }
     }
   }
-  return { success }
+  return { success, data: responseData }
 }
 
 const isAlphaValue = (index: number) => index % 4 === 3

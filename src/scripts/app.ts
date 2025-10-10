@@ -404,6 +404,63 @@ export class ComfyApp {
     }
   }
 
+  /**
+   * Migrate old clipspace friendly filenames to hash-based filenames
+   * This handles workflows saved before the hash-based filename fix
+   */
+  migrateClipspaceFilenames(graph: LGraph) {
+    // Iterate through all nodes in the graph
+    for (const node of graph._nodes) {
+      if (!node.widgets) continue
+
+      // Find image widgets
+      for (const widget of node.widgets) {
+        if (widget.name !== 'image' || typeof widget.value !== 'string')
+          continue
+
+        // Check if widget has an old clipspace friendly filename
+        const oldFilenamePattern =
+          /clipspace\/clipspace-(painted-masked|painted|mask|paint)-\d+\.png(\s+\[input\])?/
+
+        if (oldFilenamePattern.test(widget.value)) {
+          const oldValue = widget.value
+
+          // Try to migrate if clipspace has images
+          if (
+            ComfyApp.clipspace?.images &&
+            ComfyApp.clipspace.images.length > 0
+          ) {
+            const currentClipspaceImage =
+              ComfyApp.clipspace.images[ComfyApp.clipspace.selectedIndex || 0]
+            if (currentClipspaceImage?.filename) {
+              // Check if this is a hash-based filename (64 chars hex)
+              const isHashFilename = /^[0-9a-f]{64}\.png$/i.test(
+                currentClipspaceImage.filename
+              )
+              if (isHashFilename) {
+                // Construct the new hash-based value (filename only, no subfolder)
+                const newValue =
+                  currentClipspaceImage.filename +
+                  (currentClipspaceImage.type
+                    ? ` [${currentClipspaceImage.type}]`
+                    : '')
+
+                widget.value = newValue
+                continue
+              }
+            }
+          }
+
+          // If we can't migrate, clear the widget to prevent using old friendly name
+          console.warn(
+            `Cannot migrate clipspace filename "${oldValue}" for node ${node.id} - clipspace not available. Clearing widget to prevent asset not found error. Please re-paste from clipspace.`
+          )
+          widget.value = ''
+        }
+      }
+    }
+  }
+
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
@@ -482,10 +539,21 @@ export class ComfyApp {
               typeof node.widgets[index].value == 'string' &&
               clip_image.filename
             ) {
-              node.widgets[index].value =
-                (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
+              // Widget value should be JUST the filename (no subfolder)
+              const widgetValue =
                 clip_image.filename +
                 (clip_image.type ? ` [${clip_image.type}]` : '')
+              node.widgets[index].value = widgetValue
+
+              // Also update the node's serialized properties
+              // This ensures the value persists when the graph is serialized/configured
+              if (node.properties) {
+                node.properties['image'] = widgetValue
+              }
+              // Update widgets_values array if it exists (used during serialization)
+              if (node.widgets_values) {
+                node.widgets_values[index] = widgetValue
+              }
             } else {
               node.widgets[index].value = clip_image
             }
@@ -505,8 +573,9 @@ export class ComfyApp {
                 value.filename
               ) {
                 const resultItem = value as ResultItem
+                // For cloud storage, don't include subfolder prefix in widget value
+                // The subfolder is handled internally by the backend
                 prop.value =
-                  (resultItem.subfolder ? resultItem.subfolder + '/' : '') +
                   resultItem.filename +
                   (resultItem.type ? ` [${resultItem.type}]` : '')
               } else {
@@ -793,6 +862,9 @@ export class ComfyApp {
       triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
       const r = onConfigure?.apply(this, args)
+
+      // Migrate old clipspace friendly filenames to hash-based filenames
+      app.migrateClipspaceFilenames(this)
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
       triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
