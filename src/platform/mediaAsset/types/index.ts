@@ -43,6 +43,7 @@ interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>
   context: Ref<AssetContext>
   isVideoPlaying: Ref<boolean>
+  showVideoPlayer: Ref<boolean>
   actions: MediaAssetActions
 }
 

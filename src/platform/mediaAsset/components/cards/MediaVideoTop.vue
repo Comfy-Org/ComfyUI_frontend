@@ -10,15 +10,18 @@
       <video
         ref="videoRef"
         :controls="showControls"
+        autoplay
         class="relative h-full w-full object-contain"
         @click.stop
+        @play="onVideoPlay"
+        @pause="onVideoPause"
       >
         <source :src="asset.src || ''" />
       </video>
     </div>
 
     <!-- Show thumbnail initially with DefaultThumbnail (lazy loading) -->
-    <div v-else class="relative h-full w-full" @click="handlePlayClick">
+    <div v-else class="relative h-full w-full">
       <LazyImage
         v-if="asset.thumbnailUrl"
         :src="asset.thumbnailUrl"
@@ -40,12 +43,13 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { inject, onBeforeUnmount, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
 
 import type { AssetContext, AssetMeta } from '../../types'
+import { MediaAssetKey } from '../../types'
 
 const { asset } = defineProps<{
   asset: AssetMeta
@@ -57,10 +61,11 @@ const emit = defineEmits<{
   videoPlayingStateChanged: [isPlaying: boolean]
 }>()
 
-const videoRef = ref<HTMLVideoElement>()
+const { showVideoPlayer } = inject(MediaAssetKey)!
 
-const showVideoPlayer = ref(false)
+const videoRef = ref<HTMLVideoElement>()
 const showControls = ref(false)
+const isActuallyPlaying = ref(false)
 
 watch(showControls, (controlsVisible) => {
   if (showVideoPlayer.value) {
@@ -71,6 +76,15 @@ watch(showControls, (controlsVisible) => {
 const handlePlayClick = () => {
   showVideoPlayer.value = true
   emit('play', asset.id)
+  // Video will autoplay due to the autoplay attribute
+}
+
+const onVideoPlay = () => {
+  isActuallyPlaying.value = true
+}
+
+const onVideoPause = () => {
+  isActuallyPlaying.value = false
 }
 
 // Cleanup on unmount to prevent memory leaks

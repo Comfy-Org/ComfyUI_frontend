@@ -35,7 +35,7 @@
             :context="context"
             @view="actions.onView"
             @download="actions.onDownload"
-            @play="actions.onPlay"
+            @play="handleVideoPlay"
             @video-playing-state-changed="isVideoPlaying = $event"
           />
         </template>
@@ -161,6 +161,7 @@ const cardContainerRef = ref<HTMLElement>()
 
 const isVideoPlaying = ref(false)
 const isMenuOpen = ref(false)
+const showVideoPlayer = ref(false)
 
 const isHovered = useElementHover(cardContainerRef)
 
@@ -174,6 +175,7 @@ provide(MediaAssetKey, {
   asset: toRef(() => asset),
   context: toRef(() => context),
   isVideoPlaying,
+  showVideoPlayer,
   actions
 })
 
@@ -215,5 +217,13 @@ const handleCardClick = () => {
   if (asset) {
     actions.onSelect(asset)
   }
+}
+
+const handleVideoPlay = (assetId: string) => {
+  // Keep video player visible after play button is clicked
+  if (asset?.kind === 'video') {
+    showVideoPlayer.value = true
+  }
+  actions.onPlay(assetId)
 }
 </script>
