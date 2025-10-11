@@ -319,10 +319,9 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  return (
-    (hasAnyError.value && 'border-error') ||
-    (executing.value && 'border-node-executing')
-  )
+  if (hasAnyError.value) return 'border-node-stroke-error'
+  if (executing.value) return 'border-node-stroke-executing'
+  return 'border-node-stroke'
 })
 
 const outlineClass = computed(() => {
