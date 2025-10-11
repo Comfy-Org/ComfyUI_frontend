@@ -1,45 +1,62 @@
 /* eslint-disable no-console */
-import type { AssetMeta, MediaAssetEmits } from '../types'
+import type { AssetMeta } from '../types'
 
-export interface MediaAssetActions {
-  onSelect: (asset: AssetMeta) => void
-  onView: (assetId: string) => void
-  onDownload: (assetId: string) => void
-  onDelete: (assetId: string) => void
-  onPlay: (assetId: string) => void
-  // Internal actions (not emitted to parent)
-  onCopy: (assetId: string) => void
-  onCopyJobId: (assetId: string) => void
-  onMore: (assetId: string) => void
-  onAddToWorkflow: (assetId: string) => void
-  onOpenWorkflow: (assetId: string) => void
-  onExportWorkflow: (assetId: string) => void
-  onOutputCountClick: (assetId: string) => void
-}
+export function useMediaAssetActions() {
+  const selectAsset = (asset: AssetMeta) => {
+    console.log('Asset selected:', asset)
+  }
 
-export function useMediaAssetActions(
-  emit: <K extends keyof MediaAssetEmits>(
-    event: K,
-    ...args: MediaAssetEmits[K]
-  ) => void
-): MediaAssetActions {
+  const viewAsset = (assetId: string) => {
+    console.log('Viewing asset:', assetId)
+  }
+
+  const downloadAsset = (assetId: string) => {
+    console.log('Downloading asset:', assetId)
+  }
+
+  const deleteAsset = (assetId: string) => {
+    console.log('Deleting asset:', assetId)
+  }
+
+  const playAsset = (assetId: string) => {
+    console.log('Playing asset:', assetId)
+  }
+
+  const copyAssetUrl = (assetId: string) => {
+    console.log('Copy asset URL:', assetId)
+  }
+
+  const copyJobId = (jobId: string) => {
+    console.log('Copy job ID:', jobId)
+  }
+
+  const addWorkflow = (assetId: string) => {
+    console.log('Adding asset to workflow:', assetId)
+  }
+
+  const openWorkflow = (assetId: string) => {
+    console.log('Opening workflow for asset:', assetId)
+  }
+
+  const exportWorkflow = (assetId: string) => {
+    console.log('Exporting workflow for asset:', assetId)
+  }
+
+  const openMoreOutputs = (assetId: string) => {
+    console.log('Opening more outputs for asset:', assetId)
+  }
+
   return {
-    // Actions that emit to parent
-    onSelect: (asset: AssetMeta) => emit('select', asset),
-    onView: (assetId: string) => emit('view', assetId),
-    onDownload: (assetId: string) => emit('download', assetId),
-    onDelete: (assetId: string) => emit('delete', assetId),
-    onPlay: (assetId: string) => emit('play', assetId),
-    // Internal actions (can be extended later)
-    onCopy: (assetId: string) => console.log('Copy:', assetId),
-    onCopyJobId: (assetId: string) => console.log('Copy Job ID:', assetId),
-    onMore: (assetId: string) => console.log('More:', assetId),
-    onAddToWorkflow: (assetId: string) =>
-      console.log('Add to workflow:', assetId),
-    onOpenWorkflow: (assetId: string) => console.log('Open workflow:', assetId),
-    onExportWorkflow: (assetId: string) =>
-      console.log('Export workflow:', assetId),
-    onOutputCountClick: (assetId: string) =>
-      console.log('Output count:', assetId)
+    selectAsset,
+    viewAsset,
+    downloadAsset,
+    deleteAsset,
+    playAsset,
+    copyAssetUrl,
+    copyJobId,
+    addWorkflow,
+    openWorkflow,
+    exportWorkflow,
+    openMoreOutputs
   }
 }

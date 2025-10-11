@@ -14,15 +14,15 @@ const { label, variant = 'dark' } = defineProps<{
   variant?: 'dark' | 'light'
 }>()
 
+const baseClasses =
+  'inline-flex shrink-0 items-center justify-center gap-1 rounded px-2 py-1 text-xs font-bold'
+
+const variantStyles = {
+  dark: 'bg-zinc-500/40 text-white/90',
+  light: 'backdrop-blur-[2px] bg-white/50 text-zinc-900 dark-theme:text-white'
+}
+
 const chipClasses = computed(() => {
-  const baseClasses =
-    'inline-flex shrink-0 items-center justify-center gap-1 rounded px-2 py-1 text-xs font-bold'
-
-  const variantStyles = {
-    dark: 'bg-zinc-500/40 text-white/90',
-    light: 'backdrop-blur-[2px] bg-white/50 text-zinc-900 dark-theme:text-white'
-  }
-
   return cn(baseClasses, variantStyles[variant])
 })
 </script>

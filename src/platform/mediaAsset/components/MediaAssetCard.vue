@@ -33,9 +33,9 @@
             :is="getTopComponent(asset.kind)"
             :asset="asset"
             :context="context"
-            @view="actions.onView"
-            @download="actions.onDownload"
-            @play="actions.onPlay"
+            @view="actions.viewAsset(asset!.id)"
+            @download="actions.downloadAsset(asset!.id)"
+            @play="actions.playAsset(asset!.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
           />
@@ -48,7 +48,7 @@
 
         <!-- Zoom button (top-right) - show on hover, but not when video is playing -->
         <template v-if="showZoomOverlay" #top-right>
-          <IconButton size="sm" @click="actions.onView(asset!.id)">
+          <IconButton size="sm" @click="actions.viewAsset(asset!.id)">
             <i class="icon-[lucide--zoom-in] size-4" />
           </IconButton>
         </template>
@@ -65,7 +65,7 @@
             type="secondary"
             size="sm"
             :label="context?.outputCount?.toString() ?? '0'"
-            @click="actions.onOutputCountClick(asset?.id || '')"
+            @click="actions.openMoreOutputs(asset?.id || '')"
           >
             <template #icon>
               <i class="icon-[lucide--layers] size-4" />
@@ -150,14 +150,6 @@ const { context, asset, loading, selected } = defineProps<{
   selected?: boolean
 }>()
 
-const emit = defineEmits<{
-  select: [asset: AssetMeta]
-  view: [assetId: string]
-  download: [assetId: string]
-  delete: [assetId: string]
-  play: [assetId: string]
-}>()
-
 const cardContainerRef = ref<HTMLElement>()
 
 const isVideoPlaying = ref(false)
@@ -166,14 +158,13 @@ const showVideoControls = ref(false)
 
 const isHovered = useElementHover(cardContainerRef)
 
-const actions = useMediaAssetActions(emit)
+const actions = useMediaAssetActions()
 
 provide(MediaAssetKey, {
   asset: toRef(() => asset),
   context: toRef(() => context),
   isVideoPlaying,
-  showVideoControls,
-  actions
+  showVideoControls
 })
 
 const containerClasses = computed(() => {
@@ -232,7 +223,7 @@ const showOutputCount = computed(() => {
 
 const handleCardClick = () => {
   if (asset) {
-    actions.onSelect(asset)
+    actions.selectAsset(asset)
   }
 }
 </script>

@@ -2,45 +2,27 @@
   <div :class="topStyle">
     <slot class="absolute top-0 left-0 h-full w-full"></slot>
 
-    <div
-      v-if="slots['top-left']"
-      :class="getSlotClasses('top-left', topLeftClass)"
-    >
+    <div v-if="slots['top-left']" :class="slotClasses['top-left']">
       <slot name="top-left"></slot>
     </div>
 
-    <div
-      v-if="slots['top-right']"
-      :class="getSlotClasses('top-right', topRightClass)"
-    >
+    <div v-if="slots['top-right']" :class="slotClasses['top-right']">
       <slot name="top-right"></slot>
     </div>
 
-    <div
-      v-if="slots['center-left']"
-      :class="getSlotClasses('center-left', centerLeftClass)"
-    >
+    <div v-if="slots['center-left']" :class="slotClasses['center-left']">
       <slot name="center-left"></slot>
     </div>
 
-    <div
-      v-if="slots['center-right']"
-      :class="getSlotClasses('center-right', centerRightClass)"
-    >
+    <div v-if="slots['center-right']" :class="slotClasses['center-right']">
       <slot name="center-right"></slot>
     </div>
 
-    <div
-      v-if="slots['bottom-left']"
-      :class="getSlotClasses('bottom-left', bottomLeftClass)"
-    >
+    <div v-if="slots['bottom-left']" :class="slotClasses['bottom-left']">
       <slot name="bottom-left"></slot>
     </div>
 
-    <div
-      v-if="slots['bottom-right']"
-      :class="getSlotClasses('bottom-right', bottomRightClass)"
-    >
+    <div v-if="slots['bottom-right']" :class="slotClasses['bottom-right']">
       <slot name="bottom-right"></slot>
     </div>
   </div>
@@ -94,11 +76,13 @@ const defaultSlotClasses = {
   'bottom-right': 'absolute right-2 bottom-2 flex flex-wrap justify-end gap-2'
 }
 
-// Function to merge default and custom classes
-function getSlotClasses(
-  position: keyof typeof defaultSlotClasses,
-  customClass?: string
-) {
-  return cn(defaultSlotClasses[position], customClass)
-}
+// Compute all slot classes once and cache them
+const slotClasses = computed(() => ({
+  'top-left': cn(defaultSlotClasses['top-left'], topLeftClass),
+  'top-right': cn(defaultSlotClasses['top-right'], topRightClass),
+  'center-left': cn(defaultSlotClasses['center-left'], centerLeftClass),
+  'center-right': cn(defaultSlotClasses['center-right'], centerRightClass),
+  'bottom-left': cn(defaultSlotClasses['bottom-left'], bottomLeftClass),
+  'bottom-right': cn(defaultSlotClasses['bottom-right'], bottomRightClass)
+}))
 </script>

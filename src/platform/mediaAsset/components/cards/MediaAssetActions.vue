@@ -25,6 +25,7 @@ import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 
+import { useMediaAssetActions } from '../../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../../types'
 import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
 
@@ -32,17 +33,18 @@ const emit = defineEmits<{
   menuStateChanged: [isOpen: boolean]
 }>()
 
-const { asset, actions } = inject(MediaAssetKey)!
+const { asset } = inject(MediaAssetKey)!
+const actions = useMediaAssetActions()
 
 const handleDelete = () => {
   if (asset.value) {
-    actions.onDelete(asset.value.id)
+    actions.deleteAsset(asset.value.id)
   }
 }
 
 const handleDownload = () => {
   if (asset.value) {
-    actions.onDownload(asset.value.id)
+    actions.downloadAsset(asset.value.id)
   }
 }
 </script>

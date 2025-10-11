@@ -3,8 +3,6 @@
  */
 import type { InjectionKey, Ref } from 'vue'
 
-import type { MediaAssetActions } from '../composables/useMediaAssetActions'
-
 export type MediaKind = 'video' | 'audio' | 'image' | '3D'
 
 export type AssetContext = {
@@ -28,23 +26,12 @@ export interface AssetMeta {
     height: number
   }
 }
-
-// Emit types for MediaAssetCard component
-export type MediaAssetEmits = {
-  select: [asset: AssetMeta]
-  view: [assetId: string]
-  download: [assetId: string]
-  delete: [assetId: string]
-  play: [assetId: string]
-}
-
 // Injection key for MediaAsset provide/inject pattern
 interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>
   context: Ref<AssetContext>
   isVideoPlaying: Ref<boolean>
   showVideoControls: Ref<boolean>
-  actions: MediaAssetActions
 }
 
 export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =

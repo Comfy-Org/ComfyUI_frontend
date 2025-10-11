@@ -92,6 +92,7 @@ import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 
+import { useMediaAssetActions } from '../../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../../types'
 import Divider from './Divider.vue'
 
@@ -99,7 +100,8 @@ const { close } = defineProps<{
   close: () => void
 }>()
 
-const { asset, context, actions } = inject(MediaAssetKey)!
+const { asset, context } = inject(MediaAssetKey)!
+const actions = useMediaAssetActions()
 
 const showWorkflowOptions = computed(() => {
   return context.value.type
@@ -107,49 +109,49 @@ const showWorkflowOptions = computed(() => {
 
 const handleInspect = () => {
   if (asset.value) {
-    actions.onView(asset.value.id)
+    actions.viewAsset(asset.value.id)
   }
   close()
 }
 
 const handleAddToWorkflow = () => {
   if (asset.value) {
-    actions.onAddToWorkflow(asset.value.id)
+    actions.addWorkflow(asset.value.id)
   }
   close()
 }
 
 const handleDownload = () => {
   if (asset.value) {
-    actions.onDownload(asset.value.id)
+    actions.downloadAsset(asset.value.id)
   }
   close()
 }
 
 const handleOpenWorkflow = () => {
   if (asset.value) {
-    actions.onOpenWorkflow(asset.value.id)
+    actions.openWorkflow(asset.value.id)
   }
   close()
 }
 
 const handleExportWorkflow = () => {
   if (asset.value) {
-    actions.onExportWorkflow(asset.value.id)
+    actions.exportWorkflow(asset.value.id)
   }
   close()
 }
 
 const handleCopyJobId = () => {
   if (asset.value) {
-    actions.onCopyJobId(asset.value.id)
+    actions.copyAssetUrl(asset.value.id)
   }
   close()
 }
 
 const handleDelete = () => {
   if (asset.value) {
-    actions.onDelete(asset.value.id)
+    actions.deleteAsset(asset.value.id)
   }
   close()
 }
