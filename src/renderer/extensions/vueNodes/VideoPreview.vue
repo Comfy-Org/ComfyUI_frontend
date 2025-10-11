@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview group relative flex flex-col items-center"
+    class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col"
     tabindex="0"
     role="region"
     :aria-label="$t('g.videoPreview')"
@@ -12,12 +12,12 @@
   >
     <!-- Video Wrapper -->
     <div
-      class="relative w-full max-w-[352px] overflow-hidden rounded-[5px] bg-[#262729]"
+      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="videoError"
-        class="flex h-[352px] w-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
       >
         <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.videoFailedToLoad') }}</p>
@@ -27,17 +27,13 @@
       </div>
 
       <!-- Loading State -->
-      <Skeleton
-        v-else-if="isLoading"
-        class="h-[352px] w-full"
-        border-radius="5px"
-      />
+      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
 
       <!-- Main Video -->
       <video
         v-else
         :src="currentVideoUrl"
-        class="block h-[352px] w-full object-contain"
+        class="block size-full object-contain"
         controls
         loop
         playsinline
