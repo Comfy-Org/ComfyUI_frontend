@@ -56,6 +56,17 @@ export class SpatialIndexManager {
   }
 
   /**
+   * Batch update multiple nodes' bounds in the spatial index
+   * More efficient than calling update() multiple times as it only invalidates cache once
+   */
+  batchUpdate(updates: Array<{ nodeId: NodeId; bounds: Bounds }>): void {
+    for (const { nodeId, bounds } of updates) {
+      this.quadTree.update(nodeId, bounds)
+    }
+    this.invalidateCache()
+  }
+
+  /**
    * Remove a node from the spatial index
    */
   remove(nodeId: NodeId): void {

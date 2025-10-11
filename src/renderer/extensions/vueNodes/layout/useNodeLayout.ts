@@ -258,14 +258,6 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     mutations.moveNode(nodeId, position)
   }
 
-  /**
-   * Update node size
-   */
-  function resize(newSize: { width: number; height: number }) {
-    mutations.setSource(LayoutSource.Vue)
-    mutations.resizeNode(nodeId, newSize)
-  }
-
   return {
     // Reactive state (via customRef)
     layoutRef,
@@ -278,7 +270,6 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
 
     // Mutations
     moveTo,
-    resize,
 
     // Drag handlers
     startDrag,
