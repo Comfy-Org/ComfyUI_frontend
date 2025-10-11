@@ -3,8 +3,10 @@
     <SidebarIcon
       icon="pi pi-question-circle"
       class="comfy-help-center-btn"
+      label="menu.help"
       :tooltip="$t('sideToolbar.helpCenter')"
       :icon-badge="shouldShowRedDot ? '•' : ''"
+      :is-small="isSmall"
       @click="toggleHelpCenter"
     />
 
@@ -16,7 +18,7 @@
         :class="{
           'sidebar-left': sidebarLocation === 'left',
           'sidebar-right': sidebarLocation === 'right',
-          'small-sidebar': sidebarSize === 'small'
+          'small-sidebar': isSmall
         }"
       >
         <HelpCenterMenuContent @close="closeHelpCenter" />
@@ -29,7 +31,7 @@
         :class="{
           'sidebar-left': sidebarLocation === 'left',
           'sidebar-right': sidebarLocation === 'right',
-          'small-sidebar': sidebarSize === 'small'
+          'small-sidebar': isSmall
         }"
       />
     </Teleport>
@@ -40,7 +42,7 @@
         :class="{
           'sidebar-left': sidebarLocation === 'left',
           'sidebar-right': sidebarLocation === 'right',
-          'small-sidebar': sidebarSize === 'small'
+          'small-sidebar': isSmall
         }"
         @whats-new-dismissed="handleWhatsNewDismissed"
       />
@@ -59,7 +61,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, toRefs } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -87,6 +89,11 @@ const { showNodeConflictDialog } = useDialogService()
 const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
   useConflictAcknowledgment()
 
+const props = defineProps<{
+  isSmall: boolean
+}>()
+const { isSmall } = toRefs(props)
+
 // Use either release red dot or conflict red dot
 const shouldShowRedDot = computed((): boolean => {
   const releaseRedDot = showReleaseRedDot.value
@@ -96,8 +103,6 @@ const shouldShowRedDot = computed((): boolean => {
 const sidebarLocation = computed(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
-
-const sidebarSize = computed(() => settingStore.get('Comfy.Sidebar.Size'))
 
 const toggleHelpCenter = () => {
   helpCenterStore.toggle()
