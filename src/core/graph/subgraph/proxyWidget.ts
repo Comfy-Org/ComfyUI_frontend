@@ -115,11 +115,14 @@ const onConfigure = function (
       this.arrange()
     }
   })
-  if (serialisedNode.properties?.proxyWidgets)
+  if (serialisedNode.properties?.proxyWidgets) {
     this.properties.proxyWidgets = serialisedNode.properties.proxyWidgets
-  serialisedNode.widgets_values?.forEach((v, index) => {
-    if (v !== null) this.widgets[index].value = v
-  })
+    const parsed = parseProxyWidgets(serialisedNode.properties.proxyWidgets)
+    serialisedNode.widgets_values?.forEach((v, index) => {
+      const widget = this.widgets.find((w) => w.name == parsed[index][1])
+      if (v !== null && widget) widget.value = v
+    })
+  }
 }
 
 function newProxyWidget(
