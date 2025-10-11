@@ -17,11 +17,10 @@ import { computed } from 'vue'
 
 import { formatSize, getFilenameDetails } from '@/utils/formatUtil'
 
-import type { AssetContext, AssetMeta } from '../../types'
+import type { AssetMeta } from '../../types'
 
 const { asset } = defineProps<{
   asset: AssetMeta
-  context: AssetContext
 }>()
 
 const fileName = computed(() => {

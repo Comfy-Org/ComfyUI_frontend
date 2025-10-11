@@ -42,6 +42,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
+import type { ClassValue } from '@/utils/tailwindUtil'
 
 const {
   src,
@@ -53,8 +54,8 @@ const {
 } = defineProps<{
   src: string
   alt?: string
-  containerClass?: string | string[] | Record<string, boolean>
-  imageClass?: string | string[] | Record<string, boolean>
+  containerClass?: ClassValue
+  imageClass?: ClassValue
   imageStyle?: Record<string, any>
   rootMargin?: string
 }>()

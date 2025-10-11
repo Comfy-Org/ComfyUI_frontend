@@ -15,10 +15,10 @@ interface CardStoryArgs {
   variant: 'default' | 'ghost' | 'outline'
   rounded: 'none' | 'sm' | 'lg' | 'xl'
   customAspectRatio?: string
-  noBorder: boolean
-  noBackground: boolean
-  noShadow: boolean
-  noCursor: boolean
+  hasBorder: boolean
+  hasBackground: boolean
+  hasShadow: boolean
+  hasCursor: boolean
   customClass: string
   maxWidth: number
   minWidth: number
@@ -71,21 +71,21 @@ const meta: Meta<CardStoryArgs> = {
       control: 'text',
       description: 'Custom aspect ratio (e.g., "16/9")'
     },
-    noBorder: {
+    hasBorder: {
       control: 'boolean',
-      description: 'Remove border styling'
+      description: 'Add border styling'
     },
-    noBackground: {
+    hasBackground: {
       control: 'boolean',
-      description: 'Remove background styling'
+      description: 'Add background styling'
     },
-    noShadow: {
+    hasShadow: {
       control: 'boolean',
-      description: 'Remove shadow styling'
+      description: 'Add shadow styling'
     },
-    noCursor: {
+    hasCursor: {
       control: 'boolean',
-      description: 'Remove cursor pointer'
+      description: 'Add cursor pointer'
     },
     customClass: {
       control: 'text',
@@ -195,10 +195,10 @@ const createCardTemplate = (args: CardStoryArgs) => ({
         :variant="args.variant"
         :rounded="args.rounded"
         :custom-aspect-ratio="args.customAspectRatio"
-        :no-border="args.noBorder"
-        :no-background="args.noBackground"
-        :no-shadow="args.noShadow"
-        :no-cursor="args.noCursor"
+        :has-border="args.hasBorder"
+        :has-background="args.hasBackground"
+        :has-shadow="args.hasShadow"
+        :has-cursor="args.hasCursor"
         :class="args.customClass || 'max-w-[320px] mx-auto'"
       >
         <template #top>
@@ -271,10 +271,10 @@ export const Default: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: false,
@@ -304,10 +304,10 @@ export const SquareCard: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
@@ -337,10 +337,10 @@ export const TallPortraitCard: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: true,
@@ -370,10 +370,10 @@ export const ImageCard: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: false,
@@ -402,10 +402,10 @@ export const MiniCard: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: false,
@@ -434,10 +434,10 @@ export const MinimalCard: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
@@ -466,10 +466,10 @@ export const GhostVariant: Story = {
     variant: 'ghost',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: false,
@@ -498,10 +498,10 @@ export const OutlineVariant: Story = {
     variant: 'outline',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
@@ -529,10 +529,10 @@ export const CustomAspectRatio: Story = {
     containerSize: 'regular',
     variant: 'default',
     customAspectRatio: '16/9',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
@@ -561,10 +561,10 @@ export const RoundedNone: Story = {
     variant: 'default',
     rounded: 'none',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: false,
@@ -593,10 +593,10 @@ export const RoundedXL: Story = {
     variant: 'default',
     rounded: 'xl',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: false,
@@ -625,10 +625,10 @@ export const NoStylesCard: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: true,
-    noBackground: true,
-    noShadow: true,
-    noCursor: false,
+    hasBorder: false,
+    hasBackground: false,
+    hasShadow: false,
+    hasCursor: true,
     customClass: 'bg-gradient-to-br from-blue-500 to-purple-600',
     topRatio: 'square',
     showTopLeft: false,
@@ -657,10 +657,10 @@ export const FullFeaturedCard: Story = {
     variant: 'default',
     rounded: 'lg',
     customAspectRatio: '',
-    noBorder: false,
-    noBackground: false,
-    noShadow: false,
-    noCursor: false,
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
     customClass: '',
     topRatio: 'square',
     showTopLeft: true,

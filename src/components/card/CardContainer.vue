@@ -15,49 +15,50 @@ const {
   variant = 'default',
   rounded = 'md',
   customAspectRatio,
-  noBorder = false,
-  noBackground = false,
-  noShadow = false,
-  noCursor = false,
+  hasBorder = true,
+  hasBackground = true,
+  hasShadow = true,
+  hasCursor = true,
   class: customClass = ''
 } = defineProps<{
   size?: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall'
   variant?: 'default' | 'ghost' | 'outline'
   rounded?: 'none' | 'md' | 'lg' | 'xl'
   customAspectRatio?: string
-  noBorder?: boolean
-  noBackground?: boolean
-  noShadow?: boolean
-  noCursor?: boolean
+  hasBorder?: boolean
+  hasBackground?: boolean
+  hasShadow?: boolean
+  hasCursor?: boolean
   class?: string
 }>()
 
-const containerClasses = computed(() => {
-  // Base structure classes
-  const structureClasses = 'flex flex-col overflow-hidden'
+// Base structure classes
+const structureClasses = 'flex flex-col overflow-hidden'
 
-  // Rounded corners
-  const roundedClasses = {
-    none: 'rounded-none',
-    md: 'rounded',
-    lg: 'rounded-lg',
-    xl: 'rounded-xl'
-  }
+// Rounded corners
+const roundedClasses = {
+  none: 'rounded-none',
+  md: 'rounded',
+  lg: 'rounded-lg',
+  xl: 'rounded-xl'
+} as const
+
+const containerClasses = computed(() => {
   // Variant styles
   const variantClasses = {
     default: cn(
-      !noBackground && 'bg-white dark-theme:bg-zinc-800',
-      !noBorder && 'border border-zinc-200 dark-theme:border-zinc-700',
-      !noShadow && 'shadow-sm',
-      !noCursor && 'cursor-pointer'
+      hasBackground && 'bg-white dark-theme:bg-zinc-800',
+      hasBorder && 'border border-zinc-200 dark-theme:border-zinc-700',
+      hasShadow && 'shadow-sm',
+      hasCursor && 'cursor-pointer'
     ),
     ghost: cn(
-      !noCursor && 'cursor-pointer',
+      hasCursor && 'cursor-pointer',
       'p-2 transition-colors duration-200'
     ),
     outline: cn(
-      !noBorder && 'border-2 border-zinc-300 dark-theme:border-zinc-600',
-      !noCursor && 'cursor-pointer',
+      hasBorder && 'border-2 border-zinc-300 dark-theme:border-zinc-600',
+      hasCursor && 'cursor-pointer',
       'hover:border-zinc-400 dark-theme:hover:border-zinc-500 transition-colors'
     )
   }

@@ -20,10 +20,9 @@
 </template>
 
 <script setup lang="ts">
-import type { AssetContext, AssetMeta } from '../../types'
+import type { AssetMeta } from '../../types'
 
 const { asset } = defineProps<{
   asset: AssetMeta
-  context: AssetContext
 }>()
 </script>

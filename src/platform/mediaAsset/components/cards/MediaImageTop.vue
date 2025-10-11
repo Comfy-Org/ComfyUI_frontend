@@ -19,10 +19,9 @@
 <script setup lang="ts">
 import LazyImage from '@/components/common/LazyImage.vue'
 
-import type { AssetContext, AssetMeta } from '../../types'
+import type { AssetMeta } from '../../types'
 
 const { asset } = defineProps<{
   asset: AssetMeta
-  context: AssetContext
 }>()
 </script>
