@@ -15,7 +15,7 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      class="translate-x-1/2"
+      class="w-3 translate-x-1/2"
       @pointerdown="onPointerDown"
     />
   </div>

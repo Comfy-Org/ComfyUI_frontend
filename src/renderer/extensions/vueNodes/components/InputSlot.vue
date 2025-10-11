@@ -5,7 +5,7 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      :class="cn('-translate-x-1/2', errorClassesDot)"
+      :class="cn('-translate-x-1/2', 'w-3', errorClassesDot)"
       @pointerdown="onPointerDown"
     />
 
