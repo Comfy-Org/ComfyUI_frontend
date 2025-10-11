@@ -9,7 +9,7 @@
     :class="
       cn(
         'bg-node-component-surface',
-        'lg-node absolute rounded-2xl touch-none',
+        'lg-node absolute rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -88,7 +88,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex flex-col gap-4 pb-4"
+        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -98,18 +98,12 @@
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
-        <NodeContent
-          v-if="hasCustomContent"
-          :node-data="nodeData"
-          :media="nodeMedia"
-        />
-        <!-- Live preview image -->
-        <div v-if="shouldShowPreviewImg" class="px-4">
-          <img
-            :src="latestPreviewUrl"
-            alt="preview"
-            class="max-h-64 w-full object-contain"
-          />
+        <div v-if="hasCustomContent" class="min-h-0 flex-1">
+          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        </div>
+        <!-- Live mid-execution preview images -->
+        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
+          <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
       </div>
     </template>
@@ -155,6 +149,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 import { useNodeResize } from '../composables/useNodeResize'
 import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
+import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
