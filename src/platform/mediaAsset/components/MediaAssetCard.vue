@@ -35,35 +35,36 @@
             :context="context"
             @view="actions.onView"
             @download="actions.onDownload"
-            @play="handleVideoPlay"
+            @play="actions.onPlay"
             @video-playing-state-changed="isVideoPlaying = $event"
+            @video-controls-changed="showVideoControls = $event"
           />
         </template>
 
-        <!-- Actions overlay (top-left) - show on hover or when menu is open -->
-        <template v-if="showHoverActions" #top-left>
+        <!-- Actions overlay (top-left) - show on hover or when menu is open, but not when video is playing -->
+        <template v-if="showActionsOverlay" #top-left>
           <MediaAssetActions @menu-state-changed="isMenuOpen = $event" />
         </template>
 
-        <!-- Zoom button (top-right) - show on hover -->
-        <template v-if="showHoverActions && showZoomButton" #top-right>
+        <!-- Zoom button (top-right) - show on hover, but not when video is playing -->
+        <template v-if="showZoomOverlay" #top-right>
           <IconButton size="sm" @click="actions.onView(asset!.id)">
             <i class="icon-[lucide--zoom-in] size-4" />
           </IconButton>
         </template>
 
-        <!-- Duration/Format chips (bottom-left) -->
-        <template v-if="!loading && asset?.duration" #bottom-left>
+        <!-- Duration/Format chips (bottom-left) - hide when video is playing -->
+        <template v-if="showDurationChips" #bottom-left>
           <SquareChip variant="light" :label="formattedDuration" />
           <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
         </template>
 
-        <!-- Output count (bottom-right) -->
-        <template v-if="!loading && context?.outputCount" #bottom-right>
+        <!-- Output count (bottom-right) - hide when video is playing -->
+        <template v-if="showOutputCount" #bottom-right>
           <IconTextButton
             type="secondary"
             size="sm"
-            :label="context.outputCount.toString()"
+            :label="context?.outputCount?.toString() ?? '0'"
             @click="actions.onOutputCountClick(asset?.id || '')"
           >
             <template #icon>
@@ -161,13 +162,9 @@ const cardContainerRef = ref<HTMLElement>()
 
 const isVideoPlaying = ref(false)
 const isMenuOpen = ref(false)
-const showVideoPlayer = ref(false)
+const showVideoControls = ref(false)
 
 const isHovered = useElementHover(cardContainerRef)
-
-const showHoverActions = computed(() => {
-  return !loading && !!asset && (isHovered.value || isMenuOpen.value)
-})
 
 const actions = useMediaAssetActions(emit)
 
@@ -175,7 +172,7 @@ provide(MediaAssetKey, {
   asset: toRef(() => asset),
   context: toRef(() => context),
   isVideoPlaying,
-  showVideoPlayer,
+  showVideoControls,
   actions
 })
 
@@ -203,27 +200,39 @@ const durationChipClasses = computed(() => {
   if (asset?.kind === 'audio') {
     return '-translate-y-11'
   }
-  if (asset?.kind === 'video' && isVideoPlaying.value) {
+  if (asset?.kind === 'video' && showVideoControls.value) {
     return '-translate-y-16'
   }
   return ''
+})
+
+const showHoverActions = computed(() => {
+  return !loading && !!asset && (isHovered.value || isMenuOpen.value)
 })
 
 const showZoomButton = computed(() => {
   return asset?.kind === 'image' || asset?.kind === '3D'
 })
 
+const showActionsOverlay = computed(() => {
+  return showHoverActions.value && !isVideoPlaying.value
+})
+
+const showZoomOverlay = computed(() => {
+  return showHoverActions.value && showZoomButton.value && !isVideoPlaying.value
+})
+
+const showDurationChips = computed(() => {
+  return !loading && asset?.duration && !isVideoPlaying.value
+})
+
+const showOutputCount = computed(() => {
+  return !loading && context?.outputCount && !isVideoPlaying.value
+})
+
 const handleCardClick = () => {
   if (asset) {
     actions.onSelect(asset)
   }
-}
-
-const handleVideoPlay = (assetId: string) => {
-  // Keep video player visible after play button is clicked
-  if (asset?.kind === 'video') {
-    showVideoPlayer.value = true
-  }
-  actions.onPlay(assetId)
 }
 </script>
