@@ -1,6 +1,5 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-import { test as base } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
@@ -130,7 +129,8 @@ export class ComfyPage {
 
   // Buttons
   public readonly resetViewButton: Locator
-  public readonly queueButton: Locator
+  public readonly queueButton: Locator // Run button in Legacy UI
+  public readonly runButton: Locator // Run button (renamed "Queue" -> "Run")
 
   // Inputs
   public readonly workflowUploadInput: Locator
@@ -165,6 +165,9 @@ export class ComfyPage {
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
+    this.runButton = page
+      .getByTestId('queue-button')
+      .getByRole('button', { name: 'Run' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
     this.visibleToasts = page.locator('.p-toast-message:visible')
 
@@ -1085,12 +1088,6 @@ export class ComfyPage {
       : await sourceSlot.getOpenSlotPosition() // Create new slot
 
     const targetPosition = await targetSlot.getPosition()
-
-    // Debug: Log the positions we're trying to use
-    console.log('Drag positions:', {
-      source: sourcePosition,
-      target: targetPosition
-    })
 
     await this.dragAndDrop(sourcePosition, targetPosition)
     await this.nextFrame()
