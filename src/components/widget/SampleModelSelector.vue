@@ -88,7 +88,7 @@
     <template #content>
       <!-- Card Examples -->
       <div :style="gridStyle">
-        <CardContainer v-for="i in 100" :key="i" ratio="square">
+        <CardContainer v-for="i in 100" :key="i" size="regular">
           <template #top>
             <CardTop ratio="landscape">
               <template #default>

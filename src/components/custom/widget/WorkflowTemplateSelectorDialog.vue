@@ -141,8 +141,10 @@
           <CardContainer
             v-for="n in isLoading ? 12 : 0"
             :key="`initial-skeleton-${n}`"
-            ratio="smallSquare"
-            type="workflow-template-card"
+            size="compact"
+            variant="ghost"
+            rounded="lg"
+            class="hover:bg-white dark-theme:hover:bg-zinc-800"
           >
             <template #top>
               <CardTop ratio="landscape">
@@ -172,9 +174,11 @@
             v-for="template in isLoading ? [] : displayTemplates"
             :key="template.name"
             ref="cardRefs"
-            ratio="smallSquare"
-            type="workflow-template-card"
+            size="compact"
+            variant="ghost"
+            rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
+            class="hover:bg-white dark-theme:hover:bg-zinc-800"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -316,8 +320,10 @@
           <CardContainer
             v-for="n in isLoadingMore ? 6 : 0"
             :key="`skeleton-${n}`"
-            ratio="smallSquare"
-            type="workflow-template-card"
+            size="compact"
+            variant="ghost"
+            rounded="lg"
+            class="hover:bg-white dark-theme:hover:bg-zinc-800"
           >
             <template #top>
               <CardTop ratio="square">
