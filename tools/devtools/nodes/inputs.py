@@ -280,29 +280,6 @@ class NodeWithValidation:
         return tuple()
 
 
-class NodeWithV2ComboInput:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "combo_input": (
-                    "COMBO",
-                    {"options": ["A", "B"]},
-                ),
-            }
-        }
-
-    RETURN_TYPES = ("COMBO",)
-    FUNCTION = "node_with_v2_combo_input"
-    CATEGORY = "DevTools"
-    DESCRIPTION = (
-        "A node that outputs a combo type that adheres to the v2 combo input spec"
-    )
-
-    def node_with_v2_combo_input(self, combo_input: str):
-        return (combo_input,)
-
-
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -317,7 +294,6 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsSimpleSlider": SimpleSlider,
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
-    "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -334,7 +310,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsSimpleSlider": "Simple Slider",
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
-    "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
 }
 
 __all__ = [
@@ -351,7 +326,6 @@ __all__ = [
     "SimpleSlider",
     "NodeWithSeedInput",
     "NodeWithValidation",
-    "NodeWithV2ComboInput",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]
