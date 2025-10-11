@@ -12,7 +12,7 @@ const zDimensionsSchema = z.object({
 })
 
 // Extend the base asset schema with media-specific fields
-export const mediaAssetDisplayItemSchema = assetItemSchema.extend({
+const zMediaAssetDisplayItemSchema = assetItemSchema.extend({
   // New required fields
   kind: zMediaKindSchema,
   src: z.string().url(),
@@ -25,13 +25,13 @@ export const mediaAssetDisplayItemSchema = assetItemSchema.extend({
 })
 
 // Asset context schema
-export const zAssetContextSchema = z.object({
+const zAssetContextSchema = z.object({
   type: z.enum(['input', 'output']),
   outputCount: z.number().positive().optional() // Only for output context
 })
 
 // Export the inferred types
-export type AssetMeta = z.infer<typeof mediaAssetDisplayItemSchema>
+export type AssetMeta = z.infer<typeof zMediaAssetDisplayItemSchema>
 export type AssetContext = z.infer<typeof zAssetContextSchema>
 
 // Injection key for MediaAsset provide/inject pattern
