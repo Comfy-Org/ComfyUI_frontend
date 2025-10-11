@@ -116,22 +116,26 @@ import { formatDuration } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import type { AssetContext, AssetMeta, MediaKind } from '../types'
-import { MediaAssetKey } from '../types'
-import MediaAssetActions from './cards/MediaAssetActions.vue'
+import type {
+  AssetContext,
+  AssetMeta,
+  MediaKind
+} from '../schemas/mediaAssetSchema'
+import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import MediaAssetActions from './MediaAssetActions.vue'
 
 const mediaComponents = {
   top: {
-    video: defineAsyncComponent(() => import('./cards/MediaVideoTop.vue')),
-    audio: defineAsyncComponent(() => import('./cards/MediaAudioTop.vue')),
-    image: defineAsyncComponent(() => import('./cards/MediaImageTop.vue')),
-    '3D': defineAsyncComponent(() => import('./cards/Media3DTop.vue'))
+    video: defineAsyncComponent(() => import('./MediaVideoTop.vue')),
+    audio: defineAsyncComponent(() => import('./MediaAudioTop.vue')),
+    image: defineAsyncComponent(() => import('./MediaImageTop.vue')),
+    '3D': defineAsyncComponent(() => import('./Media3DTop.vue'))
   },
   bottom: {
-    video: defineAsyncComponent(() => import('./cards/MediaVideoBottom.vue')),
-    audio: defineAsyncComponent(() => import('./cards/MediaAudioBottom.vue')),
-    image: defineAsyncComponent(() => import('./cards/MediaImageBottom.vue')),
-    '3D': defineAsyncComponent(() => import('./cards/Media3DBottom.vue'))
+    video: defineAsyncComponent(() => import('./MediaVideoBottom.vue')),
+    audio: defineAsyncComponent(() => import('./MediaAudioBottom.vue')),
+    image: defineAsyncComponent(() => import('./MediaImageBottom.vue')),
+    '3D': defineAsyncComponent(() => import('./Media3DBottom.vue'))
   }
 }
 

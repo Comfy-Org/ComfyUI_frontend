@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { AssetMeta } from '../types'
+import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaAssetCard from './MediaAssetCard.vue'
 
 const meta: Meta<typeof MediaAssetCard> = {
@@ -38,12 +38,13 @@ const sampleAsset: AssetMeta = {
   kind: 'image',
   duration: 3345,
   size: 2048576,
-  timestamp: Date.now(),
+  created_at: Date.now().toString(),
   src: SAMPLE_MEDIA.image1,
   dimensions: {
     width: 1920,
     height: 1080
-  }
+  },
+  tags: []
 }
 
 export const ImageAsset: Story = {
@@ -74,7 +75,7 @@ export const VideoAsset: Story = {
       kind: 'video',
       size: 10485760,
       duration: 13425,
-      thumbnailUrl: SAMPLE_MEDIA.videoThumbnail, // Poster image
+      preview_url: SAMPLE_MEDIA.videoThumbnail, // Poster image
       src: SAMPLE_MEDIA.video, // Actual video file
       dimensions: {
         width: 1280,
@@ -180,14 +181,15 @@ export const WebMVideo: Story = {
       name: 'animated-clip.webm',
       kind: 'video',
       size: 3145728,
-      timestamp: Date.now(),
-      thumbnailUrl: SAMPLE_MEDIA.image1, // Poster image
+      created_at: Date.now().toString(),
+      preview_url: SAMPLE_MEDIA.image1, // Poster image
       src: 'https://www.w3schools.com/html/movie.mp4', // Actual video
       duration: 620,
       dimensions: {
         width: 640,
         height: 360
-      }
+      },
+      tags: []
     }
   }
 }
@@ -206,12 +208,13 @@ export const GifAnimation: Story = {
       kind: 'image',
       size: 1572864,
       duration: 1345,
-      timestamp: Date.now(),
+      created_at: Date.now().toString(),
       src: 'https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/giphy.gif',
       dimensions: {
         width: 480,
         height: 270
-      }
+      },
+      tags: []
     }
   }
 }
@@ -227,9 +230,10 @@ export const GridLayout: Story = {
           kind: 'image',
           size: 2097152,
           duration: 4500,
-          timestamp: Date.now(),
+          created_at: Date.now().toString(),
           src: SAMPLE_MEDIA.image1,
-          dimensions: { width: 1920, height: 1080 }
+          dimensions: { width: 1920, height: 1080 },
+          tags: []
         },
         {
           id: 'grid-2',
@@ -237,9 +241,10 @@ export const GridLayout: Story = {
           kind: 'image',
           size: 2097152,
           duration: 4500,
-          timestamp: Date.now(),
+          created_at: Date.now().toString(),
           src: SAMPLE_MEDIA.image2,
-          dimensions: { width: 1920, height: 1080 }
+          dimensions: { width: 1920, height: 1080 },
+          tags: []
         },
         {
           id: 'grid-3',
@@ -247,10 +252,11 @@ export const GridLayout: Story = {
           kind: 'video',
           size: 10485760,
           duration: 13425,
-          timestamp: Date.now(),
-          thumbnailUrl: SAMPLE_MEDIA.videoThumbnail, // Poster image
+          created_at: Date.now().toString(),
+          preview_url: SAMPLE_MEDIA.videoThumbnail, // Poster image
           src: SAMPLE_MEDIA.video, // Actual video
-          dimensions: { width: 1280, height: 720 }
+          dimensions: { width: 1280, height: 720 },
+          tags: []
         },
         {
           id: 'grid-4',
@@ -258,8 +264,9 @@ export const GridLayout: Story = {
           kind: 'audio',
           size: 5242880,
           duration: 180,
-          timestamp: Date.now(),
-          src: SAMPLE_MEDIA.audio
+          created_at: Date.now().toString(),
+          src: SAMPLE_MEDIA.audio,
+          tags: []
         },
         {
           id: 'grid-5',
@@ -267,9 +274,10 @@ export const GridLayout: Story = {
           kind: 'image',
           size: 3145728,
           duration: 1345,
-          timestamp: Date.now(),
+          created_at: Date.now().toString(),
           src: 'https://media.giphy.com/media/l0HlNaQ6gWfllcjDO/giphy.gif',
-          dimensions: { width: 480, height: 360 }
+          dimensions: { width: 480, height: 360 },
+          tags: []
         },
         {
           id: 'grid-6',
@@ -279,7 +287,8 @@ export const GridLayout: Story = {
           src: '',
           dimensions: undefined,
           duration: 18023,
-          timestamp: 0
+          created_at: Date.now().toString(),
+          tags: []
         },
         {
           id: 'grid-7',
@@ -287,9 +296,10 @@ export const GridLayout: Story = {
           kind: 'image',
           size: 2097152,
           duration: 4500,
-          timestamp: Date.now(),
+          created_at: Date.now().toString(),
           src: SAMPLE_MEDIA.image3,
-          dimensions: { width: 1920, height: 1080 }
+          dimensions: { width: 1920, height: 1080 },
+          tags: []
         }
       ]
       return { assets }

@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import type { AssetMeta } from '../types'
+import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 export function useMediaAssetActions() {
   const selectAsset = (asset: AssetMeta) => {

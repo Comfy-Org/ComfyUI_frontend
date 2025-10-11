@@ -25,8 +25,8 @@ import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 
-import { useMediaAssetActions } from '../../composables/useMediaAssetActions'
-import { MediaAssetKey } from '../../types'
+import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
 
 const emit = defineEmits<{

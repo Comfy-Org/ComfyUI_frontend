@@ -33,7 +33,7 @@
       </template>
     </IconTextButton>
 
-    <Divider />
+    <MediaAssetButtonDivider />
 
     <IconTextButton
       v-if="showWorkflowOptions"
@@ -59,7 +59,7 @@
       </template>
     </IconTextButton>
 
-    <Divider v-if="showWorkflowOptions" />
+    <MediaAssetButtonDivider v-if="showWorkflowOptions" />
 
     <IconTextButton
       type="transparent"
@@ -72,7 +72,7 @@
       </template>
     </IconTextButton>
 
-    <Divider />
+    <MediaAssetButtonDivider />
 
     <IconTextButton
       type="transparent"
@@ -92,9 +92,9 @@ import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 
-import { useMediaAssetActions } from '../../composables/useMediaAssetActions'
-import { MediaAssetKey } from '../../types'
-import Divider from './Divider.vue'
+import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import MediaAssetButtonDivider from './MediaAssetButtonDivider.vue'
 
 const { close } = defineProps<{
   close: () => void

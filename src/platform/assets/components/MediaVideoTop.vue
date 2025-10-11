@@ -8,7 +8,7 @@
       ref="videoRef"
       :controls="showControls"
       preload="none"
-      :poster="asset.thumbnailUrl"
+      :poster="asset.preview_url"
       class="relative h-full w-full object-contain"
       @click.stop
       @play="onVideoPlay"
@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
-import type { AssetContext, AssetMeta } from '../../types'
+import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{
   asset: AssetMeta

@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AssetMeta } from '../../types'
+import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{
   asset: AssetMeta
