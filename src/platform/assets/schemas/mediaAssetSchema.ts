@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { assetItemSchema } from './assetSchema'
 
-export const zMediaKindSchema = z.enum(['video', 'audio', 'image', '3D'])
+const zMediaKindSchema = z.enum(['video', 'audio', 'image', '3D'])
 export type MediaKind = z.infer<typeof zMediaKindSchema>
 
 const zDimensionsSchema = z.object({
