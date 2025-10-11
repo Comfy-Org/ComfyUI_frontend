@@ -15,8 +15,6 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 
-import { getSlotKey } from './slotIdentifier'
-
 /**
  * Register slot layout with the layout store for hit testing
  * @param nodeId The node ID
@@ -30,8 +28,6 @@ function registerSlotLayout(
   isInput: boolean,
   position: Point
 ): void {
-  const slotKey = getSlotKey(nodeId, slotIndex, isInput)
-
   // Calculate bounds for the slot using LiteGraph's standard slot height
   const slotSize = LiteGraph.NODE_SLOT_HEIGHT
   const halfSize = slotSize / 2
@@ -49,7 +45,12 @@ function registerSlotLayout(
     }
   }
 
-  layoutStore.updateSlotLayout(slotKey, slotLayout)
+  layoutStore.updateSlotLayoutBy(
+    nodeId,
+    isInput ? 'input' : 'output',
+    slotIndex,
+    slotLayout
+  )
 }
 
 /**

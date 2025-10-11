@@ -1,7 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { NodeId } from '../../../../../src/platform/workflow/validation/schemas/workflowSchema'
-import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -67,8 +66,11 @@ function slotLocator(
   slotIndex: number,
   isInput: boolean
 ) {
-  const key = getSlotKey(String(nodeId), slotIndex, isInput)
-  return page.locator(`[data-slot-key="${key}"]`)
+  const type = isInput ? 'input' : 'output'
+  const id = String(nodeId)
+  return page.locator(
+    `[data-node-id="${id}"][data-slot-type="${type}"][data-slot-index="${slotIndex}"]`
+  )
 }
 
 async function expectVisibleAll(...locators: Locator[]) {

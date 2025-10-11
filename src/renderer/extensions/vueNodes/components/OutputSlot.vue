@@ -29,7 +29,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
@@ -75,13 +74,12 @@ onErrorCaptured((error) => {
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
 
-const { state: dragState } = useSlotLinkDragUIState()
-const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, false)
-)
+const { state: dragState, getCompatible } = useSlotLinkDragUIState()
 const shouldDim = computed(() => {
   if (!dragState.active) return false
-  return !dragState.compatible.get(slotKey.value)
+  const nodeId = props.nodeId ?? ''
+  const value = getCompatible(nodeId, 'output', props.index)
+  return !value
 })
 
 const slotWrapperClass = computed(() =>
