@@ -1,0 +1,245 @@
+name: Deploy to GitHub Pages
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Storybook
+        run: pnpm build-storybook --output-dir dist/storybook
+
+      - name: Build Nx Graph
+        run: |
+          mkdir -p dist/nx-graph
+          pnpm nx graph --file=dist/nx-graph/index.html || echo "Nx graph generation skipped"
+        continue-on-error: true
+
+      - name: Build Vitest UI
+        run: |
+          mkdir -p dist/vitest-ui
+          pnpm test:unit --run --reporter=html --reporter=json --outputFile.html=dist/vitest-ui/index.html --outputFile.json=dist/vitest-ui/results.json || echo "Vitest UI generation skipped"
+        continue-on-error: true
+
+      - name: Generate test coverage
+        run: |
+          mkdir -p dist/coverage
+          pnpm test:unit --run --coverage --coverage.reporter=html --coverage.reportsDirectory=dist/coverage || echo "Coverage generation skipped"
+        continue-on-error: true
+
+      - name: Generate Knip report
+        run: |
+          mkdir -p dist/knip
+          pnpm knip --reporter json > dist/knip/report.json || echo "{}" > dist/knip/report.json
+          echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Knip Report</title><style>body{font-family:monospace;padding:2rem;background:#1a1a1a;color:#f0f0f0}pre{background:#2a2a2a;padding:1rem;border-radius:8px;overflow-x:auto}</style></head><body><h1>Knip Report</h1><pre>' > dist/knip/index.html
+          cat dist/knip/report.json >> dist/knip/index.html
+          echo '</pre></body></html>' >> dist/knip/index.html
+        continue-on-error: true
+
+      - name: Create index page
+        run: |
+          cat > dist/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>ComfyUI Frontend - Development Tools</title>
+            <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem;
+              }
+              .container {
+                max-width: 1200px;
+                width: 100%;
+              }
+              .header {
+                text-align: center;
+                color: white;
+                margin-bottom: 3rem;
+              }
+              .header h1 {
+                font-size: 2.5rem;
+                margin-bottom: 0.5rem;
+                font-weight: 700;
+              }
+              .header p {
+                font-size: 1.125rem;
+                opacity: 0.9;
+              }
+              .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 1.5rem;
+              }
+              .card {
+                background: white;
+                border-radius: 12px;
+                padding: 2rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                transition: transform 0.2s, box-shadow 0.2s;
+                text-decoration: none;
+                color: inherit;
+                display: block;
+              }
+              .card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+              }
+              .card-icon {
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+              }
+              .card-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+                color: #1a202c;
+              }
+              .card-description {
+                color: #718096;
+                line-height: 1.6;
+              }
+              .card-status {
+                display: inline-block;
+                margin-top: 1rem;
+                padding: 0.25rem 0.75rem;
+                border-radius: 20px;
+                font-size: 0.875rem;
+                font-weight: 500;
+              }
+              .status-available {
+                background: #c6f6d5;
+                color: #22543d;
+              }
+              .status-unavailable {
+                background: #fed7d7;
+                color: #742a2a;
+              }
+              .footer {
+                text-align: center;
+                color: white;
+                margin-top: 3rem;
+                opacity: 0.8;
+              }
+              .footer a {
+                color: white;
+                text-decoration: underline;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🎨 ComfyUI Frontend</h1>
+                <p>Development Tools & Documentation</p>
+              </div>
+
+              <div class="grid">
+                <a href="./storybook/index.html" class="card">
+                  <div class="card-icon">📚</div>
+                  <h2 class="card-title">Storybook</h2>
+                  <p class="card-description">Interactive component library and design system documentation</p>
+                  <span class="card-status status-available">Available</span>
+                </a>
+
+                <a href="./nx-graph/index.html" class="card">
+                  <div class="card-icon">🔗</div>
+                  <h2 class="card-title">Nx Dependency Graph</h2>
+                  <p class="card-description">Visual representation of project dependencies and build structure</p>
+                  <span class="card-status status-available">Available</span>
+                </a>
+
+                <a href="./coverage/index.html" class="card">
+                  <div class="card-icon">📊</div>
+                  <h2 class="card-title">Test Coverage</h2>
+                  <p class="card-description">Code coverage reports from Vitest unit tests</p>
+                  <span class="card-status status-available">Available</span>
+                </a>
+
+                <a href="./vitest-ui/index.html" class="card">
+                  <div class="card-icon">🧪</div>
+                  <h2 class="card-title">Vitest Results</h2>
+                  <p class="card-description">Interactive test results and reports</p>
+                  <span class="card-status status-available">Available</span>
+                </a>
+
+                <a href="./knip/index.html" class="card">
+                  <div class="card-icon">🔍</div>
+                  <h2 class="card-title">Knip Report</h2>
+                  <p class="card-description">Unused code and dependency analysis</p>
+                  <span class="card-status status-available">Available</span>
+                </a>
+              </div>
+
+              <div class="footer">
+                <p>
+                  Built from the <strong>main</strong> branch &bull;
+                  <a href="https://github.com/Comfy-Org/ComfyUI_frontend" target="_blank">GitHub Repository</a> &bull;
+                  <a href="https://docs.comfy.org" target="_blank">Official Documentation</a>
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
