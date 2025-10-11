@@ -129,6 +129,7 @@
 
   /* --- */
 
+  --accent-primary: var(--color-charcoal-700);
   --backdrop: var(--color-white);
   --dialog-surface: var(--color-neutral-200);
   --node-component-border: var(--color-gray-400);
@@ -154,13 +155,20 @@
     from var(--color-zinc-500) r g b / 10%
   );
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
-  --node-stroke: var(--color-stone-100);
+  --node-stroke: var(--color-gray-400);
+  --node-stroke-selected: var(--color-accent-primary);
+  --node-stroke-error: var(--color-error);
+  --node-stroke-executing: var(--color-blue-100);
 }
 
 .dark-theme {
+  --accent-primary: var(--color-pure-white);
   --backdrop: var(--color-neutral-900);
   --dialog-surface: var(--color-neutral-700);
   --node-component-border: var(--color-stone-200);
+  --node-component-border-error: var(--color-danger-100);
+  --node-component-border-executing: var(--color-blue-500);
+  --node-component-border-selected: var(--color-charcoal-200);
   --node-component-header-icon: var(--color-slate-300);
   --node-component-header-surface: var(--color-charcoal-800);
   --node-component-outline: var(--color-white);
@@ -176,7 +184,10 @@
   --node-component-tooltip-border: var(--color-slate-300);
   --node-component-tooltip-surface: var(--color-charcoal-800);
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
-  --node-stroke: var(--color-slate-100);
+  --node-stroke: var(--color-stone-200);
+  --node-stroke-selected: var(--color-pure-white);
+  --node-stroke-error: var(--color-error);
+  --node-stroke-executing: var(--color-blue-100);
 }
 
 @theme inline {
@@ -214,6 +225,9 @@
     --node-component-widget-skeleton-surface
   );
   --color-node-stroke: var(--node-stroke);
+  --color-node-stroke-selected: var(--node-stroke-selected);
+  --color-node-stroke-error: var(--node-stroke-error);
+  --color-node-stroke-executing: var(--node-stroke-executing);
 }
 
 @custom-variant dark-theme {
