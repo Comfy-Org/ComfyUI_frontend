@@ -43,7 +43,7 @@ test.describe('User Select View', () => {
 
     // Try to click first option if it exists
     const firstOption = page.locator('.p-select-list .p-select-option').first()
-    await firstOption.waitFor({ state: 'visible' }).catch(() => {})
+    await firstOption.waitFor({ state: 'visible', timeout: 5000 })
 
     if ((await firstOption.count()) > 0) {
       await firstOption.click()

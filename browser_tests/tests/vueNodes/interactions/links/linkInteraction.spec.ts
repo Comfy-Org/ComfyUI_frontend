@@ -300,6 +300,7 @@ test.describe('Vue Node Link Interaction', () => {
         'vue-node-input-drag-ctrl-alt.png'
       )
     } finally {
+      // Cleanup operations: silently ignore errors if state is already clean
       await comfyMouse.drop().catch(() => {})
       await comfyPage.page.keyboard.up('Alt').catch(() => {})
       await comfyPage.page.keyboard.up('Control').catch(() => {})
@@ -467,6 +468,7 @@ test.describe('Vue Node Link Interaction', () => {
       await comfyMouse.drop()
       dropped = true
     } finally {
+      // Cleanup: ensure mouse is released if drop failed
       if (!dropped) {
         await comfyMouse.drop().catch(() => {})
       }
@@ -557,6 +559,7 @@ test.describe('Vue Node Link Interaction', () => {
       await comfyMouse.drop()
       dropPending = false
     } finally {
+      // Cleanup: ensure mouse and keyboard are released if test fails
       if (dropPending) await comfyMouse.drop().catch(() => {})
       if (shiftHeld) await comfyPage.page.keyboard.up('Shift').catch(() => {})
     }
@@ -689,6 +692,7 @@ test.describe('Vue Node Link Interaction', () => {
         'vue-node-shift-output-multi-link.png'
       )
     } finally {
+      // Cleanup: ensure mouse and keyboard are released if test fails
       if (dropPending) await comfyMouse.drop().catch(() => {})
       if (shiftHeld) await comfyPage.page.keyboard.up('Shift').catch(() => {})
     }
