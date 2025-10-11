@@ -18,14 +18,14 @@ jobs:
       uses: actions/checkout@v5
 
     # Setup playwright environment
-    - name: Setup ComfyUI Server
-      uses: ./.github/actions/setup-comfyui-server
-      with:
-        launch_server: true
     - name: Setup ComfyUI Frontend
       uses: ./.github/actions/setup-frontend
       with:
         include_build_step: true
+    - name: Setup ComfyUI Server
+      uses: ./.github/actions/setup-comfyui-server
+      with:
+        launch_server: true
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
 
