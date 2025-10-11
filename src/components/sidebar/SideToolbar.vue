@@ -1,11 +1,11 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container"
+    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
-      'connected-sidebar': selectedTab || isOverflowing,
-      'floating-sidebar': !selectedTab && !isOverflowing,
+      'connected-sidebar': isConnected,
+      'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing
     }"
   >
@@ -17,7 +17,7 @@
           : 'flex flex-col h-full'
       "
     >
-      <div ref="topToolbarRef" class="sidebar-item-group">
+      <div ref="topToolbarRef" :class="groupClasses">
         <ComfyMenuButton :is-small="isSmall" />
         <SidebarIcon
           v-for="tab in tabs"
@@ -35,7 +35,7 @@
         <SidebarTemplatesButton />
       </div>
 
-      <div ref="bottomToolbarRef" class="sidebar-item-group mt-auto">
+      <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
         <SidebarLogoutIcon
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
@@ -63,6 +63,7 @@ import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
@@ -85,6 +86,13 @@ const isSmall = computed(
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
+const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
+const isConnected = computed(
+  () =>
+    selectedTab.value ||
+    isOverflowing.value ||
+    sidebarStyle.value === 'connected'
+)
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
@@ -103,6 +111,12 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 }
 
 const isOverflowing = ref(false)
+const groupClasses = computed(() =>
+  cn(
+    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0' +
+      (isConnected.value ? '' : ' rounded-lg shadow-md')
+  )
+)
 
 const ENTER_OVERFLOW_MARGIN = 20
 const EXIT_OVERFLOW_MARGIN = 50
@@ -202,16 +216,11 @@ onMounted(() => {
 <style scoped>
 @reference "tailwindcss";
 
-.side-tool-bar-container {
-  @apply flex flex-col items-center h-full bg-transparent;
-}
-
 .floating-sidebar {
   padding: var(--sidebar-padding);
 }
 
 .floating-sidebar .sidebar-item-group {
-  @apply rounded-lg shadow-md;
   border-color: var(--p-panel-border-color);
 }
 
@@ -221,17 +230,14 @@ onMounted(() => {
 }
 
 .sidebar-item-group {
-  @apply flex flex-col items-center overflow-hidden flex-shrink-0;
   background-color: var(--comfy-menu-bg);
   border: 1px solid transparent;
 }
 
-.overflowing-sidebar {
-  @apply mr-2;
-}
-
 .overflowing-sidebar :deep(.comfy-menu-button-wrapper) {
-  @apply sticky top-0 z-[1];
+  position: sticky;
+  top: 0;
+  z-index: 1;
   background-color: var(--comfy-menu-bg);
 }
 </style>

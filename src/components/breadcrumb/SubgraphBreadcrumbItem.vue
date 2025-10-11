@@ -15,7 +15,7 @@
     }"
     @click="handleClick"
   >
-    <span class="p-breadcrumb-item-label">{{ item.label }}</span>
+    <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
     <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
@@ -243,7 +243,7 @@ const inputBlur = async (doRename: boolean) => {
 }
 
 .p-breadcrumb-item-label {
-  @apply whitespace-nowrap text-ellipsis overflow-hidden px-2;
+  @apply whitespace-nowrap text-ellipsis overflow-hidden;
 }
 
 .active-breadcrumb-item {

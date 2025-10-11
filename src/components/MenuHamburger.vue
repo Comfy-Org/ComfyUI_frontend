@@ -1,5 +1,8 @@
 <template>
-  <div v-show="workspaceState.focusMode" class="comfy-menu-hamburger no-drag">
+  <div
+    v-show="workspaceState.focusMode"
+    class="comfy-menu-hamburger no-drag top-0 right-0"
+  >
     <Button
       v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
       icon="pi pi-bars"
@@ -46,6 +49,6 @@ watchEffect(() => {
 @reference '../assets/css/style.css';
 
 .comfy-menu-hamburger {
-  @apply fixed z-9999 flex flex-row top-0 right-0;
+  @apply fixed z-9999 flex flex-row;
 }
 </style>

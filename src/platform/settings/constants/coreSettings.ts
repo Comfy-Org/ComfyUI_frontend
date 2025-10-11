@@ -116,6 +116,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.18.1'
   },
   {
+    id: 'Comfy.Sidebar.Style',
+    category: ['Appearance', 'Sidebar', 'Style'],
+    name: 'Sidebar style',
+    type: 'combo',
+    options: ['floating', 'connected'],
+    defaultValue: 'floating'
+  },
+  {
     id: 'Comfy.TextareaWidget.FontSize',
     category: ['Appearance', 'Node Widget', 'TextareaWidget', 'FontSize'],
     name: 'Textarea widget font size',

@@ -415,6 +415,7 @@ const zSettings = z.object({
   'Comfy.Sidebar.Location': z.enum(['left', 'right']),
   'Comfy.Sidebar.Size': z.enum(['small', 'normal']),
   'Comfy.Sidebar.UnifiedWidth': z.boolean(),
+  'Comfy.Sidebar.Style': z.enum(['floating', 'connected']),
   'Comfy.SnapToGrid.GridSize': z.number(),
   'Comfy.TextareaWidget.FontSize': z.number(),
   'Comfy.TextareaWidget.Spellcheck': z.boolean(),

@@ -1,5 +1,5 @@
 <template>
-  <div class="splitter-overlay-root flex flex-col">
+  <div class="splitter-overlay-root pointer-events-none flex flex-col">
     <slot name="workflow-tabs" />
 
     <div
@@ -9,13 +9,7 @@
         'flex-row-reverse': sidebarLocation === 'right'
       }"
     >
-      <div
-        class="side-toolbar-container pointer-events-auto"
-        :class="{
-          'sidebar-floating': !sidebarPanelVisible,
-          'sidebar-connected': sidebarPanelVisible
-        }"
-      >
+      <div class="side-toolbar-container pointer-events-auto">
         <slot name="side-toolbar" />
       </div>
 
@@ -28,7 +22,7 @@
       >
         <SplitterPanel
           v-if="sidebarLocation === 'left'"
-          class="side-bar-panel"
+          class="side-bar-panel pointer-events-auto"
           :min-size="10"
           :size="20"
           :style="{
@@ -48,17 +42,22 @@
           <slot name="topmenu" :sidebar-panel-visible="sidebarPanelVisible" />
 
           <Splitter
-            class="splitter-overlay splitter-overlay-bottom mr-2 mb-2 flex-1"
-            :class="{ 'ml-2': sidebarPanelVisible }"
+            class="splitter-overlay splitter-overlay-bottom mr-2 mb-2 ml-2 flex-1"
             layout="vertical"
-            :pt:gutter="bottomPanelVisible ? '' : 'hidden'"
+            :pt:gutter="
+              'rounded-tl-lg rounded-tr-lg ' +
+              (bottomPanelVisible ? '' : 'hidden')
+            "
             state-key="bottom-panel-splitter"
             state-storage="local"
           >
             <SplitterPanel class="graph-canvas-panel relative">
               <slot name="graph-canvas-panel" />
             </SplitterPanel>
-            <SplitterPanel v-show="bottomPanelVisible" class="bottom-panel">
+            <SplitterPanel
+              v-show="bottomPanelVisible"
+              class="bottom-panel pointer-events-auto rounded-lg"
+            >
               <slot name="bottom-panel" />
             </SplitterPanel>
           </Splitter>
@@ -66,7 +65,7 @@
 
         <SplitterPanel
           v-if="sidebarLocation === 'right'"
-          class="side-bar-panel"
+          class="side-bar-panel pointer-events-auto"
           :min-size="10"
           :size="20"
           :style="{
@@ -137,12 +136,10 @@ const sidebarStateKey = computed(() => {
 }
 
 .side-bar-panel {
-  @apply pointer-events-auto;
   background-color: var(--bg-color);
 }
 
 .bottom-panel {
-  @apply pointer-events-auto rounded-lg;
   background-color: var(--comfy-menu-bg);
   border: 1px solid var(--p-panel-border-color);
   max-width: 100%;
@@ -150,7 +147,6 @@ const sidebarStateKey = computed(() => {
 }
 
 .splitter-overlay-bottom :deep(.p-splitter-gutter) {
-  @apply rounded-tl-lg rounded-tr-lg;
   transform: translateY(5px);
 }
 
@@ -159,7 +155,7 @@ const sidebarStateKey = computed(() => {
 }
 
 .splitter-overlay-root {
-  @apply w-full h-full absolute top-0 left-0 pointer-events-none;
+  @apply w-full h-full absolute top-0 left-0;
 
   /* Set it the same as the ComfyUI menu */
   /* Note: Lite-graph DOM widgets have the same z-index as the node id, so

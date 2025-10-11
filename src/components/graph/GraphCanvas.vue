@@ -25,8 +25,8 @@
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
     </template>
-    <template v-if="showUI" #topmenu="{ sidebarPanelVisible }">
-      <TopMenuSection :sidebar-panel-visible="sidebarPanelVisible" />
+    <template v-if="showUI" #topmenu>
+      <TopMenuSection />
     </template>
     <template v-if="showUI" #bottom-panel>
       <BottomPanel />

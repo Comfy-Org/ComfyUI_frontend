@@ -1,16 +1,20 @@
 <template>
-  <div v-if="!workspaceStore.focusMode" class="pointer-events-none flex pt-2">
-    <div
-      class="pointer-events-auto min-w-0 flex-1"
-      :class="{ 'ml-2': sidebarPanelVisible }"
-    >
+  <div
+    v-if="!workspaceStore.focusMode"
+    class="pointer-events-none ml-2 flex pt-2"
+  >
+    <div class="pointer-events-auto min-w-0 flex-1">
       <SubgraphBreadcrumb />
     </div>
 
     <div
       class="actionbar-container pointer-events-auto mx-2 flex h-12 items-center rounded-lg px-2 shadow-md"
     >
-      <div ref="legacyCommandsContainerRef"></div>
+      <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+      <div
+        ref="legacyCommandsContainerRef"
+        class="[&:not(:has(*>*:not(:empty)))]:hidden"
+      ></div>
       <ComfyActionbar />
       <LoginButton v-if="!isLoggedIn" />
       <CurrentUserButton v-else class="shrink-0" />
@@ -28,10 +32,6 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-
-defineProps<{
-  sidebarPanelVisible: boolean
-}>()
 
 const workspaceStore = useWorkspaceStore()
 const { isLoggedIn } = useCurrentUser()

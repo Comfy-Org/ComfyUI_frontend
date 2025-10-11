@@ -2,7 +2,7 @@
   <div class="flex h-full items-center">
     <div
       v-if="isDragging && !isDocked"
-      class="actionbar-drop-zone self-stretch"
+      class="actionbar-drop-zone m-1.5 flex items-center justify-center self-stretch rounded-md"
       :class="{
         'drop-zone-active': isMouseOverDropZone
       }"
@@ -15,7 +15,11 @@
     <Panel
       class="actionbar"
       :style="style"
-      :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
+      :class="{
+        fixed: !isDocked,
+        'is-dragging': isDragging,
+        'is-docked static mr-2 border-none bg-transparent p-0': isDocked
+      }"
     >
       <div
         ref="panelRef"
@@ -253,12 +257,10 @@ watch(isDragging, (dragging) => {
 
 .actionbar {
   pointer-events: all;
-  position: fixed;
   z-index: 1000;
 }
 
 .actionbar-drop-zone {
-  @apply rounded-md flex items-center justify-center self-stretch m-1.5;
   width: 265px;
   border: 2px dashed var(--p-primary-color);
   opacity: 0.8;
@@ -271,11 +273,6 @@ watch(isDragging, (dragging) => {
   box-shadow: 0 0 20px var(--p-primary-color);
   opacity: 1;
   transform: scale(1.05);
-}
-
-.actionbar.is-docked {
-  position: static;
-  @apply bg-transparent border-none p-0 mr-2;
 }
 
 .actionbar.is-dragging {

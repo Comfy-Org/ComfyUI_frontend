@@ -176,7 +176,8 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb) {
-  @apply w-full bg-transparent;
+  width: 100%;
+  background-color: transparent;
 }
 
 :deep(.p-breadcrumb-item) {
