@@ -159,7 +159,7 @@ const pt = computed(() => ({
   },
   listContainer: () => ({
     style: `max-height: ${listMaxHeight}`,
-    class: 'overflow-y-auto custom-scrollbar'
+    class: 'scrollbar-custom'
   }),
   list: {
     class:
