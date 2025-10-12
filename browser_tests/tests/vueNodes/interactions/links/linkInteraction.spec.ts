@@ -789,6 +789,41 @@ test.describe('Vue Node Link Interaction', () => {
     })
   })
 
+  test('should batch disconnect all links with ctrl+alt+click on slot', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.setup()
+    await comfyPage.vueNodes.waitForNodes()
+    await fitToViewInstant(comfyPage)
+
+    const checkpointNode = (
+      await comfyPage.getNodeRefsByType('CheckpointLoaderSimple')
+    )[0]
+    expect(checkpointNode).toBeTruthy()
+
+    const clipOutput = await checkpointNode.getOutput(1)
+    const initialLinkCount = await clipOutput.getLinkCount()
+    expect(initialLinkCount).toBeGreaterThan(0)
+
+    const clipOutputSlot = slotLocator(
+      comfyPage.page,
+      checkpointNode.id,
+      1,
+      false
+    )
+    await expect(clipOutputSlot).toBeVisible()
+
+    await clipOutputSlot.click({
+      modifiers: ['Control', 'Alt']
+    })
+    await comfyPage.nextFrame()
+
+    const finalLinkCount = await clipOutput.getLinkCount()
+    expect(finalLinkCount).toBe(0)
+  })
+
   test.describe('Release actions (Shift-drop)', () => {
     test('Context menu opens and endpoint is pinned on Shift-drop', async ({
       comfyPage,
