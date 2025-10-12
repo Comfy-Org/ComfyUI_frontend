@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -10,6 +10,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { useNumberStepCalculation } from '../composables/useNumberStepCalculation'
 import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
@@ -29,6 +30,15 @@ const { localValue, onChange } = useNumberWidgetValue(
   emit
 )
 
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue !== localValue.value) {
+      localValue.value = newValue
+    }
+  }
+)
+
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
 )
@@ -41,28 +51,10 @@ const precision = computed(() => {
 })
 
 // Calculate the step value based on precision or widget options
-const stepValue = computed(() => {
-  // Use step2 (correct input spec value) instead of step (legacy 10x value)
-  if (props.widget.options?.step2 !== undefined) {
-    return Number(props.widget.options.step2)
-  }
-  // Otherwise, derive from precision
-  if (precision.value !== undefined) {
-    if (precision.value === 0) {
-      return 1
-    }
-    // For precision > 0, step = 1 / (10^precision)
-    // precision 1 → 0.1, precision 2 → 0.01, etc.
-    return Number((1 / Math.pow(10, precision.value)).toFixed(precision.value))
-  }
-  // Default to 'any' for unrestricted stepping
-  return 0
-})
+const stepValue = useNumberStepCalculation(props.widget.options, precision)
 
 // Disable grouping separators by default unless explicitly enabled by the node author
-const useGrouping = computed(() => {
-  return props.widget.options?.useGrouping === true
-})
+const useGrouping = computed(() => props.widget.options?.useGrouping === true)
 
 // Check if increment/decrement buttons should be disabled due to precision limits
 const buttonsDisabled = computed(() => {
@@ -73,6 +65,7 @@ const buttonsDisabled = computed(() => {
   )
 })
 
+// Tooltip message for disabled buttons
 const buttonTooltip = computed(() => {
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
