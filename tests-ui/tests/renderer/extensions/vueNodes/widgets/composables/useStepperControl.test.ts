@@ -4,8 +4,8 @@ import { ref } from 'vue'
 
 import {
   NumberControlMode,
-  useNumberControl
-} from '@/renderer/extensions/vueNodes/widgets/composables/useNumberControl'
+  useStepperControl
+} from '@/renderer/extensions/vueNodes/widgets/composables/useStepperControl'
 
 // Mock the global seed store
 vi.mock('@/stores/globalSeedStore', () => ({
@@ -29,7 +29,7 @@ vi.mock(
   })
 )
 
-describe('useNumberControl', () => {
+describe('useStepperControl', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -40,7 +40,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 1000, step: 1 }
 
-      const { controlMode } = useNumberControl(modelValue, options)
+      const { controlMode } = useStepperControl(modelValue, options)
 
       expect(controlMode.value).toBe(NumberControlMode.FIXED)
     })
@@ -49,7 +49,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 1000, step: 1 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -64,7 +64,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 1000, step: 1 }
 
-      const { applyControl } = useNumberControl(modelValue, options)
+      const { applyControl } = useStepperControl(modelValue, options)
 
       applyControl()
       expect(modelValue.value).toBe(100)
@@ -74,7 +74,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 1000, step: 5 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -88,7 +88,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 1000, step: 5 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -102,7 +102,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(995)
       const options = { min: 0, max: 1000, step: 10 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -116,7 +116,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(5)
       const options = { min: 0, max: 1000, step: 10 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -130,7 +130,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 10, step: 1 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -159,7 +159,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 100000, step: 1 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -173,7 +173,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = { min: 20000, max: 50000, step: 1 }
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -189,7 +189,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = {} // Empty options
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -203,7 +203,7 @@ describe('useNumberControl', () => {
       const modelValue = ref(100)
       const options = {} // Empty options - should use defaults
 
-      const { controlMode, applyControl } = useNumberControl(
+      const { controlMode, applyControl } = useStepperControl(
         modelValue,
         options
       )
@@ -214,6 +214,52 @@ describe('useNumberControl', () => {
       // Should be within default bounds (0 to 1000000)
       expect(modelValue.value).toBeGreaterThanOrEqual(0)
       expect(modelValue.value).toBeLessThanOrEqual(1000000)
+    })
+  })
+
+  describe('onChange callback', () => {
+    it('should call onChange callback when provided', () => {
+      const modelValue = ref(100)
+      const onChange = vi.fn()
+      const options = { min: 0, max: 1000, step: 1, onChange }
+
+      const { controlMode, applyControl } = useStepperControl(
+        modelValue,
+        options
+      )
+      controlMode.value = NumberControlMode.INCREMENT
+
+      applyControl()
+
+      expect(onChange).toHaveBeenCalledWith(101)
+    })
+
+    it('should fallback to direct assignment when onChange not provided', () => {
+      const modelValue = ref(100)
+      const options = { min: 0, max: 1000, step: 1 } // No onChange
+
+      const { controlMode, applyControl } = useStepperControl(
+        modelValue,
+        options
+      )
+      controlMode.value = NumberControlMode.INCREMENT
+
+      applyControl()
+
+      expect(modelValue.value).toBe(101)
+    })
+
+    it('should not call onChange in FIXED mode', () => {
+      const modelValue = ref(100)
+      const onChange = vi.fn()
+      const options = { min: 0, max: 1000, step: 1, onChange }
+
+      const { applyControl } = useStepperControl(modelValue, options)
+      // controlMode remains FIXED by default
+
+      applyControl()
+
+      expect(onChange).not.toHaveBeenCalled()
     })
   })
 })

@@ -1,99 +1,110 @@
-<template>
-  <WidgetSelectDropdown
-    v-if="isDropdownUIWidget"
-    v-bind="props"
-    :asset-kind="assetKind"
-    :allow-upload="allowUpload"
-    :upload-folder="uploadFolder"
-    @update:model-value="handleUpdateModelValue"
-  />
-  <WidgetSelectDefault
-    v-else
-    v-bind="props"
-    @update:model-value="handleUpdateModelValue"
-  />
-</template>
-
 <script setup lang="ts">
-import { computed } from 'vue'
+import Button from 'primevue/button'
+import { type Ref, computed, defineAsyncComponent, ref } from 'vue'
 
-import type { ResultItemType } from '@/schemas/apiSchema'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { AssetKind } from '@/types/widgetTypes'
 
-import WidgetSelectDefault from './WidgetSelectDefault.vue'
-import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
+import { useComboControl } from '../composables/useComboControl'
+import { useControlButtonIcon } from '../composables/useControlButtonIcon'
+import { NumberControlMode } from '../composables/useStepperControl'
+import WidgetSelectBase from './WidgetSelectBase.vue'
+
+const NumberControlPopover = defineAsyncComponent(
+  () => import('./NumberControlPopover.vue')
+)
+
+type ComboValue = string | number | undefined
 
 const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
-  modelValue: string | number | undefined
+  widget: SimplifiedWidget<ComboValue>
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string | number | undefined]
+  'update:modelValue': [value: ComboValue]
 }>()
 
-function handleUpdateModelValue(value: string | number | undefined) {
+const modelValue = defineModel<ComboValue>({ default: undefined })
+const modelRef = modelValue as Ref<ComboValue>
+
+const hasControlAfterGenerate = computed(
+  () => props.widget.spec?.control_after_generate === true
+)
+
+const popover = ref()
+
+const availableValues = computed<ComboValue[]>(() => {
+  const values = props.widget.options?.values
+  if (Array.isArray(values)) return values
+  if (typeof values === 'function') {
+    try {
+      const result = values()
+      return Array.isArray(result) ? result : []
+    } catch (error) {
+      return []
+    }
+  }
+  if (values && typeof values === 'object') {
+    return Object.values(values) as ComboValue[]
+  }
+  return []
+})
+
+const updateModelValue = (value: ComboValue) => {
+  modelRef.value = value
   emit('update:modelValue', value)
 }
 
-const comboSpec = computed<ComboInputSpec | undefined>(() => {
-  if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
-    return props.widget.spec
-  }
-  return undefined
-})
+const controlModeRef: Ref<NumberControlMode> = hasControlAfterGenerate.value
+  ? (() => {
+      const comboControl = useComboControl(modelRef, {
+        values: availableValues,
+        onChange: updateModelValue
+      })
+      if (comboControl.controlMode.value === NumberControlMode.FIXED) {
+        comboControl.controlMode.value = NumberControlMode.RANDOMIZE
+      }
+      return comboControl.controlMode
+    })()
+  : ref(NumberControlMode.FIXED)
 
-const specDescriptor = computed<{
-  kind: AssetKind
-  allowUpload: boolean
-  folder: ResultItemType | undefined
-}>(() => {
-  const spec = comboSpec.value
-  if (!spec) {
-    return {
-      kind: 'unknown',
-      allowUpload: false,
-      folder: undefined
-    }
-  }
+const controlButtonIcon = useControlButtonIcon(controlModeRef)
 
-  const {
-    image_upload,
-    animated_image_upload,
-    video_upload,
-    image_folder,
-    audio_upload
-  } = spec
+const togglePopover = (event: Event) => {
+  popover.value?.toggle(event)
+}
 
-  let kind: AssetKind = 'unknown'
-  if (video_upload) {
-    kind = 'video'
-  } else if (image_upload || animated_image_upload) {
-    kind = 'image'
-  } else if (audio_upload) {
-    kind = 'audio'
-  }
-  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
-
-  const allowUpload =
-    image_upload === true ||
-    animated_image_upload === true ||
-    video_upload === true ||
-    audio_upload === true
-  return {
-    kind,
-    allowUpload,
-    folder: image_folder
-  }
-})
-
-const assetKind = computed(() => specDescriptor.value.kind)
-const isDropdownUIWidget = computed(() => assetKind.value !== 'unknown')
-const allowUpload = computed(() => specDescriptor.value.allowUpload)
-const uploadFolder = computed<ResultItemType>(() => {
-  return specDescriptor.value.folder ?? 'input'
-})
+const setControlMode = (mode: NumberControlMode) => {
+  controlModeRef.value = mode
+}
 </script>
+
+<template>
+  <div v-if="hasControlAfterGenerate" class="relative">
+    <WidgetSelectBase
+      :widget="widget"
+      :model-value="modelValue"
+      @update:model-value="updateModelValue"
+    />
+
+    <Button
+      variant="link"
+      size="small"
+      class="absolute right-12 top-1/2 -translate-y-1/2 h-4 w-7 p-0 bg-blue-100/30 rounded-xl"
+      @click="togglePopover"
+    >
+      <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />
+    </Button>
+
+    <NumberControlPopover
+      ref="popover"
+      :control-mode="controlModeRef"
+      @update:control-mode="setControlMode"
+    />
+  </div>
+  <WidgetSelectBase
+    v-else
+    :widget="widget"
+    :model-value="modelValue"
+    @update:model-value="updateModelValue"
+  />
+</template>
