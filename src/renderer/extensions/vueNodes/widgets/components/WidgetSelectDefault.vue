@@ -5,6 +5,7 @@
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+      :aria-label="widget.name"
       size="small"
       :pt="{
         option: 'text-xs'
