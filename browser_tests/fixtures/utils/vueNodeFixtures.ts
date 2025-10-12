@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
@@ -35,13 +36,16 @@ export class VueNodeFixture {
   async setTitle(value: string): Promise<void> {
     await this.title.dblclick()
     const input = this.titleInput
+    await expect(input).toBeVisible()
     await input.fill(value)
     await input.press('Enter')
   }
 
   async cancelTitleEdit(): Promise<void> {
     await this.title.dblclick()
-    await this.titleInput.press('Escape')
+    const input = this.titleInput
+    await expect(input).toBeVisible()
+    await input.press('Escape')
   }
 
   async toggleCollapse(): Promise<void> {
