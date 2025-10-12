@@ -28,7 +28,17 @@ async function main() {
   }
 
   const raw = await fsp.readFile(reportPath, 'utf8')
-  const data = JSON.parse(raw)
+
+  let data: JSONReport
+  try {
+    data = JSON.parse(raw)
+  } catch (error) {
+    throw new Error(
+      `Failed to parse Playwright JSON report at ${reportPath}. ` +
+        `The report file may be corrupted or incomplete. ` +
+        `Error: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
 
   const hasScreenshotSignal = (r: JSONReportTestResult) => {
     return r.attachments.some((att) => att?.contentType?.startsWith('image/'))
@@ -52,7 +62,10 @@ async function main() {
           last && last.status === 'failed' && hasScreenshotSignal(last)
         if (!failedScreenshot) continue
         if (!out.has(project)) out.set(project, new Set())
-        out.get(project)!.add(loc)
+        const projectSet = out.get(project)
+        if (projectSet) {
+          projectSet.add(loc)
+        }
       }
     }
   }

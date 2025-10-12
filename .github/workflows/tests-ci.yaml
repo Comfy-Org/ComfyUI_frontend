@@ -256,7 +256,11 @@ jobs:
         if: ${{ needs.playwright-tests-chromium-sharded.result == 'failure' }}
         run: |
           set -euo pipefail
-          pnpm tsx scripts/cicd/build-failed-screenshot-manifest.ts
+          if ! pnpm tsx scripts/cicd/build-failed-screenshot-manifest.ts; then
+            echo "ERROR: Failed to generate screenshot manifest"
+            echo "This may indicate an issue with the Playwright JSON report or the manifest script"
+            exit 1
+          fi
         working-directory: ComfyUI_frontend
 
       - name: Upload failed screenshot manifest

@@ -1,4 +1,12 @@
 # Setting test expectation screenshots for Playwright
+#
+# This workflow uses a selective snapshot update strategy:
+# 1. When tests fail in CI, they generate a manifest of failed test locations (file:line)
+# 2. This workflow downloads that manifest from the failed test run artifacts
+# 3. Only the failed tests are re-run with --update-snapshots (much faster than running all tests)
+# 4. Updated snapshots are committed back to the PR branch
+#
+# Trigger: Add label "New Browser Test Expectations" OR comment "/update-playwright" on PR
 name: Update Playwright Expectations
 
 on:
@@ -97,38 +105,79 @@ jobs:
         continue-on-error: true
         run: |
           set -euo pipefail
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Selective Snapshot Update"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          # Check if manifest exists
           if [ ! -d ci-rerun ]; then
-            echo "No manifest found; running full suite as fallback"
-            PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-            pnpm exec playwright test --update-snapshots \
-              --reporter=line --reporter=html
-            exit 0
+            echo "ERROR: No manifest found in ci-rerun/ directory"
+            echo "   This means no failed screenshot tests were detected in the latest CI run."
+            echo "   Please ensure tests have been run and failures were recorded."
+            exit 1
           fi
+
           shopt -s nullglob
           files=(ci-rerun/*.txt)
+
           if [ ${#files[@]} -eq 0 ]; then
-            echo "Manifest is empty; running full suite as fallback"
-            PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-            pnpm exec playwright test --update-snapshots \
-              --reporter=line --reporter=html
-            exit 0
+            echo "ERROR: No manifest files found in ci-rerun/"
+            echo "   Expected files like: chromium.txt, chromium-2x.txt, mobile-chrome.txt"
+            exit 1
           fi
+
+          echo "Found ${#files[@]} project manifest(s):"
+          for f in "${files[@]}"; do
+            project="$(basename "$f" .txt)"
+            count=$(grep -c . "$f" 2>/dev/null || echo "0")
+            echo "   - $project: $count failed test(s)"
+          done
+          echo ""
+
+          # Re-run tests per project
+          total_tests=0
           for f in "${files[@]}"; do
             project="$(basename "$f" .txt)"
             mapfile -t lines < "$f"
             filtered=( )
+
+            # Validate and sanitize test paths to prevent command injection
             for l in "${lines[@]}"; do
-              [ -n "$l" ] && filtered+=("$l")
+              # Skip empty lines
+              [ -z "$l" ] && continue
+
+              # Validate format: must be browser_tests/...spec.ts:number
+              if [[ "$l" =~ ^browser_tests/.+\.spec\.ts:[0-9]+$ ]]; then
+                filtered+=("$l")
+              else
+                echo "WARNING: Skipping invalid test path: $l"
+              fi
             done
+
             if [ ${#filtered[@]} -eq 0 ]; then
+              echo "WARNING: Skipping $project (no valid tests in manifest)"
               continue
             fi
-            echo "Re-running ${#filtered[@]} tests for project $project"
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Updating snapshots for project: $project"
+            echo "   Re-running ${#filtered[@]} failed test(s)..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
             PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
             pnpm exec playwright test --project="$project" --update-snapshots \
               --reporter=line --reporter=html \
               "${filtered[@]}"
+
+            total_tests=$((total_tests + ${#filtered[@]}))
+            echo ""
           done
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Completed snapshot updates for $total_tests test(s)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -144,6 +193,7 @@ jobs:
           git status
 
       - name: Commit updated expectations
+        id: commit
         working-directory: ComfyUI_frontend
         run: |
           git config --global user.name 'github-actions'
@@ -157,7 +207,13 @@ jobs:
           git add browser_tests
           if git diff --cached --quiet; then
             echo "No expectation updates detected; skipping commit."
+            echo "changed=false" >> $GITHUB_OUTPUT
           else
+            # Count changed snapshots
+            changed_count=$(git diff --cached --name-only browser_tests | wc -l)
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "count=$changed_count" >> $GITHUB_OUTPUT
+
             git commit -m "[automated] Update test expectations"
             if [ "${{ github.event_name }}" = "issue_comment" ]; then
               git push
@@ -165,3 +221,30 @@ jobs:
               git push origin HEAD:${{ github.head_ref }}
             fi
           fi
+
+      - name: Generate workflow summary
+        if: always()
+        working-directory: ComfyUI_frontend
+        run: |
+          echo "## Snapshot Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.commit.outputs.changed }}" = "true" ]; then
+            echo "**${{ steps.commit.outputs.count }} snapshot(s) updated**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "<details>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>View updated files</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            git diff HEAD~1 --name-only browser_tests 2>/dev/null || echo "No git history available" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.commit.outputs.changed }}" = "false" ]; then
+            echo "No snapshot changes detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "WARNING: Snapshot update may have failed - check logs above" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Strategy:** Selective snapshot update (only failed tests re-run)" >> $GITHUB_STEP_SUMMARY
