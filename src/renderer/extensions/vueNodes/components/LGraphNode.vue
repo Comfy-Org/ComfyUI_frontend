@@ -19,9 +19,9 @@
         outlineClass,
         {
           'animate-pulse': executing,
-          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
+          'before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
-          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
+          'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
           'will-change-transform': isDragging
         },
@@ -174,9 +174,6 @@ const {
 
 useVueElementTracking(() => nodeData.id, 'node')
 
-const { selectedNodeIds } = storeToRefs(useCanvasStore())
-
-// Inject transform state for coordinate conversion
 const transformState = inject(TransformStateKey)
 if (!transformState) {
   throw new Error(
@@ -184,16 +181,13 @@ if (!transformState) {
   )
 }
 
-// Computed selection state - only this node re-evaluates when its selection changes
+const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
 
-// Use execution state composable
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-
-// Direct access to execution store for error state
 const executionStore = useExecutionStore()
 const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
@@ -225,9 +219,16 @@ const nodeBodyBackgroundColor = computed(() => {
   )
 })
 
-const nodeOpacity = computed(
-  () => useSettingStore().get('Comfy.Node.Opacity') ?? 1
-)
+const nodeOpacity = computed(() => {
+  const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+
+  // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
+  if (bypassed.value || muted.value) {
+    return globalOpacity * 0.5
+  }
+
+  return globalOpacity
+})
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()

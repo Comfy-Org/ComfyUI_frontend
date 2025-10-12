@@ -4,7 +4,7 @@ import {
 } from '../../../fixtures/ComfyPage'
 
 const MUTE_HOTKEY = 'Control+m'
-const MUTE_CLASS = /opacity-50/
+const MUTE_OPACITY = '0.5'
 
 test.describe('Vue Node Mute', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -19,10 +19,11 @@ test.describe('Vue Node Mute', () => {
     await comfyPage.page.keyboard.press(MUTE_HOTKEY)
 
     const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
-    await expect(checkpointNode).toHaveClass(MUTE_CLASS)
+    await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
+    await expect(comfyPage.canvas).toHaveScreenshot('vue-node-muted-state.png')
 
     await comfyPage.page.keyboard.press(MUTE_HOTKEY)
-    await expect(checkpointNode).not.toHaveClass(MUTE_CLASS)
+    await expect(checkpointNode).not.toHaveCSS('opacity', MUTE_OPACITY)
   })
 
   test('should allow toggling mute on multiple selected nodes with hotkey', async ({
@@ -35,11 +36,11 @@ test.describe('Vue Node Mute', () => {
     const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
 
     await comfyPage.page.keyboard.press(MUTE_HOTKEY)
-    await expect(checkpointNode).toHaveClass(MUTE_CLASS)
-    await expect(ksamplerNode).toHaveClass(MUTE_CLASS)
+    await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
+    await expect(ksamplerNode).toHaveCSS('opacity', MUTE_OPACITY)
 
     await comfyPage.page.keyboard.press(MUTE_HOTKEY)
-    await expect(checkpointNode).not.toHaveClass(MUTE_CLASS)
-    await expect(ksamplerNode).not.toHaveClass(MUTE_CLASS)
+    await expect(checkpointNode).not.toHaveCSS('opacity', MUTE_OPACITY)
+    await expect(ksamplerNode).not.toHaveCSS('opacity', MUTE_OPACITY)
   })
 })
