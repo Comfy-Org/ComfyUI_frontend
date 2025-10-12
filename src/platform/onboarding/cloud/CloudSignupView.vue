@@ -117,7 +117,8 @@ const navigateToLogin = () => {
 }
 
 const onSuccess = async () => {
-  await router.push({ name: 'cloud-login', query: route.query })
+  // The invite code will be handled after the user is logged in
+  await router.push({ path: '/', query: route.query })
 }
 
 // Custom error handler for inline display
