@@ -5,6 +5,7 @@ import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { app } from '@/scripts/app'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Keep one adapter per graph so rendering and interaction share state.
 const adapterByGraph = new WeakMap<LGraph, LinkConnectorAdapter>()
@@ -130,6 +131,15 @@ export class LinkConnectorAdapter {
 
   /** Drops moving links onto the canvas (no target). */
   dropOnCanvas(event: CanvasPointerEvent): void {
+    //Add extra check for connection to subgraphInput/subgraphOutput
+    if (isSubgraph(this.network)) {
+      const { canvasX, canvasY } = event
+      const ioNode = this.network.getIoNodeOnPos?.(canvasX, canvasY)
+      if (ioNode) {
+        this.linkConnector.dropOnIoNode(ioNode, event)
+        return
+      }
+    }
     this.linkConnector.dropOnNothing(event)
   }
 
