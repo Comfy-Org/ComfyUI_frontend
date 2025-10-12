@@ -54,7 +54,7 @@ test.describe('Vue Node Selection', () => {
     const initialCount = await comfyPage.vueNodes.getNodeCount()
     expect(initialCount).toBeGreaterThan(0)
 
-    await comfyPage.page.keyboard.press('Control+a')
+    await comfyPage.canvas.press('Control+a')
 
     const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()
     expect(selectedCount).toBe(initialCount)
