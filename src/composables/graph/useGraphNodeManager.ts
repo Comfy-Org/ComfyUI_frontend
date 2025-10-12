@@ -2,13 +2,15 @@
  * Vue node lifecycle management for LiteGraph integration
  * Provides event-driven reactivity with performance optimizations
  */
-import { reactive } from 'vue'
+import { reactiveComputed } from '@vueuse/core'
+import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -132,43 +134,56 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       })
     })
 
-    const safeWidgets = node.widgets?.map((widget) => {
-      try {
-        // TODO: Use widget.getReactiveData() once TypeScript types are updated
-        let value = widget.value
-
-        // For combo widgets, if value is undefined, use the first option as default
-        if (
-          value === undefined &&
-          widget.type === 'combo' &&
-          widget.options?.values &&
-          Array.isArray(widget.options.values) &&
-          widget.options.values.length > 0
-        ) {
-          value = widget.options.values[0]
-        }
-        const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
-        const slotInfo = slotMetadata.get(widget.name)
-
-        return {
-          name: widget.name,
-          type: widget.type,
-          value: value,
-          label: widget.label,
-          options: widget.options ? { ...widget.options } : undefined,
-          callback: widget.callback,
-          spec,
-          slotMetadata: slotInfo,
-          isDOMWidget: isDOMWidget(widget)
-        }
-      } catch (error) {
-        return {
-          name: widget.name || 'unknown',
-          type: widget.type || 'text',
-          value: undefined
-        }
+    const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
+    Object.defineProperty(node, 'widgets', {
+      get() {
+        return reactiveWidgets
+      },
+      set(v) {
+        reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
       }
     })
+
+    const safeWidgets = reactiveComputed<SafeWidgetData[]>(
+      () =>
+        node.widgets?.map((widget) => {
+          try {
+            // TODO: Use widget.getReactiveData() once TypeScript types are updated
+            let value = widget.value
+
+            // For combo widgets, if value is undefined, use the first option as default
+            if (
+              value === undefined &&
+              widget.type === 'combo' &&
+              widget.options?.values &&
+              Array.isArray(widget.options.values) &&
+              widget.options.values.length > 0
+            ) {
+              value = widget.options.values[0]
+            }
+            const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
+            const slotInfo = slotMetadata.get(widget.name)
+
+            return {
+              name: widget.name,
+              type: widget.type,
+              value: value,
+              label: widget.label,
+              options: widget.options ? { ...widget.options } : undefined,
+              callback: widget.callback,
+              spec,
+              slotMetadata: slotInfo,
+              isDOMWidget: isDOMWidget(widget)
+            }
+          } catch (error) {
+            return {
+              name: widget.name || 'unknown',
+              type: widget.type || 'text',
+              value: undefined
+            }
+          }
+        }) ?? []
+    )
 
     const nodeType =
       node.type ||
