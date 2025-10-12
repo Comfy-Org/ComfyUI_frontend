@@ -134,5 +134,3 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
     }
   }
 })
-
-export type { WorkflowDraftSnapshot } from '@/platform/workflow/persistence/base/draftCache'
