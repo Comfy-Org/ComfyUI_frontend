@@ -60,7 +60,6 @@ async function getInputLinkDetails(
   )
 }
 
-// Test helpers to reduce repetition across cases
 function slotLocator(
   page: Page,
   nodeId: NodeId,
@@ -792,12 +791,6 @@ test.describe('Vue Node Link Interaction', () => {
   test('should batch disconnect all links with ctrl+alt+click on slot', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
-    await fitToViewInstant(comfyPage)
-
     const checkpointNode = (
       await comfyPage.getNodeRefsByType('CheckpointLoaderSimple')
     )[0]
