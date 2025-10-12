@@ -50,7 +50,7 @@
       >
         <!-- Edit button -->
         <button
-          aria-label="Edit image"
+          :aria-label="$t('g.editImage')"
           class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
           style="background-color: #262729"
           @click="handleEdit"
@@ -59,7 +59,7 @@
         </button>
         <!-- Delete button -->
         <button
-          aria-label="Delete image"
+          :aria-label="$t('g.deleteImage')"
           class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
           style="background-color: #262729"
           @click="clearFile"
@@ -130,7 +130,7 @@
         <div class="flex gap-1">
           <!-- Delete button -->
           <button
-            aria-label="Delete audio file"
+            :aria-label="$t('g.deleteAudioFile')"
             class="flex h-8 w-8 items-center justify-center rounded border-none transition-all duration-150 hover:bg-[#262729] focus:outline-none"
             @click="clearFile"
           >
@@ -171,7 +171,7 @@
     type="file"
     class="hidden"
     :accept="widget.options?.accept"
-    :aria-label="`Upload ${widget.name || 'file'}`"
+    :aria-label="`${$t('g.upload')} ${widget.name || $t('g.file')}`"
     :multiple="false"
     @change="handleFileChange"
   />

@@ -7,7 +7,7 @@
         :type="chartType"
         :data="chartData"
         :options="chartOptions"
-        :aria-label="`${widget.name || 'Chart'} - ${chartType} chart`"
+        :aria-label="`${widget.name || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
       />
     </div>
   </div>
