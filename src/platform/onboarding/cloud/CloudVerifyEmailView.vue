@@ -35,18 +35,53 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { useFirebaseAuth } from 'vuefire'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const authStore = useFirebaseAuthStore()
+const auth = useFirebaseAuth()!
 
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+
+let intervalId: number | null = null
+let timeoutId: number | null = null
+const redirectInProgress = ref(false)
+
+function clearPolling(): void {
+  if (intervalId !== null) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
+  if (timeoutId !== null) {
+    clearTimeout(timeoutId)
+    timeoutId = null
+  }
+}
+
+async function redirectToNextStep(): Promise<void> {
+  if (redirectInProgress.value) return
+
+  redirectInProgress.value = true
+  clearPolling()
+
+  const inviteCode = route.query.inviteCode as string | undefined
+
+  if (inviteCode) {
+    await router.push({
+      name: 'cloud-invite-check',
+      query: { inviteCode }
+    })
+  } else {
+    await router.push({ name: 'cloud-user-check' })
+  }
+}
 
 const goBack = async () => {
   const inviteCode = route.query.inviteCode as string | undefined
@@ -86,23 +121,35 @@ async function onSend() {
 }
 
 onMounted(async () => {
-  // When this screen loads via invite flow,
-  // ensure the invite code stays in the URL for the next step.
-  const inviteCode = route.query.inviteCode as string | undefined
-
   // If the user is already verified (email link already clicked),
   // continue to the next step automatically.
   if (authStore.isEmailVerified) {
-    if (inviteCode) {
-      await router.push({
-        name: 'cloud-invite-check',
-        query: inviteCode ? { inviteCode } : {}
-      })
-    } else {
-      await router.push({ name: 'cloud-user-check' })
-    }
-  } else {
-    await onSend()
+    return redirectToNextStep()
   }
+
+  // Send initial verification email
+  await onSend()
+
+  // Start polling to check email verification status
+  intervalId = window.setInterval(async () => {
+    if (auth.currentUser && !redirectInProgress.value) {
+      await auth.currentUser.reload()
+      if (auth.currentUser?.emailVerified) {
+        void redirectToNextStep()
+      }
+    }
+  }, 5000) // Check every 5 seconds
+
+  // Stop polling after 5 minutes
+  timeoutId = window.setTimeout(
+    () => {
+      clearPolling()
+    },
+    5 * 60 * 1000
+  )
+})
+
+onUnmounted(() => {
+  clearPolling()
 })
 </script>
