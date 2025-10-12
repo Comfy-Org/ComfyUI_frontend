@@ -15,34 +15,34 @@ test.describe('Vue Node Collapse', () => {
   test('should allow collapsing node with collapse icon', async ({
     comfyPage
   }) => {
-    const node = comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-    await expect(node).toBeVisible()
+    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.element).toBeVisible()
 
     // Initially should not be collapsed
-    const body = node.locator('[data-testid^="node-body-"]')
+    const body = vueNode.body
     await expect(body).toBeVisible()
-    const expandedBoundingBox = await node.boundingBox()
+    const expandedBoundingBox = await vueNode.boundingBox()
     if (!expandedBoundingBox)
       throw new Error('Failed to get node bounding box before collapse')
 
     // Collapse the node
-    await node.locator('[data-testid="node-collapse-button"]').click()
+    await vueNode.toggleCollapse()
     await comfyPage.nextFrame()
 
     // Verify node content is hidden
     await expect(body).not.toBeVisible()
-    const collapsedBoundingBox = await node.boundingBox()
+    const collapsedBoundingBox = await vueNode.boundingBox()
     if (!collapsedBoundingBox)
       throw new Error('Failed to get node bounding box after collapse')
     expect(collapsedBoundingBox.height).toBeLessThan(expandedBoundingBox.height)
 
     // Expand again
-    await node.locator('[data-testid="node-collapse-button"]').click()
+    await vueNode.toggleCollapse()
     await comfyPage.nextFrame()
     await expect(body).toBeVisible()
 
     // Size should be restored
-    const expandedBoundingBoxAfter = await node.boundingBox()
+    const expandedBoundingBoxAfter = await vueNode.boundingBox()
     if (!expandedBoundingBoxAfter)
       throw new Error('Failed to get node bounding box after expand')
     expect(expandedBoundingBoxAfter.height).toBeGreaterThanOrEqual(
@@ -51,52 +51,43 @@ test.describe('Vue Node Collapse', () => {
   })
 
   test('should show collapse/expand icon state', async ({ comfyPage }) => {
-    const node = comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-    await expect(node).toBeVisible()
-    const collapseButton = node.locator('[data-testid="node-collapse-button"]')
-    const collapseIcon = collapseButton.locator('i')
+    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.element).toBeVisible()
 
     // Check initial expanded state icon
-    let iconClass = await collapseIcon.getAttribute('class')
+    let iconClass = await vueNode.getCollapseIconClass()
     expect(iconClass).not.toContain('-rotate-90')
 
     // Collapse and check icon
-    await collapseButton.click()
-    iconClass = (await collapseIcon.getAttribute('class')) || ''
+    await vueNode.toggleCollapse()
+    iconClass = await vueNode.getCollapseIconClass()
     expect(iconClass).toContain('-rotate-90')
 
     // Expand and check icon
-    await collapseButton.click()
-    iconClass = (await collapseIcon.getAttribute('class')) || ''
+    await vueNode.toggleCollapse()
+    iconClass = await vueNode.getCollapseIconClass()
     expect(iconClass).not.toContain('-rotate-90')
   })
 
   test('should preserve title when collapsing/expanding', async ({
     comfyPage
   }) => {
-    const node = comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-    await expect(node).toBeVisible()
-    const title = node.locator('[data-testid="node-title"]')
-    const collapseButton = node.locator('[data-testid="node-collapse-button"]')
+    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.element).toBeVisible()
 
     // Set custom title
-    await title.dblclick()
-    const input = node.locator('[data-testid="node-title-input"]')
-    await input.fill('Test Sampler')
-    await input.press('Enter')
-    await expect(title).toHaveText('Test Sampler')
+    await vueNode.setTitle('Test Sampler')
+    expect(await vueNode.getTitle()).toBe('Test Sampler')
 
     // Collapse
-    await collapseButton.click()
-    await expect(title).toHaveText('Test Sampler')
+    await vueNode.toggleCollapse()
+    expect(await vueNode.getTitle()).toBe('Test Sampler')
 
     // Expand
-    await collapseButton.click()
-    await expect(title).toHaveText('Test Sampler')
+    await vueNode.toggleCollapse()
+    expect(await vueNode.getTitle()).toBe('Test Sampler')
 
     // Verify title is still displayed
-    await expect(node.locator('[data-testid^="node-header-"]')).toContainText(
-      'Test Sampler'
-    )
+    await expect(vueNode.header).toContainText('Test Sampler')
   })
 })

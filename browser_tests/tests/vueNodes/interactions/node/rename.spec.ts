@@ -12,21 +12,16 @@ test.describe('Vue Nodes Renaming', () => {
   })
 
   test('should display node title', async ({ comfyPage }) => {
-    const node = comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-    await expect(node).toBeVisible()
-
-    const title = node.locator('[data-testid="node-title"]')
-    await expect(title).toHaveText('KSampler')
+    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.header).toContainText('KSampler')
   })
 
   test('should allow title renaming by double clicking on the node header', async ({
     comfyPage
   }) => {
-    const node = comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-    await expect(node).toBeVisible()
-
-    const title = node.locator('[data-testid="node-title"]')
-    const titleInput = node.locator('[data-testid="node-title-input"]')
+    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const title = vueNode.title
+    const titleInput = vueNode.titleInput
 
     // Test renaming with Enter
     await title.dblclick()
@@ -35,9 +30,7 @@ test.describe('Vue Nodes Renaming', () => {
     await expect(title).toHaveText('My Custom Sampler')
 
     // Verify the title is displayed
-    await expect(node.locator('[data-testid^="node-header-"]')).toContainText(
-      'My Custom Sampler'
-    )
+    await expect(vueNode.header).toContainText('My Custom Sampler')
 
     // Test cancel with Escape
     await title.dblclick()

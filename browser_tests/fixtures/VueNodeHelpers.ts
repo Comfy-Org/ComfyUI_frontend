@@ -3,6 +3,8 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { VueNodeFixture } from './utils/vueNodeFixtures'
+
 export class VueNodeHelpers {
   constructor(private page: Page) {}
 
@@ -104,6 +106,13 @@ export class VueNodeHelpers {
   async deleteSelectedWithBackspace(): Promise<void> {
     await this.page.locator('#graph-canvas').focus()
     await this.page.keyboard.press('Backspace')
+  }
+
+  /**
+   * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   */
+  getFixtureByTitle(title: string): VueNodeFixture {
+    return new VueNodeFixture(this.getNodeByTitle(title).first())
   }
 
   /**
