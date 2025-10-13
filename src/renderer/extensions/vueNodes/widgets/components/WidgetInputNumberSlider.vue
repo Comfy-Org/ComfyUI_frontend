@@ -43,6 +43,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { useNumberStepCalculation } from '../composables/useNumberStepCalculation'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -84,23 +85,5 @@ const precision = computed(() => {
 })
 
 // Calculate the step value based on precision or widget options
-const stepValue = computed(() => {
-  // Use step2 (correct input spec value) instead of step (legacy 10x value)
-  if (widget.options?.step2 !== undefined) {
-    return widget.options.step2
-  }
-
-  // Otherwise, derive from precision
-  if (precision.value === undefined) {
-    return undefined
-  }
-
-  if (precision.value === 0) {
-    return 1
-  }
-
-  // For precision > 0, step = 1 / (10^precision)
-  // precision 1 → 0.1, precision 2 → 0.01, etc.
-  return 1 / Math.pow(10, precision.value)
-})
+const stepValue = useNumberStepCalculation(widget.options, precision, true)
 </script>

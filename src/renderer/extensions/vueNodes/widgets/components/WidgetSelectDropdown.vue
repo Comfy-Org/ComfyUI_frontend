@@ -111,9 +111,6 @@ const outputItems = computed<DropdownItem[]>(() => {
   }))
 })
 
-const allItems = computed<DropdownItem[]>(() => {
-  return [...inputItems.value, ...outputItems.value]
-})
 const dropdownItems = computed<DropdownItem[]>(() => {
   switch (filterSelected.value) {
     case 'inputs':
@@ -122,7 +119,7 @@ const dropdownItems = computed<DropdownItem[]>(() => {
       return outputItems.value
     case 'all':
     default:
-      return allItems.value
+      return [...inputItems.value, ...outputItems.value]
   }
 })
 
