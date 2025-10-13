@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ $t('Node Render Error') }}
   </div>
   <div
@@ -8,20 +8,20 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-white dark-theme:bg-charcoal-800',
-        'lg-node absolute rounded-2xl',
-        'border-2 border-solid border-sand-100 dark-theme:border-charcoal-600',
+        'bg-node-component-surface',
+        'lg-node absolute rounded-2xl touch-none flex flex-col',
+        'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
+          'hover:ring-7 ring-node-component-ring',
         'outline-transparent -outline-offset-2 outline-2',
         borderClass,
         outlineClass,
         {
           'animate-pulse': executing,
-          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
+          'before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
-          'opacity-50 before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
+          'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
           'will-change-transform': isDragging
         },
@@ -50,15 +50,7 @@
         <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
       </template>
       <NodeHeader
-        v-memo="[
-          nodeData.title,
-          nodeData.color,
-          nodeData.bgcolor,
-          isCollapsed,
-          nodeData.flags?.pinned
-        ]"
         :node-data="nodeData"
-        :readonly="readonly"
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
@@ -78,7 +70,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="mb-4 relative">
+      <div class="relative mb-4">
         <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
         <div
@@ -96,55 +88,39 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex flex-col gap-4 pb-4"
+        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
-        <NodeSlots
-          v-memo="[
-            nodeData.inputs?.length,
-            nodeData.outputs?.length,
-            executionStore.lastNodeErrors
-          ]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeSlots :node-data="nodeData" />
 
         <!-- Widgets rendered at reduced+ detail -->
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
-        <NodeContent
-          v-if="hasCustomContent"
-          :node-data="nodeData"
-          :readonly="readonly"
-          :image-urls="nodeImageUrls"
-        />
-        <!-- Live preview image -->
-        <div
-          v-if="shouldShowPreviewImg"
-          v-memo="[latestPreviewUrl]"
-          class="px-4"
-        >
-          <img
-            :src="latestPreviewUrl"
-            alt="preview"
-            class="w-full max-h-64 object-contain"
-          />
+        <div v-if="hasCustomContent" class="min-h-0 flex-1">
+          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        </div>
+        <!-- Live mid-execution preview images -->
+        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
+          <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
       </div>
     </template>
+
+    <!-- Resize handle -->
+    <div
+      v-if="!isCollapsed"
+      class="absolute right-0 bottom-0 h-3 w-3 cursor-se-resize opacity-0 transition-opacity duration-200 hover:bg-white hover:opacity-20"
+      @pointerdown.stop="startResize"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, provide, ref } from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -171,6 +147,9 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useNodeResize } from '../composables/useNodeResize'
+import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
+import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -180,16 +159,11 @@ import SlotConnectionDot from './SlotConnectionDot.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   nodeData: VueNodeData
-  readonly?: boolean
   error?: string | null
   zoomLevel?: number
 }
 
-const {
-  nodeData,
-  error = null,
-  readonly = false
-} = defineProps<LGraphNodeProps>()
+const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const {
   handleNodeCollapse,
@@ -200,21 +174,20 @@ const {
 
 useVueElementTracking(() => nodeData.id, 'node')
 
-const { selectedNodeIds } = storeToRefs(useCanvasStore())
-
-// Inject transform state for coordinate conversion
 const transformState = inject(TransformStateKey)
+if (!transformState) {
+  throw new Error(
+    'TransformState must be provided for node resize functionality'
+  )
+}
 
-// Computed selection state - only this node re-evaluates when its selection changes
+const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
 
-// Use execution state composable
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-
-// Direct access to execution store for error state
 const executionStore = useExecutionStore()
 const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
@@ -229,6 +202,7 @@ const hasAnyError = computed((): boolean => {
   )
 })
 
+const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed((): boolean => nodeData.mode === 4)
 const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 
@@ -245,9 +219,16 @@ const nodeBodyBackgroundColor = computed(() => {
   )
 })
 
-const nodeOpacity = computed(
-  () => useSettingStore().get('Comfy.Node.Opacity') ?? 1
-)
+const nodeOpacity = computed(() => {
+  const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+
+  // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
+  if (bypassed.value || muted.value) {
+    return globalOpacity * 0.5
+  }
+
+  return globalOpacity
+})
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -263,7 +244,7 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
@@ -285,28 +266,50 @@ const handleContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  if (size.value && transformState?.camera) {
-    const scale = transformState.camera.z
-    const screenSize = {
-      width: size.value.width * scale,
-      height: size.value.height * scale
-    }
-    resize(screenSize)
+  // Set initial DOM size from layout store, but respect intrinsic content minimum
+  if (size.value && nodeContainerRef.value && transformState) {
+    const intrinsicMin = calculateIntrinsicSize(
+      nodeContainerRef.value,
+      transformState.camera.z
+    )
+
+    // Use the larger of stored size or intrinsic minimum
+    const finalWidth = Math.max(size.value.width, intrinsicMin.width)
+    const finalHeight = Math.max(size.value.height, intrinsicMin.height)
+
+    nodeContainerRef.value.style.width = `${finalWidth}px`
+    nodeContainerRef.value.style.height = `${finalHeight}px`
   }
 })
 
-// Track collapsed state
-const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const { startResize } = useNodeResize(
+  (newSize, element) => {
+    // Apply size directly to DOM element - ResizeObserver will pick this up
+    if (isCollapsed.value) return
 
-// Check if node has custom content (like image outputs)
+    element.style.width = `${newSize.width}px`
+    element.style.height = `${newSize.height}px`
+  },
+  {
+    transformState
+  }
+)
+
+whenever(isCollapsed, () => {
+  const element = nodeContainerRef.value
+  if (!element) return
+  element.style.width = ''
+  element.style.height = ''
+})
+
+// Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has image outputs
-  return nodeImageUrls.value.length > 0
+  // Show custom content if node has media outputs
+  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses =
-  'bg-sand-100 dark-theme:bg-charcoal-600 h-px mx-0 w-full lod-toggle'
+const separatorClasses = 'bg-node-component-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
@@ -317,18 +320,17 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  return (
-    (hasAnyError.value && 'border-error dark-theme:border-error') ||
-    (executing.value && 'border-blue-500')
-  )
+  if (hasAnyError.value) return 'border-node-stroke-error'
+  if (executing.value) return 'border-node-stroke-executing'
+  return 'border-node-stroke'
 })
 
 const outlineClass = computed(() => {
-  return (
+  return cn(
     isSelected.value &&
-    ((hasAnyError.value && 'outline-error dark-theme:outline-error') ||
-      (executing.value && 'outline-blue-500 dark-theme:outline-blue-500') ||
-      'outline-black dark-theme:outline-white')
+      ((hasAnyError.value && 'outline-error ') ||
+        (executing.value && 'outline-node-executing') ||
+        'outline-node-component-outline')
   )
 })
 
@@ -363,7 +365,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  canvas.openSubgraph(litegraphNode.subgraph)
+  canvas.openSubgraph(litegraphNode.subgraph, litegraphNode)
 }
 
 const nodeOutputs = useNodeOutputStore()
@@ -371,28 +373,35 @@ const nodeOutputs = useNodeOutputStore()
 const nodeOutputLocatorId = computed(() =>
   nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
 )
-const nodeImageUrls = computed(() => {
-  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+
+const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
-
-  // Use root graph for getNodeByLocatorId since it needs to traverse from root
   const rootGraph = app.graph?.rootGraph || app.graph
-  if (!rootGraph) {
-    return []
-  }
-
-  const node = getNodeByLocatorId(rootGraph, locatorId)
-
-  if (node && newOutputs?.images?.length) {
-    const urls = nodeOutputs.getNodeImageUrls(node)
-    if (urls) {
-      return urls
-    }
-  }
-  // Clear URLs if no outputs or no images
-  return []
+  if (!rootGraph) return null
+  return getNodeByLocatorId(rootGraph, locatorId)
 })
 
-const nodeContainerRef = ref()
-provide('tooltipContainer', nodeContainerRef)
+const nodeMedia = computed(() => {
+  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+  const node = lgraphNode.value
+
+  if (!node || !newOutputs?.images?.length) return undefined
+
+  const urls = nodeOutputs.getNodeImageUrls(node)
+  if (!urls?.length) return undefined
+
+  // Determine media type from previewMediaType or fallback to input slot types
+  // Note: Despite the field name "images", videos are also included in outputs
+  // TODO: fix the backend to return videos using the videos key instead of the images key
+  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
+  const type =
+    node.previewMediaType === 'video' ||
+    (!node.previewMediaType && hasVideoInput)
+      ? 'video'
+      : 'image'
+
+  return { type, urls } as const
+})
+
+const nodeContainerRef = ref<HTMLDivElement>()
 </script>

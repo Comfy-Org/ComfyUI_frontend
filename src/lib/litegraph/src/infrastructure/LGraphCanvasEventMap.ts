@@ -4,6 +4,7 @@ import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
 export interface LGraphCanvasEventMap {
@@ -13,6 +14,11 @@ export interface LGraphCanvasEventMap {
     newGraph: LGraph | Subgraph
     /** The old active graph, or `null` if there was no active graph. */
     oldGraph: LGraph | Subgraph | null | undefined
+  }
+  'subgraph-opened': {
+    subgraph: Subgraph
+    closingGraph: LGraph
+    fromNode: SubgraphNode
   }
 
   'litegraph:canvas':

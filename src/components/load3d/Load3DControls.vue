@@ -1,21 +1,21 @@
 <template>
   <div
-    class="absolute top-12 left-2 flex flex-col pointer-events-auto z-20 bg-gray-700/30 rounded-lg"
+    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-gray-700/30"
   >
-    <div class="relative show-menu">
+    <div class="show-menu relative">
       <Button class="p-button-rounded p-button-text" @click="toggleMenu">
-        <i class="pi pi-bars text-white text-lg" />
+        <i class="pi pi-bars text-lg text-white" />
       </Button>
 
       <div
         v-show="isMenuOpen"
-        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
       >
         <div class="flex flex-col">
           <Button
             v-for="category in availableCategories"
             :key="category"
-            class="p-button-text w-full flex items-center justify-start"
+            class="p-button-text flex w-full items-center justify-start"
             :class="{ 'bg-gray-600': activeCategory === category }"
             @click="selectCategory(category)"
           >
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div v-show="activeCategory" class="bg-gray-700/30 rounded-lg">
+    <div v-show="activeCategory" class="rounded-lg bg-gray-700/30">
       <SceneControls
         v-if="activeCategory === 'scene'"
         ref="sceneControlsRef"
@@ -81,7 +81,7 @@
           :class="[
             'pi',
             showPreview ? 'pi-eye' : 'pi-eye-slash',
-            'text-white text-lg'
+            'text-lg text-white'
           ]"
         />
       </Button>

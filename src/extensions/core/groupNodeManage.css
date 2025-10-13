@@ -30,14 +30,14 @@
 }
 .comfy-group-manage h2 {
   margin: 0;
-  font-weight: normal;
+  font-weight: 400;
 }
 .comfy-group-manage main {
   display: flex;
   overflow: hidden;
 }
 .comfy-group-manage .drag-handle {
-  font-weight: bold;
+  font-weight: 700;
 }
 .comfy-group-manage-list {
   border-right: 1px solid var(--comfy-menu-bg);
@@ -49,8 +49,7 @@
 }
 .comfy-group-manage-list-items {
   max-height: calc(100% - 40px);
-  overflow-y: scroll;
-  overflow-x: hidden;
+  overflow: hidden scroll;
 }
 .comfy-group-manage-list li {
   display: flex;

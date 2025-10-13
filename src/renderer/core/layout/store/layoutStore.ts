@@ -5,38 +5,38 @@
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
 import log from 'loglevel'
-import { type ComputedRef, type Ref, computed, customRef, ref } from 'vue'
+import { computed, customRef, ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
+  BatchUpdateBoundsOperation,
+  Bounds,
   CreateLinkOperation,
   CreateNodeOperation,
   CreateRerouteOperation,
   DeleteLinkOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
+  LayoutChange,
   LayoutOperation,
+  LayoutStore,
+  LinkId,
+  LinkLayout,
+  LinkSegmentLayout,
   MoveNodeOperation,
   MoveRerouteOperation,
   NodeBoundsUpdate,
+  NodeId,
+  NodeLayout,
+  Point,
+  RerouteId,
+  RerouteLayout,
   ResizeNodeOperation,
-  SetNodeZIndexOperation
-} from '@/renderer/core/layout/types'
-import {
-  type Bounds,
-  type LayoutChange,
-  LayoutSource,
-  type LayoutStore,
-  type LinkId,
-  type LinkLayout,
-  type LinkSegmentLayout,
-  type NodeId,
-  type NodeLayout,
-  type Point,
-  type RerouteId,
-  type RerouteLayout,
-  type SlotLayout
+  SetNodeZIndexOperation,
+  SlotLayout
 } from '@/renderer/core/layout/types'
 import {
   isBoundsEqual,
@@ -49,10 +49,10 @@ import {
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
-  type NodeLayoutMap,
   layoutToYNode,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
+import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
@@ -579,6 +579,14 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Returns all slot layout keys currently tracked by the store.
+   * Useful for global passes without relying on spatial queries.
+   */
+  getAllSlotKeys(): string[] {
+    return Array.from(this.slotLayouts.keys())
+  }
+
+  /**
    * Update link segment layout data
    */
   updateLinkSegmentLayout(
@@ -864,6 +872,12 @@ class LayoutStoreImpl implements LayoutStore {
       case 'deleteNode':
         this.handleDeleteNode(operation as DeleteNodeOperation, change)
         break
+      case 'batchUpdateBounds':
+        this.handleBatchUpdateBounds(
+          operation as BatchUpdateBoundsOperation,
+          change
+        )
+        break
       case 'createLink':
         this.handleCreateLink(operation as CreateLinkOperation, change)
         break
@@ -1090,6 +1104,38 @@ class LayoutStoreImpl implements LayoutStore {
 
     change.type = 'delete'
     change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleBatchUpdateBounds(
+    operation: BatchUpdateBoundsOperation,
+    change: LayoutChange
+  ): void {
+    const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
+
+    for (const nodeId of operation.nodeIds) {
+      const data = operation.bounds[nodeId]
+      const ynode = this.ynodes.get(nodeId)
+      if (!ynode || !data) continue
+
+      ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
+      ynode.set('size', {
+        width: data.bounds.width,
+        height: data.bounds.height
+      })
+      ynode.set('bounds', data.bounds)
+
+      spatialUpdates.push({ nodeId, bounds: data.bounds })
+      change.nodeIds.push(nodeId)
+    }
+
+    // Batch update spatial index for better performance
+    if (spatialUpdates.length > 0) {
+      this.spatialIndex.batchUpdate(spatialUpdates)
+    }
+
+    if (change.nodeIds.length) {
+      change.type = 'update'
+    }
   }
 
   private handleCreateLink(
@@ -1372,19 +1418,38 @@ class LayoutStoreImpl implements LayoutStore {
     const originalSource = this.currentSource
     this.currentSource = LayoutSource.Vue
 
-    this.ydoc.transact(() => {
-      for (const { nodeId, bounds } of updates) {
-        const ynode = this.ynodes.get(nodeId)
-        if (!ynode) continue
+    const nodeIds: NodeId[] = []
+    const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-        this.spatialIndex.update(nodeId, bounds)
-        ynode.set('bounds', bounds)
-        ynode.set('position', { x: bounds.x, y: bounds.y })
-        ynode.set('size', { width: bounds.width, height: bounds.height })
+    for (const { nodeId, bounds } of updates) {
+      const ynode = this.ynodes.get(nodeId)
+      if (!ynode) continue
+      const currentLayout = yNodeToLayout(ynode)
+
+      boundsRecord[nodeId] = {
+        bounds,
+        previousBounds: currentLayout.bounds
       }
-    }, this.currentActor)
+      nodeIds.push(nodeId)
+    }
 
-    // Restore original source
+    if (!nodeIds.length) {
+      this.currentSource = originalSource
+      return
+    }
+
+    const operation: BatchUpdateBoundsOperation = {
+      type: 'batchUpdateBounds',
+      entity: 'node',
+      nodeIds,
+      bounds: boundsRecord,
+      timestamp: Date.now(),
+      source: this.currentSource,
+      actor: this.currentActor
+    }
+
+    this.applyOperation(operation)
+
     this.currentSource = originalSource
   }
 }

@@ -213,12 +213,6 @@ Here's how Claude Code can use the Playwright MCP server to inspect the interfac
 - `pnpm i` to install all dependencies
 - `pnpm test:unit` to execute all unit tests
 
-### Component Tests
-
-Component tests verify Vue components in `src/components/`.
-
-- `pnpm test:component` to execute all component tests
-
 ### Playwright Tests
 
 Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details.
@@ -229,7 +223,6 @@ Before submitting a PR, ensure all tests pass:
 
 ```bash
 pnpm test:unit
-pnpm test:component
 pnpm test:browser
 pnpm typecheck
 pnpm lint
@@ -262,7 +255,7 @@ pnpm format
 The project supports three types of icons, all with automatic imports (no manual imports needed):
 
 1. **PrimeIcons** - Built-in PrimeVue icons using CSS classes: `<i class="pi pi-plus" />`
-2. **Iconify Icons** - 200,000+ icons from various libraries: `<i-lucide:settings />`, `<i-mdi:folder />`
+2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<i class="icon-[mdi--folder]" />`
 3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
 
 Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Custom icons are stored in `packages/design-system/src/icons/` and processed by `packages/design-system/src/iconCollection.ts` with automatic validation.

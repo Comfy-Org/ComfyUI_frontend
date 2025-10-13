@@ -4,8 +4,8 @@
       v-model="localValue"
       :options="multiSelectOptions"
       v-bind="combinedProps"
-      :disabled="readonly"
       class="w-full text-xs"
+      :aria-label="widget.name"
       size="small"
       display="chip"
       :pt="{
@@ -33,7 +33,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<T[]>
   modelValue: T[]
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

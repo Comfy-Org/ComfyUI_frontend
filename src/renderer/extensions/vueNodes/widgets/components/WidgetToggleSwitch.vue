@@ -3,7 +3,7 @@
     <ToggleSwitch
       v-model="localValue"
       v-bind="filteredProps"
-      :disabled="readonly"
+      :aria-label="widget.name"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>
@@ -25,7 +25,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<boolean>
   modelValue: boolean
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

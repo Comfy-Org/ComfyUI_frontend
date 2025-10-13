@@ -6,7 +6,6 @@ import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 
 defineProps<{
   widget: SimplifiedWidget<number>
-  readonly?: boolean
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
@@ -21,7 +20,6 @@ const modelValue = defineModel<number>({ default: 0 })
     "
     v-model="modelValue"
     :widget="widget"
-    :readonly="readonly"
     v-bind="$attrs"
   />
 </template>

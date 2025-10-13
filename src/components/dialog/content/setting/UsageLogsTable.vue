@@ -30,7 +30,7 @@
           <div class="event-details">
             <!-- Credits Added -->
             <template v-if="data.event_type === EventType.CREDIT_ADDED">
-              <div class="text-green-500 font-semibold">
+              <div class="font-semibold text-green-500">
                 {{ $t('credits.added') }} ${{
                   customerEventService.formatAmount(data.params?.amount)
                 }}

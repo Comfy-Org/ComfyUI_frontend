@@ -11,7 +11,15 @@ import CardTop from './CardTop.vue'
 
 interface CardStoryArgs {
   // CardContainer props
-  containerRatio: 'square' | 'portrait' | 'tallPortrait'
+  containerSize: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall'
+  variant: 'default' | 'ghost' | 'outline'
+  rounded: 'none' | 'sm' | 'lg' | 'xl'
+  customAspectRatio?: string
+  hasBorder: boolean
+  hasBackground: boolean
+  hasShadow: boolean
+  hasCursor: boolean
+  customClass: string
   maxWidth: number
   minWidth: number
 
@@ -44,10 +52,44 @@ interface CardStoryArgs {
 const meta: Meta<CardStoryArgs> = {
   title: 'Components/Card/Card',
   argTypes: {
-    containerRatio: {
+    containerSize: {
       control: 'select',
-      options: ['square', 'portrait', 'tallPortrait'],
-      description: 'Card container aspect ratio'
+      options: ['mini', 'compact', 'regular', 'portrait', 'tall'],
+      description: 'Card container size preset'
+    },
+    variant: {
+      control: 'select',
+      options: ['default', 'ghost', 'outline'],
+      description: 'Card visual variant'
+    },
+    rounded: {
+      control: 'select',
+      options: ['none', 'sm', 'lg', 'xl'],
+      description: 'Border radius size'
+    },
+    customAspectRatio: {
+      control: 'text',
+      description: 'Custom aspect ratio (e.g., "16/9")'
+    },
+    hasBorder: {
+      control: 'boolean',
+      description: 'Add border styling'
+    },
+    hasBackground: {
+      control: 'boolean',
+      description: 'Add background styling'
+    },
+    hasShadow: {
+      control: 'boolean',
+      description: 'Add shadow styling'
+    },
+    hasCursor: {
+      control: 'boolean',
+      description: 'Add cursor pointer'
+    },
+    customClass: {
+      control: 'text',
+      description: 'Additional custom CSS classes'
     },
     topRatio: {
       control: 'select',
@@ -149,8 +191,15 @@ const createCardTemplate = (args: CardStoryArgs) => ({
   template: `
     <div class="min-h-screen">
       <CardContainer 
-        :ratio="args.containerRatio" 
-        class="max-w-[320px] mx-auto"
+        :size="args.containerSize"
+        :variant="args.variant"
+        :rounded="args.rounded"
+        :custom-aspect-ratio="args.customAspectRatio"
+        :has-border="args.hasBorder"
+        :has-background="args.hasBackground"
+        :has-shadow="args.hasShadow"
+        :has-cursor="args.hasCursor"
+        :class="args.customClass || 'max-w-[320px] mx-auto'"
       >
         <template #top>
           <CardTop :ratio="args.topRatio">
@@ -205,7 +254,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
         </template>
         
         <template #bottom>
-          <CardBottom class="p-3 bg-neutral-100">
+          <CardBottom>
             <CardTitle v-if="args.showTitle">{{ args.title }}</CardTitle>
             <CardDescription v-if="args.showDescription">{{ args.description }}</CardDescription>
           </CardBottom>
@@ -218,7 +267,15 @@ const createCardTemplate = (args: CardStoryArgs) => ({
 export const Default: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'portrait',
+    containerSize: 'portrait',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: false,
     showTopRight: true,
@@ -243,7 +300,15 @@ export const Default: Story = {
 export const SquareCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'square',
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
     showTopRight: true,
@@ -268,7 +333,15 @@ export const SquareCard: Story = {
 export const TallPortraitCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'tallPortrait',
+    containerSize: 'tall',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: true,
     showTopRight: true,
@@ -293,7 +366,15 @@ export const TallPortraitCard: Story = {
 export const ImageCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'portrait',
+    containerSize: 'portrait',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: false,
     showTopRight: true,
@@ -314,10 +395,50 @@ export const ImageCard: Story = {
   }
 }
 
+export const MiniCard: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'mini',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: true,
+    showTitle: true,
+    showDescription: false,
+    title: 'Mini Asset',
+    description: '',
+    backgroundColor: '#06b6d4',
+    showImage: false,
+    imageUrl: '',
+    tags: ['Asset'],
+    showFileSize: true,
+    fileSize: '124 KB',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
 export const MinimalCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'square',
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
     showTopRight: false,
@@ -338,10 +459,209 @@ export const MinimalCard: Story = {
   }
 }
 
+export const GhostVariant: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'compact',
+    variant: 'ghost',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: true,
+    showTitle: true,
+    showDescription: true,
+    title: 'Workflow Template',
+    description: 'Ghost variant for workflow templates',
+    backgroundColor: '#10b981',
+    showImage: false,
+    imageUrl: '',
+    tags: ['Template'],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const OutlineVariant: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'outline',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'landscape',
+    showTopLeft: false,
+    showTopRight: true,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Outline Card',
+    description: 'Card with outline variant styling',
+    backgroundColor: '#f59e0b',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const CustomAspectRatio: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    customAspectRatio: '16/9',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'landscape',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: true,
+    showTitle: true,
+    showDescription: false,
+    title: 'Wide Format Card',
+    description: '',
+    backgroundColor: '#8b5cf6',
+    showImage: false,
+    imageUrl: '',
+    tags: ['Wide'],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const RoundedNone: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'none',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Sharp Corners',
+    description: 'Card with no border radius',
+    backgroundColor: '#dc2626',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const RoundedXL: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'xl',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Extra Rounded',
+    description: 'Card with extra large border radius',
+    backgroundColor: '#059669',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const NoStylesCard: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: false,
+    hasBackground: false,
+    hasShadow: false,
+    hasCursor: true,
+    customClass: 'bg-gradient-to-br from-blue-500 to-purple-600',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Custom Styled Card',
+    description: 'Card with all default styles removed and custom gradient',
+    backgroundColor: 'transparent',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
 export const FullFeaturedCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'tallPortrait',
+    containerSize: 'tall',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: true,
     showTopRight: true,

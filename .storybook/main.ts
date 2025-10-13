@@ -76,11 +76,6 @@ const config: StorybookConfig = {
       },
       build: {
         rollupOptions: {
-          external: () => {
-            // Don't externalize any modules in Storybook build
-            // This ensures PrimeVue and other dependencies are bundled
-            return false
-          },
           onwarn: (warning, warn) => {
             // Suppress specific warnings
             if (

@@ -101,9 +101,6 @@ const createMountConfig = () => {
           updated: vi.fn(),
           unmounted: vi.fn()
         }
-      },
-      provide: {
-        tooltipContainer: { value: document.createElement('div') }
       }
     }
   }
@@ -118,7 +115,6 @@ const mountHeader = (
     ...config,
     props: {
       nodeData: makeNodeData(),
-      readonly: false,
       collapsed: false,
       ...props
     }
@@ -182,28 +178,14 @@ describe('NodeHeader.vue', () => {
     expect(wrapper.get('[data-testid="node-title"]').text()).toContain('KeepMe')
   })
 
-  it('honors readonly: hides collapse button and prevents editing', async () => {
-    const wrapper = mountHeader({ readonly: true })
-
-    // Collapse button should be hidden
-    const btn = wrapper.find('[data-testid="node-collapse-button"]')
-    expect(btn.exists()).toBe(true)
-    // v-show hides via display:none
-    expect((btn.element as HTMLButtonElement).style.display).toBe('none')
-    // In unit test, presence is fine; simulate double click should not create input
-    await wrapper.get('[data-testid="node-header-1"]').trigger('dblclick')
-    const input = wrapper.find('[data-testid="node-title-input"]')
-    expect(input.exists()).toBe(false)
-  })
-
   it('renders correct chevron icon based on collapsed prop', async () => {
     const wrapper = mountHeader({ collapsed: false })
     const expandedIcon = wrapper.get('i')
-    expect(expandedIcon.classes()).toContain('pi-chevron-down')
+    expect(expandedIcon.classes()).not.toContain('-rotate-90')
 
     await wrapper.setProps({ collapsed: true })
     const collapsedIcon = wrapper.get('i')
-    expect(collapsedIcon.classes()).toContain('pi-chevron-right')
+    expect(collapsedIcon.classes()).toContain('-rotate-90')
   })
 
   describe('Tooltips', () => {
@@ -220,16 +202,6 @@ describe('NodeHeader.vue', () => {
         '[data-testid="node-title"]'
       )
       expect(directive).toBeTruthy()
-    })
-
-    it('disables tooltip when in readonly mode', () => {
-      const wrapper = mountHeader({
-        readonly: true,
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      const titleElement = wrapper.find('[data-testid="node-title"]')
-      expect(titleElement.exists()).toBe(true)
     })
 
     it('disables tooltip when editing is active', async () => {

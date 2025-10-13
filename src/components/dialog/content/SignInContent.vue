@@ -1,5 +1,5 @@
 <template>
-  <div class="w-96 p-2 overflow-x-hidden">
+  <div class="w-96 overflow-x-hidden p-2">
     <ApiKeyForm
       v-if="showApiKeyForm"
       @back="showApiKeyForm = false"
@@ -7,11 +7,11 @@
     />
     <template v-else>
       <!-- Header -->
-      <div class="flex flex-col gap-4 mb-8">
-        <h1 class="text-2xl font-medium leading-normal my-0">
+      <div class="mb-8 flex flex-col gap-4">
+        <h1 class="my-0 text-2xl leading-normal font-medium">
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
-        <p class="text-base my-0">
+        <p class="my-0 text-base">
           <span class="text-muted">{{
             isSignIn
               ? t('auth.login.newUser')
@@ -88,17 +88,17 @@
         >
           <img
             src="/assets/images/comfy-logo-mono.svg"
-            class="w-5 h-5 mr-2"
+            class="mr-2 h-5 w-5"
             alt="Comfy"
           />
           {{ t('auth.login.useApiKey') }}
         </Button>
-        <small class="text-muted text-center">
+        <small class="text-center text-muted">
           {{ t('auth.apiKey.helpText') }}
           <a
             :href="`${COMFY_PLATFORM_BASE_URL}/login`"
             target="_blank"
-            class="text-blue-500 cursor-pointer"
+            class="cursor-pointer text-blue-500"
           >
             {{ t('auth.apiKey.generateKey') }}
           </a>
@@ -115,12 +115,12 @@
       </div>
 
       <!-- Terms & Contact -->
-      <p class="text-xs text-muted mt-8">
+      <p class="mt-8 text-xs text-muted">
         {{ t('auth.login.termsText') }}
         <a
           href="https://www.comfy.org/terms-of-service"
           target="_blank"
-          class="text-blue-500 cursor-pointer"
+          class="cursor-pointer text-blue-500"
         >
           {{ t('auth.login.termsLink') }}
         </a>
@@ -128,12 +128,12 @@
         <a
           href="https://www.comfy.org/privacy"
           target="_blank"
-          class="text-blue-500 cursor-pointer"
+          class="cursor-pointer text-blue-500"
         >
           {{ t('auth.login.privacyLink') }} </a
         >.
         {{ t('auth.login.questionsContactPrefix') }}
-        <a href="mailto:hello@comfy.org" class="text-blue-500 cursor-pointer">
+        <a href="mailto:hello@comfy.org" class="cursor-pointer text-blue-500">
           hello@comfy.org</a
         >.
       </p>

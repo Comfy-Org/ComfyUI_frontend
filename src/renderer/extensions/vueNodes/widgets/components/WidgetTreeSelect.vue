@@ -3,8 +3,8 @@
     <TreeSelect
       v-model="localValue"
       v-bind="combinedProps"
-      :disabled="readonly"
       class="w-full text-xs"
+      :aria-label="widget.name"
       size="small"
       @update:model-value="onChange"
     />
@@ -37,7 +37,6 @@ export type TreeNode = {
 const props = defineProps<{
   widget: SimplifiedWidget<any>
   modelValue: any
-  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

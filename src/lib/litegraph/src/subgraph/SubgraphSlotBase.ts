@@ -12,7 +12,7 @@ import type {
   INodeOutputSlot,
   Point,
   ReadOnlyRect,
-  ReadOnlySize
+  Size
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
@@ -21,7 +21,8 @@ import type {
   Serialisable,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
-import { type UUID, createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphInputNode } from './SubgraphInputNode'
@@ -45,7 +46,7 @@ export abstract class SubgraphSlot
     return LiteGraph.NODE_SLOT_HEIGHT
   }
 
-  readonly #pos: Point = new Float32Array(2)
+  readonly #pos: Point = [0, 0]
 
   readonly measurement: ConstrainedSize = new ConstrainedSize(
     SubgraphSlot.defaultHeight,
@@ -133,7 +134,7 @@ export abstract class SubgraphSlot
     }
   }
 
-  measure(): ReadOnlySize {
+  measure(): Readonly<Size> {
     const width = LGraphCanvas._measureText?.(this.displayName) ?? 0
 
     const { defaultHeight } = SubgraphSlot

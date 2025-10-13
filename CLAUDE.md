@@ -18,7 +18,6 @@ This bootstraps the monorepo with dependencies, builds, tests, and dev server ve
 - `pnpm build`: Build for production (via nx)
 - `pnpm lint`: Linting (via nx)
 - `pnpm format`: Prettier formatting
-- `pnpm test:component`: Run component tests with browser environment
 - `pnpm test:unit`: Run all unit tests
 - `pnpm test:browser`: Run E2E tests via Playwright
 - `pnpm test:unit -- tests-ui/tests/example.test.ts`: Run single test file
@@ -127,6 +126,5 @@ const value = api.getServerFeature('config_name', defaultValue)  // Get config
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
-- NEVER use `dark:` prefix - always use `dark-theme:` for dark mode styles, for example: `dark-theme:text-white dark-theme:bg-black`
-- NEVER use `:class="[]"` to merge class names - always use `import { cn } from '@/utils/tailwindUtil'`, for example: `<div :class="cn('bg-red-500', { 'bg-blue-500': condition })" />`
-
+- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the `style.css` theme, e.g. `bg-node-component-surface`
+- NEVER use `:class="[]"` to merge class names - always use `import { cn } from '@/utils/tailwindUtil'`, for example: `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`

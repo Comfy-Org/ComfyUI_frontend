@@ -4,6 +4,14 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
+vi.mock('@/scripts/api', () => ({
+  api: {
+    fetchApi: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
+}))
+
 const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/modelToNodeStore', () => ({
@@ -108,7 +116,9 @@ describe('assetService', () => {
 
       const result = await assetService.getAssetModelFolders()
 
-      expect(api.fetchApi).toHaveBeenCalledWith('/assets?include_tags=models')
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models&limit=300'
+      )
       expect(result).toHaveLength(2)
 
       const folderNames = result.map((f) => f.name)
@@ -153,7 +163,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetModels('checkpoints')
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints'
+        '/assets?include_tags=models,checkpoints&limit=300'
       )
       expect(result).toEqual([
         expect.objectContaining({ name: 'valid.safetensors', pathIndex: 0 })
@@ -181,41 +191,18 @@ describe('assetService', () => {
   })
 
   describe('isAssetBrowserEligible', () => {
-    it('should return true for eligible widget names with registered node types', () => {
+    it('should return true for registered node types', () => {
       expect(
-        assetService.isAssetBrowserEligible(
-          'ckpt_name',
-          'CheckpointLoaderSimple'
-        )
+        assetService.isAssetBrowserEligible('CheckpointLoaderSimple')
       ).toBe(true)
-      expect(
-        assetService.isAssetBrowserEligible('lora_name', 'LoraLoader')
-      ).toBe(true)
-      expect(assetService.isAssetBrowserEligible('vae_name', 'VAELoader')).toBe(
-        true
-      )
+      expect(assetService.isAssetBrowserEligible('LoraLoader')).toBe(true)
+      expect(assetService.isAssetBrowserEligible('VAELoader')).toBe(true)
     })
 
-    it('should return false for non-eligible widget names', () => {
-      expect(assetService.isAssetBrowserEligible('seed', 'TestNode')).toBe(
-        false
-      )
-      expect(assetService.isAssetBrowserEligible('steps', 'TestNode')).toBe(
-        false
-      )
-      expect(
-        assetService.isAssetBrowserEligible('sampler_name', 'TestNode')
-      ).toBe(false)
-      expect(assetService.isAssetBrowserEligible('', 'TestNode')).toBe(false)
-    })
-
-    it('should return false for eligible widget names with unregistered node types', () => {
-      expect(
-        assetService.isAssetBrowserEligible('ckpt_name', 'UnknownNode')
-      ).toBe(false)
-      expect(
-        assetService.isAssetBrowserEligible('lora_name', 'UnknownNode')
-      ).toBe(false)
+    it('should return false for unregistered node types', () => {
+      expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('NotRegistered')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('')).toBe(false)
     })
   })
 
@@ -249,7 +236,7 @@ describe('assetService', () => {
 
       // Verify API call includes correct category
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints'
+        '/assets?include_tags=models,checkpoints&limit=300'
       )
     })
 
@@ -299,6 +286,74 @@ describe('assetService', () => {
 
       result = await assetService.getAssetsForNodeType('VAELoader')
       expect(result).toEqual(vaeAssets)
+    })
+  })
+
+  describe('getAssetsByTag', () => {
+    it('should fetch assets with correct tag query parameter', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints, MOCK_ASSETS.loras]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('models')
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models&limit=300'
+      )
+      expect(result).toEqual(testAssets)
+    })
+
+    it('should filter out assets with missing tag', async () => {
+      const testAssets = [
+        MOCK_ASSETS.checkpoints,
+        createTestAsset({
+          id: 'uuid-missing',
+          name: 'missing.safetensors',
+          tags: ['models', 'checkpoints', 'missing']
+        }),
+        MOCK_ASSETS.loras
+      ]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('models')
+
+      expect(result).toHaveLength(2)
+      expect(result).toEqual([MOCK_ASSETS.checkpoints, MOCK_ASSETS.loras])
+      expect(result.some((a) => a.id === 'uuid-missing')).toBe(false)
+    })
+
+    it('should return empty array on API error', async () => {
+      mockApiError(500)
+
+      await expect(assetService.getAssetsByTag('models')).rejects.toThrow(
+        'Unable to load assets for tag models: Server returned 500. Please try again.'
+      )
+    })
+
+    it('should return empty array for empty response', async () => {
+      mockApiResponse([])
+
+      const result = await assetService.getAssetsByTag('nonexistent')
+
+      expect(result).toEqual([])
+    })
+
+    it('should return AssetItem[] with full metadata', async () => {
+      const fullAsset = createTestAsset({
+        id: 'test-full',
+        name: 'full-model.safetensors',
+        asset_hash: 'blake3:full123',
+        size: 999999,
+        tags: ['models', 'checkpoints'],
+        user_metadata: { filename: 'models/checkpoints/full-model.safetensors' }
+      })
+      mockApiResponse([fullAsset])
+
+      const result = await assetService.getAssetsByTag('models')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toEqual(fullAsset)
+      expect(result[0]).toHaveProperty('asset_hash', 'blake3:full123')
+      expect(result[0]).toHaveProperty('user_metadata')
     })
   })
 })

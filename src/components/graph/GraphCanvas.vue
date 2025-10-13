@@ -10,7 +10,7 @@
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
-      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
+      <div class="pointer-events-auto absolute top-0 left-0 w-auto max-w-full">
         <SecondRowWorkflowTabs
           v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
         />
@@ -28,7 +28,7 @@
     id="graph-canvas"
     ref="canvasRef"
     tabindex="1"
-    class="align-top w-full h-full touch-none"
+    class="absolute inset-0 size-full touch-none"
   />
 
   <!-- TransformPane for Vue node rendering -->
@@ -39,11 +39,10 @@
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
   >
     <!-- Vue nodes rendered based on graph nodes -->
-    <VueGraphNode
+    <LGraphNode
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
-      :readonly="false"
       :error="
         executionStore.lastExecutionError?.node_id === nodeData.id
           ? 'Execution error'
@@ -104,6 +103,7 @@ import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { i18n, t } from '@/i18n'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -113,11 +113,10 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { attachSlotLinkPreviewRenderer } from '@/renderer/core/canvas/links/slotLinkPreviewRenderer'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
-import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -144,6 +143,8 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
+const colorPaletteStore = useColorPaletteStore()
+const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
 
 const betaMenuEnabled = computed(
@@ -194,6 +195,15 @@ const allNodes = computed((): VueNodeData[] =>
 )
 
 watchEffect(() => {
+  LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
+})
+watchEffect(() => {
+  LiteGraph.nodeLightness = colorPaletteStore.completedActivePalette.light_theme
+    ? 0.5
+    : undefined
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 
@@ -239,8 +249,6 @@ watch(
   }
 )
 
-const colorPaletteService = useColorPaletteService()
-const colorPaletteStore = useColorPaletteStore()
 watch(
   [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
   async ([canvas, currentPaletteId]) => {
@@ -392,7 +400,6 @@ onMounted(async () => {
 
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
-  attachSlotLinkPreviewRenderer(comfyApp.canvas)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false

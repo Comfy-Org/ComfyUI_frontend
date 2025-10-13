@@ -1,14 +1,14 @@
 <template>
   <Message
     :severity="statusSeverity"
-    class="p-0 flex items-center rounded-xl break-words w-fit"
+    class="flex w-fit items-center rounded-xl p-0 break-words"
     :pt="{
       text: { class: 'text-xs' },
       content: { class: 'px-2 py-0.5' }
     }"
   >
     <i
-      class="pi pi-circle-fill mr-1.5 text-[0.6rem] p-0"
+      class="pi pi-circle-fill mr-1.5 p-0 text-[0.6rem]"
       :style="{ opacity: 0.8 }"
     />
     {{ $t(`manager.status.${statusLabel}`) }}

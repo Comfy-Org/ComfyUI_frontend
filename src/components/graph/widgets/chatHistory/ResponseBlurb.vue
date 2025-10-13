@@ -1,13 +1,13 @@
 <template>
   <span>
-    <div class="flex justify-start mb-1">
-      <div class="rounded-xl px-4 py-1 max-w-[80%]">
-        <div class="break-words text-[12px]">
+    <div class="mb-1 flex justify-start">
+      <div class="max-w-[80%] rounded-xl px-4 py-1">
+        <div class="text-[12px] break-words">
           <slot />
         </div>
       </div>
     </div>
-    <div class="flex justify-start ml-1">
+    <div class="ml-1 flex justify-start">
       <CopyButton :text="text" />
     </div>
   </span>

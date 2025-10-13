@@ -5,7 +5,7 @@
     }}</label>
     <Button
       v-bind="filteredProps"
-      :disabled="readonly"
+      :aria-label="widget.name || widget.label"
       size="small"
       @click="handleClick"
     />
@@ -25,7 +25,6 @@ import {
 // Button widgets don't have a v-model value, they trigger actions
 const props = defineProps<{
   widget: SimplifiedWidget<void>
-  readonly?: boolean
 }>()
 
 // Button specific excluded props
@@ -36,7 +35,7 @@ const filteredProps = computed(() =>
 )
 
 const handleClick = () => {
-  if (!props.readonly && props.widget.callback) {
+  if (props.widget.callback) {
     props.widget.callback()
   }
 }

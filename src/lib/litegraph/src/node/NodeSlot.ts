@@ -8,8 +8,7 @@ import type {
   INodeSlot,
   ISubgraphInput,
   OptionalProps,
-  Point,
-  ReadOnlyPoint
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { getCentre } from '@/lib/litegraph/src/measure'
@@ -36,7 +35,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
 
   /** The offset from the parent node to the centre point of this slot. */
-  get #centreOffset(): ReadOnlyPoint {
+  get #centreOffset(): Readonly<Point> {
     const nodePos = this.node.pos
     const { boundingRect } = this
 
@@ -52,7 +51,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   }
 
   /** The center point of this slot when the node is collapsed. */
-  abstract get collapsedPos(): ReadOnlyPoint
+  abstract get collapsedPos(): Readonly<Point>
 
   #node: LGraphNode
   get node(): LGraphNode {

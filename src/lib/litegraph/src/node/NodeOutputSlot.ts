@@ -5,10 +5,11 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   OptionalProps,
-  ReadOnlyPoint
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -24,7 +25,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     return false
   }
 
-  get collapsedPos(): ReadOnlyPoint {
+  get collapsedPos(): Readonly<Point> {
     return [
       this.#node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH,
       LiteGraph.NODE_TITLE_HEIGHT * -0.5

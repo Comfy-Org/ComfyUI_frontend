@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
@@ -7,6 +7,7 @@ import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import FormDropdown from './form/dropdown/FormDropdown.vue'
+import { AssetKindKey } from './form/dropdown/types'
 import type {
   DropdownItem,
   FilterOption,
@@ -25,11 +27,15 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
-  readonly?: boolean
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
 }>()
+
+provide(
+  AssetKindKey,
+  computed(() => props.assetKind)
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number | undefined]
@@ -43,6 +49,7 @@ const { localValue, onChange } = useWidgetValue({
 })
 
 const toastStore = useToastStore()
+const queueStore = useQueueStore()
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -51,8 +58,15 @@ const combinedProps = computed(() => ({
   ...transformCompatProps.value
 }))
 
+const filterSelected = ref('all')
+const filterOptions = ref<FilterOption[]>([
+  { id: 'all', name: 'All' },
+  { id: 'inputs', name: 'Inputs' },
+  { id: 'outputs', name: 'Outputs' }
+])
+
 const selectedSet = ref<Set<SelectedKey>>(new Set())
-const dropdownItems = computed<DropdownItem[]>(() => {
+const inputItems = computed<DropdownItem[]>(() => {
   const values = props.widget.options?.values || []
 
   if (!Array.isArray(values)) {
@@ -60,11 +74,56 @@ const dropdownItems = computed<DropdownItem[]>(() => {
   }
 
   return values.map((value: string, index: number) => ({
-    id: index,
-    imageSrc: getMediaUrl(value),
+    id: `input-${index}`,
+    mediaSrc: getMediaUrl(value, 'input'),
     name: value,
     metadata: ''
   }))
+})
+const outputItems = computed<DropdownItem[]>(() => {
+  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+
+  const outputs = new Set<string>()
+
+  // Extract output images/videos from queue history
+  queueStore.historyTasks.forEach((task) => {
+    task.flatOutputs.forEach((output) => {
+      const isTargetType =
+        (props.assetKind === 'image' && output.mediaType === 'images') ||
+        (props.assetKind === 'video' && output.mediaType === 'video')
+
+      if (output.type === 'output' && isTargetType) {
+        const path = output.subfolder
+          ? `${output.subfolder}/${output.filename}`
+          : output.filename
+        // Add [output] annotation so the preview component knows the type
+        const annotatedPath = `${path} [output]`
+        outputs.add(annotatedPath)
+      }
+    })
+  })
+
+  return Array.from(outputs).map((output, index) => ({
+    id: `output-${index}`,
+    mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
+    name: output,
+    metadata: ''
+  }))
+})
+
+const allItems = computed<DropdownItem[]>(() => {
+  return [...inputItems.value, ...outputItems.value]
+})
+const dropdownItems = computed<DropdownItem[]>(() => {
+  switch (filterSelected.value) {
+    case 'inputs':
+      return inputItems.value
+    case 'outputs':
+      return outputItems.value
+    case 'all':
+    default:
+      return allItems.value
+  }
 })
 
 const mediaPlaceholder = computed(() => {
@@ -91,6 +150,21 @@ const mediaPlaceholder = computed(() => {
 })
 
 const uploadable = computed(() => props.allowUpload === true)
+
+const acceptTypes = computed(() => {
+  // Be permissive with accept types because backend uses libraries
+  // that can handle a wide range of formats
+  switch (props.assetKind) {
+    case 'image':
+      return 'image/*'
+    case 'video':
+      return 'video/*'
+    case 'audio':
+      return 'audio/*'
+    default:
+      return undefined // model or unknown
+  }
+})
 
 watch(
   localValue,
@@ -198,19 +272,13 @@ async function handleFilesUpdate(files: File[]) {
   }
 }
 
-function getMediaUrl(filename: string): string {
-  if (props.assetKind !== 'image') return ''
-  // TODO: This needs to be adapted based on actual ComfyUI API structure
-  return `/api/view?filename=${encodeURIComponent(filename)}&type=input`
+function getMediaUrl(
+  filename: string,
+  type: 'input' | 'output' = 'input'
+): string {
+  if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
+  return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
 }
-
-// TODO handle filter logic
-const filterSelected = ref('all')
-const filterOptions = ref<FilterOption[]>([
-  { id: 'all', name: 'All' },
-  { id: 'image', name: 'Inputs' },
-  { id: 'video', name: 'Outputs' }
-])
 </script>
 
 <template>
@@ -222,7 +290,7 @@ const filterOptions = ref<FilterOption[]>([
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable="uploadable"
-      :disabled="readonly"
+      :accept="acceptTypes"
       :filter-options="filterOptions"
       v-bind="combinedProps"
       class="w-full"

@@ -3,7 +3,7 @@
     v-if="hasMissingCoreNodes"
     severity="info"
     icon="pi pi-info-circle"
-    class="my-2 mx-2"
+    class="mx-2 my-2"
     :pt="{
       root: { class: 'flex-col' },
       text: { class: 'flex-1' }

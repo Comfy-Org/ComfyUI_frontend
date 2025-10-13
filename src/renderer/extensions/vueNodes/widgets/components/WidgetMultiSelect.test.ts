@@ -176,33 +176,6 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
   })
 
-  describe('Readonly Mode', () => {
-    it('disables multiselect when readonly', () => {
-      const widget = createMockWidget(['selected'], {
-        values: ['selected', 'other']
-      })
-      const wrapper = mountComponent(widget, ['selected'], true)
-
-      const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
-      expect(multiselect.props('disabled')).toBe(true)
-    })
-
-    it('disables interaction but allows programmatic changes', async () => {
-      const widget = createMockWidget(['initial'], {
-        values: ['initial', 'other']
-      })
-      const wrapper = mountComponent(widget, ['initial'], true)
-
-      const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
-
-      // The MultiSelect should be disabled, preventing user interaction
-      expect(multiselect.props('disabled')).toBe(true)
-
-      // But programmatic changes (like from external updates) should still work
-      // This is the expected behavior - readonly prevents UI interaction, not programmatic updates
-    })
-  })
-
   describe('Widget Options Handling', () => {
     it('passes through valid widget options', () => {
       const widget = createMockWidget([], {

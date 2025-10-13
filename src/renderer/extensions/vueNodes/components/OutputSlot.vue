@@ -1,11 +1,11 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
+  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <div class="relative">
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200 lod-toggle"
+        class="lod-toggle text-sm font-normal whitespace-nowrap text-node-component-slot-text"
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
@@ -15,26 +15,21 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      class="translate-x-1/2"
-      v-on="readonly ? {} : { pointerdown: onPointerDown }"
+      class="w-3 translate-x-1/2"
+      @pointerdown="onPointerDown"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  type ComponentPublicInstance,
-  type Ref,
-  computed,
-  inject,
-  onErrorCaptured,
-  ref,
-  watchEffect
-} from 'vue'
+import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
@@ -50,7 +45,6 @@ interface OutputSlotProps {
   index: number
   connected?: boolean
   compatible?: boolean
-  readonly?: boolean
   dotOnly?: boolean
 }
 
@@ -61,11 +55,8 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const tooltipContainer =
-  inject<Ref<HTMLElement | undefined>>('tooltipContainer')
 const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || '',
-  tooltipContainer
+  props.nodeType || ''
 )
 
 const tooltipConfig = computed(() => {
@@ -84,16 +75,26 @@ onErrorCaptured((error) => {
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
 
+const { state: dragState } = useSlotLinkDragUIState()
+const slotKey = computed(() =>
+  getSlotKey(props.nodeId ?? '', props.index, false)
+)
+const shouldDim = computed(() => {
+  if (!dragState.active) return false
+  return !dragState.compatible.get(slotKey.value)
+})
+
 const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output flex items-center justify-end group rounded-l-lg h-6',
-    props.readonly ? 'cursor-default opacity-70' : 'cursor-crosshair',
+    'cursor-crosshair',
     props.dotOnly
       ? 'lg-slot--dot-only justify-center'
       : 'pl-6 hover:bg-black/5 hover:dark:bg-white/5',
     {
       'lg-slot--connected': props.connected,
-      'lg-slot--compatible': props.compatible
+      'lg-slot--compatible': props.compatible,
+      'opacity-40': shouldDim.value
     }
   )
 )
@@ -120,7 +121,6 @@ useSlotElementTracking({
 const { onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
-  type: 'output',
-  readonly: props.readonly
+  type: 'output'
 })
 </script>

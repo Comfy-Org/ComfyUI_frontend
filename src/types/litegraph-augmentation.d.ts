@@ -1,8 +1,9 @@
 import '@/lib/litegraph/src/litegraph'
-import type { LLink, Size } from '@/lib/litegraph/src/litegraph'
 import type {
   ExecutableLGraphNode,
-  ExecutionId
+  ExecutionId,
+  LLink,
+  Size
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'

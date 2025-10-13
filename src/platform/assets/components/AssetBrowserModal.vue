@@ -2,7 +2,7 @@
   <BaseModalLayout
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
-    :content-title="contentTitle"
+    :content-title="displayTitle"
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
@@ -14,13 +14,16 @@
         <template #header-icon>
           <div class="icon-[lucide--folder] size-4" />
         </template>
-        <template #header-title>{{ $t('assetBrowser.browseAssets') }}</template>
+        <template #header-title>
+          <span class="capitalize">{{ displayTitle }}</span>
+        </template>
       </LeftSidePanel>
     </template>
 
     <template #header>
       <SearchBox
         v-model="searchQuery"
+        :autofocus="true"
         size="lg"
         :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
         class="max-w-96"
@@ -28,7 +31,10 @@
     </template>
 
     <template #contentFilter>
-      <AssetFilterBar :assets="assets" @filter-change="updateFilters" />
+      <AssetFilterBar
+        :assets="categoryFilteredAssets"
+        @filter-change="updateFilters"
+      />
     </template>
 
     <template #content>
@@ -56,10 +62,11 @@ import { OnCloseKey } from '@/types/widgetTypes'
 const props = defineProps<{
   nodeType?: string
   inputName?: string
-  onSelect?: (assetPath: string) => void
+  onSelect?: (asset: AssetItem) => void
   onClose?: () => void
   showLeftPanel?: boolean
   assets?: AssetItem[]
+  title?: string
 }>()
 
 const emit = defineEmits<{
@@ -74,10 +81,14 @@ const {
   selectedCategory,
   availableCategories,
   contentTitle,
+  categoryFilteredAssets,
   filteredAssets,
-  selectAssetWithCallback,
   updateFilters
 } = useAssetBrowser(props.assets)
+
+const displayTitle = computed(() => {
+  return props.title ?? contentTitle.value
+})
 
 const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true
@@ -88,8 +99,10 @@ function handleClose() {
   emit('close')
 }
 
-async function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
+function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   emit('asset-select', asset)
-  await selectAssetWithCallback(asset.id, props.onSelect)
+  // onSelect callback is provided by dialog composable layer
+  // It handles the appropriate transformation (filename extraction or full asset)
+  props.onSelect?.(asset)
 }
 </script>

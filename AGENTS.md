@@ -5,15 +5,14 @@
 - Routing/i18n/entry: `src/router.ts`, `src/i18n.ts`, `src/main.ts`.
 - Tests: unit/component in `tests-ui/` and `src/components/**/*.{test,spec}.ts`; E2E in `browser_tests/`.
 - Public assets: `public/`. Build output: `dist/`.
-- Config: `vite.config.mts`, `vitest.config.ts`, `playwright.config.ts`, `eslint.config.js`, `.prettierrc`.
+- Config: `vite.config.mts`, `vitest.config.ts`, `playwright.config.ts`, `eslint.config.ts`, `.prettierrc`.
 
 ## Build, Test, and Development Commands
 - `pnpm dev`: Start Vite dev server.
 - `pnpm dev:electron`: Dev server with Electron API mocks.
 - `pnpm build`: Type-check then production build to `dist/`.
 - `pnpm preview`: Preview the production build locally.
-- `pnpm test:unit`: Run Vitest unit tests (`tests-ui/`).
-- `pnpm test:component`: Run component tests (`src/components/`).
+- `pnpm test:unit`: Run Vitest unit tests.
 - `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`).
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint). `pnpm format` / `format:check`: Prettier.
 - `pnpm typecheck`: Vue TSC type checking.

@@ -136,36 +136,7 @@ describe('useComboWidget', () => {
     expect(widget).toBe(mockWidget)
   })
 
-  it('should create normal combo widget when widget is not eligible for asset browser', () => {
-    mockSettingStoreGet.mockReturnValue(true)
-    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
-
-    const constructor = useComboWidget()
-    const mockWidget = createMockWidget()
-    const mockNode = createMockNode()
-    vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
-    const inputSpec = createMockInputSpec({
-      name: 'not_eligible_widget',
-      options: ['option1', 'option2']
-    })
-
-    const widget = constructor(mockNode, inputSpec)
-
-    expect(mockNode.addWidget).toHaveBeenCalledWith(
-      'combo',
-      'not_eligible_widget',
-      'option1',
-      expect.any(Function),
-      { values: ['option1', 'option2'] }
-    )
-    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
-      'not_eligible_widget',
-      'TestNode'
-    )
-    expect(widget).toBe(mockWidget)
-  })
-
-  it('should create asset browser widget when API enabled and widget eligible', () => {
+  it('should create asset browser widget when API enabled', () => {
     mockSettingStoreGet.mockReturnValue(true)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
 
@@ -192,13 +163,12 @@ describe('useComboWidget', () => {
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
-      'ckpt_name',
       'CheckpointLoaderSimple'
     )
     expect(widget).toBe(mockWidget)
   })
 
-  it('should create asset browser widget with options when API enabled and widget eligible', () => {
+  it('should create asset browser widget with options when API enabled', () => {
     mockSettingStoreGet.mockReturnValue(true)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
 
@@ -224,10 +194,6 @@ describe('useComboWidget', () => {
       expect.any(Function)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
-    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
-      'ckpt_name',
-      'CheckpointLoaderSimple'
-    )
     expect(widget).toBe(mockWidget)
   })
 
@@ -258,10 +224,6 @@ describe('useComboWidget', () => {
       expect.any(Function)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
-    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
-      'ckpt_name',
-      'CheckpointLoaderSimple'
-    )
     expect(widget).toBe(mockWidget)
   })
 
@@ -291,10 +253,6 @@ describe('useComboWidget', () => {
       expect.any(Function)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
-    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
-      'ckpt_name',
-      'CheckpointLoaderSimple'
-    )
     expect(widget).toBe(mockWidget)
   })
 })

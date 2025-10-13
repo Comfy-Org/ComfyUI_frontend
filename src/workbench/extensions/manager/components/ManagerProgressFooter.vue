@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full px-6 py-2 shadow-lg flex items-center justify-between"
+    class="flex w-full items-center justify-between px-6 py-2 shadow-lg"
     :class="{
       'rounded-t-none': progressDialogContent.isExpanded,
       'rounded-lg': !progressDialogContent.isExpanded
@@ -32,7 +32,7 @@
           v-if="!isInProgress && !isRestartCompleted"
           rounded
           outlined
-          class="mr-4 rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 !dark-theme:bg-transparent dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-800"
+          class="!dark-theme:bg-transparent mr-4 rounded-md border-2 border-neutral-900 px-3 text-neutral-600 hover:bg-neutral-100 dark-theme:border-white dark-theme:text-white dark-theme:hover:bg-neutral-800"
           @click="handleRestart"
         >
           {{ $t('manager.applyChanges') }}

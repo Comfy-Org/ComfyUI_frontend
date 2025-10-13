@@ -106,14 +106,6 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
       expect(toggle.props('modelValue')).toBe(true)
     })
-
-    it('disables component in readonly mode', () => {
-      const widget = createMockWidget(false)
-      const wrapper = mountComponent(widget, false, true)
-
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
-      expect(toggle.props('disabled')).toBe(true)
-    })
   })
 
   describe('Multiple Value Changes', () => {

@@ -79,6 +79,7 @@ export type IWidget =
   | ISelectButtonWidget
   | ITextareaWidget
   | IAssetWidget
+  | IAudioRecordWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -227,6 +228,11 @@ export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
   value: string
 }
 
+export interface IAudioRecordWidget extends IBaseWidget<string, 'audiorecord'> {
+  type: 'audiorecord'
+  value: string
+}
+
 export interface IAssetWidget
   extends IBaseWidget<string, 'asset', IWidgetOptions<string[]>> {
   type: 'asset'
@@ -308,6 +314,13 @@ export interface IBaseWidget<
 
   hidden?: boolean
   advanced?: boolean
+  /**
+   * This property is automatically computed on graph change
+   * and should not be changed.
+   * Promoted widgets have a colored border
+   * @see /core/graph/subgraph/proxyWidget.registerProxyWidgets
+   */
+  promoted?: boolean
 
   tooltip?: string
 

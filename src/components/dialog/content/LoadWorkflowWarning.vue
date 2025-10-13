@@ -16,7 +16,7 @@
     }"
   >
     <template #option="slotProps">
-      <div class="flex align-items-center">
+      <div class="align-items-center flex">
         <span class="node-type">{{ slotProps.option.label }}</span>
         <span v-if="slotProps.option.hint" class="node-hint">{{
           slotProps.option.hint

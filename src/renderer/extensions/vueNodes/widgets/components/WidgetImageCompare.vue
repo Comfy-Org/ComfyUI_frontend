@@ -11,14 +11,14 @@
       <img
         :src="beforeImage"
         :alt="beforeAlt"
-        class="w-full h-full object-cover"
+        class="h-full w-full object-cover"
       />
     </template>
     <template #right>
       <img
         :src="afterImage"
         :alt="afterAlt"
-        class="w-full h-full object-cover"
+        class="h-full w-full object-cover"
       />
     </template>
   </ImageCompare>
@@ -41,7 +41,6 @@ export interface ImageCompareValue {
 // Image compare widgets typically don't have v-model, they display comparison
 const props = defineProps<{
   widget: SimplifiedWidget<ImageCompareValue | string>
-  readonly?: boolean
 }>()
 
 const beforeImage = computed(() => {
