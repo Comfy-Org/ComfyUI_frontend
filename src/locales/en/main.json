@@ -610,6 +610,10 @@
         "hideCanceled": "Hide Canceled"
       }
     },
+    "queueProgressOverlay": {
+      "title": "Queue Progress",
+      "placeholder": "Placeholder - we will hook real data next."
+    },
     "workflowTab": {
       "confirmDeleteTitle": "Delete workflow?",
       "confirmDelete": "Are you sure you want to delete this workflow?",
