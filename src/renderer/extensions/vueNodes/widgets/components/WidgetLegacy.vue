@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -18,6 +20,7 @@ const canvasEl = ref()
 const { canvas } = useCanvasStore()
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
+let pointer: CanvasPointer | undefined
 onMounted(() => {
   node =
     canvas?.graph?.getNodeById(canvasEl.value.attributes['node-id'].value) ??
@@ -32,6 +35,7 @@ onMounted(() => {
     return ret
   }
   draw()
+  pointer = new CanvasPointer(canvasEl.value)
 })
 function draw() {
   if (!widgetInstance || !node) return
@@ -54,27 +58,36 @@ function draw() {
     LiteGraph.WIDGET_BGCOLOR = bgcolor
   }
 }
-//TODO: some nodes use onPointerDown
-let interactingMouse: boolean = false
-function handleMouse(e: PointerEvent) {
-  if (!node || !widgetInstance || !canvas) return
-  if (e.type == 'pointerup') interactingMouse = false
-  else if (e.type == 'pointerdown') interactingMouse = true
-  else if (e.type == 'pointermove' && !interactingMouse) return
-  const x = e.offsetX
-  const y = e.offsetY
+function translateEvent(e) {
+  canvas.adjustMouseEvent(e)
+  canvas.graph_mouse[0] = e.offsetX + node.pos[0]
+  canvas.graph_mouse[1] = e.offsetY + node.pos[1]
+}
+//See LGraphCanvas.processWidgetClick
+function handleDown(e) {
+  translateEvent(e)
+  pointer.down(e)
   if (widgetInstance.mouse) {
-    // @ts-expect-error - event is missing properties
-    widgetInstance.mouse(e, [x, y], node)
+    pointer.onDrag = (e) => widgetInstance.mouse(e, [e.offsetX, e.offsetY], node)
+    pointer.onClick = (e) => widgetInstance.mouse(e, [e.offsetX, e.offsetY], node)
   }
+  canvas.processWidgetClick(e, node, widgetInstance, pointer)
+}
+function handleUp(e) {
+  translateEvent(e)
+  pointer.up(e)
+}
+function handleMove(e) {
+  translateEvent(e)
+  pointer.move(e)
 }
 </script>
 <template>
   <canvas
     ref="canvasEl"
     class="ml-[-24px] mr-[-16px] cursor-crosshair"
-    @pointerdown="handleMouse"
-    @pointermove="handleMouse"
-    @pointerup="handleMouse"
+    @pointerdown="handleDown"
+    @pointerup="handleUp"
+    @pointermove="handleMove"
   />
 </template>

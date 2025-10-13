@@ -2782,7 +2782,7 @@ export class LGraphCanvas
     // Widget
     const widget = node.getWidgetOnPos(x, y)
     if (widget) {
-      this.#processWidgetClick(e, node, widget)
+      this.processWidgetClick(e, node, widget)
       this.node_widget = [node, widget]
     } else {
       // Node background
@@ -2962,12 +2962,12 @@ export class LGraphCanvas
     this.dirty_canvas = true
   }
 
-  #processWidgetClick(
+  processWidgetClick(
     e: CanvasPointerEvent,
     node: LGraphNode,
-    widget: IBaseWidget
+    widget: IBaseWidget,
+    pointer = this.pointer
   ) {
-    const { pointer } = this
 
     // Custom widget - CanvasPointer
     if (typeof widget.onPointerDown === 'function') {
