@@ -1,118 +1,45 @@
 <template>
   <div
     v-if="visible"
-    class="absolute right-2 bottom-[66px] z-1300 flex w-[250px] justify-center border-0! bg-inherit! md:right-11"
+    class="absolute right-2 bottom-[66px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
-      class="w-4/5 rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark-theme:border-gray-700 dark-theme:bg-[#2b2b2b]"
+      class="text-neutral w-4/5 rounded-lg border border-zinc-200 bg-interface-panel-surface p-2 shadow-lg select-none dark-theme:border-zinc-700 dark-theme:text-white"
       :style="filteredMinimapStyles"
       @click.stop
     >
-      <div>
-        <Button
-          severity="secondary"
-          text
-          :pt="{
-            root: {
-              class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
-            },
-            label: {
-              class: 'flex flex-col items-start w-full'
-            }
-          }"
+      <div class="flex flex-col gap-1">
+        <div
+          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
           @mousedown="startRepeat('Comfy.Canvas.ZoomIn')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
-          <template #default>
-            <span class="block text-sm font-medium">{{
-              $t('graphCanvasMenu.zoomIn')
-            }}</span>
-            <span class="block text-sm text-gray-500">{{
-              zoomInCommandText
-            }}</span>
-          </template>
-        </Button>
+          <span class="font-medium">{{ $t('graphCanvasMenu.zoomIn') }}</span>
+          <span class="text-gray-500">{{ zoomInCommandText }}</span>
+        </div>
 
-        <Button
-          severity="secondary"
-          text
-          :pt="{
-            root: {
-              class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
-            },
-            label: {
-              class: 'flex flex-col items-start w-full'
-            }
-          }"
+        <div
+          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
           @mousedown="startRepeat('Comfy.Canvas.ZoomOut')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
-          <template #default>
-            <span class="block text-sm font-medium">{{
-              $t('graphCanvasMenu.zoomOut')
-            }}</span>
-            <span class="block text-sm text-gray-500">{{
-              zoomOutCommandText
-            }}</span>
-          </template>
-        </Button>
+          <span class="font-medium">{{ $t('graphCanvasMenu.zoomOut') }}</span>
+          <span class="text-gray-500">{{ zoomOutCommandText }}</span>
+        </div>
 
-        <Button
-          severity="secondary"
-          text
-          :pt="{
-            root: {
-              class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
-            },
-            label: {
-              class: 'flex flex-col items-start w-full'
-            }
-          }"
+        <div
+          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
-          <template #default>
-            <span class="block text-sm font-medium">{{
-              $t('zoomControls.zoomToFit')
-            }}</span>
-            <span class="block text-sm text-gray-500">{{
-              zoomToFitCommandText
-            }}</span>
-          </template>
-        </Button>
-        <hr class="mb-1 border-[#E1DED5] dark-theme:border-[#2E3037]" />
-        <Button
-          severity="secondary"
-          text
-          data-testid="toggle-minimap-button"
-          :pt="{
-            root: {
-              class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
-            },
-            label: {
-              class: 'flex flex-col items-start w-full'
-            }
-          }"
-          @click="executeCommand('Comfy.Canvas.ToggleMinimap')"
-        >
-          <template #default>
-            <span class="block text-sm font-medium">{{
-              minimapToggleText
-            }}</span>
-            <span class="block text-sm text-gray-500">{{
-              showMinimapCommandText
-            }}</span>
-          </template>
-        </Button>
-        <hr class="mt-1 border-[#E1DED5] dark-theme:border-[#2E3037]" />
+          <span class="font-medium">{{ $t('zoomControls.zoomToFit') }}</span>
+          <span class="text-gray-500">{{ zoomToFitCommandText }}</span>
+        </div>
+
         <div
           ref="zoomInputContainer"
-          class="zoomInputContainer flex items-center rounded bg-[#E7E6E6] p-2 px-2 focus-within:bg-[#F3F3F3] dark-theme:bg-[#8282821A]"
+          class="zoomInputContainer flex items-center gap-1 rounded bg-[#E7E6E6] p-2 focus-within:bg-[#F3F3F3] dark-theme:bg-[#8282821A]"
         >
           <InputNumber
             ref="zoomInput"
@@ -122,12 +49,12 @@
             :show-buttons="false"
             :use-grouping="false"
             :unstyled="true"
-            input-class="flex-1 bg-transparent border-none outline-hidden text-sm shadow-none my-0 "
+            input-class="bg-transparent border-none outline-hidden text-sm shadow-none my-0 w-full"
             fluid
             @input="applyZoom"
             @keyup.enter="applyZoom"
           />
-          <span class="-ml-4 text-sm text-gray-500">%</span>
+          <span class="flex-shrink-0 text-sm text-gray-500">%</span>
         </div>
       </div>
     </div>
@@ -136,18 +63,14 @@
 
 <script setup lang="ts">
 import type { InputNumberInputEvent } from 'primevue'
-import { Button, InputNumber } from 'primevue'
+import { InputNumber } from 'primevue'
 import { computed, nextTick, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 
-const { t } = useI18n()
 const minimap = useMinimap()
-const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const { formatKeySequence } = useCommandStore()
@@ -158,18 +81,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  close: []
-}>()
-
 const interval = ref<number | null>(null)
-
-// Computed properties for reactive states
-const minimapToggleText = computed(() =>
-  settingStore.get('Comfy.Minimap.Visible')
-    ? t('zoomControls.hideMinimap')
-    : t('zoomControls.showMinimap')
-)
 
 const applyZoom = (val: InputNumberInputEvent) => {
   const inputValue = val.value as number
@@ -181,9 +93,6 @@ const applyZoom = (val: InputNumberInputEvent) => {
 
 const executeCommand = (command: string) => {
   void commandStore.execute(command)
-  if (command === 'Comfy.Canvas.ToggleMinimap') {
-    emit('close')
-  }
 }
 
 const startRepeat = (command: string) => {
@@ -214,9 +123,6 @@ const zoomOutCommandText = computed(() =>
 )
 const zoomToFitCommandText = computed(() =>
   formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
-)
-const showMinimapCommandText = computed(() =>
-  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ToggleMinimap'))
 )
 const zoomInput = ref<InstanceType<typeof InputNumber> | null>(null)
 const zoomInputContainer = ref<HTMLDivElement | null>(null)

@@ -164,12 +164,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'f'
-    },
-    commandId: 'Workspace.ToggleFocusMode'
-  },
-  {
-    combo: {
       key: 'e',
       ctrl: true,
       shift: true
