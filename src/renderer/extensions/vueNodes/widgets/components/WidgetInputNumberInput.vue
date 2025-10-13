@@ -69,7 +69,7 @@ const buttonsDisabled = computed(() => {
   const currentValue = localValue.value ?? 0
   return (
     !Number.isFinite(currentValue) ||
-    Math.abs(currentValue) >= Number.MAX_SAFE_INTEGER
+    Math.abs(currentValue) > Number.MAX_SAFE_INTEGER
   )
 })
 
