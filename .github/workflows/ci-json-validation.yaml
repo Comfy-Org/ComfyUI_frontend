@@ -1,4 +1,4 @@
-name: CI - JSON Validation
+name: "CI: JSON Validation"
 
 on:
   push:

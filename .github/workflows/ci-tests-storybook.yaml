@@ -1,6 +1,8 @@
 name: Tests Storybook CI
 
-# - [Automate Chromatic with GitHub Actions • Chromatic docs]( https://www.chromatic.com/docs/github-actions/ )
+# Builds Storybook and runs visual regression testing via Chromatic
+# Deploys Storybook previews to Cloudflare Pages for PR review
+# Reference: https://www.chromatic.com/docs/github-actions/
 
 on:
   workflow_dispatch: # Allow manual triggering

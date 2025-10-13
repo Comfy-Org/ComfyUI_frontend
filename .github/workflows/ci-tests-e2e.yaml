@@ -1,5 +1,9 @@
 name: Tests E2E CI
 
+# End-to-end testing with Playwright across multiple browsers and configurations
+# Runs on main branches and PRs, skips WIP branches
+# Generates test reports and deploys them to Cloudflare Pages for review
+
 on:
   push:
     branches: [main, master, core/*, desktop/*]

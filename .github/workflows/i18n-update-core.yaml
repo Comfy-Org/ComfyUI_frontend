@@ -1,5 +1,8 @@
 name: i18n Update Core
 
+# Generates and updates translations for core ComfyUI components using OpenAI
+# Runs manually or automatically on version-bump PRs to keep translations current
+
 on:
   # Manual dispatch for urgent translation updates  
   workflow_dispatch:

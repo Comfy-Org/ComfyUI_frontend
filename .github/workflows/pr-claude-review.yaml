@@ -1,5 +1,8 @@
 name: PR Claude Review
 
+# AI-powered code review triggered by adding the "claude-review" label to a PR
+# Provides comprehensive analysis of code changes, architecture, and security
+
 permissions:
   contents: read
   pull-requests: write

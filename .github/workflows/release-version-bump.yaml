@@ -1,5 +1,8 @@
 name: Release Version Bump
 
+# Manual workflow to increment package version and create version commit
+# Supports semantic versioning (patch, minor, major) and pre-release versions
+
 on:
   workflow_dispatch:
     inputs:

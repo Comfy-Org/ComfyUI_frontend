@@ -1,5 +1,8 @@
 name: Tests Unit CI
 
+# Unit and component testing with Vitest
+# Runs on main branches and PRs, skips WIP branches
+
 on:
   push:
     branches: [main, master, dev*, core/*, desktop/*]
