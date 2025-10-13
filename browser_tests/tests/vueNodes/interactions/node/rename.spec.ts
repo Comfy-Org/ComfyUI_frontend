@@ -12,37 +12,28 @@ test.describe('Vue Nodes Renaming', () => {
   })
 
   test('should display node title', async ({ comfyPage }) => {
-    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     await expect(vueNode.header).toContainText('KSampler')
   })
 
   test('should allow title renaming by double clicking on the node header', async ({
     comfyPage
   }) => {
-    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    const title = vueNode.title
-    const titleInput = vueNode.titleInput
-
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     // Test renaming with Enter
-    await title.dblclick()
-    await titleInput.fill('My Custom Sampler')
-    await titleInput.press('Enter')
-    await expect(title).toHaveText('My Custom Sampler')
-
-    // Verify the title is displayed
+    await vueNode.setTitle('My Custom Sampler')
+    await expect(await vueNode.getTitle()).toBe('My Custom Sampler')
     await expect(vueNode.header).toContainText('My Custom Sampler')
 
     // Test cancel with Escape
-    await title.dblclick()
+    await vueNode.title.dblclick()
     await comfyPage.nextFrame()
-
-    // Type a different value but cancel
-    await titleInput.fill('This Should Be Cancelled')
-    await titleInput.press('Escape')
+    await vueNode.titleInput.fill('This Should Be Cancelled')
+    await vueNode.titleInput.press('Escape')
     await comfyPage.nextFrame()
 
     // Title should remain as the previously saved value
-    await expect(title).toHaveText('My Custom Sampler')
+    await expect(await vueNode.getTitle()).toBe('My Custom Sampler')
   })
 
   test('Double click node body does not trigger edit', async ({

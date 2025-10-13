@@ -29,12 +29,16 @@ export class VueNodeFixture {
     return this.collapseButton.locator('i')
   }
 
+  get root(): Locator {
+    return this.locator
+  }
+
   async getTitle(): Promise<string> {
     return (await this.title.textContent()) ?? ''
   }
 
   async setTitle(value: string): Promise<void> {
-    await this.title.dblclick()
+    await this.header.dblclick()
     const input = this.titleInput
     await expect(input).toBeVisible()
     await input.fill(value)
@@ -42,7 +46,7 @@ export class VueNodeFixture {
   }
 
   async cancelTitleEdit(): Promise<void> {
-    await this.title.dblclick()
+    await this.header.dblclick()
     const input = this.titleInput
     await expect(input).toBeVisible()
     await input.press('Escape')
@@ -58,9 +62,5 @@ export class VueNodeFixture {
 
   boundingBox(): ReturnType<Locator['boundingBox']> {
     return this.locator.boundingBox()
-  }
-
-  get element(): Locator {
-    return this.locator
   }
 }

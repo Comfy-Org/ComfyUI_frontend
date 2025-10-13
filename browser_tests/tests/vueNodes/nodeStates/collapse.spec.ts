@@ -15,8 +15,8 @@ test.describe('Vue Node Collapse', () => {
   test('should allow collapsing node with collapse icon', async ({
     comfyPage
   }) => {
-    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await expect(vueNode.element).toBeVisible()
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.root).toBeVisible()
 
     // Initially should not be collapsed
     const body = vueNode.body
@@ -51,8 +51,8 @@ test.describe('Vue Node Collapse', () => {
   })
 
   test('should show collapse/expand icon state', async ({ comfyPage }) => {
-    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await expect(vueNode.element).toBeVisible()
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.root).toBeVisible()
 
     // Check initial expanded state icon
     let iconClass = await vueNode.getCollapseIconClass()
@@ -72,8 +72,8 @@ test.describe('Vue Node Collapse', () => {
   test('should preserve title when collapsing/expanding', async ({
     comfyPage
   }) => {
-    const vueNode = comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await expect(vueNode.element).toBeVisible()
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.root).toBeVisible()
 
     // Set custom title
     await vueNode.setTitle('Test Sampler')

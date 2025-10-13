@@ -110,9 +110,20 @@ export class VueNodeHelpers {
 
   /**
    * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   * Resolves the node id up front so subsequent interactions survive title changes.
    */
-  getFixtureByTitle(title: string): VueNodeFixture {
-    return new VueNodeFixture(this.getNodeByTitle(title).first())
+  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+    const node = this.getNodeByTitle(title).first()
+    await node.waitFor({ state: 'visible' })
+
+    const nodeId = await node.evaluate((el) => el.getAttribute('data-node-id'))
+    if (!nodeId) {
+      throw new Error(
+        `Vue node titled "${title}" is missing its data-node-id attribute`
+      )
+    }
+
+    return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
 
   /**
