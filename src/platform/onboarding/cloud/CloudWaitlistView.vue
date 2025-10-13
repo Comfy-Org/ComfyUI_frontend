@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col items-center justify-center p-8">
     <div class="w-full max-w-md text-center">
-      <h1 class="font-abcrom font-black italic uppercase hero-title">
+      <h1 class="font-abcrom hero-title font-black uppercase italic">
         {{ t('cloudWaitlist_titleLine1') }}<br />
         {{ t('cloudWaitlist_titleLine2') }}
       </h1>
-      <div class="max-w-[320px] text-lg font-light m-auto">
+      <div class="m-auto max-w-[320px] text-lg font-light">
         <p class="text-white">
           {{ t('cloudWaitlist_message') }}
         </p>

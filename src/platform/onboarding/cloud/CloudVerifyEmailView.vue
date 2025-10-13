@@ -1,9 +1,9 @@
 <template>
-  <div class="px-6 py-8 max-w-[640px] mx-auto">
+  <div class="mx-auto max-w-[640px] px-6 py-8">
     <!-- Back button -->
     <button
       type="button"
-      class="flex items-center justify-center size-10 rounded-lg bg-transparent border border-white text-foreground/80"
+      class="text-foreground/80 flex size-10 items-center justify-center rounded-lg border border-white bg-transparent"
       aria-label="{{ t('cloudVerifyEmail_back') }}"
       @click="goBack"
     >
@@ -16,18 +16,18 @@
     </h1>
 
     <!-- Body copy -->
-    <p class="mt-6 text-base text-foreground/80">
+    <p class="text-foreground/80 mt-6 text-base">
       {{ t('cloudVerifyEmail_sent') }}
     </p>
     <p class="mt-3 text-base font-medium">{{ authStore.userEmail }}</p>
 
-    <p class="mt-6 text-base text-foreground/80">
+    <p class="text-foreground/80 mt-6 text-base">
       {{ t('cloudVerifyEmail_clickToContinue') }}
     </p>
 
-    <p class="mt-10 text-base text-foreground/80">
+    <p class="text-foreground/80 mt-10 text-base">
       {{ t('cloudVerifyEmail_didntReceive') }}
-      <span class="text-blue-400 no-underline cursor-pointer" @click="onSend">
+      <span class="cursor-pointer text-blue-400 no-underline" @click="onSend">
         {{ t('cloudVerifyEmail_resend') }}</span
       >
     </p>

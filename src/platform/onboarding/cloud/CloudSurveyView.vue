@@ -2,22 +2,22 @@
   <div>
     <Stepper
       value="1"
-      class="flex flex-col max-h-[80vh] h-[638px] max-w-[90vw] w-[320px]"
+      class="flex h-[638px] max-h-[80vh] w-[320px] max-w-[90vw] flex-col"
     >
       <ProgressBar
         :value="progressPercent"
         :show-value="false"
-        class="h-2 mb-8"
+        class="mb-8 h-2"
       />
 
-      <StepPanels class="p-0 flex-1 flex flex-col">
+      <StepPanels class="flex flex-1 flex-col p-0">
         <StepPanel
           v-slot="{ activateCallback }"
           value="1"
-          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
+          class="flex min-h-full flex-1 flex-col justify-between bg-transparent"
         >
           <div>
-            <label class="text-lg font-medium block mb-8">{{
+            <label class="mb-8 block text-lg font-medium">{{
               t('cloudSurvey_steps_familiarity')
             }}</label>
             <div class="flex flex-col gap-6">
@@ -34,7 +34,7 @@
                 />
                 <label
                   :for="`fam-${opt.value}`"
-                  class="text-sm cursor-pointer"
+                  class="cursor-pointer text-sm"
                   >{{ opt.label }}</label
                 >
               </div>
@@ -46,7 +46,7 @@
             <Button
               label="Next"
               :disabled="!validStep1"
-              class="w-full h-10 border-none text-white"
+              class="h-10 w-full border-none text-white"
               @click="goTo(2, activateCallback)"
             />
           </div>
@@ -55,10 +55,10 @@
         <StepPanel
           v-slot="{ activateCallback }"
           value="2"
-          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
+          class="flex min-h-full flex-1 flex-col justify-between bg-transparent"
         >
           <div>
-            <label class="text-lg font-medium block mb-8">{{
+            <label class="mb-8 block text-lg font-medium">{{
               t('cloudSurvey_steps_purpose')
             }}</label>
             <div class="flex flex-col gap-6">
@@ -75,7 +75,7 @@
                 />
                 <label
                   :for="`purpose-${opt.value}`"
-                  class="text-sm cursor-pointer"
+                  class="cursor-pointer text-sm"
                   >{{ opt.label }}</label
                 >
               </div>
@@ -93,13 +93,13 @@
             <Button
               label="Back"
               severity="secondary"
-              class="text-white flex-1"
+              class="flex-1 text-white"
               @click="goTo(1, activateCallback)"
             />
             <Button
               label="Next"
               :disabled="!validStep2"
-              class="flex-1 h-10 text-white"
+              class="h-10 flex-1 text-white"
               @click="goTo(3, activateCallback)"
             />
           </div>
@@ -108,10 +108,10 @@
         <StepPanel
           v-slot="{ activateCallback }"
           value="3"
-          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
+          class="flex min-h-full flex-1 flex-col justify-between bg-transparent"
         >
           <div>
-            <label class="text-lg font-medium block mb-8">{{
+            <label class="mb-8 block text-lg font-medium">{{
               t('cloudSurvey_steps_industry')
             }}</label>
             <div class="flex flex-col gap-6">
@@ -128,7 +128,7 @@
                 />
                 <label
                   :for="`industry-${opt.value}`"
-                  class="text-sm cursor-pointer"
+                  class="cursor-pointer text-sm"
                   >{{ opt.label }}</label
                 >
               </div>
@@ -146,13 +146,13 @@
             <Button
               label="Back"
               severity="secondary"
-              class="text-white flex-1"
+              class="flex-1 text-white"
               @click="goTo(2, activateCallback)"
             />
             <Button
               label="Next"
               :disabled="!validStep3"
-              class="flex-1 h-10 border-none text-white"
+              class="h-10 flex-1 border-none text-white"
               @click="goTo(4, activateCallback)"
             />
           </div>
@@ -161,10 +161,10 @@
         <StepPanel
           v-slot="{ activateCallback }"
           value="4"
-          class="flex-1 min-h-full flex flex-col justify-between bg-transparent"
+          class="flex min-h-full flex-1 flex-col justify-between bg-transparent"
         >
           <div>
-            <label class="text-lg font-medium block mb-8">{{
+            <label class="mb-8 block text-lg font-medium">{{
               t('cloudSurvey_steps_making')
             }}</label>
             <div class="flex flex-col gap-6">
@@ -180,7 +180,7 @@
                 />
                 <label
                   :for="`making-${opt.value}`"
-                  class="text-sm cursor-pointer"
+                  class="cursor-pointer text-sm"
                   >{{ opt.label }}</label
                 >
               </div>
@@ -191,14 +191,14 @@
             <Button
               label="Back"
               severity="secondary"
-              class="text-white flex-1"
+              class="flex-1 text-white"
               @click="goTo(3, activateCallback)"
             />
             <Button
               label="Submit"
               :disabled="!validStep4 || isSubmitting"
               :loading="isSubmitting"
-              class="flex-1 h-10 border-none text-white"
+              class="h-10 flex-1 border-none text-white"
               @click="onSubmitSurvey"
             />
           </div>

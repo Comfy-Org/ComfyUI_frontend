@@ -1,12 +1,12 @@
 <template>
-  <div class="h-full flex items-center justify-center p-8">
-    <div class="lg:w-96 max-w-[100vw] p-2">
+  <div class="flex h-full items-center justify-center p-8">
+    <div class="max-w-[100vw] p-2 lg:w-96">
       <!-- Header -->
-      <div class="flex flex-col gap-4 mb-8">
-        <h1 class="text-xl font-medium leading-normal my-0">
+      <div class="mb-8 flex flex-col gap-4">
+        <h1 class="my-0 text-xl leading-normal font-medium">
           {{ t('cloudForgotPassword_title') }}
         </h1>
-        <p class="text-base my-0 text-muted">
+        <p class="my-0 text-base text-muted">
           {{ t('cloudForgotPassword_instructions') }}
         </p>
       </div>
@@ -15,7 +15,7 @@
       <form class="flex flex-col gap-6" @submit.prevent="handleSubmit">
         <div class="flex flex-col gap-2">
           <label
-            class="opacity-80 text-base font-medium mb-2"
+            class="mb-2 text-base font-medium opacity-80"
             for="reset-email"
           >
             {{ t('cloudForgotPassword_emailLabel') }}
@@ -63,7 +63,7 @@
         {{ t('cloudForgotPassword_didntReceiveEmail') }}
         <a
           href="https://support.comfy.org"
-          class="text-blue-400 no-underline cursor-pointer"
+          class="cursor-pointer text-blue-400 no-underline"
           target="_blank"
           rel="noopener noreferrer"
         >

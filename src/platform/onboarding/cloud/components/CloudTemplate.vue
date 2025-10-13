@@ -9,10 +9,10 @@
         <CloudTemplateFooter />
       </template>
     </BaseViewTemplate>
-    <div class="flex-1 relative bg-black overflow-hidden hidden lg:block">
+    <div class="relative hidden flex-1 overflow-hidden bg-black lg:block">
       <!-- Video Background -->
       <video
-        class="absolute inset-0 w-full h-full object-cover"
+        class="absolute inset-0 h-full w-full object-cover"
         autoplay
         muted
         loop
@@ -22,20 +22,20 @@
         <source :src="videoSrc" type="video/mp4" />
       </video>
 
-      <div class="absolute inset-0 w-full h-full bg-black/30"></div>
+      <div class="absolute inset-0 h-full w-full bg-black/30"></div>
 
       <!-- Optional Overlay for better visual -->
       <div
-        class="absolute inset-0 flex justify-center items-center text-white text-center"
+        class="absolute inset-0 flex items-center justify-center text-center text-white"
       >
         <div>
-          <h1 class="font-abcrom font-black italic uppercase hero-title">
+          <h1 class="font-abcrom hero-title font-black uppercase italic">
             {{ t('cloudStart_title') }}
           </h1>
-          <p class="m-2 text-xl text-center text-white">
+          <p class="m-2 text-center text-xl text-white">
             {{ t('cloudStart_desc') }}
           </p>
-          <p class="m-0 text-xl text-center text-white">
+          <p class="m-0 text-center text-xl text-white">
             {{ t('cloudStart_explain') }}
           </p>
         </div>
@@ -48,7 +48,7 @@
             </p>
             <Button
               type="button"
-              class="h-10 bg-black text-white font-bold"
+              class="h-10 bg-black font-bold text-white"
               severity="secondary"
               @click="handleDownloadClick"
             >

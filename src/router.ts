@@ -1,9 +1,9 @@
 import {
-  type RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'

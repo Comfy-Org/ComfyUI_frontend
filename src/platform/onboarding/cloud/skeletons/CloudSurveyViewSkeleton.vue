@@ -1,10 +1,10 @@
 <template>
   <div>
-    <div class="flex flex-col min-h-[638px] min-w-[320px]">
+    <div class="flex min-h-[638px] min-w-[320px] flex-col">
       <Skeleton width="100%" height="0.5rem" class="mb-8" />
 
-      <div class="p-0 flex-1 flex flex-col">
-        <div class="flex-1 min-h-full flex flex-col justify-between">
+      <div class="flex flex-1 flex-col p-0">
+        <div class="flex min-h-full flex-1 flex-col justify-between">
           <div>
             <Skeleton width="70%" height="1.75rem" class="mb-8" />
             <div class="flex flex-col gap-6">
