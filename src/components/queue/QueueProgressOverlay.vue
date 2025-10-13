@@ -118,7 +118,7 @@ const totalPercent = computed(() =>
 )
 
 const currentNodePercent = computed(() =>
-  clampPercent(((executionStore.executingNodeProgress ?? 0) as number) * 100)
+  clampPercent((executionStore.executingNodeProgress ?? 0) * 100)
 )
 
 const totalProgressStyle = computed(() => ({
