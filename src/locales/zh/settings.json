@@ -11,10 +11,7 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Python安装镜像",
-    "tooltip": "管理的Python安装包从Astral python-build-standalone项目下载。此变量可以设置为镜像URL，以使用不同的Python安装源。提供的URL将替换https://github.com/astral-sh/python-build-standalone/releases/download，例如，在https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz中。可以通过使用file:// URL方案从本地目录读取分发包。",
-    "urlFormatTitle": "镜像 URL 格式",
-    "urlDescription": "这是一个 Python 下载 URL 示例。\n\n镜像 URL 是前半部分，包括日期（20250902）之前的所有内容：",
-    "fileUrlDescription": "要从之前下载的文件安装，可以使用 file URL："
+    "tooltip": "管理的Python安装包从Astral python-build-standalone项目下载。此变量可以设置为镜像URL，以使用不同的Python安装源。提供的URL将替换https://github.com/astral-sh/python-build-standalone/releases/download，例如，在https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz中。可以通过使用file:// URL方案从本地目录读取分发包。"
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "Torch安装镜像",
@@ -346,14 +343,6 @@
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
   },
-  "Comfy_VueNodes_Enabled": {
-    "name": "启用 Vue 节点渲染",
-    "tooltip": "将节点渲染为 Vue 组件，而不是画布元素。实验性功能。"
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "启用Vue小部件",
-    "tooltip": "在Vue节点中将小部件渲染为Vue组件。"
-  },
   "Comfy_WidgetControlMode": {
     "name": "组件控制模式",
     "options": {
@@ -399,13 +388,13 @@
       "Topbar (2nd-row)": "顶部栏 (第二行)"
     }
   },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "低质量渲染缩放阈值",
-    "tooltip": "在缩小时渲染低质量形状"
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "画布允许渲染的最大帧数。限制GPU使用以换取流畅度。如果为0，则使用屏幕刷新率。默认值：0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "缩放节点细节级别 - 字体大小阈值",
+    "tooltip": "控制节点何时切换为低质量LOD渲染。使用字体像素大小来决定何时切换。设置为0可禁用。1-24的数值设置LOD的最小字体大小阈值——数值越高（24px），缩小时越早切换为简化渲染，数值越低（1px），则在缩小时更长时间保持完整节点质量。"
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"
@@ -423,9 +412,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"
-  },
-  "LiteGraph_Canvas_MinFontSizeForLOD": {
-    "name": "缩放节点细节级别 - 字体大小阈值",
-    "tooltip": "控制节点何时切换为低质量LOD渲染。使用字体像素大小来决定何时切换。设置为0可禁用。1-24的数值设置LOD的最小字体大小阈值——数值越高（24px），缩小时越早切换为简化渲染，数值越低（1px），则在缩小时更长时间保持完整节点质量。"
   }
 }

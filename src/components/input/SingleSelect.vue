@@ -44,7 +44,7 @@
     <!-- Option row -->
     <template #option="{ option, selected }">
       <div
-        class="flex items-center justify-between gap-3 w-full"
+        class="flex w-full items-center justify-between gap-3"
         :style="optionStyle"
       >
         <span class="truncate">{{ option.name }}</span>

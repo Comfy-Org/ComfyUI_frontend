@@ -5,7 +5,7 @@
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
       <Chip
-        class="h-6 text-sm font-light bg-red-700 mt-2"
+        class="mt-2 h-6 bg-red-700 text-sm font-light"
         removable
         @remove="handleRemoveDownload"
       >
@@ -30,7 +30,7 @@
       <Button
         v-if="download.status === 'in_progress'"
         v-tooltip.top="t('electronFileDownload.pause')"
-        class="file-action-button w-[22px] h-[22px]"
+        class="file-action-button h-[22px] w-[22px]"
         size="small"
         rounded
         icon="pi pi-pause"
@@ -40,7 +40,7 @@
       <Button
         v-if="download.status === 'paused'"
         v-tooltip.top="t('electronFileDownload.resume')"
-        class="file-action-button w-[22px] h-[22px]"
+        class="file-action-button h-[22px] w-[22px]"
         size="small"
         rounded
         icon="pi pi-play"
@@ -50,7 +50,7 @@
       <Button
         v-if="['in_progress', 'paused'].includes(download.status ?? '')"
         v-tooltip.top="t('electronFileDownload.cancel')"
-        class="file-action-button w-[22px] h-[22px] p-red"
+        class="file-action-button p-red h-[22px] w-[22px]"
         size="small"
         rounded
         severity="danger"
@@ -67,10 +67,8 @@ import Chip from 'primevue/chip'
 import ProgressBar from 'primevue/progressbar'
 import { useI18n } from 'vue-i18n'
 
-import {
-  type ElectronDownload,
-  useElectronDownloadStore
-} from '@/stores/electronDownloadStore'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
 const { t } = useI18n()
 

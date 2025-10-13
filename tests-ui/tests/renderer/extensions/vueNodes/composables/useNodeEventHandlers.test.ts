@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, shallowRef } from 'vue'
 
-import {
-  type GraphNodeManager,
-  type VueNodeData,
-  useGraphNodeManager
+import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import type {
+  GraphNodeManager,
+  VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type {
@@ -102,7 +102,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(event, testNodeData, false)
+      handleNodeSelect(event, testNodeData)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -122,7 +122,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData, false)
+      handleNodeSelect(ctrlClickEvent, testNodeData)
 
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -141,7 +141,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData, false)
+      handleNodeSelect(ctrlClickEvent, testNodeData)
 
       expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
       expect(canvas?.select).not.toHaveBeenCalled()
@@ -159,7 +159,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: true
       })
 
-      handleNodeSelect(metaClickEvent, testNodeData, false)
+      handleNodeSelect(metaClickEvent, testNodeData)
 
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
@@ -171,7 +171,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.flags.pinned = false
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData, false)
+      handleNodeSelect(event, testNodeData)
 
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
         'node-1'
@@ -184,7 +184,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.flags.pinned = true
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData, false)
+      handleNodeSelect(event, testNodeData)
 
       expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
     })

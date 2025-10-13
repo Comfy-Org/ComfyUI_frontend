@@ -2,7 +2,7 @@
   <div
     v-if="visible && initialized"
     ref="minimapRef"
-    class="minimap-main-container flex absolute bottom-[66px] right-2 md:right-11 z-1000"
+    class="minimap-main-container absolute right-2 bottom-[66px] z-1000 flex md:right-11"
   >
     <MiniMapPanel
       v-if="showOptionsPanel"
@@ -32,7 +32,7 @@
         </template>
       </Button>
       <Button
-        class="absolute z-10 right-0"
+        class="absolute right-0 z-10"
         size="small"
         text
         severity="secondary"
@@ -45,7 +45,7 @@
       </Button>
 
       <hr
-        class="absolute top-5 bg-node-component-border h-px border-0"
+        class="absolute top-5 h-px border-0 bg-node-component-border"
         :style="{
           width: containerStyles.width
         }"

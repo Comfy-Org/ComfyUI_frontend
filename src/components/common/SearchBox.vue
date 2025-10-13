@@ -28,7 +28,7 @@
     </IconField>
     <div
       v-if="filters?.length"
-      class="search-filters pt-2 flex flex-wrap gap-2"
+      class="search-filters flex flex-wrap gap-2 pt-2"
     >
       <SearchFilterChip
         v-for="filter in filters"

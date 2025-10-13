@@ -130,17 +130,12 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import {
-  type CSSProperties,
-  type Component,
-  computed,
-  nextTick,
-  onMounted,
-  ref
-} from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
@@ -271,7 +266,7 @@ const moreMenuItem = computed(() =>
 )
 
 const menuItems = computed<MenuItem[]>(() => {
-  return [
+  const items: MenuItem[] = [
     {
       key: 'docs',
       type: 'item',
@@ -311,8 +306,12 @@ const menuItems = computed<MenuItem[]>(() => {
         void commandStore.execute('Comfy.ContactSupport')
         emit('close')
       }
-    },
-    {
+    }
+  ]
+
+  // Extension manager - only in non-cloud distributions
+  if (!isCloud) {
+    items.push({
       key: 'manager',
       type: 'item',
       icon: PuzzleIcon,
@@ -325,17 +324,20 @@ const menuItems = computed<MenuItem[]>(() => {
         })
         emit('close')
       }
-    },
-    {
-      key: 'more',
-      type: 'item',
-      icon: '',
-      label: t('helpCenter.more'),
-      visible: hasVisibleMoreItems.value,
-      action: () => {}, // No action for more item
-      items: moreItems.value
-    }
-  ]
+    })
+  }
+
+  items.push({
+    key: 'more',
+    type: 'item',
+    icon: '',
+    label: t('helpCenter.more'),
+    visible: hasVisibleMoreItems.value,
+    action: () => {}, // No action for more item
+    items: moreItems.value
+  })
+
+  return items
 })
 
 // Utility Functions
@@ -426,6 +428,9 @@ const formatReleaseDate = (dateString?: string): string => {
 }
 
 const shouldShowUpdateButton = (release: ReleaseNote): boolean => {
+  // Hide update buttons in cloud distribution
+  if (isCloud) return false
+
   return (
     releaseStore.shouldShowUpdateButton &&
     release === releaseStore.recentReleases[0]

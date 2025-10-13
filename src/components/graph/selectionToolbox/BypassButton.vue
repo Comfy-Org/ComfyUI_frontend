@@ -7,11 +7,11 @@
     severity="secondary"
     text
     data-testid="bypass-button"
-    class="hover:dark-theme:bg-charcoal-600 hover:bg-[#E7E6E6]"
+    class="hover:bg-[#E7E6E6] hover:dark-theme:bg-charcoal-600"
     @click="toggleBypass"
   >
     <template #icon>
-      <i class="icon-[lucide--ban] w-4 h-4" />
+      <i class="icon-[lucide--ban] h-4 w-4" />
     </template>
   </Button>
 </template>

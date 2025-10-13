@@ -1,7 +1,5 @@
-import {
-  type ProxyWidgetsProperty,
-  parseProxyWidgets
-} from '@/core/schemas/proxyWidget'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type {
   IContextMenuValue,
   LGraphNode
@@ -11,13 +9,15 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
-export type WidgetItem = [LGraphNode, IBaseWidget]
+type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
+
+export type WidgetItem = [PartialNode, IBaseWidget]
 
 function getProxyWidgets(node: SubgraphNode) {
   return parseProxyWidgets(node.properties.proxyWidgets)
 }
 export function promoteWidget(
-  node: LGraphNode,
+  node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
@@ -32,7 +32,7 @@ export function promoteWidget(
 }
 
 export function demoteWidget(
-  node: LGraphNode,
+  node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {

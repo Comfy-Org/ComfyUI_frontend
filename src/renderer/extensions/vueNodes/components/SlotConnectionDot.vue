@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import { type ClassValue, cn } from '@/utils/tailwindUtil'
+import { cn } from '@/utils/tailwindUtil'
+import type { ClassValue } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   color?: string

@@ -8,7 +8,8 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
 import { stringToLocale } from '@/utils/formatUtil'
 
-import { type ReleaseNote, useReleaseService } from './releaseService'
+import { useReleaseService } from './releaseService'
+import type { ReleaseNote } from './releaseService'
 
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {

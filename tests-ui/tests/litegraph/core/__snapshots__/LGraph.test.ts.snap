@@ -283,6 +283,7 @@ LGraph {
   "nodes_actioning": [],
   "nodes_executedAction": [],
   "nodes_executing": [],
+  "onTrigger": undefined,
   "revision": 0,
   "runningtime": 0,
   "starttime": 0,

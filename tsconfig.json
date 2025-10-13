@@ -39,7 +39,11 @@
     },
     "typeRoots": [
       "src/types",
-      "node_modules/@types"
+      "node_modules/@types",
+      "./node_modules"
+    ],
+    "types": [
+      "vitest/globals"
     ],
     "outDir": "./dist",
     "rootDir": "./"
@@ -54,6 +58,8 @@
     "src/types/**/*.d.ts",
     "tailwind.config.ts",
     "tests-ui/**/*",
+    "vite.config.mts",
     "vitest.config.ts",
+    // "vitest.setup.ts",
   ]
 }

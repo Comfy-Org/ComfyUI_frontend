@@ -4,6 +4,10 @@ on:
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write

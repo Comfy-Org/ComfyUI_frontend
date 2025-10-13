@@ -49,4 +49,36 @@ test.describe('Vue Node Selection', () => {
       expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
     })
   }
+
+  test('should select pinned node without dragging', async ({ comfyPage }) => {
+    const PIN_HOTKEY = 'p'
+    const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
+
+    // Select a node by clicking its title
+    const checkpointNodeHeader = comfyPage.page.getByText('Load Checkpoint')
+    await checkpointNodeHeader.click()
+
+    // Pin it using the hotkey (as a user would)
+    await comfyPage.page.keyboard.press(PIN_HOTKEY)
+
+    const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const pinIndicator = checkpointNode.locator(PIN_INDICATOR)
+    await expect(pinIndicator).toBeVisible()
+
+    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+
+    const initialPos = await checkpointNodeHeader.boundingBox()
+    if (!initialPos) throw new Error('Failed to get header position')
+
+    await comfyPage.dragAndDrop(
+      { x: initialPos.x + 10, y: initialPos.y + 10 },
+      { x: initialPos.x + 100, y: initialPos.y + 100 }
+    )
+
+    const finalPos = await checkpointNodeHeader.boundingBox()
+    if (!finalPos) throw new Error('Failed to get header position after drag')
+    expect(finalPos).toEqual(initialPos)
+
+    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+  })
 })

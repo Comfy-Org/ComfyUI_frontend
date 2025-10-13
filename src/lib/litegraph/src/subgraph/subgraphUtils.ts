@@ -1,7 +1,8 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,

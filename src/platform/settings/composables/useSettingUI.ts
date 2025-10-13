@@ -1,10 +1,5 @@
-import {
-  type Component,
-  computed,
-  defineAsyncComponent,
-  onMounted,
-  ref
-} from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

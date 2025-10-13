@@ -90,6 +90,7 @@ const buttonTooltip = computed(() => {
         :step="stepValue"
         :use-grouping="useGrouping"
         :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+        :aria-label="widget.name"
         :pt="{
           incrementButton:
             '!rounded-r-lg bg-transparent border-none hover:bg-zinc-500/30 active:bg-zinc-500/40',
@@ -112,7 +113,7 @@ const buttonTooltip = computed(() => {
 <style scoped>
 :deep(.p-inputnumber-input) {
   background-color: transparent;
-  border: 1px solid color-mix(in oklab, #d4d4d8 10%, transparent);
+  border: 1px solid var(--node-stroke);
   border-top: transparent;
   border-bottom: transparent;
   height: 1.625rem;

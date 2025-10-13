@@ -3,7 +3,8 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode, NodeId } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
+import { LLink } from './LLink'
+import type { LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,

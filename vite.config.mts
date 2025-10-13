@@ -5,7 +5,8 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { type UserConfig, defineConfig } from 'vite'
+import { defineConfig } from 'vite'
+import type { UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -23,16 +24,30 @@ const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
 
+const DISTRIBUTION = (process.env.DISTRIBUTION || 'localhost') as
+  | 'desktop'
+  | 'localhost'
+  | 'cloud'
+
 export default defineConfig({
   base: '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
       ignored: [
-        '**/coverage/**',
-        '**/playwright-report/**',
+        './browser_tests/**',
+        './node_modules/**',
+        './tests-ui/**',
+        '.eslintcache',
+        '*.config.{ts,mts}',
+        '**/.git/**',
+        '**/.github/**',
+        '**/.nx/**',
         '**/*.{test,spec}.ts',
-        '*.config.{ts,mts}'
+        '**/coverage/**',
+        '**/dist/**',
+        '**/playwright-report/**',
+        '**/test-results/**'
       ]
     },
     proxy: {
@@ -185,7 +200,8 @@ export default defineConfig({
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
-    __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true'
+    __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
   },
 
   resolve: {

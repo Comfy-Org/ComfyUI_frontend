@@ -11,10 +11,7 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Python Yükleme Yansısı",
-    "tooltip": "Yönetilen Python kurulumları Astral python-build-standalone projesinden indirilir. Bu değişken, Python kurulumları için farklı bir kaynak kullanmak üzere bir yansıma URL'sine ayarlanabilir. Sağlanan URL, örneğin https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz'deki https://github.com/astral-sh/python-build-standalone/releases/download'ın yerini alacaktır. Dağıtımlar, file:// URL şeması kullanılarak yerel bir dizinden okunabilir.",
-    "urlFormatTitle": "Yansı URL Formatı",
-    "urlDescription": "Bu örnek bir python indirme URL'sidir.\n\nYansı URL'si, tarihten (20250902) önceki her şeyi içeren ilk yarıdır:",
-    "fileUrlDescription": "Daha önce indirdiğiniz bir dosyadan yüklemek için bir dosya URL'si kullanabilirsiniz:"
+    "tooltip": "Yönetilen Python kurulumları Astral python-build-standalone projesinden indirilir. Bu değişken, Python kurulumları için farklı bir kaynak kullanmak üzere bir yansıma URL'sine ayarlanabilir. Sağlanan URL, örneğin https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz'deki https://github.com/astral-sh/python-build-standalone/releases/download'ın yerini alacaktır. Dağıtımlar, file:// URL şeması kullanılarak yerel bir dizinden okunabilir."
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "Torch Yükleme Yansısı",
@@ -22,11 +19,11 @@
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "Pencere Stili",
-    "tooltip": "Özel: Sistem başlık çubuğunu ComfyUI'nin Üst menüsüyle değiştirin",
     "options": {
-      "default": "varsayılan",
-      "custom": "özel"
-    }
+      "custom": "özel",
+      "default": "varsayılan"
+    },
+    "tooltip": "Özel: Sistem başlık çubuğunu ComfyUI'nin Üst menüsüyle değiştirin"
   },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Tuval arka plan resmi",
@@ -35,8 +32,8 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Tuval Gezinme Modu",
     "options": {
-      "Standard (New)": "Standart (Yeni)",
-      "Drag Navigation": "Sürükleyerek Gezinme"
+      "Drag Navigation": "Sürükleyerek Gezinme",
+      "Standard (New)": "Standart (Yeni)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -44,6 +41,9 @@
   },
   "Comfy_ConfirmClear": {
     "name": "İş akışını temizlerken onay iste"
+  },
+  "Comfy_DOMClippingEnabled": {
+    "name": "DOM öğesi kırpmayı etkinleştir (etkinleştirmek performansı düşürebilir)"
   },
   "Comfy_DevMode": {
     "name": "Geliştirici modu seçeneklerini etkinleştir (API kaydetme, vb.)"
@@ -54,9 +54,6 @@
   },
   "Comfy_DisableSliders": {
     "name": "Düğüm widget kaydırıcılarını devre dışı bırak"
-  },
-  "Comfy_DOMClippingEnabled": {
-    "name": "DOM öğesi kırpmayı etkinleştir (etkinleştirmek performansı düşürebilir)"
   },
   "Comfy_EditAttention_Delta": {
     "name": "Ctrl+yukarı/aşağı hassasiyeti"
@@ -83,43 +80,43 @@
   "Comfy_Graph_LinkMarkers": {
     "name": "Bağlantı orta nokta işaretçileri",
     "options": {
-      "None": "Yok",
+      "Arrow": "Ok",
       "Circle": "Daire",
-      "Arrow": "Ok"
+      "None": "Yok"
     }
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Tuval yakınlaştırma hızı"
   },
-  "Comfy_Group_DoubleClickTitleToEdit": {
-    "name": "Düzenlemek için grup başlığına çift tıkla"
-  },
   "Comfy_GroupSelectedNodes_Padding": {
     "name": "Seçili düğümleri gruplandırma dolgusu"
+  },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "Düzenlemek için grup başlığına çift tıkla"
   },
   "Comfy_LinkRelease_Action": {
     "name": "Bağlantı bırakıldığında eylem (Değiştirici yok)",
     "options": {
       "context menu": "bağlam menüsü",
-      "search box": "arama kutusu",
-      "no action": "eylem yok"
+      "no action": "eylem yok",
+      "search box": "arama kutusu"
     }
   },
   "Comfy_LinkRelease_ActionShift": {
     "name": "Bağlantı bırakıldığında eylem (Shift)",
     "options": {
       "context menu": "bağlam menüsü",
-      "search box": "arama kutusu",
-      "no action": "eylem yok"
+      "no action": "eylem yok",
+      "search box": "arama kutusu"
     }
   },
   "Comfy_LinkRenderMode": {
     "name": "Bağlantı Oluşturma Modu",
     "options": {
-      "Straight": "Düz",
+      "Hidden": "Gizli",
       "Linear": "Doğrusal",
       "Spline": "Eğri",
-      "Hidden": "Gizli"
+      "Straight": "Düz"
     }
   },
   "Comfy_Load3D_3DViewerEnable": {
@@ -132,11 +129,11 @@
   },
   "Comfy_Load3D_CameraType": {
     "name": "Başlangıç Kamera Tipi",
-    "tooltip": "Yeni bir 3D widget oluşturulduğunda kameranın varsayılan olarak perspektif mi yoksa ortografik mi olacağını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir.",
     "options": {
-      "perspective": "perspektif",
-      "orthographic": "ortografik"
-    }
+      "orthographic": "ortografik",
+      "perspective": "perspektif"
+    },
+    "tooltip": "Yeni bir 3D widget oluşturulduğunda kameranın varsayılan olarak perspektif mi yoksa ortografik mi olacağını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
   },
   "Comfy_Load3D_LightAdjustmentIncrement": {
     "name": "Işık Ayarlama Artışı",
@@ -183,11 +180,63 @@
   },
   "Comfy_ModelLibrary_NameFormat": {
     "name": "Model kütüphanesi ağaç görünümünde hangi adın görüntüleneceği",
-    "tooltip": "Model listesinde ham dosya adının (dizin veya \".safetensors\" uzantısı olmadan) basitleştirilmiş bir görünümünü oluşturmak için \"dosyaadı\"nı seçin. Yapılandırılabilir model meta veri başlığını görüntülemek için \"başlık\"ı seçin.",
     "options": {
       "filename": "dosyaadı",
       "title": "başlık"
+    },
+    "tooltip": "Model listesinde ham dosya adının (dizin veya \".safetensors\" uzantısı olmadan) basitleştirilmiş bir görünümünü oluşturmak için \"dosyaadı\"nı seçin. Yapılandırılabilir model meta veri başlığını görüntülemek için \"başlık\"ı seçin."
+  },
+  "Comfy_NodeBadge_NodeIdBadgeMode": {
+    "name": "Düğüm ID rozeti modu",
+    "options": {
+      "None": "Yok",
+      "Show all": "Tümünü göster"
     }
+  },
+  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+    "name": "Düğüm yaşam döngüsü rozeti modu",
+    "options": {
+      "None": "Yok",
+      "Show all": "Tümünü göster"
+    }
+  },
+  "Comfy_NodeBadge_NodeSourceBadgeMode": {
+    "name": "Düğüm kaynak rozeti modu",
+    "options": {
+      "Hide built-in": "Yerleşik olanı gizle",
+      "None": "Yok",
+      "Show all": "Tümünü göster"
+    }
+  },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "API düğüm fiyatlandırma rozetini göster"
+  },
+  "Comfy_NodeSearchBoxImpl": {
+    "name": "Düğüm arama kutusu uygulaması",
+    "options": {
+      "default": "varsayılan",
+      "litegraph (legacy)": "litegraph (eski)"
+    }
+  },
+  "Comfy_NodeSearchBoxImpl_NodePreview": {
+    "name": "Düğüm önizlemesi",
+    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowCategory": {
+    "name": "Arama sonuçlarında düğüm kategorisini göster",
+    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowIdName": {
+    "name": "Arama sonuçlarında düğüm kimliği adını göster",
+    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+    "name": "Arama sonuçlarında düğüm sıklığını göster",
+    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
+  },
+  "Comfy_NodeSuggestions_number": {
+    "name": "Düğüm öneri sayısı",
+    "tooltip": "Yalnızca litegraph arama kutusu/bağlam menüsü için"
   },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Görüntü önizlemesinin altında genişlik × yüksekliği göster"
@@ -221,58 +270,6 @@
     "name": "Yapıştırma düğümü vurgular",
     "tooltip": "Uygun giriş yuvasına sahip bir düğümün üzerine bir bağlantı sürüklerken, düğümü vurgulayın"
   },
-  "Comfy_NodeBadge_NodeIdBadgeMode": {
-    "name": "Düğüm ID rozeti modu",
-    "options": {
-      "None": "Yok",
-      "Show all": "Tümünü göster"
-    }
-  },
-  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-    "name": "Düğüm yaşam döngüsü rozeti modu",
-    "options": {
-      "None": "Yok",
-      "Show all": "Tümünü göster"
-    }
-  },
-  "Comfy_NodeBadge_NodeSourceBadgeMode": {
-    "name": "Düğüm kaynak rozeti modu",
-    "options": {
-      "None": "Yok",
-      "Show all": "Tümünü göster",
-      "Hide built-in": "Yerleşik olanı gizle"
-    }
-  },
-  "Comfy_NodeBadge_ShowApiPricing": {
-    "name": "API düğüm fiyatlandırma rozetini göster"
-  },
-  "Comfy_NodeSearchBoxImpl": {
-    "name": "Düğüm arama kutusu uygulaması",
-    "options": {
-      "default": "varsayılan",
-      "litegraph (legacy)": "litegraph (eski)"
-    }
-  },
-  "Comfy_NodeSearchBoxImpl_NodePreview": {
-    "name": "Düğüm önizlemesi",
-    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
-  },
-  "Comfy_NodeSearchBoxImpl_ShowCategory": {
-    "name": "Arama sonuçlarında düğüm kategorisini göster",
-    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
-  },
-  "Comfy_NodeSearchBoxImpl_ShowIdName": {
-    "name": "Arama sonuçlarında düğüm kimliği adını göster",
-    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
-  },
-  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
-    "name": "Arama sonuçlarında düğüm sıklığını göster",
-    "tooltip": "Yalnızca varsayılan uygulama için geçerlidir"
-  },
-  "Comfy_NodeSuggestions_number": {
-    "name": "Düğüm öneri sayısı",
-    "tooltip": "Yalnızca litegraph arama kutusu/bağlam menüsü için"
-  },
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "Sürüm güncellemelerini göster",
     "tooltip": "Yeni modeller ve önemli yeni özellikler için güncellemeleri göster."
@@ -296,13 +293,13 @@
   "Comfy_PromptFilename": {
     "name": "İş akışını kaydederken dosya adı iste"
   },
-  "Comfy_Queue_MaxHistoryItems": {
-    "name": "Kuyruk geçmişi boyutu",
-    "tooltip": "Kuyruk geçmişinde gösterilen maksimum görev sayısı."
-  },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Toplu iş sayısı sınırı",
     "tooltip": "Tek bir düğme tıklamasıyla kuyruğa eklenen maksimum görev sayısı"
+  },
+  "Comfy_Queue_MaxHistoryItems": {
+    "name": "Kuyruk geçmişi boyutu",
+    "tooltip": "Kuyruk geçmişinde gösterilen maksimum görev sayısı."
   },
   "Comfy_Sidebar_Location": {
     "name": "Kenar çubuğu konumu",
@@ -336,31 +333,23 @@
   },
   "Comfy_UseNewMenu": {
     "name": "Yeni menüyü kullan",
-    "tooltip": "Menü çubuğu konumu. Mobil cihazlarda menü her zaman üstte gösterilir.",
     "options": {
+      "Bottom": "Alt",
       "Disabled": "Devre dışı",
-      "Top": "Üst",
-      "Bottom": "Alt"
-    }
+      "Top": "Üst"
+    },
+    "tooltip": "Menü çubuğu konumu. Mobil cihazlarda menü her zaman üstte gösterilir."
   },
   "Comfy_Validation_Workflows": {
     "name": "İş akışlarını doğrula"
   },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Vue düğüm oluşturmayı etkinleştir",
-    "tooltip": "Düğümleri tuval öğeleri yerine Vue bileşenleri olarak oluşturun. Deneysel özellik."
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "Vue widget'larını etkinleştir",
-    "tooltip": "Widget'ları Vue düğümleri içinde Vue bileşenleri olarak oluşturun."
-  },
   "Comfy_WidgetControlMode": {
     "name": "Widget kontrol modu",
-    "tooltip": "Widget değerlerinin ne zaman güncelleneceğini (rastgele/artırma/azaltma), istem kuyruğa alınmadan önce veya sonra kontrol eder.",
     "options": {
-      "before": "önce",
-      "after": "sonra"
-    }
+      "after": "sonra",
+      "before": "önce"
+    },
+    "tooltip": "Widget değerlerinin ne zaman güncelleneceğini (rastgele/artırma/azaltma), istem kuyruğa alınmadan önce veya sonra kontrol eder."
   },
   "Comfy_Window_UnloadConfirmation": {
     "name": "Pencereyi kapatırken onay göster"
@@ -368,8 +357,8 @@
   "Comfy_Workflow_AutoSave": {
     "name": "Otomatik Kaydet",
     "options": {
-      "off": "kapalı",
-      "after delay": "gecikmeden sonra"
+      "after delay": "gecikmeden sonra",
+      "off": "kapalı"
     }
   },
   "Comfy_Workflow_AutoSaveDelay": {
@@ -399,13 +388,13 @@
       "Topbar (2nd-row)": "Üst Çubuk (2. sıra)"
     }
   },
-  "LiteGraph_Canvas_MinFontSizeForLOD": {
-    "name": "Yakınlaştırma Düğümü Ayrıntı Seviyesi - yazı tipi boyutu eşiği",
-    "tooltip": "Düğümlerin ne zaman düşük kaliteli LOD oluşturmaya geçeceğini kontrol eder. Ne zaman geçiş yapılacağını belirlemek için piksel cinsinden yazı tipi boyutunu kullanır. Devre dışı bırakmak için 0'a ayarlayın. 1-24 arasındaki değerler LOD için minimum yazı tipi boyutu eşiğini ayarlar - daha yüksek değerler (24 piksel) = uzaklaştırırken düğümleri daha erken basitleştirilmiş oluşturmaya geçirin, daha düşük değerler (1 piksel) = tam düğüm kalitesini daha uzun süre koruyun."
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Maksimum FPS",
     "tooltip": "Tuvalin saniyede oluşturmasına izin verilen maksimum kare sayısı. Akıcılık pahasına GPU kullanımını sınırlar. 0 ise, ekran yenileme hızı kullanılır. Varsayılan: 0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "Yakınlaştırma Düğümü Ayrıntı Seviyesi - yazı tipi boyutu eşiği",
+    "tooltip": "Düğümlerin ne zaman düşük kaliteli LOD oluşturmaya geçeceğini kontrol eder. Ne zaman geçiş yapılacağını belirlemek için piksel cinsinden yazı tipi boyutunu kullanır. Devre dışı bırakmak için 0'a ayarlayın. 1-24 arasındaki değerler LOD için minimum yazı tipi boyutu eşiğini ayarlar - daha yüksek değerler (24 piksel) = uzaklaştırırken düğümleri daha erken basitleştirilmiş oluşturmaya geçirin, daha düşük değerler (1 piksel) = tam düğüm kalitesini daha uzun süre koruyun."
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Yakınlaştırıldığında düğüm birleşik widget menülerini (listeleri) ölçeklendir"

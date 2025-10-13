@@ -4,16 +4,16 @@
       <div
         v-for="nodeDef in mappedNodeDefs"
         :key="createNodeDefKey(nodeDef)"
-        class="border rounded-lg p-4"
+        class="rounded-lg border p-4"
       >
-        <NodePreview :node-def="nodeDef" class="text-[.625rem]! min-w-full!" />
+        <NodePreview :node-def="nodeDef" class="min-w-full! text-[.625rem]!" />
       </div>
     </template>
     <template v-else-if="isLoading">
       <ProgressSpinner />
     </template>
     <template v-else-if="nodeNames.length">
-      <div v-for="node in nodeNames" :key="node" class="text-muted truncate">
+      <div v-for="node in nodeNames" :key="node" class="truncate text-muted">
         {{ node }}
       </div>
     </template>

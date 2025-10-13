@@ -7,6 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
   LGraphCanvas,
@@ -1665,6 +1666,28 @@ export class ComfyApp {
    */
   registerExtension(extension: ComfyExtension) {
     useExtensionService().registerExtension(extension)
+  }
+
+  /**
+   * Collects context menu items from all extensions for canvas menus
+   * @param canvas The canvas instance
+   * @returns Array of context menu items from all extensions
+   */
+  collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
+    return useExtensionService()
+      .invokeExtensions('getCanvasMenuItems', canvas)
+      .flat() as IContextMenuValue[]
+  }
+
+  /**
+   * Collects context menu items from all extensions for node menus
+   * @param node The node being right-clicked
+   * @returns Array of context menu items from all extensions
+   */
+  collectNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
+    return useExtensionService()
+      .invokeExtensions('getNodeMenuItems', node)
+      .flat() as IContextMenuValue[]
   }
 
   /**
