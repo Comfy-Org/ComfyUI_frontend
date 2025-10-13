@@ -92,6 +92,7 @@
   --color-blue-100-30: rgb(from var(--color-blue-100) r g b / 0.3);
   --color-interface-panel-job-progress-primary: var(--color-blue-300);
   --color-interface-panel-job-progress-secondary: var(--color-blue-100-30);
+  --color-interface-panel-job-progress-track: var(--color-blue-900-40);
   --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
   --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
   --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);

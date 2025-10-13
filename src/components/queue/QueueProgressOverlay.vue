@@ -10,7 +10,10 @@
       <div class="flex flex-col gap-3 p-2">
         <div class="flex flex-col gap-1">
           <div
-            class="relative h-2 w-full overflow-hidden rounded-full bg-[var(--color-blue-900-40)]"
+            class="relative h-2 w-full overflow-hidden rounded-full"
+            :style="{
+              background: 'var(--color-interface-panel-job-progress-track)'
+            }"
           >
             <div
               class="absolute inset-0 h-full rounded-full transition-[width]"
@@ -120,12 +123,12 @@ const currentNodePercent = computed(() =>
 
 const totalProgressStyle = computed(() => ({
   width: `${totalPercent.value}%`,
-  background: 'var(--color-blue-100-30)'
+  background: 'var(--color-interface-panel-job-progress-secondary)'
 }))
 
 const currentNodeProgressStyle = computed(() => ({
   width: `${currentNodePercent.value}%`,
-  background: 'var(--color-blue-300)'
+  background: 'var(--color-interface-panel-job-progress-primary)'
 }))
 
 const currentNodeName = computed(() => {
