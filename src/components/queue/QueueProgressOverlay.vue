@@ -49,7 +49,9 @@
           <div class="flex items-center gap-2 text-[12px] text-white">
             <span class="opacity-90">
               <span class="font-bold">{{ runningCount }}</span>
-              <span> {{ t('sideToolbar.queueProgressOverlay.running') }}</span>
+              <span class="ml-1">{{
+                t('sideToolbar.queueProgressOverlay.running')
+              }}</span>
             </span>
             <button
               v-if="runningCount > 0"
