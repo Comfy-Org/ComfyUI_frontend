@@ -1,4 +1,4 @@
-name: Tests E2E CI
+name: "CI: Tests E2E"
 
 # End-to-end testing with Playwright across multiple browsers and configurations
 # Runs on main branches and PRs, skips WIP branches

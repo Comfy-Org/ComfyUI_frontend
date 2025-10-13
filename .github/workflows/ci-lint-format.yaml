@@ -1,4 +1,4 @@
-name: Lint Format CI
+name: "CI: Lint Format"
 
 on:
   pull_request:

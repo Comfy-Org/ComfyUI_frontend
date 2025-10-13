@@ -1,4 +1,4 @@
-name: Tests Unit CI
+name: "CI: Tests Unit"
 
 # Unit and component testing with Vitest
 # Runs on main branches and PRs, skips WIP branches

@@ -1,4 +1,4 @@
-name: Tests E2E Forks CI
+name: "CI: Tests E2E Forks"
 
 # Deploys test results from forked PRs (forks can't access deployment secrets)
 

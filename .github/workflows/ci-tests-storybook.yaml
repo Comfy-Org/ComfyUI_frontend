@@ -1,4 +1,4 @@
-name: Tests Storybook CI
+name: "CI: Tests Storybook"
 
 # Builds Storybook and runs visual regression testing via Chromatic
 # Deploys Storybook previews to Cloudflare Pages for PR review

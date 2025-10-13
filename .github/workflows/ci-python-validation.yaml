@@ -1,4 +1,4 @@
-name: Python Validation CI
+name: "CI: Python Validation"
 
 on:
   pull_request:
