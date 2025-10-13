@@ -79,7 +79,6 @@ import { useI18n } from 'vue-i18n'
 
 import { st } from '@/i18n'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -94,7 +93,6 @@ const props = withDefaults(
 )
 const { t } = useI18n()
 const queueStore = useQueueStore()
-const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 
 const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
@@ -142,7 +140,8 @@ const currentNodeName = computed(() => {
 })
 
 const viewAllJobs = async () => {
-  await commandStore.execute('Workspace_ToggleSidebarTab_queue')
+  // Placeholder for future functionality
+  return
 }
 
 const interruptAll = async () => {
