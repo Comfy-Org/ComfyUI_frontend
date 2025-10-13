@@ -22,6 +22,8 @@
         size="small"
         pt:pc-input-text:root="min-w-full bg-transparent border-none text-center"
         class="w-16"
+        :show-buttons="!buttonsDisabled"
+        :pt="sliderNumberPt"
         @update:model-value="handleNumberInputUpdate"
       />
     </div>
@@ -41,6 +43,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -101,4 +104,24 @@ const stepValue = computed(() => {
   // precision 1 → 0.1, precision 2 → 0.01, etc.
   return 1 / Math.pow(10, precision.value)
 })
+
+const buttonsDisabled = computed(() => {
+  const currentValue = localValue.value ?? 0
+  return (
+    !Number.isFinite(currentValue) ||
+    Math.abs(currentValue) >= Number.MAX_SAFE_INTEGER
+  )
+})
+
+const sliderNumberPt = useNumberWidgetButtonPt({
+  roundedLeft: true,
+  roundedRight: true
+})
 </script>
+
+<style scoped>
+:deep(.p-inputnumber-button.p-disabled .pi),
+:deep(.p-inputnumber-button.p-disabled .p-icon) {
+  color: var(--color-node-icon-disabled) !important;
+}
+</style>
