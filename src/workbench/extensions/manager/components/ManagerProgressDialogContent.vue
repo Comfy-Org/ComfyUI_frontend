@@ -3,12 +3,12 @@
     class="overflow-hidden transition-all duration-300"
     :class="{
       'max-h-[500px]': isExpanded,
-      'max-h-0 p-0 m-0': !isExpanded
+      'm-0 max-h-0 p-0': !isExpanded
     }"
   >
     <div
       ref="sectionsContainerRef"
-      class="px-6 py-4 overflow-y-auto max-h-[450px] scroll-container"
+      class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
       :style="{
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
@@ -22,11 +22,11 @@
         <Panel
           :expanded="collapsedPanels[index] === true"
           toggleable
-          class="shadow-elevation-1 rounded-lg mt-2 dark-theme:bg-black dark-theme:border-black"
+          class="shadow-elevation-1 mt-2 rounded-lg dark-theme:border-black dark-theme:bg-black"
         >
           <template #header>
-            <div class="flex items-center justify-between w-full py-2">
-              <div class="flex flex-col text-sm font-medium leading-normal">
+            <div class="flex w-full items-center justify-between py-2">
+              <div class="flex flex-col text-sm leading-normal font-medium">
                 <span>{{ log.taskName }}</span>
                 <span class="text-muted">
                   {{
@@ -56,7 +56,7 @@
                 ? (el) => (lastPanelRef = el as HTMLElement)
                 : undefined
             "
-            class="overflow-y-auto h-64 rounded-lg bg-black"
+            class="h-64 overflow-y-auto rounded-lg bg-black"
             :class="{
               'h-64': index !== focusedLogs.length - 1,
               grow: index === focusedLogs.length - 1
@@ -69,7 +69,7 @@
                 :key="logIndex"
                 class="text-neutral-400 dark-theme:text-muted"
               >
-                <pre class="whitespace-pre-wrap break-words">{{ logLine }}</pre>
+                <pre class="break-words whitespace-pre-wrap">{{ logLine }}</pre>
               </div>
             </div>
           </div>

@@ -7366,19 +7366,6 @@
       }
     }
   },
-  "SaveSVG": {
-    "description": "SVG 파일을 디스크에 저장합니다.",
-    "display_name": "SVG 저장",
-    "inputs": {
-      "filename_prefix": {
-        "name": "파일명 접두사",
-        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같이 노드의 값을 포함하는 형식 정보를 사용할 수 있습니다."
-      },
-      "svg": {
-        "name": "svg"
-      }
-    }
-  },
   "SaveVideo": {
     "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
     "display_name": "비디오 저장",

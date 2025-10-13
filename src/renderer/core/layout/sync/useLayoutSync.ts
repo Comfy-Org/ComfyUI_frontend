@@ -4,8 +4,7 @@
  * Implements one-way sync from Layout Store to LiteGraph.
  * The layout store is the single source of truth.
  */
-import { onUnmounted } from 'vue'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'

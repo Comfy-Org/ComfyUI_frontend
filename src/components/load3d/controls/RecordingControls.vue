@@ -1,5 +1,5 @@
 <template>
-  <div class="relative bg-gray-700/30 rounded-lg">
+  <div class="relative rounded-lg bg-gray-700/30">
     <div class="flex flex-col gap-2">
       <Button
         class="p-button-rounded p-button-text"
@@ -10,7 +10,7 @@
             value: t('load3d.resizeNodeMatchOutput'),
             showDelay: 300
           }"
-          class="pi pi-window-maximize text-white text-lg"
+          class="pi pi-window-maximize text-lg text-white"
         />
       </Button>
       <Button
@@ -31,7 +31,7 @@
           :class="[
             'pi',
             isRecording ? 'pi-circle-fill' : 'pi-video',
-            'text-white text-lg'
+            'text-lg text-white'
           ]"
         />
       </Button>
@@ -46,7 +46,7 @@
             value: t('load3d.exportRecording'),
             showDelay: 300
           }"
-          class="pi pi-download text-white text-lg"
+          class="pi pi-download text-lg text-white"
         />
       </Button>
 
@@ -60,13 +60,13 @@
             value: t('load3d.clearRecording'),
             showDelay: 300
           }"
-          class="pi pi-trash text-white text-lg"
+          class="pi pi-trash text-lg text-white"
         />
       </Button>
 
       <div
         v-if="recordingDuration > 0 && !isRecording"
-        class="text-xs text-white text-center mt-1"
+        class="mt-1 text-center text-xs text-white"
       >
         {{ formatDuration(recordingDuration) }}
       </div>

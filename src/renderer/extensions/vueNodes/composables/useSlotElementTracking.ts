@@ -5,7 +5,8 @@
  * positions in a single batched pass, and caches offsets so that node moves
  * update slot positions without DOM reads.
  */
-import { type Ref, onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'

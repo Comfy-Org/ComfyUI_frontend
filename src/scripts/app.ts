@@ -1674,23 +1674,9 @@ export class ComfyApp {
    * @returns Array of context menu items from all extensions
    */
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
-    const items: IContextMenuValue[] = []
-
-    for (const ext of this.extensions) {
-      if (ext.getCanvasMenuItems) {
-        try {
-          const extItems = ext.getCanvasMenuItems(canvas)
-          items.push(...extItems)
-        } catch (error) {
-          console.error(
-            `[Context Menu] Extension "${ext.name}" failed to provide canvas menu items:`,
-            error
-          )
-        }
-      }
-    }
-
-    return items
+    return useExtensionService()
+      .invokeExtensions('getCanvasMenuItems', canvas)
+      .flat() as IContextMenuValue[]
   }
 
   /**
@@ -1699,23 +1685,9 @@ export class ComfyApp {
    * @returns Array of context menu items from all extensions
    */
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
-    const items: IContextMenuValue[] = []
-
-    for (const ext of this.extensions) {
-      if (ext.getNodeMenuItems) {
-        try {
-          const extItems = ext.getNodeMenuItems(node)
-          items.push(...extItems)
-        } catch (error) {
-          console.error(
-            `[Context Menu] Extension "${ext.name}" failed to provide node menu items:`,
-            error
-          )
-        }
-      }
-    }
-
-    return items
+    return useExtensionService()
+      .invokeExtensions('getNodeMenuItems', node)
+      .flat() as IContextMenuValue[]
   }
 
   /**

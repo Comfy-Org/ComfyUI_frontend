@@ -3,6 +3,8 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { VueNodeFixture } from './utils/vueNodeFixtures'
+
 export class VueNodeHelpers {
   constructor(private page: Page) {}
 
@@ -107,6 +109,24 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Return a DOM-focused VueNodeFixture for the first node matching the title.
+   * Resolves the node id up front so subsequent interactions survive title changes.
+   */
+  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+    const node = this.getNodeByTitle(title).first()
+    await node.waitFor({ state: 'visible' })
+
+    const nodeId = await node.evaluate((el) => el.getAttribute('data-node-id'))
+    if (!nodeId) {
+      throw new Error(
+        `Vue node titled "${title}" is missing its data-node-id attribute`
+      )
+    }
+
+    return new VueNodeFixture(this.getNodeLocator(nodeId))
+  }
+
+  /**
    * Wait for Vue nodes to be rendered
    */
   async waitForNodes(expectedCount?: number): Promise<void> {
@@ -117,6 +137,26 @@ export class VueNodeHelpers {
       )
     } else {
       await this.page.waitForSelector('[data-node-id]')
+    }
+  }
+
+  /**
+   * Get a specific widget by node title and widget name
+   */
+  getWidgetByName(nodeTitle: string, widgetName: string): Locator {
+    return this.getNodeByTitle(nodeTitle).locator(
+      `_vue=[widget.name="${widgetName}"]`
+    )
+  }
+
+  /**
+   * Get controls for input number widgets (increment/decrement buttons and input)
+   */
+  getInputNumberControls(widget: Locator) {
+    return {
+      input: widget.locator('input'),
+      incrementButton: widget.locator('button').first(),
+      decrementButton: widget.locator('button').last()
     }
   }
 }

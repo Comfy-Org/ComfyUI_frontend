@@ -16,7 +16,7 @@
         <em v-else-if="segment.type === 'italic'">{{ segment.text }}</em>
         <code
           v-else-if="segment.type === 'code'"
-          class="px-1 py-0.5 rounded text-xs"
+          class="rounded px-1 py-0.5 text-xs"
           >{{ segment.text }}</code
         >
         <span v-else>{{ segment.text }}</span>

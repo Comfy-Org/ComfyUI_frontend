@@ -11,14 +11,14 @@
       <img
         :src="beforeImage"
         :alt="beforeAlt"
-        class="w-full h-full object-cover"
+        class="h-full w-full object-cover"
       />
     </template>
     <template #right>
       <img
         :src="afterImage"
         :alt="afterAlt"
-        class="w-full h-full object-cover"
+        class="h-full w-full object-cover"
       />
     </template>
   </ImageCompare>

@@ -15,14 +15,14 @@ import {
   LinkMarkerShape,
   LinkRenderType
 } from '@/lib/litegraph/src/types/globalEnums'
-import {
-  type ArrowShape,
-  CanvasPathRenderer,
-  type Direction,
-  type LinkRenderData,
-  type RenderContext as PathRenderContext,
-  type Point as PointObj,
-  type RenderMode
+import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
+import type {
+  ArrowShape,
+  Direction,
+  LinkRenderData,
+  RenderContext as PathRenderContext,
+  Point as PointObj,
+  RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'

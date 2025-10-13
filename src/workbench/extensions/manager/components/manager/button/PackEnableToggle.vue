@@ -6,10 +6,10 @@
         value: $t('manager.conflicts.warningTooltip'),
         showDelay: 300
       }"
-      class="flex items-center justify-center w-6 h-6 cursor-pointer"
+      class="flex h-6 w-6 cursor-pointer items-center justify-center"
       @click="showConflictModal(true)"
     >
-      <i class="pi pi-exclamation-triangle text-yellow-500 text-xl"></i>
+      <i class="pi pi-exclamation-triangle text-xl text-yellow-500"></i>
     </div>
     <ToggleSwitch
       v-if="!canToggleDirectly"

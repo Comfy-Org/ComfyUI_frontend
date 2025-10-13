@@ -21,7 +21,8 @@ import type {
   Serialisable,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
-import { type UUID, createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphInputNode } from './SubgraphInputNode'

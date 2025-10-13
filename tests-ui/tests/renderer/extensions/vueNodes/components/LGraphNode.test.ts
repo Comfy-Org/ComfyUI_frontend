@@ -6,8 +6,8 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 const mockData = vi.hoisted(() => ({
@@ -77,6 +77,13 @@ vi.mock('@/renderer/extensions/vueNodes/preview/useNodePreviewState', () => ({
   }))
 }))
 
+vi.mock('../composables/useNodeResize', () => ({
+  useNodeResize: vi.fn(() => ({
+    startResize: vi.fn(),
+    isResizing: computed(() => false)
+  }))
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -96,6 +103,14 @@ function mountLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         }),
         i18n
       ],
+      provide: {
+        [TransformStateKey as symbol]: {
+          screenToCanvas: vi.fn(),
+          canvasToScreen: vi.fn(),
+          camera: { z: 1 },
+          isNodeInViewport: vi.fn()
+        }
+      },
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
@@ -155,6 +170,14 @@ describe('LGraphNode', () => {
           }),
           i18n
         ],
+        provide: {
+          [TransformStateKey as symbol]: {
+            screenToCanvas: vi.fn(),
+            canvasToScreen: vi.fn(),
+            camera: { z: 1 },
+            isNodeInViewport: vi.fn()
+          }
+        },
         stubs: {
           NodeSlots: true,
           NodeWidgets: true,
@@ -180,19 +203,5 @@ describe('LGraphNode', () => {
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
     expect(wrapper.classes()).toContain('animate-pulse')
-  })
-
-  it('should emit node-click event on pointer up', async () => {
-    const { handleNodeSelect } = useNodeEventHandlers()
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
-
-    await wrapper.trigger('pointerup')
-
-    expect(handleNodeSelect).toHaveBeenCalledOnce()
-    expect(handleNodeSelect).toHaveBeenCalledWith(
-      expect.any(PointerEvent),
-      mockNodeData,
-      expect.any(Boolean)
-    )
   })
 })

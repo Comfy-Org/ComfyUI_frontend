@@ -5,7 +5,7 @@
     @click="toggleShortcutsPanel"
   >
     <template #icon>
-      <i-lucide:keyboard />
+      <i class="icon-[lucide--keyboard]" />
     </template>
   </SidebarIcon>
 </template>

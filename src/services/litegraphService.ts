@@ -8,17 +8,19 @@ import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtil
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
-  type IContextMenuValue,
   LGraphBadge,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
-  type Point,
   RenderShape,
-  type Subgraph,
   SubgraphNode,
   createBounds
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  Point,
+  Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,

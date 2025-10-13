@@ -1,5 +1,5 @@
 <template>
-  <div class="h-12 flex items-center justify-between w-full pl-6">
+  <div class="flex h-12 w-full items-center justify-between pl-6">
     <div class="flex items-center gap-2">
       <!-- Warning Icon -->
       <i class="pi pi-exclamation-triangle text-lg"></i>

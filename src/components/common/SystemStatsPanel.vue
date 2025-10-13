@@ -1,7 +1,7 @@
 <template>
   <div class="system-stats">
     <div class="mb-6">
-      <h2 class="text-2xl font-semibold mb-4">
+      <h2 class="mb-4 text-2xl font-semibold">
         {{ $t('g.systemInfo') }}
       </h2>
       <div class="grid grid-cols-2 gap-2">
@@ -17,7 +17,7 @@
     <Divider />
 
     <div>
-      <h2 class="text-2xl font-semibold mb-4">
+      <h2 class="mb-4 text-2xl font-semibold">
         {{ $t('g.devices') }}
       </h2>
       <TabView v-if="props.stats.devices.length > 1">
