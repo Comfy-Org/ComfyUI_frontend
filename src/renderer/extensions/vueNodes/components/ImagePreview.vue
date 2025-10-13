@@ -32,21 +32,12 @@
       <!-- Main Image -->
       <img
         v-else
+        ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
         class="block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
-      />
-
-      <!-- Hidden preloaded images for mask editor -->
-      <img
-        v-for="(url, i) in imageUrls"
-        v-show="false"
-        :key="i"
-        ref="imageEls"
-        :src="url"
-        alt=""
       />
 
       <!-- Floating Action Buttons (appear on hover) -->
@@ -154,7 +145,7 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const isLoading = ref(false)
 
-const imageEls = ref<HTMLImageElement[]>([])
+const currentImageEl = ref<HTMLImageElement>()
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -197,11 +188,11 @@ const handleImageError = () => {
 
 // In vueNodes mode, we need to set them manually before opening the mask editor.
 const setupNodeForMaskEditor = () => {
-  if (!props.nodeId) return
+  if (!props.nodeId || !currentImageEl.value) return
   const node = app.rootGraph?.getNodeById(props.nodeId)
   if (!node) return
   node.imageIndex = currentIndex.value
-  node.imgs = imageEls.value
+  node.imgs = [currentImageEl.value]
   app.canvas?.select(node)
 }
 
