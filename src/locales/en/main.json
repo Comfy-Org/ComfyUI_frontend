@@ -612,7 +612,12 @@
     },
     "queueProgressOverlay": {
       "title": "Queue Progress",
-      "placeholder": "Placeholder - we will hook real data next."
+      "placeholder": "Placeholder - we will hook real data next.",
+      "total": "Total:",
+      "currentNode": "Current node:",
+      "viewAllJobs": "View all jobs",
+      "running": "running",
+      "interruptAll": "Interrupt all running jobs"
     },
     "workflowTab": {
       "confirmDeleteTitle": "Delete workflow?",
