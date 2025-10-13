@@ -1,7 +1,8 @@
 <template>
   <div
     ref="containerRef"
-    class="relative overflow-hidden w-full h-full flex items-center justify-center"
+    class="relative flex h-full w-full items-center justify-center overflow-hidden"
+    :class="containerClass"
   >
     <Skeleton
       v-if="!isImageLoaded"
@@ -22,7 +23,7 @@
     />
     <div
       v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 dark-theme:bg-surface-800 text-muted"
+      class="absolute inset-0 flex items-center justify-center bg-surface-50 text-muted dark-theme:bg-surface-800"
     >
       <img
         src="/assets/images/default-template.png"
@@ -41,17 +42,20 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
+import type { ClassValue } from '@/utils/tailwindUtil'
 
 const {
   src,
   alt = '',
+  containerClass = '',
   imageClass = '',
   imageStyle,
   rootMargin = '300px'
 } = defineProps<{
   src: string
   alt?: string
-  imageClass?: string | string[] | Record<string, boolean>
+  containerClass?: ClassValue
+  imageClass?: ClassValue
   imageStyle?: Record<string, any>
   rootMargin?: string
 }>()

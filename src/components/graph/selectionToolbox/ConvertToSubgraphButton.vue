@@ -11,7 +11,7 @@
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
     <template #icon>
-      <i-lucide:expand class="w-4 h-4" />
+      <i class="icon-[lucide--expand] h-4 w-4" />
     </template>
   </Button>
   <Button
@@ -26,7 +26,7 @@
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
     <template #icon>
-      <i-lucide:shrink />
+      <i class="icon-[lucide--shrink]" />
     </template>
   </Button>
 </template>

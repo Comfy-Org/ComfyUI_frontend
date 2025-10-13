@@ -5,6 +5,14 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point, SlotLayout } from '@/renderer/core/layout/types'
 
+/**
+ * Slot link drag UI state
+ *
+ * Reactive, shared state for a single drag interaction that UI components subscribe to.
+ * Tracks pointer position, source slot, and resolved drop candidate. Also exposes
+ * a compatibility map used to dim incompatible slots during drag.
+ */
+
 type SlotDragType = 'input' | 'output'
 
 interface SlotDragSource {
@@ -33,6 +41,7 @@ interface SlotDragState {
   source: SlotDragSource | null
   pointer: PointerPosition
   candidate: SlotDropCandidate | null
+  compatible: Map<string, boolean>
 }
 
 const state = reactive<SlotDragState>({
@@ -43,7 +52,8 @@ const state = reactive<SlotDragState>({
     client: { x: 0, y: 0 },
     canvas: { x: 0, y: 0 }
   },
-  candidate: null
+  candidate: null,
+  compatible: new Map<string, boolean>()
 })
 
 function updatePointerPosition(
@@ -67,6 +77,7 @@ function beginDrag(source: SlotDragSource, pointerId: number) {
   state.source = source
   state.pointerId = pointerId
   state.candidate = null
+  state.compatible.clear()
 }
 
 function endDrag() {
@@ -78,6 +89,7 @@ function endDrag() {
   state.pointer.canvas.x = 0
   state.pointer.canvas.y = 0
   state.candidate = null
+  state.compatible.clear()
 }
 
 function getSlotLayout(nodeId: string, slotIndex: number, isInput: boolean) {
@@ -85,13 +97,21 @@ function getSlotLayout(nodeId: string, slotIndex: number, isInput: boolean) {
   return layoutStore.getSlotLayout(slotKey)
 }
 
-export function useSlotLinkDragState() {
+export function useSlotLinkDragUIState() {
   return {
     state: readonly(state),
     beginDrag,
     endDrag,
     updatePointerPosition,
     setCandidate,
-    getSlotLayout
+    getSlotLayout,
+    setCompatibleMap: (entries: Iterable<[string, boolean]>) => {
+      state.compatible.clear()
+      for (const [key, value] of entries) state.compatible.set(key, value)
+    },
+    setCompatibleForKey: (key: string, value: boolean) => {
+      state.compatible.set(key, value)
+    },
+    clearCompatible: () => state.compatible.clear()
   }
 }

@@ -4,6 +4,7 @@
       v-model="localValue"
       v-bind="filteredProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
+      :aria-label="widget.name"
       size="small"
       @update:model-value="onChange"
     />

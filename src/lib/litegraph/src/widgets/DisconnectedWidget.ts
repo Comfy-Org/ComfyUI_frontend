@@ -1,7 +1,8 @@
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget, type DrawWidgetOptions } from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
+import type { DrawWidgetOptions } from './BaseWidget'
 
 class DisconnectedWidget extends BaseWidget<IButtonWidget> {
   constructor(widget: IButtonWidget) {

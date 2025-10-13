@@ -8,18 +8,14 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import {
-  type MaybeRefOrGetter,
-  getCurrentInstance,
-  onMounted,
-  onUnmounted,
-  toValue
-} from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
@@ -123,6 +119,9 @@ const resizeObserver = new ResizeObserver((entries) => {
       nodesNeedingSlotResync.add(elementId)
     }
   }
+
+  // Set source to Vue before processing DOM-driven updates
+  layoutStore.setSource(LayoutSource.Vue)
 
   // Flush per-type
   for (const [type, updates] of updatesByType) {

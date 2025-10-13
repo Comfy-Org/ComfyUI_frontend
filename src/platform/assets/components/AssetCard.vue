@@ -24,9 +24,9 @@
     @click="interactive && $emit('select', asset)"
     @keydown.enter="interactive && $emit('select', asset)"
   >
-    <div class="relative w-full aspect-square overflow-hidden">
+    <div class="relative aspect-square w-full overflow-hidden">
       <div
-        class="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600 flex items-center justify-center"
+        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
@@ -66,15 +66,15 @@
         "
       >
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
-          <i-lucide:star class="size-3" />
+          <i class="icon-[lucide--star] size-3" />
           {{ asset.stats.stars }}
         </span>
         <span v-if="asset.stats.downloadCount" class="flex items-center gap-1">
-          <i-lucide:download class="size-3" />
+          <i class="icon-[lucide--download] size-3" />
           {{ asset.stats.downloadCount }}
         </span>
         <span v-if="asset.stats.formattedDate" class="flex items-center gap-1">
-          <i-lucide:clock class="size-3" />
+          <i class="icon-[lucide--clock] size-3" />
           {{ asset.stats.formattedDate }}
         </span>
       </div>

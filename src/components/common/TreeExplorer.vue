@@ -2,7 +2,7 @@
   <Tree
     v-model:expanded-keys="expandedKeys"
     v-model:selection-keys="selectionKeys"
-    class="tree-explorer py-0 px-2 2xl:px-4"
+    class="tree-explorer px-2 py-0 2xl:px-4"
     :class="props.class"
     :value="renderedRoot.children"
     selection-mode="single"
@@ -47,9 +47,11 @@ import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperati
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   InjectKeyExpandedKeys,
-  InjectKeyHandleEditLabelFunction,
-  type RenderedTreeExplorerNode,
-  type TreeExplorerNode
+  InjectKeyHandleEditLabelFunction
+} from '@/types/treeExplorerTypes'
+import type {
+  RenderedTreeExplorerNode,
+  TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 

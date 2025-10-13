@@ -239,6 +239,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
     api.addEventListener('execution_interrupted', handleExecutionInterrupted)
+    api.addEventListener('execution_success', handleExecutionSuccess)
     api.addEventListener('executed', handleExecuted)
     api.addEventListener('executing', handleExecuting)
     api.addEventListener('progress', handleProgress)
@@ -253,6 +254,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('execution_start', handleExecutionStart)
     api.removeEventListener('execution_cached', handleExecutionCached)
     api.removeEventListener('execution_interrupted', handleExecutionInterrupted)
+    api.removeEventListener('execution_success', handleExecutionSuccess)
     api.removeEventListener('executed', handleExecuted)
     api.removeEventListener('executing', handleExecuting)
     api.removeEventListener('progress', handleProgress)
@@ -277,12 +279,16 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionInterrupted() {
-    nodeProgressStates.value = {}
+    resetExecutionState()
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activePrompt.value) return
     activePrompt.value.nodes[e.detail.node] = true
+  }
+
+  function handleExecutionSuccess() {
+    resetExecutionState()
   }
 
   function handleExecuting(e: CustomEvent<NodeId | null>): void {
@@ -346,6 +352,19 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
+    resetExecutionState()
+  }
+
+  /**
+   * Reset execution-related state after a run completes or is stopped.
+   */
+  function resetExecutionState() {
+    nodeProgressStates.value = {}
+    if (activePromptId.value) {
+      delete queuedPrompts.value[activePromptId.value]
+    }
+    activePromptId.value = null
+    _executingNodeProgress.value = null
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {

@@ -23,7 +23,7 @@
         }"
       />
       <div
-        class="absolute inset-y-0 w-0.5 bg-white/30 backdrop-blur-sm z-10 pointer-events-none"
+        class="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-white/30 backdrop-blur-sm"
         :style="{
           left: `${sliderPosition}%`
         }"

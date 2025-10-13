@@ -16,10 +16,16 @@
       @click="queuePrompt"
     >
       <template #icon>
-        <i-lucide:list-start v-if="workspaceStore.shiftDown" />
-        <i-lucide:play v-else-if="queueMode === 'disabled'" />
-        <i-lucide:fast-forward v-else-if="queueMode === 'instant'" />
-        <i-lucide:step-forward v-else-if="queueMode === 'change'" />
+        <i v-if="workspaceStore.shiftDown" class="icon-[lucide--list-start]" />
+        <i v-else-if="queueMode === 'disabled'" class="icon-[lucide--play]" />
+        <i
+          v-else-if="queueMode === 'instant'"
+          class="icon-[lucide--fast-forward]"
+        />
+        <i
+          v-else-if="queueMode === 'change'"
+          class="icon-[lucide--step-forward]"
+        />
       </template>
       <template #item="{ item }">
         <Button

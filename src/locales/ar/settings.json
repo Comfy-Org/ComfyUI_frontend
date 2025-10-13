@@ -11,10 +11,7 @@
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "مرآة تثبيت بايثون",
-    "tooltip": "يتم تحميل تثبيتات بايثون المدارة من مشروع Astral python-build-standalone. يمكن تعيين هذا المتغير إلى عنوان مرآة لاستخدام مصدر مختلف لتثبيتات بايثون. سيحل العنوان المقدم محل https://github.com/astral-sh/python-build-standalone/releases/download في، مثلاً، https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. يمكن قراءة التوزيعات من دليل محلي باستخدام نظام ملفات file://.",
-    "urlFormatTitle": "تنسيق عنوان المرآة",
-    "urlDescription": "هذا مثال على عنوان تنزيل بايثون.\n\nعنوان المرآة هو النصف الأول، بما في ذلك كل شيء قبل التاريخ (20250902):",
-    "fileUrlDescription": "للتثبيت من ملف قمت بتنزيله مسبقًا، يمكنك استخدام عنوان ملف:"
+    "tooltip": "يتم تحميل تثبيتات بايثون المدارة من مشروع Astral python-build-standalone. يمكن تعيين هذا المتغير إلى عنوان مرآة لاستخدام مصدر مختلف لتثبيتات بايثون. سيحل العنوان المقدم محل https://github.com/astral-sh/python-build-standalone/releases/download في، مثلاً، https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. يمكن قراءة التوزيعات من دليل محلي باستخدام نظام ملفات file://."
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "مرآة تثبيت Torch",
@@ -391,13 +388,13 @@
       "Topbar (2nd-row)": "شريط الأعلى (الصف الثاني)"
     }
   },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "عتبة التكبير للرسم بجودة منخفضة",
-    "tooltip": "عرض أشكال بجودة منخفضة عند التكبير للخارج"
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "الحد الأقصى للإطارات في الثانية",
     "tooltip": "الحد الأقصى لعدد الإطارات في الثانية التي يسمح للرسم أن يعرضها. يحد من استخدام GPU على حساب السلاسة. إذا كانت 0، يتم استخدام معدل تحديث الشاشة. الافتراضي: 0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "مستوى تفاصيل عقدة التكبير - حد حجم الخط",
+    "tooltip": "يتحكم في وقت تبديل العقد إلى عرض LOD منخفض الجودة. يستخدم حجم الخط بالبكسل لتحديد وقت التبديل. اضبط على 0 للتعطيل. القيم 1-24 تحدد الحد الأدنى لحجم الخط لـ LOD - القيم الأعلى (24 بكسل) = التبديل إلى عرض مبسط عند التصغير مبكراً، القيم الأقل (1 بكسل) = الحفاظ على جودة العقدة الكاملة لفترة أطول."
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "تغيير مقياس قوائم ودجت كومبو العقدة عند التكبير"
@@ -415,17 +412,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "الالتصاق بالشبكة دائمًا"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "تفعيل عرض عقد Vue",
-    "tooltip": "عرض العقد كمكونات Vue بدلاً من عناصر اللوحة. ميزة تجريبية."
-  },
-  "Comfy_VueNodes_Widgets": {
-    "name": "تفعيل عناصر Vue",
-    "tooltip": "عرض العناصر كمكونات Vue ضمن عقد Vue."
-  },
-  "LiteGraph_Canvas_MinFontSizeForLOD": {
-    "name": "مستوى تفاصيل عقدة التكبير - حد حجم الخط",
-    "tooltip": "يتحكم في وقت تبديل العقد إلى عرض LOD منخفض الجودة. يستخدم حجم الخط بالبكسل لتحديد وقت التبديل. اضبط على 0 للتعطيل. القيم 1-24 تحدد الحد الأدنى لحجم الخط لـ LOD - القيم الأعلى (24 بكسل) = التبديل إلى عرض مبسط عند التصغير مبكراً، القيم الأقل (1 بكسل) = الحفاظ على جودة العقدة الكاملة لفترة أطول."
   }
 }

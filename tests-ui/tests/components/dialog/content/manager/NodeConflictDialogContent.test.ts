@@ -209,11 +209,13 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Find import failed panel header (first one)
-      const importFailedHeader = wrapper.find('.w-full.h-8.flex.items-center')
+      const importFailedHeader = wrapper.find(
+        '[data-testid="conflict-dialog-panel-toggle"]'
+      )
 
       // Initially collapsed
       expect(
-        wrapper.find('[class*="py-2 px-4 flex flex-col gap-2.5"]').exists()
+        wrapper.find('[data-testid="conflict-dialog-panel-expanded"]').exists()
       ).toBe(false)
 
       // Click to expand import failed panel
@@ -221,7 +223,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Should be expanded now and show package name
       const expandedContent = wrapper.find(
-        '[class*="py-2 px-4 flex flex-col gap-2.5"]'
+        '[data-testid="conflict-dialog-panel-expanded"]'
       )
       expect(expandedContent.exists()).toBe(true)
       expect(expandedContent.text()).toContain('Test Package 3')
@@ -236,7 +238,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Find conflicts panel header (second one)
       const conflictsHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[1]
 
       // Click to expand conflicts panel
@@ -252,7 +254,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Find extensions panel header (third one)
       const extensionsHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[2]
 
       // Click to expand extensions panel
@@ -260,7 +262,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Should be expanded now and show all package names
       const expandedContent = wrapper.findAll(
-        '[class*="py-2 px-4 flex flex-col gap-2.5"]'
+        '[data-testid="conflict-dialog-panel-expanded"]'
       )[0]
       expect(expandedContent.exists()).toBe(true)
       expect(expandedContent.text()).toContain('Test Package 1')
@@ -272,13 +274,13 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       const importFailedHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[0]
       const conflictsHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[1]
       const extensionsHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[2]
 
       // Open import failed panel first
@@ -317,7 +319,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Expand conflicts panel (second header)
       const conflictsHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[1]
       await conflictsHeader.trigger('click')
 
@@ -331,7 +333,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Expand import failed panel (first header)
       const importFailedHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[0]
       await importFailedHeader.trigger('click')
 
@@ -346,7 +348,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Expand extensions panel (third header)
       const extensionsHeader = wrapper.findAll(
-        '.w-full.h-8.flex.items-center'
+        '[data-testid="conflict-dialog-panel-toggle"]'
       )[2]
       await extensionsHeader.trigger('click')
 
@@ -387,7 +389,9 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Test all three panels
-      const headers = wrapper.findAll('.w-full.h-8.flex.items-center')
+      const headers = wrapper.findAll(
+        '[data-testid="conflict-dialog-panel-toggle"]'
+      )
 
       for (let i = 0; i < headers.length; i++) {
         await headers[i].trigger('click')
@@ -423,7 +427,9 @@ describe('NodeConflictDialogContent', () => {
       mockConflictData.value = mockConflictResults
       const wrapper = createWrapper()
 
-      const headers = wrapper.findAll('.w-full.h-8.flex.items-center')
+      const headers = wrapper.findAll(
+        '[data-testid="conflict-dialog-panel-toggle"]'
+      )
       expect(headers).toHaveLength(3) // import failed, conflicts and extensions headers
 
       headers.forEach((header) => {

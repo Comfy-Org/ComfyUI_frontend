@@ -4,7 +4,7 @@
       <div class="mb-3">
         {{ section.title }}
       </div>
-      <div class="text-muted break-words">
+      <div class="break-words text-muted">
         <a
           v-if="section.isUrl"
           :href="section.text"

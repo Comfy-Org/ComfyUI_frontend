@@ -1,4 +1,5 @@
-import { type Ref, computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
+import type { Ref } from 'vue'
 
 interface LazyPaginationOptions {
   itemsPerPage?: number

@@ -4,7 +4,7 @@
       v-if="nodePack?.description"
       :sections="descriptionSections"
     />
-    <p v-else class="text-muted italic text-sm">
+    <p v-else class="text-sm text-muted italic">
       {{ $t('manager.noDescription') }}
     </p>
     <div v-if="nodePack?.latest_version?.dependencies?.length">
@@ -14,7 +14,7 @@
       <div
         v-for="(dep, index) in nodePack.latest_version.dependencies"
         :key="index"
-        class="text-muted break-words"
+        class="break-words text-muted"
       >
         {{ dep }}
       </div>
@@ -28,9 +28,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { isValidUrl } from '@/utils/formatUtil'
-import InfoTextSection, {
-  type TextSection
-} from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTextSection.vue'
+import InfoTextSection from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTextSection.vue'
+import type { TextSection } from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTextSection.vue'
 
 const { t } = useI18n()
 

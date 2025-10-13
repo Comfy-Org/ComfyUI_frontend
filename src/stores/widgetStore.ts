@@ -2,10 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  type InputSpec as InputSpecV1,
-  getInputSpecType
-} from '@/schemas/nodeDefSchema'
+import { getInputSpecType } from '@/schemas/nodeDefSchema'
+import type { InputSpec as InputSpecV1 } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { ComfyWidgets } from '@/scripts/widgets'
 
