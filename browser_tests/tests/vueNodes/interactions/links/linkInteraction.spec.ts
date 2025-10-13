@@ -812,8 +812,15 @@ test.describe('Vue Node Link Interaction', () => {
     expect(await clipOutput.getLinkCount()).toBe(2)
 
     const clipOutputSlot = slotLocator(comfyPage.page, clipNode.id, 0, false)
-    await clipOutputSlot.click({
-      modifiers: ['Control', 'Alt']
+
+    await clipOutputSlot.dispatchEvent('pointerdown', {
+      button: 0,
+      buttons: 1,
+      ctrlKey: true,
+      altKey: true,
+      shiftKey: false,
+      bubbles: true,
+      cancelable: true
     })
     await comfyPage.nextFrame()
 
