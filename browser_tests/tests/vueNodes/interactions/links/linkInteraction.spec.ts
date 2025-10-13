@@ -791,30 +791,33 @@ test.describe('Vue Node Link Interaction', () => {
   test('should batch disconnect all links with ctrl+alt+click on slot', async ({
     comfyPage
   }) => {
-    const checkpointNode = (
-      await comfyPage.getNodeRefsByType('CheckpointLoaderSimple')
-    )[0]
-    expect(checkpointNode).toBeTruthy()
+    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
+    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    expect(clipNode && samplerNode).toBeTruthy()
 
-    const clipOutput = await checkpointNode.getOutput(1)
-    const initialLinkCount = await clipOutput.getLinkCount()
-    expect(initialLinkCount).toBeGreaterThan(0)
-
-    const clipOutputSlot = slotLocator(
+    await connectSlots(
       comfyPage.page,
-      checkpointNode.id,
-      1,
-      false
+      { nodeId: clipNode.id, index: 0 },
+      { nodeId: samplerNode.id, index: 1 },
+      () => comfyPage.nextFrame()
     )
-    await expect(clipOutputSlot).toBeVisible()
+    await connectSlots(
+      comfyPage.page,
+      { nodeId: clipNode.id, index: 0 },
+      { nodeId: samplerNode.id, index: 2 },
+      () => comfyPage.nextFrame()
+    )
 
+    const clipOutput = await clipNode.getOutput(0)
+    expect(await clipOutput.getLinkCount()).toBe(2)
+
+    const clipOutputSlot = slotLocator(comfyPage.page, clipNode.id, 0, false)
     await clipOutputSlot.click({
       modifiers: ['Control', 'Alt']
     })
     await comfyPage.nextFrame()
 
-    const finalLinkCount = await clipOutput.getLinkCount()
-    expect(finalLinkCount).toBe(0)
+    expect(await clipOutput.getLinkCount()).toBe(0)
   })
 
   test.describe('Release actions (Shift-drop)', () => {
