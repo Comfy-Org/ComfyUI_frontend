@@ -201,8 +201,9 @@ app.registerExtension({
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
+          if (typeof audioWidget.value !== 'string') return
           audioUIWidget.element.src = api.apiURL(
-            getResourceURL(...splitFilePath(audioWidget.value as string))
+            getResourceURL(...splitFilePath(audioWidget.value))
           )
         }
         // Initially load default audio file to audioUIWidget.
