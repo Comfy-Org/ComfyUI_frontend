@@ -6,12 +6,12 @@
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
-      <CloudBar />
+      <TopbarBadges />
     </div>
     <div
       v-show="showTopMenu"
       ref="topMenuRef"
-      class="comfyui-menu flex items-center"
+      class="comfyui-menu flex items-center bg-gray-100"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <CommandMenubar />
@@ -44,7 +44,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
-import CloudBar from './CloudBar.vue'
+
+import TopbarBadges from './TopbarBadges.vue'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
