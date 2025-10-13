@@ -1,3 +1,4 @@
+import { KeyComboImpl } from '@comfyorg/keybinding'
 import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
@@ -80,10 +81,7 @@ import {
 } from '@/utils/migration/migrateReroute'
 import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
-import {
-  KeyComboImpl,
-  useKeybindingStore
-} from '@/workbench/keybindings/stores/keybindingStore'
+import { useKeybindingStore } from '@/workbench/keybindings/stores/keybindingStore'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'

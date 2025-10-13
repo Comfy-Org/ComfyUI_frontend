@@ -1,3 +1,4 @@
+import type { KeyCombo } from '@comfyorg/keybinding'
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { test as base } from '@playwright/test'
@@ -6,7 +7,6 @@ import * as fs from 'fs'
 
 import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'

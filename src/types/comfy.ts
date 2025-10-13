@@ -1,6 +1,7 @@
+import type { Keybinding } from '@comfyorg/keybinding'
+
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Keybinding } from '@/platform/keybinding/types/keybinding'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'

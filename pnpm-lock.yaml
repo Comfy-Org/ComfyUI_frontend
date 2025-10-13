@@ -20,6 +20,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/keybinding':
+        specifier: workspace:*
+        version: link:packages/keybinding
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -367,6 +370,16 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.17
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.2
+
+  packages/keybinding:
+    dependencies:
+      zod:
+        specifier: ^3.22.4
+        version: 3.24.1
+    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.9.2

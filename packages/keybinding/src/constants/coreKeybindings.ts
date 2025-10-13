@@ -1,4 +1,4 @@
-import type { Keybinding } from '@/platform/keybinding/types/keybinding'
+import type { Keybinding } from '../types/keybinding'
 
 export const CORE_KEYBINDINGS: Keybinding[] = [
   {

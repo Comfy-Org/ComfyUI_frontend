@@ -1,13 +1,14 @@
-import { CORE_KEYBINDINGS } from '@/platform/keybinding/constants/coreKeybindings'
+import {
+  CORE_KEYBINDINGS,
+  KeyComboImpl,
+  KeybindingImpl
+} from '@comfyorg/keybinding'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import {
-  KeyComboImpl,
-  KeybindingImpl,
-  useKeybindingStore
-} from '@/workbench/keybindings/stores/keybindingStore'
+import { useKeybindingStore } from '@/workbench/keybindings/stores/keybindingStore'
 
 export const useKeybindingService = () => {
   const keybindingStore = useKeybindingStore()

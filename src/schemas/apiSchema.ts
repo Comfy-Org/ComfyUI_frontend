@@ -1,7 +1,7 @@
+import { zKeybinding } from '@comfyorg/keybinding'
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
-import { zKeybinding } from '@/platform/keybinding/types/keybinding'
 import {
   zComfyWorkflow,
   zNodeId

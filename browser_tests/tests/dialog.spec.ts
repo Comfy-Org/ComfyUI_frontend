@@ -1,7 +1,7 @@
+import type { Keybinding } from '@comfyorg/keybinding'
 import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { Keybinding } from '../../src/schemas/keyBindingSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
