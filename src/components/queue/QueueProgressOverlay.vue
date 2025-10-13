@@ -9,18 +9,16 @@
     >
       <div class="flex flex-col gap-3 p-2">
         <div class="flex flex-col gap-1">
-          <div class="relative h-2 w-full rounded-lg bg-[var(--comfy-menu-bg)]">
+          <div
+            class="relative h-2 w-full overflow-hidden rounded-full bg-[var(--color-blue-900-40)]"
+          >
             <div
-              class="absolute top-0 left-0 h-full rounded-lg bg-[rgba(11,140,233,0.3)]"
-              :style="{ width: totalPercent + '%' }"
+              class="absolute inset-0 h-full rounded-full transition-[width]"
+              :style="totalProgressStyle"
             />
             <div
-              class="absolute top-0 left-0 h-full rounded-lg bg-[#185a8b]"
-              :style="{ width: currentNodePercent + '%' }"
-            />
-            <div
-              aria-hidden="true"
-              class="pointer-events-none absolute inset-0 rounded-lg border border-[var(--p-panel-border-color)]"
+              class="absolute inset-0 h-full rounded-full transition-[width]"
+              :style="currentNodeProgressStyle"
             />
           </div>
           <div
@@ -73,12 +71,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = withDefaults(
   defineProps<{
@@ -91,6 +92,7 @@ const props = withDefaults(
 const { t } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
+const executionStore = useExecutionStore()
 
 const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
 const overlayStyle = computed(() => {
@@ -105,11 +107,36 @@ const runningCount = computed(() => queueStore.runningTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
 const isVisible = computed(() => overlayWidth.value > 0 && hasHistory.value)
 
-/** Placeholder: hook real progress data next */
-const totalPercent = ref(30)
-/** Placeholder: hook real current-node progress next */
-const currentNodePercent = ref(60)
-const currentNodeName = ref('—')
+const clampPercent = (value: number) =>
+  Math.max(0, Math.min(100, Math.round(value)))
+
+const totalPercent = computed(() =>
+  clampPercent((executionStore.executionProgress ?? 0) * 100)
+)
+
+const currentNodePercent = computed(() =>
+  clampPercent(((executionStore.executingNodeProgress ?? 0) as number) * 100)
+)
+
+const totalProgressStyle = computed(() => ({
+  width: `${totalPercent.value}%`,
+  background: 'var(--color-blue-100-30)'
+}))
+
+const currentNodeProgressStyle = computed(() => ({
+  width: `${currentNodePercent.value}%`,
+  background: 'var(--color-blue-300)'
+}))
+
+const currentNodeName = computed(() => {
+  const node = executionStore.executingNode
+  if (!node) return '—'
+  const title = (node.title ?? '').toString().trim()
+  if (title) return title
+  const nodeType = (node.type ?? '').toString().trim() || 'Untitled'
+  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
+  return st(key, nodeType)
+})
 
 const viewAllJobs = async () => {
   await commandStore.execute('Workspace_ToggleSidebarTab_queue')
