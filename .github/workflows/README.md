@@ -6,13 +6,13 @@ Workflow files follow a consistent naming pattern: `<prefix>-<descriptive-name>.
 
 ### Category Prefixes
 
-| Prefix | Purpose | Example |
-|--------|---------|---------|
-| `ci-` | Testing, linting, validation | `ci-tests-e2e.yaml` |
-| `release-` | Version management, publishing | `release-version-bump.yaml` |
-| `pr-` | PR automation (triggered by labels) | `pr-claude-review.yaml` |
-| `types-` | TypeScript type generation | `types-registry-api.yaml` |
-| `i18n-` | Internationalization updates | `i18n-update-core.yaml` |
+| Prefix     | Purpose                             | Example                     |
+| ---------- | ----------------------------------- | --------------------------- |
+| `ci-`      | Testing, linting, validation        | `ci-tests-e2e.yaml`         |
+| `release-` | Version management, publishing      | `release-version-bump.yaml` |
+| `pr-`      | PR automation (triggered by labels) | `pr-claude-review.yaml`     |
+| `types-`   | TypeScript type generation          | `types-registry-api.yaml`   |
+| `i18n-`    | Internationalization updates        | `i18n-update-core.yaml`     |
 
 ## Documentation
 
