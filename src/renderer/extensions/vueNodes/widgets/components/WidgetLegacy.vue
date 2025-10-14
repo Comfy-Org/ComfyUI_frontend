@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
@@ -17,7 +18,7 @@ const props = defineProps<{
 
 const canvasEl = ref()
 
-const { canvas } = useCanvasStore()
+const canvas: LGraphCanvas = useCanvasStore().canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
@@ -58,26 +59,32 @@ function draw() {
     LiteGraph.WIDGET_BGCOLOR = bgcolor
   }
 }
-function translateEvent(e) {
+function translateEvent(e: PointerEvent): asserts e is CanvasPointerEvent {
+  if (!node) return
   canvas.adjustMouseEvent(e)
   canvas.graph_mouse[0] = e.offsetX + node.pos[0]
   canvas.graph_mouse[1] = e.offsetY + node.pos[1]
 }
 //See LGraphCanvas.processWidgetClick
-function handleDown(e) {
+function handleDown(e: PointerEvent) {
+  if (!node || !widgetInstance || !pointer) return
   translateEvent(e)
   pointer.down(e)
   if (widgetInstance.mouse) {
-    pointer.onDrag = (e) => widgetInstance.mouse(e, [e.offsetX, e.offsetY], node)
-    pointer.onClick = (e) => widgetInstance.mouse(e, [e.offsetX, e.offsetY], node)
+    pointer.onDrag = (e) =>
+      widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
+    pointer.onClick = (e) =>
+      widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
   }
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
 }
-function handleUp(e) {
+function handleUp(e: PointerEvent) {
+  if (!pointer) return
   translateEvent(e)
   pointer.up(e)
 }
-function handleMove(e) {
+function handleMove(e: PointerEvent) {
+  if (!pointer) return
   translateEvent(e)
   pointer.move(e)
 }
@@ -85,7 +92,7 @@ function handleMove(e) {
 <template>
   <canvas
     ref="canvasEl"
-    class="ml-[-24px] mr-[-16px] cursor-crosshair"
+    class="mr-[-16px] ml-[-24px] cursor-crosshair"
     @pointerdown="handleDown"
     @pointerup="handleUp"
     @pointermove="handleMove"
