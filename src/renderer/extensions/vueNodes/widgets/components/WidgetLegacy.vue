@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import { useResizeObserver } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -22,39 +23,40 @@ const canvas: LGraphCanvas = useCanvasStore().canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
+const scaleFactor = 2
+
 onMounted(() => {
   node =
-    canvas?.graph?.getNodeById(canvasEl.value.attributes['node-id'].value) ??
-    undefined
+    canvas?.graph?.getNodeById(
+      canvasEl.value.parentElement.attributes['node-id'].value
+    ) ?? undefined
   if (!node) return
   widgetInstance = node.widgets?.find((w) => w.name === props.widget.name)
   if (!widgetInstance) return
-  const originalCallback = widgetInstance.callback
-  widgetInstance.callback = function (...args) {
-    const ret = originalCallback?.apply(this, args)
-    draw()
-    return ret
-  }
+  canvasEl.value.width *= scaleFactor
+  widgetInstance.callback = useChainCallback(widgetInstance.callback, draw)
   draw()
+  useResizeObserver(canvasEl.value.parentElement, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
+
 function draw() {
   if (!widgetInstance || !node) return
-  const ctx = canvasEl.value?.getContext('2d')
-  if (!ctx) return
   const bgcolor = LiteGraph.WIDGET_BGCOLOR
   try {
     //zinc-500/10
     LiteGraph.WIDGET_BGCOLOR = '#71717A1A'
-    const { width } = canvasEl.value
-    const height = widgetInstance.computeSize
-      ? widgetInstance.computeSize(width)[1]
-      : 20
+    const width = canvasEl.value.parentElement.clientWidth
+    const height =
+      (widgetInstance.computeSize ? widgetInstance.computeSize(width)[1] : 20) *
+      1.2
     widgetInstance.y = 0
-    canvasEl.value.height = height
-    if (widgetInstance instanceof BaseWidget)
-      widgetInstance.drawWidget(ctx, { width, showText: true })
-    else widgetInstance.draw?.(ctx, node, width, 0, height)
+    canvasEl.value.height = (height + 2) * scaleFactor
+    canvasEl.value.width = width * scaleFactor
+    const ctx = canvasEl.value?.getContext('2d')
+    if (!ctx) return
+    ctx.scale(scaleFactor, scaleFactor)
+    widgetInstance.draw?.(ctx, node, width, 1, height)
   } finally {
     LiteGraph.WIDGET_BGCOLOR = bgcolor
   }
@@ -90,11 +92,13 @@ function handleMove(e: PointerEvent) {
 }
 </script>
 <template>
-  <canvas
-    ref="canvasEl"
-    class="mr-[-16px] ml-[-24px] cursor-crosshair"
-    @pointerdown="handleDown"
-    @pointerup="handleUp"
-    @pointermove="handleMove"
-  />
+  <div class="relative min-w-0 basis-0">
+    <canvas
+      ref="canvasEl"
+      class="absolute mt-[-13px] w-full cursor-crosshair"
+      @pointerdown="handleDown"
+      @pointerup="handleUp"
+      @pointermove="handleMove"
+    />
+  </div>
 </template>
