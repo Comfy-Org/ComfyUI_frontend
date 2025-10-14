@@ -1,6 +1,6 @@
 <template>
   <div
-    class="h-full flex flex-col mx-auto overflow-hidden"
+    class="mx-auto flex h-full flex-col overflow-hidden"
     :aria-label="$t('manager.title')"
   >
     <ContentDivider :width="0.3" />
@@ -9,11 +9,11 @@
       :icon="isSideNavOpen ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"
       severity="secondary"
       filled
-      class="absolute top-1/2 -translate-y-1/2 z-10"
+      class="absolute top-1/2 z-10 -translate-y-1/2"
       :class="isSideNavOpen ? 'left-[12rem]' : 'left-2'"
       @click="toggleSideNav"
     />
-    <div class="flex flex-1 relative overflow-hidden">
+    <div class="relative flex flex-1 overflow-hidden">
       <ManagerNavSidebar
         v-if="isSideNavOpen"
         v-model:selected-tab="selectedTab"
@@ -25,22 +25,22 @@
           'transition-all duration-300': isSmallScreen
         }"
       >
-        <div class="px-6 flex flex-col h-full">
+        <div class="flex h-full flex-col px-6">
           <!-- Conflict Warning Banner -->
           <div
             v-if="shouldShowManagerBanner"
-            class="bg-yellow-500/20 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6 relative"
+            class="relative mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
           >
-            <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
-            <div class="flex flex-col gap-2 flex-1">
-              <p class="text-sm font-bold m-0">
+            <i class="pi pi-exclamation-triangle text-lg text-yellow-600"></i>
+            <div class="flex flex-1 flex-col gap-2">
+              <p class="m-0 text-sm font-bold">
                 {{ $t('manager.conflicts.warningBanner.title') }}
               </p>
-              <p class="text-xs m-0">
+              <p class="m-0 text-xs">
                 {{ $t('manager.conflicts.warningBanner.message') }}
               </p>
               <p
-                class="text-sm font-bold m-0 cursor-pointer"
+                class="m-0 cursor-pointer text-sm font-bold"
                 @click="onClickWarningLink"
               >
                 {{ $t('manager.conflicts.warningBanner.button') }}
@@ -52,7 +52,7 @@
               @click="dismissWarningBanner"
             >
               <i
-                class="pi pi-times text-neutral-900 dark-theme:text-white text-xs"
+                class="pi pi-times text-xs text-neutral-900 dark-theme:text-white"
               ></i>
             </IconButton>
           </div>
@@ -69,7 +69,7 @@
           <div class="flex-1 overflow-auto">
             <div
               v-if="isLoading"
-              class="w-full h-full overflow-auto scrollbar-hide"
+              class="h-full scrollbar-hide w-full overflow-auto"
             >
               <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
             </div>
@@ -110,9 +110,9 @@
           </div>
         </div>
       </div>
-      <div class="w-[clamp(250px,33%,306px)] border-l-0 flex z-20">
+      <div class="z-20 flex w-[clamp(250px,33%,306px)] border-l-0">
         <ContentDivider orientation="vertical" :width="0.2" />
-        <div class="w-full flex flex-col isolate">
+        <div class="isolate flex w-full flex-col">
           <InfoPanel
             v-if="!hasMultipleSelections && selectedNodePack"
             :node-pack="selectedNodePack"

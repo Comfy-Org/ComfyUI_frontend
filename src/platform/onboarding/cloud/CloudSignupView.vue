@@ -1,12 +1,12 @@
 <template>
-  <div class="h-full flex items-center justify-center p-8">
-    <div class="lg:w-96 max-w-[100vw] p-2">
+  <div class="flex h-full items-center justify-center p-8">
+    <div class="max-w-[100vw] p-2 lg:w-96">
       <!-- Header -->
-      <div class="flex flex-col gap-4 mb-8">
-        <h1 class="text-xl font-medium leading-normal my-0">
+      <div class="mb-8 flex flex-col gap-4">
+        <h1 class="my-0 text-xl leading-normal font-medium">
           {{ t('auth.signup.title') }}
         </h1>
-        <p class="text-base my-0">
+        <p class="my-0 text-base">
           <span class="text-muted">{{
             t('auth.signup.alreadyHaveAccount')
           }}</span>
@@ -62,7 +62,7 @@
         <a
           href="https://www.comfy.org/terms-of-service"
           target="_blank"
-          class="text-blue-400 no-underline cursor-pointer"
+          class="cursor-pointer text-blue-400 no-underline"
         >
           {{ t('auth.login.termsLink') }}
         </a>
@@ -70,7 +70,7 @@
         <a
           href="/privacy-policy"
           target="_blank"
-          class="text-blue-400 no-underline cursor-pointer"
+          class="cursor-pointer text-blue-400 no-underline"
         >
           {{ t('auth.login.privacyLink') }} </a
         >.
@@ -78,7 +78,7 @@
           {{ t('cloudWaitlist_questionsText') }}
           <a
             href="https://support.comfy.org"
-            class="text-blue-400 no-underline cursor-pointer"
+            class="cursor-pointer text-blue-400 no-underline"
             target="_blank"
             rel="noopener noreferrer"
           >

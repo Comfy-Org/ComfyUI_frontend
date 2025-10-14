@@ -7,7 +7,7 @@
   >
     <!-- Email Field -->
     <div class="flex flex-col gap-2">
-      <label class="opacity-80 text-base font-medium mb-2" :for="emailInputId">
+      <label class="mb-2 text-base font-medium opacity-80" :for="emailInputId">
         {{ t('auth.login.emailLabel') }}
       </label>
       <InputText
@@ -26,9 +26,9 @@
 
     <!-- Password Field -->
     <div class="flex flex-col gap-2">
-      <div class="flex justify-between items-center mb-2">
+      <div class="mb-2 flex items-center justify-between">
         <label
-          class="opacity-80 text-base font-medium"
+          class="text-base font-medium opacity-80"
           for="cloud-sign-in-password"
         >
           {{ t('auth.login.passwordLabel') }}
@@ -51,7 +51,7 @@
 
       <router-link
         :to="{ name: 'cloud-forgot-password' }"
-        class="text-muted text-sm font-medium no-underline"
+        class="text-sm font-medium text-muted no-underline"
       >
         {{ t('auth.login.forgotPassword') }}
       </router-link>
@@ -63,12 +63,12 @@
     </Message>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="w-8 h-8" />
+    <ProgressSpinner v-if="loading" class="h-8 w-8" />
     <Button
       v-else
       type="submit"
       :label="t('auth.login.loginButton')"
-      class="h-10 font-medium mt-4 text-white"
+      class="mt-4 h-10 font-medium text-white"
     />
   </Form>
 </template>
@@ -85,7 +85,8 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { type SignInData, signInSchema } from '@/schemas/signInSchema'
+import { signInSchema } from '@/schemas/signInSchema'
+import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const authStore = useFirebaseAuthStore()

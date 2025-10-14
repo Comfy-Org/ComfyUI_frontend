@@ -11,7 +11,10 @@ import type {
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import {
+  getResourceURL,
+  splitFilePath
+} from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
@@ -21,32 +24,6 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-
-function splitFilePath(path: string): [string, string] {
-  const folder_separator = path.lastIndexOf('/')
-  if (folder_separator === -1) {
-    return ['', path]
-  }
-  return [
-    path.substring(0, folder_separator),
-    path.substring(folder_separator + 1)
-  ]
-}
-
-function getResourceURL(
-  subfolder: string,
-  filename: string,
-  type: ResultItemType = 'input'
-): string {
-  const params = [
-    'filename=' + encodeURIComponent(filename),
-    'type=' + type,
-    'subfolder=' + subfolder,
-    app.getRandParam().substring(1)
-  ].join('&')
-
-  return `/view?${params}`
-}
 
 async function uploadFile(
   audioWidget: IStringWidget,
@@ -133,7 +110,6 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
-
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 
@@ -209,6 +185,7 @@ app.registerExtension({
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
+        audioUIWidget.options.canvasOnly = true
 
         const onAudioWidgetUpdate = () => {
           audioUIWidget.element.src = api.apiURL(
@@ -283,9 +260,9 @@ app.registerExtension({
         audio.controls = true
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
-
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+        audioUIWidget.options.canvasOnly = true
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false

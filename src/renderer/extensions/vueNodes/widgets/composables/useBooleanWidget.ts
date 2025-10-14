@@ -1,8 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  type InputSpec,
-  isBooleanInputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isBooleanInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const useBooleanWidget = () => {

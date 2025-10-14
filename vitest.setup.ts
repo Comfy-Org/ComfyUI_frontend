@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import 'vue'
 
 // Define global variables for tests
@@ -13,3 +14,12 @@ globalThis.__ALGOLIA_APP_ID__ = ''
 globalThis.__ALGOLIA_API_KEY__ = ''
 // @ts-expect-error - Global variables are defined in global.d.ts
 globalThis.__USE_PROD_CONFIG__ = false
+
+// Mock Worker for extendable-media-recorder
+globalThis.Worker = vi.fn().mockImplementation(() => ({
+  postMessage: vi.fn(),
+  terminate: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn()
+}))

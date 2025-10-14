@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full flex items-center justify-center p-8">
-    <div class="lg:w-96 max-w-[100vw] text-center">
-      <h2 class="text-xl mb-4">
+  <div class="flex h-full items-center justify-center p-8">
+    <div class="max-w-[100vw] text-center lg:w-96">
+      <h2 class="mb-4 text-xl">
         {{ $t('cloudOnboarding.authTimeout.title') }}
       </h2>
       <p class="mb-6 text-gray-600">

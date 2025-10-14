@@ -1,7 +1,7 @@
 <template>
   <div class="relative w-full p-6">
-    <div class="h-12 flex items-center gap-1 justify-between">
-      <div class="flex items-center w-5/12">
+    <div class="flex h-12 items-center justify-between gap-1">
+      <div class="flex w-5/12 items-center">
         <AutoComplete
           v-model.lazy="searchQuery"
           :suggestions="suggestions || []"
@@ -38,8 +38,8 @@
         :has-disabled-update-packs="hasDisabledUpdatePacks"
       />
     </div>
-    <div class="flex mt-3 text-sm">
-      <div class="flex gap-6 ml-1">
+    <div class="mt-3 flex text-sm">
+      <div class="ml-1 flex gap-6">
         <SearchFilterDropdown
           v-model:model-value="searchMode"
           :options="filterOptions"
@@ -51,7 +51,7 @@
           :label="$t('g.sort')"
         />
       </div>
-      <div class="flex items-center gap-4 ml-6">
+      <div class="ml-6 flex items-center gap-4">
         <small v-if="hasResults" class="text-color-secondary">
           {{ $t('g.resultsCount', { count: searchResults?.length || 0 }) }}
         </small>
@@ -78,10 +78,8 @@ import PackUpdateButton from '@/workbench/extensions/manager/components/manager/
 import SearchFilterDropdown from '@/workbench/extensions/manager/components/manager/registrySearchBar/SearchFilterDropdown.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
-import {
-  type SearchOption,
-  SortableAlgoliaField
-} from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import type { SearchOption } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]

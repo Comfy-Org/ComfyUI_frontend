@@ -1,6 +1,6 @@
 <template>
   <div>
-    <ZoomControlsModal :visible="isModalVisible" />
+    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
 
     <!-- Backdrop -->
     <div
@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical p-1 absolute bottom-4 right-2 md:right-4"
+      class="p-buttongroup-vertical absolute right-2 bottom-4 p-1 md:right-4"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
@@ -25,7 +25,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.Unlock')"
       >
         <template #icon>
-          <i-lucide:mouse-pointer-2 />
+          <i class="icon-[lucide--mouse-pointer-2]" />
         </template>
       </Button>
 
@@ -39,12 +39,12 @@
         @click="() => commandStore.execute('Comfy.Canvas.Lock')"
       >
         <template #icon>
-          <i-lucide:hand />
+          <i class="icon-[lucide--hand]" />
         </template>
       </Button>
 
       <!-- vertical line with bg E1DED5 -->
-      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
+      <div class="mx-2 my-1 w-px bg-[#E1DED5] dark-theme:bg-[#2E3037]" />
 
       <Button
         v-tooltip.top="fitViewTooltip"
@@ -52,11 +52,11 @@
         icon="pi pi-expand"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="dark-theme:hover:bg-[#444444]! hover:bg-[#E7E6E6]!"
+        class="hover:bg-[#E7E6E6]! dark-theme:hover:bg-[#444444]!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <template #icon>
-          <i-lucide:focus />
+          <i class="icon-[lucide--focus]" />
         </template>
       </Button>
 
@@ -73,11 +73,11 @@
       >
         <span class="inline-flex text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i-lucide:chevron-down />
+          <i class="icon-[lucide--chevron-down]" />
         </span>
       </Button>
 
-      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
+      <div class="mx-2 my-1 w-px bg-[#E1DED5] dark-theme:bg-[#2E3037]" />
 
       <Button
         ref="focusButton"
@@ -90,7 +90,7 @@
         @click="() => commandStore.execute('Workspace.ToggleFocusMode')"
       >
         <template #icon>
-          <i-lucide:lightbulb />
+          <i class="icon-[lucide--lightbulb]" />
         </template>
       </Button>
 
@@ -111,7 +111,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       >
         <template #icon>
-          <i-lucide:route-off />
+          <i class="icon-[lucide--route-off]" />
         </template>
       </Button>
     </ButtonGroup>

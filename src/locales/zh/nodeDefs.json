@@ -7366,19 +7366,6 @@
       }
     }
   },
-  "SaveSVG": {
-    "description": "将 SVG 文件保存到磁盘。",
-    "display_name": "保存 SVG",
-    "inputs": {
-      "filename_prefix": {
-        "name": "文件名前缀",
-        "tooltip": "要保存文件的前缀。可以包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以包含来自节点的数值。"
-      },
-      "svg": {
-        "name": "svg"
-      }
-    }
-  },
   "SaveVideo": {
     "description": "将输入图像保存到您的 ComfyUI 输出目录。",
     "display_name": "保存视频",

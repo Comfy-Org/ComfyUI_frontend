@@ -3,40 +3,40 @@
     <main class="w-full max-w-md px-6 py-12 text-center" role="main">
       <!-- Title -->
       <h1
-        class="text-white font-abcrom font-black italic uppercase my-0 text-3xl"
+        class="font-abcrom my-0 text-3xl font-black text-white uppercase italic"
       >
         {{ t('cloudInvite_title') }}
       </h1>
 
       <!-- Subtitle -->
-      <p v-if="inviteCodeClaimed" class="mt-6 text-amber-500 leading-relaxed">
+      <p v-if="inviteCodeClaimed" class="mt-6 leading-relaxed text-amber-500">
         {{ t('cloudInvite_alreadyClaimed_prefix') }}
         <strong>{{ userEmail }}</strong>
       </p>
       <p
         v-else-if="inviteCodeExpired"
-        class="mt-6 text-amber-500 leading-relaxed"
+        class="mt-6 leading-relaxed text-amber-500"
       >
         {{ t('cloudInvite_expired_prefix') }}
       </p>
-      <p v-else class="mt-6 text-neutral-300 leading-relaxed">
+      <p v-else class="mt-6 leading-relaxed text-neutral-300">
         {{ t('cloudInvite_subtitle') }}
       </p>
 
       <div v-if="inviteCodeClaimed || inviteCodeExpired" class="mb-2">
         <span
-          class="text-blue-400 no-underline cursor-pointer"
+          class="cursor-pointer text-blue-400 no-underline"
           @click="onClickSupport"
         >
           {{ t('cloudInvite_contactLink') }}</span
         >
-        <span class="text-neutral-400 ml-2">
+        <span class="ml-2 text-neutral-400">
           {{ t('cloudInvite_contactLink_suffix') }}</span
         >
       </div>
       <div>
         <span
-          class="text-blue-400 no-underline cursor-pointer"
+          class="cursor-pointer text-blue-400 no-underline"
           @click="onSwitchAccounts"
         >
           {{ t('cloudInvite_switchAccounts') }}</span
@@ -52,14 +52,14 @@
         <div class="mt-4 flex flex-col items-center justify-center gap-4">
           <!-- Avatar box -->
           <div
-            class="relative grid place-items-center h-28 w-28 rounded-2xl border border-neutral-700 bg-neutral-800 shadow-inner"
+            class="relative grid h-28 w-28 place-items-center rounded-2xl border border-neutral-700 bg-neutral-800 shadow-inner"
           >
             <span class="text-5xl font-semibold select-none">{{
               userInitial
             }}</span>
             <!-- subtle ring to mimic screenshot gradient border -->
             <span
-              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-neutral-600/40"
+              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-neutral-600/40 ring-inset"
             ></span>
           </div>
 
@@ -78,7 +78,7 @@
             ? t('cloudInvite_processing')
             : t('cloudInvite_acceptButton')
         "
-        class="w-full h-12 font-medium mt-12 text-white"
+        class="mt-12 h-12 w-full font-medium text-white"
         :disabled="processing || inviteCodeClaimed || inviteCodeExpired"
         @click="onClaim"
       />

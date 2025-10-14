@@ -1,4 +1,5 @@
-import { LGraphBadge, type LGraphBadgeOptions } from './LGraphBadge'
+import { LGraphBadge } from './LGraphBadge'
+import type { LGraphBadgeOptions } from './LGraphBadge'
 import { Rectangle } from './infrastructure/Rectangle'
 
 export interface LGraphButtonOptions extends LGraphBadgeOptions {

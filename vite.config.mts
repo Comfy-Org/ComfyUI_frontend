@@ -5,7 +5,8 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { type UserConfig, defineConfig } from 'vite'
+import { defineConfig } from 'vite'
+import type { UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -44,10 +45,19 @@ export default defineConfig({
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
       ignored: [
-        '**/coverage/**',
-        '**/playwright-report/**',
+        './browser_tests/**',
+        './node_modules/**',
+        './tests-ui/**',
+        '.eslintcache',
+        '*.config.{ts,mts}',
+        '**/.git/**',
+        '**/.github/**',
+        '**/.nx/**',
         '**/*.{test,spec}.ts',
-        '*.config.{ts,mts}'
+        '**/coverage/**',
+        '**/dist/**',
+        '**/playwright-report/**',
+        '**/test-results/**'
       ]
     },
     proxy: {

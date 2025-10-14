@@ -1,13 +1,13 @@
 <template>
-  <div class="h-full flex items-center justify-center p-8">
-    <div class="lg:w-96 max-w-[100vw]">
-      <div class="bg-[#2d2e32] p-4 rounded-lg">
+  <div class="flex h-full items-center justify-center p-8">
+    <div class="max-w-[100vw] lg:w-96">
+      <div class="rounded-lg bg-[#2d2e32] p-4">
         <Skeleton width="60%" height="1.125rem" class="mb-2" />
         <Skeleton width="90%" height="1rem" class="mb-2" />
         <Skeleton width="80%" height="1rem" />
       </div>
 
-      <div class="flex flex-col gap-4 mt-6 mb-8">
+      <div class="mt-6 mb-8 flex flex-col gap-4">
         <Skeleton width="45%" height="1.5rem" class="my-0" />
         <div class="flex items-center">
           <Skeleton width="25%" height="1rem" class="mr-1" />
@@ -24,7 +24,7 @@
         <Skeleton width="100%" height="2.5rem" />
       </div>
 
-      <div class="flex items-center my-8">
+      <div class="my-8 flex items-center">
         <div class="flex-1 border-t border-gray-300"></div>
         <Skeleton width="30%" height="1rem" class="mx-4" />
         <div class="flex-1 border-t border-gray-300"></div>

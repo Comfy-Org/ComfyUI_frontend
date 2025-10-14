@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia'
-import { type MaybeRefOrGetter, type Ref, computed, toValue } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'

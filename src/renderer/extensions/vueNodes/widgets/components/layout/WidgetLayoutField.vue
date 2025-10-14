@@ -12,12 +12,12 @@ defineProps<{
 
 <template>
   <div
-    class="flex items-center justify-between gap-2 h-[30px] overscroll-contain"
+    class="flex h-[30px] items-center justify-between gap-2 overscroll-contain"
   >
-    <div class="relative h-6 flex items-center mr-4">
+    <div class="relative mr-4 flex h-6 items-center">
       <p
         v-if="widget.name"
-        class="text-sm text-node-component-slot-text font-normal flex-1 truncate w-20 lod-toggle"
+        class="lod-toggle w-20 flex-1 truncate text-sm font-normal text-node-component-slot-text"
       >
         {{ widget.label || widget.name }}
       </p>
@@ -25,7 +25,7 @@ defineProps<{
     </div>
     <div class="relative">
       <div
-        class="w-75 cursor-default lod-toggle"
+        class="lod-toggle w-75 cursor-default"
         @pointerdown.stop="noop"
         @pointermove.stop="noop"
         @pointerup.stop="noop"

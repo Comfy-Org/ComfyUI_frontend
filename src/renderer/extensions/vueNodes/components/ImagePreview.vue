@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview relative group flex flex-col items-center"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col"
     data-capture-node="true"
     tabindex="0"
     role="region"
@@ -12,33 +12,29 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative rounded-[5px] overflow-hidden w-full max-w-[352px] bg-[#262729]"
+      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="w-full h-[352px] flex flex-col items-center justify-center text-white text-center bg-gray-800/50"
+        class="flex size-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
       >
-        <i-lucide:image-off class="w-12 h-12 mb-2 text-gray-400" />
+        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="text-xs text-gray-400 mt-1">
+        <p class="mt-1 text-xs text-gray-400">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
 
       <!-- Loading State -->
-      <Skeleton
-        v-else-if="isLoading"
-        class="w-full h-[352px]"
-        border-radius="5px"
-      />
+      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
 
       <!-- Main Image -->
       <img
         v-else
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="w-full h-[352px] object-contain block"
+        class="block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -48,39 +44,39 @@
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i-lucide:venetian-mask class="w-4 h-4" />
+          <i class="icon-[lucide--venetian-mask] h-4 w-4" />
         </button>
 
         <!-- Download Button -->
         <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i-lucide:download class="w-4 h-4" />
+          <i class="icon-[lucide--download] h-4 w-4" />
         </button>
 
         <!-- Close Button -->
         <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
           :title="$t('g.removeImage')"
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
-          <i-lucide:x class="w-4 h-4" />
+          <i class="icon-[lucide--x] h-4 w-4" />
         </button>
       </div>
 
       <!-- Multiple Images Navigation -->
       <div
         v-if="hasMultipleImages"
-        class="absolute bottom-2 left-2 right-2 flex justify-center gap-1"
+        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
       >
         <button
           v-for="(_, index) in imageUrls"
@@ -99,7 +95,7 @@
 
     <div class="relative">
       <!-- Image Dimensions -->
-      <div class="text-white text-xs text-center mt-2">
+      <div class="mt-2 text-center text-xs text-white">
         <span v-if="imageError" class="text-red-400">
           {{ $t('g.errorLoadingImage') }}
         </span>

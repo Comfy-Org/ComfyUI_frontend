@@ -11,7 +11,7 @@
       severity="secondary"
       icon="pi pi-dollar"
       rounded
-      class="text-amber-400 p-1"
+      class="p-1 text-amber-400"
     />
     <div :class="textClass">{{ formattedBalance }}</div>
   </div>

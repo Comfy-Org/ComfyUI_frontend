@@ -65,7 +65,7 @@ const theButtonStyle = computed(() =>
       "
       @click="emit('select-click', $event)"
     >
-      <span class="px-4 py-2 min-w-0 text-left">
+      <span class="min-w-0 px-4 py-2 text-left">
         <span v-if="!selectedItems.length" class="min-w-0">
           {{ props.placeholder }}
         </span>
@@ -73,7 +73,7 @@ const theButtonStyle = computed(() =>
           {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
         </span>
       </span>
-      <i-lucide:chevron-down :class="chevronClass" />
+      <i class="icon-[lucide--chevron-down]" :class="chevronClass" />
     </button>
     <!-- Open File -->
     <label
@@ -86,10 +86,10 @@ const theButtonStyle = computed(() =>
         )
       "
     >
-      <i-lucide:folder-search class="size-4" />
+      <i class="icon-[lucide--folder-search] size-4" />
       <input
         type="file"
-        class="opacity-0 absolute inset-0 -z-1"
+        class="absolute inset-0 -z-1 opacity-0"
         :multiple="maxSelectable > 1"
         :disabled="disabled"
         :accept="accept"

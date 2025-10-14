@@ -65,12 +65,12 @@ onUnmounted(() => electron.Validation.dispose())
 
 .download-bg::before {
   @apply m-0 absolute text-muted;
-  font-family: 'primeicons';
+  font-family: 'primeicons', sans-serif;
   top: -2rem;
   right: 2rem;
   speak: none;
   font-style: normal;
-  font-weight: normal;
+  font-weight: 400;
   font-variant: normal;
   text-transform: none;
   line-height: 1;

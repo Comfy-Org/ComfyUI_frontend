@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ $t('Node Render Error') }}
   </div>
   <div
@@ -9,7 +9,7 @@
     :class="
       cn(
         'bg-node-component-surface',
-        'lg-node absolute rounded-2xl touch-none',
+        'lg-node absolute rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -70,7 +70,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="mb-4 relative">
+      <div class="relative mb-4">
         <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
         <div
@@ -88,7 +88,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex flex-col gap-4 pb-4"
+        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -98,25 +98,27 @@
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
-        <NodeContent
-          v-if="hasCustomContent"
-          :node-data="nodeData"
-          :media="nodeMedia"
-        />
-        <!-- Live preview image -->
-        <div v-if="shouldShowPreviewImg" class="px-4">
-          <img
-            :src="latestPreviewUrl"
-            alt="preview"
-            class="w-full max-h-64 object-contain"
-          />
+        <div v-if="hasCustomContent" class="min-h-0 flex-1">
+          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        </div>
+        <!-- Live mid-execution preview images -->
+        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
+          <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
       </div>
     </template>
+
+    <!-- Resize handle -->
+    <div
+      v-if="!isCollapsed"
+      class="absolute right-0 bottom-0 h-3 w-3 cursor-se-resize opacity-0 transition-opacity duration-200 hover:bg-white hover:opacity-20"
+      @pointerdown.stop="startResize"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 
@@ -145,6 +147,9 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useNodeResize } from '../composables/useNodeResize'
+import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
+import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -173,6 +178,11 @@ const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
 // Inject transform state for coordinate conversion
 const transformState = inject(TransformStateKey)
+if (!transformState) {
+  throw new Error(
+    'TransformState must be provided for node resize functionality'
+  )
+}
 
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
@@ -198,6 +208,7 @@ const hasAnyError = computed((): boolean => {
   )
 })
 
+const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed((): boolean => nodeData.mode === 4)
 const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
 
@@ -232,7 +243,7 @@ onErrorCaptured((error) => {
 })
 
 // Use layout system for node position and dragging
-const { position, size, zIndex, resize } = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
@@ -254,18 +265,41 @@ const handleContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  if (size.value && transformState?.camera) {
-    const scale = transformState.camera.z
-    const screenSize = {
-      width: size.value.width * scale,
-      height: size.value.height * scale
-    }
-    resize(screenSize)
+  // Set initial DOM size from layout store, but respect intrinsic content minimum
+  if (size.value && nodeContainerRef.value && transformState) {
+    const intrinsicMin = calculateIntrinsicSize(
+      nodeContainerRef.value,
+      transformState.camera.z
+    )
+
+    // Use the larger of stored size or intrinsic minimum
+    const finalWidth = Math.max(size.value.width, intrinsicMin.width)
+    const finalHeight = Math.max(size.value.height, intrinsicMin.height)
+
+    nodeContainerRef.value.style.width = `${finalWidth}px`
+    nodeContainerRef.value.style.height = `${finalHeight}px`
   }
 })
 
-// Track collapsed state
-const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const { startResize } = useNodeResize(
+  (newSize, element) => {
+    // Apply size directly to DOM element - ResizeObserver will pick this up
+    if (isCollapsed.value) return
+
+    element.style.width = `${newSize.width}px`
+    element.style.height = `${newSize.height}px`
+  },
+  {
+    transformState
+  }
+)
+
+whenever(isCollapsed, () => {
+  const element = nodeContainerRef.value
+  if (!element) return
+  element.style.width = ''
+  element.style.height = ''
+})
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
@@ -285,10 +319,9 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  return (
-    (hasAnyError.value && 'border-error') ||
-    (executing.value && 'border-node-executing')
-  )
+  if (hasAnyError.value) return 'border-node-stroke-error'
+  if (executing.value) return 'border-node-stroke-executing'
+  return 'border-node-stroke'
 })
 
 const outlineClass = computed(() => {
@@ -369,5 +402,5 @@ const nodeMedia = computed(() => {
   return { type, urls } as const
 })
 
-const nodeContainerRef = ref()
+const nodeContainerRef = ref<HTMLDivElement>()
 </script>

@@ -13,24 +13,32 @@ jobs:
   update-locales:
     runs-on: ubuntu-latest
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
+    - name: Checkout repository
+      uses: actions/checkout@v5
+    # Setup playwright environment
+    - name: Setup ComfyUI Server (and start)
+      uses: ./.github/actions/setup-comfyui-server
+      with:
+        launch_server: true
+    - name: Setup frontend
+      uses: ./.github/actions/setup-frontend
+      with:
+        include_build_step: true
     - name: Setup Playwright
       uses: ./.github/actions/setup-playwright
+
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.
       run: pnpm dev:electron &
-      working-directory: ComfyUI_frontend
     - name: Update en.json
       run: pnpm collect-i18n -- scripts/collect-i18n-node-defs.ts
       env:
         PLAYWRIGHT_TEST_URL: http://localhost:5173
-      working-directory: ComfyUI_frontend
     - name: Update translations
       run: pnpm locale
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      working-directory: ComfyUI_frontend
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
       with:
@@ -44,4 +52,3 @@ jobs:
         branch: update-locales-node-defs-${{ github.event.inputs.trigger_type }}-${{ github.run_id }}
         base: main
         labels: dependencies
-        path: ComfyUI_frontend

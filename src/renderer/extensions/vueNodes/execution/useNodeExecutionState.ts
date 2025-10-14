@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia'
-import { type MaybeRefOrGetter, computed, toValue } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -16,14 +17,17 @@ export const useNodeExecutionState = (
   nodeLocatorIdMaybe: MaybeRefOrGetter<string | undefined>
 ) => {
   const locatorId = computed(() => toValue(nodeLocatorIdMaybe) ?? '')
-  const { nodeLocationProgressStates } = storeToRefs(useExecutionStore())
+  const { nodeLocationProgressStates, isIdle } =
+    storeToRefs(useExecutionStore())
 
   const progressState = computed(() => {
     const id = locatorId.value
     return id ? nodeLocationProgressStates.value[id] : undefined
   })
 
-  const executing = computed(() => progressState.value?.state === 'running')
+  const executing = computed(
+    () => !isIdle.value && progressState.value?.state === 'running'
+  )
 
   const progress = computed(() => {
     const state = progressState.value

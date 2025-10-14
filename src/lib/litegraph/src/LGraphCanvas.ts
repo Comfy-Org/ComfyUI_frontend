@@ -1,10 +1,8 @@
 import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import {
-  type LinkRenderContext,
-  LitegraphLinkAdapter
-} from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -12,12 +10,16 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
-import { type AnimationOptions, DragAndScale } from './DragAndScale'
+import { DragAndScale } from './DragAndScale'
+import type { AnimationOptions } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
-import { Reroute, type RerouteId } from './Reroute'
+import { LGraphNode } from './LGraphNode'
+import type { NodeId, NodeProperty } from './LGraphNode'
+import { LLink } from './LLink'
+import type { LinkId } from './LLink'
+import { Reroute } from './Reroute'
+import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
@@ -85,8 +87,7 @@ import {
   TitleMode
 } from './types/globalEnums'
 import type { ClipboardItems, SubgraphIO } from './types/serialisation'
-import type { NeverNever } from './types/utility'
-import type { PickNevers } from './types/utility'
+import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
@@ -3318,7 +3319,15 @@ export class LGraphCanvas
 
                 if (slot && linkConnector.isInputValidDrop(node, slot)) {
                   highlightInput = slot
-                  highlightPos = node.getInputSlotPos(slot)
+                  if (LiteGraph.vueNodesMode) {
+                    const idx = node.inputs.indexOf(slot)
+                    highlightPos =
+                      idx !== -1
+                        ? getSlotPosition(node, idx, true)
+                        : node.getInputSlotPos(slot)
+                  } else {
+                    highlightPos = node.getInputSlotPos(slot)
+                  }
                   linkConnector.overWidget = overWidget
                 }
               }
@@ -3330,7 +3339,9 @@ export class LGraphCanvas
                   const result = node.findInputByType(firstLink.fromSlot.type)
                   if (result) {
                     highlightInput = result.slot
-                    highlightPos = node.getInputSlotPos(result.slot)
+                    highlightPos = LiteGraph.vueNodesMode
+                      ? getSlotPosition(node, result.index, true)
+                      : node.getInputSlotPos(result.slot)
                   }
                 } else if (
                   inputId != -1 &&
@@ -3355,7 +3366,9 @@ export class LGraphCanvas
               if (inputId === -1 && outputId === -1) {
                 const result = node.findOutputByType(firstLink.fromSlot.type)
                 if (result) {
-                  highlightPos = node.getOutputPos(result.index)
+                  highlightPos = LiteGraph.vueNodesMode
+                    ? getSlotPosition(node, result.index, false)
+                    : node.getOutputPos(result.index)
                 }
               } else {
                 // check if I have a slot below de mouse
@@ -4695,7 +4708,9 @@ export class LGraphCanvas
 
       // draw nodes
       const { visible_nodes } = this
-      const drawSnapGuides = this.#snapToGrid && this.isDragging
+      const drawSnapGuides =
+        this.#snapToGrid &&
+        (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
       for (const node of visible_nodes) {
         ctx.save()
@@ -5727,7 +5742,9 @@ export class LGraphCanvas
         if (!node) continue
 
         const startPos = firstReroute.pos
-        const endPos = node.getInputPos(link.target_slot)
+        const endPos: Point = LiteGraph.vueNodesMode
+          ? getSlotPosition(node, link.target_slot, true)
+          : node.getInputPos(link.target_slot)
         const endDirection = node.inputs[link.target_slot]?.dir
 
         firstReroute._dragging = true
@@ -5746,7 +5763,9 @@ export class LGraphCanvas
         const node = graph.getNodeById(link.origin_id)
         if (!node) continue
 
-        const startPos = node.getOutputPos(link.origin_slot)
+        const startPos: Point = LiteGraph.vueNodesMode
+          ? getSlotPosition(node, link.origin_slot, false)
+          : node.getOutputPos(link.origin_slot)
         const endPos = reroute.pos
         const startDirection = node.outputs[link.origin_slot]?.dir
 
@@ -6073,7 +6092,9 @@ export class LGraphCanvas
 
     ctx.save()
     ctx.globalAlpha = 0.5 * this.editor_alpha
-    const drawSnapGuides = this.#snapToGrid && this.isDragging
+    const drawSnapGuides =
+      this.#snapToGrid &&
+      (this.isDragging || layoutStore.isDraggingVueNodes.value)
 
     for (const group of groups) {
       // out of the visible area

@@ -6,18 +6,18 @@
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
   >
-    <div ref="mainContentRef" class="flex-1 relative">
+    <div ref="mainContentRef" class="relative flex-1">
       <div
         ref="containerRef"
-        class="absolute w-full h-full comfy-load-3d-viewer"
+        class="comfy-load-3d-viewer absolute h-full w-full"
         @resize="viewer.handleResize"
       />
     </div>
 
-    <div class="w-72 flex flex-col">
+    <div class="flex w-72 flex-col">
       <div class="flex-1 overflow-y-auto p-4">
         <div class="space-y-2">
-          <div class="p-2 space-y-4">
+          <div class="space-y-4 p-2">
             <SceneControls
               v-model:background-color="viewer.backgroundColor.value"
               v-model:show-grid="viewer.showGrid.value"
@@ -26,27 +26,27 @@
             />
           </div>
 
-          <div class="p-2 space-y-4">
+          <div class="space-y-4 p-2">
             <ModelControls
               v-model:up-direction="viewer.upDirection.value"
               v-model:material-mode="viewer.materialMode.value"
             />
           </div>
 
-          <div class="p-2 space-y-4">
+          <div class="space-y-4 p-2">
             <CameraControls
               v-model:camera-type="viewer.cameraType.value"
               v-model:fov="viewer.fov.value"
             />
           </div>
 
-          <div class="p-2 space-y-4">
+          <div class="space-y-4 p-2">
             <LightControls
               v-model:light-intensity="viewer.lightIntensity.value"
             />
           </div>
 
-          <div class="p-2 space-y-4">
+          <div class="space-y-4 p-2">
             <ExportControls @export-model="viewer.exportModel" />
           </div>
         </div>
