@@ -15,3 +15,14 @@
   font-style: italic;
   font-display: swap;
 }
+@font-face {
+  font-family: 'ABC ROM Extended';
+  src:
+    local('ABC ROM Extended Black Italic'),
+    local('ABCRom BlackItalic'),
+    url('/fonts/ABCROMExtended-BlackItalic-NFqMndLW.woff2') format('woff2'),
+    url('/fonts/ABCROMExtended-BlackItalic-B3Ak1JoQ.woff') format('woff');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
