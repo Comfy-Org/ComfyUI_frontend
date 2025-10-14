@@ -13,9 +13,7 @@
         </div>
       </div>
 
-      <div
-        class="rounded-8 font-abcrom text-[14px] font-extrabold text-slate-100"
-      >
+      <div class="rounded-8 font-abcrom text-sm font-extrabold text-slate-100">
         {{ badge.text }}
       </div>
     </div>
@@ -27,6 +25,3 @@ import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 
 const topbarBadgeStore = useTopbarBadgeStore()
 </script>
-<style>
-@import '../../platform/onboarding/cloud/assets/css/fonts.css';
-</style>

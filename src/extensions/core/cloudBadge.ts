@@ -1,10 +1,10 @@
-import { isProductionEnvironment } from '@/config/environment'
+import { isCloud } from '@/platform/distribution/types'
 import { useExtensionService } from '@/services/extensionService'
 
 useExtensionService().registerExtension({
   name: 'Comfy.CloudBadge',
   // Only show badge when running in cloud environment
-  topbarBadges: isProductionEnvironment()
+  topbarBadges: isCloud
     ? [
         {
           label: 'BETA',
