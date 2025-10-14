@@ -2,14 +2,14 @@
   <Button
     ref="buttonRef"
     severity="secondary"
-    class="group h-8 bg-interface-panel-surface p-0 hover:bg-button-hover-surface!"
+    class="group h-8 rounded-none! bg-interface-panel-surface p-0 hover:rounded-lg! hover:bg-button-hover-surface!"
     :style="buttonStyles"
     @click="toggle"
   >
     <template #default>
       <div class="flex items-center gap-1 pr-0.5">
         <div
-          class="rounded bg-button-active-surface p-2 group-hover:bg-button-hover-surface"
+          class="rounded-lg bg-button-active-surface p-2 group-hover:bg-button-hover-surface"
         >
           <i :class="currentModeIcon" class="block h-4 w-4" />
         </div>
@@ -29,25 +29,27 @@
   >
     <div class="flex flex-col gap-1">
       <div
-        class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
+        class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
         @click="setMode('select')"
       >
         <div class="flex items-center gap-2">
           <i class="icon-[lucide--mouse-pointer-2] h-4 w-4" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
-        <span class="text-gray-500">{{ unlockCommandText }}</span>
+        <span class="text-[9px] text-text-primary">{{
+          unlockCommandText
+        }}</span>
       </div>
 
       <div
-        class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
+        class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
         @click="setMode('hand')"
       >
         <div class="flex items-center gap-2">
           <i class="icon-[lucide--hand] h-4 w-4" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
-        <span class="text-gray-500">{{ lockCommandText }}</span>
+        <span class="text-[9px] text-text-primary">{{ lockCommandText }}</span>
       </div>
     </div>
   </Popover>
@@ -107,17 +109,16 @@ const setMode = (mode: 'select' | 'hand') => {
 
 const popoverPt = computed(() => ({
   root: {
-    class: 'absolute z-50',
-    style: 'transform: translateY(-8px);'
+    class: 'absolute z-50 -translate-y-2'
   },
   content: {
     class: [
-      'mb-2 text-neutral dark-theme:text-white',
+      'mb-2 text-text-primary',
       'shadow-lg border border-node-border',
       'bg-nav-background',
       'rounded-lg',
       'p-2 px-3',
-      'min-w-[156px]',
+      'min-w-39',
       'select-none'
     ]
   }

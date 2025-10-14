@@ -169,7 +169,7 @@
   --node-component-slot-dot-outline: var(--color-black);
   --node-component-slot-text: var(--color-stone-200);
   --node-component-surface-highlight: var(--color-stone-100);
-  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-hovered: var(--color-gray-200);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-white);
   --node-component-tooltip: var(--color-charcoal-700);
@@ -187,6 +187,8 @@
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-blue-100);
   --text-secondary: var(--color-stone-100);
+  --text-primary: var(--color-charcoal-700);
+  --input-surface: rgba(0, 0, 0, 0.15);
 }
 
 .dark-theme {
@@ -211,7 +213,7 @@
   --node-component-slot-dot-outline: var(--color-white);
   --node-component-slot-text: var(--color-slate-200);
   --node-component-surface-highlight: var(--color-slate-100);
-  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-hovered: var(--color-charcoal-600);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-charcoal-800);
   --node-component-tooltip: var(--color-white);
@@ -226,6 +228,8 @@
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-blue-100);
   --text-secondary: var(--color-slate-100);
+  --text-primary: var(--color-pure-white);
+  --input-surface: rgba(130, 130, 130, 0.1);
 }
 
 @theme inline {
@@ -276,6 +280,8 @@
   --color-node-stroke-error: var(--node-stroke-error);
   --color-node-stroke-executing: var(--node-stroke-executing);
   --color-text-secondary: var(--text-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-input-surface: var(--input-surface);
 }
 
 @custom-variant dark-theme {

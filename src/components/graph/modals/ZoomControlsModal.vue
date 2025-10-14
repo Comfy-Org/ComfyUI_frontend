@@ -4,42 +4,48 @@
     class="absolute right-2 bottom-[66px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
-      class="text-neutral w-4/5 rounded-lg border border-zinc-200 bg-interface-panel-surface p-2 shadow-lg select-none dark-theme:border-zinc-700 dark-theme:text-white"
+      class="w-4/5 rounded-lg border border-node-border bg-interface-panel-surface p-2 text-text-primary shadow-lg select-none"
       :style="filteredMinimapStyles"
       @click.stop
     >
       <div class="flex flex-col gap-1">
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
+          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
           @mousedown="startRepeat('Comfy.Canvas.ZoomIn')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomIn') }}</span>
-          <span class="text-gray-500">{{ zoomInCommandText }}</span>
+          <span class="text-[9px] text-text-primary">{{
+            zoomInCommandText
+          }}</span>
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
+          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
           @mousedown="startRepeat('Comfy.Canvas.ZoomOut')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomOut') }}</span>
-          <span class="text-gray-500">{{ zoomOutCommandText }}</span>
+          <span class="text-[9px] text-text-primary">{{
+            zoomOutCommandText
+          }}</span>
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700"
+          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
           <span class="font-medium">{{ $t('zoomControls.zoomToFit') }}</span>
-          <span class="text-gray-500">{{ zoomToFitCommandText }}</span>
+          <span class="text-[9px] text-text-primary">{{
+            zoomToFitCommandText
+          }}</span>
         </div>
 
         <div
           ref="zoomInputContainer"
-          class="zoomInputContainer flex items-center gap-1 rounded bg-[#E7E6E6] p-2 focus-within:bg-[#F3F3F3] dark-theme:bg-[#8282821A]"
+          class="zoomInputContainer flex items-center gap-1 rounded bg-input-surface p-2"
         >
           <InputNumber
             ref="zoomInput"
@@ -54,7 +60,7 @@
             @input="applyZoom"
             @keyup.enter="applyZoom"
           />
-          <span class="flex-shrink-0 text-sm text-gray-500">%</span>
+          <span class="flex-shrink-0 text-sm text-text-primary">%</span>
         </div>
       </div>
     </div>
@@ -142,10 +148,6 @@ watch(
 </script>
 <style>
 .zoomInputContainer:focus-within {
-  border: 1px solid rgb(204 204 204);
-}
-
-.dark-theme .zoomInputContainer:focus-within {
-  border: 1px solid rgb(204 204 204);
+  border: 1px solid var(--color-pure-white);
 }
 </style>

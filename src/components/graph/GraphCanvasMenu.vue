@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical absolute right-2 bottom-2 gap-1 bg-interface-panel-surface p-2"
+      class="absolute right-2 bottom-2 z-[1200] flex-row gap-1 border-[1px] border-node-border bg-interface-panel-surface p-2"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
@@ -168,7 +168,7 @@ const zoomButtonClass = computed(() => [
   'hover:bg-button-hover-surface!',
   'p-0',
   'h-8',
-  'w-[60px]'
+  'w-15'
 ])
 
 const minimapButtonClass = computed(() => ({
@@ -222,19 +222,3 @@ onBeforeUnmount(() => {
   canvasStore.cleanupScaleSync()
 })
 </script>
-
-<style scoped>
-.p-buttongroup-vertical {
-  display: flex;
-  flex-direction: row;
-  z-index: 1200;
-  border-radius: var(--p-button-border-radius);
-  overflow: hidden;
-  border: 1px solid var(--interface-stroke);
-}
-
-.p-buttongroup-vertical .p-button {
-  margin: 0;
-  border-radius: 0;
-}
-</style>
