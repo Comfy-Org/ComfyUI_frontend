@@ -114,6 +114,9 @@
   --color-bypass: #6a246a;
   --color-error: #962a2a;
 
+  /* Comfy menu colors */
+  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
+
   --color-blue-selection: rgb(from var(--color-blue-100) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
   --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
