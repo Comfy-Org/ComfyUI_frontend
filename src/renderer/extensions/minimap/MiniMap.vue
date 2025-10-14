@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="visible && initialized"
+    id="comfy-minimap"
     ref="minimapRef"
     class="minimap-main-container absolute right-2 bottom-[66px] z-1000 flex"
   >

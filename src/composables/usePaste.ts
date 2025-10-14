@@ -38,11 +38,17 @@ export const usePaste = () => {
   }
 
   useEventListener(document, 'paste', async (e) => {
+    // Check if target is graph canvas or within graph UI (minimap, controls, etc.)
     const isTargetInGraph =
       e.target instanceof Element &&
-      (e.target.classList.contains('litegraph') ||
+      (e.target.id === 'graph-canvas' ||
+        e.target.id === 'comfy-minimap' ||
+        e.target.id === 'graph-canvas-controls' ||
         e.target.classList.contains('graph-canvas-container') ||
-        e.target.id === 'graph-canvas')
+        e.target.classList.contains('litegraph') ||
+        e.target.closest('#comfy-minimap') !== null ||
+        e.target.closest('#graph-canvas-controls') !== null ||
+        e.target.closest('#graph-canvas-container') !== null)
 
     // If the target is not in the graph, we don't want to handle the paste event
     if (!isTargetInGraph) return

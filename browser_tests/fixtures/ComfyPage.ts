@@ -13,6 +13,7 @@ import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { Minimap } from './components/Minimap'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
@@ -33,6 +34,7 @@ class ComfyMenu {
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _queueTab: QueueSidebarTab | null = null
   private _topbar: Topbar | null = null
+  private _minimap: Minimap | null = null
 
   public readonly sideToolbar: Locator
   public readonly themeToggleButton: Locator
@@ -68,6 +70,11 @@ class ComfyMenu {
   get topbar() {
     this._topbar ??= new Topbar(this.page)
     return this._topbar
+  }
+
+  get minimap() {
+    this._minimap ??= new Minimap(this.page)
+    return this._minimap
   }
 
   async toggleTheme() {

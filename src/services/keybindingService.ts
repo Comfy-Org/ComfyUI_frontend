@@ -15,6 +15,9 @@ export const useKeybindingService = () => {
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
 
+  // Keys that LiteGraph handles but aren't in core keybindings
+  const canvasBindedKeys = ['Delete', 'Backspace']
+
   // Helper function to determine if an event should be forwarded to canvas
   const shouldForwardToCanvas = (event: KeyboardEvent): boolean => {
     // Don't forward if modifier keys are pressed (except shift)
@@ -22,10 +25,7 @@ export const useKeybindingService = () => {
       return false
     }
 
-    // Keys that LiteGraph handles but aren't in core keybindings
-    const canvasKeys = ['Delete', 'Backspace']
-
-    return canvasKeys.includes(event.key)
+    return canvasBindedKeys.includes(event.key)
   }
 
   const keybindHandler = async function (event: KeyboardEvent) {

@@ -2,17 +2,40 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe('Copy Paste', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  })
+
   test('Can copy and paste node', async ({ comfyPage }) => {
     await comfyPage.clickEmptyLatentNode()
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.ctrlC()
     await comfyPage.ctrlV()
     await expect(comfyPage.canvas).toHaveScreenshot('copied-node.png')
+  })
+
+  test('Can copy and paste node after clicking minimap', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setSetting('Comfy.Minimap.Visible', true)
+
+    const latentNodeTitle = 'Empty Latent Image'
+    const initialLatentNodeCt =
+      await comfyPage.getNodeRefsByTitle(latentNodeTitle)
+
+    await comfyPage.clickEmptyLatentNode()
+    await comfyPage.ctrlC()
+
+    // Click minimap to lose focus.
+    await comfyPage.menu.minimap.clickCanvas({ force: true })
+
+    // Paste node.
+    await comfyPage.ctrlV()
+    const expectedNodeCt = initialLatentNodeCt.length + 1
+    const latentNodeCt = await comfyPage.getNodeRefsByTitle(latentNodeTitle)
+    expect(latentNodeCt.length).toBe(expectedNodeCt)
   })
 
   test('Can copy and paste node with link', async ({ comfyPage }) => {
