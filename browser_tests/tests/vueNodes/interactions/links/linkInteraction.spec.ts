@@ -60,7 +60,6 @@ async function getInputLinkDetails(
   )
 }
 
-// Test helpers to reduce repetition across cases
 function slotLocator(
   page: Page,
   nodeId: NodeId,
@@ -787,6 +786,45 @@ test.describe('Vue Node Link Interaction', () => {
       targetId: samplerNode.id,
       targetSlot: 2
     })
+  })
+
+  test('should batch disconnect all links with ctrl+alt+click on slot', async ({
+    comfyPage
+  }) => {
+    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
+    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    expect(clipNode && samplerNode).toBeTruthy()
+
+    await connectSlots(
+      comfyPage.page,
+      { nodeId: clipNode.id, index: 0 },
+      { nodeId: samplerNode.id, index: 1 },
+      () => comfyPage.nextFrame()
+    )
+    await connectSlots(
+      comfyPage.page,
+      { nodeId: clipNode.id, index: 0 },
+      { nodeId: samplerNode.id, index: 2 },
+      () => comfyPage.nextFrame()
+    )
+
+    const clipOutput = await clipNode.getOutput(0)
+    expect(await clipOutput.getLinkCount()).toBe(2)
+
+    const clipOutputSlot = slotLocator(comfyPage.page, clipNode.id, 0, false)
+
+    await clipOutputSlot.dispatchEvent('pointerdown', {
+      button: 0,
+      buttons: 1,
+      ctrlKey: true,
+      altKey: true,
+      shiftKey: false,
+      bubbles: true,
+      cancelable: true
+    })
+    await comfyPage.nextFrame()
+
+    expect(await clipOutput.getLinkCount()).toBe(0)
   })
 
   test.describe('Release actions (Shift-drop)', () => {

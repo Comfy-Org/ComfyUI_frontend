@@ -50,15 +50,23 @@ test.describe('Vue Node Selection', () => {
     })
   }
 
+  test('should select all nodes with ctrl+a', async ({ comfyPage }) => {
+    const initialCount = await comfyPage.vueNodes.getNodeCount()
+    expect(initialCount).toBeGreaterThan(0)
+
+    await comfyPage.canvas.press('Control+a')
+
+    const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()
+    expect(selectedCount).toBe(initialCount)
+  })
+
   test('should select pinned node without dragging', async ({ comfyPage }) => {
     const PIN_HOTKEY = 'p'
     const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
-    // Select a node by clicking its title
     const checkpointNodeHeader = comfyPage.page.getByText('Load Checkpoint')
     await checkpointNodeHeader.click()
 
-    // Pin it using the hotkey (as a user would)
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
 
     const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')

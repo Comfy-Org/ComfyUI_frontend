@@ -5,6 +5,7 @@
       :options="multiSelectOptions"
       v-bind="combinedProps"
       class="w-full text-xs"
+      :aria-label="widget.name"
       size="small"
       display="chip"
       :pt="{

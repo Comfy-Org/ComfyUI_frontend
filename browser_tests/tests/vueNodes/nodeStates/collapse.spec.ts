@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../../fixtures/ComfyPage'
-import { VueNodeFixture } from '../../../fixtures/utils/vueNodeFixtures'
 
 test.describe('Vue Node Collapse', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -10,43 +9,50 @@ test.describe('Vue Node Collapse', () => {
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
+    await comfyPage.vueNodes.waitForNodes()
   })
 
   test('should allow collapsing node with collapse icon', async ({
     comfyPage
   }) => {
-    // Get the KSampler node from the default workflow
-    const nodes = await comfyPage.getNodeRefsByType('KSampler')
-    const node = nodes[0]
-    const vueNode = new VueNodeFixture(node, comfyPage.page)
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.root).toBeVisible()
 
     // Initially should not be collapsed
-    expect(await node.isCollapsed()).toBe(false)
-    const body = await vueNode.getBody()
+    const body = vueNode.body
     await expect(body).toBeVisible()
+    const expandedBoundingBox = await vueNode.boundingBox()
+    if (!expandedBoundingBox)
+      throw new Error('Failed to get node bounding box before collapse')
 
     // Collapse the node
     await vueNode.toggleCollapse()
-    expect(await node.isCollapsed()).toBe(true)
+    await comfyPage.nextFrame()
 
     // Verify node content is hidden
-    const collapsedSize = await node.getSize()
     await expect(body).not.toBeVisible()
+    const collapsedBoundingBox = await vueNode.boundingBox()
+    if (!collapsedBoundingBox)
+      throw new Error('Failed to get node bounding box after collapse')
+    expect(collapsedBoundingBox.height).toBeLessThan(expandedBoundingBox.height)
 
     // Expand again
     await vueNode.toggleCollapse()
-    expect(await node.isCollapsed()).toBe(false)
+    await comfyPage.nextFrame()
     await expect(body).toBeVisible()
 
     // Size should be restored
-    const expandedSize = await node.getSize()
-    expect(expandedSize.height).toBeGreaterThanOrEqual(collapsedSize.height)
+    const expandedBoundingBoxAfter = await vueNode.boundingBox()
+    if (!expandedBoundingBoxAfter)
+      throw new Error('Failed to get node bounding box after expand')
+    expect(expandedBoundingBoxAfter.height).toBeGreaterThanOrEqual(
+      collapsedBoundingBox.height
+    )
   })
 
   test('should show collapse/expand icon state', async ({ comfyPage }) => {
-    const nodes = await comfyPage.getNodeRefsByType('KSampler')
-    const node = nodes[0]
-    const vueNode = new VueNodeFixture(node, comfyPage.page)
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.root).toBeVisible()
 
     // Check initial expanded state icon
     let iconClass = await vueNode.getCollapseIconClass()
@@ -66,9 +72,8 @@ test.describe('Vue Node Collapse', () => {
   test('should preserve title when collapsing/expanding', async ({
     comfyPage
   }) => {
-    const nodes = await comfyPage.getNodeRefsByType('KSampler')
-    const node = nodes[0]
-    const vueNode = new VueNodeFixture(node, comfyPage.page)
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.root).toBeVisible()
 
     // Set custom title
     await vueNode.setTitle('Test Sampler')
@@ -83,7 +88,6 @@ test.describe('Vue Node Collapse', () => {
     expect(await vueNode.getTitle()).toBe('Test Sampler')
 
     // Verify title is still displayed
-    const header = await vueNode.getHeader()
-    await expect(header).toContainText('Test Sampler')
+    await expect(vueNode.header).toContainText('Test Sampler')
   })
 })

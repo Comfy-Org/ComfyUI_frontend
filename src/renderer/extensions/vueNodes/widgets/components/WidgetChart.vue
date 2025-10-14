@@ -3,7 +3,12 @@
     <div
       class="max-h-[48rem] rounded border border-gray-300 p-4 dark-theme:border-gray-600"
     >
-      <Chart :type="chartType" :data="chartData" :options="chartOptions" />
+      <Chart
+        :type="chartType"
+        :data="chartData"
+        :options="chartOptions"
+        :aria-label="`${widget.name || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
+      />
     </div>
   </div>
 </template>

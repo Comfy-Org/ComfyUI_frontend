@@ -595,6 +595,13 @@ export function useSlotLinkInteraction({
       event.altKey &&
       !event.shiftKey
 
+    const shouldBatchDisconnectOutputLinks =
+      isOutputSlot &&
+      hasExistingOutputLink &&
+      ctrlOrMeta &&
+      event.altKey &&
+      !event.shiftKey
+
     const existingInputLink =
       isInputSlot && inputLinkId != null
         ? graph.getLink(inputLinkId)
@@ -602,6 +609,14 @@ export function useSlotLinkInteraction({
 
     if (shouldBreakExistingInputLink && resolvedNode) {
       resolvedNode.disconnectInput(index, true)
+    }
+
+    if (shouldBatchDisconnectOutputLinks && resolvedNode) {
+      resolvedNode.disconnectOutput(index)
+      app.canvas?.setDirty(true, true)
+      event.preventDefault()
+      event.stopPropagation()
+      return
     }
 
     const baseDirection = isInputSlot
