@@ -2,15 +2,16 @@
   <div>
     <div
       v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
-      class="z-1001 flex h-[38px] w-full content-end"
+      class="z-1001 flex h-9.5 w-full content-end"
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
+      <CloudBetaBadge v-if="isCloud" />
     </div>
     <div
       v-show="showTopMenu"
       ref="topMenuRef"
-      class="comfyui-menu flex items-center"
+      class="comfyui-menu flex items-center bg-gray-100"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <CommandMenubar />
@@ -39,14 +40,16 @@ import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
 
+import CloudBetaBadge from './CloudBetaBadge.vue'
+
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
-
 const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
 const showTopMenu = computed(
