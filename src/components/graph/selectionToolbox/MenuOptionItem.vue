@@ -13,7 +13,7 @@
     <span class="flex-1">{{ option.label }}</span>
     <span
       v-if="option.shortcut"
-      class="flex h-[14px] min-w-[14px] items-center justify-center rounded bg-interface-menu-keybind-surface-default px-1 py-0 text-xxs"
+      class="flex h-3.5 min-w-3.5 items-center justify-center rounded bg-interface-menu-keybind-surface-default px-1 py-0 text-xxs"
     >
       {{ option.shortcut }}
     </span>
