@@ -14,6 +14,7 @@
         <div class="flex items-center justify-between gap-2">
           <div class="text-[12px] font-bold text-white">{{ headerTitle }}</div>
           <div class="flex items-center gap-1">
+            <!-- Placeholder: Overflow menu button; no actions wired yet. -->
             <button
               class="rounded p-1 hover:opacity-90"
               :aria-label="
@@ -37,36 +38,105 @@
           </div>
         </div>
         <div class="h-px w-full bg-[var(--p-panel-border-color)]" />
+
+        <!-- Row 1: assets button | queued workflows | cancel queued -->
         <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 text-[12px] text-[#9c9eab]">
-            <span>{{
-              st('sideToolbar.queueProgressOverlay.runningTab', 'Running')
-            }}</span>
-            <span class="rounded bg-[#2d2e32] px-1 text-white">{{
-              runningCount
-            }}</span>
-            <span>{{
-              st('sideToolbar.queueProgressOverlay.pendingTab', 'Pending')
-            }}</span>
-            <span class="rounded bg-[#2d2e32] px-1 text-white">{{
-              queueStore.pendingTasks.length
-            }}</span>
-            <span>{{
-              st('sideToolbar.queueProgressOverlay.historyTab', 'History')
-            }}</span>
-            <span class="rounded bg-[#2d2e32] px-1 text-white">{{
-              queueStore.historyTasks.length
+          <button
+            class="rounded bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90"
+            :aria-label="
+              st('sideToolbar.queueProgressOverlay.showAssets', 'Show assets')
+            "
+            @click="openAssetsPanel"
+          >
+            {{ st('assets', 'Assets') }}
+          </button>
+          <div class="text-[12px] text-white opacity-90">
+            <span class="font-bold">{{ queuedCount }}</span>
+            <span class="ml-1">{{
+              st(
+                'sideToolbar.queueProgressOverlay.queuedWorkflowsSuffix',
+                'queued workflows'
+              )
             }}</span>
           </div>
-          <div class="flex items-center gap-1"></div>
+          <button
+            class="rounded bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90 disabled:opacity-50"
+            :disabled="queuedCount === 0"
+            :aria-label="
+              st(
+                'sideToolbar.queueProgressOverlay.cancelQueued',
+                'Cancel queued workflows'
+              )
+            "
+            @click="cancelQueuedWorkflows"
+          >
+            {{
+              st(
+                'sideToolbar.queueProgressOverlay.cancelQueued',
+                'Cancel queued'
+              )
+            }}
+          </button>
         </div>
-        <div class="rounded bg-[#2d2e32] p-2 text-[12px] text-[#9c9eab]">
-          {{
-            st(
-              'sideToolbar.queueProgressOverlay.runWorkflowHint',
-              'Run your workflow to see jobs here.'
-            )
-          }}
+
+        <!-- Row 2: tabs | filter | sort -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1">
+            <button
+              v-for="tab in jobTabs"
+              :key="tab"
+              class="rounded px-2 py-1 text-[12px] hover:opacity-90"
+              :class="[
+                selectedJobTab === tab
+                  ? 'bg-[#2d2e32] text-white'
+                  : 'text-[#9c9eab]'
+              ]"
+              @click="selectedJobTab = tab"
+            >
+              {{ tab }}
+            </button>
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              class="rounded p-1 hover:opacity-90"
+              :aria-label="
+                st('sideToolbar.queueProgressOverlay.filterJobs', 'Filter jobs')
+              "
+            >
+              <i class="pi pi-filter text-xs text-white" />
+            </button>
+            <button
+              class="rounded p-1 hover:opacity-90"
+              :aria-label="
+                st('sideToolbar.queueProgressOverlay.sortJobs', 'Sort jobs')
+              "
+            >
+              <i class="pi pi-sort-alt text-xs text-white" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 3: job list (stubbed horizontal cards) -->
+        <div class="flex flex-col gap-2">
+          <div
+            v-for="item in stubJobItems"
+            :key="item.id"
+            class="flex items-center justify-between gap-2 rounded border border-[var(--p-panel-border-color)] bg-[var(--comfy-menu-bg)] px-2 py-2 text-[12px] text-white"
+          >
+            <div class="flex min-w-0 flex-1 items-center gap-2">
+              <div class="h-8 w-8 rounded bg-[#2d2e32]" />
+              <div class="truncate opacity-90">{{ item.title }}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[#9c9eab]">{{ item.meta }}</span>
+              <button
+                class="rounded p-1 hover:opacity-90"
+                :aria-label="st('g.more', 'More')"
+              >
+                <i class="pi pi-ellipsis-h text-xs text-white" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -162,6 +232,7 @@ import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = withDefaults(
@@ -175,6 +246,7 @@ const props = withDefaults(
 const { t } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
+const sidebarTabStore = useSidebarTabStore()
 
 const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
 const isHovered = ref(false)
@@ -201,6 +273,7 @@ const bottomRowClass = computed(
 )
 
 const runningCount = computed(() => queueStore.runningTasks.length)
+const queuedCount = computed(() => queueStore.pendingTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
 const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
@@ -262,6 +335,22 @@ const headerTitle = computed(() =>
     : st('sideToolbar.queueProgressOverlay.jobQueue', 'Job Queue')
 )
 
+/** Tabs for job list filtering */
+const jobTabs = ['All', 'Completed', 'Failed'] as const
+const selectedJobTab = ref<(typeof jobTabs)[number]>('All')
+
+/** Stubbed job list items for structure only */
+const stubJobItems = computed(() => {
+  const base = [
+    { id: '1', title: 'Workflow A — Placeholder', meta: '00:12 • 1 output' },
+    { id: '2', title: 'Workflow B — Placeholder', meta: '01:03 • 3 outputs' },
+    { id: '3', title: 'Workflow C — Placeholder', meta: '00:45 • 2 outputs' }
+  ]
+  if (selectedJobTab.value === 'Completed') return base.slice(0, 2)
+  if (selectedJobTab.value === 'Failed') return base.slice(2)
+  return base
+})
+
 const openExpandedFromEmpty = () => {
   isExpanded.value = true
 }
@@ -272,6 +361,20 @@ const closeExpanded = () => {
 
 const viewAllJobs = async () => {
   isExpanded.value = true
+}
+
+/** Opens the Assets (Model Library) sidebar */
+const openAssetsPanel = () => {
+  sidebarTabStore.activeSidebarTabId = 'model-library'
+}
+
+/** Cancels all queued (pending) workflows */
+const cancelQueuedWorkflows = async () => {
+  const pending = [...queueStore.pendingTasks]
+  for (const task of pending) {
+    await api.deleteItem('queue', task.promptId)
+  }
+  await queueStore.update()
 }
 
 const interruptAll = async () => {
