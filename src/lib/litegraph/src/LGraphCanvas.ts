@@ -2972,7 +2972,6 @@ export class LGraphCanvas
     widget: IBaseWidget,
     pointer = this.pointer
   ) {
-
     // Custom widget - CanvasPointer
     if (typeof widget.onPointerDown === 'function') {
       const handled = widget.onPointerDown(pointer, node, this)

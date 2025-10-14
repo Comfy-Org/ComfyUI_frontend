@@ -115,10 +115,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
   ],
-  [
-    'legacy',
-    { component: WidgetLegacy, aliases: [], essential: true}
-  ],
+  ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
     'audiorecord',
     {
@@ -165,7 +162,6 @@ export const getComponent = (type: string, name: string): Component | null => {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.component || null
 }
-
 
 export const isEssential = (type: string): boolean => {
   const canonicalType = getCanonicalType(type)

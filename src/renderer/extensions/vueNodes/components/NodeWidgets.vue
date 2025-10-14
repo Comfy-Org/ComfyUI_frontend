@@ -62,9 +62,9 @@ import type {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
-import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import {
   getComponent,
   shouldRenderAsVue
