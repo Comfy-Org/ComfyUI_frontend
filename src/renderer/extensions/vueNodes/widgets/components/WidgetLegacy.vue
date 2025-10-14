@@ -92,7 +92,7 @@ function handleMove(e: PointerEvent) {
 }
 </script>
 <template>
-  <div class="relative min-w-0 basis-0">
+  <div class="relative mx-[-12px] min-w-0 basis-0">
     <canvas
       ref="canvasEl"
       class="absolute mt-[-13px] w-full cursor-crosshair"
