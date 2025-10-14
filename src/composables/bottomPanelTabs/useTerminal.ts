@@ -5,12 +5,14 @@ import { debounce } from 'es-toolkit/compat'
 import type { Ref } from 'vue'
 import { markRaw, onMounted, onUnmounted } from 'vue'
 
+import { isDesktop } from '@/platform/distribution/types'
+
 export function useTerminal(element: Ref<HTMLElement | undefined>) {
   const fitAddon = new FitAddon()
   const terminal = markRaw(
     new Terminal({
       convertEol: true,
-      theme: { background: '#171717' }
+      theme: isDesktop ? { background: '#171717' } : undefined
     })
   )
   terminal.loadAddon(fitAddon)
