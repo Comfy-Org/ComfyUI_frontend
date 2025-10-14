@@ -3,10 +3,10 @@ import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
 import {
-  type ComfyPage,
   comfyPageFixture as test,
   testComfySnapToGridGridSize
 } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -786,16 +786,8 @@ test.describe('Viewport settings', () => {
     // Screenshot the canvas element
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
 
-    // Open zoom controls dropdown first
-    const zoomControlsButton = comfyPage.page.getByTestId(
-      'zoom-controls-button'
-    )
-    await zoomControlsButton.click()
-
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
     await toggleButton.click()
-    // close zoom menu
-    await zoomControlsButton.click()
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', false)
 
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
