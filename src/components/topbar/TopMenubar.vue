@@ -6,7 +6,7 @@
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
-      <TopbarBadges />
+      <CloudBetaBadge v-if="isCloud" />
     </div>
     <div
       v-show="showTopMenu"
@@ -40,16 +40,16 @@ import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
 
-import TopbarBadges from './TopbarBadges.vue'
+import CloudBetaBadge from './CloudBetaBadge.vue'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
-
 const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
 const showTopMenu = computed(
