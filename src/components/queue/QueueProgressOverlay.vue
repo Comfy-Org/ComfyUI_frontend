@@ -16,13 +16,15 @@
         class="flex w-full flex-col gap-[var(--spacing-spacing-xs)] p-[var(--spacing-spacing-xs)]"
       >
         <div
-          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)]"
+          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)]"
         >
-          <div class="text-[12px] font-bold text-white">{{ headerTitle }}</div>
+          <div class="text-[14px] font-normal text-white">
+            {{ headerTitle }}
+          </div>
           <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <!-- Placeholder: Overflow menu button; no actions wired yet. -->
             <button
-              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
+              class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
               :aria-label="
                 st(
                   'sideToolbar.queueProgressOverlay.moreOptions',
@@ -31,18 +33,18 @@
               "
             >
               <i
-                class="icon-[lucide--more-horizontal] block size-4 leading-none text-white"
+                class="icon-[lucide--more-horizontal] block size-4 leading-none text-[var(--color-text-secondary)]"
               />
             </button>
             <button
-              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
+              class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
               :aria-label="
                 st('sideToolbar.queueProgressOverlay.close', 'Close')
               "
               @click="closeExpanded"
             >
               <i
-                class="icon-[lucide--x] block size-4 leading-none text-white"
+                class="icon-[lucide--x] block size-4 leading-none text-[var(--color-text-secondary)]"
               />
             </button>
           </div>

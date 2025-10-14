@@ -72,6 +72,8 @@
   --color-slate-200: #9fa2bd;
   --color-slate-300: #5b5e7d;
 
+  --color-text-secondary: var(--color-slate-100);
+
   --color-brand-yellow: #f0ff41;
   --color-brand-blue: #172dd7;
 
