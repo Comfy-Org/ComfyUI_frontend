@@ -18,14 +18,6 @@ export interface AboutPageBadge {
   icon: string
 }
 
-export interface TopbarBadge {
-  text: string
-  /**
-   * Optional badge label (e.g., "BETA", "ALPHA", "NEW")
-   */
-  label?: string
-}
-
 type MenuCommandGroup = {
   /**
    * The path to the menu group.
@@ -79,10 +71,6 @@ export interface ComfyExtension {
    * Badges to add to the about page
    */
   aboutPageBadges?: AboutPageBadge[]
-  /**
-   * Badges to add to the topbar
-   */
-  topbarBadges?: TopbarBadge[]
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
