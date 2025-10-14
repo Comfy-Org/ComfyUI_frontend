@@ -10,6 +10,7 @@
         v-model="localValue"
         v-bind="filteredProps"
         class="h-4 w-8 overflow-hidden !rounded-full border-none"
+        :aria-label="widget.name"
         :pt="{
           preview: '!w-full !h-full !border-none'
         }"

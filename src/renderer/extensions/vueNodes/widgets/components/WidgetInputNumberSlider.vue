@@ -10,6 +10,7 @@
         v-bind="filteredProps"
         class="flex-grow text-xs"
         :step="stepValue"
+        :aria-label="widget.name"
         @update:model-value="updateLocalValue"
       />
       <InputNumber
@@ -19,6 +20,7 @@
         :step="stepValue"
         :min-fraction-digits="precision"
         :max-fraction-digits="precision"
+        :aria-label="widget.name"
         size="small"
         pt:pc-input-text:root="min-w-full bg-transparent border-none text-center"
         class="w-16"
