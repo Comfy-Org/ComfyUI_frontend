@@ -832,6 +832,11 @@
       "guidance": {
         "name": "guidance"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CLIPTextEncodeHiDream": {
@@ -870,6 +875,11 @@
       },
       "mt5xl": {
         "name": "mt5xl"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -936,6 +946,11 @@
       },
       "empty_padding": {
         "name": "empty_padding"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1475,10 +1490,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -1974,6 +1991,11 @@
       "batch_size": {
         "name": "batch_size"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyHunyuanLatentVideo": {
@@ -1990,6 +2012,11 @@
       },
       "batch_size": {
         "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2113,6 +2140,11 @@
       "batch_size": {
         "name": "batch_size"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Epsilon Scaling": {
@@ -2200,6 +2232,11 @@
       "conditioning": {
         "name": "conditioning"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxGuidance": {
@@ -2211,6 +2248,11 @@
       "guidance": {
         "name": "guidance"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxKontextImageScale": {
@@ -2219,6 +2261,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2271,6 +2318,11 @@
       },
       "reference_latents_method": {
         "name": "reference_latents_method"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2629,6 +2681,10 @@
         "name": "files",
         "tooltip": "Optional file(s) to use as context for the model. Accepts inputs from the Gemini Generate Content Input Files node."
       },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Defaults to matching the output image size to that of your input image, or otherwise generates 1:1 squares."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -2870,10 +2926,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -2895,13 +2953,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -3478,6 +3539,11 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageYUVToRGB": {
@@ -3581,6 +3647,11 @@
       },
       "alpha": {
         "name": "alpha"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4209,6 +4280,11 @@
       "samples2": {
         "name": "samples2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentApplyOperation": {
@@ -4219,6 +4295,11 @@
       },
       "operation": {
         "name": "operation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4231,6 +4312,11 @@
       "operation": {
         "name": "operation"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentBatch": {
@@ -4242,6 +4328,11 @@
       "samples2": {
         "name": "samples2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentBatchSeedBehavior": {
@@ -4252,6 +4343,11 @@
       },
       "seed_behavior": {
         "name": "seed_behavior"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4324,6 +4420,11 @@
       "dim": {
         "name": "dim"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentCrop": {
@@ -4360,6 +4461,11 @@
       },
       "amount": {
         "name": "amount"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4400,6 +4506,11 @@
       "ratio": {
         "name": "ratio"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentMultiply": {
@@ -4410,6 +4521,11 @@
       },
       "multiplier": {
         "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4425,6 +4541,11 @@
       "alpha": {
         "name": "alpha"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentOperationTonemapReinhard": {
@@ -4432,6 +4553,11 @@
     "inputs": {
       "multiplier": {
         "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4454,6 +4580,11 @@
       },
       "samples2": {
         "name": "samples2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7701,6 +7832,10 @@
         "name": "video",
         "tooltip": "The reference video used to generate the output video. Must be at least 5 seconds long. Videos longer than 5s will be automatically trimmed. Only MP4 format supported."
       },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Number of inference steps"
+      },
       "control_type": {
         "name": "control_type"
       },
@@ -8106,6 +8241,11 @@
       "upscale_method": {
         "name": "upscale_method"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PerpNeg": {
@@ -8407,7 +8547,7 @@
       },
       "mask": {
         "name": "mask",
-        "tooltip": "Use the mask to define areas in the video to replace"
+        "tooltip": "Use the mask to define areas in the video to replace."
       },
       "prompt_text": {
         "name": "prompt_text"
@@ -8417,6 +8557,10 @@
       },
       "seed": {
         "name": "seed"
+      },
+      "region_to_modify": {
+        "name": "region_to_modify",
+        "tooltip": "Plaintext description of the object / region to modify."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -8634,6 +8778,14 @@
       },
       "mode": {
         "name": "mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -10248,6 +10400,11 @@
       "rescaling_scale": {
         "name": "rescaling_scale"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceDiTSimple": {
@@ -10269,6 +10426,11 @@
       "end_percent": {
         "name": "end_percent"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceSD3": {
@@ -10289,6 +10451,11 @@
       },
       "end_percent": {
         "name": "end_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10328,6 +10495,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -11152,6 +11327,11 @@
         "name": "image_interleave",
         "tooltip": "How much the image influences things vs the text prompt. Higher number means more influence from the text prompt."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TextEncodeQwenImageEdit": {
@@ -11378,6 +11558,11 @@
       },
       "clip_name3": {
         "name": "clip_name3"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11759,6 +11944,11 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

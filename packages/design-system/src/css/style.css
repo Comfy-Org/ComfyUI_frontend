@@ -89,6 +89,21 @@
   --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
   --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
   --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
+  --color-alpha-charcoal-600-30: color-mix(
+    in srgb,
+    var(--color-charcoal-600) 30%,
+    transparent
+  );
+  --color-alpha-stone-100-20: color-mix(
+    in srgb,
+    var(--color-stone-100) 20%,
+    transparent
+  );
+  --color-alpha-gray-500-50: color-mix(
+    in srgb,
+    var(--color-gray-500) 50%,
+    transparent
+  );
 
   /* PrimeVue pulled colors */
   --color-muted: var(--p-text-muted-color);
@@ -155,6 +170,8 @@
     from var(--color-zinc-500) r g b / 10%
   );
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
+  --node-component-disabled: var(--color-alpha-stone-100-20);
+  --node-icon-disabled: var(--color-alpha-gray-500-50);
   --node-stroke: var(--color-gray-400);
   --node-stroke-selected: var(--color-accent-primary);
   --node-stroke-error: var(--color-error);
@@ -184,6 +201,8 @@
   --node-component-tooltip-border: var(--color-slate-300);
   --node-component-tooltip-surface: var(--color-charcoal-800);
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
+  --node-component-disabled: var(--color-alpha-charcoal-600-30);
+  --node-icon-disabled: var(--color-alpha-stone-100-20);
   --node-stroke: var(--color-stone-200);
   --node-stroke-selected: var(--color-pure-white);
   --node-stroke-error: var(--color-error);
@@ -224,6 +243,8 @@
   --color-node-component-widget-skeleton-surface: var(
     --node-component-widget-skeleton-surface
   );
+  --color-node-component-disabled: var(--node-component-disabled);
+  --color-node-icon-disabled: var(--node-icon-disabled);
   --color-node-stroke: var(--node-stroke);
   --color-node-stroke-selected: var(--node-stroke-selected);
   --color-node-stroke-error: var(--node-stroke-error);
