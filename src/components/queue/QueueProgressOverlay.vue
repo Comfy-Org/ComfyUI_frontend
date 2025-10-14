@@ -10,7 +10,63 @@
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
-      <div v-if="hasActiveJob" class="flex flex-col gap-3 p-2">
+      <div v-if="isExpanded" class="flex w-full flex-col gap-2 p-2">
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-[12px] font-bold text-white">
+            {{ st('sideToolbar.queueProgressOverlay.title', 'Queue') }}
+          </div>
+          <button
+            class="rounded p-1 hover:opacity-90"
+            :aria-label="st('sideToolbar.queueProgressOverlay.close', 'Close')"
+            @click="closeExpanded"
+          >
+            <i class="pi pi-times text-xs text-white" />
+          </button>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 text-[12px] text-[#9c9eab]">
+            <span>{{
+              st('sideToolbar.queueProgressOverlay.runningTab', 'Running')
+            }}</span>
+            <span class="rounded bg-[#2d2e32] px-1 text-white">{{
+              runningCount
+            }}</span>
+            <span>{{
+              st('sideToolbar.queueProgressOverlay.pendingTab', 'Pending')
+            }}</span>
+            <span class="rounded bg-[#2d2e32] px-1 text-white">{{
+              queueStore.pendingTasks.length
+            }}</span>
+            <span>{{
+              st('sideToolbar.queueProgressOverlay.historyTab', 'History')
+            }}</span>
+            <span class="rounded bg-[#2d2e32] px-1 text-white">{{
+              queueStore.historyTasks.length
+            }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              class="rounded p-1 hover:opacity-90"
+              :aria-label="
+                st('sideToolbar.queueProgressOverlay.refresh', 'Refresh')
+              "
+              @click="refreshQueue"
+            >
+              <i class="pi pi-refresh text-xs text-white" />
+            </button>
+          </div>
+        </div>
+        <div class="rounded bg-[#2d2e32] p-2 text-[12px] text-[#9c9eab]">
+          {{
+            st(
+              'sideToolbar.queueProgressOverlay.runWorkflowHint',
+              'Run your workflow to see jobs here.'
+            )
+          }}
+        </div>
+      </div>
+
+      <div v-else-if="hasActiveJob" class="flex flex-col gap-3 p-2">
         <div class="flex flex-col gap-1">
           <div
             class="relative h-2 w-full overflow-hidden rounded-full"
@@ -75,7 +131,11 @@
         </div>
       </div>
 
-      <div v-else class="flex items-center justify-between gap-4 p-2">
+      <div
+        v-else
+        class="flex cursor-pointer items-center justify-between gap-4 p-2"
+        @click="openExpandedFromEmpty"
+      >
         <div class="text-[12px] text-[#9c9eab]">
           {{
             st(
@@ -114,6 +174,7 @@ const executionStore = useExecutionStore()
 
 const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
 const isHovered = ref(false)
+const isExpanded = ref(false)
 const overlayStyle = computed(() => {
   const width = `${overlayWidth.value}px`
   return {
@@ -146,7 +207,9 @@ const isFullyInvisible = computed(
 const isEmptyState = computed(() => !hasActiveJob.value && hasHistory.value)
 const isActiveState = computed(() => hasActiveJob.value && isHovered.value)
 
-const showBackground = computed(() => isActiveState.value || isEmptyState.value)
+const showBackground = computed(
+  () => isExpanded.value || isActiveState.value || isEmptyState.value
+)
 
 const isVisible = computed(
   () => overlayWidth.value > 0 && !isFullyInvisible.value
@@ -183,9 +246,20 @@ const currentNodeName = computed(() => {
   return st(key, nodeType)
 })
 
+const openExpandedFromEmpty = () => {
+  isExpanded.value = true
+}
+
+const closeExpanded = () => {
+  isExpanded.value = false
+}
+
 const viewAllJobs = async () => {
-  // Placeholder for future functionality
-  return
+  isExpanded.value = true
+}
+
+const refreshQueue = async () => {
+  await queueStore.update()
 }
 
 const interruptAll = async () => {
