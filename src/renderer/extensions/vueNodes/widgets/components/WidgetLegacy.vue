@@ -47,9 +47,9 @@ function draw() {
     //zinc-500/10
     LiteGraph.WIDGET_BGCOLOR = '#71717A1A'
     const width = canvasEl.value.parentElement.clientWidth
-    const height =
-      (widgetInstance.computeSize ? widgetInstance.computeSize(width)[1] : 20) *
-      1.2
+    const height = widgetInstance.computeSize
+      ? widgetInstance.computeSize(width)[1]
+      : 20
     widgetInstance.y = 0
     canvasEl.value.height = (height + 2) * scaleFactor
     canvasEl.value.width = width * scaleFactor
@@ -75,8 +75,10 @@ function handleDown(e: PointerEvent) {
   if (widgetInstance.mouse) {
     pointer.onDrag = (e) =>
       widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
-    pointer.onClick = (e) =>
+    pointer.onClick = (e) => {
+      e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
       widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
+    }
   }
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
 }
