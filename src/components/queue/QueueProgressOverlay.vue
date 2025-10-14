@@ -17,7 +17,7 @@
           <div class="flex items-center gap-1">
             <!-- Placeholder: Overflow menu button; no actions wired yet. -->
             <button
-              class="rounded p-1 hover:opacity-90"
+              class="rounded border-0 p-1 hover:opacity-90"
               :aria-label="
                 st(
                   'sideToolbar.queueProgressOverlay.moreOptions',
@@ -28,7 +28,7 @@
               <i class="pi pi-ellipsis-h text-xs text-white" />
             </button>
             <button
-              class="rounded p-1 hover:opacity-90"
+              class="rounded border-0 p-1 hover:opacity-90"
               :aria-label="
                 st('sideToolbar.queueProgressOverlay.close', 'Close')
               "
@@ -42,7 +42,7 @@
 
         <div class="flex items-center justify-between gap-2">
           <button
-            class="rounded bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90"
+            class="rounded border-0 bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90"
             :aria-label="
               st('sideToolbar.queueProgressOverlay.showAssets', 'Show assets')
             "
@@ -60,7 +60,7 @@
             }}</span>
           </div>
           <button
-            class="rounded bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90 disabled:opacity-50"
+            class="rounded border-0 bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90 disabled:opacity-50"
             :disabled="queuedCount === 0"
             :aria-label="
               st(
@@ -84,7 +84,7 @@
             <button
               v-for="tab in jobTabs"
               :key="tab"
-              class="rounded px-2 py-1 text-[12px] hover:opacity-90"
+              class="rounded border-0 px-2 py-1 text-[12px] hover:opacity-90"
               :class="[
                 selectedJobTab === tab
                   ? 'bg-[#2d2e32] text-white'
@@ -97,7 +97,7 @@
           </div>
           <div class="flex items-center gap-1">
             <button
-              class="rounded p-1 hover:opacity-90"
+              class="rounded border-0 p-1 hover:opacity-90"
               :aria-label="
                 st('sideToolbar.queueProgressOverlay.filterJobs', 'Filter jobs')
               "
@@ -105,7 +105,7 @@
               <i class="pi pi-filter text-xs text-white" />
             </button>
             <button
-              class="rounded p-1 hover:opacity-90"
+              class="rounded border-0 p-1 hover:opacity-90"
               :aria-label="
                 st('sideToolbar.queueProgressOverlay.sortJobs', 'Sort jobs')
               "
@@ -128,7 +128,7 @@
             <div class="flex items-center gap-2">
               <span class="text-[#9c9eab]">{{ item.meta }}</span>
               <button
-                class="rounded p-1 hover:opacity-90"
+                class="rounded border-0 p-1 hover:opacity-90"
                 :aria-label="st('g.more', 'More')"
               >
                 <i class="pi pi-ellipsis-h text-xs text-white" />
@@ -142,10 +142,7 @@
       <div v-else-if="hasActiveJob" class="flex flex-col gap-3 p-2">
         <div class="flex flex-col gap-1">
           <div
-            class="relative h-2 w-full overflow-hidden rounded-full"
-            :style="{
-              background: 'var(--color-interface-panel-job-progress-track)'
-            }"
+            class="relative h-2 w-full overflow-hidden rounded-full border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)]"
           >
             <div
               class="absolute inset-0 h-full rounded-full transition-[width]"
@@ -157,14 +154,14 @@
             />
           </div>
           <div
-            class="flex items-start justify-end gap-4 text-[12px] leading-none"
+            class="flex items-start justify-end gap-[var(--spacing-spacing-md)] text-[12px] leading-none"
           >
             <div class="flex items-center gap-1 text-white opacity-90">
               <span>{{ t('sideToolbar.queueProgressOverlay.total') }}</span>
               <span class="font-bold">{{ totalPercent }}</span>
               <span>%</span>
             </div>
-            <div class="flex items-center gap-1 text-[#9c9eab]">
+            <div class="flex items-center gap-1 text-[var(--color-slate-100)]">
               <span>{{
                 t('sideToolbar.queueProgressOverlay.currentNode')
               }}</span>
@@ -178,7 +175,9 @@
         </div>
 
         <div :class="bottomRowClass">
-          <div class="flex items-center gap-2 text-[12px] text-white">
+          <div
+            class="flex items-center gap-[var(--spacing-spacing-xs)] text-[12px] text-white"
+          >
             <span class="opacity-90">
               <span class="font-bold">{{ runningCount }}</span>
               <span class="ml-1">{{
@@ -187,16 +186,16 @@
             </span>
             <button
               v-if="runningCount > 0"
-              class="rounded bg-[#2d2e32] p-1 hover:opacity-90"
+              class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
               :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
               @click="interruptAll"
             >
-              <i class="pi pi-times text-xs text-white" />
+              <i class="icon-[lucide--x] size-4 text-white" />
             </button>
           </div>
 
           <button
-            class="w-full rounded bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90"
+            class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
             @click="viewAllJobs"
           >
             {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
@@ -237,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { st } from '@/i18n'
@@ -261,6 +260,22 @@ const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
 
 const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
+/** Temporary: toggle stub active progress with '+' key for testing */
+const forceActiveStub = ref(false)
+const toggleForceActiveStub = () => {
+  forceActiveStub.value = !forceActiveStub.value
+}
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === '+' || (event.key === '=' && event.shiftKey)) {
+    toggleForceActiveStub()
+  }
+}
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 const isHovered = ref(false)
 const isExpanded = ref(false)
 const overlayStyle = computed(() => {
@@ -272,22 +287,26 @@ const overlayStyle = computed(() => {
 })
 const containerClass = computed(() =>
   showBackground.value
-    ? 'border-[var(--p-panel-border-color)] bg-[var(--comfy-menu-bg)] shadow-md'
+    ? 'border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md'
     : 'border-transparent bg-transparent shadow-none'
 )
 const bottomRowClass = computed(
   () =>
-    `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
+    `flex items-center justify-end gap-[var(--spacing-spacing-md)] transition-opacity duration-200 ease-in-out ${
       isActiveState.value
         ? 'opacity-100 pointer-events-auto'
         : 'opacity-0 pointer-events-none'
     }`
 )
 
-const runningCount = computed(() => queueStore.runningTasks.length)
+const runningCount = computed(() =>
+  forceActiveStub.value ? 1 : queueStore.runningTasks.length
+)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
-const isExecuting = computed(() => !executionStore.isIdle)
+const isExecuting = computed(
+  () => forceActiveStub.value || !executionStore.isIdle
+)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
 const activeJobsCount = computed(
   () => runningCount.value + queueStore.pendingTasks.length
@@ -311,11 +330,15 @@ const clampPercent = (value: number) =>
   Math.max(0, Math.min(100, Math.round(value)))
 
 const totalPercent = computed(() =>
-  clampPercent((executionStore.executionProgress ?? 0) * 100)
+  forceActiveStub.value
+    ? 30
+    : clampPercent((executionStore.executionProgress ?? 0) * 100)
 )
 
 const currentNodePercent = computed(() =>
-  clampPercent((executionStore.executingNodeProgress ?? 0) * 100)
+  forceActiveStub.value
+    ? 60
+    : clampPercent((executionStore.executingNodeProgress ?? 0) * 100)
 )
 
 const totalProgressStyle = computed(() => ({
@@ -329,6 +352,7 @@ const currentNodeProgressStyle = computed(() => ({
 }))
 
 const currentNodeName = computed(() => {
+  if (forceActiveStub.value) return 'CLIP Text Encode:'
   const node = executionStore.executingNode
   if (!node) return '—'
   const title = (node.title ?? '').toString().trim()
