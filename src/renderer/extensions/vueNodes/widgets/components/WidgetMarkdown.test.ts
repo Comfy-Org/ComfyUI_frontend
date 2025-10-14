@@ -3,7 +3,9 @@ import PrimeVue from 'primevue/config'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetMarkdown from './WidgetMarkdown.vue'
@@ -39,9 +41,19 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     modelValue: string,
     readonly = false
   ) => {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          ...enMessages
+        }
+      }
+    })
+
     return mount(WidgetMarkdown, {
       global: {
-        plugins: [PrimeVue],
+        plugins: [PrimeVue, i18n],
         components: { Textarea }
       },
       props: {

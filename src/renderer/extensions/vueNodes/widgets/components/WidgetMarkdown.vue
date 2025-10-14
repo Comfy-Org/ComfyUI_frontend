@@ -15,6 +15,7 @@
       v-show="isEditing"
       ref="textareaRef"
       v-model="localValue"
+      :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
       class="absolute inset-0 min-h-[60px] w-full resize-none"
       :pt="{
         root: {
