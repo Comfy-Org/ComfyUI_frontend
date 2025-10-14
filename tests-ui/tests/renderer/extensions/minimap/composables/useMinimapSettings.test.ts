@@ -55,9 +55,9 @@ describe('useMinimapSettings', () => {
     const settings = useMinimapSettings()
     const styles = settings.containerStyles.value
 
-    expect(styles.width).toBe('250px')
+    expect(styles.width).toBe('253px')
     expect(styles.height).toBe('200px')
-    expect(styles.border).toBe('1px solid #333')
+    expect(styles.border).toBe('1px solid var(--interface-stroke)')
     expect(styles.borderRadius).toBe('8px')
   })
 
@@ -74,9 +74,9 @@ describe('useMinimapSettings', () => {
     const settings = useMinimapSettings()
     const styles = settings.containerStyles.value
 
-    expect(styles.width).toBe('250px')
+    expect(styles.width).toBe('253px')
     expect(styles.height).toBe('200px')
-    expect(styles.border).toBe('1px solid #ccc')
+    expect(styles.border).toBe('1px solid var(--interface-stroke)')
     expect(styles.borderRadius).toBe('8px')
   })
 
@@ -95,7 +95,7 @@ describe('useMinimapSettings', () => {
 
     expect(styles.width).toBe('210px')
     expect(styles.height).toBe('200px')
-    expect(styles.border).toBe('1px solid #333')
+    expect(styles.border).toBe('1px solid var(--interface-stroke)')
     expect(styles.borderRadius).toBe('8px')
   })
 
