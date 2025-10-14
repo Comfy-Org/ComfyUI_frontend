@@ -1,8 +1,5 @@
 name: "CI: Tests Storybook"
-
-# Builds Storybook and runs visual regression testing via Chromatic
-# Deploys Storybook previews to Cloudflare Pages for PR review
-# Reference: https://www.chromatic.com/docs/github-actions/
+description: "Builds Storybook and runs visual regression testing via Chromatic, deploys previews to Cloudflare Pages"
 
 on:
   workflow_dispatch: # Allow manual triggering

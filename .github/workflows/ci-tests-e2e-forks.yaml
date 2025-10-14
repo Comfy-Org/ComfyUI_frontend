@@ -1,10 +1,9 @@
-name: "CI: Tests E2E Forks"
-
-# Deploys test results from forked PRs (forks can't access deployment secrets)
+name: "CI: Tests E2E (Deploy for Forks)"
+description: "Deploys test results from forked PRs (forks can't access deployment secrets)"
 
 on:
   workflow_run:
-    workflows: ["Tests E2E CI"]
+    workflows: ["CI: Tests E2E"]
     types: [requested, completed]
 
 env:
