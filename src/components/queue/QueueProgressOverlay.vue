@@ -13,14 +13,30 @@
       <div v-if="isExpanded" class="flex w-full flex-col gap-2 p-2">
         <div class="flex items-center justify-between gap-2">
           <div class="text-[12px] font-bold text-white">{{ headerTitle }}</div>
-          <button
-            class="rounded p-1 hover:opacity-90"
-            :aria-label="st('sideToolbar.queueProgressOverlay.close', 'Close')"
-            @click="closeExpanded"
-          >
-            <i class="pi pi-times text-xs text-white" />
-          </button>
+          <div class="flex items-center gap-1">
+            <button
+              class="rounded p-1 hover:opacity-90"
+              :aria-label="
+                st(
+                  'sideToolbar.queueProgressOverlay.moreOptions',
+                  'More options'
+                )
+              "
+            >
+              <i class="pi pi-ellipsis-h text-xs text-white" />
+            </button>
+            <button
+              class="rounded p-1 hover:opacity-90"
+              :aria-label="
+                st('sideToolbar.queueProgressOverlay.close', 'Close')
+              "
+              @click="closeExpanded"
+            >
+              <i class="pi pi-times text-xs text-white" />
+            </button>
+          </div>
         </div>
+        <div class="h-px w-full bg-[var(--p-panel-border-color)]" />
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2 text-[12px] text-[#9c9eab]">
             <span>{{
@@ -42,17 +58,7 @@
               queueStore.historyTasks.length
             }}</span>
           </div>
-          <div class="flex items-center gap-1">
-            <button
-              class="rounded p-1 hover:opacity-90"
-              :aria-label="
-                st('sideToolbar.queueProgressOverlay.refresh', 'Refresh')
-              "
-              @click="refreshQueue"
-            >
-              <i class="pi pi-refresh text-xs text-white" />
-            </button>
-          </div>
+          <div class="flex items-center gap-1"></div>
         </div>
         <div class="rounded bg-[#2d2e32] p-2 text-[12px] text-[#9c9eab]">
           {{
@@ -266,10 +272,6 @@ const closeExpanded = () => {
 
 const viewAllJobs = async () => {
   isExpanded.value = true
-}
-
-const refreshQueue = async () => {
-  await queueStore.update()
 }
 
 const interruptAll = async () => {
