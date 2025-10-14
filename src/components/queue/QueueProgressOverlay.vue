@@ -10,7 +10,7 @@
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
-      <div class="flex flex-col gap-3 p-2">
+      <div v-if="hasActiveJob" class="flex flex-col gap-3 p-2">
         <div class="flex flex-col gap-1">
           <div
             class="relative h-2 w-full overflow-hidden rounded-full"
@@ -74,6 +74,18 @@
           </button>
         </div>
       </div>
+
+      <div v-else class="flex items-center justify-between gap-4 p-2">
+        <div class="text-[12px] text-[#9c9eab]">
+          {{
+            st(
+              'sideToolbar.queueProgressOverlay.noActiveJobs',
+              'No active jobs'
+            )
+          }}
+        </div>
+        <i class="pi pi-chevron-down text-xs text-white opacity-90" />
+      </div>
     </div>
   </div>
 </template>
@@ -110,14 +122,14 @@ const overlayStyle = computed(() => {
   }
 })
 const containerClass = computed(() =>
-  isHovered.value
+  showBackground.value
     ? 'border-[var(--p-panel-border-color)] bg-[var(--comfy-menu-bg)] shadow-md'
     : 'border-transparent bg-transparent shadow-none'
 )
 const bottomRowClass = computed(
   () =>
     `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
-      isHovered.value
+      isActiveState.value
         ? 'opacity-100 pointer-events-auto'
         : 'opacity-0 pointer-events-none'
     }`
@@ -126,11 +138,18 @@ const bottomRowClass = computed(
 const runningCount = computed(() => queueStore.runningTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
 const isExecuting = computed(() => !executionStore.isIdle)
-const hasActiveQueueState = computed(
-  () => runningCount.value > 0 || isExecuting.value || hasHistory.value
+const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
+
+const isFullyInvisible = computed(
+  () => !hasActiveJob.value && !hasHistory.value
 )
+const isEmptyState = computed(() => !hasActiveJob.value && hasHistory.value)
+const isActiveState = computed(() => hasActiveJob.value && isHovered.value)
+
+const showBackground = computed(() => isActiveState.value || isEmptyState.value)
+
 const isVisible = computed(
-  () => overlayWidth.value > 0 && hasActiveQueueState.value
+  () => overlayWidth.value > 0 && !isFullyInvisible.value
 )
 
 const clampPercent = (value: number) =>
