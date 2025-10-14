@@ -10,6 +10,7 @@
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
+      <!-- Expanded state -->
       <div v-if="isExpanded" class="flex w-full flex-col gap-2 p-2">
         <div class="flex items-center justify-between gap-2">
           <div class="text-[12px] font-bold text-white">{{ headerTitle }}</div>
@@ -39,7 +40,6 @@
         </div>
         <div class="h-px w-full bg-[var(--p-panel-border-color)]" />
 
-        <!-- Row 1: assets button | queued workflows | cancel queued -->
         <div class="flex items-center justify-between gap-2">
           <button
             class="rounded bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90"
@@ -79,7 +79,6 @@
           </button>
         </div>
 
-        <!-- Row 2: tabs | filter | sort -->
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-1">
             <button
@@ -116,7 +115,6 @@
           </div>
         </div>
 
-        <!-- Row 3: job list (stubbed horizontal cards) -->
         <div class="flex flex-col gap-2">
           <div
             v-for="item in stubJobItems"
@@ -140,6 +138,7 @@
         </div>
       </div>
 
+      <!-- Passive/Active state -->
       <div v-else-if="hasActiveJob" class="flex flex-col gap-3 p-2">
         <div class="flex flex-col gap-1">
           <div
@@ -205,6 +204,7 @@
         </div>
       </div>
 
+      <!-- Empty State -->
       <div v-else class="pointer-events-auto">
         <button
           type="button"
