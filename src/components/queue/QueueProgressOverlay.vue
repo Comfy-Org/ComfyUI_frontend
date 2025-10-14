@@ -4,8 +4,11 @@
     :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
   >
     <div
-      class="pointer-events-auto rounded-lg border border-[var(--p-panel-border-color)] bg-[var(--comfy-menu-bg)] shadow-md"
+      class="pointer-events-auto rounded-lg border transition-colors duration-200 ease-in-out"
+      :class="containerClass"
       :style="overlayStyle"
+      @mouseenter="isHovered = true"
+      @mouseleave="isHovered = false"
     >
       <div class="flex flex-col gap-3 p-2">
         <div class="flex flex-col gap-1">
@@ -45,7 +48,7 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-4">
+        <div :class="bottomRowClass">
           <div class="flex items-center gap-2 text-[12px] text-white">
             <span class="opacity-90">
               <span class="font-bold">{{ runningCount }}</span>
@@ -76,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { st } from '@/i18n'
@@ -98,6 +101,7 @@ const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 
 const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
+const isHovered = ref(false)
 const overlayStyle = computed(() => {
   const width = `${overlayWidth.value}px`
   return {
@@ -105,6 +109,19 @@ const overlayStyle = computed(() => {
     width
   }
 })
+const containerClass = computed(() =>
+  isHovered.value
+    ? 'border-[var(--p-panel-border-color)] bg-[var(--comfy-menu-bg)] shadow-md'
+    : 'border-transparent bg-transparent shadow-none'
+)
+const bottomRowClass = computed(
+  () =>
+    `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
+      isHovered.value
+        ? 'opacity-100 pointer-events-auto'
+        : 'opacity-0 pointer-events-none'
+    }`
+)
 
 const runningCount = computed(() => queueStore.runningTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
