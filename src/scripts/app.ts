@@ -1615,45 +1615,6 @@ export class ComfyApp {
     }
     app.graph.arrange()
 
-    for (const id of ids) {
-      const data = apiData[id]
-      const node = app.graph.getNodeById(id)
-      for (const input in data.inputs ?? {}) {
-        const value = data.inputs[input]
-        if (value instanceof Array) {
-          const [fromId, fromSlot] = value
-          const fromNode = app.graph.getNodeById(fromId)
-          // @ts-expect-error fixme ts strict error
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
-          if (toSlot == null || toSlot === -1) {
-            try {
-              // Target has no matching input, most likely a converted widget
-              // @ts-expect-error fixme ts strict error
-              const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-expect-error
-              if (widget && node.convertWidgetToInput?.(widget)) {
-                // @ts-expect-error fixme ts strict error
-                toSlot = node.inputs?.length - 1
-              }
-            } catch (error) {}
-          }
-          if (toSlot != null || toSlot !== -1) {
-            // @ts-expect-error fixme ts strict error
-            fromNode.connect(fromSlot, node, toSlot)
-          }
-        } else {
-          // @ts-expect-error fixme ts strict error
-          const widget = node.widgets?.find((w) => w.name === input)
-          if (widget) {
-            widget.value = value
-            widget.callback?.(value)
-          }
-        }
-      }
-    }
-
-    app.graph.arrange()
-
     useWorkflowService().afterLoadNewGraph(
       fileName,
       this.graph.serialize() as unknown as ComfyWorkflowJSON
