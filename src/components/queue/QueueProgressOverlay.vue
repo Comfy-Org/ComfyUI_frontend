@@ -12,9 +12,7 @@
     >
       <div v-if="isExpanded" class="flex w-full flex-col gap-2 p-2">
         <div class="flex items-center justify-between gap-2">
-          <div class="text-[12px] font-bold text-white">
-            {{ st('sideToolbar.queueProgressOverlay.title', 'Queue') }}
-          </div>
+          <div class="text-[12px] font-bold text-white">{{ headerTitle }}</div>
           <button
             class="rounded p-1 hover:opacity-90"
             :aria-label="st('sideToolbar.queueProgressOverlay.close', 'Close')"
@@ -200,6 +198,9 @@ const runningCount = computed(() => queueStore.runningTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
 const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
+const activeJobsCount = computed(
+  () => runningCount.value + queueStore.pendingTasks.length
+)
 
 const isFullyInvisible = computed(
   () => !hasActiveJob.value && !hasHistory.value
@@ -245,6 +246,15 @@ const currentNodeName = computed(() => {
   const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
   return st(key, nodeType)
 })
+
+const headerTitle = computed(() =>
+  hasActiveJob.value
+    ? `${activeJobsCount.value} ${st(
+        'sideToolbar.queueProgressOverlay.activeJobsSuffix',
+        'active jobs'
+      )}`
+    : st('sideToolbar.queueProgressOverlay.jobQueue', 'Job Queue')
+)
 
 const openExpandedFromEmpty = () => {
   isExpanded.value = true
