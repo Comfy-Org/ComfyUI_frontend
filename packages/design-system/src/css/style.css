@@ -152,6 +152,9 @@
   --button-hover-surface: var(--color-gray-200);
   --button-active-surface: var(--color-gray-400);
   --dialog-surface: var(--color-neutral-200);
+  --interface-menu-component-surface-hovered: var(--color-gray-200);
+  --interface-menu-component-surface-selected: var(--color-gray-400);
+  --interface-menu-keybind-surface-default: var(--color-gray-500);
   --interface-panel-surface: var(--color-pure-white);
   --interface-stroke: var(--color-gray-300);
   --nav-background: var(--color-pure-white);
@@ -197,6 +200,9 @@
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
   --dialog-surface: var(--color-neutral-700);
+  --interface-menu-component-surface-hovered: var(--color-charcoal-400);
+  --interface-menu-component-surface-selected: var(--color-charcoal-300);
+  --interface-menu-keybind-surface-default: var(--color-charcoal-200);
   --interface-panel-surface: var(--color-charcoal-100);
   --interface-stroke: var(--color-charcoal-400);
   --nav-background: var(--color-charcoal-100);
@@ -237,6 +243,9 @@
   --color-button-hover-surface: var(--button-hover-surface);
   --color-button-active-surface: var(--button-active-surface);
   --color-dialog-surface: var(--dialog-surface);
+  --color-interface-menu-component-surface-hovered: var(--interface-menu-component-surface-hovered);
+  --color-interface-menu-component-surface-selected: var(--interface-menu-component-surface-selected);
+  --color-interface-menu-keybind-surface-default: var(--interface-menu-keybind-surface-default);
   --color-interface-panel-surface: var(--interface-panel-surface);
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
