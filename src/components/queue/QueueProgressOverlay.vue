@@ -140,12 +140,12 @@ const currentNodePercent = computed(() =>
 
 const totalProgressStyle = computed(() => ({
   width: `${totalPercent.value}%`,
-  background: 'var(--color-interface-panel-job-progress-secondary)'
+  background: 'var(--color-interface-panel-job-progress-primary)'
 }))
 
 const currentNodeProgressStyle = computed(() => ({
   width: `${currentNodePercent.value}%`,
-  background: 'var(--color-interface-panel-job-progress-primary)'
+  background: 'var(--color-interface-panel-job-progress-secondary)'
 }))
 
 const currentNodeName = computed(() => {
