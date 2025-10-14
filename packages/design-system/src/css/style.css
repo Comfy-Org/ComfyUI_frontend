@@ -27,6 +27,10 @@
   /* Font Families */
   --font-inter: 'Inter', sans-serif;
 
+  /* Spacing Tokens */
+  --spacing-spacing-xss: 4px;
+  --spacing-spacing-xs: 8px;
+
   /* Palette Colors */
   --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;

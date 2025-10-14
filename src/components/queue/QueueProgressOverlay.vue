@@ -205,20 +205,32 @@
         </div>
       </div>
 
-      <div
-        v-else
-        class="flex cursor-pointer items-center justify-between gap-4 p-2"
-        @click="openExpandedFromEmpty"
-      >
-        <div class="text-[12px] text-[#9c9eab]">
-          {{
+      <div v-else class="pointer-events-auto">
+        <button
+          type="button"
+          class="group flex h-10 w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xss))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] py-[var(--spacing-spacing-xss)] pr-[var(--spacing-spacing-xs)] pl-[calc(var(--spacing-spacing-xs)*2)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
+          :aria-label="
             st(
-              'sideToolbar.queueProgressOverlay.noActiveJobs',
-              'No active jobs'
+              'sideToolbar.queueProgressOverlay.expandCollapsedQueue',
+              'Expand job queue'
             )
-          }}
-        </div>
-        <i class="pi pi-chevron-down text-xs text-white opacity-90" />
+          "
+          @click="openExpandedFromEmpty"
+        >
+          <span class="text-[14px] leading-none font-normal text-white">
+            {{
+              st(
+                'sideToolbar.queueProgressOverlay.noActiveJobs',
+                'No active jobs'
+              )
+            }}
+          </span>
+          <span
+            class="flex items-center justify-center rounded p-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
+          >
+            <i class="pi pi-chevron-down text-xs" />
+          </span>
+        </button>
       </div>
     </div>
   </div>
