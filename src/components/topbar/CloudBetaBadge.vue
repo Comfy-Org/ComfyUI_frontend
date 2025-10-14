@@ -15,5 +15,5 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const betaString = t('g.beta')
-const cloudText = t('g.comfyCloud')
+const cloudText = 'Comfy Cloud'
 </script>
