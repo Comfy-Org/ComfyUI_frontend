@@ -2,16 +2,15 @@
   <div>
     <div
       v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
-      class="w-full flex content-end z-1001 h-9.5"
+      class="w-full flex content-end z-1001 h-[38px]"
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
-      <TopbarBadges />
     </div>
     <div
       v-show="showTopMenu"
       ref="topMenuRef"
-      class="comfyui-menu flex items-center bg-gray-100"
+      class="comfyui-menu flex items-center"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <CommandMenubar />
@@ -44,8 +43,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
-
-import TopbarBadges from './TopbarBadges.vue'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
