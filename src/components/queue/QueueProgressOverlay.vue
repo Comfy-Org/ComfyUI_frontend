@@ -11,13 +11,18 @@
       @mouseleave="isHovered = false"
     >
       <!-- Expanded state -->
-      <div v-if="isExpanded" class="flex w-full flex-col gap-2 p-2">
-        <div class="flex items-center justify-between gap-2">
+      <div
+        v-if="isExpanded"
+        class="flex w-full flex-col gap-[var(--spacing-spacing-xs)] p-[var(--spacing-spacing-xs)]"
+      >
+        <div
+          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)]"
+        >
           <div class="text-[12px] font-bold text-white">{{ headerTitle }}</div>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <!-- Placeholder: Overflow menu button; no actions wired yet. -->
             <button
-              class="rounded border-0 p-1 hover:opacity-90"
+              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
               :aria-label="
                 st(
                   'sideToolbar.queueProgressOverlay.moreOptions',
@@ -25,24 +30,30 @@
                 )
               "
             >
-              <i class="pi pi-ellipsis-h text-xs text-white" />
+              <i
+                class="icon-[lucide--more-horizontal] block size-4 leading-none text-white"
+              />
             </button>
             <button
-              class="rounded border-0 p-1 hover:opacity-90"
+              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
               :aria-label="
                 st('sideToolbar.queueProgressOverlay.close', 'Close')
               "
               @click="closeExpanded"
             >
-              <i class="pi pi-times text-xs text-white" />
+              <i
+                class="icon-[lucide--x] block size-4 leading-none text-white"
+              />
             </button>
           </div>
         </div>
-        <div class="h-px w-full bg-[var(--p-panel-border-color)]" />
+        <div class="h-px w-full bg-[var(--color-charcoal-400)]" />
 
-        <div class="flex items-center justify-between gap-2">
+        <div
+          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)]"
+        >
           <button
-            class="rounded border-0 bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90"
+            class="rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
             :aria-label="
               st('sideToolbar.queueProgressOverlay.showAssets', 'Show assets')
             "
@@ -60,7 +71,7 @@
             }}</span>
           </div>
           <button
-            class="rounded border-0 bg-[#2d2e32] px-2 py-1 text-[12px] text-white hover:opacity-90 disabled:opacity-50"
+            class="rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90 disabled:opacity-50"
             :disabled="queuedCount === 0"
             :aria-label="
               st(
@@ -79,59 +90,69 @@
           </button>
         </div>
 
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-1">
+        <div
+          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)]"
+        >
+          <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <button
               v-for="tab in jobTabs"
               :key="tab"
-              class="rounded border-0 px-2 py-1 text-[12px] hover:opacity-90"
+              class="rounded border-0 px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] hover:opacity-90"
               :class="[
                 selectedJobTab === tab
-                  ? 'bg-[#2d2e32] text-white'
-                  : 'text-[#9c9eab]'
+                  ? 'bg-[var(--color-charcoal-500)] text-white'
+                  : 'text-[var(--color-slate-100)]'
               ]"
               @click="selectedJobTab = tab"
             >
               {{ tab }}
             </button>
           </div>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <button
-              class="rounded border-0 p-1 hover:opacity-90"
+              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
               :aria-label="
                 st('sideToolbar.queueProgressOverlay.filterJobs', 'Filter jobs')
               "
             >
-              <i class="pi pi-filter text-xs text-white" />
+              <i
+                class="icon-[lucide--filter] block size-4 leading-none text-white"
+              />
             </button>
             <button
-              class="rounded border-0 p-1 hover:opacity-90"
+              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
               :aria-label="
                 st('sideToolbar.queueProgressOverlay.sortJobs', 'Sort jobs')
               "
             >
-              <i class="pi pi-sort-alt text-xs text-white" />
+              <i
+                class="icon-[lucide--arrow-up-down] block size-4 leading-none text-white"
+              />
             </button>
           </div>
         </div>
 
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-[var(--spacing-spacing-xs)]">
           <div
             v-for="item in stubJobItems"
             :key="item.id"
-            class="flex items-center justify-between gap-2 rounded border border-[var(--p-panel-border-color)] bg-[var(--comfy-menu-bg)] px-2 py-2 text-[12px] text-white"
+            class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] rounded border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xs)] text-[12px] text-white"
           >
-            <div class="flex min-w-0 flex-1 items-center gap-2">
-              <div class="h-8 w-8 rounded bg-[#2d2e32]" />
+            <div
+              class="flex min-w-0 flex-1 items-center gap-[var(--spacing-spacing-xs)]"
+            >
+              <div class="h-8 w-8 rounded bg-[var(--color-charcoal-500)]" />
               <div class="truncate opacity-90">{{ item.title }}</div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-[#9c9eab]">{{ item.meta }}</span>
+            <div class="flex items-center gap-[var(--spacing-spacing-xs)]">
+              <span class="text-[var(--color-slate-100)]">{{ item.meta }}</span>
               <button
-                class="rounded border-0 p-1 hover:opacity-90"
+                class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
                 :aria-label="st('g.more', 'More')"
               >
-                <i class="pi pi-ellipsis-h text-xs text-white" />
+                <i
+                  class="icon-[lucide--more-horizontal] block size-4 leading-none text-white"
+                />
               </button>
             </div>
           </div>
@@ -139,8 +160,11 @@
       </div>
 
       <!-- Passive/Active state -->
-      <div v-else-if="hasActiveJob" class="flex flex-col gap-3 p-2">
-        <div class="flex flex-col gap-1">
+      <div
+        v-else-if="hasActiveJob"
+        class="flex flex-col gap-[var(--spacing-spacing-sm)] p-[var(--spacing-spacing-xs)]"
+      >
+        <div class="flex flex-col gap-[var(--spacing-spacing-xss)]">
           <div
             class="relative h-2 w-full overflow-hidden rounded-full border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)]"
           >
@@ -156,17 +180,21 @@
           <div
             class="flex items-start justify-end gap-[var(--spacing-spacing-md)] text-[12px] leading-none"
           >
-            <div class="flex items-center gap-1 text-white opacity-90">
+            <div
+              class="flex items-center gap-[var(--spacing-spacing-xss)] text-white opacity-90"
+            >
               <span>{{ t('sideToolbar.queueProgressOverlay.total') }}</span>
               <span class="font-bold">{{ totalPercent }}</span>
               <span>%</span>
             </div>
-            <div class="flex items-center gap-1 text-[var(--color-slate-100)]">
+            <div
+              class="flex items-center gap-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)]"
+            >
               <span>{{
                 t('sideToolbar.queueProgressOverlay.currentNode')
               }}</span>
               <span class="max-w-[10rem] truncate">{{ currentNodeName }}</span>
-              <span class="flex items-center gap-1">
+              <span class="flex items-center gap-[var(--spacing-spacing-xss)]">
                 <span>{{ currentNodePercent }}</span>
                 <span>%</span>
               </span>
@@ -180,7 +208,7 @@
           >
             <span class="opacity-90">
               <span class="font-bold">{{ runningCount }}</span>
-              <span class="ml-1">{{
+              <span class="ml-[var(--spacing-spacing-xss)]">{{
                 t('sideToolbar.queueProgressOverlay.running')
               }}</span>
             </span>
@@ -190,7 +218,9 @@
               :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
               @click="interruptAll"
             >
-              <i class="icon-[lucide--x] size-4 text-white" />
+              <i
+                class="icon-[lucide--x] block size-4 leading-none text-white"
+              />
             </button>
           </div>
 
@@ -227,7 +257,7 @@
           <span
             class="flex items-center justify-center rounded p-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
           >
-            <i class="pi pi-chevron-down text-xs" />
+            <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
           </span>
         </button>
       </div>
