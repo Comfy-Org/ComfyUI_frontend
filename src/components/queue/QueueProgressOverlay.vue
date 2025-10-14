@@ -125,7 +125,13 @@ const bottomRowClass = computed(
 
 const runningCount = computed(() => queueStore.runningTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
-const isVisible = computed(() => overlayWidth.value > 0 && hasHistory.value)
+const isExecuting = computed(() => !executionStore.isIdle)
+const hasActiveQueueState = computed(
+  () => runningCount.value > 0 || isExecuting.value || hasHistory.value
+)
+const isVisible = computed(
+  () => overlayWidth.value > 0 && hasActiveQueueState.value
+)
 
 const clampPercent = (value: number) =>
   Math.max(0, Math.min(100, Math.round(value)))
