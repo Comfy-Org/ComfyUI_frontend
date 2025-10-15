@@ -132,7 +132,7 @@ export const i18n = createI18n({
   fallbackLocale: 'en',
   messages,
   // Ignore warnings for locale options as each option is in its own language.
-  // e.g. "English", "中文", "Русский", "日本語", "한国어", "Français", "Español"
+  // e.g. "English", "中文", "Русский", "日本語", "한국어", "Français", "Español"
   missingWarn: /^(?!settings\.Comfy_Locale\.options\.).+/,
   fallbackWarn: /^(?!settings\.Comfy_Locale\.options\.).+/
 })
