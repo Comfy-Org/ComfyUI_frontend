@@ -6,7 +6,6 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -42,24 +41,17 @@ onMounted(() => {
 
 function draw() {
   if (!widgetInstance || !node) return
-  const bgcolor = LiteGraph.WIDGET_BGCOLOR
-  try {
-    //zinc-500/10
-    LiteGraph.WIDGET_BGCOLOR = '#71717A1A'
-    const width = canvasEl.value.parentElement.clientWidth
-    const height = widgetInstance.computeSize
-      ? widgetInstance.computeSize(width)[1]
-      : 20
-    widgetInstance.y = 0
-    canvasEl.value.height = (height + 2) * scaleFactor
-    canvasEl.value.width = width * scaleFactor
-    const ctx = canvasEl.value?.getContext('2d')
-    if (!ctx) return
-    ctx.scale(scaleFactor, scaleFactor)
-    widgetInstance.draw?.(ctx, node, width, 1, height)
-  } finally {
-    LiteGraph.WIDGET_BGCOLOR = bgcolor
-  }
+  const width = canvasEl.value.parentElement.clientWidth
+  const height = widgetInstance.computeSize
+    ? widgetInstance.computeSize(width)[1]
+    : 20
+  widgetInstance.y = 0
+  canvasEl.value.height = (height + 2) * scaleFactor
+  canvasEl.value.width = width * scaleFactor
+  const ctx = canvasEl.value?.getContext('2d')
+  if (!ctx) return
+  ctx.scale(scaleFactor, scaleFactor)
+  widgetInstance.draw?.(ctx, node, width, 1, height)
 }
 function translateEvent(e: PointerEvent): asserts e is CanvasPointerEvent {
   if (!node) return
