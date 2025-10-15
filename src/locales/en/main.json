@@ -51,6 +51,7 @@
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
+    "more": "More",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -617,7 +618,17 @@
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "running": "running",
-      "interruptAll": "Interrupt all running jobs"
+      "interruptAll": "Interrupt all running jobs",
+      "moreOptions": "More options",
+      "showAssets": "Show assets",
+      "queuedSuffix": "queued",
+      "clearQueued": "Clear queued",
+      "filterJobs": "Filter jobs",
+      "sortJobs": "Sort jobs",
+      "activeJobsSuffix": "active jobs",
+      "jobQueue": "Job Queue",
+      "expandCollapsedQueue": "Expand job queue",
+      "noActiveJobs": "No active jobs"
     },
     "workflowTab": {
       "confirmDeleteTitle": "Delete workflow?",

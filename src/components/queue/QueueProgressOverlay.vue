@@ -25,12 +25,7 @@
             <!-- Placeholder: Overflow menu button; no actions wired yet. -->
             <button
               class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
-              :aria-label="
-                st(
-                  'sideToolbar.queueProgressOverlay.moreOptions',
-                  'More options'
-                )
-              "
+              :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
             >
               <i
                 class="icon-[lucide--more-horizontal] block size-4 leading-none text-[var(--color-text-secondary)]"
@@ -38,9 +33,7 @@
             </button>
             <button
               class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
-              :aria-label="
-                st('sideToolbar.queueProgressOverlay.close', 'Close')
-              "
+              :aria-label="t('g.close')"
               @click="closeExpanded"
             >
               <i
@@ -51,44 +44,35 @@
         </div>
         <div class="h-px w-full bg-[var(--color-charcoal-400)]" />
 
-        <div
-          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)]"
-        >
+        <div class="flex items-center">
           <button
-            class="rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
-            :aria-label="
-              st('sideToolbar.queueProgressOverlay.showAssets', 'Show assets')
-            "
-            @click="openAssetsPanel"
+            class="mr-[var(--spacing-spacing-md)] inline-flex h-6 flex-1 items-center justify-center gap-[var(--spacing-spacing-xxs)] rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-0 text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+            :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
+            @click="openQueueSidebar"
           >
-            {{ st('assets', 'Assets') }}
+            <i-comfy:image-ai-edit
+              class="pointer-events-none block size-4 shrink-0 leading-none"
+              aria-hidden="true"
+            />
+            <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
           </button>
-          <div class="text-[12px] text-white opacity-90">
+          <div
+            class="inline-flex h-6 items-center text-[12px] leading-none text-white opacity-90"
+          >
             <span class="font-bold">{{ queuedCount }}</span>
-            <span class="ml-1">{{
-              st(
-                'sideToolbar.queueProgressOverlay.queuedWorkflowsSuffix',
-                'queued workflows'
-              )
+            <span class="ml-[var(--spacing-spacing-xss)]">{{
+              t('sideToolbar.queueProgressOverlay.queuedSuffix')
             }}</span>
           </div>
           <button
-            class="rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90 disabled:opacity-50"
+            class="ml-[var(--spacing-spacing-xs)] inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90 disabled:opacity-50"
             :disabled="queuedCount === 0"
-            :aria-label="
-              st(
-                'sideToolbar.queueProgressOverlay.cancelQueued',
-                'Cancel queued workflows'
-              )
-            "
+            :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
             @click="cancelQueuedWorkflows"
           >
-            {{
-              st(
-                'sideToolbar.queueProgressOverlay.cancelQueued',
-                'Cancel queued'
-              )
-            }}
+            <i
+              class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-white"
+            />
           </button>
         </div>
 
@@ -113,9 +97,7 @@
           <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <button
               class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
-              :aria-label="
-                st('sideToolbar.queueProgressOverlay.filterJobs', 'Filter jobs')
-              "
+              :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
             >
               <i
                 class="icon-[lucide--filter] block size-4 leading-none text-white"
@@ -123,9 +105,7 @@
             </button>
             <button
               class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
-              :aria-label="
-                st('sideToolbar.queueProgressOverlay.sortJobs', 'Sort jobs')
-              "
+              :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
             >
               <i
                 class="icon-[lucide--arrow-up-down] block size-4 leading-none text-white"
@@ -150,7 +130,7 @@
               <span class="text-[var(--color-slate-100)]">{{ item.meta }}</span>
               <button
                 class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
-                :aria-label="st('g.more', 'More')"
+                :aria-label="t('g.more')"
               >
                 <i
                   class="icon-[lucide--more-horizontal] block size-4 leading-none text-white"
@@ -241,20 +221,12 @@
           type="button"
           class="group flex h-10 w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xss))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] py-[var(--spacing-spacing-xss)] pr-[var(--spacing-spacing-xs)] pl-[calc(var(--spacing-spacing-xs)*2)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
           :aria-label="
-            st(
-              'sideToolbar.queueProgressOverlay.expandCollapsedQueue',
-              'Expand job queue'
-            )
+            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
           "
           @click="openExpandedFromEmpty"
         >
           <span class="text-[14px] leading-none font-normal text-white">
-            {{
-              st(
-                'sideToolbar.queueProgressOverlay.noActiveJobs',
-                'No active jobs'
-              )
-            }}
+            {{ t('sideToolbar.queueProgressOverlay.noActiveJobs') }}
           </span>
           <span
             class="flex items-center justify-center rounded p-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
@@ -396,11 +368,8 @@ const currentNodeName = computed(() => {
 
 const headerTitle = computed(() =>
   hasActiveJob.value
-    ? `${activeJobsCount.value} ${st(
-        'sideToolbar.queueProgressOverlay.activeJobsSuffix',
-        'active jobs'
-      )}`
-    : st('sideToolbar.queueProgressOverlay.jobQueue', 'Job Queue')
+    ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
+    : t('sideToolbar.queueProgressOverlay.jobQueue')
 )
 
 /** Tabs for job list filtering */
@@ -431,9 +400,9 @@ const viewAllJobs = async () => {
   isExpanded.value = true
 }
 
-/** Opens the Assets (Model Library) sidebar */
-const openAssetsPanel = () => {
-  sidebarTabStore.activeSidebarTabId = 'model-library'
+/** Opens the Queue sidebar */
+const openQueueSidebar = () => {
+  sidebarTabStore.activeSidebarTabId = 'queue'
 }
 
 /** Cancels all queued (pending) workflows */
