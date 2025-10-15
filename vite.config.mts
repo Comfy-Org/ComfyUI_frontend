@@ -9,6 +9,7 @@ import { defineConfig } from 'vite'
 import type { UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
@@ -163,7 +164,19 @@ export default defineConfig({
       deep: true,
       extensions: ['vue'],
       directoryAsNamespace: true
-    })
+    }),
+
+    ...(IS_DEV
+      ? []
+      : [
+          visualizer({
+            filename: '.pages/size-reports/index.html',
+            template: 'treemap',
+            gzipSize: true,
+            brotliSize: true,
+            emitFile: false
+          })
+        ])
   ],
 
   build: {
