@@ -1,7 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
-import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
@@ -164,20 +163,7 @@ export default defineConfig({
       deep: true,
       extensions: ['vue'],
       directoryAsNamespace: true
-    }),
-
-    // Bundle analyzer - generates dist/stats.html after build
-    ...(!IS_DEV
-      ? [
-          visualizer({
-            filename: 'dist/stats.html',
-            open: false,
-            gzipSize: true,
-            brotliSize: true,
-            template: 'treemap' // or 'sunburst', 'network'
-          })
-        ]
-      : [])
+    })
   ],
 
   build: {
