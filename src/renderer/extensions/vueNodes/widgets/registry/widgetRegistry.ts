@@ -169,8 +169,5 @@ export const isEssential = (type: string): boolean => {
 }
 
 export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
-  if (widget.options?.canvasOnly) return false
-  if (widget.isDOMWidget) return true
-  if (!widget.type) return false
-  return true
+  return !widget.options?.canvasOnly && !!widget.type
 }
