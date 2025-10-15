@@ -11,8 +11,14 @@
     @view="emit('view')"
   >
     <template #icon>
-      <div class="icon-box">
-        <img v-if="iconImageUrl" :src="iconImageUrl" class="icon-img" />
+      <div
+        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px] bg-[var(--color-charcoal-500)]"
+      >
+        <img
+          v-if="iconImageUrl"
+          :src="iconImageUrl"
+          class="h-full w-full object-cover"
+        />
         <i v-else :class="[iconClass, 'size-4']" />
       </div>
     </template>
@@ -110,21 +116,3 @@ const computedShowMenu = computed(() => {
   return true
 })
 </script>
-
-<style scoped>
-.icon-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: var(--color-charcoal-500);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.icon-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-</style>

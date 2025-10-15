@@ -1,36 +1,47 @@
 <template>
   <div
-    class="job-row"
-    :class="[variantClass]"
+    class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] rounded-[var(--corner-radius-corner-radius-md)] border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-[var(--spacing-spacing-xxs)] text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <div class="job-row-left">
-      <div class="job-row-icon">
+    <div class="relative flex items-center gap-[var(--spacing-spacing-xxs)]">
+      <div
+        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px] bg-[var(--color-charcoal-500)]"
+      >
         <slot name="icon">
           <i v-if="iconName" :class="[iconName, 'size-4']" />
-          <div v-else class="default-icon" />
+          <div v-else class="h-full w-full" />
         </slot>
       </div>
     </div>
 
-    <div class="job-row-center">
-      <div class="job-row-primary" :title="primaryText">
+    <div class="min-w-0 flex-1">
+      <div class="truncate opacity-90" :title="primaryText">
         <slot name="primary">{{ primaryText }}</slot>
       </div>
     </div>
 
-    <div class="job-row-right">
-      <Transition name="job-actions" mode="out-in">
+    <div
+      class="flex items-center gap-[var(--spacing-spacing-xs)] text-[var(--color-slate-100)]"
+    >
+      <Transition
+        mode="out-in"
+        enter-active-class="transition-opacity transition-transform duration-150 ease-out"
+        leave-active-class="transition-opacity transition-transform duration-150 ease-in"
+        enter-from-class="opacity-0 translate-y-0.5"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-0.5"
+      >
         <div
           v-if="isHovered && showActionsOnHover"
           key="actions"
-          class="job-row-actions-inline"
+          class="inline-flex items-center gap-[var(--spacing-spacing-xs)] pr-[calc(var(--spacing-spacing-xs)-var(--spacing-spacing-xxs))]"
         >
           <button
             v-if="variant !== 'completed' && showClear"
             type="button"
-            class="row-action-btn"
+            class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
             :aria-label="t('g.clear')"
             @click.stop="emit('clear')"
           >
@@ -39,7 +50,7 @@
           <button
             v-else-if="variant === 'completed'"
             type="button"
-            class="row-action-btn row-action-btn-view"
+            class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
             :aria-label="t('menuLabels.View')"
             @click.stop="emit('view')"
           >
@@ -48,14 +59,14 @@
           <button
             v-if="showMenu"
             type="button"
-            class="row-action-btn"
+            class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
             :aria-label="t('g.moreOptions')"
             @click.stop="emit('menu')"
           >
             <i class="icon-[lucide--more-horizontal] size-4" />
           </button>
         </div>
-        <div v-else key="secondary" class="job-row-secondary">
+        <div v-else key="secondary" class="pr-[var(--spacing-spacing-xs)]">
           <slot name="secondary">{{ secondaryText }}</slot>
         </div>
       </Transition>
@@ -64,10 +75,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     primaryText?: string
     secondaryText?: string
@@ -102,132 +113,5 @@ const emit = defineEmits<{
 
 const isHovered = ref(false)
 
-const variantClass = computed(() => `variant-${props.variant}`)
-
 const { t } = useI18n()
 </script>
-
-<style scoped>
-.job-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-spacing-xs);
-  padding: var(--spacing-spacing-xxs);
-  border-radius: var(--corner-radius-corner-radius-md);
-  border: 1px solid var(--color-charcoal-400);
-  background: var(--color-charcoal-600);
-  color: white;
-  font-size: 12px;
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.job-row-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-spacing-xxs);
-  position: relative;
-}
-
-.job-row-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: var(--color-charcoal-500);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.default-icon {
-  width: 100%;
-  height: 100%;
-}
-
-.job-row-center {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.job-row-primary {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.9;
-}
-
-.job-row-right {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-spacing-xs);
-  color: var(--color-slate-100);
-}
-
-.job-row:hover {
-  background: var(--color-charcoal-500);
-  border-color: var(--color-charcoal-300);
-}
-
-.job-row-secondary {
-  padding-right: var(--spacing-spacing-xs);
-}
-
-.job-row-actions-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-spacing-xs);
-  padding-right: calc(var(--spacing-spacing-xs) - var(--spacing-spacing-xxs));
-}
-
-.row-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-spacing-xss);
-  height: 24px;
-  padding: 0 var(--spacing-spacing-xxs);
-  border: 0;
-  background: var(--color-charcoal-300);
-  color: white;
-  border-radius: var(--corner-radius-corner-radius-sm, 4px);
-  transition:
-    background-color 150ms ease,
-    opacity 150ms ease,
-    transform 150ms ease;
-}
-
-.row-action-btn:hover {
-  opacity: 0.98;
-  transform: translateY(-1px);
-}
-
-.row-action-btn-view {
-  padding: 0 var(--spacing-spacing-xs);
-}
-
-/* Variants can adjust border or icon backgrounds if needed */
-.variant-running .job-row-icon {
-  background: var(--color-charcoal-500);
-}
-.variant-queued .job-row-icon {
-  background: var(--color-charcoal-500);
-}
-.variant-loading .job-row-icon {
-  background: var(--color-charcoal-500);
-}
-.variant-completed .job-row-icon {
-  background: var(--color-charcoal-500);
-}
-.variant-failed .job-row-icon {
-  background: var(--color-charcoal-500);
-}
-.variant-added .job-row-icon {
-  background: var(--color-charcoal-500);
-}
-</style>
-.job-actions-enter-active, .job-actions-leave-active { transition: opacity 150ms
-ease, transform 150ms ease; } .job-actions-enter-from, .job-actions-leave-to {
-opacity: 0; transform: translateY(2px); }
