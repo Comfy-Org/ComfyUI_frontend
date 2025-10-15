@@ -1,5 +1,6 @@
+import { isCloud } from '@/platform/distribution/types'
+
 import './clipspace'
-import './cloudBadge'
 import './contextMenuFilter'
 import './dynamicPrompts'
 import './editAttention'
@@ -22,3 +23,7 @@ import './uploadAudio'
 import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
+
+if (isCloud) {
+  import('./cloudBadge')
+}
