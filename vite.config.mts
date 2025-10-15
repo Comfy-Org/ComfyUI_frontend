@@ -17,6 +17,7 @@ dotenv.config()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
+const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
@@ -167,7 +168,8 @@ export default defineConfig({
     }),
 
     // Bundle analyzer - generates dist/stats.html after build
-    ...(!IS_DEV
+    // Only enabled when ANALYZE_BUNDLE=true
+    ...(ANALYZE_BUNDLE
       ? [
           visualizer({
             filename: 'dist/stats.html',
