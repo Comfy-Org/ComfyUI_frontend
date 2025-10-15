@@ -409,9 +409,6 @@ const formatTime = (time?: number) => {
   return `${time.toFixed(2)}s`
 }
 
-const pluralize = (word: string, count: number) =>
-  count === 1 ? word : `${word}s`
-
 const deriveStateFromTask = (task: any): JobListItem['state'] => {
   if (task.taskType === 'Pending') return 'queued'
   if (task.taskType === 'Running') return 'running'
@@ -438,11 +435,7 @@ const formatMetaForTask = (task: any, state: JobListItem['state']) => {
   if (state === 'queued') return 'Queued'
   if (state === 'completed') {
     const time = formatTime(task.executionTimeInSeconds)
-    const outputs = task.flatOutputs?.length ?? 0
-    if (time && outputs)
-      return `${time} • ${outputs} ${pluralize('output', outputs)}`
-    if (time) return time
-    if (outputs) return `${outputs} ${pluralize('output', outputs)}`
+    return time || ''
   }
   if (state === 'failed') return 'Failed'
   if (state === 'cancelled') return 'Cancelled'
