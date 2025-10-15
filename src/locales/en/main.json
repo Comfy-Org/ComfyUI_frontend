@@ -146,6 +146,13 @@
     "inProgress": "In progress",
     "completed": "Completed",
     "interrupted": "Interrupted",
+    "queued": "Queued",
+    "running": "Running",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "job": "Job",
+    "untitled": "Untitled",
+    "emDash": "—",
     "enabling": "Enabling {id}",
     "disabling": "Disabling {id}",
     "updating": "Updating {id}",
@@ -628,7 +635,8 @@
       "activeJobsSuffix": "active jobs",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",
-      "noActiveJobs": "No active jobs"
+      "noActiveJobs": "No active jobs",
+      "stubClipTextEncode": "CLIP Text Encode:"
     },
     "workflowTab": {
       "confirmDeleteTitle": "Delete workflow?",

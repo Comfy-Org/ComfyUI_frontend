@@ -104,7 +104,7 @@
                   ]"
                   @click="selectedJobTab = tab"
                 >
-                  {{ tab }}
+                  {{ tabLabel(tab) }}
                 </button>
               </div>
             </div>
@@ -367,12 +367,13 @@ const currentNodeProgressStyle = computed(() => ({
 }))
 
 const currentNodeName = computed(() => {
-  if (forceActiveStub.value) return 'CLIP Text Encode:'
+  if (forceActiveStub.value)
+    return t('sideToolbar.queueProgressOverlay.stubClipTextEncode')
   const node = executionStore.executingNode
-  if (!node) return '—'
+  if (!node) return t('g.emDash')
   const title = (node.title ?? '').toString().trim()
   if (title) return title
-  const nodeType = (node.type ?? '').toString().trim() || 'Untitled'
+  const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
   const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
   return st(key, nodeType)
 })
@@ -385,6 +386,11 @@ const headerTitle = computed(() =>
 
 /** Tabs for job list filtering */
 const jobTabs = ['All', 'Completed', 'Failed'] as const
+const tabLabel = (tab: (typeof jobTabs)[number]) => {
+  if (tab === 'All') return t('g.all')
+  if (tab === 'Completed') return t('g.completed')
+  return t('g.failed')
+}
 const selectedJobTab = ref<(typeof jobTabs)[number]>('All')
 
 type JobListItem = {
@@ -423,7 +429,7 @@ const deriveStateFromTask = (task: any): JobListItem['state'] => {
 }
 
 const formatTitleForTask = (task: any) => {
-  const prefix = 'Job'
+  const prefix = t('g.job')
   const shortId = String(task.promptId ?? '').split('-')[0]
   const idx = task.queueIndex ?? ''
   if (idx !== '') return `${prefix} #${idx}`
@@ -432,14 +438,14 @@ const formatTitleForTask = (task: any) => {
 }
 
 const formatMetaForTask = (task: any, state: JobListItem['state']) => {
-  if (state === 'running') return 'Running'
-  if (state === 'queued') return 'Queued'
+  if (state === 'running') return t('g.running')
+  if (state === 'queued') return t('g.queued')
   if (state === 'completed') {
     const time = formatTime(task.executionTimeInSeconds)
     return time || ''
   }
-  if (state === 'failed') return 'Failed'
-  if (state === 'cancelled') return 'Cancelled'
+  if (state === 'failed') return t('g.failed')
+  if (state === 'cancelled') return t('g.cancelled')
   return ''
 }
 

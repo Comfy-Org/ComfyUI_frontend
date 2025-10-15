@@ -31,7 +31,7 @@
             v-if="variant !== 'completed' && showClear"
             type="button"
             class="row-action-btn"
-            :aria-label="'Clear'"
+            :aria-label="t('g.clear')"
             @click.stop="emit('clear')"
           >
             <i class="icon-[lucide--x] size-4" />
@@ -40,16 +40,16 @@
             v-else-if="variant === 'completed'"
             type="button"
             class="row-action-btn row-action-btn-view"
-            :aria-label="'View'"
+            :aria-label="t('menuLabels.View')"
             @click.stop="emit('view')"
           >
-            <span>{{ t('View') }}</span>
+            <span>{{ t('menuLabels.View') }}</span>
           </button>
           <button
             v-if="showMenu"
             type="button"
             class="row-action-btn"
-            :aria-label="'More options'"
+            :aria-label="t('g.moreOptions')"
             @click.stop="emit('menu')"
           >
             <i class="icon-[lucide--more-horizontal] size-4" />
