@@ -1,18 +1,26 @@
 import { createI18n } from 'vue-i18n'
 
+// ESLint cannot statically resolve dynamic imports with relative paths in template strings,
+// but these are valid ES module imports that Vite processes correctly at build time.
+
 // Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }
 import en from './locales/en/main.json' with { type: 'json' }
 import enNodes from './locales/en/nodeDefs.json' with { type: 'json' }
 import enSettings from './locales/en/settings.json' with { type: 'json' }
 
-function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
+function buildLocale<
+  M extends Record<string, unknown>,
+  N extends Record<string, unknown>,
+  C extends Record<string, unknown>,
+  S extends Record<string, unknown>
+>(main: M, nodes: N, commands: C, settings: S) {
   return {
     ...main,
     nodeDefs: nodes,
     commands: commands,
     settings: settings
-  }
+  } as M & { nodeDefs: N; commands: C; settings: S }
 }
 
 // Locale loader map - dynamically import locales only when needed
@@ -112,7 +120,7 @@ export async function loadLocale(locale: string): Promise<void> {
       settings.default
     )
 
-    i18n.global.setLocaleMessage(locale, messages as any)
+    i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
     loadedLocales.add(locale)
   } catch (error) {
     console.error(`Failed to load locale "${locale}":`, error)
@@ -124,6 +132,9 @@ export async function loadLocale(locale: string): Promise<void> {
 const messages = {
   en: buildLocale(en, enNodes, enCommands, enSettings)
 }
+
+// Type for locale messages - inferred from the English locale structure
+type LocaleMessages = typeof messages.en
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2

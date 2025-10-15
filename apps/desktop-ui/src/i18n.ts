@@ -1,3 +1,5 @@
+// ESLint cannot statically resolve dynamic imports with path aliases (@frontend-locales/*),
+// but these are properly configured in tsconfig.json and resolved by Vite at build time.
 /* eslint-disable import-x/no-unresolved */
 // Import only English locale eagerly as the default/fallback
 import enCommands from '@frontend-locales/en/commands.json' with { type: 'json' }
@@ -6,13 +8,18 @@ import enNodes from '@frontend-locales/en/nodeDefs.json' with { type: 'json' }
 import enSettings from '@frontend-locales/en/settings.json' with { type: 'json' }
 import { createI18n } from 'vue-i18n'
 
-function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
+function buildLocale<
+  M extends Record<string, unknown>,
+  N extends Record<string, unknown>,
+  C extends Record<string, unknown>,
+  S extends Record<string, unknown>
+>(main: M, nodes: N, commands: C, settings: S) {
   return {
     ...main,
     nodeDefs: nodes,
     commands: commands,
     settings: settings
-  }
+  } as M & { nodeDefs: N; commands: C; settings: S }
 }
 
 // Locale loader map - dynamically import locales only when needed
@@ -112,7 +119,7 @@ async function loadLocale(locale: string): Promise<void> {
       settings.default
     )
 
-    i18n.global.setLocaleMessage(locale, messages as any)
+    i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
     loadedLocales.add(locale)
   } catch (error) {
     console.error(`Failed to load locale "${locale}":`, error)
@@ -124,6 +131,9 @@ async function loadLocale(locale: string): Promise<void> {
 const messages = {
   en: buildLocale(en, enNodes, enCommands, enSettings)
 }
+
+// Type for locale messages - inferred from the English locale structure
+type LocaleMessages = typeof messages.en
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
