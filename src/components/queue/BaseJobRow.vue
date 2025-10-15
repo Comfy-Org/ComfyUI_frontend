@@ -172,6 +172,10 @@ const variantClass = computed(() => `variant-${props.variant}`)
   color: var(--color-slate-100);
 }
 
+.job-row-secondary {
+  padding-right: var(--spacing-spacing-xs);
+}
+
 /* Variants can adjust border or icon backgrounds if needed */
 .variant-running .job-row-icon {
   background: var(--color-charcoal-500);
