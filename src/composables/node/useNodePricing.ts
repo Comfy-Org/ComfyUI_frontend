@@ -1141,9 +1141,15 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const generateAudio =
           String(generateAudioWidget.value).toLowerCase() === 'true'
 
-        if (model.includes('veo-3.0-fast-generate-001')) {
+        if (
+          model.includes('veo-3.0-fast-generate-001') ||
+          model.includes('veo-3.1-fast-generate')
+        ) {
           return generateAudio ? '$1.20/Run' : '$0.80/Run'
-        } else if (model.includes('veo-3.0-generate-001')) {
+        } else if (
+          model.includes('veo-3.0-generate-001') ||
+          model.includes('veo-3.1-generate')
+        ) {
           return generateAudio ? '$3.20/Run' : '$1.60/Run'
         }
 
