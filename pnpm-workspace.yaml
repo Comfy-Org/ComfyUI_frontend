@@ -49,6 +49,7 @@ catalog:
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-import-x: ^4.16.1
+  eslint-plugin-oxlint: ^1.23.0
   eslint-plugin-prettier: ^5.5.4
   eslint-plugin-storybook: ^9.1.6
   eslint-plugin-tailwindcss: 4.0.0-beta.0
@@ -63,6 +64,7 @@ catalog:
   knip: ^5.62.0
   lint-staged: ^15.2.7
   nx: 21.4.1
+  oxlint: ^1.23.0
   pinia: ^2.1.7
   postcss-html: ^1.8.0
   prettier: ^3.3.2
@@ -97,9 +99,6 @@ catalog:
 
 cleanupUnusedCatalogs: true
 
-overrides:
-  '@types/eslint': '-'
-
 ignoredBuiltDependencies:
   - '@firebase/util'
   - protobufjs
@@ -114,3 +113,6 @@ onlyBuiltDependencies:
   - esbuild
   - nx
   - oxc-resolver
+
+overrides:
+  '@types/eslint': '-'
