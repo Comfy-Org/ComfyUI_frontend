@@ -16,12 +16,6 @@ export const useMediaAssetGalleryStore = defineStore(
     }
 
     const openSingle = (asset: AssetMeta) => {
-      // Don't open gallery for 3D assets
-      if (asset.kind === '3D') {
-        console.warn('Gallery view not supported for 3D assets')
-        return
-      }
-
       // Convert AssetMeta to ResultItemImpl format
       const resultItem = new ResultItemImpl({
         filename: asset.name,

@@ -191,14 +191,14 @@ provide(MediaAssetKey, {
   showVideoControls
 })
 
-const containerClasses = computed(() => {
-  return cn(
+const containerClasses = computed(() =>
+  cn(
     'gap-1',
     selected
       ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
       : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
   )
-})
+)
 
 const formattedDuration = computed(() => {
   if (!asset?.duration) return ''
@@ -221,48 +221,40 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-const isCardOrOverlayHovered = computed(() => {
-  return isHovered.value || isOverlayHovered.value || isMenuOpen.value
-})
+const isCardOrOverlayHovered = computed(
+  () => isHovered.value || isOverlayHovered.value || isMenuOpen.value
+)
 
-const showHoverActions = computed(() => {
-  return !loading && !!asset && isCardOrOverlayHovered.value
-})
+const showHoverActions = computed(
+  () => !loading && !!asset && isCardOrOverlayHovered.value
+)
 
-const showActionsOverlay = computed(() => {
-  // Show actions on hover, hide only when playing and not hovered
-  return (
+const showActionsOverlay = computed(
+  () =>
     showHoverActions.value &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-  )
-})
+)
 
-const showZoomOverlay = computed(() => {
-  // Show zoom button for all media types except 3D on hover
-  return (
+const showZoomOverlay = computed(
+  () =>
     showHoverActions.value &&
     asset?.kind !== '3D' &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-  )
-})
+)
 
-const showDurationChips = computed(() => {
-  // Show chips on hover, even when playing
-  return (
+const showDurationChips = computed(
+  () =>
     !loading &&
     asset?.duration &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-  )
-})
+)
 
-const showOutputCount = computed(() => {
-  // Show output count on hover, even when playing
-  return (
+const showOutputCount = computed(
+  () =>
     !loading &&
     context?.outputCount &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-  )
-})
+)
 
 const handleCardClick = () => {
   if (asset) {

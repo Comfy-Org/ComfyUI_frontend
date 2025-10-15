@@ -106,9 +106,7 @@ const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
 const galleryStore = useMediaAssetGalleryStore()
 
-const showWorkflowOptions = computed(() => {
-  return context.value.type
-})
+const showWorkflowOptions = computed(() => context.value.type)
 
 const handleInspect = () => {
   if (asset.value) {

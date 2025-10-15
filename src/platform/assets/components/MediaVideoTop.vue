@@ -41,9 +41,7 @@ const isHovered = ref(false)
 const isPlaying = ref(false)
 
 // Always show controls when not playing, hide/show based on hover when playing
-const shouldShowControls = computed(() => {
-  return !isPlaying.value || isHovered.value
-})
+const shouldShowControls = computed(() => !isPlaying.value || isHovered.value)
 
 watch(shouldShowControls, (controlsVisible) => {
   emit('videoControlsChanged', controlsVisible)
