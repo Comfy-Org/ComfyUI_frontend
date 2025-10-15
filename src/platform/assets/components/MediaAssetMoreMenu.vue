@@ -1,6 +1,7 @@
 <template>
   <div class="flex flex-col">
     <IconTextButton
+      v-if="asset?.kind !== '3D'"
       type="transparent"
       class="dark-theme:text-white"
       label="Inspect asset"
@@ -93,6 +94,7 @@ import { computed, inject } from 'vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetButtonDivider from './MediaAssetButtonDivider.vue'
 
@@ -102,6 +104,7 @@ const { close } = defineProps<{
 
 const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
+const galleryStore = useMediaAssetGalleryStore()
 
 const showWorkflowOptions = computed(() => {
   return context.value.type
@@ -109,7 +112,7 @@ const showWorkflowOptions = computed(() => {
 
 const handleInspect = () => {
   if (asset.value) {
-    actions.viewAsset(asset.value.id)
+    galleryStore.openSingle(asset.value)
   }
   close()
 }

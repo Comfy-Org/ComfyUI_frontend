@@ -33,7 +33,7 @@
             :is="getTopComponent(asset.kind)"
             :asset="asset"
             :context="context"
-            @view="actions.viewAsset(asset!.id)"
+            @view="handleZoomClick"
             @download="actions.downloadAsset(asset!.id)"
             @play="actions.playAsset(asset!.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
@@ -41,31 +41,48 @@
           />
         </template>
 
-        <!-- Actions overlay (top-left) - show on hover or when menu is open, but not when video is playing -->
+        <!-- Actions overlay (top-left) - show on hover or when menu is open -->
         <template v-if="showActionsOverlay" #top-left>
-          <MediaAssetActions @menu-state-changed="isMenuOpen = $event" />
+          <MediaAssetActions
+            @menu-state-changed="isMenuOpen = $event"
+            @mouseenter="handleOverlayMouseEnter"
+            @mouseleave="handleOverlayMouseLeave"
+          />
         </template>
 
-        <!-- Zoom button (top-right) - show on hover, but not when video is playing -->
+        <!-- Zoom button (top-right) - show on hover for all media types -->
         <template v-if="showZoomOverlay" #top-right>
-          <IconButton size="sm" @click="actions.viewAsset(asset!.id)">
+          <IconButton
+            size="sm"
+            @click.stop="handleZoomClick"
+            @mouseenter="handleOverlayMouseEnter"
+            @mouseleave="handleOverlayMouseLeave"
+          >
             <i class="icon-[lucide--zoom-in] size-4" />
           </IconButton>
         </template>
 
-        <!-- Duration/Format chips (bottom-left) - hide when video is playing -->
+        <!-- Duration/Format chips (bottom-left) - show on hover even when playing -->
         <template v-if="showDurationChips" #bottom-left>
-          <SquareChip variant="light" :label="formattedDuration" />
-          <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
+          <div
+            class="flex flex-wrap items-center gap-1"
+            @mouseenter="handleOverlayMouseEnter"
+            @mouseleave="handleOverlayMouseLeave"
+          >
+            <SquareChip variant="light" :label="formattedDuration" />
+            <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
+          </div>
         </template>
 
-        <!-- Output count (bottom-right) - hide when video is playing -->
+        <!-- Output count (bottom-right) - show on hover even when playing -->
         <template v-if="showOutputCount" #bottom-right>
           <IconTextButton
             type="secondary"
             size="sm"
             :label="context?.outputCount?.toString() ?? '0'"
-            @click="actions.openMoreOutputs(asset?.id || '')"
+            @click.stop="actions.openMoreOutputs(asset?.id || '')"
+            @mouseenter="handleOverlayMouseEnter"
+            @mouseleave="handleOverlayMouseLeave"
           >
             <template #icon>
               <i class="icon-[lucide--layers] size-4" />
@@ -116,6 +133,7 @@ import { formatDuration } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import type {
   AssetContext,
   AssetMeta,
@@ -159,10 +177,12 @@ const cardContainerRef = ref<HTMLElement>()
 const isVideoPlaying = ref(false)
 const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
+const isOverlayHovered = ref(false)
 
 const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
+const galleryStore = useMediaAssetGalleryStore()
 
 provide(MediaAssetKey, {
   asset: toRef(() => asset),
@@ -201,33 +221,66 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-const showHoverActions = computed(() => {
-  return !loading && !!asset && (isHovered.value || isMenuOpen.value)
+const isCardOrOverlayHovered = computed(() => {
+  return isHovered.value || isOverlayHovered.value || isMenuOpen.value
 })
 
-const showZoomButton = computed(() => {
-  return asset?.kind === 'image' || asset?.kind === '3D'
+const showHoverActions = computed(() => {
+  return !loading && !!asset && isCardOrOverlayHovered.value
 })
 
 const showActionsOverlay = computed(() => {
-  return showHoverActions.value && !isVideoPlaying.value
+  // Show actions on hover, hide only when playing and not hovered
+  return (
+    showHoverActions.value &&
+    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+  )
 })
 
 const showZoomOverlay = computed(() => {
-  return showHoverActions.value && showZoomButton.value && !isVideoPlaying.value
+  // Show zoom button for all media types except 3D on hover
+  return (
+    showHoverActions.value &&
+    asset?.kind !== '3D' &&
+    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+  )
 })
 
 const showDurationChips = computed(() => {
-  return !loading && asset?.duration && !isVideoPlaying.value
+  // Show chips on hover, even when playing
+  return (
+    !loading &&
+    asset?.duration &&
+    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+  )
 })
 
 const showOutputCount = computed(() => {
-  return !loading && context?.outputCount && !isVideoPlaying.value
+  // Show output count on hover, even when playing
+  return (
+    !loading &&
+    context?.outputCount &&
+    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+  )
 })
 
 const handleCardClick = () => {
   if (asset) {
     actions.selectAsset(asset)
+  }
+}
+
+const handleOverlayMouseEnter = () => {
+  isOverlayHovered.value = true
+}
+
+const handleOverlayMouseLeave = () => {
+  isOverlayHovered.value = false
+}
+
+const handleZoomClick = () => {
+  if (asset) {
+    galleryStore.openSingle(asset)
   }
 }
 </script>

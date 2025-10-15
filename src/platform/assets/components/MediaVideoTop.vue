@@ -1,18 +1,19 @@
 <template>
   <div
     class="relative h-full w-full overflow-hidden rounded bg-black"
-    @mouseenter="showControls = true"
-    @mouseleave="showControls = false"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
     <video
       ref="videoRef"
-      :controls="showControls"
+      :controls="shouldShowControls"
       preload="none"
       :poster="asset.preview_url"
       class="relative h-full w-full object-contain"
       @click.stop
       @play="onVideoPlay"
       @pause="onVideoPause"
+      @ended="onVideoEnded"
     >
       <source :src="asset.src || ''" />
     </video>
@@ -20,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
 
@@ -36,22 +37,34 @@ const emit = defineEmits<{
 }>()
 
 const videoRef = ref<HTMLVideoElement>()
-const showControls = ref(true)
+const isHovered = ref(false)
+const isPlaying = ref(false)
 
-watch(showControls, (controlsVisible) => {
+// Always show controls when not playing, hide/show based on hover when playing
+const shouldShowControls = computed(() => {
+  return !isPlaying.value || isHovered.value
+})
+
+watch(shouldShowControls, (controlsVisible) => {
   emit('videoControlsChanged', controlsVisible)
 })
 
 onMounted(() => {
-  emit('videoControlsChanged', showControls.value)
+  emit('videoControlsChanged', shouldShowControls.value)
 })
 
 const onVideoPlay = () => {
-  showControls.value = true
+  isPlaying.value = true
   emit('videoPlayingStateChanged', true)
 }
 
 const onVideoPause = () => {
+  isPlaying.value = false
+  emit('videoPlayingStateChanged', false)
+}
+
+const onVideoEnded = () => {
+  isPlaying.value = false
   emit('videoPlayingStateChanged', false)
 }
 </script>
