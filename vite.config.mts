@@ -16,8 +16,7 @@ import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 dotenv.config()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
-// 🧪 TEST: Temporarily disabled SHOULD_MINIFY - using full optimization
-// const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
+const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
@@ -167,7 +166,7 @@ export default defineConfig({
       directoryAsNamespace: true
     }),
 
-    // Bundle analyzer - generates stats.html after build
+    // Bundle analyzer - generates dist/stats.html after build
     ...(!IS_DEV
       ? [
           visualizer({
@@ -182,20 +181,19 @@ export default defineConfig({
   ],
 
   build: {
-    minify: 'esbuild', // 🧪 TEST: Force enable minification
+    minify: SHOULD_MINIFY ? 'esbuild' : false,
     target: 'es2022',
     sourcemap: true,
     rollupOptions: {
-      // 🧪 TEST: Enable tree-shaking to see maximum optimization
       treeshake: true
     }
   },
 
   esbuild: {
-    minifyIdentifiers: true, // 🧪 TEST: Enable identifier minification
-    keepNames: false, // 🧪 TEST: Don't preserve names
-    minifySyntax: true, // 🧪 TEST: Enable syntax minification
-    minifyWhitespace: true // 🧪 TEST: Enable whitespace minification
+    minifyIdentifiers: SHOULD_MINIFY,
+    keepNames: true,
+    minifySyntax: SHOULD_MINIFY,
+    minifyWhitespace: SHOULD_MINIFY
   },
 
   test: {
