@@ -26,7 +26,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -317,9 +317,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     inputWidget: IWidgetLocator | undefined
   ) {
     // Use the first matching widget
-    const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(
-      this
-    )
+    const promotedWidget =
+      widget instanceof BaseWidget
+        ? widget.createCopyForNode(this)
+        : { ...widget, node: this }
 
     Object.assign(promotedWidget, {
       get name() {
