@@ -8,6 +8,7 @@
     :show-menu="computedShowMenu"
     @clear="emit('clear')"
     @menu="emit('menu')"
+    @view="emit('view')"
   >
     <template #icon>
       <div class="icon-box">
@@ -60,6 +61,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'clear'): void
   (e: 'menu'): void
+  (e: 'view'): void
 }>()
 
 const normalizedState = computed(() =>
@@ -92,7 +94,6 @@ const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear
   switch (props.state) {
     case 'queued':
-    case 'completed':
     case 'failed':
     case 'added':
       return true

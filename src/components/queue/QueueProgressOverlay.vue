@@ -145,6 +145,7 @@
               :show-menu="true"
               @clear="onClearItem(ji)"
               @menu="onMenuItem(ji)"
+              @view="onViewItem(ji)"
             />
           </div>
         </div>
@@ -502,8 +503,7 @@ const jobItems = computed<JobListItem[]>(() =>
       state,
       iconName,
       iconImageUrl,
-      showClear:
-        state === 'queued' || state === 'completed' || state === 'failed',
+      showClear: state === 'queued' || state === 'failed',
       taskRef: task
     } as JobListItem
   })
@@ -516,6 +516,10 @@ const onClearItem = async (item: JobListItem) => {
 
 const onMenuItem = (_item: JobListItem) => {
   // Placeholder for future context menu
+}
+
+const onViewItem = (_item: JobListItem) => {
+  // Stub for view action
 }
 
 const openExpandedFromEmpty = () => {

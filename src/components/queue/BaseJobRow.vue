@@ -6,27 +6,6 @@
     @mouseleave="isHovered = false"
   >
     <div class="job-row-left">
-      <div
-        class="job-row-actions"
-        :class="{ visible: isHovered && showActionsOnHover }"
-      >
-        <button
-          v-if="showClear"
-          class="icon-btn"
-          :aria-label="'Clear'"
-          @click.stop="emit('clear')"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </button>
-        <button
-          v-if="showMenu"
-          class="icon-btn"
-          :aria-label="'More options'"
-          @click.stop="emit('menu')"
-        >
-          <i class="icon-[lucide--more-horizontal] size-4" />
-        </button>
-      </div>
       <div class="job-row-icon">
         <slot name="icon">
           <i v-if="iconName" :class="[iconName, 'size-4']" />
@@ -42,15 +21,51 @@
     </div>
 
     <div class="job-row-right">
-      <div class="job-row-secondary">
-        <slot name="secondary">{{ secondaryText }}</slot>
-      </div>
+      <Transition name="job-actions" mode="out-in">
+        <div
+          v-if="isHovered && showActionsOnHover"
+          key="actions"
+          class="job-row-actions-inline"
+        >
+          <button
+            v-if="variant !== 'completed' && showClear"
+            type="button"
+            class="row-action-btn"
+            :aria-label="'Clear'"
+            @click.stop="emit('clear')"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </button>
+          <button
+            v-else-if="variant === 'completed'"
+            type="button"
+            class="row-action-btn row-action-btn-view"
+            :aria-label="'View'"
+            @click.stop="emit('view')"
+          >
+            <span>{{ t('View') }}</span>
+          </button>
+          <button
+            v-if="showMenu"
+            type="button"
+            class="row-action-btn"
+            :aria-label="'More options'"
+            @click.stop="emit('menu')"
+          >
+            <i class="icon-[lucide--more-horizontal] size-4" />
+          </button>
+        </div>
+        <div v-else key="secondary" class="job-row-secondary">
+          <slot name="secondary">{{ secondaryText }}</slot>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -82,11 +97,14 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'clear'): void
   (e: 'menu'): void
+  (e: 'view'): void
 }>()
 
 const isHovered = ref(false)
 
 const variantClass = computed(() => `variant-${props.variant}`)
+
+const { t } = useI18n()
 </script>
 
 <style scoped>
@@ -101,40 +119,17 @@ const variantClass = computed(() => `variant-${props.variant}`)
   background: var(--color-charcoal-600);
   color: white;
   font-size: 12px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .job-row-left {
   display: flex;
   align-items: center;
-  gap: var(--spacing-spacing-xs);
+  gap: var(--spacing-spacing-xxs);
   position: relative;
-}
-
-.job-row-actions {
-  position: absolute;
-  left: -4px;
-  display: none;
-  align-items: center;
-  gap: var(--spacing-spacing-xss);
-}
-
-.job-row-actions.visible {
-  display: inline-flex;
-}
-
-.icon-btn {
-  width: 24px;
-  height: 24px;
-  border: 0;
-  padding: 0;
-  background: var(--color-charcoal-500);
-  color: white;
-  border-radius: 6px;
-}
-
-.icon-btn:hover {
-  background: var(--color-charcoal-600);
-  opacity: 0.9;
 }
 
 .job-row-icon {
@@ -172,8 +167,45 @@ const variantClass = computed(() => `variant-${props.variant}`)
   color: var(--color-slate-100);
 }
 
+.job-row:hover {
+  background: var(--color-charcoal-500);
+  border-color: var(--color-charcoal-300);
+}
+
 .job-row-secondary {
   padding-right: var(--spacing-spacing-xs);
+}
+
+.job-row-actions-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-spacing-xs);
+  padding-right: calc(var(--spacing-spacing-xs) - var(--spacing-spacing-xxs));
+}
+
+.row-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-spacing-xss);
+  height: 24px;
+  padding: 0 var(--spacing-spacing-xxs);
+  border: 0;
+  background: var(--color-charcoal-300);
+  color: white;
+  border-radius: var(--corner-radius-corner-radius-sm, 4px);
+  transition:
+    background-color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.row-action-btn:hover {
+  opacity: 0.98;
+  transform: translateY(-1px);
+}
+
+.row-action-btn-view {
+  padding: 0 var(--spacing-spacing-xs);
 }
 
 /* Variants can adjust border or icon backgrounds if needed */
@@ -196,3 +228,6 @@ const variantClass = computed(() => `variant-${props.variant}`)
   background: var(--color-charcoal-500);
 }
 </style>
+.job-actions-enter-active, .job-actions-leave-active { transition: opacity 150ms
+ease, transform 150ms ease; } .job-actions-enter-from, .job-actions-leave-to {
+opacity: 0; transform: translateY(2px); }
