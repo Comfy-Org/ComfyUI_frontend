@@ -234,33 +234,29 @@ const scroll = (direction: number) => {
   scrollElement.scrollBy({ left: direction * 20 })
 }
 
+const ensureActiveTabVisible = async () => {
+  if (!selectedWorkflow.value) return
+
+  await nextTick()
+
+  const scrollPanelElement = scrollPanelRef.value?.$el as
+    | HTMLElement
+    | undefined
+  if (!scrollPanelElement) return
+
+  const activeTabElement = scrollPanelElement.querySelector(
+    '.p-togglebutton-checked'
+  ) as HTMLElement | null
+  if (!activeTabElement) return
+
+  activeTabElement.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+}
+
 // Scroll to active offscreen tab when opened
 watch(
   () => workflowStore.activeWorkflow,
-  async () => {
-    if (!selectedWorkflow.value) return
-
-    await nextTick()
-
-    const activeTabElement = document.querySelector('.p-togglebutton-checked')
-    if (!activeTabElement || !scrollPanelRef.value) return
-
-    const container = scrollPanelRef.value.$el.querySelector(
-      '.p-scrollpanel-content'
-    )
-    if (!container) return
-
-    const tabRect = activeTabElement.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
-
-    const offsetLeft = tabRect.left - containerRect.left
-    const offsetRight = tabRect.right - containerRect.right
-
-    if (offsetRight > 0) {
-      container.scrollBy({ left: offsetRight })
-    } else if (offsetLeft < 0) {
-      container.scrollBy({ left: offsetLeft })
-    }
+  () => {
+    void ensureActiveTabVisible()
   },
   { immediate: true }
 )
@@ -291,6 +287,7 @@ watch(scrollContent, (value) => {
       void nextTick(() => {
         // Force a new check after arrows are updated
         scrollState.measure()
+        void ensureActiveTabVisible()
       })
     },
     { immediate: true }
