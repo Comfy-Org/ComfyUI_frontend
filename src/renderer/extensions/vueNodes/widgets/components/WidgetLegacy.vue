@@ -72,19 +72,16 @@ function handleDown(e: PointerEvent) {
   if (!node || !widgetInstance || !pointer) return
   translateEvent(e)
   pointer.down(e)
-  if (widgetInstance.mouse) {
+  if (widgetInstance.mouse)
     pointer.onDrag = (e) =>
       widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
-    pointer.onClick = (e) => {
-      e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
-      widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
-    }
-  }
+  //NOTE: a mouseUp event is already registed under pointer.finally
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
 }
 function handleUp(e: PointerEvent) {
   if (!pointer) return
   translateEvent(e)
+  e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
   pointer.up(e)
 }
 function handleMove(e: PointerEvent) {
