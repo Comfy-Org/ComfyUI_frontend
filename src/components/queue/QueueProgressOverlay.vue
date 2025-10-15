@@ -130,34 +130,22 @@
             </div>
           </div>
 
-          <div class="px-[var(--spacing-spacing-sm)]">
-            <div class="flex flex-col gap-[var(--spacing-spacing-xs)]">
-              <div
-                v-for="item in stubJobItems"
-                :key="item.id"
-                class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] rounded border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xs)] text-[12px] text-white"
-              >
-                <div
-                  class="flex min-w-0 flex-1 items-center gap-[var(--spacing-spacing-xs)]"
-                >
-                  <div class="h-8 w-8 rounded bg-[var(--color-charcoal-500)]" />
-                  <div class="truncate opacity-90">{{ item.title }}</div>
-                </div>
-                <div class="flex items-center gap-[var(--spacing-spacing-xs)]">
-                  <span class="text-[var(--color-slate-100)]">{{
-                    item.meta
-                  }}</span>
-                  <button
-                    class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
-                    :aria-label="t('g.more')"
-                  >
-                    <i
-                      class="icon-[lucide--more-horizontal] block size-4 leading-none text-white"
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div
+            class="flex flex-col gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-sm)] pb-[var(--spacing-spacing-md)]"
+          >
+            <QueueJobItem
+              v-for="ji in jobItems"
+              :key="ji.id"
+              :state="ji.state"
+              :title="ji.title"
+              :right-text="ji.meta"
+              :icon-name="ji.iconName"
+              :icon-image-url="ji.iconImageUrl"
+              :show-clear="ji.showClear"
+              :show-menu="true"
+              @clear="onClearItem(ji)"
+              @menu="onMenuItem(ji)"
+            />
           </div>
         </div>
       </div>
@@ -264,6 +252,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import QueueJobItem from '@/components/queue/QueueJobItem.vue'
 import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -397,17 +386,137 @@ const headerTitle = computed(() =>
 const jobTabs = ['All', 'Completed', 'Failed'] as const
 const selectedJobTab = ref<(typeof jobTabs)[number]>('All')
 
-/** Stubbed job list items for structure only */
-const stubJobItems = computed(() => {
-  const base = [
-    { id: '1', title: 'Workflow A — Placeholder', meta: '00:12 • 1 output' },
-    { id: '2', title: 'Workflow B — Placeholder', meta: '01:03 • 3 outputs' },
-    { id: '3', title: 'Workflow C — Placeholder', meta: '00:45 • 2 outputs' }
+type JobListItem = {
+  id: string
+  title: string
+  meta: string
+  state:
+    | 'added'
+    | 'queued'
+    | 'loading'
+    | 'running'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+  iconName?: string
+  iconImageUrl?: string
+  showClear?: boolean
+  taskRef?: any
+}
+
+const formatTime = (time?: number) => {
+  if (time === undefined) return ''
+  return `${time.toFixed(2)}s`
+}
+
+const pluralize = (word: string, count: number) =>
+  count === 1 ? word : `${word}s`
+
+const deriveStateFromTask = (task: any): JobListItem['state'] => {
+  if (task.taskType === 'Pending') return 'queued'
+  if (task.taskType === 'Running') return 'running'
+  if (task.taskType === 'History') {
+    const status = task.displayStatus
+    if (status === 'Completed') return 'completed'
+    if (status === 'Failed') return 'failed'
+    if (status === 'Cancelled') return 'cancelled'
+  }
+  return 'queued'
+}
+
+const formatTitleForTask = (task: any) => {
+  const prefix = 'Job'
+  const shortId = String(task.promptId ?? '').split('-')[0]
+  const idx = task.queueIndex ?? ''
+  if (idx !== '') return `${prefix} #${idx}`
+  if (shortId) return `${prefix} ${shortId}`
+  return prefix
+}
+
+const formatMetaForTask = (task: any, state: JobListItem['state']) => {
+  if (state === 'running') return 'Running'
+  if (state === 'queued') return 'Queued'
+  if (state === 'completed') {
+    const time = formatTime(task.executionTimeInSeconds)
+    const outputs = task.flatOutputs?.length ?? 0
+    if (time && outputs)
+      return `${time} • ${outputs} ${pluralize('output', outputs)}`
+    if (time) return time
+    if (outputs) return `${outputs} ${pluralize('output', outputs)}`
+  }
+  if (state === 'failed') return 'Failed'
+  if (state === 'cancelled') return 'Cancelled'
+  return ''
+}
+
+const allTasksSorted = computed(() => {
+  const all = [
+    ...queueStore.pendingTasks,
+    ...queueStore.runningTasks,
+    ...queueStore.historyTasks
   ]
-  if (selectedJobTab.value === 'Completed') return base.slice(0, 2)
-  if (selectedJobTab.value === 'Failed') return base.slice(2)
-  return base
+  return all.sort((a, b) => b.queueIndex - a.queueIndex)
 })
+
+const filteredTasks = computed(() => {
+  if (selectedJobTab.value === 'Completed') {
+    return allTasksSorted.value.filter(
+      (t) => deriveStateFromTask(t) === 'completed'
+    )
+  }
+  if (selectedJobTab.value === 'Failed') {
+    return allTasksSorted.value.filter((t) => {
+      const s = deriveStateFromTask(t)
+      return s === 'failed'
+    })
+  }
+  return allTasksSorted.value
+})
+
+const jobItems = computed<JobListItem[]>(() =>
+  filteredTasks.value.map((task: any) => {
+    const state = deriveStateFromTask(task)
+
+    let iconName: string | undefined
+    let iconImageUrl: string | undefined
+
+    if (state === 'completed') {
+      const previewOutput = task.previewOutput
+      if (previewOutput && previewOutput.isImage) {
+        iconImageUrl = previewOutput.urlWithTimestamp
+      } else {
+        iconName = 'icon-[lucide--check]'
+      }
+    } else if (state === 'running') {
+      iconName = 'icon-[lucide--play]'
+    } else if (state === 'queued') {
+      iconName = 'icon-[lucide--clock]'
+    } else if (state === 'failed' || state === 'cancelled') {
+      iconName = 'icon-[lucide--alert-circle]'
+    }
+
+    return {
+      id: String(task.promptId),
+      title: formatTitleForTask(task),
+      meta: formatMetaForTask(task, state),
+      state,
+      iconName,
+      iconImageUrl,
+      showClear:
+        state === 'queued' || state === 'completed' || state === 'failed',
+      taskRef: task
+    } as JobListItem
+  })
+)
+
+const onClearItem = async (item: JobListItem) => {
+  if (!item.taskRef) return
+  await queueStore.delete(item.taskRef)
+}
+
+const onMenuItem = (_item: JobListItem) => {
+  // Placeholder for future context menu
+}
 
 const openExpandedFromEmpty = () => {
   isExpanded.value = true
