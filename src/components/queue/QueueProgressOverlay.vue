@@ -13,16 +13,17 @@
       <!-- Expanded state -->
       <div
         v-if="isExpanded"
-        class="flex w-full flex-col gap-[var(--spacing-spacing-xs)] p-[var(--spacing-spacing-xs)]"
+        class="flex w-full flex-col gap-[var(--spacing-spacing-md)]"
       >
         <div
-          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)]"
+          class="flex h-12 items-center justify-between gap-[var(--spacing-spacing-xs)] border-b border-[var(--color-charcoal-400)] px-[var(--spacing-spacing-xs)]"
         >
-          <div class="text-[14px] font-normal text-white">
+          <div
+            class="px-[var(--spacing-spacing-xs)] text-[14px] font-normal text-white"
+          >
             {{ headerTitle }}
           </div>
           <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
-            <!-- Placeholder: Overflow menu button; no actions wired yet. -->
             <button
               class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
               :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
@@ -42,100 +43,120 @@
             </button>
           </div>
         </div>
-        <div class="h-px w-full bg-[var(--color-charcoal-400)]" />
 
-        <div class="flex items-center">
-          <button
-            class="mr-[var(--spacing-spacing-md)] inline-flex h-6 flex-1 items-center justify-center gap-[var(--spacing-spacing-xxs)] rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-0 text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
-            :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
-            @click="openQueueSidebar"
-          >
-            <i-comfy:image-ai-edit
-              class="pointer-events-none block size-4 shrink-0 leading-none"
-              aria-hidden="true"
-            />
-            <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
-          </button>
+        <div class="flex w-full flex-col gap-[var(--spacing-spacing-md)]">
           <div
-            class="inline-flex h-6 items-center text-[12px] leading-none text-white opacity-90"
+            class="flex items-center justify-between px-[var(--spacing-spacing-sm)]"
           >
-            <span class="font-bold">{{ queuedCount }}</span>
-            <span class="ml-[var(--spacing-spacing-xss)]">{{
-              t('sideToolbar.queueProgressOverlay.queuedSuffix')
-            }}</span>
-          </div>
-          <button
-            class="ml-[var(--spacing-spacing-xs)] inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90 disabled:opacity-50"
-            :disabled="queuedCount === 0"
-            :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
-            @click="cancelQueuedWorkflows"
-          >
-            <i
-              class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-white"
-            />
-          </button>
-        </div>
-
-        <div
-          class="flex items-center justify-between gap-[var(--spacing-spacing-xs)]"
-        >
-          <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <button
-              v-for="tab in jobTabs"
-              :key="tab"
-              class="rounded border-0 px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] hover:opacity-90"
-              :class="[
-                selectedJobTab === tab
-                  ? 'bg-[var(--color-charcoal-500)] text-white'
-                  : 'text-[var(--color-slate-100)]'
-              ]"
-              @click="selectedJobTab = tab"
+              class="inline-flex h-8 flex-1 items-center justify-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-0 text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+              :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
+              @click="openQueueSidebar"
             >
-              {{ tab }}
-            </button>
-          </div>
-          <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
-            <button
-              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
-              :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
-            >
-              <i
-                class="icon-[lucide--filter] block size-4 leading-none text-white"
+              <i-comfy:image-ai-edit
+                class="pointer-events-none block size-4 shrink-0 leading-none"
+                aria-hidden="true"
               />
+              <span>{{
+                t('sideToolbar.queueProgressOverlay.showAssets')
+              }}</span>
             </button>
-            <button
-              class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
-              :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
-            >
-              <i
-                class="icon-[lucide--arrow-up-down] block size-4 leading-none text-white"
-              />
-            </button>
-          </div>
-        </div>
 
-        <div class="flex flex-col gap-[var(--spacing-spacing-xs)]">
-          <div
-            v-for="item in stubJobItems"
-            :key="item.id"
-            class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] rounded border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xs)] text-[12px] text-white"
-          >
             <div
-              class="flex min-w-0 flex-1 items-center gap-[var(--spacing-spacing-xs)]"
+              class="ml-[var(--spacing-spacing-md)] inline-flex items-center"
             >
-              <div class="h-8 w-8 rounded bg-[var(--color-charcoal-500)]" />
-              <div class="truncate opacity-90">{{ item.title }}</div>
-            </div>
-            <div class="flex items-center gap-[var(--spacing-spacing-xs)]">
-              <span class="text-[var(--color-slate-100)]">{{ item.meta }}</span>
+              <div
+                class="inline-flex h-6 items-center text-[12px] leading-none text-white opacity-90"
+              >
+                <span class="font-bold">{{ queuedCount }}</span>
+                <span class="ml-[var(--spacing-spacing-xss)]">{{
+                  t('sideToolbar.queueProgressOverlay.queuedSuffix')
+                }}</span>
+              </div>
               <button
-                class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
-                :aria-label="t('g.more')"
+                v-if="queuedCount > 0"
+                class="ml-[var(--spacing-spacing-xs)] inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+                :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+                @click="cancelQueuedWorkflows"
               >
                 <i
-                  class="icon-[lucide--more-horizontal] block size-4 leading-none text-white"
+                  class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-white"
                 />
               </button>
+            </div>
+          </div>
+
+          <div
+            class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-sm)]"
+          >
+            <div class="min-w-0 flex-1 overflow-x-auto">
+              <div
+                class="inline-flex items-center gap-[var(--spacing-spacing-xss)] whitespace-nowrap"
+              >
+                <button
+                  v-for="tab in jobTabs"
+                  :key="tab"
+                  class="h-6 rounded border-0 px-[var(--spacing-spacing-sm)] py-[var(--spacing-spacing-xss)] text-[12px] leading-none hover:opacity-90"
+                  :class="[
+                    selectedJobTab === tab
+                      ? 'bg-[var(--color-charcoal-500)] text-white'
+                      : 'bg-transparent text-[var(--color-slate-100)]'
+                  ]"
+                  @click="selectedJobTab = tab"
+                >
+                  {{ tab }}
+                </button>
+              </div>
+            </div>
+            <div
+              class="ml-[var(--spacing-spacing-xs)] flex shrink-0 items-center gap-[var(--spacing-spacing-xs)]"
+            >
+              <button
+                class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+                :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+              >
+                <i
+                  class="icon-[lucide--list-filter] block size-4 leading-none text-white"
+                />
+              </button>
+              <button
+                class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+                :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+              >
+                <i
+                  class="icon-[lucide--arrow-up-down] block size-4 leading-none text-white"
+                />
+              </button>
+            </div>
+          </div>
+
+          <div class="px-[var(--spacing-spacing-sm)]">
+            <div class="flex flex-col gap-[var(--spacing-spacing-xs)]">
+              <div
+                v-for="item in stubJobItems"
+                :key="item.id"
+                class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] rounded border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xs)] text-[12px] text-white"
+              >
+                <div
+                  class="flex min-w-0 flex-1 items-center gap-[var(--spacing-spacing-xs)]"
+                >
+                  <div class="h-8 w-8 rounded bg-[var(--color-charcoal-500)]" />
+                  <div class="truncate opacity-90">{{ item.title }}</div>
+                </div>
+                <div class="flex items-center gap-[var(--spacing-spacing-xs)]">
+                  <span class="text-[var(--color-slate-100)]">{{
+                    item.meta
+                  }}</span>
+                  <button
+                    class="inline-flex size-6 items-center justify-center rounded border-0 p-0 hover:opacity-90"
+                    :aria-label="t('g.more')"
+                  >
+                    <i
+                      class="icon-[lucide--more-horizontal] block size-4 leading-none text-white"
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -34,6 +34,9 @@
   --spacing-spacing-sm: 12px;
   --spacing-spacing-md: 16px;
 
+  /* Corner Radius Tokens */
+  --corner-radius-corner-radius-md: 8px;
+
   /* Palette Colors */
   --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;
