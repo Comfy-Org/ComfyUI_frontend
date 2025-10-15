@@ -6,10 +6,6 @@ export function useMediaAssetActions() {
     console.log('Asset selected:', asset)
   }
 
-  const viewAsset = (assetId: string) => {
-    console.log('Viewing asset:', assetId)
-  }
-
   const downloadAsset = (assetId: string) => {
     console.log('Downloading asset:', assetId)
   }
@@ -48,7 +44,6 @@ export function useMediaAssetActions() {
 
   return {
     selectAsset,
-    viewAsset,
     downloadAsset,
     deleteAsset,
     playAsset,
