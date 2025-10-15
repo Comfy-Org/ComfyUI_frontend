@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
@@ -9,6 +9,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
@@ -42,6 +43,7 @@ onMounted(() => {
     )
   widgetInstance.triggerDraw = draw
   useResizeObserver(canvasEl.value.parentElement, draw)
+  watch(() => useColorPaletteStore().activePaletteId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
 onBeforeUnmount(() => {
