@@ -95,10 +95,10 @@ const variantClass = computed(() => `variant-${props.variant}`)
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-spacing-xs);
-  padding: var(--spacing-spacing-xs);
+  padding: var(--spacing-spacing-xxs);
   border-radius: var(--corner-radius-corner-radius-md);
   border: 1px solid var(--color-charcoal-400);
-  background: var(--color-charcoal-800);
+  background: var(--color-charcoal-600);
   color: white;
   font-size: 12px;
 }

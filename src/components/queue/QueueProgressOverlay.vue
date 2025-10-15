@@ -495,9 +495,16 @@ const jobItems = computed<JobListItem[]>(() =>
       iconName = 'icon-[lucide--alert-circle]'
     }
 
+    const completedPreviewOutput =
+      state === 'completed' ? task.previewOutput : undefined
+    const displayTitle =
+      state === 'completed' && completedPreviewOutput?.filename
+        ? completedPreviewOutput.filename
+        : formatTitleForTask(task)
+
     return {
       id: String(task.promptId),
-      title: formatTitleForTask(task),
+      title: displayTitle,
       meta: formatMetaForTask(task, state),
       state,
       iconName,
