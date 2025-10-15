@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
@@ -33,10 +33,19 @@ onMounted(() => {
   widgetInstance = node.widgets?.find((w) => w.name === props.widget.name)
   if (!widgetInstance) return
   canvasEl.value.width *= scaleFactor
-  widgetInstance.callback = useChainCallback(widgetInstance.callback, draw)
-  draw()
+  if (!widgetInstance.triggerDraw)
+    widgetInstance.callback = useChainCallback(
+      widgetInstance.callback,
+      function (this: IBaseWidget) {
+        this?.triggerDraw?.()
+      }
+    )
+  widgetInstance.triggerDraw = draw
   useResizeObserver(canvasEl.value.parentElement, draw)
   pointer = new CanvasPointer(canvasEl.value)
+})
+onBeforeUnmount(() => {
+  if (widgetInstance) widgetInstance.triggerDraw = () => {}
 })
 
 function draw() {
