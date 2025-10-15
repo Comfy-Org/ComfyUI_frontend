@@ -1,4 +1,3 @@
-/* eslint-disable import-x/no-unresolved */
 import { createI18n } from 'vue-i18n'
 
 // Import only English locale eagerly as the default/fallback
@@ -113,7 +112,6 @@ export async function loadLocale(locale: string): Promise<void> {
       settings.default
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     i18n.global.setLocaleMessage(locale, messages as any)
     loadedLocales.add(locale)
   } catch (error) {

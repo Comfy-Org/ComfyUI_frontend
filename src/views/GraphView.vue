@@ -156,7 +156,6 @@ watchEffect(async () => {
   if (locale) {
     // Load the locale dynamically if not already loaded
     await loadLocale(locale)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(i18n.global.locale as any).value = locale
   }
 })

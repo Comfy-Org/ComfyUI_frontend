@@ -1,11 +1,10 @@
 /* eslint-disable import-x/no-unresolved */
-import { createI18n } from 'vue-i18n'
-
 // Import only English locale eagerly as the default/fallback
 import enCommands from '@frontend-locales/en/commands.json' with { type: 'json' }
 import en from '@frontend-locales/en/main.json' with { type: 'json' }
 import enNodes from '@frontend-locales/en/nodeDefs.json' with { type: 'json' }
 import enSettings from '@frontend-locales/en/settings.json' with { type: 'json' }
+import { createI18n } from 'vue-i18n'
 
 function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
   return {
@@ -83,7 +82,7 @@ const loadedLocales = new Set<string>(['en'])
 /**
  * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
  */
-export async function loadLocale(locale: string): Promise<void> {
+async function loadLocale(locale: string): Promise<void> {
   if (loadedLocales.has(locale)) {
     return
   }
@@ -113,7 +112,6 @@ export async function loadLocale(locale: string): Promise<void> {
       settings.default
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     i18n.global.setLocaleMessage(locale, messages as any)
     loadedLocales.add(locale)
   } catch (error) {
