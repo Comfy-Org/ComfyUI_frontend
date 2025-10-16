@@ -6,6 +6,41 @@ interface ShimResult {
   exports: string[]
 }
 
+type DeprecationInfo =
+  | {
+      /** Replacement API or migration guide text */
+      replacement: string
+      /** Version when this will be removed (e.g., 'v2.0.0') */
+      removeVersion: string
+      /** URL to migration guide (optional) */
+      migrationUrl?: string
+
+      skip?: false
+    }
+  | {
+      skip: true
+    }
+
+/**
+ * Map of deprecated file paths to their deprecation info.
+ * Key format: relative path from src/ without extension
+ */
+const deprecatedFiles: Record<string, DeprecationInfo> = {
+  all: {
+    removeVersion: 'v1.33',
+    // TODO: Update this
+    replacement: 'Use the new API instead',
+    // TODO: Update this
+    migrationUrl: 'https://comfy.org'
+  },
+  'scripts/app': {
+    skip: true
+  },
+  'scripts/api': {
+    skip: true
+  }
+}
+
 function isLegacyFile(id: string): boolean {
   return (
     id.endsWith('.ts') &&
@@ -63,12 +98,27 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
           const relativePath = path.relative(path.join(projectRoot, 'src'), id)
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
-          const shimComment = `// Shim for ${relativePath}\n`
+          let shimContent = `// Shim for ${relativePath}\n`
+
+          const fileKey = relativePath.replace(/\.ts$/, '').replace(/\\/g, '/')
+          const deprecationInfo =
+            deprecatedFiles[fileKey] || deprecatedFiles['all']
+          if (deprecationInfo && deprecationInfo.skip != true) {
+            let warningMessage = `[ComfyUI Deprecated] Importing from ${shimFileName} is deprecated. ${deprecationInfo.replacement}. This will be removed in ${deprecationInfo.removeVersion}.`
+
+            if (deprecationInfo.migrationUrl) {
+              warningMessage += ` See: ${deprecationInfo.migrationUrl}`
+            }
+
+            shimContent += `console.warn('${warningMessage}');\n`
+          }
+
+          shimContent += result.exports.join('')
 
           this.emitFile({
             type: 'asset',
             fileName: shimFileName,
-            source: shimComment + result.exports.join('')
+            source: shimContent
           })
         }
 
