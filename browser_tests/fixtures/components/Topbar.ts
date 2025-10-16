@@ -105,7 +105,7 @@ export class Topbar {
    * Close the topbar menu by clicking outside
    */
   async closeTopbarMenu() {
-    await this.page.locator('body').click({ position: { x: 10, y: 10 } })
+    await this.page.locator('body').click({ position: { x: 300, y: 10 } })
     await expect(this.menuLocator).not.toBeVisible()
   }
 
