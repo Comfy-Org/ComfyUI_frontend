@@ -84,6 +84,28 @@ export const NonInteractive: Story = {
   }
 }
 
+export const WithPreviewImage: Story = {
+  args: {
+    asset: createAssetData({
+      preview_url: '/assets/images/comfy-logo-single.svg'
+    }),
+    interactive: true
+  },
+  decorators: [
+    () => ({
+      template:
+        '<div class="p-8 bg-gray-50 dark-theme:bg-gray-900 max-w-96"><story /></div>'
+    })
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story: 'AssetCard with a preview image displayed.'
+      }
+    }
+  }
+}
+
 export const EdgeCases: Story = {
   render: () => ({
     components: { AssetCard },

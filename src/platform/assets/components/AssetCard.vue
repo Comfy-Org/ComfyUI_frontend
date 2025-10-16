@@ -25,7 +25,13 @@
     @keydown.enter="interactive && $emit('select', asset)"
   >
     <div class="relative aspect-square w-full overflow-hidden">
+      <img
+        v-if="asset.preview_url"
+        :src="asset.preview_url"
+        class="h-full w-full object-contain"
+      />
       <div
+        v-else
         class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
