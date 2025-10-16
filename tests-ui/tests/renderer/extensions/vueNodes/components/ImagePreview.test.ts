@@ -113,7 +113,12 @@ describe('ImagePreview', () => {
 
     // Action buttons should now be visible
     expect(wrapper.find('.actions').exists()).toBe(true)
-    expect(wrapper.findAll('.action-btn')).toHaveLength(2) // download, remove (no mask for multiple images)
+    // For multiple images: download and remove buttons (no mask button)
+    expect(wrapper.find('[aria-label="Download image"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Remove image"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Edit or mask image"]').exists()).toBe(
+      false
+    )
   })
 
   it('hides action buttons when not hovering', async () => {
