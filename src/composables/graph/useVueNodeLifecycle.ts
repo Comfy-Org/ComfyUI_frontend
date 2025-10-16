@@ -9,6 +9,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
+import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
+import { useFixVueNodeOverlap } from '@/renderer/extensions/vueNodes/composables/useFixVueNodeOverlap'
 import { app as comfyApp } from '@/scripts/app'
 
 function useVueNodeLifecycleIndividual() {
@@ -19,6 +22,8 @@ function useVueNodeLifecycleIndividual() {
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
 
   const { startSync } = useLayoutSync()
+
+  const { fixOverlaps } = useFixVueNodeOverlap()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -77,6 +82,10 @@ function useVueNodeLifecycleIndividual() {
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
+        // Run the overlap fix for vue nodes
+        setTimeout(() => {
+          fixOverlaps()
+        }, 5000)
       } else {
         disposeNodeManagerAndSyncs()
       }
