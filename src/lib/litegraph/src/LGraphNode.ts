@@ -3326,11 +3326,14 @@ export class LGraphNode
    * Gets the position of an output slot, in graph co-ordinates.
    *
    * This method is preferred over the legacy {@link getConnectionPos} method.
-   * @param slot Output slot index
+   * @param outputSlotIndex Output slot index
    * @returns Position of the output slot
    */
-  getOutputPos(slot: number): Point {
-    return calculateOutputSlotPos(this.#getSlotPositionContext(), slot)
+  getOutputPos(outputSlotIndex: number): Point {
+    return calculateOutputSlotPos(
+      this.#getSlotPositionContext(),
+      outputSlotIndex
+    )
   }
 
   /** @inheritdoc */

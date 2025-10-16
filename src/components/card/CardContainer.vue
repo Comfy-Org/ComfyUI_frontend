@@ -8,26 +8,78 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const { ratio = 'square', type } = defineProps<{
-  ratio?: 'smallSquare' | 'square' | 'portrait' | 'tallPortrait'
-  type?: string
+import { cn } from '@/utils/tailwindUtil'
+
+const {
+  size = 'regular',
+  variant = 'default',
+  rounded = 'md',
+  customAspectRatio,
+  hasBorder = true,
+  hasBackground = true,
+  hasShadow = true,
+  hasCursor = true,
+  class: customClass = ''
+} = defineProps<{
+  size?: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall'
+  variant?: 'default' | 'ghost' | 'outline'
+  rounded?: 'none' | 'md' | 'lg' | 'xl'
+  customAspectRatio?: string
+  hasBorder?: boolean
+  hasBackground?: boolean
+  hasShadow?: boolean
+  hasCursor?: boolean
+  class?: string
 }>()
 
+// Base structure classes
+const structureClasses = 'flex flex-col overflow-hidden'
+
+// Rounded corners
+const roundedClasses = {
+  none: 'rounded-none',
+  md: 'rounded',
+  lg: 'rounded-lg',
+  xl: 'rounded-xl'
+} as const
+
 const containerClasses = computed(() => {
-  const baseClasses =
-    'cursor-pointer flex flex-col bg-white dark-theme:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden'
-
-  if (type === 'workflow-template-card') {
-    return `cursor-pointer p-2 flex flex-col hover:bg-white dark-theme:hover:bg-zinc-800 rounded-lg transition-background duration-200 ease-in-out`
+  // Variant styles
+  const variantClasses = {
+    default: cn(
+      hasBackground && 'bg-white dark-theme:bg-zinc-800',
+      hasBorder && 'border border-zinc-200 dark-theme:border-zinc-700',
+      hasShadow && 'shadow-sm',
+      hasCursor && 'cursor-pointer'
+    ),
+    ghost: cn(
+      hasCursor && 'cursor-pointer',
+      'p-2 transition-colors duration-200'
+    ),
+    outline: cn(
+      hasBorder && 'border-2 border-zinc-300 dark-theme:border-zinc-600',
+      hasCursor && 'cursor-pointer',
+      'hover:border-zinc-400 dark-theme:hover:border-zinc-500 transition-colors'
+    )
   }
 
-  const ratioClasses = {
-    smallSquare: 'aspect-240/311',
-    square: 'aspect-256/308',
-    portrait: 'aspect-256/325',
-    tallPortrait: 'aspect-256/353'
-  }
+  // Size/aspect ratio
+  const aspectRatio = customAspectRatio
+    ? `aspect-[${customAspectRatio}]`
+    : {
+        mini: 'aspect-100/120',
+        compact: 'aspect-240/311',
+        regular: 'aspect-256/308',
+        portrait: 'aspect-256/325',
+        tall: 'aspect-256/353'
+      }[size]
 
-  return `${baseClasses} ${ratioClasses[ratio]}`
+  return cn(
+    structureClasses,
+    roundedClasses[rounded],
+    variantClasses[variant],
+    aspectRatio,
+    customClass
+  )
 })
 </script>

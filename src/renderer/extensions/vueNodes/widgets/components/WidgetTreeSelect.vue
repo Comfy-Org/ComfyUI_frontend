@@ -4,6 +4,7 @@
       v-model="localValue"
       v-bind="combinedProps"
       class="w-full text-xs"
+      :aria-label="widget.name"
       size="small"
       @update:model-value="onChange"
     />

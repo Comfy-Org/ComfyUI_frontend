@@ -1,5 +1,8 @@
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
@@ -28,6 +31,14 @@ type MenuCommandGroup = {
    * Note: Commands must be defined in `commands` array in the extension.
    */
   commands: string[]
+}
+
+export interface TopbarBadge {
+  text: string
+  /**
+   * Optional badge label (e.g., "BETA", "ALPHA", "NEW")
+   */
+  label?: string
 }
 
 export type MissingNodeType =
@@ -72,6 +83,10 @@ export interface ComfyExtension {
    */
   aboutPageBadges?: AboutPageBadge[]
   /**
+   * Badges to add to the top bar
+   */
+  topbarBadges?: TopbarBadge[]
+  /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
    */
@@ -105,6 +120,20 @@ export interface ComfyExtension {
    * @returns An array of command ids to add to the selection toolbox
    */
   getSelectionToolboxCommands?(selectedItem: Positionable): string[]
+
+  /**
+   * Allows the extension to add context menu items to canvas right-click menus
+   * @param canvas The canvas instance
+   * @returns An array of context menu items to add
+   */
+  getCanvasMenuItems?(canvas: LGraphCanvas): IContextMenuValue[]
+
+  /**
+   * Allows the extension to add context menu items to node right-click menus
+   * @param node The node being right-clicked
+   * @returns An array of context menu items to add
+   */
+  getNodeMenuItems?(node: LGraphNode): IContextMenuValue[]
 
   /**
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**

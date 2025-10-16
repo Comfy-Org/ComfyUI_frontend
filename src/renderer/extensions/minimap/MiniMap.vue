@@ -2,7 +2,7 @@
   <div
     v-if="visible && initialized"
     ref="minimapRef"
-    class="minimap-main-container absolute right-2 bottom-[66px] z-1000 flex md:right-11"
+    class="minimap-main-container absolute right-2 bottom-[66px] z-1000 flex"
   >
     <MiniMapPanel
       v-if="showOptionsPanel"
@@ -17,11 +17,11 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative"
+      class="litegraph-minimap relative bg-interface-panel-surface"
       :style="containerStyles"
     >
       <Button
-        class="absolute z-10"
+        class="absolute top-1 left-1 z-10 hover:bg-button-hover-surface!"
         size="small"
         text
         severity="secondary"
@@ -32,7 +32,7 @@
         </template>
       </Button>
       <Button
-        class="absolute right-0 z-10"
+        class="absolute top-1 right-1 z-10 hover:bg-button-hover-surface!"
         size="small"
         text
         severity="secondary"
@@ -45,7 +45,7 @@
       </Button>
 
       <hr
-        class="absolute top-5 h-px border-0 bg-node-component-border"
+        class="absolute top-7 h-px border-0 bg-node-component-border"
         :style="{
           width: containerStyles.width
         }"

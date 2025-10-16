@@ -56,13 +56,6 @@ import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 
 interface Props {
   option: MenuOption
-  containerStyles: {
-    width: string
-    height: string
-    backgroundColor: string
-    border: string
-    borderRadius: string
-  }
 }
 
 interface Emits {
@@ -117,11 +110,9 @@ const submenuPt = computed(() => ({
   content: {
     class: [
       'text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700'
-    ],
-    style: {
-      backgroundColor: props.containerStyles.backgroundColor
-    }
+      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700',
+      'bg-interface-panel-surface'
+    ]
   }
 }))
 </script>
