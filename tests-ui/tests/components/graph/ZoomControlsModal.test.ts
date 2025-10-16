@@ -76,7 +76,7 @@ describe('ZoomControlsModal', () => {
   it('should execute zoom in command when zoom in button is clicked', async () => {
     const wrapper = createWrapper()
 
-    const buttons = wrapper.findAll('button')
+    const buttons = wrapper.findAll('.cursor-pointer')
     const zoomInButton = buttons.find((btn) =>
       btn.text().includes('graphCanvasMenu.zoomIn')
     )
@@ -90,7 +90,7 @@ describe('ZoomControlsModal', () => {
   it('should execute zoom out command when zoom out button is clicked', async () => {
     const wrapper = createWrapper()
 
-    const buttons = wrapper.findAll('button')
+    const buttons = wrapper.findAll('.cursor-pointer')
     const zoomOutButton = buttons.find((btn) =>
       btn.text().includes('graphCanvasMenu.zoomOut')
     )
@@ -104,7 +104,7 @@ describe('ZoomControlsModal', () => {
   it('should execute fit view command when fit view button is clicked', async () => {
     const wrapper = createWrapper()
 
-    const buttons = wrapper.findAll('button')
+    const buttons = wrapper.findAll('.cursor-pointer')
     const fitViewButton = buttons.find((btn) =>
       btn.text().includes('zoomControls.zoomToFit')
     )
@@ -113,34 +113,6 @@ describe('ZoomControlsModal', () => {
     await fitViewButton!.trigger('click')
 
     expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.FitView')
-  })
-
-  it('should emit close when minimap toggle button is clicked', async () => {
-    const wrapper = createWrapper()
-
-    const minimapButton = wrapper.find('[data-testid="toggle-minimap-button"]')
-    expect(minimapButton.exists()).toBe(true)
-
-    await minimapButton.trigger('click')
-
-    expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.ToggleMinimap')
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')).toHaveLength(1)
-  })
-
-  it('should not emit close when other command buttons are clicked', async () => {
-    const wrapper = createWrapper()
-
-    const buttons = wrapper.findAll('button')
-    const fitViewButton = buttons.find((btn) =>
-      btn.text().includes('zoomControls.zoomToFit')
-    )
-
-    expect(fitViewButton).toBeDefined()
-    await fitViewButton!.trigger('click')
-
-    expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.FitView')
-    expect(wrapper.emitted('close')).toBeFalsy()
   })
 
   it('should call setAppZoomFromPercentage with valid zoom input values', async () => {
@@ -169,26 +141,10 @@ describe('ZoomControlsModal', () => {
     expect(mockSetAppZoom).not.toHaveBeenCalled()
   })
 
-  it('should display "Hide Minimap" when minimap is visible', () => {
-    mockSettingGet.mockReturnValue(true)
-    const wrapper = createWrapper()
-
-    const minimapButton = wrapper.find('[data-testid="toggle-minimap-button"]')
-    expect(minimapButton.text()).toContain('zoomControls.hideMinimap')
-  })
-
-  it('should display "Show Minimap" when minimap is hidden', () => {
-    mockSettingGet.mockReturnValue(false)
-    const wrapper = createWrapper()
-
-    const minimapButton = wrapper.find('[data-testid="toggle-minimap-button"]')
-    expect(minimapButton.text()).toContain('zoomControls.showMinimap')
-  })
-
   it('should display keyboard shortcuts for commands', () => {
     const wrapper = createWrapper()
 
-    const buttons = wrapper.findAll('button')
+    const buttons = wrapper.findAll('.cursor-pointer')
     expect(buttons.length).toBeGreaterThan(0)
 
     // Each command button should show the keyboard shortcut

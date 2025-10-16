@@ -17,6 +17,11 @@
     "chart": "Chart",
     "chartLowercase": "chart",
     "file": "file",
+    "selectedFile": "Selected file",
+    "none": "None",
+    "markdown": "markdown",
+    "content": "content",
+    "audioProgress": "Audio progress",
     "viewImageOfTotal": "View image {index} of {total}",
     "viewVideoOfTotal": "View video {index} of {total}",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
@@ -199,7 +204,8 @@
     "volume": "Volume",
     "halfSpeed": "0.5x",
     "1x": "1x",
-    "2x": "2x"
+    "2x": "2x",
+    "beta": "BETA"
   },
   "manager": {
     "title": "Custom Nodes Manager",

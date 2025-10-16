@@ -24,11 +24,14 @@
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
 
+  /* Spacing */
+  --spacing-xs: 8px;
+
   /* Font Families */
   --font-inter: 'Inter', sans-serif;
 
   /* Palette Colors */
-  --color-charcoal-100: #55565e;
+  --color-charcoal-100: #171718;
   --color-charcoal-200: #494a50;
   --color-charcoal-300: #3c3d42;
   --color-charcoal-400: #313235;
@@ -84,6 +87,10 @@
 
   --color-bypass: #6a246a;
   --color-error: #962a2a;
+
+  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
+  --text-xxxs: 0.5625rem;
+  --text-xxxs--line-height: calc(1 / 0.5625);
 
   --color-blue-selection: rgb(from var(--color-blue-100) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
@@ -146,8 +153,18 @@
 
   --accent-primary: var(--color-charcoal-700);
   --backdrop: var(--color-white);
+  --button-hover-surface: var(--color-gray-200);
+  --button-active-surface: var(--color-gray-400);
   --dialog-surface: var(--color-neutral-200);
+  --interface-menu-component-surface-hovered: var(--color-gray-200);
+  --interface-menu-component-surface-selected: var(--color-gray-400);
+  --interface-menu-keybind-surface-default: var(--color-gray-500);
+  --interface-panel-surface: var(--color-pure-white);
+  --interface-stroke: var(--color-gray-300);
+  --nav-background: var(--color-pure-white);
+  --node-border: var(--color-gray-300);
   --node-component-border: var(--color-gray-400);
+  --node-component-disabled: var(--color-alpha-stone-100-20);
   --node-component-executing: var(--color-blue-500);
   --node-component-header: var(--fg-color);
   --node-component-header-icon: var(--color-stone-200);
@@ -159,7 +176,7 @@
   --node-component-slot-dot-outline: var(--color-black);
   --node-component-slot-text: var(--color-stone-200);
   --node-component-surface-highlight: var(--color-stone-100);
-  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-hovered: var(--color-gray-200);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-white);
   --node-component-tooltip: var(--color-charcoal-700);
@@ -170,18 +187,30 @@
     from var(--color-zinc-500) r g b / 10%
   );
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
-  --node-component-disabled: var(--color-alpha-stone-100-20);
+  --node-divider: var(--color-sand-100);
   --node-icon-disabled: var(--color-alpha-gray-500-50);
   --node-stroke: var(--color-gray-400);
   --node-stroke-selected: var(--color-accent-primary);
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-blue-100);
+  --text-secondary: var(--color-stone-100);
+  --text-primary: var(--color-charcoal-700);
+  --input-surface: rgba(0, 0, 0, 0.15);
 }
 
 .dark-theme {
   --accent-primary: var(--color-pure-white);
   --backdrop: var(--color-neutral-900);
+  --button-hover-surface: var(--color-charcoal-600);
+  --button-active-surface: var(--color-charcoal-600);
   --dialog-surface: var(--color-neutral-700);
+  --interface-menu-component-surface-hovered: var(--color-charcoal-400);
+  --interface-menu-component-surface-selected: var(--color-charcoal-300);
+  --interface-menu-keybind-surface-default: var(--color-charcoal-200);
+  --interface-panel-surface: var(--color-charcoal-100);
+  --interface-stroke: var(--color-charcoal-400);
+  --nav-background: var(--color-charcoal-100);
+  --node-border: var(--color-charcoal-500);
   --node-component-border: var(--color-stone-200);
   --node-component-border-error: var(--color-danger-100);
   --node-component-border-executing: var(--color-blue-500);
@@ -194,7 +223,7 @@
   --node-component-slot-dot-outline: var(--color-white);
   --node-component-slot-text: var(--color-slate-200);
   --node-component-surface-highlight: var(--color-slate-100);
-  --node-component-surface-hovered: var(--color-charcoal-400);
+  --node-component-surface-hovered: var(--color-charcoal-600);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-charcoal-800);
   --node-component-tooltip: var(--color-white);
@@ -202,16 +231,29 @@
   --node-component-tooltip-surface: var(--color-charcoal-800);
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
   --node-component-disabled: var(--color-alpha-charcoal-600-30);
+  --node-divider: var(--color-charcoal-500);
   --node-icon-disabled: var(--color-alpha-stone-100-20);
   --node-stroke: var(--color-stone-200);
   --node-stroke-selected: var(--color-pure-white);
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-blue-100);
+  --text-secondary: var(--color-slate-100);
+  --text-primary: var(--color-pure-white);
+  --input-surface: rgba(130, 130, 130, 0.1);
 }
 
 @theme inline {
   --color-backdrop: var(--backdrop);
+  --color-button-hover-surface: var(--button-hover-surface);
+  --color-button-active-surface: var(--button-active-surface);
   --color-dialog-surface: var(--dialog-surface);
+  --color-interface-menu-component-surface-hovered: var(--interface-menu-component-surface-hovered);
+  --color-interface-menu-component-surface-selected: var(--interface-menu-component-surface-selected);
+  --color-interface-menu-keybind-surface-default: var(--interface-menu-keybind-surface-default);
+  --color-interface-panel-surface: var(--interface-panel-surface);
+  --color-interface-stroke: var(--interface-stroke);
+  --color-nav-background: var(--nav-background);
+  --color-node-border: var(--node-border);
   --color-node-component-border: var(--node-component-border);
   --color-node-component-executing: var(--node-component-executing);
   --color-node-component-header: var(--node-component-header);
@@ -244,11 +286,15 @@
     --node-component-widget-skeleton-surface
   );
   --color-node-component-disabled: var(--node-component-disabled);
+  --color-node-divider: var(--node-divider);
   --color-node-icon-disabled: var(--node-icon-disabled);
   --color-node-stroke: var(--node-stroke);
   --color-node-stroke-selected: var(--node-stroke-selected);
   --color-node-stroke-error: var(--node-stroke-error);
   --color-node-stroke-executing: var(--node-stroke-executing);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-input-surface: var(--input-surface);
 }
 
 @custom-variant dark-theme {

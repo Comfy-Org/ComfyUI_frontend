@@ -7,11 +7,10 @@
     <Transition name="slide-up">
       <Panel
         v-if="visible"
-        class="selection-toolbox pointer-events-auto rounded-lg"
-        :style="`backgroundColor: ${containerStyles.backgroundColor};`"
+        class="selection-toolbox pointer-events-auto rounded-lg border border-interface-stroke bg-interface-panel-surface"
         :pt="{
           header: 'hidden',
-          content: 'p-1 h-10 flex flex-row gap-1'
+          content: 'p-2 h-12 flex flex-row gap-1'
         }"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
@@ -65,7 +64,6 @@ import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionTo
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
@@ -78,8 +76,6 @@ const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
-const minimap = useMinimap()
-const containerStyles = minimap.containerStyles
 
 const toolboxRef = ref<HTMLElement | undefined>()
 const { visible } = useSelectionToolboxPosition(toolboxRef)

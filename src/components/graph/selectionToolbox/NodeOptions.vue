@@ -28,7 +28,6 @@
       :key="`submenu-${option.label}`"
       :ref="(el) => setSubmenuRef(`submenu-${option.label}`, el)"
       :option="option"
-      :container-styles="containerStyles"
       @submenu-click="handleSubmenuClick"
     />
   </div>
@@ -55,7 +54,6 @@ import type {
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
@@ -75,8 +73,6 @@ const currentSubmenu = ref<string | null>(null)
 const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 const canvasInteractions = useCanvasInteractions()
-const minimap = useMinimap()
-const containerStyles = minimap.containerStyles
 
 let lastLogTs = 0
 const LOG_INTERVAL = 120 // ms
@@ -264,11 +260,9 @@ const pt = computed(() => ({
   content: {
     class: [
       'mt-2 text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700'
-    ],
-    style: {
-      backgroundColor: containerStyles.value.backgroundColor
-    }
+      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700',
+      'bg-interface-panel-surface'
+    ]
   }
 }))
 
