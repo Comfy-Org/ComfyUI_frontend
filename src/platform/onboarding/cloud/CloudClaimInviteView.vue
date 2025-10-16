@@ -34,14 +34,6 @@
           {{ t('cloudInvite_contactLink_suffix') }}</span
         >
       </div>
-      <div>
-        <span
-          class="cursor-pointer text-blue-400 no-underline"
-          @click="onSwitchAccounts"
-        >
-          {{ t('cloudInvite_switchAccounts') }}</span
-        >
-      </div>
 
       <!-- Signed in as -->
       <section class="mt-10">
@@ -50,26 +42,22 @@
         </p>
 
         <div class="mt-4 flex flex-col items-center justify-center gap-4">
-          <!-- Avatar box -->
-          <div
-            class="relative grid h-28 w-28 place-items-center rounded-2xl border border-neutral-700 bg-neutral-800 shadow-inner"
-          >
-            <span class="text-5xl font-semibold select-none">{{
-              userInitial
-            }}</span>
-            <!-- subtle ring to mimic screenshot gradient border -->
-            <span
-              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-neutral-600/40 ring-inset"
-            ></span>
-          </div>
-
           <div class="text-left">
-            <div class="text-sm break-all">
+            <div class="font-bold break-all">
               {{ userEmail }}
             </div>
           </div>
         </div>
       </section>
+
+      <div class="mt-4">
+        <span
+          class="cursor-pointer text-blue-400 no-underline"
+          @click="onSwitchAccounts"
+        >
+          {{ t('cloudInvite_switchAccounts') }}</span
+        >
+      </div>
 
       <Button
         type="button"
