@@ -48,6 +48,7 @@ export default defineConfig([
       '.i18nrc.cjs',
       'components.d.ts',
       'lint-staged.config.js',
+      'scripts/benchmark-prettier.js',
       'vitest.setup.ts',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
