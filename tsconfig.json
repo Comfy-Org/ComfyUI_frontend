@@ -49,6 +49,7 @@
     "rootDir": "./"
   },
   "include": [
+    ".pages/*.ts",
     ".storybook/**/*",
     "eslint.config.ts",
     "global.d.ts",

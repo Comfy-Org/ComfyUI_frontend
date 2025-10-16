@@ -32,14 +32,29 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@trivago/prettier-plugin-sort-imports',
+    // 3D and collaboration libraries
+    'three',
+    '@types/three',
+    'yjs'
   ],
   ignore: [
     // Auto generated manager types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts'
+    'src/scripts/ui/components/splitButton.ts',
+    '.pages/vite.config.ts',
+    // Utility files with exports that may be used by extensions or future features
+    'src/constants/uvMirrors.ts',
+    'src/lib/litegraph/src/measure.ts',
+    'src/lib/litegraph/src/widgets/DisconnectedWidget.ts',
+    'src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts',
+    'src/utils/electronMirrorCheck.ts',
+    'src/renderer/extensions/vueNodes/composables/slotLinkDragContext.ts',
+    'src/types/spatialIndex.ts',
+    'src/lib/litegraph/src/litegraph.ts',
+    'src/utils/vintageClipboard.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
