@@ -1223,7 +1223,7 @@ class MaskEditorDialog extends ComfyDialog {
         // Create and set new image
         const newImage = new Image()
         newImage.crossOrigin = 'anonymous'
-        newImage.src = mkFileUrl({ ref: filepath, preview: true })
+        newImage.src = mkFileUrl({ ref: actualFilepath, preview: true })
         ComfyApp.clipspace.imgs[paintedIndex] = newImage
 
         // Update images array - create if it doesn't exist
@@ -1276,7 +1276,7 @@ class MaskEditorDialog extends ComfyDialog {
       // Create and set new image
       const newImage = new Image()
       newImage.crossOrigin = 'anonymous'
-      newImage.src = mkFileUrl({ ref: filepath, preview: true })
+      newImage.src = mkFileUrl({ ref: actualFilepath, preview: true })
       ComfyApp.clipspace.imgs[indexToSaveTo] = newImage
 
       // Update images array - create if it doesn't exist
