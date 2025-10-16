@@ -10,41 +10,15 @@
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical absolute right-2 bottom-4 p-1 md:right-4"
+      class="absolute right-2 bottom-2 z-[1200] flex-row gap-1 border-[1px] border-node-border bg-interface-panel-surface p-2"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
-      <Button
-        v-tooltip.top="selectTooltip"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        severity="secondary"
-        :aria-label="selectTooltip"
-        :pressed="isCanvasReadOnly"
-        icon="i-material-symbols:pan-tool-outline"
-        :class="selectButtonClass"
-        @click="() => commandStore.execute('Comfy.Canvas.Unlock')"
-      >
-        <template #icon>
-          <i class="icon-[lucide--mouse-pointer-2]" />
-        </template>
-      </Button>
+      <CanvasModeSelector
+        :button-styles="stringifiedMinimapStyles.buttonStyles"
+      />
 
-      <Button
-        v-tooltip.top="handTooltip"
-        severity="secondary"
-        :aria-label="handTooltip"
-        :pressed="isCanvasUnlocked"
-        :class="handButtonClass"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="() => commandStore.execute('Comfy.Canvas.Lock')"
-      >
-        <template #icon>
-          <i class="icon-[lucide--hand]" />
-        </template>
-      </Button>
-
-      <!-- vertical line with bg E1DED5 -->
-      <div class="mx-2 my-1 w-px bg-[#E1DED5] dark-theme:bg-[#2E3037]" />
+      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
 
       <Button
         v-tooltip.top="fitViewTooltip"
@@ -52,11 +26,11 @@
         icon="pi pi-expand"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="hover:bg-[#E7E6E6]! dark-theme:hover:bg-[#444444]!"
+        class="h-8 w-8 bg-interface-panel-surface p-0 hover:bg-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <template #icon>
-          <i class="icon-[lucide--focus]" />
+          <i class="icon-[lucide--focus] h-4 w-4" />
         </template>
       </Button>
 
@@ -71,26 +45,26 @@
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="toggleModal"
       >
-        <span class="inline-flex text-xs">
+        <span class="inline-flex items-center gap-1 px-2 text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down]" />
+          <i class="icon-[lucide--chevron-down] h-4 w-4" />
         </span>
       </Button>
 
-      <div class="mx-2 my-1 w-px bg-[#E1DED5] dark-theme:bg-[#2E3037]" />
+      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
 
       <Button
-        ref="focusButton"
-        v-tooltip.top="focusModeTooltip"
+        ref="minimapButton"
+        v-tooltip.top="minimapTooltip"
         severity="secondary"
-        :aria-label="focusModeTooltip"
-        data-testid="focus-mode-button"
+        :aria-label="minimapTooltip"
+        data-testid="toggle-minimap-button"
         :style="stringifiedMinimapStyles.buttonStyles"
-        :class="focusButtonClass"
-        @click="() => commandStore.execute('Workspace.ToggleFocusMode')"
+        :class="minimapButtonClass"
+        @click="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
         <template #icon>
-          <i class="icon-[lucide--lightbulb]" />
+          <i class="icon-[lucide--map] h-4 w-4" />
         </template>
       </Button>
 
@@ -111,7 +85,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       >
         <template #icon>
-          <i class="icon-[lucide--route-off]" />
+          <i class="icon-[lucide--route-off] h-4 w-4" />
         </template>
       </Button>
     </ButtonGroup>
@@ -131,8 +105,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 
+import CanvasModeSelector from './CanvasModeSelector.vue'
 import ZoomControlsModal from './modals/ZoomControlsModal.vue'
 
 const { t } = useI18n()
@@ -141,21 +115,16 @@ const { formatKeySequence } = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
-const workspaceStore = useWorkspaceStore()
 const minimap = useMinimap()
 
 const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
-  const buttonGroupKeys = ['backgroundColor', 'borderRadius', '']
-  const buttonKeys = ['backgroundColor', 'borderRadius']
+  const buttonGroupKeys = ['borderRadius']
+  const buttonKeys = ['borderRadius']
   const additionalButtonStyles = {
-    border: 'none',
-    width: '35px',
-    height: '35px',
-    'margin-right': '2px',
-    'margin-left': '2px'
+    border: 'none'
   }
 
   const containerStyles = minimap.containerStyles.value
@@ -176,72 +145,56 @@ const stringifiedMinimapStyles = computed(() => {
 })
 
 // Computed properties for reactive states
-const isCanvasReadOnly = computed(() => canvasStore.canvas?.read_only ?? false)
-const isCanvasUnlocked = computed(() => !isCanvasReadOnly.value)
 const linkHidden = computed(
   () => settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK
 )
 
 // Computed properties for command text
-const unlockCommandText = computed(() =>
-  formatKeySequence(
-    commandStore.getCommand('Comfy.Canvas.Unlock')
-  ).toUpperCase()
-)
-const lockCommandText = computed(() =>
-  formatKeySequence(commandStore.getCommand('Comfy.Canvas.Lock')).toUpperCase()
-)
 const fitViewCommandText = computed(() =>
   formatKeySequence(
     commandStore.getCommand('Comfy.Canvas.FitView')
   ).toUpperCase()
 )
-const focusCommandText = computed(() =>
+const minimapCommandText = computed(() =>
   formatKeySequence(
-    commandStore.getCommand('Workspace.ToggleFocusMode')
+    commandStore.getCommand('Comfy.Canvas.ToggleMinimap')
   ).toUpperCase()
 )
 
 // Computed properties for button classes and states
-const selectButtonClass = computed(() =>
-  isCanvasUnlocked.value
-    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
-    : ''
-)
-
-const handButtonClass = computed(() =>
-  isCanvasReadOnly.value
-    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
-    : ''
-)
-
 const zoomButtonClass = computed(() => [
-  'w-16!',
-  isModalVisible.value
-    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
-    : '',
-  'dark-theme:hover:bg-[#262729]! hover:bg-[#E7E6E6]!'
+  'bg-interface-panel-surface',
+  isModalVisible.value ? 'not-active:bg-button-active-surface!' : '',
+  'hover:bg-button-hover-surface!',
+  'p-0',
+  'h-8',
+  'w-15'
 ])
 
-const focusButtonClass = computed(() => ({
-  'dark-theme:hover:bg-[#262729]! hover:bg-[#E7E6E6]!': true,
-  'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!':
-    workspaceStore.focusMode
+const minimapButtonClass = computed(() => ({
+  'bg-interface-panel-surface': true,
+  'hover:bg-button-hover-surface!': true,
+  'not-active:bg-button-active-surface!': settingStore.get(
+    'Comfy.Minimap.Visible'
+  ),
+  'p-0': true,
+  'w-8': true,
+  'h-8': true
 }))
 
 // Computed properties for tooltip and aria-label texts
-const selectTooltip = computed(
-  () => `${t('graphCanvasMenu.select')} (${unlockCommandText.value})`
-)
-const handTooltip = computed(
-  () => `${t('graphCanvasMenu.hand')} (${lockCommandText.value})`
-)
-const fitViewTooltip = computed(
-  () => `${t('graphCanvasMenu.fitView')} (${fitViewCommandText.value})`
-)
-const focusModeTooltip = computed(
-  () => `${t('graphCanvasMenu.focusMode')} (${focusCommandText.value})`
-)
+const fitViewTooltip = computed(() => {
+  const label = t('graphCanvasMenu.fitView')
+  const shortcut = fitViewCommandText.value
+  return shortcut ? `${label} (${shortcut})` : label
+})
+const minimapTooltip = computed(() => {
+  const label = settingStore.get('Comfy.Minimap.Visible')
+    ? t('zoomControls.hideMinimap')
+    : t('zoomControls.showMinimap')
+  const shortcut = minimapCommandText.value
+  return shortcut ? `${label} (${shortcut})` : label
+})
 const linkVisibilityTooltip = computed(() =>
   linkHidden.value
     ? t('graphCanvasMenu.showLinks')
@@ -253,10 +206,12 @@ const linkVisibilityAriaLabel = computed(() =>
     : t('graphCanvasMenu.hideLinks')
 )
 const linkVisibleClass = computed(() => [
-  linkHidden.value
-    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
-    : '',
-  'dark-theme:hover:bg-[#262729]! hover:bg-[#E7E6E6]!'
+  'bg-interface-panel-surface',
+  linkHidden.value ? 'not-active:bg-button-active-surface!' : '',
+  'hover:bg-button-hover-surface!',
+  'p-0',
+  'w-8',
+  'h-8'
 ])
 
 onMounted(() => {
@@ -267,19 +222,3 @@ onBeforeUnmount(() => {
   canvasStore.cleanupScaleSync()
 })
 </script>
-
-<style scoped>
-.p-buttongroup-vertical {
-  display: flex;
-  flex-direction: row;
-  z-index: 1200;
-  border-radius: var(--p-button-border-radius);
-  overflow: hidden;
-  border: 1px solid var(--p-panel-border-color);
-}
-
-.p-buttongroup-vertical .p-button {
-  margin: 0;
-  border-radius: 0;
-}
-</style>

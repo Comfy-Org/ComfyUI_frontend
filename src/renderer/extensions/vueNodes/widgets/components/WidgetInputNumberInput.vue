@@ -10,6 +10,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -65,16 +66,23 @@ const useGrouping = computed(() => {
 
 // Check if increment/decrement buttons should be disabled due to precision limits
 const buttonsDisabled = computed(() => {
-  const currentValue = localValue.value || 0
-  return !Number.isSafeInteger(currentValue)
+  const currentValue = localValue.value ?? 0
+  return (
+    !Number.isFinite(currentValue) ||
+    Math.abs(currentValue) > Number.MAX_SAFE_INTEGER
+  )
 })
 
-// Tooltip message for disabled buttons
 const buttonTooltip = computed(() => {
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
   }
   return null
+})
+
+const inputNumberPt = useNumberWidgetButtonPt({
+  roundedLeft: true,
+  roundedRight: true
 })
 </script>
 
@@ -84,19 +92,14 @@ const buttonTooltip = computed(() => {
       <InputNumber
         v-model="localValue"
         v-bind="filteredProps"
-        :show-buttons="!buttonsDisabled"
         button-layout="horizontal"
         size="small"
         :step="stepValue"
         :use-grouping="useGrouping"
         :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
         :aria-label="widget.name"
-        :pt="{
-          incrementButton:
-            '!rounded-r-lg bg-transparent border-none hover:bg-zinc-500/30 active:bg-zinc-500/40',
-          decrementButton:
-            '!rounded-l-lg bg-transparent border-none hover:bg-zinc-500/30 active:bg-zinc-500/40'
-        }"
+        :show-buttons="!buttonsDisabled"
+        :pt="inputNumberPt"
         @update:model-value="onChange"
       >
         <template #incrementicon>
@@ -113,11 +116,16 @@ const buttonTooltip = computed(() => {
 <style scoped>
 :deep(.p-inputnumber-input) {
   background-color: transparent;
-  border: 1px solid color-mix(in oklab, #d4d4d8 10%, transparent);
+  border: 1px solid var(--node-stroke);
   border-top: transparent;
   border-bottom: transparent;
   height: 1.625rem;
   margin: 1px 0;
   box-shadow: none;
+}
+
+:deep(.p-inputnumber-button.p-disabled .pi),
+:deep(.p-inputnumber-button.p-disabled .p-icon) {
+  color: var(--color-node-icon-disabled) !important;
 }
 </style>

@@ -12,6 +12,7 @@ const iconGroupClasses = cn(
   'outline-hidden border-none p-0 rounded-lg',
   'bg-white dark-theme:bg-zinc-700',
   'text-neutral-950 dark-theme:text-white',
+  'transition-all duration-200',
   'cursor-pointer'
 )
 </script>

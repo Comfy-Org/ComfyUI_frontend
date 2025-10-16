@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col gap-2 pr-4',
+        'lg-node-widgets flex flex-col gap-2 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -62,6 +62,7 @@ import type {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
   getComponent,
@@ -120,12 +121,15 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const result: ProcessedWidget[] = []
 
   for (const widget of widgets) {
+    // Skip if widget is in the hidden list for this node type
     if (widget.options?.hidden) continue
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    const vueComponent = getComponent(widget.type) || WidgetInputText
+    const vueComponent =
+      getComponent(widget.type, widget.name) ||
+      (widget.isDOMWidget ? WidgetDOM : WidgetInputText)
 
     const slotMetadata = widget.slotMetadata
 
@@ -150,6 +154,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     const updateHandler = (value: unknown) => {
+      // Update the widget value directly
+      widget.value = value as WidgetValue
+
       if (widget.callback) {
         widget.callback(value)
       }

@@ -8,7 +8,6 @@ import { createI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 const mockData = vi.hoisted(() => ({
@@ -204,19 +203,5 @@ describe('LGraphNode', () => {
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
     expect(wrapper.classes()).toContain('animate-pulse')
-  })
-
-  it('should emit node-click event on pointer up', async () => {
-    const { handleNodeSelect } = useNodeEventHandlers()
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
-
-    await wrapper.trigger('pointerup')
-
-    expect(handleNodeSelect).toHaveBeenCalledOnce()
-    expect(handleNodeSelect).toHaveBeenCalledWith(
-      expect.any(PointerEvent),
-      mockNodeData,
-      expect.any(Boolean)
-    )
   })
 })

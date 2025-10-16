@@ -25,7 +25,7 @@ export function useMinimapSettings() {
     settingStore.get('Comfy.Minimap.RenderErrorState')
   )
 
-  const width = 250
+  const width = 253
   const height = 200
 
   // Theme-aware colors
@@ -36,16 +36,14 @@ export function useMinimapSettings() {
   const containerStyles = computed(() => ({
     width: `${width}px`,
     height: `${height}px`,
-    backgroundColor: isLightTheme.value ? '#FAF9F5' : '#15161C',
-    border: `1px solid ${isLightTheme.value ? '#ccc' : '#333'}`,
+    border: '1px solid var(--interface-stroke)',
     borderRadius: '8px'
   }))
 
   const panelStyles = computed(() => ({
     width: `210px`,
     height: `${height}px`,
-    backgroundColor: isLightTheme.value ? '#FAF9F5' : '#15161C',
-    border: `1px solid ${isLightTheme.value ? '#ccc' : '#333'}`,
+    border: '1px solid var(--interface-stroke)',
     borderRadius: '8px'
   }))
 

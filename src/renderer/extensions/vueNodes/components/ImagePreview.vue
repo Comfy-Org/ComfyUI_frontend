@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex flex-col items-center"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col"
     data-capture-node="true"
     tabindex="0"
     role="region"
@@ -12,12 +12,12 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative w-full max-w-[352px] overflow-hidden rounded-[5px] bg-[#262729]"
+      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex h-[352px] w-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
       >
         <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-gray-400" />
         <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
@@ -27,18 +27,15 @@
       </div>
 
       <!-- Loading State -->
-      <Skeleton
-        v-else-if="isLoading"
-        class="h-[352px] w-full"
-        border-radius="5px"
-      />
+      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
 
       <!-- Main Image -->
       <img
         v-else
+        ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block h-[352px] w-full object-contain"
+        class="block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -122,6 +119,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
@@ -146,6 +144,8 @@ const isHovered = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const isLoading = ref(false)
+
+const currentImageEl = ref<HTMLImageElement>()
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -186,7 +186,18 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
+// In vueNodes mode, we need to set them manually before opening the mask editor.
+const setupNodeForMaskEditor = () => {
+  if (!props.nodeId || !currentImageEl.value) return
+  const node = app.rootGraph?.getNodeById(props.nodeId)
+  if (!node) return
+  node.imageIndex = currentIndex.value
+  node.imgs = [currentImageEl.value]
+  app.canvas?.select(node)
+}
+
 const handleEditMask = () => {
+  setupNodeForMaskEditor()
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
 }
 

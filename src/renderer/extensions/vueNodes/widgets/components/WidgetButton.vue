@@ -3,7 +3,12 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <Button v-bind="filteredProps" size="small" @click="handleClick" />
+    <Button
+      v-bind="filteredProps"
+      :aria-label="widget.name || widget.label"
+      size="small"
+      @click="handleClick"
+    />
   </div>
 </template>
 

@@ -60,7 +60,6 @@ async function getInputLinkDetails(
   )
 }
 
-// Test helpers to reduce repetition across cases
 function slotLocator(
   page: Page,
   nodeId: NodeId,
@@ -786,6 +785,212 @@ test.describe('Vue Node Link Interaction', () => {
       originId: clipNode.id,
       targetId: samplerNode.id,
       targetSlot: 2
+    })
+  })
+
+  test('should batch disconnect all links with ctrl+alt+click on slot', async ({
+    comfyPage
+  }) => {
+    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
+    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    expect(clipNode && samplerNode).toBeTruthy()
+
+    await connectSlots(
+      comfyPage.page,
+      { nodeId: clipNode.id, index: 0 },
+      { nodeId: samplerNode.id, index: 1 },
+      () => comfyPage.nextFrame()
+    )
+    await connectSlots(
+      comfyPage.page,
+      { nodeId: clipNode.id, index: 0 },
+      { nodeId: samplerNode.id, index: 2 },
+      () => comfyPage.nextFrame()
+    )
+
+    const clipOutput = await clipNode.getOutput(0)
+    expect(await clipOutput.getLinkCount()).toBe(2)
+
+    const clipOutputSlot = slotLocator(comfyPage.page, clipNode.id, 0, false)
+
+    await clipOutputSlot.dispatchEvent('pointerdown', {
+      button: 0,
+      buttons: 1,
+      ctrlKey: true,
+      altKey: true,
+      shiftKey: false,
+      bubbles: true,
+      cancelable: true
+    })
+    await comfyPage.nextFrame()
+
+    expect(await clipOutput.getLinkCount()).toBe(0)
+  })
+
+  test.describe('Release actions (Shift-drop)', () => {
+    test('Context menu opens and endpoint is pinned on Shift-drop', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      await comfyPage.setSetting(
+        'Comfy.LinkRelease.ActionShift',
+        'context menu'
+      )
+
+      const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+      expect(samplerNode).toBeTruthy()
+
+      const outputCenter = await getSlotCenter(
+        comfyPage.page,
+        samplerNode.id,
+        0,
+        false
+      )
+
+      const dropPos = { x: outputCenter.x + 180, y: outputCenter.y - 140 }
+
+      await comfyMouse.move(outputCenter)
+      await comfyPage.page.keyboard.down('Shift')
+      try {
+        await comfyMouse.drag(dropPos)
+        await comfyMouse.drop()
+      } finally {
+        await comfyPage.page.keyboard.up('Shift').catch(() => {})
+      }
+
+      // Context menu should be visible
+      const contextMenu = comfyPage.page.locator('.litecontextmenu')
+      await expect(contextMenu).toBeVisible()
+
+      // Pinned endpoint should not change with mouse movement while menu is open
+      const before = await comfyPage.page.evaluate(() => {
+        const snap = window['app']?.canvas?.linkConnector?.state?.snapLinksPos
+        return Array.isArray(snap) ? [snap[0], snap[1]] : null
+      })
+      expect(before).not.toBeNull()
+
+      // Move mouse elsewhere and verify snap position is unchanged
+      await comfyMouse.move({ x: dropPos.x + 160, y: dropPos.y + 100 })
+      const after = await comfyPage.page.evaluate(() => {
+        const snap = window['app']?.canvas?.linkConnector?.state?.snapLinksPos
+        return Array.isArray(snap) ? [snap[0], snap[1]] : null
+      })
+      expect(after).toEqual(before)
+    })
+
+    test('Context menu -> Search pre-filters by link type and connects after selection', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      await comfyPage.setSetting(
+        'Comfy.LinkRelease.ActionShift',
+        'context menu'
+      )
+      await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+
+      const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+      expect(samplerNode).toBeTruthy()
+
+      const outputCenter = await getSlotCenter(
+        comfyPage.page,
+        samplerNode.id,
+        0,
+        false
+      )
+      const dropPos = { x: outputCenter.x + 200, y: outputCenter.y - 120 }
+
+      await comfyMouse.move(outputCenter)
+      await comfyPage.page.keyboard.down('Shift')
+      try {
+        await comfyMouse.drag(dropPos)
+        await comfyMouse.drop()
+      } finally {
+        await comfyPage.page.keyboard.up('Shift').catch(() => {})
+      }
+
+      // Open Search from the context menu
+      await comfyPage.clickContextMenuItem('Search')
+
+      // Search box opens with prefilled type filter based on link type (LATENT)
+      await expect(comfyPage.searchBox.input).toBeVisible()
+      const chips = comfyPage.searchBox.filterChips
+      // Ensure at least one filter chip exists and it matches the link type
+      const chipCount = await chips.count()
+      expect(chipCount).toBeGreaterThan(0)
+      await expect(chips.first()).toContainText('LATENT')
+
+      // Choose a compatible node and verify it auto-connects
+      await comfyPage.searchBox.fillAndSelectFirstNode('VAEDecode')
+      await comfyPage.nextFrame()
+
+      // KSampler output should now have an outgoing link
+      const samplerOutput = await samplerNode.getOutput(0)
+      expect(await samplerOutput.getLinkCount()).toBe(1)
+
+      // One of the VAEDecode nodes should have an incoming link on input[0]
+      const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+      let linked = false
+      for (const vae of vaeNodes) {
+        const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
+        if (details) {
+          expect(details.originId).toBe(samplerNode.id)
+          linked = true
+          break
+        }
+      }
+      expect(linked).toBe(true)
+    })
+
+    test('Search box opens on Shift-drop and connects after selection', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
+
+      const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+      expect(samplerNode).toBeTruthy()
+
+      const outputCenter = await getSlotCenter(
+        comfyPage.page,
+        samplerNode.id,
+        0,
+        false
+      )
+      const dropPos = { x: outputCenter.x + 140, y: outputCenter.y - 100 }
+
+      await comfyMouse.move(outputCenter)
+      await comfyPage.page.keyboard.down('Shift')
+      try {
+        await comfyMouse.drag(dropPos)
+        await comfyMouse.drop()
+      } finally {
+        await comfyPage.page.keyboard.up('Shift').catch(() => {})
+      }
+
+      // Search box should open directly
+      await expect(comfyPage.searchBox.input).toBeVisible()
+      await expect(comfyPage.searchBox.filterChips.first()).toContainText(
+        'LATENT'
+      )
+
+      // Select a compatible node and verify connection
+      await comfyPage.searchBox.fillAndSelectFirstNode('VAEDecode')
+      await comfyPage.nextFrame()
+
+      const samplerOutput = await samplerNode.getOutput(0)
+      expect(await samplerOutput.getLinkCount()).toBe(1)
+
+      const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+      let linked = false
+      for (const vae of vaeNodes) {
+        const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
+        if (details) {
+          expect(details.originId).toBe(samplerNode.id)
+          linked = true
+          break
+        }
+      }
+      expect(linked).toBe(true)
     })
   })
 })

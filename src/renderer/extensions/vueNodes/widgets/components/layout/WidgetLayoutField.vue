@@ -14,10 +14,10 @@ defineProps<{
   <div
     class="flex h-[30px] items-center justify-between gap-2 overscroll-contain"
   >
-    <div class="relative mr-4 flex h-6 items-center">
+    <div class="relative flex h-6 items-center">
       <p
         v-if="widget.name"
-        class="lod-toggle w-20 flex-1 truncate text-sm font-normal text-node-component-slot-text"
+        class="lod-toggle w-28 flex-1 truncate text-sm font-normal text-node-component-slot-text"
       >
         {{ widget.label || widget.name }}
       </p>

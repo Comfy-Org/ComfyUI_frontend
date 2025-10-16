@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { TransformState } from '@/renderer/core/layout/injectionKeys'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
+import { calculateIntrinsicSize } from '@/renderer/extensions/vueNodes/utils/calculateIntrinsicSize'
 
 interface Size {
   width: number
@@ -64,29 +65,16 @@ export function useNodeResize(
     if (!(nodeElement instanceof HTMLElement)) return
 
     const rect = nodeElement.getBoundingClientRect()
-
-    // Calculate intrinsic content size once at start
-    const originalWidth = nodeElement.style.width
-    const originalHeight = nodeElement.style.height
-    nodeElement.style.width = 'auto'
-    nodeElement.style.height = 'auto'
-
-    const intrinsicRect = nodeElement.getBoundingClientRect()
-
-    // Restore original size
-    nodeElement.style.width = originalWidth
-    nodeElement.style.height = originalHeight
-
-    // Convert to canvas coordinates using transform state
     const scale = transformState.camera.z
+
+    // Calculate current size in canvas coordinates
     resizeStartSize.value = {
       width: rect.width / scale,
       height: rect.height / scale
     }
-    intrinsicMinSize.value = {
-      width: intrinsicRect.width / scale,
-      height: intrinsicRect.height / scale
-    }
+
+    // Calculate intrinsic content size (minimum based on content)
+    intrinsicMinSize.value = calculateIntrinsicSize(nodeElement, scale)
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (

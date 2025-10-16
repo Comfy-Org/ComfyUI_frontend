@@ -7,16 +7,9 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 
-// Treat tiny pointer jitter as a click, not a drag
-const DRAG_THRESHOLD_PX = 4
-
 export function useNodePointerInteractions(
   nodeDataMaybe: MaybeRefOrGetter<VueNodeData | null>,
-  onPointerUp: (
-    event: PointerEvent,
-    nodeData: VueNodeData,
-    wasDragging: boolean
-  ) => void
+  onNodeSelect: (event: PointerEvent, nodeData: VueNodeData) => void
 ) {
   const nodeData = computed(() => {
     const value = toValue(nodeDataMaybe)
@@ -84,8 +77,11 @@ export function useNodePointerInteractions(
       return
     }
 
-    // Don't allow dragging if node is pinned (but still record position for selection)
+    // Record position for drag threshold calculation
     startPosition.value = { x: event.clientX, y: event.clientY }
+
+    onNodeSelect(event, nodeData.value)
+
     if (nodeData.value.flags?.pinned) {
       return
     }
@@ -147,19 +143,11 @@ export function useNodePointerInteractions(
       handleDragTermination(event, 'drag end')
     }
 
-    // Don't emit node-click when canvas is in panning mode - forward to canvas instead
+    // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     if (!shouldHandleNodePointerEvents.value) {
       forwardEventToCanvas(event)
       return
     }
-
-    // Emit node-click for selection handling in GraphCanvas
-    const dx = event.clientX - startPosition.value.x
-    const dy = event.clientY - startPosition.value.y
-    const wasDragging = Math.hypot(dx, dy) > DRAG_THRESHOLD_PX
-
-    if (!nodeData?.value) return
-    onPointerUp(event, nodeData.value, wasDragging)
   }
 
   /**

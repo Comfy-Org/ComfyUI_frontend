@@ -15,7 +15,7 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      class="translate-x-1/2"
+      class="w-3 translate-x-1/2"
       @pointerdown="onPointerDown"
     />
   </div>
@@ -28,6 +28,8 @@ import type { ComponentPublicInstance } from 'vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
@@ -73,6 +75,15 @@ onErrorCaptured((error) => {
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
 
+const { state: dragState } = useSlotLinkDragUIState()
+const slotKey = computed(() =>
+  getSlotKey(props.nodeId ?? '', props.index, false)
+)
+const shouldDim = computed(() => {
+  if (!dragState.active) return false
+  return !dragState.compatible.get(slotKey.value)
+})
+
 const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output flex items-center justify-end group rounded-l-lg h-6',
@@ -82,7 +93,8 @@ const slotWrapperClass = computed(() =>
       : 'pl-6 hover:bg-black/5 hover:dark:bg-white/5',
     {
       'lg-slot--connected': props.connected,
-      'lg-slot--compatible': props.compatible
+      'lg-slot--compatible': props.compatible,
+      'opacity-40': shouldDim.value
     }
   )
 )

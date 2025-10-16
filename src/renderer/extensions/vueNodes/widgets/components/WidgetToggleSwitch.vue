@@ -3,6 +3,7 @@
     <ToggleSwitch
       v-model="localValue"
       v-bind="filteredProps"
+      :aria-label="widget.name"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>

@@ -7,6 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
   LGraphCanvas,
@@ -379,11 +380,15 @@ export class ComfyApp {
     const paintedIndex = selectedIndex + 1
     const combinedIndex = selectedIndex + 2
 
+    // for vueNodes mode
+    const images =
+      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
-      images: node.images,
+      images: images,
       selectedIndex: selectedIndex,
       img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
       paintedIndex: paintedIndex,
@@ -410,7 +415,8 @@ export class ComfyApp {
           ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
       }
       if (ComfyApp.clipspace.imgs && node.imgs) {
-        if (node.images && ComfyApp.clipspace.images) {
+        // Update node.images even if it's initially undefined (vueNodes mode)
+        if (ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
             node.images = [
               ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
@@ -512,6 +518,8 @@ export class ComfyApp {
       }
 
       app.graph.setDirtyCanvas(true)
+
+      useNodeOutputStore().updateNodeImages(node)
     }
   }
 
@@ -1665,6 +1673,28 @@ export class ComfyApp {
    */
   registerExtension(extension: ComfyExtension) {
     useExtensionService().registerExtension(extension)
+  }
+
+  /**
+   * Collects context menu items from all extensions for canvas menus
+   * @param canvas The canvas instance
+   * @returns Array of context menu items from all extensions
+   */
+  collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
+    return useExtensionService()
+      .invokeExtensions('getCanvasMenuItems', canvas)
+      .flat() as IContextMenuValue[]
+  }
+
+  /**
+   * Collects context menu items from all extensions for node menus
+   * @param node The node being right-clicked
+   * @returns Array of context menu items from all extensions
+   */
+  collectNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
+    return useExtensionService()
+      .invokeExtensions('getNodeMenuItems', node)
+      .flat() as IContextMenuValue[]
   }
 
   /**
