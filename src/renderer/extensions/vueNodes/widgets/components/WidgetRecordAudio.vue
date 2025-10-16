@@ -2,7 +2,7 @@
   <div class="relative">
     <div class="mb-4">
       <Button
-        class="w-[413px] border-0 bg-zinc-500/10 text-zinc-400 dark-theme:bg-charcoal-600 dark-theme:text-white"
+        class="w-[413px] border-0 bg-node-component-widget-input-surface text-text-secondary"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="flex h-14 w-[413px] items-center gap-4 rounded-lg bg-zinc-500/10 px-4 text-zinc-400 dark-theme:bg-node-component-surface dark-theme:text-white"
+      class="flex h-14 w-[413px] items-center gap-4 rounded-lg bg-node-component-surface px-4 text-text-primary"
     >
       <!-- Recording Status -->
       <div class="flex min-w-30 items-center gap-2">
@@ -48,7 +48,7 @@
         class="flex size-8 animate-pulse items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
         @click="handleStopRecording"
       >
-        <div class="size-2.5 rounded-sm bg-[#C02323]" />
+        <div class="size-2.5 rounded-sm bg-button-surface-danger" />
       </button>
 
       <button
@@ -57,9 +57,7 @@
         class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i
-          class="icon-[lucide--play] size-4 text-zinc-400 dark-theme:text-white"
-        />
+        <i class="icon-[lucide--play] size-4 text-text-primary" />
       </button>
 
       <button
@@ -68,9 +66,7 @@
         class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i
-          class="icon-[lucide--square] size-4 text-zinc-400 dark-theme:text-white"
-        />
+        <i class="icon-[lucide--square] size-4 text-text-primary" />
       </button>
     </div>
     <audio
