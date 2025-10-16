@@ -12,13 +12,13 @@
         // Button-specific styles
         interactive && [
           'appearance-none bg-transparent p-0 m-0 font-inherit text-inherit outline-none cursor-pointer text-left',
-          'bg-gray-100 dark-theme:bg-charcoal-800',
-          'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
+          'bg-interface-panel-card-surface',
+          'hover:bg-interface-panel-card-surface-hover',
           'border-none',
           'focus:outline-solid outline-blue-100 outline-4'
         ],
         // Div-specific styles
-        !interactive && 'bg-gray-100 dark-theme:bg-charcoal-800'
+        !interactive && 'bg-interface-panel-card-surface'
       )
     "
     @click="interactive && $emit('select', asset)"
@@ -36,8 +36,7 @@
           :class="
             cn(
               'mb-2 m-0 text-base font-semibold overflow-hidden text-ellipsis whitespace-nowrap',
-              'text-slate-800',
-              'dark-theme:text-white'
+              'text-text-primary'
             )
           "
         >
@@ -47,8 +46,7 @@
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-              'text-stone-100',
-              'dark-theme:text-slate-100'
+              'text-text-secondary'
             )
           "
           :title="asset.description"
@@ -56,15 +54,7 @@
           {{ asset.description }}
         </p>
       </div>
-      <div
-        :class="
-          cn(
-            'flex gap-4 text-xs',
-            'text-stone-400',
-            'dark-theme:text-stone-300'
-          )
-        "
-      >
+      <div :class="cn('flex gap-4 text-xs', 'text-text-secondary')">
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
           <i class="icon-[lucide--star] size-3" />
           {{ asset.stats.stars }}

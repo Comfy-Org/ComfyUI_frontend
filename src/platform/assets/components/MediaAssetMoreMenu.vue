@@ -3,7 +3,7 @@
     <IconTextButton
       v-if="asset?.kind !== '3D'"
       type="transparent"
-      class="dark-theme:text-white"
+      class="text-text-primary"
       label="Inspect asset"
       @click="handleInspect"
     >
@@ -14,7 +14,7 @@
 
     <IconTextButton
       type="transparent"
-      class="dark-theme:text-white"
+      class="text-text-primary"
       label="Add to current workflow"
       @click="handleAddToWorkflow"
     >
@@ -25,7 +25,7 @@
 
     <IconTextButton
       type="transparent"
-      class="dark-theme:text-white"
+      class="text-text-primary"
       label="Download"
       @click="handleDownload"
     >
@@ -39,7 +39,7 @@
     <IconTextButton
       v-if="showWorkflowOptions"
       type="transparent"
-      class="dark-theme:text-white"
+      class="text-text-primary"
       label="Open as workflow in new tab"
       @click="handleOpenWorkflow"
     >
@@ -51,7 +51,7 @@
     <IconTextButton
       v-if="showWorkflowOptions"
       type="transparent"
-      class="dark-theme:text-white"
+      class="text-text-primary"
       label="Export workflow"
       @click="handleExportWorkflow"
     >
@@ -64,7 +64,7 @@
 
     <IconTextButton
       type="transparent"
-      class="dark-theme:text-white"
+      class="text-text-primary"
       label="Copy job ID"
       @click="handleCopyJobId"
     >
@@ -77,7 +77,7 @@
 
     <IconTextButton
       type="transparent"
-      class="dark-theme:text-white"
+      class="text-text-primary"
       label="Delete"
       @click="handleDelete"
     >

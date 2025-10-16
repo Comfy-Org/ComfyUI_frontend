@@ -9,7 +9,7 @@
     />
     <div
       v-else
-      class="flex h-full w-full items-center justify-center bg-zinc-200 dark-theme:bg-zinc-700/50"
+      class="flex h-full w-full items-center justify-center bg-interface-panel-card-surface"
     >
       <i class="pi pi-image text-3xl text-gray-400" />
     </div>
