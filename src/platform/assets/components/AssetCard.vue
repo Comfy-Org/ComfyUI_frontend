@@ -4,23 +4,7 @@
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     v-bind="elementProps"
-    :class="
-      cn(
-        // Base layout and container styles (always applied)
-        'rounded-xl overflow-hidden transition-all duration-200',
-        interactive && 'group',
-        // Button-specific styles
-        interactive && [
-          'appearance-none bg-transparent p-0 m-0 font-inherit text-inherit outline-none cursor-pointer text-left',
-          'bg-gray-100 dark-theme:bg-charcoal-800',
-          'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
-          'border-none',
-          'focus:outline-solid outline-blue-100 outline-4'
-        ],
-        // Div-specific styles
-        !interactive && 'bg-gray-100 dark-theme:bg-charcoal-800'
-      )
-    "
+    :class="cardClasses"
     @click="interactive && $emit('select', asset)"
     @keydown.enter="interactive && $emit('select', asset)"
   >
@@ -103,7 +87,6 @@ const props = defineProps<{
   interactive?: boolean
 }>()
 
-
 const titleId = useId()
 const descId = useId()
 
@@ -112,9 +95,31 @@ const { error } = useImage({
   alt: props.asset.name
 })
 
-const shouldShowImage = computed(
-  () => props.asset.preview_url && !error.value
-)
+const shouldShowImage = computed(() => props.asset.preview_url && !error.value)
+
+const cardClasses = computed(() => {
+  const base = [
+    'rounded-xl',
+    'overflow-hidden',
+    'transition-all',
+    'duration-200'
+  ]
+
+  if (!props.interactive) {
+    return cn(...base, 'bg-gray-100 dark-theme:bg-charcoal-800')
+  }
+
+  return cn(
+    ...base,
+    'group',
+    'appearance-none bg-transparent p-0 m-0',
+    'font-inherit text-inherit outline-none cursor-pointer text-left',
+    'bg-gray-100 dark-theme:bg-charcoal-800',
+    'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
+    'border-none',
+    'focus:outline-solid outline-blue-100 outline-4'
+  )
+})
 
 const elementProps = computed(() =>
   props.interactive
