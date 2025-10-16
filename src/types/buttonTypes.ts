@@ -23,12 +23,9 @@ export const getButtonSizeClasses = (size: ButtonSize = 'md') => {
 
 export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
   const baseByType = {
-    primary:
-      'bg-neutral-900 border-none text-white dark-theme:bg-white dark-theme:text-neutral-900',
-    secondary:
-      'bg-white border-none text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
-    transparent:
-      'bg-transparent border-none text-neutral-600 dark-theme:text-neutral-400'
+    primary: 'bg-button-surface-contrast border-none text-accent-contrast',
+    secondary: 'bg-button-surface border-none text-text-primary',
+    transparent: 'bg-transparent border-none text-text-secondary'
   } as const
 
   return baseByType[type]
@@ -36,18 +33,15 @@ export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
 
 export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
   const baseByType = {
-    primary:
-      'bg-neutral-900 text-white dark-theme:bg-white dark-theme:text-neutral-900',
-    secondary:
-      'bg-white text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
-    transparent: 'bg-transparent text-neutral-600 dark-theme:text-neutral-400'
+    primary: 'bg-button-surface-contrast text-accent-contrast',
+    secondary: 'bg-button-surface text-text-primary',
+    transparent: 'bg-transparent text-text-secondary'
   } as const
 
   const borderByType = {
-    primary: 'border border-solid border-white dark-theme:border-neutral-900',
-    secondary: 'border border-solid border-neutral-950 dark-theme:border-white',
-    transparent:
-      'border border-solid border-neutral-950 dark-theme:border-white'
+    primary: 'border border-solid border-accent-contrast',
+    secondary: 'border border-solid border-accent-primary',
+    transparent: 'border border-solid border-accent-primary'
   } as const
 
   return `${baseByType[type]} ${borderByType[type]}`
