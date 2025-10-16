@@ -126,8 +126,12 @@ export default defineConfig([
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'tailwindcss/no-custom-classname': 'off', // TODO: fix
       'vue/no-v-html': 'off',
-      // Enforce dark-theme: instead of dark: prefix
-      'vue/no-restricted-class': ['error', '/^dark:/'],
+      // Enforce semantic CSS tokens:
+      'vue/no-restricted-class': [
+        'error',
+        '/^dark:/',
+        '/^(bg|text|border|fill|stroke)-\\[#/'
+      ],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/match-component-import-name': 'error',
