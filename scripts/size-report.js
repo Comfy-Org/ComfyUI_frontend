@@ -42,6 +42,10 @@ async function run() {
  * Renders file sizes and diffs between current and previous versions
  */
 async function renderFiles() {
+  /**
+   * @param {string[]} files
+   * @returns {string[]}
+   */
   const filterFiles = (files) =>
     files.filter((file) => file.endsWith('.json'))
 
