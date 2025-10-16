@@ -32,6 +32,7 @@
       <!-- Main Image -->
       <img
         v-else
+        ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
         class="block size-full object-contain"
@@ -118,6 +119,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
@@ -142,6 +144,8 @@ const isHovered = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const isLoading = ref(false)
+
+const currentImageEl = ref<HTMLImageElement>()
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -182,7 +186,18 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
+// In vueNodes mode, we need to set them manually before opening the mask editor.
+const setupNodeForMaskEditor = () => {
+  if (!props.nodeId || !currentImageEl.value) return
+  const node = app.rootGraph?.getNodeById(props.nodeId)
+  if (!node) return
+  node.imageIndex = currentIndex.value
+  node.imgs = [currentImageEl.value]
+  app.canvas?.select(node)
+}
+
 const handleEditMask = () => {
+  setupNodeForMaskEditor()
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
 }
 

@@ -68,6 +68,7 @@ catalog:
   prettier: ^3.3.2
   primeicons: ^7.0.0
   primevue: ^4.2.5
+  rollup-plugin-visualizer: ^6.0.4
   storybook: ^9.1.6
   stylelint: ^16.24.0
   tailwindcss: ^4.1.12
