@@ -119,6 +119,7 @@ const onConfigure = function (
     this.properties.proxyWidgets = serialisedNode.properties.proxyWidgets
     const parsed = parseProxyWidgets(serialisedNode.properties.proxyWidgets)
     serialisedNode.widgets_values?.forEach((v, index) => {
+      if (parsed[index]?.[0] !== '-1') return
       const widget = this.widgets.find((w) => w.name == parsed[index][1])
       if (v !== null && widget) widget.value = v
     })

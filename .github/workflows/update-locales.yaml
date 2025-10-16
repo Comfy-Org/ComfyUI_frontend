@@ -54,5 +54,5 @@ jobs:
         # Apply the stashed changes if any
         git stash pop || true
         git add src/locales/
-        git diff --staged --quiet || git commit -m "Update locales [skip ci]"
+        git diff --staged --quiet || git commit -m "Update locales"
         git push origin HEAD:${{ github.head_ref }}

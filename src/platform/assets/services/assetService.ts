@@ -12,7 +12,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const ASSETS_ENDPOINT = '/assets'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
-const DEFAULT_LIMIT = 300
+const DEFAULT_LIMIT = 500
 
 export const MODELS_TAG = 'models'
 export const MISSING_TAG = 'missing'

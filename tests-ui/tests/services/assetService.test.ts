@@ -117,7 +117,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetModelFolders()
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models&limit=300'
+        '/assets?include_tags=models&limit=500'
       )
       expect(result).toHaveLength(2)
 
@@ -163,7 +163,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetModels('checkpoints')
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints&limit=300'
+        '/assets?include_tags=models,checkpoints&limit=500'
       )
       expect(result).toEqual([
         expect.objectContaining({ name: 'valid.safetensors', pathIndex: 0 })
@@ -236,7 +236,7 @@ describe('assetService', () => {
 
       // Verify API call includes correct category
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints&limit=300'
+        '/assets?include_tags=models,checkpoints&limit=500'
       )
     })
 
@@ -297,7 +297,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetsByTag('models')
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models&limit=300'
+        '/assets?include_tags=models&limit=500'
       )
       expect(result).toEqual(testAssets)
     })
