@@ -19,10 +19,10 @@ const filterSelected = defineModel<OptionId>('filterSelected')
         cn(
           'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer select-none',
           'transition-all duration-150',
-          'hover:text-black hover:dark-theme:text-white hover:bg-zinc-500/10',
+          'hover:text-text-primary hover:bg-node-component-widget-input-surface',
           'active:scale-95',
           filterSelected === option.id
-            ? '!bg-zinc-500/20 text-black dark-theme:text-white'
+            ? '!bg-node-component-widget-input-surface text-text-primary'
             : 'bg-transparent'
         )
       "
