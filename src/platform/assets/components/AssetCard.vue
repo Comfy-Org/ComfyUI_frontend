@@ -26,7 +26,7 @@
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <img
-        v-if="asset.preview_url"
+        v-if="shouldShowImage"
         :src="asset.preview_url"
         class="h-full w-full object-contain"
       />
@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { useImage } from '@vueuse/core'
 import { computed } from 'vue'
 
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
@@ -99,6 +100,15 @@ const props = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
 }>()
+
+const { error } = useImage({
+  src: props.asset.preview_url ?? '',
+  alt: props.asset.name
+})
+
+const shouldShowImage = computed(
+  () => props.asset.preview_url && !error.value
+)
 
 const elementProps = computed(() =>
   props.interactive
