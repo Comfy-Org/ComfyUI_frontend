@@ -24,7 +24,7 @@
     @click="interactive && $emit('select', asset)"
     @keydown.enter="interactive && $emit('select', asset)"
   >
-    <div class="relative aspect-square w-full overflow-hidden">
+    <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <img
         v-if="asset.preview_url"
         :src="asset.preview_url"
@@ -32,7 +32,7 @@
       />
       <div
         v-else
-        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600"
+        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-400 via-gray-800 to-charcoal-400"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
@@ -41,7 +41,7 @@
         <h3
           :class="
             cn(
-              'mb-2 m-0 text-base font-semibold overflow-hidden text-ellipsis whitespace-nowrap',
+              'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
               'text-slate-800',
               'dark-theme:text-white'
             )
