@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, shallowRef } from 'vue'
 
-import {
-  type GraphNodeManager,
-  type VueNodeData,
-  useGraphNodeManager
+import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import type {
+  GraphNodeManager,
+  VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type {
