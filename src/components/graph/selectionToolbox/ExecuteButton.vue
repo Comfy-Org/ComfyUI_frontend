@@ -4,7 +4,7 @@
       value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
-    class="size-8 bg-[#31B9F4] !p-0 dark-theme:bg-[#0B8CE9]"
+    class="size-8 bg-button-surface-blue !p-0"
     text
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
