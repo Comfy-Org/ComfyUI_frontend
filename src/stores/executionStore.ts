@@ -21,6 +21,7 @@ import type {
   ExecutionStartWsMessage,
   NodeError,
   NodeProgressState,
+  NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage
@@ -105,6 +106,8 @@ export const useExecutionStore = defineStore('execution', () => {
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
+
+  const initializingPromptIds = ref<Set<string>>(new Set())
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -236,6 +239,7 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   function bindExecutionEvents() {
+    api.addEventListener('notification', handleNotification)
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
     api.addEventListener('execution_interrupted', handleExecutionInterrupted)
@@ -251,6 +255,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function unbindExecutionEvents() {
+    api.removeEventListener('notification', handleNotification)
     api.removeEventListener('execution_start', handleExecutionStart)
     api.removeEventListener('execution_cached', handleExecutionCached)
     api.removeEventListener('execution_interrupted', handleExecutionInterrupted)
@@ -269,6 +274,7 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionError.value = null
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
+    clearInitializationByPromptId(activePromptId.value)
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -279,6 +285,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionInterrupted() {
+    if (activePromptId.value)
+      clearInitializationByPromptId(activePromptId.value)
     resetExecutionState()
   }
 
@@ -352,7 +360,40 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
+    // Clear initialization for errored prompt if present
+    if (e.detail?.prompt_id) clearInitializationByPromptId(e.detail.prompt_id)
     resetExecutionState()
+  }
+
+  /**
+   * Notification handler used for frontend/cloud initialization tracking.
+   * Marks a prompt as initializing when cloud notifies it is waiting for a machine.
+   */
+  function handleNotification(e: CustomEvent<NotificationWsMessage>) {
+    const payload = e.detail
+    const text = payload?.value || ''
+    const id = payload?.id ? payload.id : ''
+    if (!id) return
+    if (text.includes('Waiting for a machine')) {
+      const next = new Set(initializingPromptIds.value)
+      next.add(id)
+      initializingPromptIds.value = next
+    }
+  }
+
+  function clearInitializationByPromptId(promptId: string | null) {
+    if (!promptId) return
+    if (!initializingPromptIds.value.has(promptId)) return
+    const next = new Set(initializingPromptIds.value)
+    next.delete(promptId)
+    initializingPromptIds.value = next
+  }
+
+  function isPromptInitializing(
+    promptId: string | number | undefined
+  ): boolean {
+    if (!promptId) return false
+    return initializingPromptIds.value.has(String(promptId))
   }
 
   /**
@@ -455,6 +496,8 @@ export const useExecutionStore = defineStore('execution', () => {
     executingNodeProgress,
     nodeProgressStates,
     nodeLocationProgressStates,
+    initializingPromptIds,
+    isPromptInitializing,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,

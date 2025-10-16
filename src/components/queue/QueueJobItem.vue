@@ -1,6 +1,6 @@
 <template>
   <BaseJobRow
-    :variant="normalizedState"
+    :variant="props.state"
     :primary-text="title"
     :secondary-text="rightText"
     :show-actions-on-hover="true"
@@ -39,11 +39,10 @@ import BaseJobRow from './BaseJobRow.vue'
 type JobState =
   | 'added'
   | 'queued'
-  | 'loading'
+  | 'initialization'
   | 'running'
   | 'completed'
   | 'failed'
-  | 'cancelled'
 
 const props = withDefaults(
   defineProps<{
@@ -70,10 +69,6 @@ const emit = defineEmits<{
   (e: 'view'): void
 }>()
 
-const normalizedState = computed(() =>
-  props.state === 'cancelled' ? 'failed' : props.state
-)
-
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
   switch (props.state) {
@@ -81,14 +76,13 @@ const iconClass = computed(() => {
       return 'icon-[lucide--plus]'
     case 'queued':
       return 'icon-[lucide--clock]'
-    case 'loading':
-      return 'icon-[lucide--loader-circle] animate-spin'
+    case 'initialization':
+      return 'icon-[lucide--server-crash]'
     case 'running':
       return 'icon-[lucide--play]'
     case 'completed':
       return 'icon-[lucide--check]'
     case 'failed':
-    case 'cancelled':
       return 'icon-[lucide--alert-circle]'
   }
   return 'icon-[lucide--circle]'
@@ -103,9 +97,8 @@ const computedShowClear = computed(() => {
     case 'failed':
     case 'added':
       return true
-    case 'loading':
+    case 'initialization':
     case 'running':
-    case 'cancelled':
       return false
   }
   return false

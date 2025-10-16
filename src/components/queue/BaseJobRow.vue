@@ -86,7 +86,7 @@ withDefaults(
     variant?:
       | 'added'
       | 'queued'
-      | 'loading'
+      | 'initialization'
       | 'running'
       | 'completed'
       | 'failed'

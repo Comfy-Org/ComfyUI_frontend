@@ -400,11 +400,10 @@ type JobListItem = {
   state:
     | 'added'
     | 'queued'
-    | 'loading'
+    | 'initialization'
     | 'running'
     | 'completed'
     | 'failed'
-    | 'cancelled'
   iconName?: string
   iconImageUrl?: string
   showClear?: boolean
@@ -417,13 +416,14 @@ const formatTime = (time?: number) => {
 }
 
 const deriveStateFromTask = (task: any): JobListItem['state'] => {
+  if (isJobInitializing(task?.promptId)) return 'initialization'
   if (task.taskType === 'Pending') return 'queued'
   if (task.taskType === 'Running') return 'running'
   if (task.taskType === 'History') {
     const status = task.displayStatus
     if (status === 'Completed') return 'completed'
     if (status === 'Failed') return 'failed'
-    if (status === 'Cancelled') return 'cancelled'
+    if (status === 'Cancelled') return 'failed'
   }
   return 'queued'
 }
@@ -445,7 +445,6 @@ const formatMetaForTask = (task: any, state: JobListItem['state']) => {
     return time || ''
   }
   if (state === 'failed') return t('g.failed')
-  if (state === 'cancelled') return t('g.cancelled')
   return ''
 }
 
@@ -491,7 +490,7 @@ const jobItems = computed<JobListItem[]>(() =>
       iconName = 'icon-[lucide--play]'
     } else if (state === 'queued') {
       iconName = 'icon-[lucide--clock]'
-    } else if (state === 'failed' || state === 'cancelled') {
+    } else if (state === 'failed') {
       iconName = 'icon-[lucide--alert-circle]'
     }
 
@@ -560,4 +559,7 @@ const interruptAll = async () => {
     await api.interrupt(task.promptId)
   }
 }
+/** Determines if a job is currently in initialization */
+const isJobInitializing = (promptId: string | number | undefined) =>
+  executionStore.isPromptInitializing(promptId)
 </script>
