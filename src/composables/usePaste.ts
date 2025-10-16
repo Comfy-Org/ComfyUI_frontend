@@ -109,6 +109,19 @@ export const usePaste = () => {
         return
       }
     }
+    try {
+      const tempElement = document.createElement('div')
+      tempElement.innerHTML = data.getData('text/html')
+      const nodeData = atob(
+        // @ts-expect-error Unused param
+        tempElement?.children?.[1]?.children?.[0]?.attributes?.['data-metadata']
+          .value
+      )
+      canvas._deserializeItems(JSON.parse(nodeData), {})
+      return
+    } catch (err) {
+      console.error(err)
+    }
 
     // No image found. Look for node data
     data = data.getData('text/plain')

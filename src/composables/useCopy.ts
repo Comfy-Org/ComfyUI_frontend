@@ -28,9 +28,14 @@ export const useCopy = () => {
     // copy nodes and clear clipboard
     const canvas = canvasStore.canvas
     if (isTargetInGraph && canvas?.selectedItems) {
-      canvas.copyToClipboard()
+      const serializedData = canvas.copyToClipboard()
       // clearData doesn't remove images from clipboard
-      e.clipboardData?.setData('text', ' ')
+      e.clipboardData?.setData(
+        'text/html',
+        '<meta charset="utf-8"><div><span data-metadata="' +
+          btoa(serializedData) +
+          '"></span></div><span style="white-space:pre-wrap;">Text</span>'
+      )
       e.preventDefault()
       e.stopImmediatePropagation()
       return false

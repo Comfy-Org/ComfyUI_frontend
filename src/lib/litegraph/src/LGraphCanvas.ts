@@ -3853,11 +3853,10 @@ export class LGraphCanvas
    * When called without parameters, it copies {@link selectedItems}.
    * @param items The items to copy.  If nullish, all selected items are copied.
    */
-  copyToClipboard(items?: Iterable<Positionable>): void {
-    localStorage.setItem(
-      'litegrapheditor_clipboard',
-      JSON.stringify(this._serializeItems(items))
-    )
+  copyToClipboard(items?: Iterable<Positionable>): string {
+    const serializedData = JSON.stringify(this._serializeItems(items))
+    localStorage.setItem('litegrapheditor_clipboard', serializedData)
+    return serializedData
   }
 
   emitEvent(detail: LGraphCanvasEventMap['litegraph:canvas']): void {
