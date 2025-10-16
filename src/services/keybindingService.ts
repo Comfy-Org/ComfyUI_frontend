@@ -8,6 +8,7 @@ import {
   KeybindingImpl,
   useKeybindingStore
 } from '@/stores/keybindingStore'
+import { migrateKeybindings } from '@/utils/keybindingMigration'
 
 export const useKeybindingService = () => {
   const keybindingStore = useKeybindingStore()
@@ -111,14 +112,41 @@ export const useKeybindingService = () => {
     }
   }
 
-  function registerUserKeybindings() {
-    // Unset bindings first as new bindings might conflict with default bindings.
+  async function registerUserKeybindings() {
+    // Load user keybindings from settings
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
+    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
+
+    // Migrate keybindings from old event.key format to new event.code format
+    const migratedUnset = migrateKeybindings(unsetBindings)
+    const migratedNew = migrateKeybindings(newBindings)
+
+    // Save migrated keybindings back to settings if any migration occurred
+    if (migratedUnset.migrated) {
+      await settingStore.set(
+        'Comfy.Keybinding.UnsetBindings',
+        migratedUnset.keybindings
+      )
+      console.warn(
+        '[Keybindings] Migrated unset keybindings to event.code format'
+      )
+    }
+
+    if (migratedNew.migrated) {
+      await settingStore.set(
+        'Comfy.Keybinding.NewBindings',
+        migratedNew.keybindings
+      )
+      console.warn(
+        '[Keybindings] Migrated custom keybindings to event.code format'
+      )
+    }
+
+    // Unset bindings first as new bindings might conflict with default bindings.
+    for (const keybinding of migratedUnset.keybindings) {
       keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
     }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
+    for (const keybinding of migratedNew.keybindings) {
       keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
     }
   }

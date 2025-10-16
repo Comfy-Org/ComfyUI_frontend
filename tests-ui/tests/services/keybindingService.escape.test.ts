@@ -11,10 +11,14 @@ import {
   useKeybindingStore
 } from '@/stores/keybindingStore'
 
+const settingStoreGetMock = vi.fn()
+const settingStoreSetMock = vi.fn()
+
 // Mock stores
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => [])
+    get: settingStoreGetMock,
+    set: settingStoreSetMock
   }))
 }))
 
@@ -31,6 +35,9 @@ describe('keybindingService - Escape key handling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
+
+    settingStoreGetMock.mockImplementation(() => [])
+    settingStoreSetMock.mockResolvedValue(undefined)
 
     // Mock command store execute
     mockCommandExecute = vi.fn()
@@ -67,6 +74,7 @@ describe('keybindingService - Escape key handling', () => {
   it('should execute ExitSubgraph command when Escape is pressed', async () => {
     const event = new KeyboardEvent('keydown', {
       key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -84,6 +92,7 @@ describe('keybindingService - Escape key handling', () => {
   it('should not execute command when Escape is pressed with modifiers', async () => {
     const event = new KeyboardEvent('keydown', {
       key: 'Escape',
+      code: 'Escape',
       ctrlKey: true,
       bubbles: true,
       cancelable: true
@@ -101,6 +110,7 @@ describe('keybindingService - Escape key handling', () => {
     const inputElement = document.createElement('input')
     const event = new KeyboardEvent('keydown', {
       key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -131,6 +141,7 @@ describe('keybindingService - Escape key handling', () => {
 
     const event = new KeyboardEvent('keydown', {
       key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -159,6 +170,7 @@ describe('keybindingService - Escape key handling', () => {
 
     const event = new KeyboardEvent('keydown', {
       key: 'Escape',
+      code: 'Escape',
       bubbles: true,
       cancelable: true
     })
@@ -198,5 +210,110 @@ describe('keybindingService - Escape key handling', () => {
     // Should not call preventDefault or execute command
     expect(event.preventDefault).not.toHaveBeenCalled()
     expect(mockCommandExecute).not.toHaveBeenCalled()
+  })
+})
+
+describe('keybindingService - migration support', () => {
+  let keybindingService: ReturnType<typeof useKeybindingService>
+  let keybindingStore: ReturnType<typeof useKeybindingStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createPinia())
+
+    settingStoreSetMock.mockResolvedValue(undefined)
+    settingStoreGetMock.mockImplementation((key: string) => {
+      if (key === 'Comfy.Keybinding.UnsetBindings') {
+        return []
+      }
+      if (key === 'Comfy.Keybinding.NewBindings') {
+        return []
+      }
+      return []
+    })
+
+    keybindingService = useKeybindingService()
+    keybindingService.registerCoreKeybindings()
+    keybindingStore = useKeybindingStore()
+  })
+
+  it('migrates legacy unset bindings using default combos', async () => {
+    // Legacy format used lowercase letters
+    // User wants to unset the 'R' shortcut (Comfy.RefreshNodeDefinitions)
+    const legacyUnset = [
+      {
+        commandId: 'Comfy.RefreshNodeDefinitions',
+        combo: { key: 'r' } // Old format
+      }
+    ]
+
+    settingStoreGetMock.mockImplementation((key: string) => {
+      if (key === 'Comfy.Keybinding.UnsetBindings') {
+        return legacyUnset
+      }
+      if (key === 'Comfy.Keybinding.NewBindings') {
+        return []
+      }
+      return []
+    })
+
+    await keybindingService.registerUserKeybindings()
+
+    const unsetBindings = Object.values(
+      keybindingStore.getUserUnsetKeybindings()
+    )
+
+    // Should have migrated and unset the binding
+    expect(unsetBindings).toHaveLength(1)
+    expect(unsetBindings[0].combo.key).toBe('KeyR')
+    expect(unsetBindings[0].commandId).toBe('Comfy.RefreshNodeDefinitions')
+
+    // Should have saved the migrated format
+    expect(settingStoreSetMock).toHaveBeenCalledWith(
+      'Comfy.Keybinding.UnsetBindings',
+      expect.arrayContaining([
+        expect.objectContaining({
+          commandId: 'Comfy.RefreshNodeDefinitions',
+          combo: expect.objectContaining({
+            key: 'KeyR'
+          })
+        })
+      ])
+    )
+
+    // Verify the keybinding no longer matches
+    const eventCombo = new KeyComboImpl({ key: 'KeyR' })
+    const resolved = keybindingStore.getKeybinding(eventCombo)
+    expect(resolved).toBeUndefined()
+  })
+
+  it('matches migrated event.code against legacy user bindings', async () => {
+    // User has a legacy binding in old format
+    const legacyBindings = [
+      {
+        commandId: 'Custom.Legacy',
+        combo: { key: 'q' }
+      }
+    ]
+
+    settingStoreGetMock.mockImplementation((key: string) => {
+      if (key === 'Comfy.Keybinding.UnsetBindings') {
+        return []
+      }
+      if (key === 'Comfy.Keybinding.NewBindings') {
+        return legacyBindings
+      }
+      return []
+    })
+
+    // Register user keybindings (which will migrate them)
+    await keybindingService.registerUserKeybindings()
+
+    // Now press 'Q' key with event.code format
+    const eventCombo = new KeyComboImpl({ key: 'KeyQ' })
+
+    const resolved = keybindingStore.getKeybinding(eventCombo)
+
+    expect(resolved?.commandId).toBe('Custom.Legacy')
   })
 })
