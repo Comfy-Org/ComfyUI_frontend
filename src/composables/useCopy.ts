@@ -9,9 +9,6 @@ export const useCopy = () => {
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'copy', (e) => {
-    if (!(e.target instanceof Element)) {
-      return
-    }
     if (
       (e.target instanceof HTMLTextAreaElement &&
         e.target.type === 'textarea') ||
@@ -20,14 +17,9 @@ export const useCopy = () => {
       // Default system copy
       return
     }
-    const isTargetInGraph =
-      e.target.classList.contains('litegraph') ||
-      e.target.classList.contains('graph-canvas-container') ||
-      e.target.id === 'graph-canvas'
-
     // copy nodes and clear clipboard
     const canvas = canvasStore.canvas
-    if (isTargetInGraph && canvas?.selectedItems) {
+    if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
       // clearData doesn't remove images from clipboard
       e.clipboardData?.setData(

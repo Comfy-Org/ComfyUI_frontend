@@ -3892,6 +3892,7 @@ export class LGraphCanvas
     if (!data) return
     return this._deserializeItems(JSON.parse(data), options)
   }
+
   _deserializeItems(
     parsed: ClipboardItems,
     options: IPasteFromClipboardOptions
@@ -3908,6 +3909,7 @@ export class LGraphCanvas
     const { graph } = this
     if (!graph) throw new NullGraphError()
     graph.beforeChange()
+    this.emitBeforeChange()
 
     // Parse & initialise
     parsed.nodes ??= []
@@ -4077,6 +4079,7 @@ export class LGraphCanvas
     this.selectItems(created)
 
     graph.afterChange()
+    this.emitAfterChange()
 
     return results
   }

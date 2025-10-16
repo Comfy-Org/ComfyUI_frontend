@@ -38,15 +38,14 @@ export const usePaste = () => {
   }
 
   useEventListener(document, 'paste', async (e) => {
-    const isTargetInGraph =
-      e.target instanceof Element &&
-      (e.target.classList.contains('litegraph') ||
-        e.target.classList.contains('graph-canvas-container') ||
-        e.target.id === 'graph-canvas')
-
-    // If the target is not in the graph, we don't want to handle the paste event
-    if (!isTargetInGraph) return
-
+    if (
+      (e.target instanceof HTMLTextAreaElement &&
+        e.target.type === 'textarea') ||
+      (e.target instanceof HTMLInputElement && e.target.type === 'text')
+    ) {
+      // Default system copy
+      return
+    }
     // ctrl+shift+v is used to paste nodes with connections
     // this is handled by litegraph
     if (workspaceStore.shiftDown) return
