@@ -76,26 +76,28 @@
       </div>
 
       <!-- Terms & Contact -->
-      <p v-if="!hasInviteCode" class="mt-5 text-sm text-gray-600">
-        {{ t('cloudWaitlist_questionsText') }}
-        <a
-          href="https://support.comfy.org"
-          class="cursor-pointer text-blue-400 no-underline"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ t('cloudWaitlist_contactLink') }}</a
-        >.
-      </p>
-      <p v-else class="mt-5 text-sm text-gray-600">
-        {{ t('cloudStart_invited_signup_title') }}
-        <span
-          class="cursor-pointer text-blue-400 no-underline"
-          @click="navigateToSignup"
-        >
-          {{ t('cloudStart_invited_signup_description') }}</span
-        >
-      </p>
+      <template v-if="!hasInviteCode">
+        <p class="mt-5 text-sm text-gray-600">
+          {{ t('cloudWaitlist_questionsText') }}
+          <a
+            href="https://support.comfy.org"
+            class="cursor-pointer text-blue-400 no-underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ t('cloudWaitlist_contactLink') }}</a
+          >.
+        </p>
+        <p class="mt-5 text-sm text-gray-600">
+          {{ t('cloudStart_invited_signup_title') }}
+          <span
+            class="cursor-pointer text-blue-400 no-underline"
+            @click="navigateToSignup"
+          >
+            {{ t('cloudStart_invited_signup_description') }}</span
+          >
+        </p>
+      </template>
     </div>
   </div>
 </template>
