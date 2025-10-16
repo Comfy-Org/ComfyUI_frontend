@@ -24,7 +24,7 @@
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        class="z-10 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       >
         <InputSlot
           :slot-data="{
