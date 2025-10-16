@@ -133,7 +133,7 @@ const searchResults = computed<ISettingGroup[]>(() =>
 )
 
 const tabValue = computed<string>(() =>
-  inSearch.value ? 'Search Results' : activeCategory.value?.label ?? ''
+  inSearch.value ? 'Search Results' : (activeCategory.value?.label ?? '')
 )
 
 // Don't allow null category to be set outside of search.
