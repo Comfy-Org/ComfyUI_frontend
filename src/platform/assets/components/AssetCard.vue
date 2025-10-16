@@ -39,6 +39,7 @@
     <div :class="cn('p-4 h-32 flex flex-col justify-between')">
       <div>
         <h3
+          :id="titleId"
           :class="
             cn(
               'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
@@ -50,6 +51,7 @@
           {{ asset.name }}
         </h3>
         <p
+          :id="descId"
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
@@ -90,7 +92,7 @@
 
 <script setup lang="ts">
 import { useImage } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
@@ -100,6 +102,10 @@ const props = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
 }>()
+
+
+const titleId = useId()
+const descId = useId()
 
 const { error } = useImage({
   src: props.asset.preview_url ?? '',
@@ -114,9 +120,13 @@ const elementProps = computed(() =>
   props.interactive
     ? {
         type: 'button',
-        'aria-label': `Select asset ${props.asset.name}`
+        'aria-labelledby': titleId,
+        'aria-describedby': descId
       }
-    : {}
+    : {
+        'aria-labelledby': titleId,
+        'aria-describedby': descId
+      }
 )
 
 defineEmits<{
