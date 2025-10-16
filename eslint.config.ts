@@ -24,7 +24,14 @@ const commonGlobals = {
 
 const settings = {
   'import/resolver': {
-    typescript: true,
+    typescript: {
+      alwaysTryTypes: true,
+      project: [
+        './tsconfig.json',
+        './apps/*/tsconfig.json',
+        './packages/*/tsconfig.json'
+      ]
+    },
     node: true
   },
   tailwindcss: {
@@ -249,6 +256,14 @@ export default defineConfig([
     files: ['**/*.{test,spec,stories}.ts', '**/*.stories.vue'],
     rules: {
       'no-console': 'off'
+    }
+  },
+  {
+    files: ['apps/**/*.{ts,tsx,vue,mts}'],
+    rules: {
+      // Disable import resolution checking for monorepo apps due to path alias resolution issues
+      // TypeScript itself still validates imports via projectService
+      'import-x/no-unresolved': 'off'
     }
   }
 ])
