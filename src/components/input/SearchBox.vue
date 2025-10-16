@@ -74,7 +74,7 @@ onMounted(() => autofocus && focusInput())
 const wrapperStyle = computed(() => {
   const baseClasses = [
     'relative flex w-full items-center gap-2',
-    'bg-white dark-theme:bg-zinc-800',
+    'bg-interface-panel-surface',
     'cursor-text'
   ]
 
@@ -83,7 +83,7 @@ const wrapperStyle = computed(() => {
       ...baseClasses,
       'rounded p-2',
       'border border-solid',
-      'border-zinc-200 dark-theme:border-zinc-700'
+      'border-interface-stroke'
     )
   }
 
@@ -100,13 +100,11 @@ const inputStyle = computed(() => {
   return cn(
     'absolute inset-0 w-full h-full pl-11',
     'border-none outline-none bg-transparent',
-    'text-sm text-neutral dark-theme:text-white'
+    'text-sm text-text-primary'
   )
 })
 
 const iconColorStyle = computed(() => {
-  return cn(
-    !showBorder ? 'text-neutral' : ['text-zinc-300', 'dark-theme:text-zinc-700']
-  )
+  return cn(!showBorder ? 'text-neutral' : 'text-text-secondary')
 })
 </script>

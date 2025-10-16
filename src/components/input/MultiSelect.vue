@@ -39,7 +39,7 @@
         >
           <span
             v-if="showSelectedCount"
-            class="px-1 text-sm text-neutral-400 dark-theme:text-zinc-500"
+            class="px-1 text-sm text-text-secondary"
           >
             {{
               selectedCount > 0
@@ -52,22 +52,22 @@
             :label="$t('g.clearAll')"
             type="transparent"
             size="fit-content"
-            class="text-sm text-blue-500 dark-theme:text-blue-600"
+            class="text-sm text-text-blue"
             @click.stop="selectedItems = []"
           />
         </div>
-        <div class="my-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+        <div class="my-4 h-px bg-interface-stroke"></div>
       </div>
     </template>
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
+      <span class="text-sm text-text-primary">
         {{ label }}
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-xs font-semibold text-white dark-theme:bg-blue-500"
+        class="pointer-events-none absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-accent-blue text-xs font-semibold text-text-contrast"
       >
         {{ selectedCount }}
       </span>
@@ -83,11 +83,7 @@
       <div class="flex items-center gap-2" :style="popoverStyle">
         <div
           class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
-          :class="
-            slotProps.selected
-              ? 'bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
-              : 'bg-neutral-100 dark-theme:bg-zinc-700'
-          "
+          :class="slotProps.selected ? 'bg-accent-blue' : 'bg-button-surface'"
         >
           <i
             v-if="slotProps.selected"
@@ -208,13 +204,11 @@ const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: cn(
       'h-10 relative inline-flex cursor-pointer select-none',
-      'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
+      'rounded-lg bg-button-surface text-text-primary',
       'transition-all duration-200 ease-in-out',
       'border-[2.5px] border-solid',
-      selectedCount.value > 0
-        ? 'border-blue-400 dark-theme:border-blue-500'
-        : 'border-transparent',
-      'focus-within:border-blue-400 dark-theme:focus-within:border-blue-500',
+      selectedCount.value > 0 ? 'border-accent-blue' : 'border-transparent',
+      'focus-within:border-accent-blue',
       { 'opacity-60 cursor-default': props.disabled }
     )
   }),
@@ -236,9 +230,9 @@ const pt = computed(() => ({
   overlay: {
     class: cn(
       'mt-2 rounded-lg py-2 px-2',
-      'bg-white dark-theme:bg-zinc-800',
-      'text-neutral dark-theme:text-white',
-      'border border-solid border-neutral-200 dark-theme:border-zinc-700'
+      'bg-interface-menu-surface',
+      'text-text-primary',
+      'border border-solid border-interface-menu-stroke'
     )
   },
   listContainer: () => ({
@@ -252,10 +246,10 @@ const pt = computed(() => ({
   option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
     class: [
       'flex gap-2 items-center h-10 px-2 rounded-lg',
-      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+      'hover:bg-interface-menu-component-surface-hovered',
       // Add focus/highlight state for keyboard navigation
       {
-        'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context?.focused
+        'bg-interface-menu-component-surface-hovered': context?.focused
       }
     ]
   }),

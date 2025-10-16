@@ -26,11 +26,11 @@
         <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-zinc-700 dark-theme:text-gray-200"
+          class="text-text-primary"
         >
           {{ getLabel(slotProps.value) }}
         </span>
-        <span v-else class="text-zinc-700 dark-theme:text-gray-200">
+        <span v-else class="text-text-primary">
           {{ label }}
         </span>
       </div>
@@ -48,10 +48,7 @@
         :style="optionStyle"
       >
         <span class="truncate">{{ option.name }}</span>
-        <i
-          v-if="selected"
-          class="icon-[lucide--check] text-neutral-600 dark-theme:text-white"
-        />
+        <i v-if="selected" class="icon-[lucide--check] text-text-primary" />
       </div>
     </template>
   </Select>
@@ -132,10 +129,10 @@ const pt = computed(() => ({
       'h-10 relative inline-flex cursor-pointer select-none items-center',
       // trigger surface
       'rounded-lg',
-      'bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
+      'bg-button-surface text-text-primary',
       'border-[2.5px] border-solid border-transparent',
       'transition-all duration-200 ease-in-out',
-      'focus-within:border-blue-400 dark-theme:focus-within:border-blue-500',
+      'focus-within:border-accent-blue',
       // disabled
       { 'opacity-60 cursor-default': props.disabled }
     ]
@@ -153,8 +150,8 @@ const pt = computed(() => ({
   overlay: {
     class: cn(
       'mt-2 p-2 rounded-lg',
-      'bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
-      'border border-solid border-neutral-200 dark-theme:border-zinc-700'
+      'bg-interface-menu-surface text-text-primary',
+      'border border-solid border-interface-menu-stroke'
     )
   },
   listContainer: () => ({
@@ -170,22 +167,21 @@ const pt = computed(() => ({
     class: [
       // Row layout
       'flex items-center justify-between gap-3 px-2 py-3 rounded',
-      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+      'hover:bg-interface-menu-component-surface-hovered',
       // Selected state + check icon
-      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected },
+      { 'bg-interface-menu-component-surface-hovered': context.selected },
       // Add focus state for keyboard navigation
-      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.focused }
+      { 'bg-interface-menu-component-surface-hovered': context.focused }
     ]
   }),
   optionLabel: {
     class: 'truncate'
   },
   optionGroupLabel: {
-    class:
-      'px-3 py-2 text-xs uppercase tracking-wide text-zinc-500 dark-theme:text-zinc-400'
+    class: 'px-3 py-2 text-xs uppercase tracking-wide text-text-secondary'
   },
   emptyMessage: {
-    class: 'px-3 py-2 text-sm text-zinc-500 dark-theme:text-zinc-400'
+    class: 'px-3 py-2 text-sm text-text-secondary'
   }
 }))
 </script>
