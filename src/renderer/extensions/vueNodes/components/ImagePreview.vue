@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
     data-capture-node="true"
     tabindex="0"
     role="region"
