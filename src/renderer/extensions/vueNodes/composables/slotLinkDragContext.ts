@@ -1,5 +1,5 @@
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { SlotIdentity, SlotLayout } from '@/renderer/core/layout/types'
 
 /**
  * Slot link drag context
@@ -17,14 +17,18 @@ interface PendingPointerMoveData {
 export interface SlotLinkDragContext {
   preferredSlotForNode: Map<
     NodeId,
-    { index: number; key: string; layout: SlotLayout } | null
+    {
+      index: number
+      identity: SlotIdentity
+      layout: SlotLayout
+    } | null
   >
-  lastHoverSlotKey: string | null
+  lastHoverSlotIdentity: SlotIdentity | null
   lastHoverNodeId: NodeId | null
-  lastCandidateKey: string | null
+  lastCandidateIdentity: SlotIdentity | null
   pendingPointerMove: PendingPointerMoveData | null
   lastPointerEventTarget: EventTarget | null
-  lastPointerTargetSlotKey: string | null
+  lastPointerTargetSlotIdentity: SlotIdentity | null
   lastPointerTargetNodeId: NodeId | null
   reset: () => void
   dispose: () => void
@@ -33,21 +37,21 @@ export interface SlotLinkDragContext {
 export function createSlotLinkDragContext(): SlotLinkDragContext {
   const state: SlotLinkDragContext = {
     preferredSlotForNode: new Map(),
-    lastHoverSlotKey: null,
+    lastHoverSlotIdentity: null,
     lastHoverNodeId: null,
-    lastCandidateKey: null,
+    lastCandidateIdentity: null,
     pendingPointerMove: null,
     lastPointerEventTarget: null,
-    lastPointerTargetSlotKey: null,
+    lastPointerTargetSlotIdentity: null,
     lastPointerTargetNodeId: null,
     reset: () => {
       state.preferredSlotForNode = new Map()
-      state.lastHoverSlotKey = null
+      state.lastHoverSlotIdentity = null
       state.lastHoverNodeId = null
-      state.lastCandidateKey = null
+      state.lastCandidateIdentity = null
       state.pendingPointerMove = null
       state.lastPointerEventTarget = null
-      state.lastPointerTargetSlotKey = null
+      state.lastPointerTargetSlotIdentity = null
       state.lastPointerTargetNodeId = null
     },
     dispose: () => {

@@ -10,7 +10,7 @@ type SlotEntry = {
 
 type NodeEntry = {
   nodeId: string
-  slots: Map<string, SlotEntry>
+  slots: { input: Map<number, SlotEntry>; output: Map<number, SlotEntry> }
   stopWatch?: () => void
 }
 
@@ -26,7 +26,10 @@ export const useNodeSlotRegistryStore = defineStore('nodeSlotRegistry', () => {
     if (!node) {
       node = {
         nodeId,
-        slots: markRaw(new Map<string, SlotEntry>())
+        slots: markRaw({
+          input: new Map<number, SlotEntry>(),
+          output: new Map<number, SlotEntry>()
+        })
       }
       registry.set(nodeId, node)
     }
