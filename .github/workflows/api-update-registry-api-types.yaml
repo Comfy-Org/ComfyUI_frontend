@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            .cache
+            tsconfig.tsbuildinfo
           key: update-registry-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             update-registry-tools-cache-${{ runner.os }}-
