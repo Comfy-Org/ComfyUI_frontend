@@ -95,7 +95,7 @@ const loadedLocales = new Set<string>(['en'])
 /**
  * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
  */
-async function loadLocale(locale: string): Promise<void> {
+export async function loadLocale(locale: string): Promise<void> {
   if (loadedLocales.has(locale)) {
     return
   }
