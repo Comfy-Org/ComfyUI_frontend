@@ -215,5 +215,120 @@ describe('contextMenuCompat', () => {
       expect(legacyItems[0]).toMatchObject({ content: 'Extension 1 Item' })
       expect(legacyItems[1]).toMatchObject({ content: 'Extension 2 Item' })
     })
+
+    it('should extract legacy items only once even when called multiple times', () => {
+      // Setup base method
+      LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+        return [
+          { content: 'Base Item 1', callback: () => {} },
+          { content: 'Base Item 2', callback: () => {} }
+        ]
+      }
+
+      legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
+
+      // Simulate legacy extension monkey-patching the prototype
+      const original = LGraphCanvas.prototype.getCanvasMenuOptions
+      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
+        const items = (original as any).apply(this, args)
+        items.push({ content: 'Legacy Item 1', callback: () => {} })
+        items.push({ content: 'Legacy Item 2', callback: () => {} })
+        return items
+      }
+
+      // Extract legacy items multiple times (simulating repeated menu opens)
+      const legacyItems1 = legacyMenuCompat.extractLegacyItems(
+        'getCanvasMenuOptions',
+        mockCanvas
+      )
+      const legacyItems2 = legacyMenuCompat.extractLegacyItems(
+        'getCanvasMenuOptions',
+        mockCanvas
+      )
+      const legacyItems3 = legacyMenuCompat.extractLegacyItems(
+        'getCanvasMenuOptions',
+        mockCanvas
+      )
+
+      // Each extraction should return the same items (no accumulation)
+      expect(legacyItems1).toHaveLength(2)
+      expect(legacyItems2).toHaveLength(2)
+      expect(legacyItems3).toHaveLength(2)
+
+      // Verify items are the expected ones
+      expect(legacyItems1[0]).toMatchObject({ content: 'Legacy Item 1' })
+      expect(legacyItems1[1]).toMatchObject({ content: 'Legacy Item 2' })
+
+      expect(legacyItems2[0]).toMatchObject({ content: 'Legacy Item 1' })
+      expect(legacyItems2[1]).toMatchObject({ content: 'Legacy Item 2' })
+
+      expect(legacyItems3[0]).toMatchObject({ content: 'Legacy Item 1' })
+      expect(legacyItems3[1]).toMatchObject({ content: 'Legacy Item 2' })
+    })
+
+    it('should not extract items from registered wrapper methods', () => {
+      // Setup base method
+      LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+        return [{ content: 'Base Item', callback: () => {} }]
+      }
+
+      legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
+
+      // Create a wrapper that adds new API items (simulating useContextMenuTranslation)
+      const originalMethod = LGraphCanvas.prototype.getCanvasMenuOptions
+      const wrapperMethod = function (this: LGraphCanvas) {
+        const items = (originalMethod as any).apply(this, [])
+        // Add new API items
+        items.push({ content: 'New API Item 1', callback: () => {} })
+        items.push({ content: 'New API Item 2', callback: () => {} })
+        return items
+      }
+
+      // Register the wrapper so it's not treated as a legacy patch
+      legacyMenuCompat.registerWrapper('getCanvasMenuOptions', wrapperMethod)
+
+      // Set the wrapper as the current method
+      LGraphCanvas.prototype.getCanvasMenuOptions = wrapperMethod
+
+      // Extract legacy items - should return empty because current method is a registered wrapper
+      const legacyItems = legacyMenuCompat.extractLegacyItems(
+        'getCanvasMenuOptions',
+        mockCanvas
+      )
+
+      expect(legacyItems).toHaveLength(0)
+    })
+
+    it('should extract legacy items even when a wrapper is registered but not active', () => {
+      // Setup base method
+      LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+        return [{ content: 'Base Item', callback: () => {} }]
+      }
+
+      legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
+
+      // Register a wrapper (but don't set it as the current method)
+      const wrapperMethod = function () {
+        return [{ content: 'Wrapper Item', callback: () => {} }]
+      }
+      legacyMenuCompat.registerWrapper('getCanvasMenuOptions', wrapperMethod)
+
+      // Monkey-patch with a different function (legacy extension)
+      const original = LGraphCanvas.prototype.getCanvasMenuOptions
+      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
+        const items = (original as any).apply(this, args)
+        items.push({ content: 'Legacy Item', callback: () => {} })
+        return items
+      }
+
+      // Extract legacy items - should return the legacy item because current method is NOT the wrapper
+      const legacyItems = legacyMenuCompat.extractLegacyItems(
+        'getCanvasMenuOptions',
+        mockCanvas
+      )
+
+      expect(legacyItems).toHaveLength(1)
+      expect(legacyItems[0]).toMatchObject({ content: 'Legacy Item' })
+    })
   })
 })
