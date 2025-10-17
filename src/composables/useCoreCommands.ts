@@ -936,7 +936,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Graph.EditSubgraphWidgets',
-      label: 'Toggle promotion of hovered widget',
+      label: 'Edit Subgraph Widgets',
       icon: 'icon-[lucide--settings-2]',
       versionAdded: '1.28.5',
       function: showSubgraphNodeDialog
