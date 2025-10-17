@@ -23,7 +23,7 @@ function useVueNodeLifecycleIndividual() {
 
   const { startSync } = useLayoutSync()
 
-  const { fixOverlaps } = useFixVueNodeOverlap()
+  // const { fixOverlaps } = useFixVueNodeOverlap()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -84,8 +84,8 @@ function useVueNodeLifecycleIndividual() {
         initializeNodeManager()
         // Run the overlap fix for vue nodes
         setTimeout(() => {
-          fixOverlaps()
-        }, 5000)
+          useFixVueNodeOverlap()
+        }, 3000)
       } else {
         disposeNodeManagerAndSyncs()
       }
