@@ -60,8 +60,8 @@ import {
   watch
 } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
