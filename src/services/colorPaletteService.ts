@@ -91,7 +91,7 @@ export const useColorPaletteService = () => {
     propertyMaybe: unknown
   ): propertyMaybe is keyof typeof THEME_PROPERTY_MAP {
     return (
-      (propertyMaybe as keyof typeof THEME_PROPERTY_MAP) in THEME_PROPERTY_MAP
+      typeof propertyMaybe === 'string' && propertyMaybe in THEME_PROPERTY_MAP
     )
   }
 
