@@ -474,3 +474,51 @@ export function formatDuration(milliseconds: number): string {
 
   return parts.join(' ')
 }
+
+/**
+ * Determines the media type from a filename's extension
+ * @param filename The filename to analyze
+ * @returns The media type: 'images', 'videos', 'audios', '3D' for gallery compatibility
+ */
+export function getMediaTypeFromFilename(filename: string): string {
+  if (!filename) return 'images'
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (!ext) return 'images'
+
+  const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']
+  const videoExts = ['mp4', 'webm', 'mov', 'avi']
+  const audioExts = ['mp3', 'wav', 'ogg', 'flac']
+  const threeDExts = ['obj', 'fbx', 'gltf', 'glb']
+
+  if (imageExts.includes(ext)) return 'images'
+  if (videoExts.includes(ext)) return 'videos'
+  if (audioExts.includes(ext)) return 'audios'
+  if (threeDExts.includes(ext)) return '3D'
+
+  return 'images'
+}
+
+/**
+ * Determines the media kind from a filename's extension
+ * @param filename The filename to analyze
+ * @returns The media kind: 'image', 'video', 'audio', or '3D'
+ */
+export function getMediaKindFromFilename(
+  filename: string
+): 'image' | 'video' | 'audio' | '3D' {
+  if (!filename) return 'image'
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (!ext) return 'image'
+
+  const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']
+  const videoExts = ['mp4', 'webm', 'mov', 'avi']
+  const audioExts = ['mp3', 'wav', 'ogg', 'flac']
+  const threeDExts = ['obj', 'fbx', 'gltf', 'glb']
+
+  if (imageExts.includes(ext)) return 'image'
+  if (videoExts.includes(ext)) return 'video'
+  if (audioExts.includes(ext)) return 'audio'
+  if (threeDExts.includes(ext)) return '3D'
+
+  return 'image'
+}
