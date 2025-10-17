@@ -1863,6 +1863,12 @@
       "success": "Account Deleted",
       "successDetail": "Your account has been successfully deleted."
     },
+    "reauthRequired": {
+      "title": "Re-authentication Required",
+      "message": "For security reasons, this action requires you to sign in again. Would you like to proceed?",
+      "confirm": "Sign In Again",
+      "cancel": "Cancel"
+    },
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
       "tooltipLearnMore": "Learn more..."
