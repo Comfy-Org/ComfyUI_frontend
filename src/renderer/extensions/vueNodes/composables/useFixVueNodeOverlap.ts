@@ -1,356 +1,346 @@
-/**
- * Greedy Overlap Removal Algorithm for ComfyUI Vue Nodes
- *
- * Strategy:
- * 1. Sort nodes by execution priority (level → x → y)
- * 2. For each overlapping pair, compute minimal movement vector
- * 3. Move only the lower-priority node (preserve higher-priority positions)
- * 4. Iterate until no overlaps remain or max iterations reached
- *
- * This preserves the original layout structure while removing overlaps
- * with minimal total node movement.
- */
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { ReadOnlyRectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import { createBounds } from '@/lib/litegraph/src/measure'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeId, Point } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
 
-interface NodeBounds {
+type posAndBounds = {
   id: NodeId
-  x: number
-  y: number
-  width: number
-  height: number
-  level: number // Execution order level from Kahn's algorithm
-  originalX: number // Store original position for minimal movement
-  originalY: number
+  position: Point
+  bounds: ReadOnlyRectangle
 }
 
-interface OverlapInfo {
-  nodeA: NodeBounds
-  nodeB: NodeBounds
-  overlapX: number // Amount of horizontal overlap
-  overlapY: number // Amount of vertical overlap
+type NodeWithVueBounds = {
+  id: NodeId
+  position: Point
+  lgBounds: ReadOnlyRectangle
+  vueBounds: ReadOnlyRectangle
 }
 
-/**
- * Check if two axis-aligned bounding boxes overlap
- */
-function boundsOverlap(a: NodeBounds, b: NodeBounds): boolean {
-  return !(
-    (
-      a.x + a.width <= b.x || // A is left of B
-      b.x + b.width <= a.x || // B is left of A
-      a.y + a.height <= b.y || // A is above B
-      b.y + b.height <= a.y
-    ) // B is above A
-  )
-}
-
-/**
- * Calculate overlap amount between two rectangles
- */
-function calculateOverlap(a: NodeBounds, b: NodeBounds): OverlapInfo | null {
-  if (!boundsOverlap(a, b)) return null
-
-  // Calculate overlap amounts
-  const overlapX = Math.min(a.x + a.width - b.x, b.x + b.width - a.x)
-  const overlapY = Math.min(a.y + a.height - b.y, b.y + b.height - a.y)
-
-  return {
-    nodeA: a,
-    nodeB: b,
-    overlapX,
-    overlapY
-  }
-}
-
-/**
- * Compute minimal movement vector to separate two overlapping nodes
- * Returns: { dx, dy } - direction and distance to move nodeB away from nodeA
- */
-function computeSeparationVector(
-  overlap: OverlapInfo,
-  margin: number
-): { dx: number; dy: number } {
-  const { nodeA, nodeB, overlapX, overlapY } = overlap
-
-  // Choose the axis with smaller overlap (requires less movement)
-  if (overlapX < overlapY) {
-    // Move horizontally
-    const direction = nodeB.x < nodeA.x ? -1 : 1
-    return {
-      dx: direction * (overlapX + margin),
-      dy: 0
-    }
-  } else {
-    // Move vertically
-    const direction = nodeB.y < nodeA.y ? -1 : 1
-    return {
-      dx: 0,
-      dy: direction * (overlapY + margin)
-    }
-  }
-}
-
-/**
- * Sort nodes by priority for overlap resolution
- * Higher priority = processed first, stays fixed
- * Priority order: level (execution order) → x position → y position
- */
-function sortNodesByPriority(nodes: NodeBounds[]): NodeBounds[] {
-  return [...nodes].sort((a, b) => {
-    // Primary: execution level (earlier in workflow = higher priority)
-    if (a.level !== b.level) return a.level - b.level
-
-    // Secondary: x position (left = higher priority)
-    if (Math.abs(a.x - b.x) > 10) return a.x - b.x
-
-    // Tertiary: y position (top = higher priority)
-    return a.y - b.y
-  })
-}
-
-/**
- * Detect all overlapping pairs in the current layout
- */
-function detectOverlaps(nodes: NodeBounds[]): OverlapInfo[] {
-  const overlaps: OverlapInfo[] = []
-
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const overlap = calculateOverlap(nodes[i], nodes[j])
-      if (overlap) {
-        overlaps.push(overlap)
-      }
-    }
-  }
-
-  return overlaps
-}
-
-/**
- * Resolve a single overlap by moving the lower-priority node
- */
-function resolveOverlap(
-  overlap: OverlapInfo,
-  margin: number,
-  priorities: Map<NodeId, number>
-): void {
-  const { nodeA, nodeB } = overlap
-
-  // Determine which node has lower priority (moves)
-  const priorityA = priorities.get(nodeA.id) ?? 0
-  const priorityB = priorities.get(nodeB.id) ?? 0
-
-  const separation = computeSeparationVector(overlap, margin)
-
-  if (priorityA < priorityB) {
-    // nodeA has higher priority (lower number), move nodeB
-    nodeB.x += separation.dx
-    nodeB.y += separation.dy
-  } else {
-    // nodeB has higher priority, move nodeA
-    nodeA.x -= separation.dx // Reverse direction
-    nodeA.y -= separation.dy
-  }
-}
-
-/**
- * Main overlap removal algorithm with iterative refinement
- */
-function removeAllOverlaps(
-  nodes: NodeBounds[],
-  options: {
-    maxIterations: number
-    margin: number
-  }
-): { converged: boolean; iterations: number } {
-  const { maxIterations, margin } = options
-
-  // Build priority map (lower number = higher priority)
-  const priorities = new Map<NodeId, number>()
-  nodes.forEach((node, index) => {
-    priorities.set(node.id, index)
-  })
-
-  let previousOverlapCount = Infinity
-
-  for (let iteration = 0; iteration < maxIterations; iteration++) {
-    const overlaps = detectOverlaps(nodes)
-
-    // Success: no overlaps remaining
-    if (overlaps.length === 0) {
-      return { converged: true, iterations: iteration }
-    }
-
-    // Resolve each overlap
-    for (const overlap of overlaps) {
-      resolveOverlap(overlap, margin, priorities)
-    }
-
-    // Detect stalling (no progress)
-    if (overlaps.length === previousOverlapCount && iteration > 5) {
-      console.warn(
-        `[OverlapRemoval] ⚠ Stalled at ${overlaps.length} overlaps after ${iteration} iterations`
-      )
-      return { converged: false, iterations: iteration }
-    }
-
-    previousOverlapCount = overlaps.length
-  }
-
-  console.warn(
-    `[OverlapRemoval] ⚠ Did not converge after ${maxIterations} iterations`
-  )
-  return { converged: false, iterations: maxIterations }
-}
-
-/**
- * Snap positions to grid for clean alignment
- */
-function snapToGrid(
-  positions: Map<NodeId, Point>,
-  gridSize: number
-): Map<NodeId, Point> {
-  const snapped = new Map<NodeId, Point>()
-
-  for (const [nodeId, pos] of positions) {
-    snapped.set(nodeId, {
-      x: Math.round(pos.x / gridSize) * gridSize,
-      y: Math.round(pos.y / gridSize) * gridSize
-    })
-  }
-
-  return snapped
-}
-
-/**
- * Extract node bounds from layout store and graph
- */
-function extractNodeBounds(): NodeBounds[] {
+export function useFixVueNodeOverlap() {
   const allNodes = layoutStore.getAllNodes().value
   const graph = comfyApp.canvas?.graph
-
-  if (!graph) {
-    console.error('[OverlapRemoval] No graph available')
-    return []
-  }
-
-  // Compute execution order to get node._level
-  graph.computeExecutionOrder(false, true)
-
-  const nodes: NodeBounds[] = []
-
-  for (const [nodeId, layout] of allNodes) {
-    // Skip nodes without valid bounds
-    if (
-      !layout.bounds ||
-      layout.bounds.width <= 0 ||
-      layout.bounds.height <= 0
-    ) {
-      continue
-    }
-
-    // Get level from graph node
-    const graphNode = graph.getNodeById(nodeId)
-    const level = graphNode?._level ?? 999 // Unconnected nodes get low priority
-
-    nodes.push({
-      id: nodeId,
-      x: layout.position.x,
-      y: layout.position.y,
-      width: layout.size.width,
-      height: layout.size.height,
-      level,
-      originalX: layout.position.x,
-      originalY: layout.position.y
-    })
-  }
-
-  return nodes
-}
-
-/**
- * Apply new positions to layout store
- */
-function applyNewPositions(
-  nodes: NodeBounds[],
-  options: { snapToGrid: boolean; gridSize: number }
-): void {
   const { moveNode } = useLayoutMutations()
-  const { snapToGrid: shouldSnap, gridSize } = options
 
-  // Build position map
-  const positions = new Map<NodeId, Point>()
-  for (const node of nodes) {
-    positions.set(node.id, { x: node.x, y: node.y })
+  //Problem. When switching from litegraph to vue nodes because the vue nodes are a new design they are arbitrarily and non uniformally different sized but all together larger than litegraph nodes. But they use the same posiiton as the litegraph nodes... so that means they can be overlapped. And for litegraph workflows where nodes are very close together the overlap can be often and severe because the vue nodes are much larger.
+
+  //Solution take the litegraph node positions and bounds and scale them proportionally from the center of the canvas before the switch to vue nodes.
+
+  //Implementation guide:
+
+  //Step 1: litegraph nodes pos and bounds to new array to work with
+  //Get all the nodes positions and bounds in litegraph and put them in a new array to work with. This array is called lgOriginalPosAndBounds
+  //Scale their positions and bounds proportionally from the center of the canvas
+  //Determine the right sclaing factor for now we can scale all of them by say 20% (for now)
+  //For convenince assign new scaled pos and bounds to new array lgScaledPosAndBounds
+
+  //Step 2: iterate over the lgScaledPosAndBounds positions and move the vue nodes there.
+  //Loop over the lgScalePosAndBounds
+  //Loop over the layoutStore.getAllNodes().value
+  //For each lgScalePosAndBounds find the layoutStore.getAllNodes().value equivilent and move the node to the lgScalePosAndBounds position
+  //Acutally move the node using moveNode(nodeID, nodePos) from useLayoutMutations();
+
+  //Questions:
+  // 1. Q: how do we get litegraph nodes pos and bounds for every node cleanly and accurately in canvas space? A: Should be able to use comfyApp.canvas.graph.nodes
+  //How do we check lgScalePosAndBounds item is the same item as layoutStore.getAllNodes().value maybe we use nodeID? A: yes we can use graph.getNodeById()
+
+  //The before should be all the litegraph nodes exactly where they are
+  //The after should be all the litegraph nodes scaled proportionally from their center and the vue nodes moved to their positions.
+
+  if (!graph) return
+
+  const lgOriginalPosAndBounds = graph?.nodes.map((node) => {
+    return {
+      id: node.id,
+      position: node.pos,
+      bounds: node.boundingRect
+    }
+  })
+
+  console.log(graph) //Prints that we have one.
+
+  const lgBounds = createBounds(graph.nodes)
+
+  console.log(lgBounds)
+
+  // Merge LiteGraph positions with Vue node bounds
+  const nodesWithVueBounds = mergeWithVueBounds(lgOriginalPosAndBounds, allNodes)
+  console.log('Nodes with Vue bounds:', nodesWithVueBounds)
+
+  // Calculate overlap and get the closest pair distance
+  const { maxOverlap, minDistance } = calculateOverlapAndMinDistance(nodesWithVueBounds)
+  console.log('Maximum overlap with Vue bounds:', maxOverlap, 'px')
+  console.log('Minimum distance between overlapping nodes:', minDistance, 'px')
+
+  // Calculate total expansion needed (max overlap + 20px buffer)
+  const additionalSpace = 20
+  const totalExpansion = maxOverlap + additionalSpace
+  console.log('Total expansion needed:', totalExpansion, 'px')
+  console.log('LG Bounds dimensions:', lgBounds)
+
+  // Apply dynamic scaling uniformly to all nodes (preserves topology)
+  const lgScaledPosAndBounds = lgOriginalPosAndBounds?.map((posAndBounds) => {
+    const { position, bounds } = scaleNodeProportionally(
+      posAndBounds,
+      totalExpansion,
+      minDistance
+    )
+    return {
+      id: posAndBounds.id,
+      position,
+      bounds
+    }
+  })
+
+  console.log('Litegraoh Original Node Pos and Bounds', lgOriginalPosAndBounds)
+  console.log('Litegraoh Scaled Node Pos and Bounds', lgScaledPosAndBounds)
+  console.log('All Vue Nodes', allNodes)
+
+  // Debug: Check ID types
+  if (lgScaledPosAndBounds && lgScaledPosAndBounds.length > 0) {
+    const lgId = lgScaledPosAndBounds[0].id
+    console.log('Sample LG ID:', lgId, 'Type:', typeof lgId)
+  }
+  if (allNodes.size > 0) {
+    const firstVueNode = Array.from(allNodes.values())[0]
+    console.log(
+      'Sample Vue ID:',
+      firstVueNode.id,
+      'Type:',
+      typeof firstVueNode.id
+    )
   }
 
-  // Optionally snap to grid
-  const finalPositions = shouldSnap
-    ? snapToGrid(positions, gridSize)
-    : positions
+  console.log('=== MOVING NODES ===')
+  let movedCount = 0
+  lgScaledPosAndBounds?.forEach((scaledPosAndBounds) => {
+    // Find the original position for comparison
+    const originalPosAndBounds = lgOriginalPosAndBounds?.find(
+      (orig) => orig.id === scaledPosAndBounds.id
+    )
 
-  // Apply movements
-  for (const [nodeId, position] of finalPositions) {
-    moveNode(nodeId, position)
-  }
-}
+    allNodes.forEach((vueNode) => {
+      // Convert both IDs to string for comparison (LG uses number, Vue uses string)
+      if (String(scaledPosAndBounds.id) === String(vueNode.id)) {
+        const newPos = {
+          x: scaledPosAndBounds.position[0],
+          y: scaledPosAndBounds.position[1]
+        }
+        const oldPos = originalPosAndBounds
+          ? {
+              x: originalPosAndBounds.position[0],
+              y: originalPosAndBounds.position[1]
+            }
+          : { x: 0, y: 0 }
 
-/**
- * Main composable for fixing Vue node overlaps
- */
-export function useFixVueNodeOverlap() {
-  const fixOverlaps = (options?: {
-    maxIterations?: number
-    margin?: number
-    snapToGrid?: boolean
-    gridSize?: number
-  }) => {
-    const {
-      maxIterations = 50,
-      margin = 20,
-      snapToGrid: shouldSnap = true,
-      gridSize = 10
-    } = options ?? {}
+        console.log(`Node ${vueNode.id}:`)
+        console.log('  Old position:', oldPos)
+        console.log('  New position:', newPos)
+        console.log(
+          '  Delta:',
+          (newPos.x - oldPos.x).toFixed(1),
+          ',',
+          (newPos.y - oldPos.y).toFixed(1)
+        )
 
-    // Step 1: Extract node bounds from layout store
-    const nodes = extractNodeBounds()
+        moveNode(vueNode.id, newPos)
+        movedCount++
+      }
+    })
+  })
+  console.log('Total nodes moved:', movedCount)
 
-    if (nodes.length === 0) {
-      console.warn('[OverlapRemoval] No nodes found')
-      return
-    }
+  function mergeWithVueBounds(
+    lgNodes: posAndBounds[],
+    vueNodes: ReadonlyMap<string, any>
+  ): NodeWithVueBounds[] {
+    const result: NodeWithVueBounds[] = []
 
-    // Step 2: Check if any overlaps exist
-    const initialOverlaps = detectOverlaps(nodes)
-    if (initialOverlaps.length === 0) {
-      return
-    }
+    console.log('=== MERGE DEBUG ===')
+    console.log('Total LG nodes:', lgNodes.length)
+    console.log('Total Vue nodes:', vueNodes.size)
 
-    // Step 3: Sort by priority (execution order)
-    const sortedNodes = sortNodesByPriority(nodes)
-
-    // Step 4: Iteratively resolve overlaps
-    const result = removeAllOverlaps(sortedNodes, { maxIterations, margin })
-
-    // Step 5: Apply new positions
-    applyNewPositions(sortedNodes, {
-      snapToGrid: shouldSnap,
-      gridSize
+    lgNodes.forEach((lgNode) => {
+      const vueNode = vueNodes.get(String(lgNode.id))
+      console.log(`Node ${lgNode.id}:`, {
+        hasVueNode: !!vueNode,
+        hasBounds: !!(vueNode && vueNode.bounds),
+        lgBounds: lgNode.bounds,
+        vueBounds: vueNode?.bounds
+      })
+      if (vueNode && vueNode.bounds) {
+        result.push({
+          id: lgNode.id,
+          position: lgNode.position,
+          lgBounds: lgNode.bounds,
+          vueBounds: vueNode.bounds
+        })
+      }
     })
 
-    // Step 6: Report convergence
-    if (!result.converged) {
-      console.warn(
-        `[OverlapRemoval] Did not fully converge after ${result.iterations} iterations`
-      )
+    console.log('Merged nodes with Vue bounds:', result.length)
+    return result
+  }
+
+  function calculateOverlapAndMinDistance(
+    nodes: NodeWithVueBounds[]
+  ): { maxOverlap: number; minDistance: number } {
+    let maxOverlap = 0
+    let minDistance = Infinity
+
+    console.log('=== OVERLAP CALCULATION DEBUG ===')
+
+    // Check every pair of nodes for overlap
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const nodeA = nodes[i]
+        const nodeB = nodes[j]
+
+        // Debug: Check the vueBounds format
+        if (i === 0 && j === 1) {
+          const vb = nodeA.vueBounds as any
+          console.log('VueBounds structure:')
+          console.log('  Keys:', Object.keys(vb))
+          console.log('  [0]:', vb[0])
+          console.log('  [1]:', vb[1])
+          console.log('  [2]:', vb[2])
+          console.log('  [3]:', vb[3])
+          console.log('  .x:', vb.x)
+          console.log('  .y:', vb.y)
+          console.log('  .width:', vb.width)
+          console.log('  .height:', vb.height)
+          console.log('  .left:', vb.left)
+          console.log('  .top:', vb.top)
+          console.log('  Full object:', JSON.stringify(vb, null, 2))
+        }
+
+        // Calculate center-to-center distance
+        // vueBounds is an object with {x, y, width, height} properties
+        const aVueBounds = nodeA.vueBounds as any
+        const bVueBounds = nodeB.vueBounds as any
+
+        const aCenterX = nodeA.position[0] + aVueBounds.width / 2
+        const aCenterY = nodeA.position[1] + aVueBounds.height / 2
+        const bCenterX = nodeB.position[0] + bVueBounds.width / 2
+        const bCenterY = nodeB.position[1] + bVueBounds.height / 2
+
+        const distance = Math.sqrt(
+          Math.pow(bCenterX - aCenterX, 2) + Math.pow(bCenterY - aCenterY, 2)
+        )
+
+        // Use Vue bounds with LiteGraph positions
+        const aLeft = nodeA.position[0]
+        const aTop = nodeA.position[1]
+        const aRight = aLeft + aVueBounds.width
+        const aBottom = aTop + aVueBounds.height
+
+        const bLeft = nodeB.position[0]
+        const bTop = nodeB.position[1]
+        const bRight = bLeft + bVueBounds.width
+        const bBottom = bTop + bVueBounds.height
+
+        // Calculate overlap in both dimensions
+        const overlapX = Math.max(
+          0,
+          Math.min(aRight, bRight) - Math.max(aLeft, bLeft)
+        )
+        const overlapY = Math.max(
+          0,
+          Math.min(aBottom, bBottom) - Math.max(aTop, bTop)
+        )
+
+        // Debug first few pairs
+        if (i < 2 && j < 3) {
+          console.log(`Pair ${nodeA.id}-${nodeB.id}:`, {
+            aRect: { left: aLeft, top: aTop, right: aRight, bottom: aBottom },
+            bRect: { left: bLeft, top: bTop, right: bRight, bottom: bBottom },
+            overlapX,
+            overlapY,
+            overlaps: overlapX > 0 && overlapY > 0
+          })
+        }
+
+        // Only count as overlap if both dimensions overlap
+        if (overlapX > 0 && overlapY > 0) {
+          // Use the minimum of the two dimensions as the overlap measure
+          const overlap = Math.min(overlapX, overlapY)
+          if (overlap > maxOverlap) {
+            maxOverlap = overlap
+            minDistance = distance
+          }
+        }
+      }
+    }
+
+    console.log('Final overlap results:', { maxOverlap, minDistance })
+    return { maxOverlap, minDistance: minDistance === Infinity ? 0 : minDistance }
+  }
+
+  function scaleNodeProportionally(
+    posAndBounds: posAndBounds,
+    totalExpansion: number,
+    minDistance: number
+  ): {
+    position: Point
+    bounds: ReadOnlyRectangle
+  } {
+    // If no expansion needed, return original position
+    if (totalExpansion <= 0 || minDistance === 0) {
+      return {
+        position: posAndBounds.position,
+        bounds: posAndBounds.bounds
+      }
+    }
+
+    // Calculate scale factor from expansion distance
+    // If lgBounds doesn't exist, use a default scale
+    if (!lgBounds || lgBounds[2] === 0) {
+      return {
+        position: posAndBounds.position,
+        bounds: posAndBounds.bounds
+      }
+    }
+
+    // CORRECT calculation:
+    // The closest overlapping nodes are currently minDistance apart
+    // We need them to be (minDistance + totalExpansion) apart
+    // When we scale from center, distances get multiplied by scaleFactor
+    // So: minDistance * scaleFactor = minDistance + totalExpansion
+    // Therefore: scaleFactor = (minDistance + totalExpansion) / minDistance
+    const scaleFactor = (minDistance + totalExpansion) / minDistance
+
+    console.log('Calculated scale factor:', scaleFactor)
+    console.log('This will move the closest nodes from', minDistance.toFixed(1), 'px apart to', (minDistance * scaleFactor).toFixed(1), 'px apart')
+    console.log('Increase:', ((minDistance * scaleFactor) - minDistance).toFixed(1), 'px (target was', totalExpansion, 'px)')
+
+    // Calculate center of all litegraph nodes bounding box
+    // lgBounds format: [x, y, width, height]
+    const centerX = lgBounds[0] + lgBounds[2] / 2
+    const centerY = lgBounds[1] + lgBounds[3] / 2
+
+    // Calculate vector from center to node position
+    const vectorX = posAndBounds.position[0] - centerX
+    const vectorY = posAndBounds.position[1] - centerY
+
+    // Scale the vector
+    const scaledVectorX = vectorX * scaleFactor
+    const scaledVectorY = vectorY * scaleFactor
+
+    // Calculate new position (center + scaled vector)
+    const newPosition: Point = [
+      centerX + scaledVectorX,
+      centerY + scaledVectorY
+    ]
+
+    // Return scaled position and original bounds
+    // (Vue will recalculate bounds based on actual rendering)
+    return {
+      position: newPosition,
+      bounds: posAndBounds.bounds
     }
   }
 
-  // Auto-run with default options
-  //   fixOverlaps()
-
-  return { fixOverlaps }
+  console.log('Reached the end of the fix overlap code.')
 }
