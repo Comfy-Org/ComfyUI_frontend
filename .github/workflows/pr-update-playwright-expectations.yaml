@@ -12,11 +12,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  setup:
     runs-on: ubuntu-latest
     if: >
       ( github.event_name == 'pull_request' && github.event.label.name == 'New Browser Test Expectations' ) ||
-      ( github.event.issue.pull_request && 
+      ( github.event.issue.pull_request &&
         github.event_name == 'issue_comment' &&
         (
           github.event.comment.author_association == 'OWNER' ||
@@ -24,12 +24,25 @@ jobs:
           github.event.comment.author_association == 'COLLABORATOR'
         ) &&
         startsWith(github.event.comment.body, '/update-playwright') )
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+      pr-number: ${{ steps.pr-info.outputs.pr-number }}
+      branch: ${{ steps.pr-info.outputs.branch }}
+      comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
     steps:
+      - name: Get PR info
+        id: pr-info
+        run: |
+          echo "pr-number=${{ github.event.number || github.event.issue.number }}" >> $GITHUB_OUTPUT
+          echo "branch=$(gh pr view ${{ github.event.number || github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Find Update Comment
         uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad
         id: "find-update-comment"
         with:
-          issue-number: ${{ github.event.number || github.event.issue.number }}
+          issue-number: ${{ steps.pr-info.outputs.pr-number }}
           comment-author: "github-actions[bot]"
           body-includes: "Updating Playwright Expectations"
 
@@ -37,49 +50,129 @@ jobs:
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
         with:
           comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
-          issue-number: ${{ github.event.number || github.event.issue.number }}
+          issue-number: ${{ steps.pr-info.outputs.pr-number }}
           body: |
             Updating Playwright Expectations
           edit-mode: replace
           reactions: eyes
 
-      - name: Get Branch SHA
-        id: "get-branch"
-        run: echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
-        env:
-          REPO: ${{ github.repository }}
-          PR_NO: ${{ github.event.number || github.event.issue.number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Initial Checkout
+      - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          ref: ${{ steps.get-branch.outputs.branch }}
-      - name: Setup Frontend
+          ref: ${{ steps.pr-info.outputs.branch }}
+
+      # Setup Test Environment, build frontend but do not start server yet
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+      - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
-      - name: Setup ComfyUI Server
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # Save the entire workspace as cache for update jobs to restore
+      - name: Generate cache key
+        id: cache-key
+        run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
+      - name: Save cache
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: .
+          key: comfyui-setup-${{ steps.cache-key.outputs.key }}
+
+  # Sharded snapshot updates
+  update-snapshots-sharded:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    steps:
+      # Restore test environment from setup job
+      - name: Wait for cache propagation
+        run: sleep 10
+
+      - name: Restore cached setup
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          fail-on-cache-miss: true
+          path: .
+          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+
+      - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: true
+
+      - name: Setup nodejs, pnpm, reuse built frontend
+        uses: ./.github/actions/setup-frontend
+
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
-      - name: Run Playwright tests and update snapshots
+
+      # Run sharded tests with snapshot updates
+      - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots
+        run: pnpm exec playwright test --update-snapshots --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         continue-on-error: true
-      - uses: actions/upload-artifact@v4
+
+      # Upload updated snapshots from this shard
+      - name: Upload updated snapshots
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: snapshots-shard-${{ matrix.shardIndex }}
+          path: browser_tests/**/*-snapshots/
+          retention-days: 1
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-shard-${{ matrix.shardIndex }}
           path: ./playwright-report/
           retention-days: 30
+
+  # Merge snapshots and commit
+  merge-and-commit:
+    needs: [setup, update-snapshots-sharded]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.setup.outputs.branch }}
+
+      # Download all snapshot artifacts from shards
+      - name: Download all snapshots
+        uses: actions/download-artifact@v4
+        with:
+          pattern: snapshots-shard-*
+          path: ./downloaded-snapshots
+          merge-multiple: false
+
+      # Merge snapshots from all shards into browser_tests directory
+      - name: Merge snapshots
+        run: |
+          echo "Merging snapshots from all shards..."
+          for shard_dir in ./downloaded-snapshots/snapshots-shard-*; do
+            if [ -d "$shard_dir" ]; then
+              echo "Copying from $shard_dir..."
+              cp -r "$shard_dir"/* browser_tests/ 2>/dev/null || true
+            fi
+          done
+          echo "Snapshot merge complete"
+
       - name: Debugging info
         run: |
-          echo "PR: ${{ github.event.issue.number }}"
-          echo "Branch: ${{ steps.get-branch.outputs.branch }}"
+          echo "PR: ${{ needs.setup.outputs.pr-number }}"
+          echo "Branch: ${{ needs.setup.outputs.branch }}"
           git status
+
       - name: Commit updated expectations
         run: |
           git config --global user.name 'github-actions'
@@ -89,20 +182,20 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "[automated] Update test expectations"
-            git push origin ${{ steps.get-branch.outputs.branch }}
+            git push origin ${{ needs.setup.outputs.branch }}
           fi
 
       - name: Add Done Reaction
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
         if: github.event_name == 'issue_comment'
         with:
-          comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
-          issue-number: ${{ github.event.number || github.event.issue.number }}
+          comment-id: ${{ needs.setup.outputs.comment-id }}
+          issue-number: ${{ needs.setup.outputs.pr-number }}
           reactions: +1
           reactions-edit-mode: replace
 
       - name: Remove New Browser Test Expectations label
         if: always() && github.event_name == 'pull_request'
-        run: gh pr edit ${{ github.event.pull_request.number }} --remove-label "New Browser Test Expectations"
+        run: gh pr edit ${{ needs.setup.outputs.pr-number }} --remove-label "New Browser Test Expectations"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
