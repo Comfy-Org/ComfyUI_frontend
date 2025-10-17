@@ -1,4 +1,5 @@
-name: Tests CI
+name: "CI: Tests E2E"
+description: "End-to-end testing with Playwright across multiple browsers, deploys test reports to Cloudflare Pages"
 
 on:
   push:
