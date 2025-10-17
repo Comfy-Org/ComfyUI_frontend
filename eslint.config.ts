@@ -2,6 +2,7 @@
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { importX } from 'eslint-plugin-import-x'
+import oxlint from 'eslint-plugin-oxlint'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import tailwind from 'eslint-plugin-tailwindcss'
@@ -97,6 +98,7 @@ export default defineConfig([
   importX.flatConfigs.recommended,
   // @ts-expect-error Bad types in the plugin
   importX.flatConfigs.typescript,
+  oxlint.configs['flat/recommended'],
   {
     plugins: {
       'unused-imports': unusedImports,

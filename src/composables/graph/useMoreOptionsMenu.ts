@@ -125,7 +125,7 @@ export function useMoreOptionsMenu() {
 
   const menuOptions = computed((): MenuOption[] => {
     // Reference selection flags to ensure re-computation when they change
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+
     optionsVersion.value
     const states = computeSelectionFlags()
 
