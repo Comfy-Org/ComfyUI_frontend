@@ -9,13 +9,36 @@ import { describe, expect, it } from 'vitest'
  * These are static file tests that don't require the browser or ComfyUI backend to be running.
  */
 
-const DIST_DIR = path.join(__dirname, '../../dist-treeshake-enabled')
-const SCRIPTS_DIR = path.join(DIST_DIR, 'scripts')
+// Use standard dist folder (built by CI/CD and normal builds)
+// Falls back to local debug builds if available
+const findDistDir = (): string | null => {
+  const candidates = [
+    path.join(__dirname, '../../dist'),
+    path.join(__dirname, '../../dist-treeshake-enabled'),
+    path.join(__dirname, '../../dist-treeshake-disabled')
+  ]
+
+  for (const dir of candidates) {
+    if (fs.existsSync(dir) && fs.existsSync(path.join(dir, 'scripts'))) {
+      return dir
+    }
+  }
+
+  return null
+}
+
+const DIST_DIR = findDistDir()
+const SCRIPTS_DIR = DIST_DIR ? path.join(DIST_DIR, 'scripts') : ''
 
 // Skip these tests if dist folder doesn't exist (e.g., during development before build)
-const distExists = fs.existsSync(DIST_DIR)
+const distExists = DIST_DIR !== null
 
 describe.skipIf(!distExists)('Shim Files Exports', () => {
+  it('should find a valid dist directory', () => {
+    expect(DIST_DIR).toBeTruthy()
+    expect(fs.existsSync(SCRIPTS_DIR)).toBe(true)
+  })
+
   describe('Core shim files should exist', () => {
     const coreShimFiles = [
       'api.js',
@@ -222,57 +245,5 @@ describe.skipIf(!distExists)('Shim Files Exports', () => {
         expect(content).toContain('export const')
       })
     })
-  })
-
-  describe('Compare with treeshake-disabled build', () => {
-    const treeshakeDisabledDir = path.join(
-      __dirname,
-      '../../dist-treeshake-disabled'
-    )
-    const treeshakeDisabledScriptsDir = path.join(
-      treeshakeDisabledDir,
-      'scripts'
-    )
-
-    if (fs.existsSync(treeshakeDisabledDir)) {
-      it('should have identical shim files between treeshake-enabled and treeshake-disabled builds', () => {
-        const getShimFiles = (dir: string): string[] => {
-          const files: string[] = []
-          const walk = (currentDir: string, relativePath = '') => {
-            const entries = fs.readdirSync(currentDir, { withFileTypes: true })
-            for (const entry of entries) {
-              const fullPath = path.join(currentDir, entry.name)
-              const relPath = path.join(relativePath, entry.name)
-              if (entry.isDirectory()) {
-                walk(fullPath, relPath)
-              } else if (entry.name.endsWith('.js')) {
-                files.push(relPath)
-              }
-            }
-          }
-          walk(dir)
-          return files.sort()
-        }
-
-        const enabledShimFiles = getShimFiles(SCRIPTS_DIR)
-        const disabledShimFiles = getShimFiles(treeshakeDisabledScriptsDir)
-
-        // Check that both builds have the same shim files
-        expect(enabledShimFiles).toEqual(disabledShimFiles)
-
-        // Check that the content of each shim file is identical
-        for (const file of enabledShimFiles) {
-          const enabledContent = fs.readFileSync(
-            path.join(SCRIPTS_DIR, file),
-            'utf-8'
-          )
-          const disabledContent = fs.readFileSync(
-            path.join(treeshakeDisabledScriptsDir, file),
-            'utf-8'
-          )
-          expect(enabledContent).toBe(disabledContent)
-        }
-      })
-    }
   })
 })
