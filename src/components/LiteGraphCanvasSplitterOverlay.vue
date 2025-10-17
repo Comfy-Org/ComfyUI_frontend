@@ -9,7 +9,7 @@
         'flex-row-reverse': sidebarLocation === 'right'
       }"
     >
-      <div class="side-toolbar-container pointer-events-auto">
+      <div class="side-toolbar-container">
         <slot name="side-toolbar" />
       </div>
 
