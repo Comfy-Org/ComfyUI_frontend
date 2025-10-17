@@ -1,30 +1,28 @@
 <template>
   <div
-    class="comfyui-logo-wrapper mr-2 flex cursor-pointer items-center justify-center rounded-md p-1"
+    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center rounded-t-md p-2 transition-colors"
     :class="{
-      'comfyui-logo-menu-visible': menuRef?.visible
-    }"
-    :style="{
-      minWidth: isLargeSidebar ? '4rem' : 'auto'
+      'comfy-menu-button-active': menuRef?.visible
     }"
     @click="menuRef?.toggle($event)"
   >
-    <img
-      src="/assets/images/comfy-logo-mono.svg"
+    <ComfyLogoTransparent
       alt="ComfyUI Logo"
-      class="comfyui-logo h-7"
-      @contextmenu="showNativeSystemMenu"
+      class="comfyui-logo h-[18px] w-[18px]"
     />
-    <i class="pi pi-angle-down ml-1 text-[10px]" />
+
+    <span
+      v-if="!isSmall"
+      class="side-bar-button-label mt-1 text-center text-[10px]"
+      >{{ t('sideToolbar.labels.menu') }}</span
+    >
   </div>
+
   <TieredMenu
     ref="menuRef"
     :model="translatedItems"
     :popup="true"
     class="comfy-command-menu"
-    :class="{
-      'comfy-command-menu-top': isTopMenu
-    }"
     @show="onMenuShow"
   >
     <template #item="{ item, props }">
@@ -48,7 +46,7 @@
           v-else-if="
             item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
           "
-          class="p-menubar-item-icon"
+          class="p-menubar-item-icon text-sm"
           :class="item.icon"
         />
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
@@ -67,8 +65,6 @@
       </a>
     </template>
   </TieredMenu>
-
-  <SubgraphBreadcrumb />
 </template>
 
 <script setup lang="ts">
@@ -78,38 +74,34 @@ import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import ComfyLogoTransparent from '@/components/icons/ComfyLogoTransparent.vue'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
+const { t } = useI18n()
+const commandStore = useCommandStore()
+const menuItemStore = useMenuItemStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
-const menuItemsStore = useMenuItemStore()
-const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
-const settingStore = useSettingStore()
-const { t } = useI18n()
-
 const managerState = useManagerState()
+
+const { isSmall = false } = defineProps<{
+  isSmall?: boolean
+}>()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
-const isLargeSidebar = computed(
-  () => settingStore.get('Comfy.Sidebar.Size') !== 'small'
-)
-const isTopMenu = computed(() => settingStore.get('Comfy.UseNewMenu') === 'Top')
 
 const translateMenuItem = (item: MenuItem): MenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label
@@ -185,7 +177,7 @@ const extraMenuItems = computed(() => [
 ])
 
 const translatedItems = computed(() => {
-  const items = menuItemsStore.menuItems.map(translateMenuItem)
+  const items = menuItemStore.menuItems.map(translateMenuItem)
   let helpIndex = items.findIndex((item) => item.key === 'Help')
   let helpItem: MenuItem | undefined
 
@@ -272,27 +264,30 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
   return (
     item.parentPath &&
     (item.parentPath === 'theme' ||
-      menuItemsStore.menuItemHasActiveStateChildren[item.parentPath])
+      menuItemStore.menuItemHasActiveStateChildren[item.parentPath])
   )
 }
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
+.comfy-menu-button-wrapper {
+  width: var(--sidebar-width);
+  height: var(--sidebar-item-height);
+}
 
-:deep(.p-menubar-submenu.dropdown-direction-up) {
-  @apply top-auto bottom-full flex-col-reverse;
+.comfy-menu-button-wrapper:hover {
+  background: var(--p-button-text-secondary-hover-background);
+}
+
+.comfy-menu-button-active,
+.comfy-menu-button-active:hover {
+  background-color: var(--content-hover-bg);
 }
 
 .keybinding-tag {
   background: var(--p-content-hover-background);
   border-color: var(--p-content-border-color);
   border-style: solid;
-}
-
-.comfyui-logo-menu-visible,
-.comfyui-logo-wrapper:hover {
-  background-color: color-mix(in srgb, var(--fg-color) 10%, transparent);
 }
 </style>
 
@@ -309,22 +304,8 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
     transparent
   );
 }
+
 .comfy-command-menu ul {
-  background-color: var(--comfy-menu-secondary-bg) !important;
-}
-.comfy-command-menu-top .p-tieredmenu-submenu {
-  left: calc(100% + 15px) !important;
-  top: -4px !important;
-}
-@media (max-height: 700px) {
-  .comfy-command-menu .p-tieredmenu-submenu {
-    @apply absolute max-h-[90vh] overflow-y-auto;
-  }
-  /* Help (last) submenu upward offset in compact mode */
-  .p-tieredmenu-root-list
-    > .p-tieredmenu-item:last-of-type
-    .p-tieredmenu-submenu {
-    top: -188px !important;
-  }
+  background-color: var(--comfy-menu-bg) !important;
 }
 </style>

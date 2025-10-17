@@ -312,6 +312,14 @@ export class LGraphCanvas
     }
   }
 
+  /**
+   * The location of the fps info widget. Leaving an element unset will use the default position for that element.
+   */
+  fpsInfoLocation:
+    | [x: number | null | undefined, y: number | null | undefined]
+    | null
+    | undefined
+
   /** Dispatches a custom event on the canvas. */
   dispatch<T extends keyof NeverNever<LGraphCanvasEventMap>>(
     type: T,
@@ -2369,6 +2377,7 @@ export class LGraphCanvas
 
     // clone node ALT dragging
     if (
+      !LiteGraph.vueNodesMode &&
       LiteGraph.alt_drag_do_clone_nodes &&
       e.altKey &&
       !e.ctrlKey &&
@@ -2667,6 +2676,12 @@ export class LGraphCanvas
     ctrlOrMeta: boolean,
     node: LGraphNode
   ): void {
+    // In Vue nodes mode, Vue components own all node-level interactions
+    // Skip LiteGraph handling to prevent dual event processing
+    if (LiteGraph.vueNodesMode) {
+      return
+    }
+
     const { pointer, graph, linkConnector } = this
     if (!graph) throw new NullGraphError()
 
@@ -4698,7 +4713,8 @@ export class LGraphCanvas
 
     // info widget
     if (this.show_info) {
-      this.renderInfo(ctx, area ? area[0] : 0, area ? area[1] : 0)
+      const pos = this.fpsInfoLocation ?? area
+      this.renderInfo(ctx, pos?.[0] ?? 0, pos?.[1] ?? 0)
     }
 
     if (graph) {

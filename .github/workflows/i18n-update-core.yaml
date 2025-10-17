@@ -1,4 +1,5 @@
-name: Update Locales
+name: "i18n: Update Core"
+description: "Generates and updates translations for core ComfyUI components using OpenAI"
 
 on:
   # Manual dispatch for urgent translation updates  
@@ -54,5 +55,5 @@ jobs:
         # Apply the stashed changes if any
         git stash pop || true
         git add src/locales/
-        git diff --staged --quiet || git commit -m "Update locales [skip ci]"
+        git diff --staged --quiet || git commit -m "Update locales"
         git push origin HEAD:${{ github.head_ref }}

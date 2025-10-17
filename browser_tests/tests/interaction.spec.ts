@@ -792,10 +792,19 @@ test.describe('Viewport settings', () => {
 
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
     await comfyPage.nextFrame()
-    const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')
 
     // Save workflow as a new file, then zoom out before screen shot
     await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+
+    await comfyPage.nextFrame()
+    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
+    await changeTab(tabA)
+
+    const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')
+
+    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
+    await changeTab(tabB)
+
     await comfyMouse.move(comfyPage.emptySpace)
     for (let i = 0; i < 4; i++) {
       await comfyMouse.wheel(0, 60)
@@ -806,9 +815,6 @@ test.describe('Viewport settings', () => {
 
     // Ensure that the screenshots are different due to zoom level
     expect(screenshotB).not.toBe(screenshotA)
-
-    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
 
     // Go back to Workflow A
     await changeTab(tabA)
