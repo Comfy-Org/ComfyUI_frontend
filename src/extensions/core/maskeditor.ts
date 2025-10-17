@@ -5382,14 +5382,18 @@ class KeyboardManager {
     if (!this.keysDown.includes(event.key)) {
       this.keysDown.push(event.key)
     }
+    const key = event.key.toUpperCase()
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-      const key = event.key.toUpperCase()
       // Redo: Ctrl + Y, or Ctrl + Shift + Z
       if ((key === 'Y' && !event.shiftKey) || (key == 'Z' && event.shiftKey)) {
         this.messageBroker.publish('redo')
       } else if (key === 'Z' && !event.shiftKey) {
         this.messageBroker.publish('undo')
       }
+    } else if (key == '[' && !event.shiftKey) {
+      adjustBrushSize(-4)
+    } else if (key == ']' && !event.shiftKey) {
+      adjustBrushSize(4)
     }
   }
 
@@ -5505,13 +5509,17 @@ app.registerExtension({
       id: 'Comfy.MaskEditor.BrushSize.Increase',
       icon: 'pi pi-plus-circle',
       label: 'Increase Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old + 4, 1, 100))
+      function: () => {
+        adjustBrushSize(4)
+      }
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Decrease',
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
+      function: () => {
+        adjustBrushSize(-4)
+      }
     }
   ],
   init() {
@@ -5525,6 +5533,10 @@ app.registerExtension({
     )
   }
 })
+
+const adjustBrushSize = async (amount: number) => {
+  changeBrushSize((oid) => _.clamp(oid + amount, 1, 100))
+}
 
 const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
   if (!isOpened()) return
