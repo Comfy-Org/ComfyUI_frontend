@@ -78,7 +78,7 @@ export function useTemplateWorkflows() {
     const fallback =
       template.title ?? template.name ?? `${sourceModule} Template`
     return sourceModule === 'default'
-      ? template.localizedTitle ?? fallback
+      ? (template.localizedTitle ?? fallback)
       : fallback
   }
 

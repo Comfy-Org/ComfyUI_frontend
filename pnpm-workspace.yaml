@@ -65,7 +65,7 @@ catalog:
   nx: 21.4.1
   pinia: ^2.1.7
   postcss-html: ^1.8.0
-  prettier: ^3.3.2
+  prettier: ^3.6.2
   primeicons: ^7.0.0
   primevue: ^4.2.5
   rollup-plugin-visualizer: ^6.0.4
@@ -98,9 +98,6 @@ catalog:
 
 cleanupUnusedCatalogs: true
 
-overrides:
-  '@types/eslint': '-'
-
 ignoredBuiltDependencies:
   - '@firebase/util'
   - protobufjs
@@ -115,3 +112,6 @@ onlyBuiltDependencies:
   - esbuild
   - nx
   - oxc-resolver
+
+overrides:
+  '@types/eslint': '-'

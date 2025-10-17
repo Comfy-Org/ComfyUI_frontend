@@ -113,7 +113,12 @@ describe('ImagePreview', () => {
 
     // Action buttons should now be visible
     expect(wrapper.find('.actions').exists()).toBe(true)
-    expect(wrapper.findAll('.action-btn')).toHaveLength(2) // download, remove (no mask for multiple images)
+    // For multiple images: download and remove buttons (no mask button)
+    expect(wrapper.find('[aria-label="Download image"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Remove image"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Edit or mask image"]').exists()).toBe(
+      false
+    )
   })
 
   it('hides action buttons when not hovering', async () => {
@@ -203,8 +208,9 @@ describe('ImagePreview', () => {
     await navigationDots[1].trigger('click')
     await nextTick()
 
-    // After clicking, component shows loading state (Skeleton)
+    // After clicking, component shows loading state (Skeleton), not img
     expect(wrapper.find('skeleton-stub').exists()).toBe(true)
+    expect(wrapper.find('img').exists()).toBe(false)
 
     // Simulate image load event to clear loading state
     const component = wrapper.vm as any

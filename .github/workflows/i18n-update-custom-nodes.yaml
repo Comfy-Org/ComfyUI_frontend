@@ -1,4 +1,4 @@
-name: Update Locales for given custom node repository
+name: i18n Update Custom Nodes
 
 on:
   workflow_dispatch:

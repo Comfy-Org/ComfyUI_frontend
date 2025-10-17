@@ -63,10 +63,7 @@
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     />
     <ContextMenu ref="menu" :model="contextMenuItems" />
-    <div
-      v-if="menuSetting !== 'Bottom' && isDesktop"
-      class="window-actions-spacer app-drag shrink-0"
-    />
+    <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
 </template>
 
@@ -81,7 +78,6 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -108,7 +104,6 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
-const settingStore = useSettingStore()
 const workflowService = useWorkflowService()
 
 const rightClickedTab = ref<WorkflowOption | undefined>()
@@ -119,7 +114,6 @@ const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
 
 const isDesktop = isElectron()
-const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -234,33 +228,29 @@ const scroll = (direction: number) => {
   scrollElement.scrollBy({ left: direction * 20 })
 }
 
+const ensureActiveTabVisible = async () => {
+  if (!selectedWorkflow.value) return
+
+  await nextTick()
+
+  const scrollPanelElement = scrollPanelRef.value?.$el as
+    | HTMLElement
+    | undefined
+  if (!scrollPanelElement) return
+
+  const activeTabElement = scrollPanelElement.querySelector(
+    '.p-togglebutton-checked'
+  ) as HTMLElement | null
+  if (!activeTabElement) return
+
+  activeTabElement.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+}
+
 // Scroll to active offscreen tab when opened
 watch(
   () => workflowStore.activeWorkflow,
-  async () => {
-    if (!selectedWorkflow.value) return
-
-    await nextTick()
-
-    const activeTabElement = document.querySelector('.p-togglebutton-checked')
-    if (!activeTabElement || !scrollPanelRef.value) return
-
-    const container = scrollPanelRef.value.$el.querySelector(
-      '.p-scrollpanel-content'
-    )
-    if (!container) return
-
-    const tabRect = activeTabElement.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
-
-    const offsetLeft = tabRect.left - containerRect.left
-    const offsetRight = tabRect.right - containerRect.right
-
-    if (offsetRight > 0) {
-      container.scrollBy({ left: offsetRight })
-    } else if (offsetLeft < 0) {
-      container.scrollBy({ left: offsetLeft })
-    }
+  () => {
+    void ensureActiveTabVisible()
   },
   { immediate: true }
 )
@@ -291,6 +281,7 @@ watch(scrollContent, (value) => {
       void nextTick(() => {
         // Force a new check after arrows are updated
         scrollState.measure()
+        void ensureActiveTabVisible()
       })
     },
     { immediate: true }
@@ -308,7 +299,7 @@ onUpdated(() => {
 @reference '../../assets/css/style.css';
 
 .workflow-tabs-container {
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
 }
 
 :deep(.p-togglebutton) {

@@ -330,6 +330,13 @@
       "small": "small"
     }
   },
+  "Comfy_Sidebar_Style": {
+    "name": "Sidebar style",
+    "options": {
+      "floating": "floating",
+      "connected": "connected"
+    }
+  },
   "Comfy_Sidebar_UnifiedWidth": {
     "name": "Unified sidebar width"
   },
@@ -351,8 +358,7 @@
     "tooltip": "Menu bar position. On mobile devices, the menu is always shown at the top.",
     "options": {
       "Disabled": "Disabled",
-      "Top": "Top",
-      "Bottom": "Bottom"
+      "Top": "Top"
     }
   },
   "Comfy_Validation_Workflows": {
@@ -402,8 +408,7 @@
     "name": "Opened workflows position",
     "options": {
       "Sidebar": "Sidebar",
-      "Topbar": "Topbar",
-      "Topbar (2nd-row)": "Topbar (2nd-row)"
+      "Topbar": "Topbar"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

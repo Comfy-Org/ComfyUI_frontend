@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "新しいメニューを使用",
     "options": {
-      "Bottom": "下",
       "Disabled": "無効",
       "Top": "上"
     },
@@ -384,8 +383,7 @@
     "name": "開いているワークフローの位置",
     "options": {
       "Sidebar": "サイドバー",
-      "Topbar": "トップバー",
-      "Topbar (2nd-row)": "トップバー（2行目）"
+      "Topbar": "トップバー"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {
