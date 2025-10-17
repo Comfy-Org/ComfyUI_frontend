@@ -2,9 +2,7 @@
   <CardContainer
     ref="cardContainerRef"
     role="button"
-    :aria-label="
-      asset ? `${asset.name} - ${asset.kind} asset` : 'Loading asset'
-    "
+    :aria-label="asset ? `${asset.name} - ${fileKind} asset` : 'Loading asset'"
     :tabindex="loading ? -1 : 0"
     size="mini"
     variant="ghost"
@@ -28,16 +26,17 @@
         </template>
 
         <!-- Content based on asset type -->
-        <template v-else-if="asset">
+        <template v-else-if="asset && adaptedAsset">
           <component
-            :is="getTopComponent(asset.kind)"
-            :asset="asset"
-            :context="context"
+            :is="getTopComponent(fileKind)"
+            :asset="adaptedAsset"
+            :context="{ type: assetType }"
             @view="handleZoomClick"
-            @download="actions.downloadAsset(asset!.id)"
-            @play="actions.playAsset(asset!.id)"
+            @download="actions.downloadAsset(asset.id)"
+            @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
+            @image-loaded="handleImageLoaded"
           />
         </template>
 
@@ -79,7 +78,7 @@
           <IconTextButton
             type="secondary"
             size="sm"
-            :label="context?.outputCount?.toString() ?? '0'"
+            :label="'0'"
             @click.stop="actions.openMoreOutputs(asset?.id || '')"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
@@ -107,11 +106,11 @@
         </template>
 
         <!-- Content based on asset type -->
-        <template v-else-if="asset">
+        <template v-else-if="asset && adaptedAsset">
           <component
-            :is="getBottomComponent(asset.kind)"
-            :asset="asset"
-            :context="context"
+            :is="getBottomComponent(fileKind)"
+            :asset="adaptedAsset"
+            :context="{ type: assetType }"
           />
         </template>
       </CardBottom>
@@ -129,16 +128,12 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import { formatDuration } from '@/utils/formatUtil'
+import { formatDuration, getMediaKindFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
-import type {
-  AssetContext,
-  AssetMeta,
-  MediaKind
-} from '../schemas/mediaAssetSchema'
+import type { AssetItem } from '../schemas/assetSchema'
+import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetActions from './MediaAssetActions.vue'
 
@@ -165,11 +160,14 @@ function getBottomComponent(kind: MediaKind) {
   return mediaComponents.bottom[kind] || mediaComponents.bottom.image
 }
 
-const { context, asset, loading, selected } = defineProps<{
-  context: AssetContext
-  asset?: AssetMeta
+const { asset, loading, selected } = defineProps<{
+  asset?: AssetItem
   loading?: boolean
   selected?: boolean
+}>()
+
+const emit = defineEmits<{
+  zoom: [asset: AssetItem]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
@@ -179,14 +177,48 @@ const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
 const isOverlayHovered = ref(false)
 
+// Store actual image dimensions
+const imageDimensions = ref<{ width: number; height: number } | undefined>()
+
 const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
-const galleryStore = useMediaAssetGalleryStore()
+
+// Get asset type from tags[0]
+const assetType = computed(() => {
+  return (asset?.tags?.[0] as 'input' | 'output') || 'input'
+})
+
+// Determine file type from extension
+const fileKind = computed((): MediaKind => {
+  return getMediaKindFromFilename(asset?.name || '') as MediaKind
+})
+
+// Adapt AssetItem to legacy AssetMeta format for existing components
+const adaptedAsset = computed(() => {
+  if (!asset) return undefined
+  return {
+    id: asset.id,
+    name: asset.name,
+    kind: fileKind.value,
+    src: asset.preview_url || '',
+    size: asset.size,
+    tags: asset.tags || [],
+    created_at: asset.created_at,
+    duration: asset.user_metadata?.duration
+      ? Number(asset.user_metadata.duration)
+      : undefined,
+    dimensions:
+      imageDimensions.value ||
+      (asset.user_metadata?.dimensions as
+        | { width: number; height: number }
+        | undefined)
+  }
+})
 
 provide(MediaAssetKey, {
-  asset: toRef(() => asset),
-  context: toRef(() => context),
+  asset: toRef(() => adaptedAsset.value),
+  context: toRef(() => ({ type: assetType.value })),
   isVideoPlaying,
   showVideoControls
 })
@@ -201,8 +233,16 @@ const containerClasses = computed(() =>
 )
 
 const formattedDuration = computed(() => {
-  if (!asset?.duration) return ''
-  return formatDuration(asset.duration)
+  // Check for execution time first (from history API)
+  const executionTime = asset?.user_metadata?.executionTimeInSeconds
+  if (executionTime !== undefined && executionTime !== null) {
+    return `${Number(executionTime).toFixed(2)}s`
+  }
+
+  // Fall back to duration for media files
+  const duration = asset?.user_metadata?.duration
+  if (!duration) return ''
+  return formatDuration(Number(duration))
 })
 
 const fileFormat = computed(() => {
@@ -212,10 +252,10 @@ const fileFormat = computed(() => {
 })
 
 const durationChipClasses = computed(() => {
-  if (asset?.kind === 'audio') {
+  if (fileKind.value === 'audio') {
     return '-translate-y-11'
   }
-  if (asset?.kind === 'video' && showVideoControls.value) {
+  if (fileKind.value === 'video' && showVideoControls.value) {
     return '-translate-y-16'
   }
   return ''
@@ -229,36 +269,35 @@ const showHoverActions = computed(
   () => !loading && !!asset && isCardOrOverlayHovered.value
 )
 
-const showActionsOverlay = computed(
-  () =>
-    showHoverActions.value &&
-    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-)
+const showActionsOverlay = false
+// const showActionsOverlay = computed(
+//   () =>
+//     showHoverActions.value &&
+//     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+// )
 
 const showZoomOverlay = computed(
   () =>
     showHoverActions.value &&
-    asset?.kind !== '3D' &&
+    fileKind.value !== '3D' &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
 )
 
 const showDurationChips = computed(
   () =>
     !loading &&
-    asset?.duration &&
+    (asset?.user_metadata?.executionTimeInSeconds ||
+      asset?.user_metadata?.duration) &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
 )
 
 const showOutputCount = computed(
-  () =>
-    !loading &&
-    context?.outputCount &&
-    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+  () => false // Remove output count for simplified version
 )
 
 const handleCardClick = () => {
-  if (asset) {
-    actions.selectAsset(asset)
+  if (adaptedAsset.value) {
+    actions.selectAsset(adaptedAsset.value)
   }
 }
 
@@ -272,7 +311,11 @@ const handleOverlayMouseLeave = () => {
 
 const handleZoomClick = () => {
   if (asset) {
-    galleryStore.openSingle(asset)
+    emit('zoom', asset)
   }
+}
+
+const handleImageLoaded = (dimensions: { width: number; height: number }) => {
+  imageDimensions.value = dimensions
 }
 </script>
