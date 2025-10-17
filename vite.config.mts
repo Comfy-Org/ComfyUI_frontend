@@ -187,14 +187,12 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: true,
     rollupOptions: {
-      // Disabling tree-shaking
-      // Prevent vite remove unused exports
-      treeshake: false
+      treeshake: true
     }
   },
 
   esbuild: {
-    minifyIdentifiers: false,
+    minifyIdentifiers: SHOULD_MINIFY,
     keepNames: true,
     minifySyntax: SHOULD_MINIFY,
     minifyWhitespace: SHOULD_MINIFY

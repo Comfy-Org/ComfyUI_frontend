@@ -4,38 +4,29 @@
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     v-bind="elementProps"
-    :class="
-      cn(
-        // Base layout and container styles (always applied)
-        'rounded-xl overflow-hidden transition-all duration-200',
-        interactive && 'group',
-        // Button-specific styles
-        interactive && [
-          'appearance-none bg-transparent p-0 m-0 font-inherit text-inherit outline-none cursor-pointer text-left',
-          'bg-gray-100 dark-theme:bg-charcoal-800',
-          'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
-          'border-none',
-          'focus:outline-solid outline-blue-100 outline-4'
-        ],
-        // Div-specific styles
-        !interactive && 'bg-gray-100 dark-theme:bg-charcoal-800'
-      )
-    "
+    :class="cardClasses"
     @click="interactive && $emit('select', asset)"
     @keydown.enter="interactive && $emit('select', asset)"
   >
-    <div class="relative aspect-square w-full overflow-hidden">
+    <div class="relative aspect-square w-full overflow-hidden rounded-xl">
+      <img
+        v-if="shouldShowImage"
+        :src="asset.preview_url"
+        class="h-full w-full object-contain"
+      />
       <div
-        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-600"
+        v-else
+        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-400 via-gray-800 to-charcoal-400"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
     <div :class="cn('p-4 h-32 flex flex-col justify-between')">
       <div>
         <h3
+          :id="titleId"
           :class="
             cn(
-              'mb-2 m-0 text-base font-semibold overflow-hidden text-ellipsis whitespace-nowrap',
+              'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
               'text-slate-800',
               'dark-theme:text-white'
             )
@@ -44,6 +35,7 @@
           {{ asset.name }}
         </h3>
         <p
+          :id="descId"
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
@@ -83,7 +75,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed, useId } from 'vue'
 
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
@@ -94,13 +87,51 @@ const props = defineProps<{
   interactive?: boolean
 }>()
 
+const titleId = useId()
+const descId = useId()
+
+const { error } = useImage({
+  src: props.asset.preview_url ?? '',
+  alt: props.asset.name
+})
+
+const shouldShowImage = computed(() => props.asset.preview_url && !error.value)
+
+const cardClasses = computed(() => {
+  const base = [
+    'rounded-xl',
+    'overflow-hidden',
+    'transition-all',
+    'duration-200'
+  ]
+
+  if (!props.interactive) {
+    return cn(...base, 'bg-gray-100 dark-theme:bg-charcoal-800')
+  }
+
+  return cn(
+    ...base,
+    'group',
+    'appearance-none bg-transparent p-0 m-0',
+    'font-inherit text-inherit outline-none cursor-pointer text-left',
+    'bg-gray-100 dark-theme:bg-charcoal-800',
+    'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
+    'border-none',
+    'focus:outline-solid outline-blue-100 outline-4'
+  )
+})
+
 const elementProps = computed(() =>
   props.interactive
     ? {
         type: 'button',
-        'aria-label': `Select asset ${props.asset.name}`
+        'aria-labelledby': titleId,
+        'aria-describedby': descId
       }
-    : {}
+    : {
+        'aria-labelledby': titleId,
+        'aria-describedby': descId
+      }
 )
 
 defineEmits<{
