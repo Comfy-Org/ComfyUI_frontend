@@ -184,7 +184,9 @@
               <span>{{
                 t('sideToolbar.queueProgressOverlay.currentNode')
               }}</span>
-              <span class="max-w-[10rem] truncate">{{ currentNodeName }}</span>
+              <span class="inline-block max-w-[10rem] truncate">{{
+                currentNodeName
+              }}</span>
               <span class="flex items-center gap-[var(--spacing-spacing-xss)]">
                 <span>{{ currentNodePercent }}</span>
                 <span>%</span>
