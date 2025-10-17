@@ -1,0 +1,565 @@
+<template>
+  <div
+    v-show="isVisible"
+    :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
+  >
+    <div
+      class="pointer-events-auto rounded-lg border transition-colors duration-200 ease-in-out"
+      :class="containerClass"
+      :style="overlayStyle"
+      @mouseenter="isHovered = true"
+      @mouseleave="isHovered = false"
+    >
+      <!-- Expanded state -->
+      <div
+        v-if="isExpanded"
+        class="flex w-full flex-col gap-[var(--spacing-spacing-md)]"
+      >
+        <div
+          class="flex h-12 items-center justify-between gap-[var(--spacing-spacing-xs)] border-b border-[var(--color-charcoal-400)] px-[var(--spacing-spacing-xs)]"
+        >
+          <div
+            class="px-[var(--spacing-spacing-xs)] text-[14px] font-normal text-white"
+          >
+            {{ headerTitle }}
+          </div>
+          <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
+            <button
+              class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
+              :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
+            >
+              <i
+                class="icon-[lucide--more-horizontal] block size-4 leading-none text-[var(--color-text-secondary)]"
+              />
+            </button>
+            <button
+              class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
+              :aria-label="t('g.close')"
+              @click="closeExpanded"
+            >
+              <i
+                class="icon-[lucide--x] block size-4 leading-none text-[var(--color-text-secondary)]"
+              />
+            </button>
+          </div>
+        </div>
+
+        <div class="flex w-full flex-col gap-[var(--spacing-spacing-md)]">
+          <div
+            class="flex items-center justify-between px-[var(--spacing-spacing-sm)]"
+          >
+            <button
+              class="inline-flex h-8 flex-1 items-center justify-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-0 text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+              :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
+              @click="openQueueSidebar"
+            >
+              <i-comfy:image-ai-edit
+                class="pointer-events-none block size-4 shrink-0 leading-none"
+                aria-hidden="true"
+              />
+              <span>{{
+                t('sideToolbar.queueProgressOverlay.showAssets')
+              }}</span>
+            </button>
+
+            <div
+              class="ml-[var(--spacing-spacing-md)] inline-flex items-center"
+            >
+              <div
+                class="inline-flex h-6 items-center text-[12px] leading-none text-white opacity-90"
+              >
+                <span class="font-bold">{{ queuedCount }}</span>
+                <span class="ml-[var(--spacing-spacing-xss)]">{{
+                  t('sideToolbar.queueProgressOverlay.queuedSuffix')
+                }}</span>
+              </div>
+              <button
+                v-if="queuedCount > 0"
+                class="ml-[var(--spacing-spacing-xs)] inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+                :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+                @click="cancelQueuedWorkflows"
+              >
+                <i
+                  class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-white"
+                />
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-sm)]"
+          >
+            <div class="min-w-0 flex-1 overflow-x-auto">
+              <div
+                class="inline-flex items-center gap-[var(--spacing-spacing-xss)] whitespace-nowrap"
+              >
+                <button
+                  v-for="tab in jobTabs"
+                  :key="tab"
+                  class="h-6 rounded border-0 px-[var(--spacing-spacing-sm)] py-[var(--spacing-spacing-xss)] text-[12px] leading-none hover:opacity-90"
+                  :class="[
+                    selectedJobTab === tab
+                      ? 'bg-[var(--color-charcoal-500)] text-white'
+                      : 'bg-transparent text-[var(--color-slate-100)]'
+                  ]"
+                  @click="selectedJobTab = tab"
+                >
+                  {{ tabLabel(tab) }}
+                </button>
+              </div>
+            </div>
+            <div
+              class="ml-[var(--spacing-spacing-xs)] flex shrink-0 items-center gap-[var(--spacing-spacing-xs)]"
+            >
+              <button
+                class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+                :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+              >
+                <i
+                  class="icon-[lucide--list-filter] block size-4 leading-none text-white"
+                />
+              </button>
+              <button
+                class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+                :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+              >
+                <i
+                  class="icon-[lucide--arrow-up-down] block size-4 leading-none text-white"
+                />
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="flex flex-col gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-sm)] pb-[var(--spacing-spacing-md)]"
+          >
+            <QueueJobItem
+              v-for="ji in jobItems"
+              :key="ji.id"
+              :state="ji.state"
+              :title="ji.title"
+              :right-text="ji.meta"
+              :icon-name="ji.iconName"
+              :icon-image-url="ji.iconImageUrl"
+              :show-clear="ji.showClear"
+              :show-menu="true"
+              @clear="onClearItem(ji)"
+              @menu="onMenuItem(ji)"
+              @view="onViewItem(ji)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Passive/Active state -->
+      <div
+        v-else-if="hasActiveJob"
+        class="flex flex-col gap-[var(--spacing-spacing-sm)] p-[var(--spacing-spacing-xs)]"
+      >
+        <div class="flex flex-col gap-[var(--spacing-spacing-xss)]">
+          <div
+            class="relative h-2 w-full overflow-hidden rounded-full border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)]"
+          >
+            <div
+              class="absolute inset-0 h-full rounded-full transition-[width]"
+              :style="totalProgressStyle"
+            />
+            <div
+              class="absolute inset-0 h-full rounded-full transition-[width]"
+              :style="currentNodeProgressStyle"
+            />
+          </div>
+          <div
+            class="flex items-start justify-end gap-[var(--spacing-spacing-md)] text-[12px] leading-none"
+          >
+            <div
+              class="flex items-center gap-[var(--spacing-spacing-xss)] text-white opacity-90"
+            >
+              <span>{{ t('sideToolbar.queueProgressOverlay.total') }}</span>
+              <span class="font-bold">{{ totalPercent }}</span>
+              <span>%</span>
+            </div>
+            <div
+              class="flex items-center gap-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)]"
+            >
+              <span>{{
+                t('sideToolbar.queueProgressOverlay.currentNode')
+              }}</span>
+              <span class="max-w-[10rem] truncate">{{ currentNodeName }}</span>
+              <span class="flex items-center gap-[var(--spacing-spacing-xss)]">
+                <span>{{ currentNodePercent }}</span>
+                <span>%</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div :class="bottomRowClass">
+          <div
+            class="flex items-center gap-[var(--spacing-spacing-xs)] text-[12px] text-white"
+          >
+            <span class="opacity-90">
+              <span class="font-bold">{{ runningCount }}</span>
+              <span class="ml-[var(--spacing-spacing-xss)]">{{
+                t('sideToolbar.queueProgressOverlay.running')
+              }}</span>
+            </span>
+            <button
+              v-if="runningCount > 0"
+              class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+              :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
+              @click="interruptAll"
+            >
+              <i
+                class="icon-[lucide--x] block size-4 leading-none text-white"
+              />
+            </button>
+          </div>
+
+          <button
+            class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+            @click="viewAllJobs"
+          >
+            {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="pointer-events-auto">
+        <button
+          type="button"
+          class="group flex h-10 w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xss))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] py-[var(--spacing-spacing-xss)] pr-[var(--spacing-spacing-xs)] pl-[calc(var(--spacing-spacing-xs)*2)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
+          :aria-label="
+            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+          "
+          @click="openExpandedFromEmpty"
+        >
+          <span class="text-[14px] leading-none font-normal text-white">
+            {{ t('sideToolbar.queueProgressOverlay.noActiveJobs') }}
+          </span>
+          <span
+            class="flex items-center justify-center rounded p-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
+          >
+            <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import QueueJobItem from '@/components/queue/QueueJobItem.vue'
+import { st } from '@/i18n'
+import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+
+const props = withDefaults(
+  defineProps<{
+    minWidth?: number
+  }>(),
+  {
+    minWidth: 240
+  }
+)
+const { t } = useI18n()
+const queueStore = useQueueStore()
+const executionStore = useExecutionStore()
+const sidebarTabStore = useSidebarTabStore()
+
+const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
+/** Temporary: toggle stub active progress with '+' key for testing */
+const forceActiveStub = ref(false)
+const toggleForceActiveStub = () => {
+  forceActiveStub.value = !forceActiveStub.value
+}
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === '+' || (event.key === '=' && event.shiftKey)) {
+    toggleForceActiveStub()
+  }
+}
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+const isHovered = ref(false)
+const isExpanded = ref(false)
+const overlayStyle = computed(() => {
+  const width = `${overlayWidth.value}px`
+  return {
+    minWidth: width,
+    width
+  }
+})
+const containerClass = computed(() =>
+  showBackground.value
+    ? 'border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md'
+    : 'border-transparent bg-transparent shadow-none'
+)
+const bottomRowClass = computed(
+  () =>
+    `flex items-center justify-end gap-[var(--spacing-spacing-md)] transition-opacity duration-200 ease-in-out ${
+      isActiveState.value
+        ? 'opacity-100 pointer-events-auto'
+        : 'opacity-0 pointer-events-none'
+    }`
+)
+
+const runningCount = computed(() =>
+  forceActiveStub.value ? 1 : queueStore.runningTasks.length
+)
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+const hasHistory = computed(() => queueStore.historyTasks.length > 0)
+const isExecuting = computed(
+  () => forceActiveStub.value || !executionStore.isIdle
+)
+const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
+const activeJobsCount = computed(
+  () => runningCount.value + queueStore.pendingTasks.length
+)
+
+const isFullyInvisible = computed(
+  () => !hasActiveJob.value && !hasHistory.value
+)
+const isEmptyState = computed(() => !hasActiveJob.value && hasHistory.value)
+const isActiveState = computed(() => hasActiveJob.value && isHovered.value)
+
+const showBackground = computed(
+  () => isExpanded.value || isActiveState.value || isEmptyState.value
+)
+
+const isVisible = computed(
+  () => overlayWidth.value > 0 && !isFullyInvisible.value
+)
+
+const clampPercent = (value: number) =>
+  Math.max(0, Math.min(100, Math.round(value)))
+
+const totalPercent = computed(() =>
+  forceActiveStub.value
+    ? 30
+    : clampPercent((executionStore.executionProgress ?? 0) * 100)
+)
+
+const currentNodePercent = computed(() =>
+  forceActiveStub.value
+    ? 60
+    : clampPercent((executionStore.executingNodeProgress ?? 0) * 100)
+)
+
+const totalProgressStyle = computed(() => ({
+  width: `${totalPercent.value}%`,
+  background: 'var(--color-interface-panel-job-progress-primary)'
+}))
+
+const currentNodeProgressStyle = computed(() => ({
+  width: `${currentNodePercent.value}%`,
+  background: 'var(--color-interface-panel-job-progress-secondary)'
+}))
+
+const currentNodeName = computed(() => {
+  if (forceActiveStub.value)
+    return t('sideToolbar.queueProgressOverlay.stubClipTextEncode')
+  const node = executionStore.executingNode
+  if (!node) return t('g.emDash')
+  const title = (node.title ?? '').toString().trim()
+  if (title) return title
+  const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
+  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
+  return st(key, nodeType)
+})
+
+const headerTitle = computed(() =>
+  hasActiveJob.value
+    ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
+    : t('sideToolbar.queueProgressOverlay.jobQueue')
+)
+
+/** Tabs for job list filtering */
+const jobTabs = ['All', 'Completed', 'Failed'] as const
+const tabLabel = (tab: (typeof jobTabs)[number]) => {
+  if (tab === 'All') return t('g.all')
+  if (tab === 'Completed') return t('g.completed')
+  return t('g.failed')
+}
+const selectedJobTab = ref<(typeof jobTabs)[number]>('All')
+
+type JobListItem = {
+  id: string
+  title: string
+  meta: string
+  state:
+    | 'added'
+    | 'queued'
+    | 'initialization'
+    | 'running'
+    | 'completed'
+    | 'failed'
+  iconName?: string
+  iconImageUrl?: string
+  showClear?: boolean
+  taskRef?: any
+}
+
+const formatTime = (time?: number) => {
+  if (time === undefined) return ''
+  return `${time.toFixed(2)}s`
+}
+
+const deriveStateFromTask = (task: any): JobListItem['state'] => {
+  if (isJobInitializing(task?.promptId)) return 'initialization'
+  if (task.taskType === 'Pending') return 'queued'
+  if (task.taskType === 'Running') return 'running'
+  if (task.taskType === 'History') {
+    const status = task.displayStatus
+    if (status === 'Completed') return 'completed'
+    if (status === 'Failed') return 'failed'
+    if (status === 'Cancelled') return 'failed'
+  }
+  return 'queued'
+}
+
+const formatTitleForTask = (task: any) => {
+  const prefix = t('g.job')
+  const shortId = String(task.promptId ?? '').split('-')[0]
+  const idx = task.queueIndex ?? ''
+  if (idx !== '') return `${prefix} #${idx}`
+  if (shortId) return `${prefix} ${shortId}`
+  return prefix
+}
+
+const formatMetaForTask = (task: any, state: JobListItem['state']) => {
+  if (state === 'running') return t('g.running')
+  if (state === 'queued') return t('g.queued')
+  if (state === 'completed') {
+    const time = formatTime(task.executionTimeInSeconds)
+    return time || ''
+  }
+  if (state === 'failed') return t('g.failed')
+  return ''
+}
+
+const allTasksSorted = computed(() => {
+  const all = [
+    ...queueStore.pendingTasks,
+    ...queueStore.runningTasks,
+    ...queueStore.historyTasks
+  ]
+  return all.sort((a, b) => b.queueIndex - a.queueIndex)
+})
+
+const filteredTasks = computed(() => {
+  if (selectedJobTab.value === 'Completed') {
+    return allTasksSorted.value.filter(
+      (t) => deriveStateFromTask(t) === 'completed'
+    )
+  }
+  if (selectedJobTab.value === 'Failed') {
+    return allTasksSorted.value.filter((t) => {
+      const s = deriveStateFromTask(t)
+      return s === 'failed'
+    })
+  }
+  return allTasksSorted.value
+})
+
+const jobItems = computed<JobListItem[]>(() =>
+  filteredTasks.value.map((task: any) => {
+    const state = deriveStateFromTask(task)
+
+    let iconName: string | undefined
+    let iconImageUrl: string | undefined
+
+    if (state === 'completed') {
+      const previewOutput = task.previewOutput
+      if (previewOutput && previewOutput.isImage) {
+        iconImageUrl = previewOutput.urlWithTimestamp
+      } else {
+        iconName = 'icon-[lucide--check]'
+      }
+    } else if (state === 'running') {
+      iconName = 'icon-[lucide--play]'
+    } else if (state === 'queued') {
+      iconName = 'icon-[lucide--clock]'
+    } else if (state === 'failed') {
+      iconName = 'icon-[lucide--alert-circle]'
+    }
+
+    const completedPreviewOutput =
+      state === 'completed' ? task.previewOutput : undefined
+    const displayTitle =
+      state === 'completed' && completedPreviewOutput?.filename
+        ? completedPreviewOutput.filename
+        : formatTitleForTask(task)
+
+    return {
+      id: String(task.promptId),
+      title: displayTitle,
+      meta: formatMetaForTask(task, state),
+      state,
+      iconName,
+      iconImageUrl,
+      showClear: state === 'queued' || state === 'failed',
+      taskRef: task
+    } as JobListItem
+  })
+)
+
+const onClearItem = async (item: JobListItem) => {
+  if (!item.taskRef) return
+  await queueStore.delete(item.taskRef)
+}
+
+const onMenuItem = (_item: JobListItem) => {
+  // Placeholder for future context menu
+}
+
+const onViewItem = (_item: JobListItem) => {
+  // Stub for view action
+}
+
+const openExpandedFromEmpty = () => {
+  isExpanded.value = true
+}
+
+const closeExpanded = () => {
+  isExpanded.value = false
+}
+
+const viewAllJobs = async () => {
+  isExpanded.value = true
+}
+
+/** Opens the Queue sidebar */
+const openQueueSidebar = () => {
+  sidebarTabStore.activeSidebarTabId = 'queue'
+}
+
+/** Cancels all queued (pending) workflows */
+const cancelQueuedWorkflows = async () => {
+  const pending = [...queueStore.pendingTasks]
+  for (const task of pending) {
+    await api.deleteItem('queue', task.promptId)
+  }
+  await queueStore.update()
+}
+
+const interruptAll = async () => {
+  const tasks = queueStore.runningTasks
+  for (const task of tasks) {
+    await api.interrupt(task.promptId)
+  }
+}
+/** Determines if a job is currently in initialization */
+const isJobInitializing = (promptId: string | number | undefined) =>
+  executionStore.isPromptInitializing(promptId)
+</script>
