@@ -18,7 +18,9 @@ import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
+  ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
+  ExecutionSuccessWsMessage,
   NodeError,
   NodeProgressState,
   NotificationWsMessage,
@@ -106,6 +108,9 @@ export const useExecutionStore = defineStore('execution', () => {
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
+  const nodeProgressStatesByPrompt = ref<
+    Record<string, Record<string, NodeProgressState>>
+  >({})
 
   const initializingPromptIds = ref<Set<string>>(new Set())
 
@@ -284,7 +289,15 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  function handleExecutionInterrupted() {
+  function handleExecutionInterrupted(
+    e: CustomEvent<ExecutionInterruptedWsMessage>
+  ) {
+    const pid = e.detail.prompt_id
+    if (pid) {
+      const map = { ...nodeProgressStatesByPrompt.value }
+      delete map[pid]
+      nodeProgressStatesByPrompt.value = map
+    }
     if (activePromptId.value)
       clearInitializationByPromptId(activePromptId.value)
     resetExecutionState()
@@ -295,7 +308,13 @@ export const useExecutionStore = defineStore('execution', () => {
     activePrompt.value.nodes[e.detail.node] = true
   }
 
-  function handleExecutionSuccess() {
+  function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
+    const pid = e.detail.prompt_id
+    if (pid) {
+      const map = { ...nodeProgressStatesByPrompt.value }
+      delete map[pid]
+      nodeProgressStatesByPrompt.value = map
+    }
     resetExecutionState()
   }
 
@@ -315,12 +334,13 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes } = e.detail
+    const { nodes, prompt_id: pid } = e.detail
 
     // Revoke previews for nodes that are starting to execute
+    const previousForPrompt = nodeProgressStatesByPrompt.value[pid] || {}
     for (const nodeId in nodes) {
       const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !nodeProgressStates.value[nodeId]) {
+      if (nodeState.state === 'running' && !previousForPrompt[nodeId]) {
         // This node just started executing, revoke its previews
         // Note that we're doing the *actual* node id instead of the display node id
         // here intentionally. That way, we don't clear the preview every time a new node
@@ -331,6 +351,10 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     // Update the progress states for all nodes
+    nodeProgressStatesByPrompt.value = {
+      ...nodeProgressStatesByPrompt.value,
+      [pid]: nodes
+    }
     nodeProgressStates.value = nodes
 
     // If we have progress for the currently executing node, update it for backwards compatibility
@@ -360,6 +384,12 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
+    const pid = e.detail?.prompt_id
+    if (pid) {
+      const map = { ...nodeProgressStatesByPrompt.value }
+      delete map[pid]
+      nodeProgressStatesByPrompt.value = map
+    }
     // Clear initialization for errored prompt if present
     if (e.detail?.prompt_id) clearInitializationByPromptId(e.detail.prompt_id)
     resetExecutionState()
@@ -478,6 +508,22 @@ export const useExecutionStore = defineStore('execution', () => {
     return executionId
   }
 
+  const runningPromptIds = computed<string[]>(() => {
+    const result: string[] = []
+    for (const [pid, nodes] of Object.entries(
+      nodeProgressStatesByPrompt.value
+    )) {
+      if (Object.values(nodes).some((n) => n.state === 'running')) {
+        result.push(pid)
+      }
+    }
+    return result
+  })
+
+  const runningWorkflowCount = computed<number>(
+    () => runningPromptIds.value.length
+  )
+
   return {
     isIdle,
     clientId,
@@ -496,6 +542,9 @@ export const useExecutionStore = defineStore('execution', () => {
     executingNodeProgress,
     nodeProgressStates,
     nodeLocationProgressStates,
+    nodeProgressStatesByPrompt,
+    runningPromptIds,
+    runningWorkflowCount,
     initializingPromptIds,
     isPromptInitializing,
     bindExecutionEvents,
