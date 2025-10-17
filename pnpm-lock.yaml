@@ -270,6 +270,9 @@ catalogs:
     vuefire:
       specifier: ^3.2.1
       version: 3.2.1
+    yaml:
+      specifier: ^2.8.1
+      version: 2.8.1
     yjs:
       specifier: ^13.6.27
       version: 13.6.27
@@ -654,6 +657,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.0.7(typescript@5.9.2)
+      yaml:
+        specifier: 'catalog:'
+        version: 2.8.1
       zip-dir:
         specifier: ^2.0.0
         version: 2.0.0

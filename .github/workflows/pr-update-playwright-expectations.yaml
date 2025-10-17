@@ -1,5 +1,6 @@
 # Setting test expectation screenshots for Playwright
 name: "PR: Update Playwright Expectations"
+description: "Updates Playwright test snapshots when triggered by label or comment"
 
 on:
   pull_request:

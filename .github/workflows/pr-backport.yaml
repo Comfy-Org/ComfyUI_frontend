@@ -1,4 +1,5 @@
 name: PR Backport
+description: "Automatically backports merged PRs to release branches when 'needs-backport' label is applied"
 
 on:
   pull_request_target:
