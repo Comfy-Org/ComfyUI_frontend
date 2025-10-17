@@ -6,39 +6,21 @@ interface ShimResult {
   exports: string[]
 }
 
-type DeprecationInfo =
-  | {
-      /** Replacement API or migration guide text */
-      replacement: string
-      /** Version when this will be removed (e.g., 'v2.0.0') */
-      removeVersion: string
-      /** URL to migration guide (optional) */
-      migrationUrl?: string
+const SKIP_WARNING_FILES = new Set(['scripts/app', 'scripts/api'])
 
-      skip?: false
-    }
-  | {
-      skip: true
-    }
-
-/**
- * Map of deprecated file paths to their deprecation info.
- * Key format: relative path from src/ without extension
- */
-const deprecatedFiles: Record<string, DeprecationInfo> = {
-  all: {
-    removeVersion: 'v1.33',
-    // TODO: Update this
-    replacement: 'Use the new API instead',
-    // TODO: Update this
-    migrationUrl: 'https://comfy.org'
-  },
-  'scripts/app': {
-    skip: true
-  },
-  'scripts/api': {
-    skip: true
+function getWarningMessage(
+  fileKey: string,
+  shimFileName: string
+): string | null {
+  if (SKIP_WARNING_FILES.has(fileKey)) {
+    return null
   }
+
+  if (fileKey.startsWith('scripts/ui/')) {
+    return `[ComfyUI Deprecated] Importing from "${shimFileName}" is deprecated and will be removed in v1.34.`
+  }
+
+  return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
 function isLegacyFile(id: string): boolean {
@@ -101,15 +83,9 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
           let shimContent = `// Shim for ${relativePath}\n`
 
           const fileKey = relativePath.replace(/\.ts$/, '').replace(/\\/g, '/')
-          const deprecationInfo =
-            deprecatedFiles[fileKey] || deprecatedFiles['all']
-          if (deprecationInfo && deprecationInfo.skip != true) {
-            let warningMessage = `[ComfyUI Deprecated] Importing from ${shimFileName} is deprecated. ${deprecationInfo.replacement}. This will be removed in ${deprecationInfo.removeVersion}.`
+          const warningMessage = getWarningMessage(fileKey, shimFileName)
 
-            if (deprecationInfo.migrationUrl) {
-              warningMessage += ` See: ${deprecationInfo.migrationUrl}`
-            }
-
+          if (warningMessage) {
             shimContent += `console.warn('${warningMessage}');\n`
           }
 
