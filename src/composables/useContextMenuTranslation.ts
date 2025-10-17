@@ -53,6 +53,12 @@ export const useContextMenuTranslation = () => {
 
   LGraphCanvas.prototype.getCanvasMenuOptions = getCanvasCenterMenuOptions
 
+  // Register our wrapper so it's not treated as a legacy monkey-patch
+  legacyMenuCompat.registerWrapper(
+    'getCanvasMenuOptions',
+    getCanvasCenterMenuOptions
+  )
+
   function translateMenus(
     values: readonly (IContextMenuValue | string | null)[] | undefined,
     options: IContextMenuOptions
