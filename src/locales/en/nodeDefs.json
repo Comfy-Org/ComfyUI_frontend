@@ -11289,6 +11289,29 @@
       }
     }
   },
+  "TemporalScoreRescaling": {
+    "display_name": "TSR - Temporal Score Rescaling",
+    "description": "[Post-CFG Function]\nTSR - Temporal Score Rescaling (2510.01184)\n\nRescaling the model's score or noise to steer the sampling diversity.\n",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "tsr_k": {
+        "name": "tsr_k",
+        "tooltip": "Controls the rescaling strength.\nLower k produces more detailed results; higher k produces smoother results in image generation. Setting k = 1 disables rescaling."
+      },
+      "tsr_sigma": {
+        "name": "tsr_sigma",
+        "tooltip": "Controls how early rescaling takes effect.\nLarger values take effect earlier."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
