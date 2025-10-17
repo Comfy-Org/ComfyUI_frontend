@@ -364,6 +364,14 @@ export interface IBaseWidget<
   ): void
 
   /**
+   * Compatibility method for widgets implementing the draw
+   * method when displayed in non-canvas renderers.
+   * Set by the current renderer implementation.
+   * When called, performs a draw operation.
+   */
+  triggerDraw?: () => void
+
+  /**
    * Compute the size of the widget. Overrides {@link IBaseWidget.computeSize}.
    * @param width The width of the widget.
    * @deprecated Use {@link IBaseWidget.computeLayoutSize} instead.

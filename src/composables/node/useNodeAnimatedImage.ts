@@ -1,8 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { ANIM_PREVIEW_WIDGET } from '@/scripts/app'
-import { createImageHost } from '@/scripts/ui/imagePreview'
-import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
+import { isDOMWidget } from '@/scripts/domWidget'
 
 /**
  * Composable for handling animated image previews in nodes
@@ -20,38 +19,38 @@ export function useNodeAnimatedImage() {
       (w) => w.name === ANIM_PREVIEW_WIDGET
     )
 
+    node.imgs[0].classList.value = 'block size-full object-contain'
     if (widgetIdx > -1) {
       // Replace content in existing widget
-      const widget = node.widgets[widgetIdx] as IWidget & {
-        options: { host: ReturnType<typeof createImageHost> }
-      }
-      widget.options.host.updateImages(node.imgs)
+      const widget = node.widgets[widgetIdx]
+      if (!isDOMWidget(widget)) return
+      widget.element.replaceChildren(node.imgs[0])
     } else {
       // Create new widget
-      const host = createImageHost(node)
-      // @ts-expect-error host is not a standard DOM widget option.
-      const widget = node.addDOMWidget(ANIM_PREVIEW_WIDGET, 'img', host.el, {
-        host,
-        // @ts-expect-error `getHeight` of image host returns void instead of number.
-        getHeight: host.getHeight,
-        onDraw: host.onDraw,
+      const element = document.createElement('div')
+      element.appendChild(node.imgs[0])
+      const widget = node.addDOMWidget(ANIM_PREVIEW_WIDGET, 'img', element, {
         hideOnZoom: false
-      }) as IWidget & {
-        options: { host: ReturnType<typeof createImageHost> }
-      }
+      })
+      node.overIndex = 0
+
+      // Add event listeners for canvas interactions
+      const { handleWheel, handlePointer, forwardEventToCanvas } =
+        useCanvasInteractions()
+      node.imgs[0].style.pointerEvents = 'none'
+      element.addEventListener('wheel', handleWheel)
+      element.addEventListener('pointermove', handlePointer)
+      element.addEventListener('pointerup', handlePointer)
+      element.addEventListener(
+        'pointerdown',
+        (e) => {
+          return e.button !== 2 ? handlePointer(e) : forwardEventToCanvas(e)
+        },
+        true
+      )
+
       widget.serialize = false
       widget.serializeValue = () => undefined
-      widget.options.host.updateImages(node.imgs)
-      widget.computeLayoutSize = () => {
-        const img = widget.options.host.getCurrentImage()
-        if (!img) return { minHeight: 0, minWidth: 0 }
-
-        return fitDimensionsToNodeWidth(
-          img.naturalWidth,
-          img.naturalHeight,
-          node.size?.[0] || 0
-        )
-      }
     }
   }
 

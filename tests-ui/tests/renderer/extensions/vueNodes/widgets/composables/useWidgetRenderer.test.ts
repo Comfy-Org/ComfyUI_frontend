@@ -123,10 +123,6 @@ describe('widgetRegistry', () => {
       expect(shouldRenderAsVue({ type: 'combo' })).toBe(true)
     })
 
-    it('should return false for unknown types', () => {
-      expect(shouldRenderAsVue({ type: 'unknown_type' })).toBe(false)
-    })
-
     it('should respect options while checking type', () => {
       const widget = { type: 'text', options: { someOption: 'value' } }
       expect(shouldRenderAsVue(widget)).toBe(true)

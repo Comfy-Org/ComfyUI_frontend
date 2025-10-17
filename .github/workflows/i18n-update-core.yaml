@@ -1,4 +1,5 @@
-name: Update Locales
+name: "i18n: Update Core"
+description: "Generates and updates translations for core ComfyUI components using OpenAI"
 
 on:
   # Manual dispatch for urgent translation updates  

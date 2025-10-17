@@ -46,6 +46,10 @@ class ComfyMenu {
       .nth(0)
   }
 
+  get buttons() {
+    return this.sideToolbar.locator('.side-bar-button')
+  }
+
   get nodeLibraryTab() {
     this._nodeLibraryTab ??= new NodeLibrarySidebarTab(this.page)
     return this._nodeLibraryTab

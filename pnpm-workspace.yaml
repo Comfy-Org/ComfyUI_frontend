@@ -98,9 +98,6 @@ catalog:
 
 cleanupUnusedCatalogs: true
 
-overrides:
-  '@types/eslint': '-'
-
 ignoredBuiltDependencies:
   - '@firebase/util'
   - protobufjs
@@ -115,3 +112,6 @@ onlyBuiltDependencies:
   - esbuild
   - nx
   - oxc-resolver
+
+overrides:
+  '@types/eslint': '-'
