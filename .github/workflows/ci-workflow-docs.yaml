@@ -1,0 +1,43 @@
+name: "CI: Workflow Documentation"
+description: "Validates that workflow documentation is up-to-date with workflow files"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/*.yaml'
+      - '.github/workflows/*.yml'
+      - 'scripts/cicd/generate-workflow-docs.ts'
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate workflow documentation
+        run: pnpm workflow:docs
+
+      - name: Check if documentation is up-to-date
+        run: |
+          if [ -n "$(git status --porcelain .github/workflows/README.md)" ]; then
+            echo "::error::Workflow documentation is out of date. Please run 'pnpm workflow:docs' and commit the changes."
+            git diff .github/workflows/README.md
+            exit 1
+          else
+            echo "✓ Workflow documentation is up-to-date"
+          fi

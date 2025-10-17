@@ -1,4 +1,5 @@
 name: Release PyPI Dev
+description: "Manual workflow to publish development version to PyPI"
 
 on:
   workflow_dispatch:

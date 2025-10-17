@@ -1,4 +1,5 @@
 name: i18n Update Custom Nodes
+description: "Updates translations for custom node repositories using OpenAI"
 
 on:
   workflow_dispatch:

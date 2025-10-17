@@ -91,15 +91,13 @@ catalog:
   vue-router: ^4.4.3
   vue-tsc: ^3.0.7
   vuefire: ^3.2.1
+  yaml: ^2.8.1
   yjs: ^13.6.27
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
 
 cleanupUnusedCatalogs: true
-
-overrides:
-  '@types/eslint': '-'
 
 ignoredBuiltDependencies:
   - '@firebase/util'
@@ -115,3 +113,6 @@ onlyBuiltDependencies:
   - esbuild
   - nx
   - oxc-resolver
+
+overrides:
+  '@types/eslint': '-'
