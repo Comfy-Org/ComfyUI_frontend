@@ -920,7 +920,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Graph.UnpackSubgraph',
-      icon: 'icon-[lucide--grow]',
+      icon: 'icon-[lucide--expand]',
       label: 'Unpack the selected Subgraph',
       versionAdded: '1.26.3',
       function: () => {
