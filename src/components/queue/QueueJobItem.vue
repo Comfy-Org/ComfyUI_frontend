@@ -1,7 +1,7 @@
 <template>
   <BaseJobRow
     :variant="props.state"
-    :primary-text="title"
+    :primary-text="primaryText"
     :secondary-text="rightText"
     :show-actions-on-hover="true"
     :show-clear="computedShowClear"
@@ -23,7 +23,7 @@
       </div>
     </template>
     <template #primary>
-      <slot name="primary">{{ title }}</slot>
+      <slot name="primary">{{ primaryText }}</slot>
     </template>
     <template #secondary>
       <slot name="secondary">{{ rightText }}</slot>
@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import BaseJobRow from './BaseJobRow.vue'
 
@@ -69,6 +70,8 @@ const emit = defineEmits<{
   (e: 'view'): void
 }>()
 
+const { t } = useI18n()
+
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
   switch (props.state) {
@@ -89,6 +92,12 @@ const iconClass = computed(() => {
 })
 
 const rightText = computed(() => props.rightText)
+
+const primaryText = computed(() => {
+  if (props.state === 'initialization')
+    return t('queue.initializingAlmostReady')
+  return props.title
+})
 
 const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear

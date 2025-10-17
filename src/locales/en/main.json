@@ -1192,6 +1192,9 @@
     "help": "Help",
     "queue": "Queue Panel"
   },
+  "queue": {
+    "initializingAlmostReady": "Initializing - Almost ready"
+  },
   "menuLabels": {
     "File": "File",
     "Edit": "Edit",
