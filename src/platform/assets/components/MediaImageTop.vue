@@ -1,11 +1,12 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden rounded">
-    <LazyImage
-      v-if="asset.src"
+  <div
+    class="relative h-full w-full overflow-hidden rounded bg-zinc-200 dark-theme:bg-zinc-700/50"
+  >
+    <img
+      v-if="shouldShowImage"
       :src="asset.src"
       :alt="asset.name"
-      :container-class="'aspect-square'"
-      :image-class="'w-full h-full object-cover'"
+      class="h-full w-full object-contain"
     />
     <div
       v-else
@@ -17,11 +18,35 @@
 </template>
 
 <script setup lang="ts">
-import LazyImage from '@/components/common/LazyImage.vue'
+import { useImage } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{
   asset: AssetMeta
 }>()
+
+const emit = defineEmits<{
+  'image-loaded': [dimensions: { width: number; height: number }]
+}>()
+
+// Use same image loading logic as AssetCard
+const { state, error, isReady } = useImage({
+  src: asset.src ?? '',
+  alt: asset.name
+})
+
+const shouldShowImage = computed(() => asset.src && !error.value)
+
+// Emit dimensions when image is loaded
+watch(isReady, (ready) => {
+  if (ready && state.value) {
+    const width = state.value.naturalWidth
+    const height = state.value.naturalHeight
+    if (width && height) {
+      emit('image-loaded', { width, height })
+    }
+  }
+})
 </script>
