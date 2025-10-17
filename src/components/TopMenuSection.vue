@@ -1,9 +1,6 @@
 <template>
-  <div
-    v-if="!workspaceStore.focusMode"
-    class="pointer-events-none ml-2 flex pt-2"
-  >
-    <div class="pointer-events-auto min-w-0 flex-1">
+  <div v-if="!workspaceStore.focusMode" class="ml-2 flex pt-2">
+    <div class="min-w-0 flex-1">
       <SubgraphBreadcrumb />
     </div>
 

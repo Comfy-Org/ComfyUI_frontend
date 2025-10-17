@@ -17,6 +17,7 @@
       ref="breadcrumbRef"
       class="w-fit rounded-lg p-0"
       :model="items"
+      :pt="{ item: { class: 'pointer-events-auto' } }"
       aria-label="Graph navigation"
     >
       <template #item="{ item }">
