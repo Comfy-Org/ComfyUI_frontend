@@ -39,9 +39,8 @@ export const usePaste = () => {
 
   useEventListener(document, 'paste', async (e) => {
     if (
-      (e.target instanceof HTMLTextAreaElement &&
-        e.target.type === 'textarea') ||
-      (e.target instanceof HTMLInputElement && e.target.type === 'text')
+      e.target instanceof HTMLTextAreaElement ||
+      e.target instanceof HTMLInputElement
     ) {
       // Default system copy
       return
