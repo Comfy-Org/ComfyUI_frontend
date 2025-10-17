@@ -12,6 +12,8 @@ class LegacyMenuCompat {
   private originalMethods = new Map<string, AnyFunction>()
   private hasWarned = new Set<string>()
   private currentExtension: string | null = null
+  private isExtracting = false
+  private wrapperMethods = new Map<string, AnyFunction>()
 
   /**
    * Set the name of the extension that is currently being set up.
@@ -20,6 +22,16 @@ class LegacyMenuCompat {
    */
   setCurrentExtension(extensionName: string | null) {
     this.currentExtension = extensionName
+  }
+
+  /**
+   * Register a wrapper method that should NOT be treated as a legacy monkey-patch.
+   * This is for internal wrappers that add new API items.
+   * @param methodName The method name
+   * @param wrapperFn The wrapper function
+   */
+  registerWrapper(methodName: string, wrapperFn: AnyFunction) {
+    this.wrapperMethods.set(methodName, wrapperFn)
   }
 
   /**
@@ -79,10 +91,16 @@ class LegacyMenuCompat {
   ): IContextMenuValue[] {
     if (!ENABLE_LEGACY_SUPPORT) return []
 
+    // Prevent infinite recursion - if we're already extracting, return empty
+    if (this.isExtracting) return []
+
     const originalMethod = this.originalMethods.get(methodName)
     if (!originalMethod) return []
 
     try {
+      // Set flag to prevent infinite recursion
+      this.isExtracting = true
+
       // Get baseline from original
       const originalItems = originalMethod.apply(context, args) as
         | IContextMenuValue[]
@@ -92,6 +110,11 @@ class LegacyMenuCompat {
       // Get current method (potentially patched)
       const currentMethod = context.constructor.prototype[methodName]
       if (!currentMethod || currentMethod === originalMethod) return []
+
+      // If current method is a registered wrapper, don't extract items from it
+      // (the wrapper already handles new API items directly)
+      const registeredWrapper = this.wrapperMethods.get(methodName)
+      if (registeredWrapper && currentMethod === registeredWrapper) return []
 
       // Get items from patched method
       const patchedItems = currentMethod.apply(context, args) as
@@ -108,6 +131,9 @@ class LegacyMenuCompat {
     } catch (e) {
       console.error('[Context Menu Compat] Failed to extract legacy items:', e)
       return []
+    } finally {
+      // Always reset the flag
+      this.isExtracting = false
     }
   }
 }

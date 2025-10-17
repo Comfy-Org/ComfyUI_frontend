@@ -134,6 +134,37 @@ describe('Context Menu Extension API', () => {
       expect(items).toHaveLength(1)
       expect(items[0].content).toBe('Canvas Item 1')
     })
+
+    it('should not duplicate menu items when collected multiple times', () => {
+      const extension = createCanvasMenuExtension('Test Extension', [
+        canvasMenuItem1,
+        canvasMenuItem2
+      ])
+
+      extensionStore.registerExtension(extension)
+
+      // Collect items multiple times (simulating repeated menu opens)
+      const items1 = extensionService
+        .invokeExtensions('getCanvasMenuItems', mockCanvas)
+        .flat() as IContextMenuValue[]
+
+      const items2 = extensionService
+        .invokeExtensions('getCanvasMenuItems', mockCanvas)
+        .flat() as IContextMenuValue[]
+
+      // Both collections should have the same items (no duplication)
+      expect(items1).toHaveLength(2)
+      expect(items2).toHaveLength(2)
+
+      // Verify items are unique by checking their content
+      const contents1 = items1.map((item) => item.content)
+      const uniqueContents1 = new Set(contents1)
+      expect(uniqueContents1.size).toBe(contents1.length)
+
+      const contents2 = items2.map((item) => item.content)
+      const uniqueContents2 = new Set(contents2)
+      expect(uniqueContents2.size).toBe(contents2.length)
+    })
   })
 
   describe('collectNodeMenuItems', () => {
