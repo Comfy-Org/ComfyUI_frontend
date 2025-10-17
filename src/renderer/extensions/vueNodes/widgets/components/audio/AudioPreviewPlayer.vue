@@ -4,7 +4,7 @@
       v-if="!hidden"
       :class="
         cn(
-          'bg-zinc-500/10 dark-theme:bg-charcoal-600 box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
+          'bg-node-component-widget-input-surface box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
           { hidden: hideWhenEmpty && !hasAudio }
         )
       "
@@ -24,33 +24,31 @@
           role="button"
           :tabindex="0"
           aria-label="Play/Pause"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-node-ring-hover"
           @click="togglePlayPause"
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--play] size-4 text-node-component-header-icon"
           />
           <i
             v-else
-            class="icon-[lucide--pause] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--pause] size-4 text-node-component-header-icon"
           />
         </div>
 
         <!-- Time Display -->
-        <div
-          class="text-sm font-normal text-nowrap text-black dark-theme:text-white"
-        >
+        <div class="text-sm font-normal text-nowrap text-text-primary">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
 
       <!-- Progress Bar -->
       <div
-        class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-stone-200"
+        class="relative h-0.5 flex-1 rounded-full bg-node-component-slot-text"
       >
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-gray-600 transition-all dark-theme:bg-white/50"
+          class="bg-accent-primary absolute top-0 left-0 h-full rounded-full transition-all"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -72,20 +70,20 @@
           role="button"
           :tabindex="0"
           aria-label="Volume"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-node-ring-hover"
           @click="toggleMute"
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-2] size-4 text-node-component-header-icon"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-1] size-4 text-node-component-header-icon"
           />
           <i
             v-else
-            class="icon-[lucide--volume-x] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-x] size-4 text-node-component-header-icon"
           />
         </div>
 
@@ -96,11 +94,11 @@
           role="button"
           :tabindex="0"
           aria-label="More Options"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-node-ring-hover"
           @click="toggleOptionsMenu"
         >
           <i
-            class="icon-[lucide--more-vertical] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--more-vertical] size-4 text-node-component-header-icon"
           />
         </div>
       </div>
@@ -111,15 +109,14 @@
         :model="menuItems"
         popup
         class="audio-player-menu"
-        pt:root:class="!bg-white dark-theme:!bg-charcoal-800 !border-sand-100 dark-theme:!border-charcoal-600"
-        pt:submenu:class="!bg-white dark-theme:!bg-charcoal-800"
+        pt:root:class="!bg-node-component-tooltip-surface !border-node-component-tooltip-border"
+        pt:submenu:class="!bg-node-component-tooltip-surface"
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label
-              class="mb-2 block text-xs text-black dark-theme:text-white"
-              >{{ item.label }}</label
-            >
+            <label class="mb-2 block text-xs text-text-primary">{{
+              item.label
+            }}</label>
             <Slider
               :model-value="volume * 10"
               :min="0"
@@ -134,12 +131,10 @@
             class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
             @click="item.onClick?.()"
           >
-            <span class="text-black dark-theme:text-white">{{
-              item.label
-            }}</span>
+            <span class="text-text-primary">{{ item.label }}</span>
             <i
               v-if="item.selected"
-              class="ml-auto icon-[lucide--check] size-4 text-black dark-theme:text-white"
+              class="ml-auto icon-[lucide--check] size-4 text-text-primary"
             />
           </div>
         </template>

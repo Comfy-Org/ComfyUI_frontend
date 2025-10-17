@@ -39,8 +39,7 @@
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-              'text-stone-100',
-              'dark-theme:text-slate-100'
+              'text-text-secondary'
             )
           "
           :title="asset.description"
@@ -48,15 +47,7 @@
           {{ asset.description }}
         </p>
       </div>
-      <div
-        :class="
-          cn(
-            'flex gap-4 text-xs',
-            'text-stone-400',
-            'dark-theme:text-stone-300'
-          )
-        "
-      >
+      <div :class="cn('flex gap-4 text-xs', 'text-text-secondary')">
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
           <i class="icon-[lucide--star] size-3" />
           {{ asset.stats.stars }}
