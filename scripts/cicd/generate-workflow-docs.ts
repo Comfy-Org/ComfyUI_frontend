@@ -42,6 +42,15 @@ const PREFIX_DESCRIPTIONS: Record<string, string> = {
 }
 
 /**
+ * Add a label to the list if it's not already present
+ */
+function addUniqueLabel(labels: string[], label: string): void {
+  if (!labels.includes(label)) {
+    labels.push(label)
+  }
+}
+
+/**
  * Extract label triggers from workflow content
  */
 function extractLabelTriggers(content: string, workflowData: any): string[] {
@@ -58,9 +67,7 @@ function extractLabelTriggers(content: string, workflowData: any): string[] {
     /github\.event\.label\.name\s*==\s*['"]([^'"]+)['"]/gi
   )
   for (const match of labelNameMatches) {
-    if (!labels.includes(match[1])) {
-      labels.push(match[1])
-    }
+    addUniqueLabel(labels, match[1])
   }
 
   // Check for contains(github.event.pull_request.labels.*.name, 'label-name') pattern
@@ -68,19 +75,18 @@ function extractLabelTriggers(content: string, workflowData: any): string[] {
     /contains\(github\.event\.pull_request\.labels\.\*\.name,\s*['"]([^'"]+)['"]\)/gi
   )
   for (const match of containsLabelMatches) {
-    if (!labels.includes(match[1])) {
-      labels.push(match[1])
-    }
+    addUniqueLabel(labels, match[1])
   }
 
-  // Check for startsWith or contains patterns with label names
+  // Check for startsWith patterns with comment commands (e.g., /update-playwright)
+  // These are included as they can trigger workflows through PR comments
   const labelCommentMatches = content.matchAll(
     /startsWith\(github\.event\.comment\.body,\s*['"]([^'"]+)['"]\)/gi
   )
   for (const match of labelCommentMatches) {
     const command = match[1]
-    if (command && !labels.includes(command)) {
-      labels.push(command)
+    if (command) {
+      addUniqueLabel(labels, command)
     }
   }
 
@@ -315,7 +321,8 @@ function generateQuickReference(grouped: WorkflowsByPrefix): string {
   const labelMap = new Map<string, string[]>()
   for (const workflow of labelWorkflows) {
     for (const label of workflow.labelTriggers) {
-      // Skip comment-based triggers (like /update-playwright)
+      // Filter out comment-based triggers (commands starting with /) from Quick Reference
+      // These are still shown in detailed workflow sections with full context
       if (label.startsWith('/')) {
         continue
       }
@@ -335,7 +342,7 @@ function generateQuickReference(grouped: WorkflowsByPrefix): string {
   const sortedLabels = Array.from(labelMap.keys()).sort()
   for (const label of sortedLabels) {
     const descriptions = labelMap.get(label)!
-    // Use the first description, or combine if multiple
+    // Use the first description, or note if multiple workflows share the same label
     const description =
       descriptions.length === 1
         ? descriptions[0]
