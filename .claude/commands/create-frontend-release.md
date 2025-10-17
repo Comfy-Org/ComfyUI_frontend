@@ -460,7 +460,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    sleep 10
    gh run list --workflow=release-draft-create.yaml --limit=1
    ```
-4. **For Minor/Major Version Releases**: The create-release-candidate-branch workflow will automatically:
+4. **For Minor/Major Version Releases**: The release-branch-create workflow will automatically:
    - Create a `core/x.yy` branch for the PREVIOUS minor version
    - Apply branch protection rules
    - Document the feature freeze policy
