@@ -87,8 +87,9 @@ const iconClass = computed(() => {
       return 'icon-[lucide--check]'
     case 'failed':
       return 'icon-[lucide--alert-circle]'
+    default:
+      return 'icon-[lucide--circle]'
   }
-  return 'icon-[lucide--circle]'
 })
 
 const rightText = computed(() => props.rightText)
