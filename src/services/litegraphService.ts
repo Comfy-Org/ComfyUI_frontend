@@ -752,8 +752,6 @@ export const useLitegraphService = () => {
         if (this.imageIndex != null) {
           // An image is selected so select that
           img = this.imgs[this.imageIndex]
-        } else if (this.overIndex == -1 && this.imgs.length == 1) {
-          img = this.imgs[0]
         } else if (this.overIndex != null) {
           // No image is selected but one is hovered
           img = this.imgs[this.overIndex]
