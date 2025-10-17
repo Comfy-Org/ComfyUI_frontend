@@ -5,7 +5,6 @@ import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProv
 import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Mock global Algolia constants
-
 ;(global as any).__ALGOLIA_APP_ID__ = 'test-app-id'
 ;(global as any).__ALGOLIA_API_KEY__ = 'test-api-key'
 

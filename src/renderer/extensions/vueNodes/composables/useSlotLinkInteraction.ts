@@ -309,7 +309,7 @@ export function useSlotLinkInteraction({
       hoveredSlotKey = elWithSlot?.dataset['slotKey'] ?? null
       hoveredNodeId = hoveredSlotKey
         ? null
-        : elWithNode?.dataset['nodeId'] ?? null
+        : (elWithNode?.dataset['nodeId'] ?? null)
       dragContext.lastPointerEventTarget = target
       dragContext.lastPointerTargetSlotKey = hoveredSlotKey
       dragContext.lastPointerTargetNodeId = hoveredNodeId
@@ -620,8 +620,8 @@ export function useSlotLinkInteraction({
     }
 
     const baseDirection = isInputSlot
-      ? inputSlot?.dir ?? LinkDirection.LEFT
-      : outputSlot?.dir ?? LinkDirection.RIGHT
+      ? (inputSlot?.dir ?? LinkDirection.LEFT)
+      : (outputSlot?.dir ?? LinkDirection.RIGHT)
 
     const existingAnchor =
       isInputSlot && !shouldBreakExistingInputLink
