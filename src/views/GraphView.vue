@@ -1,14 +1,14 @@
 <template>
   <div class="comfyui-body grid h-full w-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top">
-      <TopMenubar v-if="showTopMenu" />
-    </div>
-    <div id="comfyui-body-bottom" class="comfyui-body-bottom">
-      <TopMenubar v-if="showBottomMenu" />
-    </div>
+    <div id="comfyui-body-top" class="comfyui-body-top" />
+    <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
-    <div id="graph-canvas-container" class="graph-canvas-container">
+    <div
+      id="graph-canvas-container"
+      ref="graphCanvasContainerRef"
+      class="graph-canvas-container"
+    >
       <GraphCanvas @ready="onGraphReady" />
     </div>
   </div>
@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { useBreakpoints, useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import {
@@ -28,6 +28,7 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
+  ref,
   watch,
   watchEffect
 } from 'vue'
@@ -39,7 +40,6 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
-import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -81,13 +81,7 @@ const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
-
-const breakpoints = useBreakpoints({ md: 961 })
-const isMobile = breakpoints.smaller('md')
-const showTopMenu = computed(() => isMobile.value || useNewMenu.value === 'Top')
-const showBottomMenu = computed(
-  () => !isMobile.value && useNewMenu.value === 'Bottom'
-)
+const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -226,6 +220,8 @@ onMounted(() => {
 
   try {
     init()
+    // Relocate the legacy menu container to the graph canvas container so it is below other elements
+    graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
