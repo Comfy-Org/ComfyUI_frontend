@@ -1647,7 +1647,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
             ? '720p'
             : resolutionStr.includes('480')
               ? '480p'
-              : resolutionStr.match(/^\s*(\d{3,4}p)/)?.[1] ?? ''
+              : (resolutionStr.match(/^\s*(\d{3,4}p)/)?.[1] ?? '')
 
         const pricePerSecond: Record<string, number> = {
           '480p': 0.05,

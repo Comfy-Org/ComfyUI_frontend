@@ -2467,7 +2467,7 @@ export class LGraphNode
       }
     }
 
-    return doNotUseOccupied ? -1 : occupiedSlot ?? -1
+    return doNotUseOccupied ? -1 : (occupiedSlot ?? -1)
   }
 
   /**
