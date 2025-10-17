@@ -1,9 +1,10 @@
 // @ts-check
-import path from 'node:path'
 import { markdownTable } from 'markdown-table'
-import prettyBytes from 'pretty-bytes'
-import { readdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { readdir } from 'node:fs/promises'
+import path from 'node:path'
+import prettyBytes from 'pretty-bytes'
+
 import { getCategoryMetadata } from './bundle-categories.js'
 
 /**
@@ -46,8 +47,7 @@ async function renderFiles() {
    * @param {string[]} files
    * @returns {string[]}
    */
-  const filterFiles = (files) =>
-    files.filter((file) => file.endsWith('.json'))
+  const filterFiles = (files) => files.filter((file) => file.endsWith('.json'))
 
   const curr = filterFiles(await readdir(currDir))
   const prev = existsSync(prevDir) ? filterFiles(await readdir(prevDir)) : []
@@ -107,7 +107,7 @@ async function renderFiles() {
           fileName,
           `${prettyBytes(curr.size)}${getDiff(curr.size, prev?.size)}`,
           `${prettyBytes(curr.gzip)}${getDiff(curr.gzip, prev?.gzip)}`,
-          `${prettyBytes(curr.brotli)}${getDiff(curr.brotli, prev?.brotli)}`,
+          `${prettyBytes(curr.brotli)}${getDiff(curr.brotli, prev?.brotli)}`
         ])
         categorySize += curr.size
         totalSize += curr.size

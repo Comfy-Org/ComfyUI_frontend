@@ -20,44 +20,44 @@ export const BUNDLE_CATEGORIES = [
     name: 'App Entry Points',
     description: 'Main application bundles',
     patterns: [/^index-.*\.js$/],
-    order: 1,
+    order: 1
   },
   {
     name: 'Core Views',
     description: 'Major application views and screens',
     patterns: [/GraphView-.*\.js$/, /UserSelectView-.*\.js$/],
-    order: 2,
+    order: 2
   },
   {
     name: 'UI Panels',
     description: 'Settings and configuration panels',
     patterns: [/.*Panel-.*\.js$/],
-    order: 3,
+    order: 3
   },
   {
     name: 'UI Components',
     description: 'Reusable UI components',
     patterns: [/Avatar-.*\.js$/, /Badge-.*\.js$/],
-    order: 4,
+    order: 4
   },
   {
     name: 'Services',
     description: 'Business logic and services',
     patterns: [/.*Service-.*\.js$/, /.*Store-.*\.js$/],
-    order: 5,
+    order: 5
   },
   {
     name: 'Utilities',
     description: 'Helper functions and utilities',
     patterns: [/.*[Uu]til.*\.js$/],
-    order: 6,
+    order: 6
   },
   {
     name: 'Other',
     description: 'Uncategorized bundles',
     patterns: [/.*/], // Catch-all pattern
-    order: 99,
-  },
+    order: 99
+  }
 ]
 
 /**

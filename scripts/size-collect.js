@@ -1,10 +1,11 @@
 // @ts-check
-import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
-import prettyBytes from 'pretty-bytes'
 import pico from 'picocolors'
+import prettyBytes from 'pretty-bytes'
+
 import { categorizeBundle } from './bundle-categories.js'
 
 const distDir = path.resolve('dist')
@@ -57,7 +58,7 @@ async function run() {
         category,
         size,
         gzip,
-        brotli,
+        brotli
       })
 
       console.log(
@@ -74,7 +75,7 @@ async function run() {
 
   // Write individual bundle files
   for (const bundle of bundles) {
-    const fileName = bundle.file.replace(/[\/\\]/g, '_').replace('.js', '.json')
+    const fileName = bundle.file.replace(/[/\\]/g, '_').replace('.js', '.json')
     await writeFile(
       path.join(sizeDir, fileName),
       JSON.stringify(bundle, null, 2),
