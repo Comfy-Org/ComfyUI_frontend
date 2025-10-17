@@ -6,6 +6,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
@@ -95,6 +96,21 @@ export function addWidgetPromotionOptions(
       }
     })
   }
+}
+export function tryToggleWidgetPromotion() {
+  const canvas = useCanvasStore().getCanvas()
+  const [x, y] = canvas.canvas_mouse
+  const node = canvas.graph?.getNodeOnPos(x, y, canvas.visible_nodes)
+  if (!node) return
+  const widget = node.getWidgetOnPos(x, y, true)
+  const parents = getParentNodes()
+  if (!parents.length || !widget) return
+  const promotableParents = parents.filter(
+    (s) => !getProxyWidgets(s).some(matchesPropertyItem([node, widget]))
+  )
+  if (promotableParents.length > 0)
+    promoteWidget(node, widget, promotableParents)
+  else demoteWidget(node, widget, parents)
 }
 const recommendedNodes = [
   'CLIPTextEncode',
