@@ -94,7 +94,6 @@ const inviteCodeClaimed = ref(false)
 const { userEmail } = useFirebaseAuthStore()
 
 const inviteCode = computed(() => route.query.inviteCode as string)
-const userInitial = computed(() => (userEmail?.[0] || 'U').toUpperCase())
 
 const onSwitchAccounts = () => {
   void router.push({
