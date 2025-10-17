@@ -7,7 +7,9 @@
       {{ fileName }}
     </h3>
     <div class="flex items-center text-xs text-zinc-400">
-      <span>{{ asset.dimensions?.width }}x{{ asset.dimensions?.height }}</span>
+      <span v-if="asset.dimensions"
+        >{{ asset.dimensions?.width }}x{{ asset.dimensions?.height }}</span
+      >
     </div>
   </div>
 </template>
