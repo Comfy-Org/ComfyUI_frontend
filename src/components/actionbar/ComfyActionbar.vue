@@ -34,7 +34,8 @@
             )
           "
         />
-        <ComfyQueueButton />
+        <SubscribeToRun v-if="!activeSubscription" />
+        <ComfyQueueButton v-else />
       </div>
     </Panel>
   </div>
@@ -49,13 +50,47 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import type { Component } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
+
+const activeSubscription = ref(false)
+const SubscribeToRun: Component | null = isCloud
+  ? defineAsyncComponent(
+      () =>
+        import(
+          '../../platform/cloud/subscription/components/SubscribeToRun.vue'
+        )
+    )
+  : null
+
+if (isCloud) {
+  void import('@/platform/cloud/subscription/composables/useSubscription').then(
+    ({ useSubscription }) => {
+      const { isActiveSubscription } = useSubscription()
+      watch(
+        isActiveSubscription,
+        (value) => {
+          activeSubscription.value = value
+        },
+        { immediate: true }
+      )
+    }
+  )
+}
 
 const settingsStore = useSettingStore()
 

@@ -26,4 +26,5 @@ import './widgetInputs'
 
 if (isCloud) {
   import('./cloudBadge')
+  import('./cloudSubscription')
 }

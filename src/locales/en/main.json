@@ -1774,6 +1774,8 @@
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
+    "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
+    "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
     "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.",
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
     "nothingSelected": "Nothing selected",
@@ -1913,6 +1915,34 @@
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized"
+  },
+  "subscription": {
+    "title": "Subscription",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "BETA",
+    "perMonth": "USD / month",
+    "renewsDate": "Renews {date}",
+    "manageSubscription": "Manage subscription",
+    "apiNodesBalance": "\"API Nodes\" Credit Balance",
+    "apiNodesDescription": "For running commercial/proprietary models",
+    "totalCredits": "Total credits",
+    "viewUsageHistory": "View usage history",
+    "addApiCredits": "Add API credits",
+    "yourPlanIncludes": "Your plan includes:",
+    "viewMoreDetails": "View more details",
+    "learnMore": "Learn more",
+    "messageSupport": "Message support",
+    "invoiceHistory": "Invoice history",
+    "benefits": {
+      "benefit1": "$10 in monthly credits for API models — top up when needed",
+      "benefit2": "Up to 30 min runtime per job"
+    },
+    "required": {
+        "title": "Subscribe to",
+      "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
+      "subscribe": "Subscribe"
+    },
+    "subscribeToRun": "Subscribe to Run"
   },
   "userSettings": {
     "title": "User Settings",
