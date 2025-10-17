@@ -7,7 +7,7 @@ export class Topbar {
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
-    this.menuTrigger = page.locator('.comfyui-logo-wrapper')
+    this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
   }
 
   async getTabNames(): Promise<string[]> {
@@ -105,7 +105,7 @@ export class Topbar {
    * Close the topbar menu by clicking outside
    */
   async closeTopbarMenu() {
-    await this.page.locator('body').click({ position: { x: 10, y: 10 } })
+    await this.page.locator('body').click({ position: { x: 300, y: 10 } })
     await expect(this.menuLocator).not.toBeVisible()
   }
 

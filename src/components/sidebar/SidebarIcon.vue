@@ -8,10 +8,8 @@
     text
     :pt="{
       root: {
-        class: `side-bar-button ${
-          selected
-            ? 'p-button-primary side-bar-button-selected'
-            : 'p-button-secondary'
+        class: `side-bar-button p-button-secondary ${
+          selected ? 'side-bar-button-selected' : ''
         }`,
         'aria-label': computedTooltip
       }
@@ -76,7 +74,7 @@ const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
 }>()
 const overlayValue = computed(() =>
-  typeof iconBadge === 'function' ? iconBadge() ?? '' : iconBadge
+  typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
 const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
@@ -87,9 +85,13 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
   font-size: var(--sidebar-icon-size) !important;
 }
 
+.side-bar-button-selected {
+  background-color: var(--content-hover-bg);
+  color: var(--content-hover-fg);
+}
+
 .side-bar-button-selected .side-bar-button-icon {
   font-size: var(--sidebar-icon-size) !important;
-  font-weight: 700;
 }
 </style>
 
@@ -98,8 +100,9 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 
 .side-bar-button {
   width: var(--sidebar-width);
-  height: calc(var(--sidebar-width) + 0.5rem);
+  height: var(--sidebar-item-height);
   border-radius: 0;
+  flex-shrink: 0;
 }
 
 .side-tool-bar-end .side-bar-button {
