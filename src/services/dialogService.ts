@@ -500,6 +500,11 @@ export const useDialogService = () => {
             '@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue'
           )
       ),
+      props: {
+        onClose: () => {
+          dialogStore.closeDialog({ key: 'subscription-required' })
+        }
+      },
       dialogComponentProps: {
         closable: true,
         style: 'width: 700px;',

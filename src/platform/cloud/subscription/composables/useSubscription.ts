@@ -24,6 +24,9 @@ interface CloudSubscriptionStatusResponse {
   renewal_date: string
 }
 
+const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+let isWatchSetup = false
+
 export function useSubscription() {
   const authActions = useFirebaseAuthActions()
   const dialogService = useDialogService()
@@ -33,9 +36,6 @@ export function useSubscription() {
   const { reportError } = useFirebaseAuthActions()
 
   const { isLoggedIn } = useCurrentUser()
-
-  // Subscription state
-  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
 
   const isActiveSubscription = computed(() => {
     if (!isCloud) return true
@@ -142,7 +142,20 @@ export function useSubscription() {
       return statusData
     }
 
-  watch(() => isLoggedIn.value, fetchSubscriptionStatus, { immediate: true })
+  if (!isWatchSetup) {
+    isWatchSetup = true
+    watch(
+      () => isLoggedIn.value,
+      async (loggedIn) => {
+        if (loggedIn) {
+          await fetchSubscriptionStatus()
+        } else {
+          subscriptionStatus.value = null
+        }
+      },
+      { immediate: true }
+    )
+  }
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {

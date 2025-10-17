@@ -67,7 +67,7 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { subscribe, isActiveSubscription, formattedMonthlyPrice } =
+const { subscribe, isActiveSubscription, formattedMonthlyPrice, fetchStatus } =
   useSubscription()
 
 const isLoading = ref(false)
@@ -89,6 +89,8 @@ const startPollingSubscriptionStatus = () => {
         stopPolling()
         return
       }
+
+      await fetchStatus()
 
       if (isActiveSubscription.value) {
         stopPolling()
