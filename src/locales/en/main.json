@@ -1102,6 +1102,7 @@
     "overwriteBlueprintTitle": "Overwrite existing blueprint?",
     "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
     "blueprintName": "Subgraph name",
+    "promoteOutsideSubgraph": "Can't promote widget when not in subgraph",
     "publish": "Publish Subgraph",
     "publishSuccess": "Saved to Nodes Library",
     "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",

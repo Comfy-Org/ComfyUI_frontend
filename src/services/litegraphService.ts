@@ -845,7 +845,7 @@ export const useLitegraphService = () => {
         )
       }
       if (this.graph && !this.graph.isRootGraph) {
-        const [x, y] = canvas.canvas_mouse
+        const [x, y] = canvas.graph_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
           addWidgetPromotionOptions(options, overWidget, this)
