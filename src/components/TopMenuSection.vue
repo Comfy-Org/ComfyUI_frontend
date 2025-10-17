@@ -9,7 +9,6 @@
 
     <div class="pointer-events-none flex flex-col items-end gap-2">
       <div
-        ref="actionbarRef"
         class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg px-2 shadow-md"
       >
         <div
@@ -20,13 +19,12 @@
         <LoginButton v-if="!isLoggedIn" />
         <CurrentUserButton v-else class="shrink-0" />
       </div>
-      <QueueProgressOverlay :min-width="actionbarWidth" />
+      <QueueProgressOverlay />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -40,15 +38,6 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const workspaceStore = useWorkspaceStore()
 const { isLoggedIn } = useCurrentUser()
-const actionbarRef = ref<HTMLElement | null>(null)
-const actionbarWidth = ref(240)
-
-useResizeObserver(actionbarRef, (entries) => {
-  for (const entry of entries) {
-    const width = Math.round(entry.contentRect.width)
-    if (width > 0) actionbarWidth.value = width
-  }
-})
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()

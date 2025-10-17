@@ -4,9 +4,8 @@
     :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
   >
     <div
-      class="pointer-events-auto rounded-lg border transition-colors duration-200 ease-in-out"
+      class="pointer-events-auto w-[310px] min-w-[310px] rounded-lg border transition-colors duration-200 ease-in-out"
       :class="containerClass"
-      :style="overlayStyle"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
@@ -261,20 +260,11 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const props = withDefaults(
-  defineProps<{
-    minWidth?: number
-  }>(),
-  {
-    minWidth: 240
-  }
-)
 const { t } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
 
-const overlayWidth = computed(() => Math.max(0, Math.round(props.minWidth)))
 /** Temporary: toggle stub active progress with '+' key for testing */
 const forceActiveStub = ref(false)
 const toggleForceActiveStub = () => {
@@ -293,13 +283,6 @@ onBeforeUnmount(() => {
 })
 const isHovered = ref(false)
 const isExpanded = ref(false)
-const overlayStyle = computed(() => {
-  const width = `${overlayWidth.value}px`
-  return {
-    minWidth: width,
-    width
-  }
-})
 const containerClass = computed(() =>
   showBackground.value
     ? 'border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md'
@@ -337,9 +320,7 @@ const showBackground = computed(
   () => isExpanded.value || isActiveState.value || isEmptyState.value
 )
 
-const isVisible = computed(
-  () => overlayWidth.value > 0 && !isFullyInvisible.value
-)
+const isVisible = computed(() => !isFullyInvisible.value)
 
 const clampPercent = (value: number) =>
   Math.max(0, Math.min(100, Math.round(value)))
