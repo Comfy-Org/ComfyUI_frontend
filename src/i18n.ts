@@ -87,12 +87,21 @@ const settingsLoaders: Record<
 // Track which locales have been loaded
 const loadedLocales = new Set<string>(['en'])
 
+// Track locales currently being loaded to prevent race conditions
+const loadingLocales = new Map<string, Promise<void>>()
+
 /**
  * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
  */
 export async function loadLocale(locale: string): Promise<void> {
   if (loadedLocales.has(locale)) {
     return
+  }
+
+  // If already loading, return the existing promise to prevent duplicate loads
+  const existingLoad = loadingLocales.get(locale)
+  if (existingLoad) {
+    return existingLoad
   }
 
   const loader = localeLoaders[locale]
@@ -105,27 +114,36 @@ export async function loadLocale(locale: string): Promise<void> {
     return
   }
 
-  try {
-    const [main, nodes, commands, settings] = await Promise.all([
-      loader(),
-      nodeDefsLoader(),
-      commandsLoader(),
-      settingsLoader()
-    ])
+  // Create and track the loading promise
+  const loadPromise = (async () => {
+    try {
+      const [main, nodes, commands, settings] = await Promise.all([
+        loader(),
+        nodeDefsLoader(),
+        commandsLoader(),
+        settingsLoader()
+      ])
 
-    const messages = buildLocale(
-      main.default,
-      nodes.default,
-      commands.default,
-      settings.default
-    )
+      const messages = buildLocale(
+        main.default,
+        nodes.default,
+        commands.default,
+        settings.default
+      )
 
-    i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
-    loadedLocales.add(locale)
-  } catch (error) {
-    console.error(`Failed to load locale "${locale}":`, error)
-    throw error
-  }
+      i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
+      loadedLocales.add(locale)
+    } catch (error) {
+      console.error(`Failed to load locale "${locale}":`, error)
+      throw error
+    } finally {
+      // Clean up the loading promise once complete
+      loadingLocales.delete(locale)
+    }
+  })()
+
+  loadingLocales.set(locale, loadPromise)
+  return loadPromise
 }
 
 // Only include English in the initial bundle
