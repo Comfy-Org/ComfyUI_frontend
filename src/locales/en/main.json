@@ -197,7 +197,8 @@
     "volume": "Volume",
     "halfSpeed": "0.5x",
     "1x": "1x",
-    "2x": "2x"
+    "2x": "2x",
+    "beta": "BETA"
   },
   "manager": {
     "title": "Custom Nodes Manager",

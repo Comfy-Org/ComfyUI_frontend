@@ -33,6 +33,14 @@ type MenuCommandGroup = {
   commands: string[]
 }
 
+export interface TopbarBadge {
+  text: string
+  /**
+   * Optional badge label (e.g., "BETA", "ALPHA", "NEW")
+   */
+  label?: string
+}
+
 export type MissingNodeType =
   | string
   // Primarily used by group nodes.
@@ -74,6 +82,10 @@ export interface ComfyExtension {
    * Badges to add to the about page
    */
   aboutPageBadges?: AboutPageBadge[]
+  /**
+   * Badges to add to the top bar
+   */
+  topbarBadges?: TopbarBadge[]
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
