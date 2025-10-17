@@ -1,4 +1,5 @@
 import { st, te } from '@/i18n'
+import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type {
   IContextMenuOptions,
   IContextMenuValue,
@@ -6,18 +7,42 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 /**
  * Add translation for litegraph context menu.
  */
 export const useContextMenuTranslation = () => {
+  // Install compatibility layer BEFORE any extensions load
+  legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
+
   const f = LGraphCanvas.prototype.getCanvasMenuOptions
   const getCanvasCenterMenuOptions = function (
     this: LGraphCanvas,
     ...args: Parameters<typeof f>
   ) {
     const res = f.apply(this, args) as ReturnType<typeof f>
+
+    // Add items from new extension API
+    const newApiItems = app.collectCanvasMenuItems(this)
+    for (const item of newApiItems) {
+      // @ts-expect-error - Generic types differ but runtime compatibility is ensured
+      res.push(item)
+    }
+
+    // Add legacy monkey-patched items
+    const legacyItems = legacyMenuCompat.extractLegacyItems(
+      'getCanvasMenuOptions',
+      this,
+      ...args
+    )
+    for (const item of legacyItems) {
+      // @ts-expect-error - Generic types differ but runtime compatibility is ensured
+      res.push(item)
+    }
+
+    // Translate all items
     for (const item of res) {
       if (item?.content) {
         item.content = st(`contextMenu.${item.content}`, item.content)
@@ -27,6 +52,12 @@ export const useContextMenuTranslation = () => {
   }
 
   LGraphCanvas.prototype.getCanvasMenuOptions = getCanvasCenterMenuOptions
+
+  // Register our wrapper so it's not treated as a legacy monkey-patch
+  legacyMenuCompat.registerWrapper(
+    'getCanvasMenuOptions',
+    getCanvasCenterMenuOptions
+  )
 
   function translateMenus(
     values: readonly (IContextMenuValue | string | null)[] | undefined,
