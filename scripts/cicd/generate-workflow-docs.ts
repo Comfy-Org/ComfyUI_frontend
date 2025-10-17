@@ -63,6 +63,16 @@ function extractLabelTriggers(content: string, workflowData: any): string[] {
     }
   }
 
+  // Check for contains(github.event.pull_request.labels.*.name, 'label-name') pattern
+  const containsLabelMatches = content.matchAll(
+    /contains\(github\.event\.pull_request\.labels\.\*\.name,\s*['"]([^'"]+)['"]\)/gi
+  )
+  for (const match of containsLabelMatches) {
+    if (!labels.includes(match[1])) {
+      labels.push(match[1])
+    }
+  }
+
   // Check for startsWith or contains patterns with label names
   const labelCommentMatches = content.matchAll(
     /startsWith\(github\.event\.comment\.body,\s*['"]([^'"]+)['"]\)/gi
@@ -291,10 +301,60 @@ function generateWorkflowList(grouped: WorkflowsByPrefix): string {
 }
 
 /**
+ * Generate quick reference for label-triggered workflows
+ */
+function generateQuickReference(grouped: WorkflowsByPrefix): string {
+  const allWorkflows = Object.values(grouped).flatMap((g) => g.workflows)
+  const labelWorkflows = allWorkflows.filter((w) => w.labelTriggers.length > 0)
+
+  if (labelWorkflows.length === 0) {
+    return ''
+  }
+
+  // Group workflows by label to avoid duplicates
+  const labelMap = new Map<string, string[]>()
+  for (const workflow of labelWorkflows) {
+    for (const label of workflow.labelTriggers) {
+      // Skip comment-based triggers (like /update-playwright)
+      if (label.startsWith('/')) {
+        continue
+      }
+      const description = workflow.description || workflow.name
+      if (!labelMap.has(label)) {
+        labelMap.set(label, [])
+      }
+      labelMap.get(label)!.push(description)
+    }
+  }
+
+  let markdown = '## Quick Reference\n\n'
+  markdown +=
+    'For label-triggered workflows, add the corresponding label to a PR to trigger the workflow:\n'
+
+  // Sort labels alphabetically for consistency
+  const sortedLabels = Array.from(labelMap.keys()).sort()
+  for (const label of sortedLabels) {
+    const descriptions = labelMap.get(label)!
+    // Use the first description, or combine if multiple
+    const description =
+      descriptions.length === 1
+        ? descriptions[0]
+        : `Triggers ${descriptions.length} workflows`
+    markdown += `- \`${label}\` - ${description}\n`
+  }
+
+  markdown +=
+    '\nFor manual workflows, use the "Run workflow" button in the Actions tab.\n'
+
+  return markdown
+}
+
+/**
  * Generate the complete README content
  */
 function generateReadme(grouped: WorkflowsByPrefix): string {
   const categoryTable = generateCategoryTable(grouped)
+  const quickReference = generateQuickReference(grouped)
   const workflowList = generateWorkflowList(grouped)
 
   return `# GitHub Workflows
@@ -312,13 +372,7 @@ Workflow files follow a consistent naming pattern: \`<prefix>-<descriptive-name>
 
 ${categoryTable}
 
-## Quick Reference
-
-For label-triggered workflows, add the corresponding label to a PR to trigger the workflow:
-- \`claude-review\` - Trigger AI-powered code review
-- \`New Browser Test Expectations\` - Update Playwright test snapshots
-
-For manual workflows, use the "Run workflow" button in the Actions tab.
+${quickReference}
 
 ## Workflow Details
 

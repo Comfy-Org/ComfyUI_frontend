@@ -25,10 +25,13 @@ Workflow files follow a consistent naming pattern: `<prefix>-<descriptive-name>.
 ## Quick Reference
 
 For label-triggered workflows, add the corresponding label to a PR to trigger the workflow:
-- `claude-review` - Trigger AI-powered code review
-- `New Browser Test Expectations` - Update Playwright test snapshots
+- `New Browser Test Expectations` - Updates Playwright test snapshots when triggered by label or comment
+- `Release` - Triggers 3 workflows
+- `claude-review` - AI-powered code review triggered by adding the 'claude-review' label to a PR
+- `needs-backport` - Automatically backports merged PRs to release branches when 'needs-backport' label is applied
 
 For manual workflows, use the "Run workflow" button in the Actions tab.
+
 
 ## Workflow Details
 
@@ -95,6 +98,14 @@ For manual workflows, use the "Run workflow" button in the Actions tab.
 
 **Triggers:** pull_request, push
 
+#### [`ci-workflow-docs.yaml`](./ci-workflow-docs.yaml)
+
+**Name:** CI: Workflow Documentation
+
+**Description:** Validates that workflow documentation is up-to-date with workflow files
+
+**Triggers:** pull_request
+
 
 ### PR
 
@@ -105,6 +116,8 @@ For manual workflows, use the "Run workflow" button in the Actions tab.
 **Description:** Automatically backports merged PRs to release branches when 'needs-backport' label is applied
 
 **Triggers:** workflow_dispatch (manual), pull_request_target (closed, labeled)
+
+**Label Triggers:** `needs-backport`
 
 #### [`pr-claude-review.yaml`](./pr-claude-review.yaml)
 
@@ -137,6 +150,8 @@ For manual workflows, use the "Run workflow" button in the Actions tab.
 
 **Triggers:** pull_request (closed)
 
+**Label Triggers:** `Release`
+
 #### [`release-draft-create.yaml`](./release-draft-create.yaml)
 
 **Name:** Release Draft Create
@@ -144,6 +159,8 @@ For manual workflows, use the "Run workflow" button in the Actions tab.
 **Description:** Creates GitHub release draft when version bump PR with 'Release' label is merged
 
 **Triggers:** pull_request (closed)
+
+**Label Triggers:** `Release`
 
 #### [`release-npm-types.yaml`](./release-npm-types.yaml)
 
@@ -233,6 +250,8 @@ For manual workflows, use the "Run workflow" button in the Actions tab.
 **Description:** Automatically publishes desktop UI package to npm when version bump PR is merged
 
 **Triggers:** pull_request (closed)
+
+**Label Triggers:** `Release`
 
 #### [`publish-desktop-ui.yaml`](./publish-desktop-ui.yaml)
 
