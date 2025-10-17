@@ -142,7 +142,7 @@ describe('useSubscription', () => {
     it('should format monthly price correctly', () => {
       const { formattedMonthlyPrice } = useSubscription()
 
-      expect(formattedMonthlyPrice.value).toBe('$20.00')
+      expect(formattedMonthlyPrice.value).toBe('$20')
     })
   })
 
