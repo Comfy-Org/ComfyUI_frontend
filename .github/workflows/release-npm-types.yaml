@@ -1,4 +1,4 @@
-name: Publish Frontend Types
+name: Release NPM Types
 
 on:
   workflow_dispatch:

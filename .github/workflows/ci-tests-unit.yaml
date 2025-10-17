@@ -1,4 +1,5 @@
-name: Vitest Tests
+name: "CI: Tests Unit"
+description: "Unit and component testing with Vitest"
 
 on:
   push:
