@@ -201,25 +201,36 @@
           </div>
 
           <div
-            class="flex flex-col gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-sm)] pb-[var(--spacing-spacing-md)]"
+            class="flex flex-col gap-[var(--spacing-spacing-md)] px-[var(--spacing-spacing-sm)] pb-[var(--spacing-spacing-md)]"
           >
-            <QueueJobItem
-              v-for="ji in jobItems"
-              :key="ji.id"
-              :state="ji.state"
-              :title="ji.title"
-              :right-text="ji.meta"
-              :icon-name="ji.iconName"
-              :icon-image-url="ji.iconImageUrl"
-              :show-clear="ji.showClear"
-              :show-menu="true"
-              :progress-total-percent="ji.progressTotalPercent"
-              :progress-current-percent="ji.progressCurrentPercent"
-              :running-node-name="ji.runningNodeName"
-              @clear="onClearItem(ji)"
-              @menu="onMenuItem(ji)"
-              @view="onViewItem(ji)"
-            />
+            <div
+              v-for="group in groupedJobItems"
+              :key="group.key"
+              class="flex flex-col gap-[var(--spacing-spacing-xs)]"
+            >
+              <div
+                class="text-[12px] leading-none text-[var(--color-slate-100)]"
+              >
+                {{ group.label }}
+              </div>
+              <QueueJobItem
+                v-for="ji in group.items"
+                :key="ji.id"
+                :state="ji.state"
+                :title="ji.title"
+                :right-text="ji.meta"
+                :icon-name="ji.iconName"
+                :icon-image-url="ji.iconImageUrl"
+                :show-clear="ji.showClear"
+                :show-menu="true"
+                :progress-total-percent="ji.progressTotalPercent"
+                :progress-current-percent="ji.progressCurrentPercent"
+                :running-node-name="ji.runningNodeName"
+                @clear="onClearItem(ji)"
+                @menu="onMenuItem(ji)"
+                @view="onViewItem(ji)"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -615,6 +626,74 @@ const jobItems = computed<JobListItem[]>(() =>
     } as JobListItem
   })
 )
+
+type JobGroup = {
+  key: string
+  label: string
+  items: JobListItem[]
+}
+
+/** Returns YYYY-MM-DD for local date. */
+const dateKeyForTimestamp = (ts: number) => {
+  const d = new Date(ts)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** Returns Today, Yesterday, or Mon DD. */
+const dateLabelForTimestamp = (ts: number) => {
+  const d = new Date(ts)
+  const now = new Date()
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  if (sameDay) return 'Today'
+  const yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  const isYest =
+    d.getFullYear() === yest.getFullYear() &&
+    d.getMonth() === yest.getMonth() &&
+    d.getDate() === yest.getDate()
+  if (isYest) return 'Yesterday'
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric'
+  }).format(d)
+}
+
+const jobItemById = computed(() => {
+  const m = new Map<string, JobListItem>()
+  jobItems.value.forEach((ji) => m.set(ji.id, ji))
+  return m
+})
+
+const groupedJobItems = computed<JobGroup[]>(() => {
+  const groups: JobGroup[] = []
+  const index = new Map<string, number>()
+  for (const task of filteredTasks.value) {
+    const state = deriveStateFromTask(task)
+    const pid = String(task.promptId ?? '')
+    let ts: number | undefined
+    if (state === 'completed' || state === 'failed') {
+      ts = task.executionEndTimestamp
+    } else {
+      ts = queueStore.firstSeenByPromptId?.[pid]
+    }
+    const effectiveTs = ts ?? Date.now()
+    const key = dateKeyForTimestamp(effectiveTs)
+    let groupIdx = index.get(key)
+    if (groupIdx === undefined) {
+      groups.push({ key, label: dateLabelForTimestamp(effectiveTs), items: [] })
+      groupIdx = groups.length - 1
+      index.set(key, groupIdx)
+    }
+    const ji = jobItemById.value.get(String(task.promptId))
+    if (ji) groups[groupIdx].items.push(ji)
+  }
+  return groups
+})
 
 const onClearItem = async (item: JobListItem) => {
   if (!item.taskRef) return
