@@ -128,6 +128,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Edit Subgraph Widgets"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "Exit Subgraph"
   },
@@ -136,6 +139,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Group Selected Nodes"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Toggle promotion of hovered widget"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Unpack the selected Subgraph"
