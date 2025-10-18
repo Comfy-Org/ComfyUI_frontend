@@ -9,17 +9,13 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
 function pasteClipboardItems(data: DataTransfer): boolean {
+  const rawData = data.getData('text/html')
+  const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  if (!match) return false
   try {
-    const tempElement = document.createElement('div')
-    tempElement.innerHTML = data.getData('text/html')
-    const dataElement = tempElement.querySelector('div span')
-    if (!dataElement) return false
-    const encodedData =
-      dataElement.attributes?.getNamedItem('data-metadata')?.value
-    if (!encodedData) return false
     useCanvasStore()
       .getCanvas()
-      ._deserializeItems(JSON.parse(atob(encodedData)), {})
+      ._deserializeItems(JSON.parse(atob(match)), {})
     return true
   } catch (err) {
     console.error(err)

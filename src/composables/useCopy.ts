@@ -2,6 +2,11 @@ import { useEventListener } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
+const clipboardHTMLWrapper = [
+  '<meta charset="utf-8"><div><span data-metadata="',
+  '"></span></div><span style="white-space:pre-wrap;">Text</span>'
+]
+
 /**
  * Adds a handler on copy that serializes selected nodes to JSON
  */
@@ -23,9 +28,7 @@ export const useCopy = () => {
       // clearData doesn't remove images from clipboard
       e.clipboardData?.setData(
         'text/html',
-        '<meta charset="utf-8"><div><span data-metadata="' +
-          btoa(serializedData) +
-          '"></span></div><span style="white-space:pre-wrap;">Text</span>'
+        clipboardHTMLWrapper.join(btoa(serializedData))
       )
       e.preventDefault()
       e.stopImmediatePropagation()
