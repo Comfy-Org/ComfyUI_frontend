@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
+const distributionMock = {
+  isDesktop: false
+}
+
 // Mock dependencies
 vi.mock('@/composables/bottomPanelTabs/useShortcutsTab', () => ({
   useShortcutsTab: () => [
@@ -47,13 +51,12 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/utils/envUtil', () => ({
-  isElectron: () => false
-}))
+vi.mock('@/platform/distribution/types', () => distributionMock)
 
 describe('useBottomPanelStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    distributionMock.isDesktop = false
   })
 
   it('should initialize with empty panels', () => {

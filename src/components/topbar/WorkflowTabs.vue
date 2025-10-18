@@ -79,6 +79,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { isDesktop } from '@/platform/distribution/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -87,7 +88,6 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isElectron } from '@/utils/envUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
@@ -113,8 +113,6 @@ const containerRef = ref<HTMLElement | null>(null)
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
-
-const isDesktop = isElectron()
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,

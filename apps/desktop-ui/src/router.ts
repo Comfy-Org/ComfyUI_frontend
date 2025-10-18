@@ -1,14 +1,14 @@
+import { isDesktop } from '@frontend/platform/distribution/types'
 import {
   createRouter,
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
 
-import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 const isFileProtocol = window.location.protocol === 'file:'
-const basePath = isElectron() ? '/' : window.location.pathname
+const basePath = isDesktop ? '/' : window.location.pathname
 
 const router = createRouter({
   history: isFileProtocol ? createWebHashHistory() : createWebHistory(basePath),
