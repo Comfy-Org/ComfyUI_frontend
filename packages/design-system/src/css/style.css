@@ -159,6 +159,7 @@
   --backdrop: var(--color-white);
   --button-hover-surface: var(--color-gray-200);
   --button-active-surface: var(--color-gray-400);
+  --button-icon: var(--color-gray-600);
   --dialog-surface: var(--color-neutral-200);
   --interface-menu-component-surface-hovered: var(--color-gray-200);
   --interface-menu-component-surface-selected: var(--color-gray-400);
@@ -209,6 +210,7 @@
   --button-surface-contrast: var(--color-pure-white);
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
+  --button-icon: var(--color-gray-800);
   --dialog-surface: var(--color-neutral-700);
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
@@ -250,8 +252,9 @@
 
 @theme inline {
   --color-backdrop: var(--backdrop);
-  --color-button-hover-surface: var(--button-hover-surface);
   --color-button-active-surface: var(--button-active-surface);
+  --color-button-hover-surface: var(--button-hover-surface);
+  --color-button-icon: var(--button-icon);
   --color-button-surface: var(--button-surface);
   --color-button-surface-contrast: var(--button-surface-contrast);
   --color-dialog-surface: var(--dialog-surface);
