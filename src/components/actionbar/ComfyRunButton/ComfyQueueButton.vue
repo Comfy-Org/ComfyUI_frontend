@@ -93,7 +93,7 @@ import {
 } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-import BatchCountEdit from './BatchCountEdit.vue'
+import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
