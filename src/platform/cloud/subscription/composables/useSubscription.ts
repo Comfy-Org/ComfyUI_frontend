@@ -25,6 +25,13 @@ interface CloudSubscriptionStatusResponse {
 }
 
 const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+
+const isActiveSubscription = computed(() => {
+  if (!isCloud) return true
+
+  return subscriptionStatus.value?.is_active ?? false
+})
+
 let isWatchSetup = false
 
 export function useSubscription() {
@@ -36,12 +43,6 @@ export function useSubscription() {
   const { reportError } = useFirebaseAuthActions()
 
   const { isLoggedIn } = useCurrentUser()
-
-  const isActiveSubscription = computed(() => {
-    if (!isCloud) return true
-
-    return subscriptionStatus.value?.is_active ?? false
-  })
 
   const formattedRenewalDate = computed(() => {
     if (!subscriptionStatus.value?.renewal_date) return ''

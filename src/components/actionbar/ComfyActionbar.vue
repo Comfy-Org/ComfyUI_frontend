@@ -35,7 +35,7 @@
           "
         />
 
-        <component :is="runButtonImplementation" />
+        <ComfyRunButton />
       </div>
     </Panel>
   </div>
@@ -50,57 +50,15 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
-import {
-  computed,
-  defineAsyncComponent,
-  nextTick,
-  onMounted,
-  ref,
-  watch
-} from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const activeSubscription = ref(false)
-
-if (isCloud) {
-  void import('@/platform/cloud/subscription/composables/useSubscription').then(
-    ({ useSubscription }) => {
-      const { isActiveSubscription } = useSubscription()
-      watch(
-        isActiveSubscription,
-        (value) => {
-          activeSubscription.value = value
-        },
-        { immediate: true }
-      )
-    }
-  )
-}
+import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
-
-const runButtonImplementation = computed(() => {
-  if (!isCloud) {
-    return defineAsyncComponent(
-      () => import('@/components/actionbar/ComfyQueueButton.vue')
-    )
-  } else {
-    if (activeSubscription.value) {
-      return defineAsyncComponent(
-        () => import('@/components/actionbar/ComfyQueueButton.vue')
-      )
-    } else {
-      return defineAsyncComponent(
-        () =>
-          import('@/platform/cloud/subscription/components/SubscribeToRun.vue')
-      )
-    }
-  }
-})
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
