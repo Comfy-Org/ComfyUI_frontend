@@ -110,12 +110,11 @@ export const usePaste = () => {
     try {
       const tempElement = document.createElement('div')
       tempElement.innerHTML = data.getData('text/html')
-      const nodeData = atob(
-        // @ts-expect-error Unused param
-        tempElement?.children?.[1]?.children?.[0]?.attributes?.['data-metadata']
+      const encodedData =
+        // @ts-expect-error no type checking
+        tempElement.querySelector('div span').attributes?.['data-metadata']
           .value
-      )
-      canvas._deserializeItems(JSON.parse(nodeData), {})
+      canvas._deserializeItems(JSON.parse(atob(encodedData)), {})
       return
     } catch (err) {
       console.error(err)
