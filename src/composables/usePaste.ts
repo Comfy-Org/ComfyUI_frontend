@@ -8,6 +8,25 @@ import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
+function pasteClipboardItems(data: DataTransfer): boolean {
+  try {
+    const tempElement = document.createElement('div')
+    tempElement.innerHTML = data.getData('text/html')
+    const dataElement = tempElement.querySelector('div span')
+    if (!dataElement) return false
+    const encodedData =
+      dataElement.attributes?.getNamedItem('data-metadata')?.value
+    if (!encodedData) return false
+    useCanvasStore()
+      .getCanvas()
+      ._deserializeItems(JSON.parse(atob(encodedData)), {})
+    return true
+  } catch (err) {
+    console.error(err)
+  }
+  return false
+}
+
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
  */
@@ -107,18 +126,7 @@ export const usePaste = () => {
         return
       }
     }
-    try {
-      const tempElement = document.createElement('div')
-      tempElement.innerHTML = data.getData('text/html')
-      const encodedData =
-        // @ts-expect-error no type checking
-        tempElement.querySelector('div span').attributes?.['data-metadata']
-          .value
-      canvas._deserializeItems(JSON.parse(atob(encodedData)), {})
-      return
-    } catch (err) {
-      console.error(err)
-    }
+    if (pasteClipboardItems(data)) return
 
     // No image found. Look for node data
     data = data.getData('text/plain')
