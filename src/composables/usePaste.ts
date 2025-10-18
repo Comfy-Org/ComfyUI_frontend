@@ -7,6 +7,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
@@ -53,10 +54,7 @@ export const usePaste = () => {
   }
 
   useEventListener(document, 'paste', async (e) => {
-    if (
-      e.target instanceof HTMLTextAreaElement ||
-      e.target instanceof HTMLInputElement
-    ) {
+    if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
       return
     }

@@ -1,6 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 const clipboardHTMLWrapper = [
   '<meta charset="utf-8"><div><span data-metadata="',
@@ -14,10 +15,7 @@ export const useCopy = () => {
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'copy', (e) => {
-    if (
-      e.target instanceof HTMLTextAreaElement ||
-      e.target instanceof HTMLInputElement
-    ) {
+    if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
       return
     }
