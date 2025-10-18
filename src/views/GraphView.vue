@@ -45,7 +45,7 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
-import { i18n } from '@/i18n'
+import { i18n, loadLocale } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -145,10 +145,17 @@ watchEffect(() => {
   )
 })
 
-watchEffect(() => {
+watchEffect(async () => {
   const locale = settingStore.get('Comfy.Locale')
   if (locale) {
-    i18n.global.locale.value = locale as 'en' | 'zh' | 'ru' | 'ja'
+    // Load the locale dynamically if not already loaded
+    try {
+      await loadLocale(locale)
+      // Type assertion is safe here as loadLocale validates the locale exists
+      i18n.global.locale.value = locale as typeof i18n.global.locale.value
+    } catch (error) {
+      console.error(`Failed to switch to locale "${locale}":`, error)
+    }
   }
 })
 
