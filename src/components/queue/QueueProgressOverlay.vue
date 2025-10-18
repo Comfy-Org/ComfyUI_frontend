@@ -20,7 +20,19 @@
           <div
             class="px-[var(--spacing-spacing-xs)] text-[14px] font-normal text-white"
           >
-            {{ headerTitle }}
+            <span>{{ headerTitle }}</span>
+            <span
+              v-if="showConcurrentIndicator"
+              class="ml-[var(--spacing-spacing-md)] inline-flex items-center gap-[var(--spacing-spacing-xss)] text-blue-100"
+            >
+              <span class="inline-block size-2 rounded-full bg-blue-100" />
+              <span>
+                <span class="font-bold">{{ concurrentWorkflowCount }}</span>
+                <span class="ml-[var(--spacing-spacing-xss)]">{{
+                  t('sideToolbar.queueProgressOverlay.running')
+                }}</span>
+              </span>
+            </span>
           </div>
           <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <button
@@ -377,6 +389,13 @@ const headerTitle = computed(() =>
   hasActiveJob.value
     ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
     : t('sideToolbar.queueProgressOverlay.jobQueue')
+)
+
+const concurrentWorkflowCount = computed(
+  () => executionStore.runningWorkflowCount
+)
+const showConcurrentIndicator = computed(
+  () => concurrentWorkflowCount.value > 1
 )
 
 /** Tabs for job list filtering */
