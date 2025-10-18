@@ -5,10 +5,10 @@
         <h2 class="text-2xl">
           {{ $t('subscription.title') }}
         </h2>
-        <TopbarBadges />
+        <TopbarBadges reverse-order />
       </div>
 
-      <div v-if="isActiveSubscription" class="grow overflow-auto">
+      <div class="grow overflow-auto">
         <div class="rounded-lg border border-charcoal-400 p-4">
           <div>
             <div class="flex items-center justify-between">
@@ -19,7 +19,7 @@
                   }}</span>
                   <span>{{ $t('subscription.perMonth') }}</span>
                 </div>
-                <div class="text-xs text-muted">
+                <div v-if="isActiveSubscription" class="text-xs text-muted">
                   {{
                     $t('subscription.renewsDate', {
                       date: formattedRenewalDate
@@ -28,10 +28,18 @@
                 </div>
               </div>
               <Button
+                v-if="isActiveSubscription"
                 :label="$t('subscription.manageSubscription')"
                 severity="secondary"
                 class="text-xs"
                 @click="manageSubscription"
+              />
+              <SubscribeButton
+                v-else
+                :label="$t('subscription.subscribeNow')"
+                size="small"
+                button-class="text-xs"
+                @subscribed="handleSubscribed"
               />
             </div>
           </div>
@@ -122,7 +130,7 @@
                       :label="$t('subscription.viewUsageHistory')"
                       text
                       severity="secondary"
-                      class="text-xs text-muted"
+                      class="p-0 text-xs text-muted"
                       @click="handleViewUsageHistory"
                     />
                     <Button
@@ -190,6 +198,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -261,6 +270,15 @@ const handleAddApiCredits = () => {
 
 const handleMessageSupport = async () => {
   await commandStore.execute('Comfy.ContactSupport')
+}
+
+const handleSubscribed = async () => {
+  // Refresh all data after successful subscription
+  await Promise.all([
+    authActions.fetchBalance(),
+    fetchStatus(),
+    fetchLatestEvents()
+  ])
 }
 </script>
 

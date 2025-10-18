@@ -70,8 +70,6 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
@@ -108,7 +106,6 @@ const {
 } = useSettingSearch()
 
 const authActions = useFirebaseAuthActions()
-const { requireActiveSubscription } = useSubscription()
 
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -136,7 +133,7 @@ const searchResults = computed<ISettingGroup[]>(() =>
 )
 
 const tabValue = computed<string>(() =>
-  inSearch.value ? 'Search Results' : (activeCategory.value?.label ?? '')
+  inSearch.value ? 'Search Results' : activeCategory.value?.label ?? ''
 )
 
 // Don't allow null category to be set outside of search.
@@ -147,9 +144,6 @@ watch(activeCategory, (_, oldValue) => {
   }
   if (activeCategory.value?.key === 'credits') {
     void authActions.fetchBalance()
-  }
-  if (isCloud && activeCategory.value?.key === 'subscription') {
-    void requireActiveSubscription()
   }
 })
 </script>

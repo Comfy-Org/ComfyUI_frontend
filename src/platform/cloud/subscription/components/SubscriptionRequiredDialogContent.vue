@@ -42,24 +42,15 @@
       </div>
 
       <div class="flex flex-col">
-        <Button
-          :label="$t('subscription.required.subscribe')"
-          size="large"
-          class="w-full font-bold"
-          :loading="isLoading"
-          :disabled="isPolling"
-          @click="handleSubscribe"
-        />
+        <SubscribeButton @subscribed="handleSubscribed" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import { onBeforeUnmount, ref } from 'vue'
-
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
@@ -67,74 +58,11 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { subscribe, isActiveSubscription, formattedMonthlyPrice, fetchStatus } =
-  useSubscription()
+const { formattedMonthlyPrice } = useSubscription()
 
-const isLoading = ref(false)
-const isPolling = ref(false)
-let pollInterval: number | null = null
-
-const POLL_INTERVAL_MS = 3000 // Poll every 3 seconds
-const MAX_POLL_DURATION_MS = 5 * 60 * 1000 // Stop polling after 5 minutes
-
-const startPollingSubscriptionStatus = () => {
-  isPolling.value = true
-  isLoading.value = true
-
-  const startTime = Date.now()
-
-  const poll = async () => {
-    try {
-      if (Date.now() - startTime > MAX_POLL_DURATION_MS) {
-        stopPolling()
-        return
-      }
-
-      await fetchStatus()
-
-      if (isActiveSubscription.value) {
-        stopPolling()
-        emit('close', true)
-      }
-    } catch (error) {
-      console.error(
-        '[SubscriptionRequiredDialog] Error polling subscription status:',
-        error
-      )
-    }
-  }
-
-  void poll()
-  pollInterval = window.setInterval(poll, POLL_INTERVAL_MS)
+const handleSubscribed = () => {
+  emit('close', true)
 }
-
-const stopPolling = () => {
-  if (pollInterval) {
-    clearInterval(pollInterval)
-    pollInterval = null
-  }
-  isPolling.value = false
-  isLoading.value = false
-}
-
-const handleSubscribe = async () => {
-  isLoading.value = true
-  try {
-    await subscribe()
-
-    startPollingSubscriptionStatus()
-  } catch (error) {
-    console.error(
-      '[SubscriptionRequiredDialog] Error initiating subscription:',
-      error
-    )
-    isLoading.value = false
-  }
-}
-
-onBeforeUnmount(() => {
-  stopPolling()
-})
 </script>
 
 <style scoped>
