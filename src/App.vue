@@ -16,10 +16,11 @@ import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
+import { isDesktop } from '@/platform/distribution/types'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
-import { electronAPI, isElectron } from './utils/envUtil'
+import { electronAPI } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const conflictDetection = useConflictDetection()
@@ -45,7 +46,7 @@ onMounted(() => {
   // @ts-expect-error fixme ts strict error
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
-  if (isElectron()) {
+  if (isDesktop) {
     document.addEventListener('contextmenu', showContextMenu)
   }
 

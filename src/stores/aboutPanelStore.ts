@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+import { isDesktop } from '@/platform/distribution/types'
 import type { AboutPageBadge } from '@/types/comfy'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 
 import { useExtensionStore } from './extensionStore'
 import { useSystemStatsStore } from './systemStatsStore'
@@ -20,9 +21,7 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
     // so the python server's API doesn't have the version info.
     {
       label: `ComfyUI ${
-        isElectron()
-          ? 'v' + electronAPI().getComfyUIVersion()
-          : coreVersion.value
+        isDesktop ? 'v' + electronAPI().getComfyUIVersion() : coreVersion.value
       }`,
       url: 'https://github.com/comfyanonymous/ComfyUI',
       icon: 'pi pi-github'

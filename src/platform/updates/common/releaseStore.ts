@@ -3,9 +3,9 @@ import { defineStore } from 'pinia'
 import { compare } from 'semver'
 import { computed, ref } from 'vue'
 
+import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { isElectron } from '@/utils/envUtil'
 import { stringToLocale } from '@/utils/formatUtil'
 
 import { useReleaseService } from './releaseService'
@@ -81,7 +81,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Show toast if needed
   const shouldShowToast = computed(() => {
     // Only show on desktop version
-    if (!isElectron()) {
+    if (!isDesktop) {
       return false
     }
 
@@ -113,7 +113,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
     // Only show on desktop version
-    if (!isElectron()) {
+    if (!isDesktop) {
       return false
     }
 
@@ -160,7 +160,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Show "What's New" popup
   const shouldShowPopup = computed(() => {
     // Only show on desktop version
-    if (!isElectron()) {
+    if (!isDesktop) {
       return false
     }
 
