@@ -1193,7 +1193,8 @@
     "queue": "Queue Panel"
   },
   "queue": {
-    "initializingAlmostReady": "Initializing - Almost ready"
+    "initializingAlmostReady": "Initializing - Almost ready",
+    "inQueue": "In queue..."
   },
   "menuLabels": {
     "File": "File",

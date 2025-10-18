@@ -97,6 +97,7 @@ const rightText = computed(() => props.rightText)
 const primaryText = computed(() => {
   if (props.state === 'initialization')
     return t('queue.initializingAlmostReady')
+  if (props.state === 'queued') return t('queue.inQueue')
   return props.title
 })
 
