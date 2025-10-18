@@ -3,7 +3,8 @@ import type { DownloadState } from '@comfyorg/comfyui-electron-types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
+import { electronAPI } from '@/utils/envUtil'
 
 export interface ElectronDownload
   extends Pick<DownloadState, 'url' | 'filename'> {
@@ -21,7 +22,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     downloads.value.find((download) => url === download.url)
 
   const initialize = async () => {
-    if (isElectron()) {
+    if (isDesktop) {
       const allDownloads = await DownloadManager.getAllDownloads()
 
       for (const download of allDownloads) {

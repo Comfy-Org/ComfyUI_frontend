@@ -6,10 +6,10 @@ import {
   useCommandTerminalTab,
   useLogsTerminalTab
 } from '@/composables/bottomPanelTabs/useTerminalTabs'
+import { isDesktop } from '@/platform/distribution/types'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
-import { isElectron } from '@/utils/envUtil'
 
 type PanelType = 'terminal' | 'shortcuts'
 
@@ -123,7 +123,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
 
   const registerCoreBottomPanelTabs = () => {
     registerBottomPanelTab(useLogsTerminalTab())
-    if (isElectron()) {
+    if (isDesktop) {
       registerBottomPanelTab(useCommandTerminalTab())
     }
     useShortcutsTab().forEach(registerBottomPanelTab)

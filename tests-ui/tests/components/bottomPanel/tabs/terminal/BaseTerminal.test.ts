@@ -7,6 +7,10 @@ import { createI18n } from 'vue-i18n'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 
+const distributionMock = {
+  isDesktop: false
+}
+
 // Mock xterm and related modules
 vi.mock('@xterm/xterm', () => ({
   Terminal: vi.fn().mockImplementation(() => ({
@@ -53,8 +57,8 @@ vi.mock('@/composables/bottomPanelTabs/useTerminal', () => ({
   }))
 }))
 
+vi.mock('@/platform/distribution/types', () => distributionMock)
 vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn(() => false),
   electronAPI: vi.fn(() => null)
 }))
 
@@ -103,6 +107,7 @@ describe('BaseTerminal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    distributionMock.isDesktop = false
   })
 
   afterEach(() => {

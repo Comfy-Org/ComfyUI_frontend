@@ -1,10 +1,10 @@
 <template>
   <div
     ref="rootEl"
-    class="relative overflow-hidden h-full w-full bg-neutral-900"
+    class="relative h-full w-full overflow-hidden bg-neutral-900"
   >
-    <div class="p-terminal rounded-none h-full w-full p-2">
-      <div ref="terminalEl" class="h-full terminal-host" />
+    <div class="p-terminal h-full w-full rounded-none p-2">
+      <div ref="terminalEl" class="terminal-host h-full" />
     </div>
     <Button
       v-tooltip.left="{
@@ -26,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import { isDesktop } from '@frontend/platform/distribution/types'
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
 import Button from 'primevue/button'
@@ -34,7 +35,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
@@ -84,7 +85,7 @@ const showContextMenu = (event: MouseEvent) => {
   electronAPI()?.showContextMenu({ type: 'text' })
 }
 
-if (isElectron()) {
+if (isDesktop) {
   useEventListener(terminalEl, 'contextmenu', showContextMenu)
 }
 

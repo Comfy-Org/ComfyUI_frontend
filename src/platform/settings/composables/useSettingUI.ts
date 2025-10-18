@@ -3,10 +3,10 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isDesktop } from '@/platform/distribution/types'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
@@ -129,7 +129,7 @@ export function useSettingUI(
       userPanel,
       keybindingPanel,
       extensionPanel,
-      ...(isElectron() ? [serverConfigPanel] : [])
+      ...(isDesktop ? [serverConfigPanel] : [])
     ].filter((panel) => panel.component)
   )
 
@@ -178,7 +178,7 @@ export function useSettingUI(
         keybindingPanel.node,
         extensionPanel.node,
         aboutPanel.node,
-        ...(isElectron() ? [serverConfigPanel.node] : [])
+        ...(isDesktop ? [serverConfigPanel.node] : [])
       ].map(translateCategory)
     }
   ])
