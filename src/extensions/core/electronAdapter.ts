@@ -2,12 +2,13 @@ import log from 'loglevel'
 
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
+import { isDesktop } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
-import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 
 // Desktop documentation URLs
 const DESKTOP_DOCS = {
@@ -16,7 +17,7 @@ const DESKTOP_DOCS = {
 } as const
 
 ;(async () => {
-  if (!isElectron()) return
+  if (!isDesktop) return
 
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()

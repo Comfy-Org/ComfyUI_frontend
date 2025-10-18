@@ -4,9 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
+const distributionMock = {
+  isDesktop: true
+}
+
 // Mock the dependencies
 vi.mock('semver')
-vi.mock('@/utils/envUtil')
 vi.mock('@/platform/updates/common/releaseService')
 vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/systemStatsStore')
@@ -15,6 +18,7 @@ vi.mock('@vueuse/core', () => ({
   useStorage: vi.fn(() => ({ value: {} })),
   createSharedComposable: vi.fn((fn) => fn)
 }))
+vi.mock('@/platform/distribution/types', () => distributionMock)
 
 describe('useReleaseStore', () => {
   let store: ReturnType<typeof useReleaseStore>
@@ -36,6 +40,7 @@ describe('useReleaseStore', () => {
 
     // Reset all mocks
     vi.clearAllMocks()
+    distributionMock.isDesktop = true
 
     // Setup mock services
     mockReleaseService = {
@@ -66,12 +71,10 @@ describe('useReleaseStore', () => {
     )
     const { useSettingStore } = await import('@/platform/settings/settingStore')
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
-    const { isElectron } = await import('@/utils/envUtil')
 
     vi.mocked(useReleaseService).mockReturnValue(mockReleaseService)
     vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
-    vi.mocked(isElectron).mockReturnValue(true)
 
     // Default showVersionUpdates to true
     mockSettingStore.get.mockImplementation((key: string) => {
@@ -561,20 +564,19 @@ describe('useReleaseStore', () => {
     })
   })
 
-  describe('isElectron environment checks', () => {
-    beforeEach(async () => {
-      // Set up a new version available
+  describe('isDesktop environment checks', () => {
+    beforeEach(() => {
       store.releases = [mockRelease]
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return true
         return null
       })
+      distributionMock.isDesktop = true
     })
 
     describe('when running in Electron (desktop)', () => {
-      beforeEach(async () => {
-        const { isElectron } = await import('@/utils/envUtil')
-        vi.mocked(isElectron).mockReturnValue(true)
+      beforeEach(() => {
+        distributionMock.isDesktop = true
       })
 
       it('should show toast when conditions are met', () => {
@@ -600,9 +602,8 @@ describe('useReleaseStore', () => {
     })
 
     describe('when NOT running in Electron (web)', () => {
-      beforeEach(async () => {
-        const { isElectron } = await import('@/utils/envUtil')
-        vi.mocked(isElectron).mockReturnValue(false)
+      beforeEach(() => {
+        distributionMock.isDesktop = false
       })
 
       it('should NOT show toast even when all other conditions are met', () => {
