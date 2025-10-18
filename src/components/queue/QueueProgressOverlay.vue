@@ -142,6 +142,9 @@
               :icon-image-url="ji.iconImageUrl"
               :show-clear="ji.showClear"
               :show-menu="true"
+              :progress-total-percent="ji.progressTotalPercent"
+              :progress-current-percent="ji.progressCurrentPercent"
+              :running-node-name="ji.runningNodeName"
               @clear="onClearItem(ji)"
               @menu="onMenuItem(ji)"
               @view="onViewItem(ji)"
@@ -174,9 +177,11 @@
             <div
               class="flex items-center gap-[var(--spacing-spacing-xss)] text-white opacity-90"
             >
-              <span>{{ t('sideToolbar.queueProgressOverlay.total') }}</span>
-              <span class="font-bold">{{ totalPercent }}</span>
-              <span>%</span>
+              <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
+                <template #percent>
+                  <span class="font-bold">{{ totalPercentFormatted }}</span>
+                </template>
+              </i18n-t>
             </div>
             <div
               class="flex items-center gap-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)]"
@@ -262,7 +267,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
@@ -333,6 +338,13 @@ const totalPercent = computed(() =>
     : clampPercent((executionStore.executionProgress ?? 0) * 100)
 )
 
+const totalPercentFormatted = computed(() =>
+  new Intl.NumberFormat(locale.value, {
+    style: 'percent',
+    maximumFractionDigits: 0
+  }).format((totalPercent.value || 0) / 100)
+)
+
 const currentNodePercent = computed(() =>
   forceActiveStub.value
     ? 60
@@ -391,6 +403,9 @@ type JobListItem = {
   iconImageUrl?: string
   showClear?: boolean
   taskRef?: any
+  progressTotalPercent?: number
+  progressCurrentPercent?: number
+  runningNodeName?: string
 }
 
 const formatTime = (time?: number) => {
@@ -485,7 +500,7 @@ const jobItems = computed<JobListItem[]>(() =>
         iconName = 'icon-[lucide--check]'
       }
     } else if (state === 'running') {
-      iconName = 'icon-[lucide--play]'
+      iconName = 'icon-[lucide--zap]'
     } else if (state === 'queued') {
       iconName = 'icon-[lucide--clock]'
     } else if (state === 'failed') {
@@ -499,6 +514,9 @@ const jobItems = computed<JobListItem[]>(() =>
         ? completedPreviewOutput.filename
         : formatTitleForTask(task)
 
+    const isActive =
+      String(task.promptId ?? '') ===
+      String(executionStore.activePromptId ?? '')
     return {
       id: String(task.promptId),
       title: displayTitle,
@@ -507,7 +525,13 @@ const jobItems = computed<JobListItem[]>(() =>
       iconName,
       iconImageUrl,
       showClear: state === 'queued' || state === 'failed',
-      taskRef: task
+      taskRef: task,
+      progressTotalPercent:
+        state === 'running' && isActive ? totalPercent.value : undefined,
+      progressCurrentPercent:
+        state === 'running' && isActive ? currentNodePercent.value : undefined,
+      runningNodeName:
+        state === 'running' && isActive ? currentNodeName.value : undefined
     } as JobListItem
   })
 )

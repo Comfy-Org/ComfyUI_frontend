@@ -1,12 +1,33 @@
 <template>
   <div
-    class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] rounded-[var(--corner-radius-corner-radius-md)] border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-[var(--spacing-spacing-xxs)] text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
+    class="relative flex items-center justify-between gap-[var(--spacing-spacing-xs)] overflow-hidden rounded-[var(--corner-radius-corner-radius-md)] border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-[var(--spacing-spacing-xxs)] text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <div class="relative flex items-center gap-[var(--spacing-spacing-xxs)]">
+    <div
+      v-if="
+        variant === 'running' &&
+        (progressTotalPercent !== undefined ||
+          progressCurrentPercent !== undefined)
+      "
+      class="absolute inset-0"
+    >
       <div
-        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px] bg-[var(--color-charcoal-500)]"
+        v-if="progressTotalPercent !== undefined"
+        class="pointer-events-none absolute inset-y-0 left-0 h-full bg-[var(--color-interface-panel-job-progress-primary)] transition-[width]"
+        :style="{ width: `${progressTotalPercent}%` }"
+      />
+      <div
+        v-if="progressCurrentPercent !== undefined"
+        class="pointer-events-none absolute inset-y-0 left-0 h-full bg-[var(--color-interface-panel-job-progress-secondary)] transition-[width]"
+        :style="{ width: `${progressCurrentPercent}%` }"
+      />
+    </div>
+    <div
+      class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xxs)]"
+    >
+      <div
+        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px]"
       >
         <slot name="icon">
           <i v-if="iconName" :class="[iconName, 'size-4']" />
@@ -15,14 +36,14 @@
       </div>
     </div>
 
-    <div class="min-w-0 flex-1">
+    <div class="relative z-[1] min-w-0 flex-1">
       <div class="truncate opacity-90" :title="primaryText">
         <slot name="primary">{{ primaryText }}</slot>
       </div>
     </div>
 
     <div
-      class="flex items-center gap-[var(--spacing-spacing-xs)] text-[var(--color-slate-100)]"
+      class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xs)] text-[var(--color-slate-100)]"
     >
       <Transition
         mode="out-in"
@@ -93,6 +114,8 @@ withDefaults(
     showActionsOnHover?: boolean
     showClear?: boolean
     showMenu?: boolean
+    progressTotalPercent?: number
+    progressCurrentPercent?: number
   }>(),
   {
     primaryText: '',
@@ -101,7 +124,9 @@ withDefaults(
     variant: 'queued',
     showActionsOnHover: true,
     showClear: true,
-    showMenu: true
+    showMenu: true,
+    progressTotalPercent: undefined,
+    progressCurrentPercent: undefined
   }
 )
 

@@ -6,13 +6,15 @@
     :show-actions-on-hover="true"
     :show-clear="computedShowClear"
     :show-menu="computedShowMenu"
+    :progress-total-percent="progressTotalPercent"
+    :progress-current-percent="progressCurrentPercent"
     @clear="emit('clear')"
     @menu="emit('menu')"
     @view="emit('view')"
   >
     <template #icon>
       <div
-        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px] bg-[var(--color-charcoal-500)]"
+        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px]"
       >
         <img
           v-if="iconImageUrl"
@@ -23,10 +25,41 @@
       </div>
     </template>
     <template #primary>
-      <slot name="primary">{{ primaryText }}</slot>
+      <slot name="primary">
+        <template v-if="props.state === 'running'">
+          <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
+            <template #percent>
+              <span class="font-bold">{{ formattedTotalPercent }}</span>
+            </template>
+          </i18n-t>
+        </template>
+        <template v-else>{{ primaryText }}</template>
+      </slot>
     </template>
     <template #secondary>
-      <slot name="secondary">{{ rightText }}</slot>
+      <slot name="secondary">
+        <template
+          v-if="
+            props.state === 'running' &&
+            props.runningNodeName &&
+            props.progressCurrentPercent !== undefined
+          "
+        >
+          <span
+            class="inline-flex items-center gap-[var(--spacing-spacing-xss)]"
+          >
+            <span class="inline-block max-w-[10rem] truncate">{{
+              props.runningNodeName
+            }}</span>
+            <span>{{
+              t('sideToolbar.queueProgressOverlay.colonPercent', {
+                percent: formattedCurrentPercent
+              })
+            }}</span>
+          </span>
+        </template>
+        <template v-else>{{ rightText }}</template>
+      </slot>
     </template>
   </BaseJobRow>
 </template>
@@ -54,13 +87,19 @@ const props = withDefaults(
     iconImageUrl?: string
     showClear?: boolean
     showMenu?: boolean
+    progressTotalPercent?: number
+    progressCurrentPercent?: number
+    runningNodeName?: string
   }>(),
   {
     rightText: '',
     iconName: undefined,
     iconImageUrl: undefined,
     showClear: undefined,
-    showMenu: undefined
+    showMenu: undefined,
+    progressTotalPercent: undefined,
+    progressCurrentPercent: undefined,
+    runningNodeName: undefined
   }
 )
 
@@ -70,7 +109,7 @@ const emit = defineEmits<{
   (e: 'view'): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
@@ -82,7 +121,7 @@ const iconClass = computed(() => {
     case 'initialization':
       return 'icon-[lucide--server-crash]'
     case 'running':
-      return 'icon-[lucide--play]'
+      return 'icon-[lucide--zap]'
     case 'completed':
       return 'icon-[lucide--check]'
     case 'failed':
@@ -93,6 +132,27 @@ const iconClass = computed(() => {
 })
 
 const rightText = computed(() => props.rightText)
+const runningTotalPercent = computed(() =>
+  Math.max(0, Math.min(100, Math.round(props.progressTotalPercent ?? 0)))
+)
+
+const formattedTotalPercent = computed(() =>
+  new Intl.NumberFormat(locale.value, {
+    style: 'percent',
+    maximumFractionDigits: 0
+  }).format((runningTotalPercent.value || 0) / 100)
+)
+
+const runningCurrentPercent = computed(() =>
+  Math.max(0, Math.min(100, Math.round(props.progressCurrentPercent ?? 0)))
+)
+
+const formattedCurrentPercent = computed(() =>
+  new Intl.NumberFormat(locale.value, {
+    style: 'percent',
+    maximumFractionDigits: 0
+  }).format((runningCurrentPercent.value || 0) / 100)
+)
 
 const primaryText = computed(() => {
   if (props.state === 'initialization')
