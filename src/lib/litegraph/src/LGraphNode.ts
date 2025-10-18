@@ -151,7 +151,7 @@ interface DrawTitleTextOptions extends DrawTitleOptions {
   default_title_color: string
 }
 
-interface DrawTitleBoxOptions extends DrawTitleOptions {
+export interface DrawTitleBoxOptions extends DrawTitleOptions {
   box_size?: number
 }
 
