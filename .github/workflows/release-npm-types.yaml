@@ -1,4 +1,5 @@
 name: Release NPM Types
+description: "Manual workflow to publish TypeScript type definitions to npm"
 
 on:
   workflow_dispatch:

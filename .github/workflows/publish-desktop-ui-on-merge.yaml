@@ -1,4 +1,5 @@
 name: Publish Desktop UI on PR Merge
+description: "Automatically publishes desktop UI package to npm when version bump PR is merged"
 
 on:
   pull_request:

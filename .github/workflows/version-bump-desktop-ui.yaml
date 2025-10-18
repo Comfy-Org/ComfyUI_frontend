@@ -1,4 +1,5 @@
 name: Version Bump Desktop UI
+description: "Manual workflow to increment desktop UI package version with semantic versioning support"
 
 on:
   workflow_dispatch:

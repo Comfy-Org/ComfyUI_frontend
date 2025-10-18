@@ -1,4 +1,5 @@
 name: Release Draft Create
+description: "Creates GitHub release draft when version bump PR with 'Release' label is merged"
 
 on:
   pull_request:

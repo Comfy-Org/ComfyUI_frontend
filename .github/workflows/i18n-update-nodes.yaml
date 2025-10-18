@@ -1,4 +1,5 @@
 name: i18n Update Nodes
+description: "Updates translations for ComfyUI node definitions"
 
 on:
   workflow_dispatch:

@@ -43,6 +43,7 @@
     "test:browser": "pnpm exec nx e2e",
     "test:unit": "nx run test",
     "typecheck": "vue-tsc --noEmit",
+    "workflow:docs": "tsx scripts/cicd/generate-workflow-docs.ts",
     "zipdist": "node scripts/zipdist.js"
   },
   "devDependencies": {
@@ -114,6 +115,7 @@
     "vue-component-type-helpers": "catalog:",
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
+    "yaml": "catalog:",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
   },
