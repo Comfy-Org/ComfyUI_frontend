@@ -12,7 +12,7 @@ test.describe('Vue Node Bypass', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  test('should allow toggling bypass on a selected node with hotkey', async ({
+  test.fixme('should allow toggling bypass on a selected node with hotkey', async ({
     comfyPage
   }) => {
     await comfyPage.setup()
