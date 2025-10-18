@@ -398,6 +398,17 @@ const formatTime = (time?: number) => {
   return `${time.toFixed(2)}s`
 }
 
+const formatClockTime = (timestamp?: number) => {
+  if (timestamp === undefined) return ''
+  const d = new Date(timestamp)
+  let h = d.getHours() % 12
+  h = h === 0 ? 12 : h
+  const m = String(d.getMinutes()).padStart(2, '0')
+  const s = String(d.getSeconds()).padStart(2, '0')
+  const ampm = d.getHours() >= 12 ? 'pm' : 'am'
+  return `${h}:${m}:${s}${ampm}`
+}
+
 const deriveStateFromTask = (task: any): JobListItem['state'] => {
   if (isJobInitializing(task?.promptId)) return 'initialization'
   if (task.taskType === 'Pending') return 'queued'
@@ -422,7 +433,11 @@ const formatTitleForTask = (task: any) => {
 
 const formatMetaForTask = (task: any, state: JobListItem['state']) => {
   if (state === 'running') return t('g.running')
-  if (state === 'queued') return t('g.queued')
+  if (state === 'queued' || state === 'initialization' || state === 'added') {
+    const pid = String(task.promptId ?? '')
+    const ts = queueStore.firstSeenByPromptId?.[pid]
+    return formatClockTime(ts)
+  }
   if (state === 'completed') {
     const time = formatTime(task.executionTimeInSeconds)
     return time || ''

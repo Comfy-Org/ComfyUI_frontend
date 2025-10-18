@@ -431,6 +431,7 @@ export const useQueueStore = defineStore('queue', () => {
   const historyTasks = ref<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
+  const firstSeenByPromptId = ref<Record<string, number>>({})
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -476,6 +477,14 @@ export const useQueueStore = defineStore('queue', () => {
       runningTasks.value = toClassAll(queue.Running)
       pendingTasks.value = toClassAll(queue.Pending)
 
+      const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+      appearedTasks.forEach((task) => {
+        const pid = String(task.promptId)
+        if (!(pid in firstSeenByPromptId.value)) {
+          firstSeenByPromptId.value[pid] = Date.now()
+        }
+      })
+
       const allIndex = new Set<number>(
         history.History.map((item: TaskItem) => item.prompt[0])
       )
@@ -503,11 +512,15 @@ export const useQueueStore = defineStore('queue', () => {
     }
     await Promise.all(targets.map((type) => api.clearItems(type)))
     await update()
+    if (targets.includes('queue')) {
+      firstSeenByPromptId.value = {}
+    }
   }
 
   const deleteTask = async (task: TaskItemImpl) => {
     await api.deleteItem(task.apiTaskType, task.promptId)
     await update()
+    delete firstSeenByPromptId.value[String(task.promptId)]
   }
 
   return {
@@ -524,7 +537,8 @@ export const useQueueStore = defineStore('queue', () => {
 
     update,
     clear,
-    delete: deleteTask
+    delete: deleteTask,
+    firstSeenByPromptId
   }
 })
 
