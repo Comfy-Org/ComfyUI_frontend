@@ -6,6 +6,23 @@ interface ShimResult {
   exports: string[]
 }
 
+const SKIP_WARNING_FILES = new Set(['scripts/app', 'scripts/api'])
+
+function getWarningMessage(
+  fileKey: string,
+  shimFileName: string
+): string | null {
+  if (SKIP_WARNING_FILES.has(fileKey)) {
+    return null
+  }
+
+  if (fileKey.startsWith('scripts/ui/')) {
+    return `[ComfyUI Deprecated] Importing from "${shimFileName}" is deprecated and will be removed in v1.34.`
+  }
+
+  return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
+}
+
 function isLegacyFile(id: string): boolean {
   return (
     id.endsWith('.ts') &&
@@ -63,12 +80,21 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
           const relativePath = path.relative(path.join(projectRoot, 'src'), id)
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
-          const shimComment = `// Shim for ${relativePath}\n`
+          let shimContent = `// Shim for ${relativePath}\n`
+
+          const fileKey = relativePath.replace(/\.ts$/, '').replace(/\\/g, '/')
+          const warningMessage = getWarningMessage(fileKey, shimFileName)
+
+          if (warningMessage) {
+            shimContent += `console.warn('${warningMessage}');\n`
+          }
+
+          shimContent += result.exports.join('')
 
           this.emitFile({
             type: 'asset',
             fileName: shimFileName,
-            source: shimComment + result.exports.join('')
+            source: shimContent
           })
         }
 
