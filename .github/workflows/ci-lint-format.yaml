@@ -37,7 +37,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            .cache
             .eslintcache
             tsconfig.tsbuildinfo
             .prettierCache
