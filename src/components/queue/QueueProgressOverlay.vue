@@ -180,6 +180,7 @@
               class="ml-[var(--spacing-spacing-xs)] flex shrink-0 items-center gap-[var(--spacing-spacing-xs)]"
             >
               <button
+                v-tooltip.top="filterTooltipConfig"
                 class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
                 :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
               >
@@ -188,6 +189,7 @@
                 />
               </button>
               <button
+                v-tooltip.top="sortTooltipConfig"
                 class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
                 :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
               >
@@ -666,6 +668,34 @@ const isJobInitializing = (promptId: string | number | undefined) =>
 const morePopoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const moreTooltipConfig = computed(() => ({
   value: t('g.more'),
+  showDelay: 300,
+  hideDelay: 0,
+  pt: {
+    text: {
+      class:
+        'border bg-[var(--color-charcoal-800)] border-[var(--color-slate-300)] rounded-md px-2 py-1 text-xs leading-none shadow-none'
+    },
+    arrow: {
+      class: 'border-t-[var(--color-slate-300)]'
+    }
+  }
+}))
+const filterTooltipConfig = computed(() => ({
+  value: t('sideToolbar.queueProgressOverlay.filterBy'),
+  showDelay: 300,
+  hideDelay: 0,
+  pt: {
+    text: {
+      class:
+        'border bg-[var(--color-charcoal-800)] border-[var(--color-slate-300)] rounded-md px-2 py-1 text-xs leading-none shadow-none'
+    },
+    arrow: {
+      class: 'border-t-[var(--color-slate-300)]'
+    }
+  }
+}))
+const sortTooltipConfig = computed(() => ({
+  value: t('sideToolbar.queueProgressOverlay.sortBy'),
   showDelay: 300,
   hideDelay: 0,
   pt: {
