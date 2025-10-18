@@ -21,6 +21,7 @@ test.describe('Vue Node Bypass', () => {
 
     const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
     await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
+    await comfyPage.page.mouse.click(400, 300)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-bypassed-state.png'
