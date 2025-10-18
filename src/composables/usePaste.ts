@@ -7,6 +7,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import { isEventTargetInGraph } from '@/workbench/eventHelpers'
 
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
@@ -38,14 +39,10 @@ export const usePaste = () => {
   }
 
   useEventListener(document, 'paste', async (e) => {
-    const isTargetInGraph =
-      e.target instanceof Element &&
-      (e.target.classList.contains('litegraph') ||
-        e.target.classList.contains('graph-canvas-container') ||
-        e.target.id === 'graph-canvas')
-
-    // If the target is not in the graph, we don't want to handle the paste event
-    if (!isTargetInGraph) return
+    // Check if target is graph canvas or within graph UI (minimap, controls, etc.)
+    if (!isEventTargetInGraph(e.target)) {
+      return
+    }
 
     // ctrl+shift+v is used to paste nodes with connections
     // this is handled by litegraph

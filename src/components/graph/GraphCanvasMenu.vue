@@ -10,6 +10,7 @@
     ></div>
 
     <ButtonGroup
+      id="graph-canvas-controls"
       class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-node-border bg-interface-panel-surface p-2"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
