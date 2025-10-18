@@ -658,6 +658,8 @@
       "clearHistory": "Clear job queue history",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
+      "filterAllWorkflows": "All workflows",
+      "filterCurrentWorkflow": "Current workflow",
       "sortJobs": "Sort jobs",
       "sortBy": "Sort by",
       "activeJobsSuffix": "active jobs",

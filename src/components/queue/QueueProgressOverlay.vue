@@ -181,13 +181,79 @@
             >
               <button
                 v-tooltip.top="filterTooltipConfig"
-                class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+                class="relative inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
                 :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+                @click="onFilterClick"
               >
                 <i
                   class="icon-[lucide--list-filter] block size-4 leading-none text-white"
                 />
+                <span
+                  v-if="selectedWorkflowFilter !== 'all'"
+                  class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-black dark-theme:bg-white"
+                />
               </button>
+              <Popover
+                ref="filterPopoverRef"
+                :dismissable="true"
+                :close-on-escape="true"
+                unstyled
+                :pt="{
+                  root: { class: 'absolute z-50' },
+                  content: {
+                    class: [
+                      'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
+                    ]
+                  }
+                }"
+                @hide="isFilterOpen = false"
+              >
+                <div
+                  class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)]"
+                >
+                  <button
+                    class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+                    :aria-label="
+                      t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
+                    "
+                    @click="selectWorkflowFilter('all')"
+                  >
+                    <span>{{
+                      t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
+                    }}</span>
+                    <span class="ml-auto inline-flex items-center">
+                      <i
+                        v-if="selectedWorkflowFilter === 'all'"
+                        class="icon-[lucide--check] block size-4 leading-none text-white"
+                      />
+                    </span>
+                  </button>
+                  <div
+                    class="mx-[var(--spacing-spacing-xs)] mt-[var(--spacing-spacing-xxs)] h-px"
+                  />
+                  <button
+                    class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+                    :aria-label="
+                      t(
+                        'sideToolbar.queueProgressOverlay.filterCurrentWorkflow'
+                      )
+                    "
+                    @click="selectWorkflowFilter('current')"
+                  >
+                    <span>{{
+                      t(
+                        'sideToolbar.queueProgressOverlay.filterCurrentWorkflow'
+                      )
+                    }}</span>
+                    <span class="ml-auto inline-flex items-center">
+                      <i
+                        v-if="selectedWorkflowFilter === 'current'"
+                        class="icon-[lucide--check] block size-4 leading-none text-white"
+                      />
+                    </span>
+                  </button>
+                </div>
+              </Popover>
               <button
                 v-tooltip.top="sortTooltipConfig"
                 class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
@@ -344,6 +410,7 @@ import { useI18n } from 'vue-i18n'
 
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
 import { st } from '@/i18n'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -354,6 +421,7 @@ const { t, locale } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
+const workflowStore = useWorkflowStore()
 
 /** Temporary: toggle stub active progress with '+' key for testing */
 const forceActiveStub = ref(false)
@@ -478,6 +546,7 @@ const tabLabel = (tab: (typeof jobTabs)[number]) => {
   return t('g.failed')
 }
 const selectedJobTab = ref<(typeof jobTabs)[number]>('All')
+const selectedWorkflowFilter = ref<'all' | 'current'>('all')
 
 type JobListItem = {
   id: string
@@ -562,18 +631,22 @@ const allTasksSorted = computed(() => {
 })
 
 const filteredTasks = computed(() => {
+  let tasks = allTasksSorted.value
   if (selectedJobTab.value === 'Completed') {
-    return allTasksSorted.value.filter(
-      (t) => deriveStateFromTask(t) === 'completed'
-    )
+    tasks = tasks.filter((t) => deriveStateFromTask(t) === 'completed')
+  } else if (selectedJobTab.value === 'Failed') {
+    tasks = tasks.filter((t) => deriveStateFromTask(t) === 'failed')
   }
-  if (selectedJobTab.value === 'Failed') {
-    return allTasksSorted.value.filter((t) => {
-      const s = deriveStateFromTask(t)
-      return s === 'failed'
+
+  if (selectedWorkflowFilter.value === 'current') {
+    const activeId = workflowStore.activeWorkflow?.activeState?.id
+    if (!activeId) return []
+    tasks = tasks.filter((t: any) => {
+      const wid = t.workflow?.id
+      return !!wid && wid === activeId
     })
   }
-  return allTasksSorted.value
+  return tasks
 })
 
 const jobItems = computed<JobListItem[]>(() =>
@@ -787,6 +860,19 @@ const sortTooltipConfig = computed(() => ({
     }
   }
 }))
+const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const isFilterOpen = ref(false)
+const onFilterClick = (event: Event) => {
+  if (filterPopoverRef.value) {
+    filterPopoverRef.value.toggle(event)
+    isFilterOpen.value = !isFilterOpen.value
+  }
+}
+const selectWorkflowFilter = (value: 'all' | 'current') => {
+  selectedWorkflowFilter.value = value
+  filterPopoverRef.value?.hide()
+  isFilterOpen.value = false
+}
 const onMoreClick = (event: Event) => {
   if (morePopoverRef.value) {
     morePopoverRef.value.toggle(event)
