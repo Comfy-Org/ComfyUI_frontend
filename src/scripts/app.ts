@@ -16,6 +16,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -336,6 +337,7 @@ export class ComfyApp {
   }
 
   getRandParam() {
+    if (isCloud) return ''
     return '&rand=' + Math.random()
   }
 
