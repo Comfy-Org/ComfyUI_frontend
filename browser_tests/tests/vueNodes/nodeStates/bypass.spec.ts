@@ -15,7 +15,6 @@ test.describe('Vue Node Bypass', () => {
   test('should allow toggling bypass on a selected node with hotkey', async ({
     comfyPage
   }) => {
-    await comfyPage.setup()
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
 
