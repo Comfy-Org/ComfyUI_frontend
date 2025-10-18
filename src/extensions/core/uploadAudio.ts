@@ -253,7 +253,7 @@ app.registerExtension({
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
-        audioUIWidget.options.canvasOnly = true
+        audioUIWidget.options.canvasOnly = false
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
@@ -376,10 +376,12 @@ app.registerExtension({
               mediaRecorder.stop()
             }
           },
-          { serialize: false, canvasOnly: true }
+          { serialize: false, canvasOnly: false }
         )
 
         recordWidget.label = t('g.startRecording')
+        // Override the type for Vue rendering while keeping 'button' for LiteGraph
+        recordWidget.type = 'audiorecord'
 
         const originalOnRemoved = node.onRemoved
         node.onRemoved = function () {

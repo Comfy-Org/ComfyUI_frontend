@@ -183,9 +183,15 @@ catalogs:
     lint-staged:
       specifier: ^15.2.7
       version: 15.2.7
+    markdown-table:
+      specifier: ^3.0.4
+      version: 3.0.4
     nx:
       specifier: 21.4.1
       version: 21.4.1
+    picocolors:
+      specifier: ^1.1.1
+      version: 1.1.1
     pinia:
       specifier: ^2.1.7
       version: 2.2.2
@@ -195,6 +201,9 @@ catalogs:
     prettier:
       specifier: ^3.6.2
       version: 3.6.2
+    pretty-bytes:
+      specifier: ^7.1.0
+      version: 7.1.0
     primeicons:
       specifier: ^7.0.0
       version: 7.0.0
@@ -254,7 +263,7 @@ catalogs:
       version: 3.5.13
     vue-component-type-helpers:
       specifier: ^3.0.7
-      version: 3.1.0
+      version: 3.1.1
     vue-eslint-parser:
       specifier: ^10.2.0
       version: 10.2.0
@@ -585,15 +594,24 @@ importers:
       lint-staged:
         specifier: 'catalog:'
         version: 15.2.7
+      markdown-table:
+        specifier: 'catalog:'
+        version: 3.0.4
       nx:
         specifier: 'catalog:'
         version: 21.4.1
+      picocolors:
+        specifier: 'catalog:'
+        version: 1.1.1
       postcss-html:
         specifier: 'catalog:'
         version: 1.8.0
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      pretty-bytes:
+        specifier: 'catalog:'
+        version: 7.1.0
       rollup-plugin-visualizer:
         specifier: 'catalog:'
         version: 6.0.4(rollup@4.22.4)
@@ -647,7 +665,7 @@ importers:
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.14.10)(@vitest/ui@3.2.4)(happy-dom@15.11.0)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.2)
       vue-component-type-helpers:
         specifier: 'catalog:'
-        version: 3.1.0
+        version: 3.1.1
       vue-eslint-parser:
         specifier: 'catalog:'
         version: 10.2.0(eslint@9.35.0(jiti@2.4.2))
@@ -4892,9 +4910,6 @@ packages:
   get-tsconfig@4.10.1:
     resolution: {integrity: sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ==}
 
-  get-tsconfig@4.7.5:
-    resolution: {integrity: sha512-ZCuZCnlqNzjb4QprAzXKdpp/gh6KTxSJuw3IBsPnV/7fV4NxC9ckB+vPTt8w7fJA0TaSD7c55BR47JD6MEDyDw==}
-
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
     engines: {node: '>= 6'}
@@ -5999,11 +6014,6 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  nanoid@3.3.8:
-    resolution: {integrity: sha512-WNLf5Sd8oZxOm+TzppcYk8gVOgP+l58xNy58D0nbUnOxOWRWvlcCV4kUF7ltmI6PsrLl/BgKEyS4mqsGChFN0w==}
-    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
   nanoid@5.1.5:
     resolution: {integrity: sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw==}
     engines: {node: ^18 || >=20}
@@ -6351,10 +6361,6 @@ packages:
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
-  postcss@8.5.1:
-    resolution: {integrity: sha512-6oz2beyjc5VMn/KV1pPw8fliQkhBXrVn1Z3TVyqZxU8kZpzEKhBdmCFqI6ZbmGtamQvQGuU1sgPTk8ZrXDD7jQ==}
-    engines: {node: ^10 || ^12 || >=14}
-
   postcss@8.5.6:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
@@ -6371,6 +6377,10 @@ packages:
     resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
     engines: {node: '>=14'}
     hasBin: true
+
+  pretty-bytes@7.1.0:
+    resolution: {integrity: sha512-nODzvTiYVRGRqAOvE84Vk5JDPyyxsVk0/fbA/bq7RqlnhksGpset09XTxbpvLTIjoaF7K8Z8DG8yHtKGTPSYRw==}
+    engines: {node: '>=20'}
 
   pretty-format@27.5.1:
     resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}
@@ -7472,9 +7482,6 @@ packages:
 
   vue-component-type-helpers@2.2.12:
     resolution: {integrity: sha512-YbGqHZ5/eW4SnkPNR44mKVc6ZKQoRs/Rux1sxC6rdwXb4qpbOSYfDr9DsTHolOTGmIKgM9j141mZbBeg05R1pw==}
-
-  vue-component-type-helpers@3.1.0:
-    resolution: {integrity: sha512-cC1pYNRZkSS1iCvdlaMbbg2sjDwxX098FucEjtz9Yig73zYjWzQsnMe5M9H8dRNv55hAIDGUI29hF2BEUA4FMQ==}
 
   vue-component-type-helpers@3.1.1:
     resolution: {integrity: sha512-B0kHv7qX6E7+kdc5nsaqjdGZ1KwNKSUQDWGy7XkTYT7wFsOpkEyaJ1Vq79TjwrrtuLRgizrTV7PPuC4rRQo+vw==}
@@ -12585,10 +12592,6 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  get-tsconfig@4.7.5:
-    dependencies:
-      resolve-pkg-maps: 1.0.0
-
   glob-parent@5.1.2:
     dependencies:
       is-glob: 4.0.3
@@ -13883,8 +13886,6 @@ snapshots:
 
   nanoid@3.3.11: {}
 
-  nanoid@3.3.8: {}
-
   nanoid@5.1.5: {}
 
   napi-postinstall@0.3.3: {}
@@ -14264,14 +14265,14 @@ snapshots:
     dependencies:
       htmlparser2: 8.0.2
       js-tokens: 9.0.1
-      postcss: 8.5.1
-      postcss-safe-parser: 6.0.0(postcss@8.5.1)
+      postcss: 8.5.6
+      postcss-safe-parser: 6.0.0(postcss@8.5.6)
 
   postcss-resolve-nested-selector@0.1.6: {}
 
-  postcss-safe-parser@6.0.0(postcss@8.5.1):
+  postcss-safe-parser@6.0.0(postcss@8.5.6):
     dependencies:
-      postcss: 8.5.1
+      postcss: 8.5.6
 
   postcss-safe-parser@7.0.1(postcss@8.5.6):
     dependencies:
@@ -14289,12 +14290,6 @@ snapshots:
 
   postcss-value-parser@4.2.0: {}
 
-  postcss@8.5.1:
-    dependencies:
-      nanoid: 3.3.8
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
-
   postcss@8.5.6:
     dependencies:
       nanoid: 3.3.11
@@ -14308,6 +14303,8 @@ snapshots:
       fast-diff: 1.3.0
 
   prettier@3.6.2: {}
+
+  pretty-bytes@7.1.0: {}
 
   pretty-format@27.5.1:
     dependencies:
@@ -15321,7 +15318,7 @@ snapshots:
   tsx@4.19.4:
     dependencies:
       esbuild: 0.25.5
-      get-tsconfig: 4.7.5
+      get-tsconfig: 4.10.1
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -15673,7 +15670,7 @@ snapshots:
   vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2):
     dependencies:
       esbuild: 0.21.5
-      postcss: 8.5.1
+      postcss: 8.5.6
       rollup: 4.22.4
     optionalDependencies:
       '@types/node': 20.14.10
@@ -15737,8 +15734,6 @@ snapshots:
       typescript: 5.9.2
 
   vue-component-type-helpers@2.2.12: {}
-
-  vue-component-type-helpers@3.1.0: {}
 
   vue-component-type-helpers@3.1.1: {}
 

@@ -55,6 +55,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+          ENABLE_MINIFY: 'true'
           USE_PROD_CONFIG: 'true'
         run: |
           pnpm install --frozen-lockfile

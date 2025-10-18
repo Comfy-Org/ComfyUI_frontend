@@ -254,5 +254,17 @@ export default defineConfig([
     rules: {
       'no-console': 'off'
     }
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
+      'no-console': 'off'
+    }
   }
 ])
