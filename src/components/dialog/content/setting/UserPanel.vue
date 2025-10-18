@@ -67,10 +67,10 @@
           />
           <Button
             v-if="!isApiKeyLogin"
-            class="w-32"
+            class="w-fit"
+            variant="text"
             severity="danger"
             :label="$t('auth.deleteAccount.deleteAccount')"
-            icon="pi pi-trash"
             @click="handleDeleteAccount"
           />
         </div>
