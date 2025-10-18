@@ -37,6 +37,7 @@
           </IconButton>
         </div>
 
+        <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
