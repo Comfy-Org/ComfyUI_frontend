@@ -36,13 +36,70 @@
           </div>
           <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
             <button
+              v-tooltip.top="moreTooltipConfig"
               class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
               :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
+              @click="onMoreClick"
             >
               <i
                 class="icon-[lucide--more-horizontal] block size-4 leading-none text-[var(--color-text-secondary)]"
               />
             </button>
+            <Popover
+              ref="morePopoverRef"
+              :dismissable="true"
+              :close-on-escape="true"
+              unstyled
+              :pt="{
+                root: { class: 'absolute z-50' },
+                content: {
+                  class: [
+                    'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
+                  ]
+                }
+              }"
+              @hide="isMoreOpen = false"
+            >
+              <div
+                class="flex flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)]"
+              >
+                <button
+                  class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+                  :aria-label="
+                    t('sideToolbar.queueProgressOverlay.showAssetsPanel')
+                  "
+                  @click="onShowAssetsFromMenu"
+                >
+                  <i-comfy:image-ai-edit
+                    class="block size-4 shrink-0 leading-none"
+                    aria-hidden="true"
+                  />
+                  <span>{{
+                    t('sideToolbar.queueProgressOverlay.showAssetsPanel')
+                  }}</span>
+                </button>
+                <div
+                  class="mx-[var(--spacing-spacing-xs)] my-[var(--spacing-spacing-xxs)] h-px bg-[var(--color-charcoal-400)]"
+                />
+                <button
+                  class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+                  :aria-label="
+                    t('sideToolbar.queueProgressOverlay.clearHistory')
+                  "
+                  @click="onClearHistoryFromMenu"
+                >
+                  <i
+                    class="icon-[lucide--history] block size-4 leading-none text-white"
+                  />
+                  <span>{{
+                    t('sideToolbar.queueProgressOverlay.clearHistory')
+                  }}</span>
+                </button>
+                <div
+                  class="mx-[var(--spacing-spacing-xs)] mt-[var(--spacing-spacing-xxs)] h-px bg-[var(--color-charcoal-400)]"
+                />
+              </div>
+            </Popover>
             <button
               class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
               :aria-label="t('g.close')"
@@ -268,6 +325,7 @@
 </template>
 
 <script setup lang="ts">
+import Popover from 'primevue/popover'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -302,6 +360,7 @@ onBeforeUnmount(() => {
 })
 const isHovered = ref(false)
 const isExpanded = ref(false)
+const isMoreOpen = ref(false)
 const containerClass = computed(() =>
   showBackground.value
     ? 'border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md'
@@ -603,4 +662,36 @@ const interruptAll = async () => {
 /** Determines if a job is currently in initialization */
 const isJobInitializing = (promptId: string | number | undefined) =>
   executionStore.isPromptInitializing(promptId)
+
+const morePopoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const moreTooltipConfig = computed(() => ({
+  value: t('g.more'),
+  showDelay: 300,
+  hideDelay: 0,
+  pt: {
+    text: {
+      class:
+        'border bg-[var(--color-charcoal-800)] border-[var(--color-slate-300)] rounded-md px-2 py-1 text-xs leading-none shadow-none'
+    },
+    arrow: {
+      class: 'border-t-[var(--color-slate-300)]'
+    }
+  }
+}))
+const onMoreClick = (event: Event) => {
+  if (morePopoverRef.value) {
+    morePopoverRef.value.toggle(event)
+    isMoreOpen.value = !isMoreOpen.value
+  }
+}
+const onShowAssetsFromMenu = () => {
+  openQueueSidebar()
+  morePopoverRef.value?.hide()
+  isMoreOpen.value = false
+}
+const onClearHistoryFromMenu = async () => {
+  await queueStore.clear(['history'])
+  morePopoverRef.value?.hide()
+  isMoreOpen.value = false
+}
 </script>
