@@ -21,8 +21,8 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isOutputNode } from '@/utils/nodeFilterUtil'
 
 import { getAudioUrlFromPath } from '../utils/audioUtils'
-import WidgetSelect from './WidgetSelect.vue'
 import AudioPreviewPlayer from './audio/AudioPreviewPlayer.vue'
+import WidgetSelect from './WidgetSelect.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>

@@ -130,8 +130,14 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, nextTick, onMounted, ref } from 'vue'
-import type { CSSProperties, Component } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  type Component,
+  type CSSProperties
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'

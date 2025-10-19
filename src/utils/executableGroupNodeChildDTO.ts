@@ -1,11 +1,11 @@
 import type { GroupNodeHandler } from '@/extensions/core/groupNode'
-import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
-import type {
-  ExecutableLGraphNode,
-  ExecutionId,
-  LGraphNode,
-  NodeId,
-  SubgraphNode
+import {
+  ExecutableNodeDTO,
+  type ExecutableLGraphNode,
+  type ExecutionId,
+  type LGraphNode,
+  type NodeId,
+  type SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 
 export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {

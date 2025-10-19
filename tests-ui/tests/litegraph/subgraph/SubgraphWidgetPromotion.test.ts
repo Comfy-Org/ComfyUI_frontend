@@ -1,10 +1,13 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it } from 'vitest'
 
-import type { ISlotType, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { TWidgetType } from '@/lib/litegraph/src/litegraph'
-import { BaseWidget } from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LGraphNode,
+  type ISlotType,
+  type Subgraph,
+  type TWidgetType
+} from '@/lib/litegraph/src/litegraph'
 
 import {
   createEventCapture,

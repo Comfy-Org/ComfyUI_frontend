@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
-  createAssetWithSpecificBaseModel,
-  createAssetWithSpecificExtension,
   createAssetWithoutBaseModel,
   createAssetWithoutExtension,
-  createAssetWithoutUserMetadata
+  createAssetWithoutUserMetadata,
+  createAssetWithSpecificBaseModel,
+  createAssetWithSpecificExtension
 } from '@/platform/assets/fixtures/ui-mock-assets'
 
 describe('useAssetFilterOptions', () => {

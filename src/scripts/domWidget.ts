@@ -1,10 +1,10 @@
 import _ from 'es-toolkit/compat'
-import { type Component, toRaw } from 'vue'
+import { toRaw, type Component } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
-  LGraphNode,
   LegacyWidget,
+  LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type {

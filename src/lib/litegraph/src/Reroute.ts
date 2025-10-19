@@ -1,10 +1,6 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
-import { LGraphBadge } from './LGraphBadge'
-import type { LGraphNode, NodeId } from './LGraphNode'
-import { LLink } from './LLink'
-import type { LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -13,9 +9,12 @@ import type {
   LinkSegment,
   Point,
   Positionable,
-  ReadOnlyRect,
-  ReadonlyLinkNetwork
+  ReadonlyLinkNetwork,
+  ReadOnlyRect
 } from './interfaces'
+import { LGraphBadge } from './LGraphBadge'
+import type { LGraphNode, NodeId } from './LGraphNode'
+import { LLink, type LinkId } from './LLink'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
 

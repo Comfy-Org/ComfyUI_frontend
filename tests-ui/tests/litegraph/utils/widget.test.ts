@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/litegraph'
-import { getWidgetStep } from '@/lib/litegraph/src/litegraph'
+import {
+  getWidgetStep,
+  type IWidgetOptions
+} from '@/lib/litegraph/src/litegraph'
 
 describe('getWidgetStep', () => {
   test('should return step2 when available', () => {

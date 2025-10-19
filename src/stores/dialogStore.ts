@@ -3,8 +3,7 @@
 import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
-import { markRaw, ref } from 'vue'
-import type { Component } from 'vue'
+import { markRaw, ref, type Component } from 'vue'
 
 import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 

@@ -2,12 +2,13 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
-import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
+import AssetFilterBar, {
+  type FilterState
+} from '@/platform/assets/components/AssetFilterBar.vue'
 import {
+  createAssetWithoutBaseModel,
   createAssetWithSpecificBaseModel,
-  createAssetWithSpecificExtension,
-  createAssetWithoutBaseModel
+  createAssetWithSpecificExtension
 } from '@/platform/assets/fixtures/ui-mock-assets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 

@@ -2,10 +2,10 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import {
-  createAssetWithSpecificBaseModel,
-  createAssetWithSpecificExtension,
   createAssetWithoutBaseModel,
-  createAssetWithoutExtension
+  createAssetWithoutExtension,
+  createAssetWithSpecificBaseModel,
+  createAssetWithSpecificExtension
 } from '@/platform/assets/fixtures/ui-mock-assets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 

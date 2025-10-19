@@ -1,11 +1,11 @@
 import {
-  type MockedFunction,
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  vi
+  vi,
+  type MockedFunction
 } from 'vitest'
 import { ref } from 'vue'
 

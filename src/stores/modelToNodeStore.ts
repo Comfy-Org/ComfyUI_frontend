@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore, type ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 /** Helper class that defines how to construct a node from a model. */
 export class ModelNodeProvider {

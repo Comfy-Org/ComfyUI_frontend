@@ -6,8 +6,8 @@ import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
-  KeyComboImpl,
   KeybindingImpl,
+  KeyComboImpl,
   useKeybindingStore
 } from '@/stores/keybindingStore'
 

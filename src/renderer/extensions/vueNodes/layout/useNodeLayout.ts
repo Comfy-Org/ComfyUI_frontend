@@ -1,13 +1,22 @@
 import { storeToRefs } from 'pinia'
-import { computed, inject, ref, toValue } from 'vue'
-import type { CSSProperties, MaybeRefOrGetter } from 'vue'
+import {
+  computed,
+  inject,
+  ref,
+  toValue,
+  type CSSProperties,
+  type MaybeRefOrGetter
+} from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
+import {
+  LayoutSource,
+  type NodeBoundsUpdate,
+  type Point
+} from '@/renderer/core/layout/types'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 

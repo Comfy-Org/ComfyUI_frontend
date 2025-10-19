@@ -2,27 +2,18 @@ import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
-  calculateOutputSlotPos
+  calculateOutputSlotPos,
+  type SlotPositionContext
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { adjustColor } from '@/utils/colorUtil'
-import type { ColorAdjustOptions } from '@/utils/colorUtil'
+import { adjustColor, type ColorAdjustOptions } from '@/utils/colorUtil'
 
-import type { DragAndScale } from './DragAndScale'
-import type { LGraph } from './LGraph'
-import { BadgePosition, LGraphBadge } from './LGraphBadge'
-import { LGraphButton } from './LGraphButton'
-import type { LGraphButtonOptions } from './LGraphButton'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LLink } from './LLink'
-import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
+import type { DragAndScale } from './DragAndScale'
 import type { IDrawBoundingOptions } from './draw'
 import { NullGraphError } from './infrastructure/NullGraphError'
-import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
-import { Rectangle } from './infrastructure/Rectangle'
+import { Rectangle, type ReadOnlyRectangle } from './infrastructure/Rectangle'
 import type {
   ColorOption,
   CompassCorners,
@@ -44,8 +35,17 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import { LiteGraph } from './litegraph'
-import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
+import type { LGraph } from './LGraph'
+import { BadgePosition, LGraphBadge } from './LGraphBadge'
+import { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
+import { LGraphCanvas } from './LGraphCanvas'
+import {
+  LiteGraph,
+  type LGraphNodeConstructor,
+  type Subgraph,
+  type SubgraphNode
+} from './litegraph'
+import { LLink } from './LLink'
 import {
   createBounds,
   isInRect,
@@ -61,9 +61,9 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
+import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
 import {
   LGraphEventMode,
@@ -71,6 +71,7 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
+import type { NodeLike } from './types/NodeLike'
 import type { ISerialisedNode, SubgraphIO } from './types/serialisation'
 import type {
   IBaseWidget,
@@ -84,8 +85,7 @@ import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { toClass } from './utils/type'
 import { BaseWidget } from './widgets/BaseWidget'
-import { toConcreteWidget } from './widgets/widgetMap'
-import type { WidgetTypeMap } from './widgets/widgetMap'
+import { toConcreteWidget, type WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 

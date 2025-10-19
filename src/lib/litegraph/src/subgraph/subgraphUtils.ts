@@ -1,9 +1,3 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
-import { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -13,7 +7,12 @@ import type {
   INodeOutputSlot,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { createUuidv4, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type {
   ISerialisedNode,

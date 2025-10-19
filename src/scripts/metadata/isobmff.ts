@@ -4,8 +4,8 @@ import {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   ASCII,
-  type ComfyMetadata,
   ComfyMetadataTags,
+  type ComfyMetadata,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
 

@@ -1,7 +1,6 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
-import type { Raw } from 'vue'
+import { computed, markRaw, ref, shallowRef, watch, type Raw } from 'vue'
 
 import { t } from '@/i18n'
 import type {
@@ -20,12 +19,13 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { UserFile } from '@/stores/userFileStore'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
   createNodeLocatorId,
   parseNodeExecutionId,
-  parseNodeLocatorId
+  parseNodeLocatorId,
+  type NodeExecutionId,
+  type NodeLocatorId
 } from '@/types/nodeIdentification'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'

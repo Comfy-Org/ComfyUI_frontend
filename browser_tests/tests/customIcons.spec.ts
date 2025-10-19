@@ -1,5 +1,4 @@
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
+import { expect, type Locator } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 

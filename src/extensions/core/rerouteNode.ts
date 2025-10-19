@@ -1,8 +1,8 @@
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  type IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'

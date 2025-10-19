@@ -134,12 +134,12 @@ import { cn } from '@/utils/tailwindUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
-import type {
-  AssetContext,
-  AssetMeta,
-  MediaKind
+import {
+  MediaAssetKey,
+  type AssetContext,
+  type AssetMeta,
+  type MediaKind
 } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetActions from './MediaAssetActions.vue'
 
 const mediaComponents = {

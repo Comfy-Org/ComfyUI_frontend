@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import { getNodeSource, NodeSourceType } from '@/types/nodeSource'
 
 describe('getNodeSource', () => {
   it('should return UNKNOWN_NODE_SOURCE when python_module is undefined', () => {

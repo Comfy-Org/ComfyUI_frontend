@@ -142,14 +142,14 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import {
-  KeyComboImpl,
   KeybindingImpl,
+  KeyComboImpl,
   useKeybindingStore
 } from '@/stores/keybindingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
+import PanelTemplate from './PanelTemplate.vue'
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }

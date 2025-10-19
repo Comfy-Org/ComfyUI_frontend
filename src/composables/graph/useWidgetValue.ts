@@ -2,8 +2,7 @@
  * Composable for managing widget value synchronization between Vue and LiteGraph
  * Provides consistent pattern for immediate UI updates and LiteGraph callbacks
  */
-import { ref, watch } from 'vue'
-import type { Ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 

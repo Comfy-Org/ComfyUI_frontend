@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import MultiSelect from 'primevue/multiselect'
-import type { MultiSelectProps } from 'primevue/multiselect'
+import MultiSelect, { type MultiSelectProps } from 'primevue/multiselect'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'

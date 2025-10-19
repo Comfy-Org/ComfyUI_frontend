@@ -50,18 +50,15 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
-import type { Raw } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, type Raw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type {
-  ColorOption as CanvasColorOption,
-  Positionable
-} from '@/lib/litegraph/src/litegraph'
 import {
+  isColorable,
   LGraphCanvas,
   LiteGraph,
-  isColorable
+  type ColorOption as CanvasColorOption,
+  type Positionable
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

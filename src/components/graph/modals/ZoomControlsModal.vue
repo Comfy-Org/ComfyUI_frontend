@@ -68,8 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import type { InputNumberInputEvent } from 'primevue'
-import { InputNumber } from 'primevue'
+import { InputNumber, type InputNumberInputEvent } from 'primevue'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

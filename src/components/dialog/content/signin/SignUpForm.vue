@@ -59,16 +59,14 @@
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form, FormField } from '@primevue/forms'
+import { Form, FormField, type FormSubmitEvent } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import { useI18n } from 'vue-i18n'
 
-import { signUpSchema } from '@/schemas/signInSchema'
-import type { SignUpData } from '@/schemas/signInSchema'
+import { signUpSchema, type SignUpData } from '@/schemas/signInSchema'
 
 import PasswordFields from './PasswordFields.vue'
 

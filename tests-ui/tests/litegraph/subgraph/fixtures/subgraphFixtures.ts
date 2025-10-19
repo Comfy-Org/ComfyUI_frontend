@@ -5,8 +5,7 @@
  * in their test files. Each fixture provides a clean, pre-configured subgraph
  * setup for different testing scenarios.
  */
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, type Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
 import { test } from '../../core/fixtures/testExtensions'

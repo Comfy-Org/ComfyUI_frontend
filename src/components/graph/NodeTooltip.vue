@@ -15,9 +15,9 @@ import { nextTick, ref } from 'vue'
 
 import { st } from '@/i18n'
 import {
-  LiteGraph,
   isOverNodeInput,
-  isOverNodeOutput
+  isOverNodeOutput,
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app as comfyApp } from '@/scripts/app'

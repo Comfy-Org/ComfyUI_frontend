@@ -1,7 +1,9 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import { createPinia } from 'pinia'
+
 import 'primeicons/primeicons.css'
+
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
@@ -9,7 +11,9 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 
 import App from './App.vue'
+
 import './assets/css/style.css'
+
 import { i18n } from './i18n'
 import router from './router'
 

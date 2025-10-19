@@ -1,5 +1,4 @@
-import { computed } from 'vue'
-import type { ComputedRef } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 

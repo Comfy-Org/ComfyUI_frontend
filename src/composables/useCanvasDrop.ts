@@ -2,15 +2,16 @@ import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, type LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { ComfyModelDef } from '@/stores/modelStore'
-import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import {
+  useModelToNodeStore,
+  type ModelNodeProvider
+} from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 

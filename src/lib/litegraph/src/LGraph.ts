@@ -4,21 +4,15 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import {
+  createUuidv4,
+  zeroUuid,
+  type UUID
+} from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScaleState } from './DragAndScale'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
-import type { NodeId } from './LGraphNode'
-import { LLink } from './LLink'
-import type { LinkId } from './LLink'
-import { MapProxyHandler } from './MapProxyHandler'
-import { Reroute } from './Reroute'
-import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
@@ -37,12 +31,18 @@ import type {
   Positionable,
   Size
 } from './interfaces'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode, type NodeId } from './LGraphNode'
 import { LiteGraph, SubgraphNode } from './litegraph'
+import { LLink, type LinkId } from './LLink'
+import { MapProxyHandler } from './MapProxyHandler'
 import {
   alignOutsideContainer,
   alignToContainer,
   createBounds
 } from './measure'
+import { Reroute, type RerouteId } from './Reroute'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'

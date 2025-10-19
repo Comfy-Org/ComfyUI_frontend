@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import {
-  REROUTE_RADIUS,
   boundsIntersect,
   calculateBounds,
-  pointInBounds
+  pointInBounds,
+  REROUTE_RADIUS
 } from '@/renderer/core/layout/utils/layoutMath'
 
 describe('layoutMath utils', () => {

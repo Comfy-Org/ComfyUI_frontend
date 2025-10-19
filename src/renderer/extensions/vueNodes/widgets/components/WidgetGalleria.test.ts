@@ -1,14 +1,15 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import Galleria from 'primevue/galleria'
-import type { GalleriaProps } from 'primevue/galleria'
+import Galleria, { type GalleriaProps } from 'primevue/galleria'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetGalleria from './WidgetGalleria.vue'
-import type { GalleryImage, GalleryValue } from './WidgetGalleria.vue'
+import WidgetGalleria, {
+  type GalleryImage,
+  type GalleryValue
+} from './WidgetGalleria.vue'
 
 const i18n = createI18n({
   legacy: false,

@@ -1,5 +1,4 @@
-import type { AxiosError, AxiosResponse } from 'axios'
-import axios from 'axios'
+import axios, { type AxiosError, type AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'

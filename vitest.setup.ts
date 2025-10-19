@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+
 import 'vue'
 
 // Define global variables for tests

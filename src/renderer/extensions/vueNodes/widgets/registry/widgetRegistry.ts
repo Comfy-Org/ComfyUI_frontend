@@ -5,6 +5,7 @@ import type { Component } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
+import AudioPreviewPlayer from '../components/audio/AudioPreviewPlayer.vue'
 import WidgetAudioUI from '../components/WidgetAudioUI.vue'
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
@@ -23,7 +24,6 @@ import WidgetSelectButton from '../components/WidgetSelectButton.vue'
 import WidgetTextarea from '../components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
 import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
-import AudioPreviewPlayer from '../components/audio/AudioPreviewPlayer.vue'
 
 interface WidgetDefinition {
   component: Component

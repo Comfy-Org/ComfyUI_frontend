@@ -1,7 +1,7 @@
-import type { ComfyPage } from '../fixtures/ComfyPage'
 import {
   comfyExpect as expect,
-  comfyPageFixture as test
+  comfyPageFixture as test,
+  type ComfyPage
 } from '../fixtures/ComfyPage'
 
 async function beforeChange(comfyPage: ComfyPage) {

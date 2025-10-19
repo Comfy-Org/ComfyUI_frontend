@@ -25,8 +25,8 @@ import { MultiSelectWidget } from './MultiSelectWidget'
 import { NumberWidget } from './NumberWidget'
 import { SelectButtonWidget } from './SelectButtonWidget'
 import { SliderWidget } from './SliderWidget'
-import { TextWidget } from './TextWidget'
 import { TextareaWidget } from './TextareaWidget'
+import { TextWidget } from './TextWidget'
 import { TreeSelectWidget } from './TreeSelectWidget'
 
 export type WidgetTypeMap = {

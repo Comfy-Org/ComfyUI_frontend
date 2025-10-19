@@ -3,8 +3,8 @@ import {
   type ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
-  type ComfyMetadata,
   ComfyMetadataTags,
+  type ComfyMetadata,
   type EbmlElementRange,
   type EbmlTagPosition,
   type TextRange,

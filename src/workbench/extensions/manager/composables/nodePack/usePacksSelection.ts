@@ -1,5 +1,4 @@
-import { computed } from 'vue'
-import type { Ref } from 'vue'
+import { computed, type Ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'

@@ -1,5 +1,4 @@
-import { computed } from 'vue'
-import type { CSSProperties, ComputedRef } from 'vue'
+import { computed, type ComputedRef, type CSSProperties } from 'vue'
 
 interface PopoverSizeOptions {
   minWidth?: string

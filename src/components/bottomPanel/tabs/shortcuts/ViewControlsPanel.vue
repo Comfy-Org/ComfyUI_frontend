@@ -13,8 +13,8 @@
 import { computed } from 'vue'
 
 import {
-  VIEW_CONTROLS_CONFIG,
-  useCommandSubcategories
+  useCommandSubcategories,
+  VIEW_CONTROLS_CONFIG
 } from '@/composables/bottomPanelTabs/useCommandSubcategories'
 import { useCommandStore } from '@/stores/commandStore'
 

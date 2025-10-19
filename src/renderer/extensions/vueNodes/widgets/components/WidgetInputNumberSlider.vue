@@ -41,8 +41,8 @@ import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
-  STANDARD_EXCLUDED_PROPS,
-  filterWidgetProps
+  filterWidgetProps,
+  STANDARD_EXCLUDED_PROPS
 } from '@/utils/widgetPropFilter'
 
 import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'

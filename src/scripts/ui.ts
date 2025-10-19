@@ -7,7 +7,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
-import { ComfyApp, app } from './app'
+import { app, ComfyApp } from './app'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'

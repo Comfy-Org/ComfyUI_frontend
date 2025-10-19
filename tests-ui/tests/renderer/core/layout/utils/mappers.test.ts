@@ -3,8 +3,8 @@ import * as Y from 'yjs'
 
 import {
   NODE_LAYOUT_DEFAULTS,
-  type NodeLayoutMap,
-  yNodeToLayout
+  yNodeToLayout,
+  type NodeLayoutMap
 } from '@/renderer/core/layout/utils/mappers'
 
 describe('mappers', () => {

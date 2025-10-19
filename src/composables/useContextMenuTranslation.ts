@@ -1,11 +1,12 @@
 import { st, te } from '@/i18n'
-import type {
-  IContextMenuOptions,
-  IContextMenuValue,
-  INodeInputSlot,
-  IWidget
+import {
+  LGraphCanvas,
+  LiteGraph,
+  type IContextMenuOptions,
+  type IContextMenuValue,
+  type INodeInputSlot,
+  type IWidget
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 /**

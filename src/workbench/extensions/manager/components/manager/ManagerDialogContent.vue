@@ -146,9 +146,9 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import ManagerNavSidebar from '@/workbench/extensions/manager/components/manager/ManagerNavSidebar.vue'
 import InfoPanel from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue'
 import InfoPanelMultiItem from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue'
+import ManagerNavSidebar from '@/workbench/extensions/manager/components/manager/ManagerNavSidebar.vue'
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/workbench/extensions/manager/components/manager/registrySearchBar/RegistrySearchBar.vue'
 import GridSkeleton from '@/workbench/extensions/manager/components/manager/skeleton/GridSkeleton.vue'
@@ -159,8 +159,10 @@ import { useConflictAcknowledgment } from '@/workbench/extensions/manager/compos
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import type { TabItem } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import {
+  ManagerTab,
+  type TabItem
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { initialTab } = defineProps<{
   initialTab?: ManagerTab

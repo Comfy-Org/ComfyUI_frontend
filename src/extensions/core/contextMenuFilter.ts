@@ -1,7 +1,7 @@
 import {
+  isComboWidget,
   LGraphCanvas,
-  LiteGraph,
-  isComboWidget
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'

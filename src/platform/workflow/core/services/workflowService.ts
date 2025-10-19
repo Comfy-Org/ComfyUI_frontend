@@ -1,8 +1,12 @@
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  type Point,
+  type SerialisableGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {

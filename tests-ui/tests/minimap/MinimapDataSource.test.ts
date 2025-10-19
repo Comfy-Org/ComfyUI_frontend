@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { type ComputedRef, computed } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'

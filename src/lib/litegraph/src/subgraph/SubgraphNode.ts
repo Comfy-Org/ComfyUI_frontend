@@ -1,21 +1,22 @@
-import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type {
   ISubgraphInput,
   IWidgetLocator
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  INodeInputSlot,
-  ISlotType,
-  NodeId
+import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import {
+  LGraphNode,
+  type DrawTitleBoxOptions
+} from '@/lib/litegraph/src/LGraphNode'
+import {
+  LiteGraph,
+  type INodeInputSlot,
+  type ISlotType,
+  type NodeId
 } from '@/lib/litegraph/src/litegraph'
+import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import type {
@@ -30,8 +31,11 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 
-import { ExecutableNodeDTO } from './ExecutableNodeDTO'
-import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import {
+  ExecutableNodeDTO,
+  type ExecutableLGraphNode,
+  type ExecutionId
+} from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
 
 const workflowSvg = new Image()

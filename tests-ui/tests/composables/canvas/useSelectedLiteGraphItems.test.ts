@@ -2,11 +2,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
-  type Positionable,
-  Reroute
+  Reroute,
+  type LGraphNode,
+  type Positionable
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'

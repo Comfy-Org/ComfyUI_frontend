@@ -1,4 +1,4 @@
-import { type LGraphCanvas, createBounds } from '@/lib/litegraph/src/litegraph'
+import { createBounds, type LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
 /**

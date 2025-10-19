@@ -80,8 +80,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Tab from 'primevue/tab'
-import type { TabPassThroughMethodOptions } from 'primevue/tab'
+import Tab, { type TabPassThroughMethodOptions } from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import Tabs from 'primevue/tabs'
 import { computed } from 'vue'

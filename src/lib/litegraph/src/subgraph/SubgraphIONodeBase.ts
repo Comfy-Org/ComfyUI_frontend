@@ -1,4 +1,3 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
@@ -9,12 +8,13 @@ import type {
   Point,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  CanvasColour,
-  CanvasPointer,
-  CanvasPointerEvent,
-  IContextMenuValue
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import {
+  LiteGraph,
+  type CanvasColour,
+  type CanvasPointer,
+  type CanvasPointerEvent,
+  type IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'

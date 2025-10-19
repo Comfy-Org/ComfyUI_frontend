@@ -15,19 +15,19 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import { t } from '@/i18n'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import { useDialogStore } from '@/stores/dialogStore'
-import type {
-  DialogComponentProps,
-  ShowDialogOptions
+import {
+  useDialogStore,
+  type DialogComponentProps,
+  type ShowDialogOptions
 } from '@/stores/dialogStore'
-import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
-import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
-import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
 import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
+import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
+import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
+import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =

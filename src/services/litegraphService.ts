@@ -8,18 +8,16 @@ import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtil
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
+  createBounds,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
   RenderShape,
   SubgraphNode,
-  createBounds
-} from '@/lib/litegraph/src/litegraph'
-import type {
-  IContextMenuValue,
-  Point,
-  Subgraph
+  type IContextMenuValue,
+  type Point,
+  type Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,
@@ -39,7 +37,7 @@ import type {
   OutputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyApp, app } from '@/scripts/app'
+import { app, ComfyApp } from '@/scripts/app'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'

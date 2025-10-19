@@ -1,5 +1,9 @@
-import { BaseWidget, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LiteGraph,
+  type CanvasPointer,
+  type LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions

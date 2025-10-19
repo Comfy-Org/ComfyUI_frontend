@@ -1,5 +1,3 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type {
   INodeInputSlot,
@@ -7,9 +5,10 @@ import type {
   OptionalProps,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
-import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
+import type { LinkId } from '@/lib/litegraph/src/LLink'
+import { NodeSlot, type IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'

@@ -5,54 +5,53 @@
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
 import log from 'loglevel'
-import { computed, customRef, ref } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, customRef, ref, type ComputedRef, type Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import type {
-  BatchUpdateBoundsOperation,
-  Bounds,
-  CreateLinkOperation,
-  CreateNodeOperation,
-  CreateRerouteOperation,
-  DeleteLinkOperation,
-  DeleteNodeOperation,
-  DeleteRerouteOperation,
-  LayoutChange,
-  LayoutOperation,
-  LayoutStore,
-  LinkId,
-  LinkLayout,
-  LinkSegmentLayout,
-  MoveNodeOperation,
-  MoveRerouteOperation,
-  NodeBoundsUpdate,
-  NodeId,
-  NodeLayout,
-  Point,
-  RerouteId,
-  RerouteLayout,
-  ResizeNodeOperation,
-  SetNodeZIndexOperation,
-  SlotLayout
+import {
+  LayoutSource,
+  type BatchUpdateBoundsOperation,
+  type Bounds,
+  type CreateLinkOperation,
+  type CreateNodeOperation,
+  type CreateRerouteOperation,
+  type DeleteLinkOperation,
+  type DeleteNodeOperation,
+  type DeleteRerouteOperation,
+  type LayoutChange,
+  type LayoutOperation,
+  type LayoutStore,
+  type LinkId,
+  type LinkLayout,
+  type LinkSegmentLayout,
+  type MoveNodeOperation,
+  type MoveRerouteOperation,
+  type NodeBoundsUpdate,
+  type NodeId,
+  type NodeLayout,
+  type Point,
+  type RerouteId,
+  type RerouteLayout,
+  type ResizeNodeOperation,
+  type SetNodeZIndexOperation,
+  type SlotLayout
 } from '@/renderer/core/layout/types'
 import {
   isBoundsEqual,
   isPointEqual
 } from '@/renderer/core/layout/utils/geometry'
 import {
-  REROUTE_RADIUS,
   boundsIntersect,
-  pointInBounds
+  pointInBounds,
+  REROUTE_RADIUS
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
   layoutToYNode,
-  yNodeToLayout
+  yNodeToLayout,
+  type NodeLayoutMap
 } from '@/renderer/core/layout/utils/mappers'
-import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {

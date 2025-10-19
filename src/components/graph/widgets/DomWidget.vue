@@ -19,8 +19,14 @@
 
 <script setup lang="ts">
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import type { CSSProperties } from 'vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  watch,
+  type CSSProperties
+} from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'

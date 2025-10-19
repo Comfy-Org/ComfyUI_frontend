@@ -1,13 +1,11 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import TreeSelect from 'primevue/treeselect'
-import type { TreeSelectProps } from 'primevue/treeselect'
+import TreeSelect, { type TreeSelectProps } from 'primevue/treeselect'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
-import WidgetTreeSelect from './WidgetTreeSelect.vue'
-import type { TreeNode } from './WidgetTreeSelect.vue'
+import WidgetTreeSelect, { type TreeNode } from './WidgetTreeSelect.vue'
 
 const createTreeData = (): TreeNode[] => [
   {

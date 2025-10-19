@@ -1,30 +1,33 @@
-import { useEventListener } from '@vueuse/core'
-import type { Fn } from '@vueuse/core'
+import { useEventListener, type Fn } from '@vueuse/core'
 import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import {
   clearCanvasPointerHistory,
   toCanvasPointerEvent
 } from '@/renderer/core/canvas/interaction/canvasPointerEvent'
-import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
+import {
+  createLinkConnectorAdapter,
+  type LinkConnectorAdapter
+} from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
-import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
-import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import {
+  useSlotLinkDragUIState,
+  type SlotDropCandidate
+} from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'

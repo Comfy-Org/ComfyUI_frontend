@@ -54,8 +54,10 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
-import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
+import {
+  useAssetBrowser,
+  type AssetDisplayItem
+} from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { OnCloseKey } from '@/types/widgetTypes'
 

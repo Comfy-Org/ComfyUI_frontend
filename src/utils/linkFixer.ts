@@ -25,8 +25,8 @@
  * SOFTWARE.
  */
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
   ISerialisedGraph,
   ISerialisedNode

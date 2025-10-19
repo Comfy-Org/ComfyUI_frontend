@@ -69,8 +69,10 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import TieredMenu from 'primevue/tieredmenu'
-import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
+import TieredMenu, {
+  type TieredMenuMethods,
+  type TieredMenuState
+} from 'primevue/tieredmenu'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

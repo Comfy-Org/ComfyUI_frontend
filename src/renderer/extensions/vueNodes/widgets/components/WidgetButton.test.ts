@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
-import type { ButtonProps } from 'primevue/button'
+import Button, { type ButtonProps } from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 

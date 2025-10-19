@@ -7,15 +7,19 @@
  */
 import { expect } from 'vitest'
 
-import type { ISlotType, NodeId } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  Subgraph,
+  type ISlotType,
+  type NodeId
+} from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance
 } from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+import { createUuidv4, type UUID } from '@/lib/litegraph/src/utils/uuid'
 
 interface TestSubgraphOptions {
   id?: UUID

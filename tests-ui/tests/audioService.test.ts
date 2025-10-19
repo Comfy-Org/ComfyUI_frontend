@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  type AudioRecordingError,
-  useAudioService
+  useAudioService,
+  type AudioRecordingError
 } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())

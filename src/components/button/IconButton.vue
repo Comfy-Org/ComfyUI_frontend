@@ -14,12 +14,12 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
-import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
   getBaseButtonClasses,
   getBorderButtonTypeClasses,
   getButtonTypeClasses,
-  getIconButtonSizeClasses
+  getIconButtonSizeClasses,
+  type BaseButtonProps
 } from '@/types/buttonTypes'
 import { cn } from '@/utils/tailwindUtil'
 

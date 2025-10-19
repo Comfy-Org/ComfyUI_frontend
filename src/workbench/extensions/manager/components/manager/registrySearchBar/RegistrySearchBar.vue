@@ -62,8 +62,9 @@
 
 <script setup lang="ts">
 import { stubTrue } from 'es-toolkit/compat'
-import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
-import AutoComplete from 'primevue/autocomplete'
+import AutoComplete, {
+  type AutoCompleteOptionSelectEvent
+} from 'primevue/autocomplete'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -78,8 +79,10 @@ import PackUpdateButton from '@/workbench/extensions/manager/components/manager/
 import SearchFilterDropdown from '@/workbench/extensions/manager/components/manager/registrySearchBar/SearchFilterDropdown.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
-import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type { SearchOption } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import {
+  SortableAlgoliaField,
+  type SearchOption
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]

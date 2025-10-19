@@ -1,5 +1,8 @@
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'

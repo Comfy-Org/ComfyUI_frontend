@@ -17,8 +17,11 @@ import type {
 } from '@/schemas/nodeDefSchema'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
-import type { NodeSource } from '@/types/nodeSource'
+import {
+  getNodeSource,
+  NodeSourceType,
+  type NodeSource
+} from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'

@@ -90,17 +90,17 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Load3DControls from '@/components/load3d/Load3DControls.vue'
-import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import Load3DControls from '@/components/load3d/Load3DControls.vue'
+import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import type {
   CameraType,
   Load3DNodeType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'

@@ -105,11 +105,11 @@
 </template>
 
 <script setup lang="ts">
-import { useFuse } from '@vueuse/integrations/useFuse'
-import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
+import { useFuse, type UseFuseOptions } from '@vueuse/integrations/useFuse'
 import Button from 'primevue/button'
-import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
-import MultiSelect from 'primevue/multiselect'
+import MultiSelect, {
+  type MultiSelectPassThroughMethodOptions
+} from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 

@@ -4,12 +4,12 @@ import {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   ASCII,
-  type ComfyMetadata,
   ComfyMetadataTags,
+  GltfSizeBytes,
+  type ComfyMetadata,
   type GltfChunkHeader,
   type GltfHeader,
-  type GltfJsonData,
-  GltfSizeBytes
+  type GltfJsonData
 } from '@/types/metadataTypes'
 
 const MAX_READ_BYTES = 1 << 20

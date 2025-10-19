@@ -1,15 +1,15 @@
 import { pull } from 'es-toolkit/compat'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   Point,
   ReadOnlyRect
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { SubgraphInput } from './SubgraphInput'

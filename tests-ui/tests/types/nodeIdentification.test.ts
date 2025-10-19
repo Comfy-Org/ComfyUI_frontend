@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
-  type NodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   isNodeExecutionId,
   isNodeLocatorId,
   parseNodeExecutionId,
-  parseNodeLocatorId
+  parseNodeLocatorId,
+  type NodeLocatorId
 } from '@/types/nodeIdentification'
 
 describe('nodeIdentification', () => {

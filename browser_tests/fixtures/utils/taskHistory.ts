@@ -1,7 +1,8 @@
-import type { Request, Route } from '@playwright/test'
-import _ from 'es-toolkit/compat'
 import fs from 'fs'
 import path from 'path'
+
+import type { Request, Route } from '@playwright/test'
+import _ from 'es-toolkit/compat'
 import { v4 as uuidv4 } from 'uuid'
 
 import type {

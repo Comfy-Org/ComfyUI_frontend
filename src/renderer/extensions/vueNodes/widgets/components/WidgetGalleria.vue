@@ -55,8 +55,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
-  GALLERIA_EXCLUDED_PROPS,
-  filterWidgetProps
+  filterWidgetProps,
+  GALLERIA_EXCLUDED_PROPS
 } from '@/utils/widgetPropFilter'
 
 export interface GalleryImage {

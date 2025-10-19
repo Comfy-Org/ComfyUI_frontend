@@ -1,5 +1,3 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
@@ -9,6 +7,8 @@ import type {
   CallbackReturn,
   ISlotType
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { Subgraph } from './Subgraph'

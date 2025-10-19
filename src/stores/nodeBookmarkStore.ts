@@ -9,9 +9,9 @@ import type { TreeNode } from '@/types/treeExplorerTypes'
 import {
   buildNodeDefTree,
   createDummyFolderNodeDef,
-  useNodeDefStore
+  useNodeDefStore,
+  type ComfyNodeDefImpl
 } from './nodeDefStore'
-import type { ComfyNodeDefImpl } from './nodeDefStore'
 
 const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 

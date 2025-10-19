@@ -1,8 +1,10 @@
 import { createSharedComposable } from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import {
+  useGraphNodeManager,
+  type GraphNodeManager
+} from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

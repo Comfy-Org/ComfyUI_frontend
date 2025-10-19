@@ -45,10 +45,10 @@ import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
-import type {
-  RenderedTreeExplorerNode,
-  TreeExplorerDragAndDropData
+import {
+  InjectKeyHandleEditLabelFunction,
+  type RenderedTreeExplorerNode,
+  type TreeExplorerDragAndDropData
 } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{

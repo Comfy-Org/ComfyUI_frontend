@@ -1,8 +1,7 @@
 import { useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
-import { reactive, unref } from 'vue'
-import { shallowRef } from 'vue'
+import { reactive, shallowRef, unref } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
@@ -12,9 +11,9 @@ import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  type Vector2
 } from '@/lib/litegraph/src/litegraph'
-import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -23,11 +22,11 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import {
+  isSubgraphDefinition,
   type ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
-  type NodeId,
-  isSubgraphDefinition
+  type NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ExecutionErrorWsMessage,
@@ -35,11 +34,11 @@ import type {
   ResultItem
 } from '@/schemas/apiSchema'
 import {
-  type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
-  isComboInputSpecV2
+  isComboInputSpecV2,
+  type ComfyNodeDef as ComfyNodeDefV1
 } from '@/schemas/nodeDefSchema'
-import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
+import { DOMWidgetImpl, type BaseDOMWidget } from '@/scripts/domWidget'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
@@ -67,8 +66,8 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
+  forEachNode,
   getNodeByExecutionId,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
@@ -84,7 +83,7 @@ import {
 import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { type ComfyApi, PromptExecutionError, api } from './api'
+import { api, PromptExecutionError, type ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import {
   getAvifMetadata,

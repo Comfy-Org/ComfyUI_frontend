@@ -14,8 +14,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { app } from './app'
+import { app, type ComfyApp } from './app'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))

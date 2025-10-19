@@ -110,12 +110,15 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
-import { useQueueStore } from '@/stores/queueStore'
+import {
+  useQueueStore,
+  type ResultItemImpl,
+  type TaskItemImpl
+} from '@/stores/queueStore'
 
-import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import TaskItem from './queue/TaskItem.vue'
+import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
 const IMAGE_FIT = 'Comfy.Queue.ImageFit'
 const confirm = useConfirm()

@@ -49,8 +49,7 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 
-import type { SearchFilter } from './SearchFilterChip.vue'
-import SearchFilterChip from './SearchFilterChip.vue'
+import SearchFilterChip, { type SearchFilter } from './SearchFilterChip.vue'
 
 const {
   modelValue,

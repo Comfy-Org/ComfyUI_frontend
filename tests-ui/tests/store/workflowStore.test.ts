@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
-  type LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
-  useWorkflowStore
+  useWorkflowStore,
+  type ComfyWorkflow,
+  type LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'

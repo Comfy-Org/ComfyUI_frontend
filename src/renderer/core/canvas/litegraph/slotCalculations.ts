@@ -5,12 +5,12 @@
  * This allows both litegraph nodes and the layout system to use the same
  * calculation logic while providing their own position data.
  */
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'

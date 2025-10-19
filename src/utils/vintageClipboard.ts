@@ -1,9 +1,9 @@
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
+import {
+  LiteGraph,
+  type LGraph,
+  type LGraphCanvas,
+  type LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Serialises an array of nodes using a modified version of the old Litegraph copy (& paste) function

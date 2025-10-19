@@ -1,5 +1,5 @@
 import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from './interfaces'
-import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
+import { Alignment, hasFlag, LinkDirection } from './types/globalEnums'
 
 /**
  * Calculates the distance between two points (2D vector)

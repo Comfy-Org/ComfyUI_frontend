@@ -81,8 +81,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
-import { TaskItemDisplayStatus } from '@/stores/queueStore'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 
 import ResultItem from './ResultItem.vue'
 

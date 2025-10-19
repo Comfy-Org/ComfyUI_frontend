@@ -1,7 +1,13 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { test as base, expect } from '@playwright/test'
-import dotenv from 'dotenv'
 import * as fs from 'fs'
+
+import {
+  test as base,
+  expect,
+  type APIRequestContext,
+  type Locator,
+  type Page
+} from '@playwright/test'
+import dotenv from 'dotenv'
 
 import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
@@ -11,7 +17,6 @@ import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
-import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
@@ -23,6 +28,7 @@ import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
 import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
 import TaskHistory from './utils/taskHistory'
+import { VueNodeHelpers } from './VueNodeHelpers'
 
 dotenv.config()
 

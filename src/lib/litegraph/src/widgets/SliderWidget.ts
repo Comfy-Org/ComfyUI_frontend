@@ -2,8 +2,11 @@ import { clamp } from 'es-toolkit/compat'
 
 import type { ISliderWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget } from './BaseWidget'
-import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
 export class SliderWidget
   extends BaseWidget<ISliderWidget>

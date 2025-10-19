@@ -5,8 +5,10 @@ import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  useWorkflowStore,
+  type ComfyWorkflow
+} from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyNode,
   ComfyWorkflowJSON,
@@ -28,8 +30,10 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import {
+  createNodeLocatorId,
+  type NodeLocatorId
+} from '@/types/nodeIdentification'
 
 interface QueuedPrompt {
   /**

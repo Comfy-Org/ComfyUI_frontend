@@ -1,16 +1,17 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import {
+  LiteGraph,
   type LGraphNode,
-  type LGraphNodeConstructor,
-  LiteGraph
+  type LGraphNodeConstructor
 } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import { type ComfyApp, app } from '../../scripts/app'
+import { app, type ComfyApp } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import { ComfyDialog } from '../../scripts/ui/dialog'
 import { DraggableList } from '../../scripts/ui/draggableList'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
+
 import './groupNodeManage.css'
 
 const ORDER: symbol = Symbol()

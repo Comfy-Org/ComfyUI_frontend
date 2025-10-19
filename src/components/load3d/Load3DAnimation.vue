@@ -88,11 +88,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls.vue'
 import Load3DAnimationScene from '@/components/load3d/Load3DAnimationScene.vue'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
-import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   AnimationItem,
   CameraType,
@@ -100,6 +99,7 @@ import type {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
 

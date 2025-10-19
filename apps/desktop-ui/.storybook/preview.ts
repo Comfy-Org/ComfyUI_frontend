@@ -3,13 +3,16 @@ import Aura from '@primevue/themes/aura'
 import { setup } from '@storybook/vue3'
 import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
+
 import 'primeicons/primeicons.css'
+
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
 import '@/assets/css/style.css'
+
 import { i18n } from '@/i18n'
 
 const ComfyUIPreset = definePreset(Aura, {

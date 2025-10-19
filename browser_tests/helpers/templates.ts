@@ -1,5 +1,6 @@
-import type { Locator, Page } from '@playwright/test'
 import path from 'path'
+
+import type { Locator, Page } from '@playwright/test'
 
 import type {
   TemplateInfo,

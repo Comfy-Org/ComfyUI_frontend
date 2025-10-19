@@ -1,8 +1,11 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
+import {
+  ExecutableNodeDTO,
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import {
   createNestedSubgraphs,

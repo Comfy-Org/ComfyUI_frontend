@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import type { InputTextProps } from 'primevue/inputtext'
+import InputText, { type InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it } from 'vitest'
 

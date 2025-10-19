@@ -1,5 +1,7 @@
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
+import {
+  parseProxyWidgets,
+  type ProxyWidgetsProperty
+} from '@/core/schemas/proxyWidget'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,

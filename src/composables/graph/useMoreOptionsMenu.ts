@@ -1,5 +1,4 @@
-import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { isLGraphGroup } from '@/utils/litegraphUtil'

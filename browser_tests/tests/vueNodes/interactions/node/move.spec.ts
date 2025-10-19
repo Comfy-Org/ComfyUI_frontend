@@ -1,7 +1,7 @@
 import {
-  type ComfyPage,
   comfyExpect as expect,
-  comfyPageFixture as test
+  comfyPageFixture as test,
+  type ComfyPage
 } from '../../../../fixtures/ComfyPage'
 import type { Position } from '../../../../fixtures/types'
 

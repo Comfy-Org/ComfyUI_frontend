@@ -1,10 +1,10 @@
 import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import {
   getSettingInfo,
-  useSettingStore
+  useSettingStore,
+  type SettingTreeNode
 } from '@/platform/settings/settingStore'
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'

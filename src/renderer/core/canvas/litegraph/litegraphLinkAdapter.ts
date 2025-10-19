@@ -6,23 +6,23 @@
  * rendering data that can be consumed by the PathRenderer.
  * Maintains backward compatibility with existing litegraph integration.
  */
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   LinkDirection,
   LinkMarkerShape,
   LinkRenderType
 } from '@/lib/litegraph/src/types/globalEnums'
-import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
-import type {
-  ArrowShape,
-  Direction,
-  LinkRenderData,
-  RenderContext as PathRenderContext,
-  Point as PointObj,
-  RenderMode
+import {
+  CanvasPathRenderer,
+  type ArrowShape,
+  type Direction,
+  type LinkRenderData,
+  type RenderContext as PathRenderContext,
+  type Point as PointObj,
+  type RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'

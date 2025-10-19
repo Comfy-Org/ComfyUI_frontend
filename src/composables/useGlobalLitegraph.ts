@@ -6,8 +6,8 @@ import {
   LGraphCanvas,
   LGraphGroup,
   LGraphNode,
-  LLink,
-  LiteGraph
+  LiteGraph,
+  LLink
 } from '@/lib/litegraph/src/litegraph'
 
 /**

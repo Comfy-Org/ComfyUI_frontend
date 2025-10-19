@@ -1,27 +1,20 @@
 import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import {
+  LitegraphLinkAdapter,
+  type LinkRenderContext
+} from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
-import { CanvasPointer } from './CanvasPointer'
-import type { ContextMenu } from './ContextMenu'
-import { DragAndScale } from './DragAndScale'
-import type { AnimationOptions } from './DragAndScale'
-import type { LGraph } from './LGraph'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
-import type { NodeId, NodeProperty } from './LGraphNode'
-import { LLink } from './LLink'
-import type { LinkId } from './LLink'
-import { Reroute } from './Reroute'
-import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
+import { CanvasPointer } from './CanvasPointer'
+import type { ContextMenu } from './ContextMenu'
+import { DragAndScale, type AnimationOptions } from './DragAndScale'
 import { strokeShape } from './draw'
 import type {
   CustomEventDispatcher,
@@ -56,7 +49,11 @@ import type {
   Rect,
   Size
 } from './interfaces'
+import type { LGraph } from './LGraph'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
 import { LiteGraph } from './litegraph'
+import { LLink, type LinkId } from './LLink'
 import {
   containsRect,
   createBounds,
@@ -68,9 +65,10 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
+import { Reroute, type RerouteId } from './Reroute'
 import type { Subgraph } from './subgraph/Subgraph'
-import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
@@ -92,8 +90,7 @@ import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
-import { createUuidv4 } from './utils/uuid'
-import type { UUID } from './utils/uuid'
+import { createUuidv4, type UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 

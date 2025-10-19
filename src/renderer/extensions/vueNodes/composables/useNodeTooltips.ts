@@ -2,8 +2,7 @@ import type {
   TooltipDirectivePassThroughOptions,
   TooltipPassThroughMethodOptions
 } from 'primevue/tooltip'
-import { computed, ref, unref } from 'vue'
-import type { MaybeRef } from 'vue'
+import { computed, ref, unref, type MaybeRef } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'

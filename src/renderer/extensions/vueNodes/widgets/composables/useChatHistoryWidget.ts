@@ -3,8 +3,11 @@ import { ref } from 'vue'
 import ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import type { ComponentWidgetStandardProps } from '@/scripts/domWidget'
+import {
+  addWidget,
+  ComponentWidgetImpl,
+  type ComponentWidgetStandardProps
+} from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 type ChatHistoryCustomProps = Omit<

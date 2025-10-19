@@ -2,11 +2,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
+  isColorable,
   LGraphCanvas,
   LGraphNode,
   LiteGraph,
-  RenderShape,
-  isColorable
+  RenderShape
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

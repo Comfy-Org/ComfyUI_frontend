@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import ToggleSwitch from 'primevue/toggleswitch'
-import type { ToggleSwitchProps } from 'primevue/toggleswitch'
+import ToggleSwitch, { type ToggleSwitchProps } from 'primevue/toggleswitch'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'

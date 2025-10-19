@@ -2,8 +2,11 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  type LGraphCanvas,
+  type SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,

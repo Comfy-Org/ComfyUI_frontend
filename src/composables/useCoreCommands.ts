@@ -16,16 +16,18 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph,
-  SubgraphNode
+  SubgraphNode,
+  type Point
 } from '@/lib/litegraph/src/litegraph'
-import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  useWorkflowStore,
+  type ComfyWorkflow
+} from '@/platform/workflow/management/stores/workflowStore'
 import {
   useCanvasStore,
   useTitleEditorStore

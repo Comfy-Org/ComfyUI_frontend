@@ -6,10 +6,10 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   ComfyWorkflow,
-  useWorkflowStore
+  useWorkflowStore,
+  type LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyNode,

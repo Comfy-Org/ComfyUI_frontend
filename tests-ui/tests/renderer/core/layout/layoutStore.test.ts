@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
-  type LayoutChange,
   LayoutSource,
+  type LayoutChange,
   type NodeLayout
 } from '@/renderer/core/layout/types'
 

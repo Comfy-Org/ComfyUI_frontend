@@ -1,20 +1,21 @@
 import {
-  type CallbackParams,
-  useChainCallback
+  useChainCallback,
+  type CallbackParams
 } from '@/composables/functional/useChainCallback'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  ISlotType,
-  LLink,
-  Point
+import {
+  LGraphNode,
+  LiteGraph,
+  type INodeInputSlot,
+  type INodeOutputSlot,
+  type ISlotType,
+  type LLink,
+  type Point
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
+import { addValueControlWidgets, ComfyWidgets } from '@/scripts/widgets'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'

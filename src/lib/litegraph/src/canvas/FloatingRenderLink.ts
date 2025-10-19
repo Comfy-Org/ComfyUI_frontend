@@ -1,6 +1,3 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -13,6 +10,9 @@ import type {
   LinkNetwork,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'

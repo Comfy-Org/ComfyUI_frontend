@@ -1,6 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { computed, toValue } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 

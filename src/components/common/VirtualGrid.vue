@@ -17,8 +17,7 @@
 <script setup lang="ts" generic="T">
 import { useElementSize, useScroll, whenever } from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import type { CSSProperties } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, type CSSProperties } from 'vue'
 
 type GridState = {
   start: number

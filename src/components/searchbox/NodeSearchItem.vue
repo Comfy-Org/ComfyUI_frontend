@@ -53,8 +53,10 @@ import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import {
+  useNodeFrequencyStore,
+  type ComfyNodeDefImpl
+} from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
 

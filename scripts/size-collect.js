@@ -1,8 +1,9 @@
 // @ts-check
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
+
 import pico from 'picocolors'
 import prettyBytes from 'pretty-bytes'
 

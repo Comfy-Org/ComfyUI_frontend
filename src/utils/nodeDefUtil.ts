@@ -1,19 +1,17 @@
 import _ from 'es-toolkit/compat'
 
-import type {
-  ComboInputSpec,
-  ComboInputSpecV2,
-  FloatInputSpec,
-  InputSpec,
-  IntInputSpec,
-  NumericInputOptions
-} from '@/schemas/nodeDefSchema'
 import {
   getComboSpecComboOptions,
   getInputSpecType,
   isComboInputSpec,
   isFloatInputSpec,
-  isIntInputSpec
+  isIntInputSpec,
+  type ComboInputSpec,
+  type ComboInputSpecV2,
+  type FloatInputSpec,
+  type InputSpec,
+  type IntInputSpec,
+  type NumericInputOptions
 } from '@/schemas/nodeDefSchema'
 
 import { lcm } from './mathUtil'

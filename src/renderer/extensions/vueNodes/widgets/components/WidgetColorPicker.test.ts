@@ -1,13 +1,12 @@
 import { mount } from '@vue/test-utils'
-import ColorPicker from 'primevue/colorpicker'
-import type { ColorPickerProps } from 'primevue/colorpicker'
+import ColorPicker, { type ColorPickerProps } from 'primevue/colorpicker'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetColorPicker from './WidgetColorPicker.vue'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+import WidgetColorPicker from './WidgetColorPicker.vue'
 
 describe('WidgetColorPicker Value Binding', () => {
   const createMockWidget = (

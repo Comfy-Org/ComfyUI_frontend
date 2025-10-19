@@ -96,10 +96,10 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
-import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
-  useCustomerEventsService
+  useCustomerEventsService,
+  type AuditLog
 } from '@/services/customerEventsService'
 
 const events = ref<AuditLog[]>([])

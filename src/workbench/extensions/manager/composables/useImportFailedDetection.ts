@@ -1,5 +1,4 @@
-import { computed, unref } from 'vue'
-import type { ComputedRef } from 'vue'
+import { computed, unref, type ComputedRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'

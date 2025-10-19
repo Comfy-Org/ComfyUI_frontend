@@ -1,8 +1,7 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphButton } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphButton, type LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,

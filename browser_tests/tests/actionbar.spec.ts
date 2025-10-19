@@ -1,5 +1,4 @@
-import type { Response } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
+import { expect, mergeTests, type Response } from '@playwright/test'
 
 import type { StatusWsMessage } from '../../src/schemas/apiSchema.ts'
 import { comfyPageFixture } from '../fixtures/ComfyPage.ts'

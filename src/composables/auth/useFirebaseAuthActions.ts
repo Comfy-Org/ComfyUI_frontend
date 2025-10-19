@@ -2,8 +2,10 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
-import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
+import {
+  useErrorHandling,
+  type ErrorRecoveryStrategy
+} from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'

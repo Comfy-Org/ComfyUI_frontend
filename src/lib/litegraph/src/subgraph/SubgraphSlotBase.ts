@@ -1,7 +1,3 @@
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { SlotShape } from '@/lib/litegraph/src/draw'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -14,15 +10,18 @@ import type {
   ReadOnlyRect,
   Size
 } from '@/lib/litegraph/src/interfaces'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LinkId, LLink } from '@/lib/litegraph/src/LLink'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   Serialisable,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
-import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { createUuidv4, type UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphInputNode } from './SubgraphInputNode'

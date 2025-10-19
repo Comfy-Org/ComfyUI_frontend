@@ -47,8 +47,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import OverlayBadge from 'primevue/overlaybadge'
-import { computed } from 'vue'
-import type { Component } from 'vue'
+import { computed, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

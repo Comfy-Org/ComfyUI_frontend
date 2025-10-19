@@ -104,8 +104,10 @@
 </template>
 
 <script setup lang="ts">
-import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
-import { TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
+import {
+  TorchMirrorUrl,
+  type TorchDeviceType
+} from '@comfyorg/comfyui-electron-types'
 import { isInChina } from '@comfyorg/shared-frontend-utils/networkUtil'
 import Accordion from 'primevue/accordion'
 import AccordionContent from 'primevue/accordioncontent'
@@ -115,7 +117,7 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import { type ModelRef, computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, type ModelRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MigrationPicker from '@/components/install/MigrationPicker.vue'

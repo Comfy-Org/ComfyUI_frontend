@@ -46,11 +46,9 @@ import {
 } from '@/composables/canvas/useSelectionToolboxPosition'
 import {
   registerNodeOptionsInstance,
-  useMoreOptionsMenu
-} from '@/composables/graph/useMoreOptionsMenu'
-import type {
-  MenuOption,
-  SubMenuOption
+  useMoreOptionsMenu,
+  type MenuOption,
+  type SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'

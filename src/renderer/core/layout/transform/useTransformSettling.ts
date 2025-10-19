@@ -1,6 +1,5 @@
 import { useDebounceFn, useEventListener, useThrottleFn } from '@vueuse/core'
-import { ref } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { ref, type MaybeRefOrGetter } from 'vue'
 
 interface TransformSettlingOptions {
   /**

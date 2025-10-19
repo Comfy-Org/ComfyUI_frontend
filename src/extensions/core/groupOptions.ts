@@ -1,7 +1,9 @@
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphGroup,
+  type LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { app } from '../../scripts/app'

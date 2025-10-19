@@ -6,8 +6,8 @@ import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
-  INPUT_EXCLUDED_PROPS,
-  filterWidgetProps
+  filterWidgetProps,
+  INPUT_EXCLUDED_PROPS
 } from '@/utils/widgetPropFilter'
 
 import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'

@@ -1,16 +1,13 @@
 import QuickLRU from '@alloc/quick-lru'
-import { debounce } from 'es-toolkit/compat'
-import _ from 'es-toolkit/compat'
+import _, { debounce } from 'es-toolkit/compat'
 
 import { t } from '@/i18n'
 
 import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
-import { ComfyApp } from '../../scripts/app'
+import { app, ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 import { getStorageValue, setStorageValue } from '../../scripts/utils'
-import { hexToRgb } from '../../utils/colorUtil'
-import { parseToRgb } from '../../utils/colorUtil'
+import { hexToRgb, parseToRgb } from '../../utils/colorUtil'
 import { ClipspaceDialog } from './clipspace'
 import {
   imageLayerFilenamesByTimestamp,

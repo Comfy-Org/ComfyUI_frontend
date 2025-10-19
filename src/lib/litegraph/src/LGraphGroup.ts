@@ -1,8 +1,5 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 
-import type { LGraph } from './LGraph'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import type {
   ColorOption,
@@ -13,6 +10,9 @@ import type {
   Positionable,
   Size
 } from './interfaces'
+import type { LGraph } from './LGraph'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphNode } from './LGraphNode'
 import { LiteGraph, Rectangle } from './litegraph'
 import {
   containsCentre,

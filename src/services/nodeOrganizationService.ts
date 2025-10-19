@@ -1,5 +1,4 @@
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { buildNodeDefTree } from '@/stores/nodeDefStore'
+import { buildNodeDefTree, type ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
   NodeGroupingStrategy,
   NodeOrganizationOptions,

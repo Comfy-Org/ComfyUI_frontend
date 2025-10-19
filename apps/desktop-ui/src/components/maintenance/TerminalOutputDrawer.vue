@@ -12,8 +12,7 @@
 <script setup lang="ts">
 import type { Terminal } from '@xterm/xterm'
 import Drawer from 'primevue/drawer'
-import type { Ref } from 'vue'
-import { onMounted } from 'vue'
+import { onMounted, type Ref } from 'vue'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'

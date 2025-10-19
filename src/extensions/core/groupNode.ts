@@ -2,12 +2,12 @@ import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
 import { type NodeId } from '@/lib/litegraph/src/LGraphNode'
 import {
-  type ExecutableLGraphNode,
-  type ExecutionId,
   LGraphCanvas,
   LGraphNode,
   LiteGraph,
-  SubgraphNode
+  SubgraphNode,
+  type ExecutableLGraphNode,
+  type ExecutionId
 } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {

@@ -1,7 +1,6 @@
 import { refDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
-import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 

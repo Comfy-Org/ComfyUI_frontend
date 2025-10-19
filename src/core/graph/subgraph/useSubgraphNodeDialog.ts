@@ -1,6 +1,5 @@
 import SubgraphNode from '@/core/graph/subgraph/SubgraphNode.vue'
-import { useDialogStore } from '@/stores/dialogStore'
-import type { DialogComponentProps } from '@/stores/dialogStore'
+import { useDialogStore, type DialogComponentProps } from '@/stores/dialogStore'
 
 const key = 'global-subgraph-node-config'
 

@@ -3,14 +3,12 @@ import type {
   InputSpec as InputSpecV2,
   OutputSpec as OutputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type {
-  ComfyNodeDef as ComfyNodeDefV1,
-  InputSpec as InputSpecV1
-} from '@/schemas/nodeDefSchema'
 import {
   getComboSpecComboOptions,
   isComboInputSpec,
-  isComboInputSpecV1
+  isComboInputSpecV1,
+  type ComfyNodeDef as ComfyNodeDefV1,
+  type InputSpec as InputSpecV1
 } from '@/schemas/nodeDefSchema'
 
 /**

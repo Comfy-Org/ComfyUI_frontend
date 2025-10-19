@@ -76,17 +76,15 @@ import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackBanner from '@/workbench/extensions/manager/components/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue'
+import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import {
   IsInstallingKey,
-  isMergedNodePack
-} from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type {
-  MergedNodePack,
-  RegistryPack
+  isMergedNodePack,
+  type MergedNodePack,
+  type RegistryPack
 } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { nodePack, isSelected = false } = defineProps<{

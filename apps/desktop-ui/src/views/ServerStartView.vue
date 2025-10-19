@@ -98,14 +98,13 @@
 <script setup lang="ts">
 import {
   InstallStage,
+  ProgressStatus,
   type InstallStageInfo,
-  type InstallStageName,
-  ProgressStatus
+  type InstallStageName
 } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
-import type { Ref } from 'vue'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'

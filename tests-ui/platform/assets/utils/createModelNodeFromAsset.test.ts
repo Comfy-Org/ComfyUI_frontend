@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { type Raw, markRaw } from 'vue'
+import { markRaw, type Raw } from 'vue'
 
 import {
-  type LGraphNode,
   LiteGraph,
+  type LGraphNode,
   type Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'

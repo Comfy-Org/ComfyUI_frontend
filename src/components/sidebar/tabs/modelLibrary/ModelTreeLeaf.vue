@@ -20,8 +20,14 @@
 </template>
 
 <script setup lang="ts">
-import type { CSSProperties } from 'vue'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  type CSSProperties
+} from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'

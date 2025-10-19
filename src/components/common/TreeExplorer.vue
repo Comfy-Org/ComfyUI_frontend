@@ -47,11 +47,9 @@ import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperati
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   InjectKeyExpandedKeys,
-  InjectKeyHandleEditLabelFunction
-} from '@/types/treeExplorerTypes'
-import type {
-  RenderedTreeExplorerNode,
-  TreeExplorerNode
+  InjectKeyHandleEditLabelFunction,
+  type RenderedTreeExplorerNode,
+  type TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 

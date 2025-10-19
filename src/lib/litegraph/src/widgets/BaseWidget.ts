@@ -1,13 +1,13 @@
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type {
-  CanvasPointer,
-  LGraphCanvas,
-  LGraphNode,
-  Size
+import {
+  LiteGraph,
+  type CanvasPointer,
+  type LGraphCanvas,
+  type LGraphNode,
+  type Size
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 

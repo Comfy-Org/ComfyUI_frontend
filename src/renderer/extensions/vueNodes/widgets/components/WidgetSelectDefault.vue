@@ -25,8 +25,8 @@ import { useTransformCompatOverlayProps } from '@/composables/useTransformCompat
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
+  filterWidgetProps,
+  PANEL_EXCLUDED_PROPS
 } from '@/utils/widgetPropFilter'
 
 import { WidgetInputBaseClass } from './layout'

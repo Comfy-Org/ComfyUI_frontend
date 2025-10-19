@@ -73,17 +73,23 @@ import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import { computed, nextTick, onUpdated, ref, watch } from 'vue'
-import type { WatchStopHandle } from 'vue'
+import {
+  computed,
+  nextTick,
+  onUpdated,
+  ref,
+  watch,
+  type WatchStopHandle
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useWorkflowBookmarkStore,
-  useWorkflowStore
+  useWorkflowStore,
+  type ComfyWorkflow
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

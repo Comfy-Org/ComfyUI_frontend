@@ -1,6 +1,6 @@
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type {
   ExportedSubgraph,

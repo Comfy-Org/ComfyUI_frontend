@@ -1,5 +1,4 @@
-import type { AxiosError, AxiosResponse } from 'axios'
-import axios from 'axios'
+import axios, { type AxiosError, type AxiosResponse } from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 

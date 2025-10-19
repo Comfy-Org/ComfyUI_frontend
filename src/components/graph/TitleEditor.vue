@@ -14,17 +14,16 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
-import type { CSSProperties } from 'vue'
+import { computed, ref, watch, type CSSProperties } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import {
   LGraphGroup,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  type LiteGraphCanvasEvent
 } from '@/lib/litegraph/src/litegraph'
-import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   useCanvasStore,

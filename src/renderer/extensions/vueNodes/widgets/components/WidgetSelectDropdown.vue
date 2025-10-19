@@ -11,16 +11,16 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
+  filterWidgetProps,
+  PANEL_EXCLUDED_PROPS
 } from '@/utils/widgetPropFilter'
 
 import FormDropdown from './form/dropdown/FormDropdown.vue'
-import { AssetKindKey } from './form/dropdown/types'
-import type {
-  DropdownItem,
-  FilterOption,
-  SelectedKey
+import {
+  AssetKindKey,
+  type DropdownItem,
+  type FilterOption,
+  type SelectedKey
 } from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

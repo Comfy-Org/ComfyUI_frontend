@@ -6,6 +6,13 @@ import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
+import {
+  type CameraState,
+  type CaptureResult,
+  type Load3DOptions,
+  type MaterialMode,
+  type UpDirection
+} from './interfaces'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
@@ -15,13 +22,6 @@ import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
-import {
-  type CameraState,
-  type CaptureResult,
-  type Load3DOptions,
-  type MaterialMode,
-  type UpDirection
-} from './interfaces'
 
 class Load3d {
   renderer: THREE.WebGLRenderer
