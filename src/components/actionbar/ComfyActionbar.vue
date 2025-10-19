@@ -14,7 +14,7 @@
           )
         "
       />
-      <ComfyQueueButton />
+      <ComfyRunButton />
     </div>
   </Panel>
 </template>
@@ -36,7 +36,7 @@ import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import ComfyQueueButton from './ComfyQueueButton.vue'
+import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
 
