@@ -188,7 +188,36 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
     rollupOptions: {
-      treeshake: true
+      treeshake: true,
+      output: {
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+
+          if (id.includes('primevue') || id.includes('@primeuix')) {
+            return 'vendor-primevue'
+          }
+
+          if (id.includes('@tiptap')) {
+            return 'vendor-tiptap'
+          }
+
+          if (id.includes('chart.js')) {
+            return 'vendor-chart'
+          }
+
+          if (id.includes('three') || id.includes('@xterm')) {
+            return 'vendor-visualization'
+          }
+
+          if (id.includes('/vue') || id.includes('pinia')) {
+            return 'vendor-vue'
+          }
+
+          return 'vendor-other'
+        }
+      }
     }
   },
 
