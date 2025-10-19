@@ -59,6 +59,7 @@
           min="0"
           max="100"
           step="0.1"
+          :aria-label="$t('g.audioProgress')"
           class="absolute inset-0 w-full cursor-pointer opacity-0"
           @input="handleSeek"
         />

@@ -32,6 +32,7 @@
       <!-- Main Image -->
       <img
         v-else
+        ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
         class="block size-full object-contain"
@@ -40,21 +41,21 @@
       />
 
       <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
+      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-2.5">
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i class="icon-[lucide--venetian-mask] h-4 w-4" />
+          <i-comfy:mask class="h-4 w-4" />
         </button>
 
         <!-- Download Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
@@ -64,7 +65,7 @@
 
         <!-- Close Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          :class="actionButtonClass"
           :title="$t('g.removeImage')"
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
@@ -118,6 +119,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
@@ -136,12 +138,17 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const nodeOutputStore = useNodeOutputStore()
 
+const actionButtonClass =
+  'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
+
 // Component state
 const currentIndex = ref(0)
 const isHovered = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const isLoading = ref(false)
+
+const currentImageEl = ref<HTMLImageElement>()
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -182,7 +189,18 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
+// In vueNodes mode, we need to set them manually before opening the mask editor.
+const setupNodeForMaskEditor = () => {
+  if (!props.nodeId || !currentImageEl.value) return
+  const node = app.rootGraph?.getNodeById(props.nodeId)
+  if (!node) return
+  node.imageIndex = currentIndex.value
+  node.imgs = [currentImageEl.value]
+  app.canvas?.select(node)
+}
+
 const handleEditMask = () => {
+  setupNodeForMaskEditor()
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
 }
 

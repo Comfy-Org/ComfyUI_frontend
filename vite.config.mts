@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
@@ -16,10 +17,12 @@ dotenv.config()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
+const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
+const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
@@ -163,22 +166,34 @@ export default defineConfig({
       deep: true,
       extensions: ['vue'],
       directoryAsNamespace: true
-    })
+    }),
+
+    // Bundle analyzer - generates dist/stats.html after build
+    // Only enabled when ANALYZE_BUNDLE=true
+    ...(ANALYZE_BUNDLE
+      ? [
+          visualizer({
+            filename: 'dist/stats.html',
+            open: false,
+            gzipSize: true,
+            brotliSize: true,
+            template: 'treemap' // or 'sunburst', 'network'
+          })
+        ]
+      : [])
   ],
 
   build: {
     minify: SHOULD_MINIFY ? 'esbuild' : false,
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: GENERATE_SOURCEMAP,
     rollupOptions: {
-      // Disabling tree-shaking
-      // Prevent vite remove unused exports
-      treeshake: false
+      treeshake: true
     }
   },
 
   esbuild: {
-    minifyIdentifiers: false,
+    minifyIdentifiers: SHOULD_MINIFY,
     keepNames: true,
     minifySyntax: SHOULD_MINIFY,
     minifyWhitespace: SHOULD_MINIFY

@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "استخدام القائمة الجديدة",
     "options": {
-      "Bottom": "أسفل",
       "Disabled": "معطل",
       "Top": "أعلى"
     },
@@ -384,8 +383,7 @@
     "name": "موضع تبويبات سير العمل المفتوحة",
     "options": {
       "Sidebar": "الشريط الجانبي",
-      "Topbar": "شريط الأعلى",
-      "Topbar (2nd-row)": "شريط الأعلى (الصف الثاني)"
+      "Topbar": "شريط الأعلى"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

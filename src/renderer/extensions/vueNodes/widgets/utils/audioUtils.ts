@@ -1,5 +1,6 @@
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 /**
  * Format time in MM:SS format
@@ -23,10 +24,6 @@ export function getAudioUrlFromPath(
   return api.apiURL(getResourceURL(subfolder, filename, type))
 }
 
-function getRandParam() {
-  return '&rand=' + Math.random()
-}
-
 export function getResourceURL(
   subfolder: string,
   filename: string,
@@ -36,7 +33,7 @@ export function getResourceURL(
     'filename=' + encodeURIComponent(filename),
     'type=' + type,
     'subfolder=' + subfolder,
-    getRandParam().substring(1)
+    app.getRandParam().substring(1)
   ].join('&')
 
   return `/view?${params}`

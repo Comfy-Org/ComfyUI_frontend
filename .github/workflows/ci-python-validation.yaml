@@ -1,0 +1,27 @@
+name: "CI: Python Validation"
+description: "Validates Python code in tools/devtools directory"
+
+on:
+  pull_request:
+    paths:
+      - 'tools/devtools/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/devtools/**'
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate Python syntax
+        run: python3 -m compileall -q tools/devtools

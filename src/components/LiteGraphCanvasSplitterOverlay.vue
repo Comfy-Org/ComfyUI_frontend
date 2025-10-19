@@ -1,48 +1,88 @@
 <template>
-  <Splitter
-    :key="sidebarStateKey"
-    class="splitter-overlay-root splitter-overlay"
-    :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
-    :state-key="sidebarStateKey"
-    state-storage="local"
-  >
-    <SplitterPanel
-      v-show="sidebarPanelVisible"
-      v-if="sidebarLocation === 'left'"
-      class="side-bar-panel"
-      :min-size="10"
-      :size="20"
-    >
-      <slot name="side-bar-panel" />
-    </SplitterPanel>
+  <div class="splitter-overlay-root pointer-events-none flex flex-col">
+    <slot name="workflow-tabs" />
 
-    <SplitterPanel :size="100">
+    <div
+      class="pointer-events-none flex flex-1 overflow-hidden"
+      :class="{
+        'flex-row': sidebarLocation === 'left',
+        'flex-row-reverse': sidebarLocation === 'right'
+      }"
+    >
+      <div class="side-toolbar-container">
+        <slot name="side-toolbar" />
+      </div>
+
       <Splitter
-        class="splitter-overlay max-w-full"
-        layout="vertical"
-        :pt:gutter="bottomPanelVisible ? '' : 'hidden'"
-        state-key="bottom-panel-splitter"
+        key="main-splitter-stable"
+        class="splitter-overlay flex-1 overflow-hidden"
+        :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
+        :state-key="sidebarStateKey || 'main-splitter'"
         state-storage="local"
       >
-        <SplitterPanel class="graph-canvas-panel relative">
-          <slot name="graph-canvas-panel" />
+        <SplitterPanel
+          v-if="sidebarLocation === 'left'"
+          class="side-bar-panel pointer-events-auto"
+          :min-size="10"
+          :size="20"
+          :style="{
+            display:
+              sidebarPanelVisible && sidebarLocation === 'left'
+                ? 'flex'
+                : 'none'
+          }"
+        >
+          <slot
+            v-if="sidebarPanelVisible && sidebarLocation === 'left'"
+            name="side-bar-panel"
+          />
         </SplitterPanel>
-        <SplitterPanel v-show="bottomPanelVisible" class="bottom-panel">
-          <slot name="bottom-panel" />
+
+        <SplitterPanel :size="80" class="flex flex-col">
+          <slot name="topmenu" :sidebar-panel-visible="sidebarPanelVisible" />
+
+          <Splitter
+            class="splitter-overlay splitter-overlay-bottom mr-2 mb-2 ml-2 flex-1"
+            layout="vertical"
+            :pt:gutter="
+              'rounded-tl-lg rounded-tr-lg ' +
+              (bottomPanelVisible ? '' : 'hidden')
+            "
+            state-key="bottom-panel-splitter"
+            state-storage="local"
+          >
+            <SplitterPanel class="graph-canvas-panel relative">
+              <slot name="graph-canvas-panel" />
+            </SplitterPanel>
+            <SplitterPanel
+              v-show="bottomPanelVisible"
+              class="bottom-panel pointer-events-auto rounded-lg"
+            >
+              <slot name="bottom-panel" />
+            </SplitterPanel>
+          </Splitter>
+        </SplitterPanel>
+
+        <SplitterPanel
+          v-if="sidebarLocation === 'right'"
+          class="side-bar-panel pointer-events-auto"
+          :min-size="10"
+          :size="20"
+          :style="{
+            display:
+              sidebarPanelVisible && sidebarLocation === 'right'
+                ? 'flex'
+                : 'none'
+          }"
+        >
+          <slot
+            v-if="sidebarPanelVisible && sidebarLocation === 'right'"
+            name="side-bar-panel"
+          />
         </SplitterPanel>
       </Splitter>
-    </SplitterPanel>
-
-    <SplitterPanel
-      v-show="sidebarPanelVisible"
-      v-if="sidebarLocation === 'right'"
-      class="side-bar-panel"
-      :min-size="10"
-      :size="20"
-    >
-      <slot name="side-bar-panel" />
-    </SplitterPanel>
-  </Splitter>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -74,7 +114,11 @@ const activeSidebarTabId = computed(
 )
 
 const sidebarStateKey = computed(() => {
-  return unifiedWidth.value ? 'unified-sidebar' : activeSidebarTabId.value ?? ''
+  if (unifiedWidth.value) {
+    return 'unified-sidebar'
+  }
+  // When no tab is active, use a default key to maintain state
+  return activeSidebarTabId.value ?? 'default-sidebar'
 })
 </script>
 
@@ -93,12 +137,17 @@ const sidebarStateKey = computed(() => {
 
 .side-bar-panel {
   background-color: var(--bg-color);
-  pointer-events: auto;
 }
 
 .bottom-panel {
-  background-color: var(--bg-color);
-  pointer-events: auto;
+  background-color: var(--comfy-menu-bg);
+  border: 1px solid var(--p-panel-border-color);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.splitter-overlay-bottom :deep(.p-splitter-gutter) {
+  transform: translateY(5px);
 }
 
 .splitter-overlay {

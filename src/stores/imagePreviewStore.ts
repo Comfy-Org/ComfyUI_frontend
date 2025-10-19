@@ -331,6 +331,26 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeOutputs.value = outputs
   }
 
+  function updateNodeImages(node: LGraphNode) {
+    if (!node.images?.length) return
+
+    const nodeLocatorId = nodeIdToNodeLocatorId(node.id)
+
+    if (nodeLocatorId) {
+      const existingOutputs = app.nodeOutputs[nodeLocatorId]
+
+      if (existingOutputs) {
+        const updatedOutputs = {
+          ...existingOutputs,
+          images: node.images
+        }
+
+        app.nodeOutputs[nodeLocatorId] = updatedOutputs
+        nodeOutputs.value[nodeLocatorId] = updatedOutputs
+      }
+    }
+  }
+
   function resetAllOutputsAndPreviews() {
     app.nodeOutputs = {}
     nodeOutputs.value = {}
@@ -349,6 +369,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setNodeOutputsByExecutionId,
     setNodePreviewsByExecutionId,
     setNodePreviewsByNodeId,
+    updateNodeImages,
 
     // Cleanup
     revokePreviewsByExecutionId,

@@ -24,7 +24,7 @@
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        class="z-10 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       >
         <InputSlot
           :slot-data="{
@@ -63,7 +63,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
-import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
+// Import widget components directly
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
   shouldRenderAsVue
@@ -129,7 +130,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const vueComponent =
       getComponent(widget.type, widget.name) ||
-      (widget.isDOMWidget ? WidgetDOM : WidgetInputText)
+      (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
     const slotMetadata = widget.slotMetadata
 
