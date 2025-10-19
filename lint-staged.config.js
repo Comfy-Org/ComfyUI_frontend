@@ -1,9 +1,20 @@
 export default {
   './**/*.js': (stagedFiles) => formatAndEslint(stagedFiles),
 
-  './**/*.{ts,tsx,vue,mts}': (stagedFiles) => [
+  './**/*.{ts,tsx,mts}': (stagedFiles) => [
     ...formatAndEslint(stagedFiles),
     'pnpm typecheck'
+  ],
+
+  './**/*.vue': (stagedFiles) => [
+    ...formatAndEslint(stagedFiles),
+    stylelintFix(stagedFiles),
+    'pnpm typecheck'
+  ],
+
+  './**/*.css': (stagedFiles) => [
+    stylelintFix(stagedFiles),
+    `pnpm exec prettier --cache --write ${stagedFiles.join(' ')}`
   ]
 }
 
@@ -14,4 +25,8 @@ function formatAndEslint(fileNames) {
     `pnpm exec eslint --cache --fix ${relativePaths.join(' ')}`,
     `pnpm exec prettier --cache --write ${relativePaths.join(' ')}`
   ]
+}
+
+function stylelintFix(fileNames) {
+  return `pnpm exec stylelint --cache --fix ${fileNames.join(' ')}`
 }
