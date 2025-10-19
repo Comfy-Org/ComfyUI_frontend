@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="containerRef"
     class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
@@ -13,7 +14,6 @@
       @mousedown="whileMouseDown($event, () => scroll(-1))"
     />
     <ScrollPanel
-      ref="scrollPanelRef"
       class="no-drag overflow-hidden"
       :pt:content="{
         class: 'p-0 w-full flex',
@@ -74,6 +74,7 @@ import ContextMenu from 'primevue/contextmenu'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -108,7 +109,7 @@ const workflowService = useWorkflowService()
 
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
-const scrollPanelRef = ref()
+const containerRef = ref<HTMLElement | null>(null)
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
@@ -221,75 +222,98 @@ const handleWheel = (event: WheelEvent) => {
   })
 }
 
+const scrollContent = computed(
+  () =>
+    (containerRef.value?.querySelector(
+      '.p-scrollpanel-content'
+    ) as HTMLElement | null) ?? null
+)
+
 const scroll = (direction: number) => {
-  const scrollElement = scrollPanelRef.value.$el.querySelector(
-    '.p-scrollpanel-content'
-  ) as HTMLElement
-  scrollElement.scrollBy({ left: direction * 20 })
+  const el = scrollContent.value
+  if (!el) return
+  el.scrollBy({ left: direction * 20 })
+}
+
+const ensureActiveTabVisible = async (
+  options: { waitForDom?: boolean } = {}
+) => {
+  if (!selectedWorkflow.value) return
+
+  if (options.waitForDom !== false) {
+    await nextTick()
+  }
+
+  const containerElement = containerRef.value
+  if (!containerElement) return
+
+  const activeTabElement = containerElement.querySelector(
+    '.p-togglebutton-checked'
+  )
+  if (!activeTabElement) return
+
+  activeTabElement.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 }
 
 // Scroll to active offscreen tab when opened
 watch(
   () => workflowStore.activeWorkflow,
-  async () => {
-    if (!selectedWorkflow.value) return
-
-    await nextTick()
-
-    const activeTabElement = document.querySelector('.p-togglebutton-checked')
-    if (!activeTabElement || !scrollPanelRef.value) return
-
-    const container = scrollPanelRef.value.$el.querySelector(
-      '.p-scrollpanel-content'
-    )
-    if (!container) return
-
-    const tabRect = activeTabElement.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
-
-    const offsetLeft = tabRect.left - containerRect.left
-    const offsetRight = tabRect.right - containerRect.right
-
-    if (offsetRight > 0) {
-      container.scrollBy({ left: offsetRight })
-    } else if (offsetLeft < 0) {
-      container.scrollBy({ left: offsetLeft })
-    }
+  () => {
+    void ensureActiveTabVisible()
   },
   { immediate: true }
 )
 
-const scrollContent = computed(
-  () =>
-    scrollPanelRef.value?.$el.querySelector(
-      '.p-scrollpanel-content'
-    ) as HTMLElement
-)
 let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
-let overflowWatch: ReturnType<typeof watch> | null = null
-watch(scrollContent, (value) => {
-  const scrollState = useScroll(value)
+let stopArrivedWatch: WatchStopHandle | null = null
+let stopOverflowWatch: WatchStopHandle | null = null
 
-  watch(scrollState.arrivedState, () => {
-    leftArrowEnabled.value = !scrollState.arrivedState.left
-    rightArrowEnabled.value = !scrollState.arrivedState.right
-  })
+watch(
+  scrollContent,
+  (el, _prev, onCleanup) => {
+    stopArrivedWatch?.()
+    stopOverflowWatch?.()
+    overflowObserver?.dispose()
 
-  overflowObserver?.dispose()
-  overflowWatch?.stop()
-  overflowObserver = useOverflowObserver(value)
-  overflowWatch = watch(
-    overflowObserver.isOverflowing,
-    (value) => {
-      showOverflowArrows.value = value
-      void nextTick(() => {
-        // Force a new check after arrows are updated
-        scrollState.measure()
-      })
-    },
-    { immediate: true }
-  )
-})
+    if (!el) return
+
+    const scrollState = useScroll(el)
+
+    stopArrivedWatch = watch(
+      [
+        () => scrollState.arrivedState.left,
+        () => scrollState.arrivedState.right
+      ],
+      ([atLeft, atRight]) => {
+        leftArrowEnabled.value = !atLeft
+        rightArrowEnabled.value = !atRight
+      },
+      { immediate: true }
+    )
+
+    overflowObserver = useOverflowObserver(el)
+    stopOverflowWatch = watch(
+      overflowObserver.isOverflowing,
+      (isOverflow) => {
+        showOverflowArrows.value = isOverflow
+        if (!isOverflow) return
+        void nextTick(() => {
+          // Force a new check after arrows are updated
+          scrollState.measure()
+          void ensureActiveTabVisible({ waitForDom: false })
+        })
+      },
+      { immediate: true }
+    )
+
+    onCleanup(() => {
+      stopArrivedWatch?.()
+      stopOverflowWatch?.()
+      overflowObserver?.dispose()
+    })
+  },
+  { immediate: true }
+)
 
 onUpdated(() => {
   if (!overflowObserver?.disposed.value) {

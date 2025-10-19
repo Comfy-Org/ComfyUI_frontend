@@ -152,13 +152,6 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
     .optional()
 })
 
-const zAudioRecordInputSpec = zBaseInputOptions.extend({
-  type: z.literal('AUDIORECORD'),
-  name: z.string(),
-  isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
-})
-
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -174,7 +167,6 @@ const zInputSpec = z.union([
   zColorInputSpec,
   zFileUploadInputSpec,
   zImageInputSpec,
-  zAudioRecordInputSpec,
   zImageCompareInputSpec,
   zMarkdownInputSpec,
   zTreeSelectInputSpec,
@@ -230,7 +222,6 @@ export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
 export type SelectButtonInputSpec = z.infer<typeof zSelectButtonInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
-export type AudioRecordInputSpec = z.infer<typeof zAudioRecordInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>
 export type OutputSpec = z.infer<typeof zOutputSpec>

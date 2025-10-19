@@ -246,7 +246,7 @@ For each commit:
 3. Merge the PR: `gh pr merge --merge`
 4. Monitor release workflow:
    ```bash
-   gh run list --workflow=release.yaml --limit=1
+   gh run list --workflow=release-draft-create.yaml --limit=1
    gh run watch
    ```
 5. Track progress:

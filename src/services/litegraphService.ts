@@ -8,7 +8,6 @@ import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtil
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
-  LGraphBadge,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
@@ -135,19 +134,6 @@ export const useLitegraphService = () => {
         this.#setInitialSize()
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
-        this.badges.push(
-          new LGraphBadge({
-            text: '',
-            iconOptions: {
-              unicode: '\ue96e',
-              fontFamily: 'PrimeIcons',
-              color: '#ffffff',
-              fontSize: 12
-            },
-            fgColor: '#ffffff',
-            bgColor: '#3b82f6'
-          })
-        )
       }
 
       /**
@@ -845,7 +831,7 @@ export const useLitegraphService = () => {
         )
       }
       if (this.graph && !this.graph.isRootGraph) {
-        const [x, y] = canvas.canvas_mouse
+        const [x, y] = canvas.graph_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
           addWidgetPromotionOptions(options, overWidget, this)

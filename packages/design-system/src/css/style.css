@@ -63,6 +63,7 @@
   --color-sand-200: #d6cfc2;
   --color-sand-300: #888682;
 
+  --color-pure-black: #000000;
   --color-pure-white: #ffffff;
 
   --color-slate-100: #9c9eab;
@@ -144,6 +145,9 @@
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
 
+  --button-surface: var(--color-pure-white);
+  --button-surface-contrast: var(--color-pure-black);
+
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
   --code-bg-color: rgb(96 165 250 / 0.2);
@@ -155,6 +159,7 @@
   --backdrop: var(--color-white);
   --button-hover-surface: var(--color-gray-200);
   --button-active-surface: var(--color-gray-400);
+  --button-icon: var(--color-gray-600);
   --dialog-surface: var(--color-neutral-200);
   --interface-menu-component-surface-hovered: var(--color-gray-200);
   --interface-menu-component-surface-selected: var(--color-gray-400);
@@ -201,8 +206,11 @@
 .dark-theme {
   --accent-primary: var(--color-pure-white);
   --backdrop: var(--color-neutral-900);
+  --button-surface: var(--color-charcoal-600);
+  --button-surface-contrast: var(--color-pure-white);
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
+  --button-icon: var(--color-gray-800);
   --dialog-surface: var(--color-neutral-700);
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
@@ -244,8 +252,11 @@
 
 @theme inline {
   --color-backdrop: var(--backdrop);
-  --color-button-hover-surface: var(--button-hover-surface);
   --color-button-active-surface: var(--button-active-surface);
+  --color-button-hover-surface: var(--button-hover-surface);
+  --color-button-icon: var(--button-icon);
+  --color-button-surface: var(--button-surface);
+  --color-button-surface-contrast: var(--button-surface-contrast);
   --color-dialog-surface: var(--dialog-surface);
   --color-interface-menu-component-surface-hovered: var(--interface-menu-component-surface-hovered);
   --color-interface-menu-component-surface-selected: var(--interface-menu-component-surface-selected);

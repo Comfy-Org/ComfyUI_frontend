@@ -151,7 +151,7 @@ interface DrawTitleTextOptions extends DrawTitleOptions {
   default_title_color: string
 }
 
-interface DrawTitleBoxOptions extends DrawTitleOptions {
+export interface DrawTitleBoxOptions extends DrawTitleOptions {
   box_size?: number
 }
 
@@ -2467,7 +2467,7 @@ export class LGraphNode
       }
     }
 
-    return doNotUseOccupied ? -1 : occupiedSlot ?? -1
+    return doNotUseOccupied ? -1 : (occupiedSlot ?? -1)
   }
 
   /**

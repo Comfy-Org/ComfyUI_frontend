@@ -96,41 +96,61 @@ jobs:
           echo "skip=true" >> $GITHUB_OUTPUT
           echo "::warning::Backport PRs already exist for PR #${PR_NUMBER}, skipping to avoid duplicates"
 
-      - name: Extract version labels
+      - name: Collect backport targets
         if: steps.check-existing.outputs.skip != 'true'
-        id: versions
+        id: targets
         run: |
-          # Extract version labels (e.g., "1.24", "1.22")
-          VERSIONS=""
-          
+          TARGETS=()
+          declare -A SEEN=()
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # For manual triggers, get labels from the PR
             LABELS=$(gh pr view ${{ inputs.pr_number }} --json labels | jq -r '.labels[].name')
           else
-            # For automatic triggers, extract from PR event
             LABELS='${{ toJSON(github.event.pull_request.labels) }}'
             LABELS=$(echo "$LABELS" | jq -r '.[].name')
           fi
-          
-          for label in $LABELS; do
-            # Match version labels like "1.24" (major.minor only)
-            if [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
-              # Validate the branch exists before adding to list
-              if git ls-remote --exit-code origin "core/${label}" >/dev/null 2>&1; then
-                VERSIONS="${VERSIONS}${label} "
-              else
-                echo "::warning::Label '${label}' found but branch 'core/${label}' does not exist"
-              fi
-            fi
-          done
 
-          if [ -z "$VERSIONS" ]; then
-            echo "::error::No version labels found (e.g., 1.24, 1.22)"
+          add_target() {
+            local label="$1"
+            local target="$2"
+
+            if [ -z "$target" ]; then
+              return
+            fi
+
+            target=$(echo "$target" | xargs)
+
+            if [ -z "$target" ] || [ -n "${SEEN[$target]}" ]; then
+              return
+            fi
+
+            if git ls-remote --exit-code origin "$target" >/dev/null 2>&1; then
+              TARGETS+=("$target")
+              SEEN["$target"]=1
+            else
+              echo "::warning::Label '${label}' references missing branch '${target}'"
+            fi
+          }
+
+          while IFS= read -r label; do
+            [ -z "$label" ] && continue
+
+            if [[ "$label" =~ ^branch:(.+)$ ]]; then
+              add_target "$label" "${BASH_REMATCH[1]}"
+            elif [[ "$label" =~ ^backport:(.+)$ ]]; then
+              add_target "$label" "${BASH_REMATCH[1]}"
+            elif [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
+              add_target "$label" "core/${label}"
+            fi
+          done <<< "$LABELS"
+
+          if [ "${#TARGETS[@]}" -eq 0 ]; then
+            echo "::error::No backport targets found (use labels like '1.24' or 'branch:release/hotfix')"
             exit 1
           fi
 
-          echo "versions=${VERSIONS}" >> $GITHUB_OUTPUT
-          echo "Found version labels: ${VERSIONS}"
+          echo "targets=${TARGETS[*]}" >> $GITHUB_OUTPUT
+          echo "Found backport targets: ${TARGETS[*]}"
 
       - name: Backport commits
         if: steps.check-existing.outputs.skip != 'true'
@@ -151,16 +171,17 @@ jobs:
             MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
           fi
 
-          for version in ${{ steps.versions.outputs.versions }}; do
-            echo "::group::Backporting to core/${version}"
+          for target in ${{ steps.targets.outputs.targets }}; do
+            TARGET_BRANCH="${target}"
+            SAFE_TARGET=$(echo "$TARGET_BRANCH" | tr '/' '-')
+            BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
 
-            TARGET_BRANCH="core/${version}"
-            BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${version}"
+            echo "::group::Backporting to ${TARGET_BRANCH}"
 
             # Fetch target branch (fail if doesn't exist)
             if ! git fetch origin "${TARGET_BRANCH}"; then
               echo "::error::Target branch ${TARGET_BRANCH} does not exist"
-              FAILED="${FAILED}${version}:branch-missing "
+              FAILED="${FAILED}${TARGET_BRANCH}:branch-missing "
               echo "::endgroup::"
               continue
             fi
@@ -171,7 +192,7 @@ jobs:
             # Try cherry-pick
             if git cherry-pick "${MERGE_COMMIT}"; then
               git push origin "${BACKPORT_BRANCH}"
-              SUCCESS="${SUCCESS}${version}:${BACKPORT_BRANCH} "
+              SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
               echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
               # Return to main (keep the branch, we need it for PR)
               git checkout main
@@ -181,7 +202,7 @@ jobs:
               git cherry-pick --abort
 
               echo "::error::Cherry-pick failed due to conflicts"
-              FAILED="${FAILED}${version}:conflicts:${CONFLICTS} "
+              FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
 
               # Clean up the failed branch
               git checkout main
@@ -215,13 +236,13 @@ jobs:
           fi
           
           for backport in ${{ steps.backport.outputs.success }}; do
-            IFS=':' read -r version branch <<< "${backport}"
+            IFS=':' read -r target branch <<< "${backport}"
 
             if PR_URL=$(gh pr create \
-              --base "core/${version}" \
+              --base "${target}" \
               --head "${branch}" \
-              --title "[backport ${version}] ${PR_TITLE}" \
-              --body "Backport of #${PR_NUMBER} to \`core/${version}\`"$'\n\n'"Automatically created by backport workflow." \
+              --title "[backport ${target}] ${PR_TITLE}" \
+              --body "Backport of #${PR_NUMBER} to \`${target}\`"$'\n\n'"Automatically created by backport workflow." \
               --label "backport" 2>&1); then
 
               # Extract PR number from URL
@@ -231,9 +252,9 @@ jobs:
                 gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
               fi
             else
-              echo "::error::Failed to create PR for ${version}: ${PR_URL}"
+              echo "::error::Failed to create PR for ${target}: ${PR_URL}"
               # Still try to comment on the original PR about the failure
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`core/${version}\`. Please create the PR manually from branch \`${branch}\`"
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`"
             fi
           done
 
@@ -254,16 +275,16 @@ jobs:
           fi
 
           for failure in ${{ steps.backport.outputs.failed }}; do
-            IFS=':' read -r version reason conflicts <<< "${failure}"
+            IFS=':' read -r target reason conflicts <<< "${failure}"
 
             if [ "${reason}" = "branch-missing" ]; then
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport failed: Branch \`core/${version}\` does not exist"
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist"
 
             elif [ "${reason}" = "conflicts" ]; then
               # Convert comma-separated conflicts back to newlines for display
               CONFLICTS_LIST=$(echo "${conflicts}" | tr ',' '\n' | sed 's/^/- /')
 
-              COMMENT_BODY="@${PR_AUTHOR} Backport to \`core/${version}\` failed: Merge conflicts detected."$'\n\n'"Please manually cherry-pick commit \`${MERGE_COMMIT}\` to the \`core/${version}\` branch."$'\n\n'"<details><summary>Conflicting files</summary>"$'\n\n'"${CONFLICTS_LIST}"$'\n\n'"</details>"
+              COMMENT_BODY="@${PR_AUTHOR} Backport to \`${target}\` failed: Merge conflicts detected."$'\n\n'"Please manually cherry-pick commit \`${MERGE_COMMIT}\` to the \`${target}\` branch."$'\n\n'"<details><summary>Conflicting files</summary>"$'\n\n'"${CONFLICTS_LIST}"$'\n\n'"</details>"
               gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
             fi
           done
