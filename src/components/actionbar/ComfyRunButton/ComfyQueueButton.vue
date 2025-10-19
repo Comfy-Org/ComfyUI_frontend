@@ -8,7 +8,7 @@
         showDelay: 600
       }"
       class="comfyui-queue-button"
-      :label="activeQueueModeMenuItem.label"
+      :label="String(activeQueueModeMenuItem.label)"
       severity="primary"
       size="small"
       :model="queueModeMenuItems"
@@ -82,10 +82,12 @@
 import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
+import type { MenuItem } from 'primevue/menuitem'
 import SplitButton from 'primevue/splitbutton'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isCloud } from '@/platform/distribution/types'
 import { useCommandStore } from '@/stores/commandStore'
 import {
   useQueuePendingTaskCountStore,
@@ -100,32 +102,37 @@ const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
 
 const { t } = useI18n()
-const queueModeMenuItemLookup = computed(() => ({
-  disabled: {
-    key: 'disabled',
-    label: t('menu.run'),
-    tooltip: t('menu.disabledTooltip'),
-    command: () => {
-      queueMode.value = 'disabled'
-    }
-  },
-  instant: {
-    key: 'instant',
-    label: `${t('menu.run')} (${t('menu.instant')})`,
-    tooltip: t('menu.instantTooltip'),
-    command: () => {
-      queueMode.value = 'instant'
-    }
-  },
-  change: {
-    key: 'change',
-    label: `${t('menu.run')} (${t('menu.onChange')})`,
-    tooltip: t('menu.onChangeTooltip'),
-    command: () => {
-      queueMode.value = 'change'
+const queueModeMenuItemLookup = computed(() => {
+  const items: Record<string, MenuItem> = {
+    disabled: {
+      key: 'disabled',
+      label: t('menu.run'),
+      tooltip: t('menu.disabledTooltip'),
+      command: () => {
+        queueMode.value = 'disabled'
+      }
+    },
+    change: {
+      key: 'change',
+      label: `${t('menu.run')} (${t('menu.onChange')})`,
+      tooltip: t('menu.onChangeTooltip'),
+      command: () => {
+        queueMode.value = 'change'
+      }
     }
   }
-}))
+  if (!isCloud) {
+    items.instant = {
+      key: 'instant',
+      label: `${t('menu.run')} (${t('menu.instant')})`,
+      tooltip: t('menu.instantTooltip'),
+      command: () => {
+        queueMode.value = 'instant'
+      }
+    }
+  }
+  return items
+})
 
 const activeQueueModeMenuItem = computed(
   () => queueModeMenuItemLookup.value[queueMode.value]
