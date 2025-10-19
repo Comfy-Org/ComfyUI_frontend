@@ -1665,7 +1665,7 @@ export class LGraph
         continue
       }
 
-      const input = subgraphNode.findInputSlotByType(link.type, true, true)
+      const input = subgraphNode.inputs[i - 1]
       outputNode.connectSlots(output, subgraphNode, input, link.parentId)
     }
 
