@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col"
+    class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
     tabindex="0"
     role="region"
     :aria-label="$t('g.videoPreview')"
