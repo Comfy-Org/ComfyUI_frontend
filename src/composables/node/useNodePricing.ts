@@ -1141,9 +1141,15 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const generateAudio =
           String(generateAudioWidget.value).toLowerCase() === 'true'
 
-        if (model.includes('veo-3.0-fast-generate-001')) {
+        if (
+          model.includes('veo-3.0-fast-generate-001') ||
+          model.includes('veo-3.1-fast-generate')
+        ) {
           return generateAudio ? '$1.20/Run' : '$0.80/Run'
-        } else if (model.includes('veo-3.0-generate-001')) {
+        } else if (
+          model.includes('veo-3.0-generate-001') ||
+          model.includes('veo-3.1-generate')
+        ) {
           return generateAudio ? '$3.20/Run' : '$1.60/Run'
         }
 
@@ -1641,7 +1647,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
             ? '720p'
             : resolutionStr.includes('480')
               ? '480p'
-              : resolutionStr.match(/^\s*(\d{3,4}p)/)?.[1] ?? ''
+              : (resolutionStr.match(/^\s*(\d{3,4}p)/)?.[1] ?? '')
 
         const pricePerSecond: Record<string, number> = {
           '480p': 0.05,

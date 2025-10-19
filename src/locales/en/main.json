@@ -593,7 +593,9 @@
       "nodes": "Nodes",
       "models": "Models",
       "workflows": "Workflows",
-      "templates": "Templates"
+      "templates": "Templates",
+      "console": "Console",
+      "menu": "Menu"
     },
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -1100,6 +1102,7 @@
     "overwriteBlueprintTitle": "Overwrite existing blueprint?",
     "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
     "blueprintName": "Subgraph name",
+    "promoteOutsideSubgraph": "Can't promote widget when not in subgraph",
     "publish": "Publish Subgraph",
     "publishSuccess": "Saved to Nodes Library",
     "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
@@ -1210,9 +1213,11 @@
     "Export": "Export",
     "Export (API)": "Export (API)",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
+    "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
+    "Toggle promotion of hovered widget": "Toggle promotion of hovered widget",
     "Unpack the selected Subgraph": "Unpack the selected Subgraph",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
     "Manage group nodes": "Manage group nodes",
@@ -1332,7 +1337,8 @@
     "Notification Preferences": "Notification Preferences",
     "3DViewer": "3DViewer",
     "Vue Nodes": "Vue Nodes",
-    "Canvas Navigation": "Canvas Navigation"
+    "Canvas Navigation": "Canvas Navigation",
+    "PlanCredits": "Plan & Credits"
   },
   "serverConfigItems": {
     "listen": {
@@ -1772,6 +1778,8 @@
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
+    "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
+    "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
     "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.",
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
     "nothingSelected": "Nothing selected",
@@ -1860,6 +1868,16 @@
       "cancel": "Cancel",
       "success": "Account Deleted",
       "successDetail": "Your account has been successfully deleted."
+    },
+    "reauthRequired": {
+      "title": "Re-authentication Required",
+      "message": "For security reasons, this action requires you to sign in again. Would you like to proceed?",
+      "confirm": "Sign In Again",
+      "cancel": "Cancel"
+    },
+    "loginButton": {
+      "tooltipHelp": "Login to be able to use \"API Nodes\"",
+      "tooltipLearnMore": "Learn more..."
     }
   },
   "validation": {
@@ -1907,6 +1925,35 @@
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized"
+  },
+  "subscription": {
+    "title": "Subscription",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "BETA",
+    "perMonth": "USD / month",
+    "renewsDate": "Renews {date}",
+    "manageSubscription": "Manage subscription",
+    "apiNodesBalance": "\"API Nodes\" Credit Balance",
+    "apiNodesDescription": "For running commercial/proprietary models",
+    "totalCredits": "Total credits",
+    "viewUsageHistory": "View usage history",
+    "addApiCredits": "Add API credits",
+    "yourPlanIncludes": "Your plan includes:",
+    "viewMoreDetails": "View more details",
+    "learnMore": "Learn more",
+    "messageSupport": "Message support",
+    "invoiceHistory": "Invoice history",
+    "benefits": {
+      "benefit1": "$10 in monthly credits for API models — top up when needed",
+      "benefit2": "Up to 30 min runtime per job"
+    },
+    "required": {
+        "title": "Subscribe to",
+      "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
+      "subscribe": "Subscribe"
+    },
+    "subscribeToRun": "Subscribe to Run",
+    "subscribeNow": "Subscribe Now"
   },
   "userSettings": {
     "title": "User Settings",
@@ -1963,6 +2010,7 @@
     "enterNewName": "Enter new name"
   },
   "shortcuts": {
+    "shortcuts": "Shortcuts",
     "essentials": "Essential",
     "viewControls": "View Controls",
     "manageShortcuts": "Manage Shortcuts",
@@ -2003,6 +2051,9 @@
     "sortZA": "Z-A",
     "sortRecent": "Recent",
     "sortPopular": "Popular"
+  },
+  "actionbar": {
+    "dockToTop": "Dock to top"
   },
   "desktopDialogs": {
     "": {

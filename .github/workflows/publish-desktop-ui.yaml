@@ -44,6 +44,7 @@ jobs:
       contents: read
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      ENABLE_MINIFY: 'true'
     steps:
       - name: Validate inputs
         env:

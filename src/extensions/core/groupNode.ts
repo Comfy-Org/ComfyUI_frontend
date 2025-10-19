@@ -542,7 +542,7 @@ export class GroupNodeConfig {
         primitiveConfig
       )
       primitiveConfig[1] =
-        config?.customConfig ?? inputs[inputName][1]
+        (config?.customConfig ?? inputs[inputName][1])
           ? { ...inputs[inputName][1] }
           : {}
 
