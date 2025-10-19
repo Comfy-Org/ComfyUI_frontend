@@ -208,6 +208,7 @@ export const useFirebaseAuthActions = () => {
     signUpWithEmail,
     updatePassword,
     deleteAccount,
-    accessError
+    accessError,
+    reportError
   }
 }
