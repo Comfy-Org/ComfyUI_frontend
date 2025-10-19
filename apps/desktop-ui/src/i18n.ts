@@ -87,7 +87,6 @@ const settingsLoaders: Record<
   zh: () => import('@frontend-locales/zh/settings.json'),
   'zh-TW': () => import('@frontend-locales/zh-TW/settings.json')
 }
-/* eslint-enable import-x/no-unresolved */
 
 // Track which locales have been loaded
 const loadedLocales = new Set<string>(['en'])
