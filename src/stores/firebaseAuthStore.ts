@@ -40,7 +40,7 @@ type AccessBillingPortalResponse =
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
 
-class FirebaseAuthStoreError extends Error {
+export class FirebaseAuthStoreError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'FirebaseAuthStoreError'
