@@ -135,9 +135,13 @@ const queueModeMenuItemLookup = computed(() => {
   return items
 })
 
-const activeQueueModeMenuItem = computed(
-  () => queueModeMenuItemLookup.value[queueMode.value]
-)
+const activeQueueModeMenuItem = computed(() => {
+  // Fallback to disabled mode if current mode is not available (e.g., instant mode in cloud)
+  return (
+    queueModeMenuItemLookup.value[queueMode.value] ||
+    queueModeMenuItemLookup.value.disabled
+  )
+})
 const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
