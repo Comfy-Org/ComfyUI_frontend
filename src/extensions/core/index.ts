@@ -26,5 +26,8 @@ import './widgetInputs'
 
 if (isCloud) {
   import('./cloudBadge')
-  import('./cloudSubscription')
+
+  if (__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION) {
+    import('./cloudSubscription')
+  }
 }

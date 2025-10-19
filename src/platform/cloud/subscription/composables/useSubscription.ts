@@ -26,7 +26,7 @@ interface CloudSubscriptionStatusResponse {
 const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
 
 const isActiveSubscription = computed(() => {
-  if (!isCloud) return true
+  if (!isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION) return true
 
   return subscriptionStatus.value?.is_active ?? false
 })

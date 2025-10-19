@@ -5,6 +5,11 @@ declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
 
+type BuildFeatureFlags = {
+  REQUIRE_SUBSCRIPTION: boolean
+}
+declare const __BUILD_FLAGS__: BuildFeatureFlags
+
 interface Navigator {
   /**
    * Used by the electron API.  This is a WICG non-standard API, but is guaranteed to exist in Electron.
