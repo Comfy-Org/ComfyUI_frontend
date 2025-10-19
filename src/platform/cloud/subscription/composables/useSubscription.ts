@@ -4,6 +4,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
@@ -11,8 +12,6 @@ import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
-
-const MONTHLY_SUBSCRIPTION_PRICE = 20
 
 interface CloudSubscriptionCheckoutResponse {
   checkout_url: string
@@ -198,12 +197,12 @@ export function useSubscription() {
 
     // Actions
     subscribe,
+    fetchStatus,
     showSubscriptionDialog,
     manageSubscription,
     requireActiveSubscription,
     handleViewUsageHistory,
     handleLearnMore,
-    handleInvoiceHistory,
-    fetchStatus
+    handleInvoiceHistory
   }
 }

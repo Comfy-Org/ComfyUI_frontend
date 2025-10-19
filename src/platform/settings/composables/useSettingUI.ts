@@ -85,7 +85,7 @@ export function useSettingUI(
     : {
         node: {
           key: 'subscription',
-          label: 'Plan & Credits',
+          label: 'PlanCredits',
           children: []
         },
         component: defineAsyncComponent(

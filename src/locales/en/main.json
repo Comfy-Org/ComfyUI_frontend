@@ -1334,7 +1334,8 @@
     "Notification Preferences": "Notification Preferences",
     "3DViewer": "3DViewer",
     "Vue Nodes": "Vue Nodes",
-    "Canvas Navigation": "Canvas Navigation"
+    "Canvas Navigation": "Canvas Navigation",
+    "PlanCredits": "Plan & Credits"
   },
   "serverConfigItems": {
     "listen": {

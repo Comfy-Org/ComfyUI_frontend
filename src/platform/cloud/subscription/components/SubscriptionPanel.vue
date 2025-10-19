@@ -1,5 +1,5 @@
 <template>
-  <TabPanel value="Plan & Credits" class="subscription-container h-full">
+  <TabPanel value="PlanCredits" class="subscription-container h-full">
     <div class="flex h-full flex-col">
       <div class="flex items-center gap-2">
         <h2 class="text-2xl">
@@ -39,7 +39,7 @@
                 :label="$t('subscription.subscribeNow')"
                 size="small"
                 button-class="text-xs"
-                @subscribed="handleSubscribed"
+                @subscribed="handleRefresh"
               />
             </div>
           </div>
@@ -81,7 +81,7 @@
                       severity="secondary"
                       size="small"
                       :loading="isLoadingBalance"
-                      @click="handleRefreshBalance"
+                      @click="handleRefresh"
                     />
                   </div>
 
@@ -114,7 +114,7 @@
                       </div>
                       <div
                         v-if="event.params?.amount !== undefined"
-                        :class="['font-bold']"
+                        class="font-bold"
                       >
                         ${{
                           customerEventService.formatAmount(
@@ -225,14 +225,14 @@ const {
   fetchStatus
 } = useSubscription()
 
+const latestEvents = ref<AuditLog[]>([])
+
 const totalCredits = computed(() => {
   if (!authStore.balance) return '0.00'
   return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
 })
 
 const isLoadingBalance = computed(() => authStore.isFetchingBalance)
-
-const latestEvents = ref<AuditLog[]>([])
 
 const fetchLatestEvents = async () => {
   try {
@@ -248,21 +248,9 @@ const fetchLatestEvents = async () => {
   }
 }
 
-onMounted(async () => {
-  await Promise.all([
-    authActions.fetchBalance(),
-    fetchStatus(),
-    fetchLatestEvents()
-  ])
+onMounted(() => {
+  void handleRefresh()
 })
-
-const handleRefreshBalance = async () => {
-  await Promise.all([
-    authActions.fetchBalance(),
-    fetchStatus(),
-    fetchLatestEvents()
-  ])
-}
 
 const handleAddApiCredits = () => {
   dialogService.showTopUpCreditsDialog()
@@ -272,8 +260,7 @@ const handleMessageSupport = async () => {
   await commandStore.execute('Comfy.ContactSupport')
 }
 
-const handleSubscribed = async () => {
-  // Refresh all data after successful subscription
+const handleRefresh = async () => {
   await Promise.all([
     authActions.fetchBalance(),
     fetchStatus(),
