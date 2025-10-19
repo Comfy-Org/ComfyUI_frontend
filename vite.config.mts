@@ -22,6 +22,7 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
+const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
@@ -185,7 +186,7 @@ export default defineConfig({
   build: {
     minify: SHOULD_MINIFY ? 'esbuild' : false,
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: GENERATE_SOURCEMAP,
     rollupOptions: {
       treeshake: true
     }
