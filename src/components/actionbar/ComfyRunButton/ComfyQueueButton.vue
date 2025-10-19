@@ -8,7 +8,7 @@
         showDelay: 600
       }"
       class="comfyui-queue-button"
-      :label="String(activeQueueModeMenuItem.label)"
+      :label="String(activeQueueModeMenuItem?.label ?? '')"
       severity="primary"
       size="small"
       :model="queueModeMenuItems"
@@ -33,7 +33,7 @@
             value: item.tooltip,
             showDelay: 600
           }"
-          :label="String(item.label)"
+          :label="String(item.label ?? '')"
           :icon="item.icon"
           :severity="item.key === queueMode ? 'primary' : 'secondary'"
           size="small"
