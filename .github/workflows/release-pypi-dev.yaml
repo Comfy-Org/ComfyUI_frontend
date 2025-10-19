@@ -29,6 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            .cache
             dist
             tsconfig.tsbuildinfo
           key: dev-release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}

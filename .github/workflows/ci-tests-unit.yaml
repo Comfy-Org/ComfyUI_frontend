@@ -33,6 +33,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            .cache
             coverage
             .vitest-cache
           key: vitest-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', 'vitest.config.*', 'tsconfig.json') }}
