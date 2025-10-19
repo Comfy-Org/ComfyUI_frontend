@@ -15,6 +15,9 @@ globalThis.__ALGOLIA_API_KEY__ = ''
 // @ts-expect-error - Global variables are defined in global.d.ts
 globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
+globalThis.__BUILD_FLAGS__ = {
+  REQUIRE_SUBSCRIPTION: true
+}
 
 // Mock Worker for extendable-media-recorder
 globalThis.Worker = vi.fn().mockImplementation(() => ({
