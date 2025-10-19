@@ -118,9 +118,7 @@ const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--input flex items-center group rounded-r-lg h-6',
     'cursor-crosshair',
-    props.dotOnly
-      ? 'lg-slot--dot-only'
-      : 'pr-6 hover:bg-black/5 hover:dark:bg-white/5',
+    props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
     {
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,
