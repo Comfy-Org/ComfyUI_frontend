@@ -196,7 +196,29 @@ export default defineConfig({
     minifyIdentifiers: SHOULD_MINIFY,
     keepNames: true,
     minifySyntax: SHOULD_MINIFY,
-    minifyWhitespace: SHOULD_MINIFY
+    minifyWhitespace: SHOULD_MINIFY,
+    pure: SHOULD_MINIFY
+      ? [
+          'console.log',
+          'console.debug',
+          'console.info',
+          'console.trace',
+          'console.dir',
+          'console.dirxml',
+          'console.group',
+          'console.groupCollapsed',
+          'console.groupEnd',
+          'console.table',
+          'console.time',
+          'console.timeEnd',
+          'console.timeLog',
+          'console.count',
+          'console.countReset',
+          'console.profile',
+          'console.profileEnd',
+          'console.clear'
+        ]
+      : []
   },
 
   test: {
