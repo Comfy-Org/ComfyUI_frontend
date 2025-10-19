@@ -21,6 +21,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -242,35 +243,58 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const login = async (
     email: string,
     password: string
-  ): Promise<UserCredential> =>
-    executeAuthAction(
+  ): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) =>
         signInWithEmailAndPassword(authInstance, email, password),
       { createCustomer: true }
     )
 
+    // Track successful sign-in completion
+    useTelemetry()?.trackSignUp('completed', { signup_method: 'email' })
+
+    return result
+  }
+
   const register = async (
     email: string,
     password: string
   ): Promise<UserCredential> => {
-    return executeAuthAction(
+    const result = await executeAuthAction(
       (authInstance) =>
         createUserWithEmailAndPassword(authInstance, email, password),
       { createCustomer: true }
     )
+
+    // Track successful sign-up completion
+    useTelemetry()?.trackSignUp('completed', { signup_method: 'email' })
+
+    return result
   }
 
-  const loginWithGoogle = async (): Promise<UserCredential> =>
-    executeAuthAction(
+  const loginWithGoogle = async (): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
       { createCustomer: true }
     )
 
-  const loginWithGithub = async (): Promise<UserCredential> =>
-    executeAuthAction(
+    // Track successful Google sign-in completion
+    useTelemetry()?.trackSignUp('completed', { signup_method: 'google' })
+
+    return result
+  }
+
+  const loginWithGithub = async (): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
       { createCustomer: true }
     )
+
+    // Track successful GitHub sign-in completion
+    useTelemetry()?.trackSignUp('completed', { signup_method: 'github' })
+
+    return result
+  }
 
   const logout = async (): Promise<void> =>
     executeAuthAction((authInstance) => signOut(authInstance))
