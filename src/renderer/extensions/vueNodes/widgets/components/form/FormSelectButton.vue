@@ -23,7 +23,7 @@
           },
           {
             'text-neutral-900': isSelected(option) && !disabled,
-            'text-zinc-500': !isSelected(option) || disabled
+            'text-secondary': !isSelected(option) || disabled
           }
         )
       "
