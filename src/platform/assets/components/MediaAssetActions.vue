@@ -37,11 +37,8 @@ const emit = defineEmits<{
 const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
 
-// Get asset type from context or tags
 const assetType = computed(() => {
-  // Check if asset has tags property (AssetItem type)
-  const assetWithTags = asset.value as any
-  return context?.value?.type || assetWithTags?.tags?.[0] || 'output'
+  return context?.value?.type || asset.value?.tags?.[0] || 'output'
 })
 
 const handleDelete = () => {
