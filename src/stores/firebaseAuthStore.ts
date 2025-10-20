@@ -252,7 +252,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track all auth events (login)
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
@@ -273,7 +272,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track all auth events (signup)
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
@@ -290,7 +288,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track all auth events (Google SSO)
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
@@ -309,7 +306,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track all auth events (GitHub SSO)
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false

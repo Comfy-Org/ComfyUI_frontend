@@ -7,6 +7,7 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 import type {
   AuthMetadata,
   ExecutionContext,
+  RunButtonProperties,
   SurveyResponses,
   TelemetryEventName,
   TelemetryEventProperties,
@@ -78,9 +79,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  /**
-   * Track event with Mixpanel
-   */
   private flushEventQueue(): void {
     if (!this.isInitialized || !this.mixpanel) {
       return
@@ -135,11 +133,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
     const executionContext = this.getExecutionContext()
 
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, {
+    const runButtonProperties: RunButtonProperties = {
       subscribe_to_run: options?.subscribe_to_run || false,
       workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name
-    })
+      workflow_name: executionContext.workflow_name ?? 'untitled'
+    }
+
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
   trackSurvey(

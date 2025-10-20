@@ -36,6 +36,15 @@ export interface SurveyResponses {
 }
 
 /**
+ * Run button tracking properties
+ */
+export interface RunButtonProperties {
+  subscribe_to_run: boolean
+  workflow_type: 'template' | 'custom'
+  workflow_name: string
+}
+
+/**
  * Execution context for workflow tracking
  */
 export interface ExecutionContext {
@@ -108,7 +117,7 @@ export const TelemetryEvents = {
   USER_EMAIL_VERIFY_REQUESTED: 'user_email_verify_requested',
   USER_EMAIL_VERIFY_COMPLETED: 'user_email_verify_completed',
 
-  // Enhanced Template Tracking
+  // Template Tracking
   TEMPLATE_WORKFLOW_OPENED: 'template_workflow_opened',
 
   // Workflow Execution Tracking
@@ -122,8 +131,8 @@ export type TelemetryEventName =
  * Union type for all possible telemetry event properties
  */
 export type TelemetryEventProperties =
-  | Record<string, unknown>
   | AuthMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
+  | RunButtonProperties
