@@ -17,7 +17,9 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -447,6 +449,11 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
+
+        if (isCloud) {
+          useTelemetry()?.trackWorkflowExecution()
+        }
+
         await app.queuePrompt(0, batchCount)
       }
     },
@@ -458,6 +465,11 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
+
+        if (isCloud) {
+          useTelemetry()?.trackWorkflowExecution()
+        }
+
         await app.queuePrompt(-1, batchCount)
       }
     },

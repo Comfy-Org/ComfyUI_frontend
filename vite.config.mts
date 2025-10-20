@@ -268,7 +268,8 @@ export default defineConfig({
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __BUILD_FLAGS__: JSON.stringify(BUILD_FLAGS)
+    __BUILD_FLAGS__: JSON.stringify(BUILD_FLAGS),
+    __MIXPANEL_TOKEN__: JSON.stringify(process.env.MIXPANEL_TOKEN || '')
   },
 
   resolve: {
