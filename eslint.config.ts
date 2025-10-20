@@ -183,7 +183,8 @@ export default defineConfig([
               'aria-valuetext',
               'label',
               'placeholder',
-              'title'
+              'title',
+              'v-tooltip'
             ],
             img: ['alt']
           },
