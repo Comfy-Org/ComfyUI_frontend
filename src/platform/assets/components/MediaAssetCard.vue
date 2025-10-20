@@ -128,7 +128,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import { formatDuration, getMediaKindFromFilename } from '@/utils/formatUtil'
+import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
@@ -191,7 +191,7 @@ const assetType = computed(() => {
 
 // Determine file type from extension
 const fileKind = computed((): MediaKind => {
-  return getMediaKindFromFilename(asset?.name || '') as MediaKind
+  return getMediaTypeFromFilename(asset?.name || '') as MediaKind
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components

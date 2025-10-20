@@ -5,11 +5,16 @@ import type { HistoryTaskItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { TaskItemImpl } from '@/stores/queueStore'
 
+import {
+  mapInputFileToAssetItem,
+  mapTaskOutputToAssetItem
+} from './assetMappers'
+
 /**
  * Composable for fetching media assets from local environment
  * Uses the same logic as QueueSidebarTab for history processing
  */
-export function useInternalMediaAssets() {
+export function useInternalFilesApi() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -37,16 +42,9 @@ export function useInternalMediaAssets() {
         }
         const filenames: string[] = await response.json()
 
-        return filenames.map((name, index) => ({
-          id: `${directory}-${index}-${name}`,
-          name,
-          size: 0,
-          created_at: new Date().toISOString(),
-          tags: [directory],
-          preview_url: api.apiURL(
-            `/view?filename=${encodeURIComponent(name)}&type=${directory}`
-          )
-        }))
+        return filenames.map((name, index) =>
+          mapInputFileToAssetItem(name, index, directory)
+        )
       }
 
       // For output directory, use history data like QueueSidebarTab
@@ -70,37 +68,16 @@ export function useInternalMediaAssets() {
 
         // Only process completed tasks
         if (taskItem.displayStatus === 'Completed' && taskItem.outputs) {
-          const executionTimeInSeconds = taskItem.executionTimeInSeconds
-          const executionStartTimestamp = taskItem.executionStartTimestamp
-
           // Process each output using flatOutputs like QueueSidebarTab
           taskItem.flatOutputs.forEach((output) => {
             // Only include output type files (not temp previews)
             if (output.type === 'output' && output.supportsPreview) {
-              assetItems.push({
-                id: `${taskItem.promptId}-${output.nodeId}-${output.filename}`,
-                name: output.filename,
-                size: 0,
-                created_at: executionStartTimestamp
-                  ? new Date(executionStartTimestamp).toISOString()
-                  : new Date().toISOString(),
-                tags: ['output'],
-                preview_url: output.url,
-                user_metadata: {
-                  promptId: taskItem.promptId,
-                  nodeId: output.nodeId,
-                  subfolder: output.subfolder,
-                  ...(executionTimeInSeconds && {
-                    executionTimeInSeconds
-                  }),
-                  ...(output.format && {
-                    format: output.format
-                  }),
-                  ...(taskItem.workflow && {
-                    workflow: taskItem.workflow
-                  })
-                }
-              })
+              const assetItem = mapTaskOutputToAssetItem(
+                taskItem,
+                output,
+                false // Don't use display name for internal
+              )
+              assetItems.push(assetItem)
             }
           })
         }
