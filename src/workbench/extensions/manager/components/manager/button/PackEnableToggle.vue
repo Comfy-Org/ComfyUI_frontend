@@ -16,14 +16,14 @@
       :model-value="isEnabled"
       :disabled="isLoading"
       :readonly="!canToggleDirectly"
-      aria-label="Enable or disable pack"
+      :aria-label="$t('g.enableOrDisablePack')"
       @focus="handleToggleInteraction"
     />
     <ToggleSwitch
       v-else
       :model-value="isEnabled"
       :disabled="isLoading"
-      aria-label="Enable or disable pack"
+      :aria-label="$t('g.enableOrDisablePack')"
       @update:model-value="onToggle"
     />
   </div>
