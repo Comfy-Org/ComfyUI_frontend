@@ -19,14 +19,15 @@ const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
-const DISABLE_VUE_PLUGINS = false // Always enable Vue DevTools for development
+const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
+const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 
 // CLOUD PERFORMANCE: ImportMap entries for Vue/PrimeVue temporarily disabled (see generateImportMapPlugin below)
 // This reduces 600+ HTTP requests to ~8 bundled files for better cloud deployment performance
 
 // Hardcoded to staging cloud for testing frontend changes against cloud backend
 const DEV_SERVER_COMFYUI_URL =
-  process.env.DEV_SERVER_COMFYUI_URL || 'https://stagingcloud.comfy.org'
+  process.env.DEV_SERVER_COMFYUI_URL || 'https://testcloud.comfy.org'
 // To use local backend, change to: 'http://127.0.0.1:8188'
 
 // Optional: Add API key to .env as STAGING_API_KEY if needed for authentication
@@ -235,19 +236,68 @@ export default defineConfig({
   build: {
     minify: SHOULD_MINIFY ? 'esbuild' : false,
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: GENERATE_SOURCEMAP,
     rollupOptions: {
-      // Disabling tree-shaking
-      // Prevent vite remove unused exports
-      treeshake: false
+      treeshake: true,
+      output: {
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+
+          if (id.includes('primevue') || id.includes('@primeuix')) {
+            return 'vendor-primevue'
+          }
+
+          if (id.includes('@tiptap')) {
+            return 'vendor-tiptap'
+          }
+
+          if (id.includes('chart.js')) {
+            return 'vendor-chart'
+          }
+
+          if (id.includes('three') || id.includes('@xterm')) {
+            return 'vendor-visualization'
+          }
+
+          if (id.includes('/vue') || id.includes('pinia')) {
+            return 'vendor-vue'
+          }
+
+          return 'vendor-other'
+        }
+      }
     }
   },
 
   esbuild: {
-    minifyIdentifiers: false,
+    minifyIdentifiers: SHOULD_MINIFY,
     keepNames: true,
     minifySyntax: SHOULD_MINIFY,
-    minifyWhitespace: SHOULD_MINIFY
+    minifyWhitespace: SHOULD_MINIFY,
+    pure: SHOULD_MINIFY
+      ? [
+          'console.log',
+          'console.debug',
+          'console.info',
+          'console.trace',
+          'console.dir',
+          'console.dirxml',
+          'console.group',
+          'console.groupCollapsed',
+          'console.groupEnd',
+          'console.table',
+          'console.time',
+          'console.timeEnd',
+          'console.timeLog',
+          'console.count',
+          'console.countReset',
+          'console.profile',
+          'console.profileEnd',
+          'console.clear'
+        ]
+      : []
   },
 
   test: {
