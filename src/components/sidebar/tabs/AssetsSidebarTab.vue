@@ -15,7 +15,7 @@
           <i class="icon-[lucide--copy] size-4" />
         </button>
         <span class="ml-auto text-sm text-neutral-500">
-          {{ formatExecutionTime(folderExecutionTime) }}
+          {{ formattedExecutionTime }}
         </span>
       </div>
     </template>
@@ -108,13 +108,18 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 const activeTab = ref<'input' | 'output'>('input')
 const selectedAsset = ref<AssetItem | null>(null)
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
+
+const formattedExecutionTime = computed(() => {
+  if (!folderExecutionTime.value) return ''
+  return formatDuration(folderExecutionTime.value * 1000)
+})
 
 const toast = useToast()
 
@@ -282,17 +287,5 @@ const copyJobId = async () => {
       })
     }
   }
-}
-
-const formatExecutionTime = (seconds?: number): string => {
-  if (!seconds) return ''
-
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-
-  if (minutes > 0) {
-    return `${minutes}m ${remainingSeconds}s`
-  }
-  return `${remainingSeconds}s`
 }
 </script>
