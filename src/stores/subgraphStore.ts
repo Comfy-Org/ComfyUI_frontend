@@ -28,6 +28,13 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 
+//FIXME: update with full information returned. Move into api
+type GlobalSubgraphResponse = {
+  name: string
+  info: { node_pack: string }
+  data: string
+}
+
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
     title: t('subgraphStore.overwriteBlueprintTitle'),
@@ -156,11 +163,46 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       subgraphDefCache.value.set(name, nodeDef)
       subgraphCache[name] = bp
     }
+    //FIXME: reuse existing version in workflowstore
+    const getUnconflictedPath = (basePath: string): string => {
+      return basePath
+    }
+    async function loadInstalledBlueprints() {
+      const resp = await api.fetchApi('/global_subgraphs')
+      const installedSubs: Record<string, GlobalSubgraphResponse> =
+        await resp.json()
+      for (const [k, v] of Object.entries(installedSubs)) {
+        const path = getUnconflictedPath(
+          SubgraphBlueprint.basePath + v.name + '.json'
+        )
+        const blueprint = new SubgraphBlueprint({
+          path,
+          modified: Date.now(),
+          size: -1
+        })
+        blueprint.originalContent = blueprint.content = v.data
+        blueprint.filename = v.name
+        useWorkflowStore().attachWorkflow(blueprint)
+        const loaded = await blueprint.load()
+        //TODO: Add more overrides?
+        const nodeDef = convertToNodeDef(loaded, {
+          python_module: v.info.node_pack,
+          display_name: v.name,
+          name: typePrefix + k
+        })
+        subgraphDefCache.value.set(k, nodeDef)
+        subgraphCache[k] = loaded
+      }
+    }
 
-    const res = (
+    const userSubs = (
       await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
     ).filter((f) => f.path.endsWith('.json'))
-    const settled = await Promise.allSettled(res.map(loadBlueprint))
+    const settled = await Promise.allSettled([
+      ...userSubs.map(loadBlueprint),
+      loadInstalledBlueprints()
+    ])
+
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
     if (errors.length > 0) {
@@ -172,7 +214,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       })
     }
   }
-  function convertToNodeDef(workflow: LoadedComfyWorkflow): ComfyNodeDefImpl {
+  function convertToNodeDef(
+    workflow: LoadedComfyWorkflow,
+    overrides: Partial<ComfyNodeDefV1> = {}
+  ): ComfyNodeDefImpl {
     const name = workflow.filename
     const subgraphNode = workflow.changeTracker.initialState.nodes[0]
     if (!subgraphNode) throw new Error('Invalid Subgraph Blueprint')
@@ -197,7 +242,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       description,
       category: 'Subgraph Blueprints',
       output_node: false,
-      python_module: 'blueprint'
+      python_module: 'blueprint',
+      ...overrides
     }
     const nodeDefImpl = new ComfyNodeDefImpl(nodedefv1)
     return nodeDefImpl
