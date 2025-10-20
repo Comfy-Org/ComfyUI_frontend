@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "Usar nuevo menú",
     "options": {
-      "Bottom": "Abajo",
       "Disabled": "Deshabilitado",
       "Top": "Arriba"
     },
@@ -384,8 +383,7 @@
     "name": "Posición de los flujos de trabajo abiertos",
     "options": {
       "Sidebar": "Barra lateral",
-      "Topbar": "Barra superior",
-      "Topbar (2nd-row)": "Barra superior (2ª fila)"
+      "Topbar": "Barra superior"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

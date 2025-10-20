@@ -7,6 +7,22 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+
+function pasteClipboardItems(data: DataTransfer): boolean {
+  const rawData = data.getData('text/html')
+  const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  if (!match) return false
+  try {
+    useCanvasStore()
+      .getCanvas()
+      ._deserializeItems(JSON.parse(atob(match)), {})
+    return true
+  } catch (err) {
+    console.error(err)
+  }
+  return false
+}
 
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
@@ -38,15 +54,10 @@ export const usePaste = () => {
   }
 
   useEventListener(document, 'paste', async (e) => {
-    const isTargetInGraph =
-      e.target instanceof Element &&
-      (e.target.classList.contains('litegraph') ||
-        e.target.classList.contains('graph-canvas-container') ||
-        e.target.id === 'graph-canvas')
-
-    // If the target is not in the graph, we don't want to handle the paste event
-    if (!isTargetInGraph) return
-
+    if (shouldIgnoreCopyPaste(e.target)) {
+      // Default system copy
+      return
+    }
     // ctrl+shift+v is used to paste nodes with connections
     // this is handled by litegraph
     if (workspaceStore.shiftDown) return
@@ -109,6 +120,7 @@ export const usePaste = () => {
         return
       }
     }
+    if (pasteClipboardItems(data)) return
 
     // No image found. Look for node data
     data = data.getData('text/plain')

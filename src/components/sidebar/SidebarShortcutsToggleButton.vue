@@ -1,5 +1,6 @@
 <template>
   <SidebarIcon
+    label="shortcuts.shortcuts"
     :tooltip="tooltipText"
     :selected="isShortcutsPanelVisible"
     @click="toggleShortcutsPanel"

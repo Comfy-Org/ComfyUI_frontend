@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
@@ -78,7 +80,7 @@ export function useTemplateWorkflows() {
     const fallback =
       template.title ?? template.name ?? `${sourceModule} Template`
     return sourceModule === 'default'
-      ? template.localizedTitle ?? fallback
+      ? (template.localizedTitle ?? fallback)
       : fallback
   }
 
@@ -128,6 +130,13 @@ export function useTemplateWorkflows() {
             ? t(`templateWorkflows.template.${id}`, id)
             : id
 
+        if (isCloud) {
+          useTelemetry()?.trackTemplate({
+            workflow_name: workflowName,
+            template_source: actualSourceModule
+          })
+        }
+
         dialogStore.closeDialog()
         await app.loadGraphData(json, true, true, workflowName)
 
@@ -141,6 +150,13 @@ export function useTemplateWorkflows() {
         sourceModule === 'default'
           ? t(`templateWorkflows.template.${id}`, id)
           : id
+
+      if (isCloud) {
+        useTelemetry()?.trackTemplate({
+          workflow_name: workflowName,
+          template_source: sourceModule
+        })
+      }
 
       dialogStore.closeDialog()
       await app.loadGraphData(json, true, true, workflowName)

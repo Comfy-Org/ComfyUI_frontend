@@ -171,10 +171,10 @@
     "label": "自定义节点（测试版）"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "自訂節點（舊版）"
+    "label": "自定义节点（旧版）"
   },
   "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "管理員選單（舊版）"
+    "label": "管理员菜单（旧版）"
   },
   "Comfy_Manager_ShowMissingPacks": {
     "label": "安装缺失的包"
@@ -279,13 +279,13 @@
     "label": "切换日志底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "切換基本下方面板"
+    "label": "切换基本下方面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "切換檢視控制底部面板"
+    "label": "切换检视控制底部面板"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "顯示快捷鍵對話框"
+    "label": "显示快捷键对话框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

@@ -3,6 +3,7 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isCloud } from '@/platform/distribution/types'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
@@ -23,6 +24,7 @@ export function useSettingUI(
     | 'server-config'
     | 'user'
     | 'credits'
+    | 'subscription'
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
@@ -78,6 +80,23 @@ export function useSettingUI(
     )
   }
 
+  const subscriptionPanel: SettingPanelItem | null =
+    !isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION
+      ? null
+      : {
+          node: {
+            key: 'subscription',
+            label: 'PlanCredits',
+            children: []
+          },
+          component: defineAsyncComponent(
+            () =>
+              import(
+                '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
+              )
+          )
+        }
+
   const userPanel: SettingPanelItem = {
     node: {
       key: 'user',
@@ -129,7 +148,10 @@ export function useSettingUI(
       userPanel,
       keybindingPanel,
       extensionPanel,
-      ...(isElectron() ? [serverConfigPanel] : [])
+      ...(isElectron() ? [serverConfigPanel] : []),
+      ...(isCloud && __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION && subscriptionPanel
+        ? [subscriptionPanel]
+        : [])
     ].filter((panel) => panel.component)
   )
 
@@ -155,13 +177,22 @@ export function useSettingUI(
   })
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Account settings - only show credits when user is authenticated
+    // Account settings - show different panels based on distribution and auth state
     {
       key: 'account',
       label: 'Account',
       children: [
         userPanel.node,
-        ...(isLoggedIn.value ? [creditsPanel.node] : [])
+        ...(isLoggedIn.value &&
+        isCloud &&
+        __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION &&
+        subscriptionPanel
+          ? [subscriptionPanel.node]
+          : []),
+        ...(isLoggedIn.value &&
+        !(isCloud && __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION)
+          ? [creditsPanel.node]
+          : [])
       ].map(translateCategory)
     },
     // Normal settings stored in the settingStore

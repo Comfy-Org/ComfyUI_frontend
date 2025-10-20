@@ -3,10 +3,10 @@ import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
 import {
-  type ComfyPage,
   comfyPageFixture as test,
   testComfySnapToGridGridSize
 } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -786,24 +786,25 @@ test.describe('Viewport settings', () => {
     // Screenshot the canvas element
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
 
-    // Open zoom controls dropdown first
-    const zoomControlsButton = comfyPage.page.getByTestId(
-      'zoom-controls-button'
-    )
-    await zoomControlsButton.click()
-
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
     await toggleButton.click()
-    // close zoom menu
-    await zoomControlsButton.click()
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', false)
 
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
     await comfyPage.nextFrame()
-    const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')
 
     // Save workflow as a new file, then zoom out before screen shot
     await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+
+    await comfyPage.nextFrame()
+    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
+    await changeTab(tabA)
+
+    const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')
+
+    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
+    await changeTab(tabB)
+
     await comfyMouse.move(comfyPage.emptySpace)
     for (let i = 0; i < 4; i++) {
       await comfyMouse.wheel(0, 60)
@@ -814,9 +815,6 @@ test.describe('Viewport settings', () => {
 
     // Ensure that the screenshots are different due to zoom level
     expect(screenshotB).not.toBe(screenshotA)
-
-    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
 
     // Go back to Workflow A
     await changeTab(tabA)

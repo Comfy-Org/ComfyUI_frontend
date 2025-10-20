@@ -39,15 +39,15 @@ test.describe('Graph Canvas Menu', () => {
     )
   })
 
-  test('Focus mode button is clickable and has correct test id', async ({
+  test('Toggle minimap button is clickable and has correct test id', async ({
     comfyPage
   }) => {
-    const focusButton = comfyPage.page.getByTestId('focus-mode-button')
-    await expect(focusButton).toBeVisible()
-    await expect(focusButton).toBeEnabled()
+    const minimapButton = comfyPage.page.getByTestId('toggle-minimap-button')
+    await expect(minimapButton).toBeVisible()
+    await expect(minimapButton).toBeEnabled()
 
     // Test that the button can be clicked without error
-    await focusButton.click()
+    await minimapButton.click()
     await comfyPage.nextFrame()
   })
 
