@@ -64,21 +64,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               loaded: () => {
                 this.isInitialized = true
                 this.flushEventQueue() // flush events that were queued while initializing
-                // TODO: Re-enable user tracking setup once circular dependency issue is resolved
-                // Defer user tracking setup to avoid circular dependency issues
-                // setTimeout(() => {
-                //   try {
-                //     useCurrentUser().onUserResolved((user) => {
-                //       if (this.mixpanel && user.id) {
-                //         this.mixpanel.identify(user.id)
-                //         // Set existing survey data as user properties if available
-                //         this.initializeExistingSurveyData()
-                //       }
-                //     })
-                //   } catch (error) {
-                //     console.error('Failed to initialize user tracking:', error)
-                //   }
-                // }, 0)
               }
             })
           })
