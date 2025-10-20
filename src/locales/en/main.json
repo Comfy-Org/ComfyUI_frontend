@@ -583,6 +583,7 @@
     "templates": "Templates",
     "assets": "Assets",
     "mediaAssets": "Media Assets",
+    "backToAssets": "Back to all assets",
     "labels": {
       "queue": "Queue",
       "nodes": "Nodes",

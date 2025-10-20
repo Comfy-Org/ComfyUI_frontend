@@ -1,45 +1,52 @@
 <template>
-  <SidebarTabTemplate
-    :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets')"
-  >
-    <template v-if="isInFolderView" #tool-buttons>
-      <div class="flex w-full items-center gap-2">
-        <span class="font-medium"
-          >Job ID: {{ folderPromptId?.substring(0, 8) }}</span
-        >
-        <button
-          class="rounded p-1 transition-colors hover:bg-neutral-100 dark-theme:hover:bg-neutral-700"
-          :title="$t('g.copy')"
-          @click="copyJobId"
-        >
-          <i class="icon-[lucide--copy] size-4" />
-        </button>
-        <span class="ml-auto text-sm text-neutral-500">
-          {{ formattedExecutionTime }}
-        </span>
+  <AssetsSidebarTemplate>
+    <template #top>
+      <span v-if="!isInFolderView" class="font-bold">
+        {{ $t('sideToolbar.mediaAssets') }}
+      </span>
+      <div v-else class="flex w-full items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="font-bold">{{ $t('Job ID') }}:</span>
+          <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
+          <i class="mb-1 icon-[lucide--copy] text-sm" @click="copyJobId"></i>
+        </div>
+        <div>
+          <span>{{ formattedExecutionTime }}</span>
+        </div>
       </div>
     </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div
-        v-if="isInFolderView"
-        class="border-b border-neutral-300 px-4 pt-2 pb-3 dark-theme:border-neutral-700"
-      >
-        <button
-          class="flex items-center gap-2 rounded bg-neutral-100 px-3 py-1.5 text-sm transition-colors hover:bg-neutral-200 dark-theme:bg-neutral-700 dark-theme:hover:bg-neutral-600"
+      <div v-if="isInFolderView" class="pt-4 pb-1">
+        <IconTextButton
+          :label="$t('sideToolbar.backToAssets')"
+          type="secondary"
           @click="exitFolderView"
         >
-          <i class="icon-[lucide--arrow-left] size-4" />
-          <span>Back to all assets</span>
-        </button>
+          <template #icon>
+            <i class="icon-[lucide--arrow-left] size-4" />
+          </template>
+        </IconTextButton>
       </div>
       <!-- Normal Tab View -->
-      <Tabs v-model:value="activeTab" class="w-full">
+      <div v-else class="flex items-center gap-2 pt-4 pb-1">
+        <TextButton
+          :label="$t('sideToolbar.labels.imported')"
+          :type="activeTab === 'input' ? 'secondary' : 'transparent'"
+          @click.stop="activeTab = 'input'"
+        />
+        <TextButton
+          :label="$t('sideToolbar.labels.generated')"
+          :type="activeTab === 'output' ? 'secondary' : 'transparent'"
+          @click.stop="activeTab = 'output'"
+        />
+      </div>
+      <!-- <Tabs v-else v-model:value="activeTab" class="w-full">
         <TabList class="border-b border-neutral-300">
           <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
           <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
         </TabList>
-      </Tabs>
+      </Tabs> -->
     </template>
     <template #body>
       <VirtualGrid
@@ -87,7 +94,7 @@
         />
       </div>
     </template>
-  </SidebarTabTemplate>
+  </AssetsSidebarTemplate>
   <ResultGallery
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -96,15 +103,13 @@
 
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import Tabs from 'primevue/tabs'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
@@ -114,6 +119,8 @@ import {
   formatDuration,
   getMediaTypeFromFilenamePlural
 } from '@/utils/formatUtil'
+
+import AssetsSidebarTemplate from './AssetSidebarTemplate.vue'
 
 const activeTab = ref<'input' | 'output'>('input')
 const mediaAssets = ref<AssetItem[]>([])
