@@ -46,7 +46,12 @@
           : $t('manager.installAllMissingNodes')
       "
     />
-    <Button label="Open Manager" size="small" outlined @click="openManager" />
+    <Button
+      :label="$t('g.openManager')"
+      size="small"
+      outlined
+      @click="openManager"
+    />
   </div>
 </template>
 
