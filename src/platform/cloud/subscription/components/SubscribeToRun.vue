@@ -10,7 +10,7 @@
     severity="primary"
     size="small"
     data-testid="subscribe-to-run-button"
-    @click="showSubscriptionDialog"
+    @click="handleSubscribeToRun"
   />
 </template>
 
@@ -18,6 +18,16 @@
 import Button from 'primevue/button'
 
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 
 const { showSubscriptionDialog } = useSubscription()
+
+const handleSubscribeToRun = () => {
+  if (isCloud) {
+    useTelemetry()?.trackRunButton({ subscribe_to_run: true })
+  }
+
+  showSubscriptionDialog()
+}
 </script>
