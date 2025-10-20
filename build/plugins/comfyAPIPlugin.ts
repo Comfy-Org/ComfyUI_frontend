@@ -8,6 +8,13 @@ interface ShimResult {
 
 const SKIP_WARNING_FILES = new Set(['scripts/app', 'scripts/api'])
 
+/** Files that will be removed in v1.34 */
+const DEPRECATED_FILES = [
+  'scripts/ui',
+  'extensions/core/maskEditorOld',
+  'extensions/core/groupNode'
+] as const
+
 function getWarningMessage(
   fileKey: string,
   shimFileName: string
@@ -16,7 +23,11 @@ function getWarningMessage(
     return null
   }
 
-  if (fileKey.startsWith('scripts/ui/')) {
+  const isDeprecated = DEPRECATED_FILES.some((deprecatedPath) =>
+    fileKey.startsWith(deprecatedPath)
+  )
+
+  if (isDeprecated) {
     return `[ComfyUI Deprecated] Importing from "${shimFileName}" is deprecated and will be removed in v1.34.`
   }
 
@@ -86,6 +97,7 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
           const warningMessage = getWarningMessage(fileKey, shimFileName)
 
           if (warningMessage) {
+            // It will only display once because it is at the root of the file.
             shimContent += `console.warn('${warningMessage}');\n`
           }
 
