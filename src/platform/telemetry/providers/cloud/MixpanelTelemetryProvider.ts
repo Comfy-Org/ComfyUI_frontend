@@ -15,6 +15,11 @@ import type {
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
+interface QueuedEvent {
+  eventName: TelemetryEventName
+  properties?: TelemetryEventProperties
+}
+
 /**
  * Mixpanel Telemetry Provider - Cloud Build Implementation
  *
@@ -27,11 +32,6 @@ import { TelemetryEvents } from '../../types'
  * 2. `grep -RinE --include='*.js' 'trackWorkflow|trackEvent|mixpanel' dist/` (should find nothing)
  * 3. Check dist/assets/*.js files contain no tracking code
  */
-interface QueuedEvent {
-  eventName: TelemetryEventName
-  properties?: TelemetryEventProperties
-}
-
 export class MixpanelTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private mixpanel: OverridedMixpanel | null = null
@@ -55,7 +55,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               persistence: 'cookie',
               loaded: () => {
                 this.isInitialized = true
-                this.flushEventQueue() // flush events queued while initializing
+                this.flushEventQueue() // flush events that were queued while initializing
                 useCurrentUser().onUserResolved((user) => {
                   if (this.mixpanel && user.id) {
                     this.mixpanel.identify(user.id)
