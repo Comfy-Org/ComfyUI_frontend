@@ -68,15 +68,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BaseJobRow from './BaseJobRow.vue'
+import type { JobState } from '@/types/queue'
+import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
+import { iconForJobState, shouldShowClear } from '@/utils/queueUtil'
 
-type JobState =
-  | 'added'
-  | 'queued'
-  | 'initialization'
-  | 'running'
-  | 'completed'
-  | 'failed'
+import BaseJobRow from './BaseJobRow.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -113,45 +109,24 @@ const { t, locale } = useI18n()
 
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
-  switch (props.state) {
-    case 'added':
-      return 'icon-[lucide--plus]'
-    case 'queued':
-      return 'icon-[lucide--clock]'
-    case 'initialization':
-      return 'icon-[lucide--server-crash]'
-    case 'running':
-      return 'icon-[lucide--zap]'
-    case 'completed':
-      return 'icon-[lucide--check]'
-    case 'failed':
-      return 'icon-[lucide--alert-circle]'
-    default:
-      return 'icon-[lucide--circle]'
-  }
+  return iconForJobState(props.state)
 })
 
 const rightText = computed(() => props.rightText)
 const runningTotalPercent = computed(() =>
-  Math.max(0, Math.min(100, Math.round(props.progressTotalPercent ?? 0)))
+  clampPercentInt(props.progressTotalPercent)
 )
 
 const formattedTotalPercent = computed(() =>
-  new Intl.NumberFormat(locale.value, {
-    style: 'percent',
-    maximumFractionDigits: 0
-  }).format((runningTotalPercent.value || 0) / 100)
+  formatPercent0(locale.value, runningTotalPercent.value)
 )
 
 const runningCurrentPercent = computed(() =>
-  Math.max(0, Math.min(100, Math.round(props.progressCurrentPercent ?? 0)))
+  clampPercentInt(props.progressCurrentPercent)
 )
 
 const formattedCurrentPercent = computed(() =>
-  new Intl.NumberFormat(locale.value, {
-    style: 'percent',
-    maximumFractionDigits: 0
-  }).format((runningCurrentPercent.value || 0) / 100)
+  formatPercent0(locale.value, runningCurrentPercent.value)
 )
 
 const primaryText = computed(() => {
@@ -161,19 +136,9 @@ const primaryText = computed(() => {
   return props.title
 })
 
-const computedShowClear = computed(() => {
-  if (props.showClear !== undefined) return props.showClear
-  switch (props.state) {
-    case 'queued':
-    case 'failed':
-    case 'added':
-      return true
-    case 'initialization':
-    case 'running':
-      return false
-  }
-  return false
-})
+const computedShowClear = computed(() =>
+  shouldShowClear(props.state, props.showClear)
+)
 
 const computedShowMenu = computed(() => {
   if (props.showMenu !== undefined) return props.showMenu
