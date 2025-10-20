@@ -405,17 +405,31 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
+import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { st } from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import {
+  dateKey,
+  formatClockTime,
+  formatShortMonthDay,
+  isToday,
+  isYesterday
+} from '@/utils/dateTimeUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import {
+  buildJobMeta,
+  buildJobTitle,
+  jobStateFromTask
+} from '@/utils/queueUtil'
 
 const { t, locale } = useI18n()
 const queueStore = useQueueStore()
@@ -423,22 +437,13 @@ const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
 const workflowStore = useWorkflowStore()
 
-/** Temporary: toggle stub active progress with '+' key for testing */
-const forceActiveStub = ref(false)
-const toggleForceActiveStub = () => {
-  forceActiveStub.value = !forceActiveStub.value
-}
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === '+' || (event.key === '=' && event.shiftKey)) {
-    toggleForceActiveStub()
-  }
-}
-onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleKeydown)
-})
+const {
+  totalPercent,
+  totalPercentFormatted,
+  currentNodePercent,
+  totalProgressStyle,
+  currentNodeProgressStyle
+} = useQueueProgress()
 const isHovered = ref(false)
 const isExpanded = ref(false)
 const isMoreOpen = ref(false)
@@ -456,14 +461,10 @@ const bottomRowClass = computed(
     }`
 )
 
-const runningCount = computed(() =>
-  forceActiveStub.value ? 1 : queueStore.runningTasks.length
-)
+const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
-const isExecuting = computed(
-  () => forceActiveStub.value || !executionStore.isIdle
-)
+const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
 const activeJobsCount = computed(
   () => runningCount.value + queueStore.pendingTasks.length
@@ -481,41 +482,7 @@ const showBackground = computed(
 
 const isVisible = computed(() => !isFullyInvisible.value)
 
-const clampPercent = (value: number) =>
-  Math.max(0, Math.min(100, Math.round(value)))
-
-const totalPercent = computed(() =>
-  forceActiveStub.value
-    ? 30
-    : clampPercent((executionStore.executionProgress ?? 0) * 100)
-)
-
-const totalPercentFormatted = computed(() =>
-  new Intl.NumberFormat(locale.value, {
-    style: 'percent',
-    maximumFractionDigits: 0
-  }).format((totalPercent.value || 0) / 100)
-)
-
-const currentNodePercent = computed(() =>
-  forceActiveStub.value
-    ? 60
-    : clampPercent((executionStore.executingNodeProgress ?? 0) * 100)
-)
-
-const totalProgressStyle = computed(() => ({
-  width: `${totalPercent.value}%`,
-  background: 'var(--color-interface-panel-job-progress-primary)'
-}))
-
-const currentNodeProgressStyle = computed(() => ({
-  width: `${currentNodePercent.value}%`,
-  background: 'var(--color-interface-panel-job-progress-secondary)'
-}))
-
 const currentNodeName = computed(() => {
-  if (forceActiveStub.value)
-    return t('sideToolbar.queueProgressOverlay.stubClipTextEncode')
   const node = executionStore.executingNode
   if (!node) return t('g.emDash')
   const title = (node.title ?? '').toString().trim()
@@ -568,59 +535,6 @@ type JobListItem = {
   runningNodeName?: string
 }
 
-const formatTime = (time?: number) => {
-  if (time === undefined) return ''
-  return `${time.toFixed(2)}s`
-}
-
-const formatClockTime = (timestamp?: number) => {
-  if (timestamp === undefined) return ''
-  const d = new Date(timestamp)
-  let h = d.getHours() % 12
-  h = h === 0 ? 12 : h
-  const m = String(d.getMinutes()).padStart(2, '0')
-  const s = String(d.getSeconds()).padStart(2, '0')
-  const ampm = d.getHours() >= 12 ? 'pm' : 'am'
-  return `${h}:${m}:${s}${ampm}`
-}
-
-const deriveStateFromTask = (task: any): JobListItem['state'] => {
-  if (isJobInitializing(task?.promptId)) return 'initialization'
-  if (task.taskType === 'Pending') return 'queued'
-  if (task.taskType === 'Running') return 'running'
-  if (task.taskType === 'History') {
-    const status = task.displayStatus
-    if (status === 'Completed') return 'completed'
-    if (status === 'Failed') return 'failed'
-    if (status === 'Cancelled') return 'failed'
-  }
-  return 'queued'
-}
-
-const formatTitleForTask = (task: any) => {
-  const prefix = t('g.job')
-  const shortId = String(task.promptId ?? '').split('-')[0]
-  const idx = task.queueIndex ?? ''
-  if (idx !== '') return `${prefix} #${idx}`
-  if (shortId) return `${prefix} ${shortId}`
-  return prefix
-}
-
-const formatMetaForTask = (task: any, state: JobListItem['state']) => {
-  if (state === 'running') return t('g.running')
-  if (state === 'queued' || state === 'initialization' || state === 'added') {
-    const pid = String(task.promptId ?? '')
-    const ts = queueStore.firstSeenByPromptId?.[pid]
-    return formatClockTime(ts)
-  }
-  if (state === 'completed') {
-    const time = formatTime(task.executionTimeInSeconds)
-    return time || ''
-  }
-  if (state === 'failed') return t('g.failed')
-  return ''
-}
-
 const allTasksSorted = computed(() => {
   const all = [
     ...queueStore.pendingTasks,
@@ -633,9 +547,13 @@ const allTasksSorted = computed(() => {
 const filteredTasks = computed(() => {
   let tasks = allTasksSorted.value
   if (selectedJobTab.value === 'Completed') {
-    tasks = tasks.filter((t) => deriveStateFromTask(t) === 'completed')
+    tasks = tasks.filter(
+      (t) => jobStateFromTask(t, isJobInitializing(t?.promptId)) === 'completed'
+    )
   } else if (selectedJobTab.value === 'Failed') {
-    tasks = tasks.filter((t) => deriveStateFromTask(t) === 'failed')
+    tasks = tasks.filter(
+      (t) => jobStateFromTask(t, isJobInitializing(t?.promptId)) === 'failed'
+    )
   }
 
   if (selectedWorkflowFilter.value === 'current') {
@@ -651,7 +569,7 @@ const filteredTasks = computed(() => {
 
 const jobItems = computed<JobListItem[]>(() =>
   filteredTasks.value.map((task: any) => {
-    const state = deriveStateFromTask(task)
+    const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
 
     let iconName: string | undefined
     let iconImageUrl: string | undefined
@@ -676,7 +594,7 @@ const jobItems = computed<JobListItem[]>(() =>
     const displayTitle =
       state === 'completed' && completedPreviewOutput?.filename
         ? completedPreviewOutput.filename
-        : formatTitleForTask(task)
+        : buildJobTitle(task, t)
 
     const isActive =
       String(task.promptId ?? '') ===
@@ -684,7 +602,14 @@ const jobItems = computed<JobListItem[]>(() =>
     return {
       id: String(task.promptId),
       title: displayTitle,
-      meta: formatMetaForTask(task, state),
+      meta: buildJobMeta(
+        task,
+        state,
+        queueStore.firstSeenByPromptId,
+        locale.value,
+        t,
+        formatClockTime
+      ),
       state,
       iconName,
       iconImageUrl,
@@ -706,34 +631,11 @@ type JobGroup = {
   items: JobListItem[]
 }
 
-/** Returns YYYY-MM-DD for local date. */
-const dateKeyForTimestamp = (ts: number) => {
-  const d = new Date(ts)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-/** Returns Today, Yesterday, or Mon DD. */
+/** Returns Today, Yesterday, or localized Mon DD. */
 const dateLabelForTimestamp = (ts: number) => {
-  const d = new Date(ts)
-  const now = new Date()
-  const sameDay =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  if (sameDay) return 'Today'
-  const yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
-  const isYest =
-    d.getFullYear() === yest.getFullYear() &&
-    d.getMonth() === yest.getMonth() &&
-    d.getDate() === yest.getDate()
-  if (isYest) return 'Yesterday'
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric'
-  }).format(d)
+  if (isToday(ts)) return 'Today'
+  if (isYesterday(ts)) return 'Yesterday'
+  return formatShortMonthDay(ts, locale.value)
 }
 
 const jobItemById = computed(() => {
@@ -746,7 +648,7 @@ const groupedJobItems = computed<JobGroup[]>(() => {
   const groups: JobGroup[] = []
   const index = new Map<string, number>()
   for (const task of filteredTasks.value) {
-    const state = deriveStateFromTask(task)
+    const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
     const pid = String(task.promptId ?? '')
     let ts: number | undefined
     if (state === 'completed' || state === 'failed') {
@@ -755,7 +657,7 @@ const groupedJobItems = computed<JobGroup[]>(() => {
       ts = queueStore.firstSeenByPromptId?.[pid]
     }
     const effectiveTs = ts ?? Date.now()
-    const key = dateKeyForTimestamp(effectiveTs)
+    const key = dateKey(effectiveTs)
     let groupIdx = index.get(key)
     if (groupIdx === undefined) {
       groups.push({ key, label: dateLabelForTimestamp(effectiveTs), items: [] })
@@ -818,48 +720,13 @@ const isJobInitializing = (promptId: string | number | undefined) =>
   executionStore.isPromptInitializing(promptId)
 
 const morePopoverRef = ref<InstanceType<typeof Popover> | null>(null)
-const moreTooltipConfig = computed(() => ({
-  value: t('g.more'),
-  showDelay: 300,
-  hideDelay: 0,
-  pt: {
-    text: {
-      class:
-        'border bg-[var(--color-charcoal-800)] border-[var(--color-slate-300)] rounded-md px-2 py-1 text-xs leading-none shadow-none'
-    },
-    arrow: {
-      class: 'border-t-[var(--color-slate-300)]'
-    }
-  }
-}))
-const filterTooltipConfig = computed(() => ({
-  value: t('sideToolbar.queueProgressOverlay.filterBy'),
-  showDelay: 300,
-  hideDelay: 0,
-  pt: {
-    text: {
-      class:
-        'border bg-[var(--color-charcoal-800)] border-[var(--color-slate-300)] rounded-md px-2 py-1 text-xs leading-none shadow-none'
-    },
-    arrow: {
-      class: 'border-t-[var(--color-slate-300)]'
-    }
-  }
-}))
-const sortTooltipConfig = computed(() => ({
-  value: t('sideToolbar.queueProgressOverlay.sortBy'),
-  showDelay: 300,
-  hideDelay: 0,
-  pt: {
-    text: {
-      class:
-        'border bg-[var(--color-charcoal-800)] border-[var(--color-slate-300)] rounded-md px-2 py-1 text-xs leading-none shadow-none'
-    },
-    arrow: {
-      class: 'border-t-[var(--color-slate-300)]'
-    }
-  }
-}))
+const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
+const filterTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.filterBy'))
+)
+const sortTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.sortBy'))
+)
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const isFilterOpen = ref(false)
 const onFilterClick = (event: Event) => {
