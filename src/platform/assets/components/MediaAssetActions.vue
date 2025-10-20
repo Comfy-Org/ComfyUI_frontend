@@ -3,7 +3,7 @@
     <IconButton size="sm" @click="handleDelete">
       <i class="icon-[lucide--trash-2] size-4" />
     </IconButton>
-    <IconButton size="sm" @click="handleDownload">
+    <IconButton v-if="assetType !== 'input'" size="sm" @click="handleDownload">
       <i class="icon-[lucide--download] size-4" />
     </IconButton>
     <MoreButton
@@ -12,14 +12,14 @@
       @menu-closed="emit('menuStateChanged', false)"
     >
       <template #default="{ close }">
-        <MediaAssetMoreMenu :close="close" />
+        <MediaAssetMoreMenu :close="close" @inspect="emit('inspect')" />
       </template>
     </MoreButton>
   </IconGroup>
 </template>
 
 <script setup lang="ts">
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -31,10 +31,18 @@ import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
 
 const emit = defineEmits<{
   menuStateChanged: [isOpen: boolean]
+  inspect: []
 }>()
 
-const { asset } = inject(MediaAssetKey)!
+const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
+
+// Get asset type from context or tags
+const assetType = computed(() => {
+  // Check if asset has tags property (AssetItem type)
+  const assetWithTags = asset.value as any
+  return context?.value?.type || assetWithTags?.tags?.[0] || 'output'
+})
 
 const handleDelete = () => {
   if (asset.value) {
@@ -44,7 +52,7 @@ const handleDelete = () => {
 
 const handleDownload = () => {
   if (asset.value) {
-    actions.downloadAsset(asset.value.id)
+    actions.downloadAsset()
   }
 }
 </script>
