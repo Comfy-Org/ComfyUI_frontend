@@ -31,6 +31,11 @@ vi.mock('@/scripts/app', () => ({
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: vi.fn((key, fallback) => fallback || key)
+  }),
+  createI18n: () => ({
+    global: {
+      t: (key: string) => key
+    }
   })
 }))
 
