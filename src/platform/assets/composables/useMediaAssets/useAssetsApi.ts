@@ -6,11 +6,13 @@ import type { HistoryTaskItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { TaskItemImpl } from '@/stores/queueStore'
 
+import { mapTaskOutputToAssetItem } from './assetMappers'
+
 /**
  * Composable for fetching media assets from cloud environment
  * Includes execution time from history API
  */
-export function useCloudMediaAssets() {
+export function useAssetsApi() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -53,62 +55,16 @@ export function useCloudMediaAssets() {
 
         // Only process completed tasks
         if (taskItem.displayStatus === 'Completed' && taskItem.outputs) {
-          // Get execution time
-          const executionTimeInSeconds = taskItem.executionTimeInSeconds
-
           // Process each output
           taskItem.flatOutputs.forEach((output) => {
             // Only include output type files (not temp previews)
             if (output.type === 'output' && output.supportsPreview) {
-              // Truncate filename if longer than 15 characters
-              let displayName = output.filename
-              if (output.filename.length > 20) {
-                // Get file extension
-                const lastDotIndex = output.filename.lastIndexOf('.')
-                const nameWithoutExt =
-                  lastDotIndex > -1
-                    ? output.filename.substring(0, lastDotIndex)
-                    : output.filename
-                const extension =
-                  lastDotIndex > -1
-                    ? output.filename.substring(lastDotIndex)
-                    : ''
-
-                // If name without extension is still long, truncate it
-                if (nameWithoutExt.length > 10) {
-                  displayName =
-                    nameWithoutExt.substring(0, 10) +
-                    '...' +
-                    nameWithoutExt.substring(nameWithoutExt.length - 10) +
-                    extension
-                }
-              }
-
-              assetItems.push({
-                id: `${taskItem.promptId}-${output.nodeId}-${output.filename}`,
-                name: displayName,
-                size: 0, // We don't have size info from history
-                created_at: taskItem.executionStartTimestamp
-                  ? new Date(taskItem.executionStartTimestamp).toISOString()
-                  : new Date().toISOString(),
-                tags: ['output'],
-                preview_url: output.url,
-                user_metadata: {
-                  originalFilename: output.filename, // Store original filename
-                  promptId: taskItem.promptId,
-                  nodeId: output.nodeId,
-                  subfolder: output.subfolder,
-                  ...(executionTimeInSeconds && {
-                    executionTimeInSeconds
-                  }),
-                  ...(output.format && {
-                    format: output.format
-                  }),
-                  ...(taskItem.workflow && {
-                    workflow: taskItem.workflow
-                  })
-                }
-              })
+              const assetItem = mapTaskOutputToAssetItem(
+                taskItem,
+                output,
+                true // Use display name for cloud
+              )
+              assetItems.push(assetItem)
             }
           })
         }
