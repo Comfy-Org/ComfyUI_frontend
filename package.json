@@ -110,6 +110,7 @@
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vite-plugin-html": "catalog:",
+    "vite-plugin-inspect": "catalog:",
     "vite-plugin-vue-devtools": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:",

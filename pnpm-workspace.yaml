@@ -35,7 +35,7 @@ catalog:
   '@types/node': ^20.14.8
   '@types/semver': ^7.7.0
   '@types/three': ^0.169.0
-  '@vitejs/plugin-vue': ^5.1.4
+  '@vitejs/plugin-vue': ^6.0.1
   '@vitest/coverage-v8': ^3.2.4
   '@vitest/ui': ^3.0.0
   '@vue/test-utils': ^2.4.6
@@ -63,6 +63,7 @@ catalog:
   knip: ^5.62.0
   lint-staged: ^15.2.7
   markdown-table: ^3.0.4
+  mixpanel-browser: ^2.71.0
   nx: 21.4.1
   picocolors: ^1.1.1
   pinia: ^2.1.7
@@ -85,20 +86,20 @@ catalog:
   vite: ^5.4.19
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
+  vite-plugin-inspect: ^0.8.9
   vite-plugin-vue-devtools: ^7.7.6
   vitest: ^3.2.4
-  vue: ^3.5.13
-  vue-component-type-helpers: ^3.0.7
+  vue: 3.6.0-alpha.2
+  vue-component-type-helpers: ^3.1.0
   vue-eslint-parser: ^10.2.0
   vue-i18n: ^9.14.3
   vue-router: ^4.4.3
-  vue-tsc: ^3.0.7
+  vue-tsc: ^3.1.1
   vuefire: ^3.2.1
   yjs: ^13.6.27
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
-  mixpanel-browser: ^2.71.0
 
 cleanupUnusedCatalogs: true
 

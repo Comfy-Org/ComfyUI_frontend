@@ -8,7 +8,7 @@ import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
-import { createApp } from 'vue'
+import { createApp, vaporInteropPlugin } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
 import { FIREBASE_CONFIG } from '@/config/firebase'
@@ -45,6 +45,7 @@ Sentry.init({
 })
 app.directive('tooltip', Tooltip)
 app
+  .use(vaporInteropPlugin) // Enable Vapor and vDOM mixed mode compatibility
   .use(router)
   .use(PrimeVue, {
     theme: {
