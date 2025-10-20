@@ -99,18 +99,14 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { JobState } from '@/types/queue'
+
 withDefaults(
   defineProps<{
     primaryText?: string
     secondaryText?: string
     iconName?: string
-    variant?:
-      | 'added'
-      | 'queued'
-      | 'initialization'
-      | 'running'
-      | 'completed'
-      | 'failed'
+    variant?: JobState
     showActionsOnHover?: boolean
     showClear?: boolean
     showMenu?: boolean

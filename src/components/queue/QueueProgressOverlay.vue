@@ -631,10 +631,20 @@ type JobGroup = {
   items: JobListItem[]
 }
 
-/** Returns Today, Yesterday, or localized Mon DD. */
+/** Returns localized Today/Yesterday (capitalized) or localized Mon DD. */
 const dateLabelForTimestamp = (ts: number) => {
-  if (isToday(ts)) return 'Today'
-  if (isYesterday(ts)) return 'Yesterday'
+  if (isToday(ts)) {
+    const s = new Intl.RelativeTimeFormat(locale.value, {
+      numeric: 'auto'
+    }).format(0, 'day')
+    return s ? s[0].toLocaleUpperCase(locale.value) + s.slice(1) : s
+  }
+  if (isYesterday(ts)) {
+    const s = new Intl.RelativeTimeFormat(locale.value, {
+      numeric: 'auto'
+    }).format(-1, 'day')
+    return s ? s[0].toLocaleUpperCase(locale.value) + s.slice(1) : s
+  }
   return formatShortMonthDay(ts, locale.value)
 }
 
