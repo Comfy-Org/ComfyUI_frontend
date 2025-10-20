@@ -77,6 +77,7 @@ export interface TemplateMetadata {
  */
 export interface TelemetryProvider {
   // Authentication flow events
+  trackSignupOpened(): void
   trackAuth(metadata: AuthMetadata): void
 
   // Subscription flow events
@@ -94,6 +95,10 @@ export interface TelemetryProvider {
 
   // Workflow execution events
   trackWorkflowExecution(): void
+
+  // App lifecycle management
+  markAppReady?(): void
+  identifyUser?(userId: string): void
 }
 
 /**
@@ -101,6 +106,7 @@ export interface TelemetryProvider {
  */
 export const TelemetryEvents = {
   // Authentication Flow
+  USER_SIGN_UP_OPENED: 'user_sign_up_opened',
   USER_AUTH_COMPLETED: 'user_auth_completed',
 
   // Subscription Flow

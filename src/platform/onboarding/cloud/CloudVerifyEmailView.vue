@@ -40,6 +40,8 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useFirebaseAuth } from 'vuefire'
 
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
@@ -106,6 +108,12 @@ const goBack = async () => {
 async function onSend() {
   try {
     await authStore.verifyEmail()
+
+    // Track email verification requested
+    if (isCloud) {
+      useTelemetry()?.trackEmailVerification('requested')
+    }
+
     useToastStore().add({
       severity: 'success',
       summary: t('cloudVerifyEmail_toast_success', {
@@ -121,6 +129,11 @@ async function onSend() {
 }
 
 onMounted(async () => {
+  // Track email verification screen opened
+  if (isCloud) {
+    useTelemetry()?.trackEmailVerification('opened')
+  }
+
   // If the user is already verified (email link already clicked),
   // continue to the next step automatically.
   if (authStore.isEmailVerified) {
@@ -135,6 +148,10 @@ onMounted(async () => {
     if (auth.currentUser && !redirectInProgress.value) {
       await auth.currentUser.reload()
       if (auth.currentUser?.emailVerified) {
+        // Track email verification completed
+        if (isCloud) {
+          useTelemetry()?.trackEmailVerification('completed')
+        }
         void redirectToNextStep()
       }
     }
