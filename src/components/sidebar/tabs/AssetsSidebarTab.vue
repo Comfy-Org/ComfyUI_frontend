@@ -65,23 +65,18 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
-import { useCloudMediaAssets } from '@/composables/useCloudMediaAssets'
-import { useInternalMediaAssets } from '@/composables/useInternalMediaAssets'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { isCloud } from '@/platform/distribution/types'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilenamePlural } from '@/utils/formatUtil'
 
 const activeTab = ref<'input' | 'output'>('input')
 const mediaAssets = ref<AssetItem[]>([])
 const selectedAsset = ref<AssetItem | null>(null)
 
-// Use appropriate implementation based on environment
-const implementation = isCloud
-  ? useCloudMediaAssets()
-  : useInternalMediaAssets()
-const { loading, error, fetchMediaList } = implementation
+// Use unified media assets implementation that handles cloud/internal automatically
+const { loading, error, fetchMediaList } = useMediaAssets()
 
 const galleryActiveIndex = ref(-1)
 const galleryItems = computed(() => {
@@ -92,7 +87,7 @@ const galleryItems = computed(() => {
       subfolder: '',
       type: 'output',
       nodeId: '0',
-      mediaType: getMediaTypeFromFilename(asset.name)
+      mediaType: getMediaTypeFromFilenamePlural(asset.name)
     })
 
     // Override the url getter to use asset.preview_url
