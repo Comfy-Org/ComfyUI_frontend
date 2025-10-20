@@ -28,6 +28,15 @@ jobs:
           node-version: 'lts/*'
           cache: 'pnpm'
 
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            tsconfig.tsbuildinfo
+          key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            release-tools-cache-${{ runner.os }}-
+
       - name: Get current version
         id: current_version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
