@@ -197,25 +197,62 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   private initializeExistingSurveyData(): void {
-    if (!this.mixpanel || !this._settingStore) return
+    if (!this.mixpanel) return
 
     try {
-      const surveyData = this._settingStore.get('onboarding_survey')
+      // If composables are ready, use cached store
+      if (this._settingStore) {
+        const surveyData = this._settingStore.get('onboarding_survey')
 
-      if (surveyData && typeof surveyData === 'object') {
-        const survey = surveyData as any
-        this.mixpanel.people.set({
-          survey_industry: survey.industry,
-          survey_team_size: survey.team_size,
-          survey_use_case: survey.useCase,
-          survey_familiarity: survey.familiarity,
-          survey_intended_use:
-            survey.useCase === 'personal'
-              ? 'personal'
-              : survey.useCase === 'client'
-                ? 'client'
-                : 'inhouse'
-        })
+        if (surveyData && typeof surveyData === 'object') {
+          const survey = surveyData as any
+          this.mixpanel.people.set({
+            survey_industry: survey.industry,
+            survey_team_size: survey.team_size,
+            survey_use_case: survey.useCase,
+            survey_familiarity: survey.familiarity,
+            survey_intended_use:
+              survey.useCase === 'personal'
+                ? 'personal'
+                : survey.useCase === 'client'
+                  ? 'client'
+                  : 'inhouse'
+          })
+        }
+      }
+      // If in onboarding mode, try dynamic import (safe since user is identified)
+      else if (this.isOnboardingMode) {
+        import('@/platform/settings/settingStore')
+          .then(({ useSettingStore }) => {
+            try {
+              const settingStore = useSettingStore()
+              const surveyData = settingStore.get('onboarding_survey')
+
+              if (surveyData && typeof surveyData === 'object') {
+                const survey = surveyData as any
+                this.mixpanel?.people.set({
+                  survey_industry: survey.industry,
+                  survey_team_size: survey.team_size,
+                  survey_use_case: survey.useCase,
+                  survey_familiarity: survey.familiarity,
+                  survey_intended_use:
+                    survey.useCase === 'personal'
+                      ? 'personal'
+                      : survey.useCase === 'client'
+                        ? 'client'
+                        : 'inhouse'
+                })
+              }
+            } catch (error) {
+              console.error(
+                'Failed to load existing survey data during onboarding:',
+                error
+              )
+            }
+          })
+          .catch((error) => {
+            console.error('Failed to import settings store:', error)
+          })
       }
     } catch (error) {
       console.error('Failed to initialize existing survey data:', error)
@@ -374,6 +411,11 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   getExecutionContext(): ExecutionContext {
+    // Try to initialize composables if not ready and not in onboarding mode
+    if (!this._composablesReady && !this.isOnboardingMode) {
+      void this.initializeComposables()
+    }
+
     if (
       !this._composablesReady ||
       !this._workflowStore ||
