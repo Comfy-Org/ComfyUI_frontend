@@ -89,7 +89,7 @@
           <img
             src="/assets/images/comfy-logo-mono.svg"
             class="mr-2 h-5 w-5"
-            alt="Comfy"
+            :alt="$t('g.comfy')"
           />
           {{ t('auth.login.useApiKey') }}
         </Button>
