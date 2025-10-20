@@ -62,13 +62,17 @@
         </template>
 
         <!-- Duration/Format chips (bottom-left) - show on hover even when playing -->
-        <template v-if="showDurationChips" #bottom-left>
+        <template v-if="showDurationChips || showFileFormatChip" #bottom-left>
           <div
             class="flex flex-wrap items-center gap-1"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
           >
-            <SquareChip variant="light" :label="formattedDuration" />
+            <SquareChip
+              v-if="formattedDuration"
+              variant="light"
+              :label="formattedDuration"
+            />
             <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
           </div>
         </template>
@@ -288,6 +292,14 @@ const showDurationChips = computed(
     !loading &&
     (asset?.user_metadata?.executionTimeInSeconds ||
       asset?.user_metadata?.duration) &&
+    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+)
+
+const showFileFormatChip = computed(
+  () =>
+    !loading &&
+    !!asset &&
+    !!fileFormat.value &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
 )
 

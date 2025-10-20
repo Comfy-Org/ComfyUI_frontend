@@ -7,7 +7,7 @@
       {{ fileName }}
     </h3>
     <div class="flex items-center text-xs text-zinc-400">
-      <span>{{ asset.dimensions?.width }}x{{ asset.dimensions?.height }}</span>
+      <span>{{ formatSize(asset.size) }}</span>
     </div>
   </div>
 </template>
@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { getFilenameDetails } from '@/utils/formatUtil'
+import { formatSize, getFilenameDetails } from '@/utils/formatUtil'
 
 import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
 
