@@ -31,7 +31,7 @@ const mockNodePack = {
 }
 
 const mockIsPackEnabled = vi.fn()
-const mockEnablePack = { call: vi.fn().mockResolvedValue(undefined) }
+const mockEnablePack = vi.fn().mockResolvedValue(undefined)
 const mockDisablePack = vi.fn().mockResolvedValue(undefined)
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
@@ -46,7 +46,7 @@ describe('PackEnableToggle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsPackEnabled.mockReset()
-    mockEnablePack.call.mockReset().mockResolvedValue(undefined)
+    mockEnablePack.mockReset().mockResolvedValue(undefined)
     mockDisablePack.mockReset().mockResolvedValue(undefined)
   })
 
@@ -116,7 +116,7 @@ describe('PackEnableToggle', () => {
     const toggleSwitch = wrapper.findComponent(ToggleSwitch)
     await toggleSwitch.vm.$emit('update:modelValue', true)
 
-    expect(mockEnablePack.call).toHaveBeenCalledWith(
+    expect(mockEnablePack).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
         version: mockNodePack.latest_version.version
@@ -143,7 +143,7 @@ describe('PackEnableToggle', () => {
     const pendingPromise = new Promise<void>((resolve) => {
       setTimeout(() => resolve(), 1000)
     })
-    mockEnablePack.call.mockReturnValue(pendingPromise)
+    mockEnablePack.mockReturnValue(pendingPromise)
 
     mockIsPackEnabled.mockReturnValue(false)
     const wrapper = mountComponent()

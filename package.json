@@ -89,6 +89,7 @@
     "knip": "catalog:",
     "lint-staged": "catalog:",
     "markdown-table": "catalog:",
+    "mixpanel-browser": "catalog:",
     "nx": "catalog:",
     "picocolors": "catalog:",
     "postcss-html": "catalog:",
