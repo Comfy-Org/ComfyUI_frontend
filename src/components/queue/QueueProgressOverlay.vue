@@ -4,7 +4,7 @@
     :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
   >
     <div
-      class="pointer-events-auto w-[310px] min-w-[310px] rounded-lg border transition-colors duration-200 ease-in-out"
+      class="pointer-events-auto w-[310px] min-w-[310px] rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
@@ -282,6 +282,8 @@
               <QueueJobItem
                 v-for="ji in group.items"
                 :key="ji.id"
+                :job-id="ji.id"
+                :workflow-id="ji.taskRef?.workflow?.id"
                 :state="ji.state"
                 :title="ji.title"
                 :right-text="ji.meta"

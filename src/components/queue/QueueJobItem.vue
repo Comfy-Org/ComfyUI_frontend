@@ -6,7 +6,10 @@
       @mouseenter="onPopoverEnter"
       @mouseleave="onPopoverLeave"
     >
-      <JobDetailsPopover />
+      <JobDetailsPopover
+        :job-id="props.jobId"
+        :workflow-id="props.workflowId"
+      />
     </div>
     <BaseJobRow
       :variant="props.state"
@@ -79,6 +82,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobDetailsPopover from '@/components/queue/overlay/JobDetailsPopover.vue'
+import { useQueuePopoverStore } from '@/stores/queuePopoverStore'
 import type { JobState } from '@/types/queue'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 import { iconForJobState, shouldShowClear } from '@/utils/queueUtil'
@@ -87,6 +91,8 @@ import BaseJobRow from './BaseJobRow.vue'
 
 const props = withDefaults(
   defineProps<{
+    jobId: string
+    workflowId?: string
     state: JobState
     title: string
     rightText?: string
@@ -99,6 +105,7 @@ const props = withDefaults(
     runningNodeName?: string
   }>(),
   {
+    workflowId: undefined,
     rightText: '',
     iconName: undefined,
     iconImageUrl: undefined,
@@ -118,7 +125,10 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-const showDetails = ref(false)
+const popoverStore = useQueuePopoverStore()
+const showDetails = computed(
+  () => popoverStore.activeJobDetailsId === props.jobId
+)
 const hideTimer = ref<number | null>(null)
 const clearHideTimer = () => {
   if (hideTimer.value !== null) {
@@ -128,12 +138,14 @@ const clearHideTimer = () => {
 }
 const openDetails = () => {
   clearHideTimer()
-  showDetails.value = true
+  popoverStore.setActive(props.jobId)
 }
 const scheduleHideDetails = () => {
   clearHideTimer()
   hideTimer.value = window.setTimeout(() => {
-    showDetails.value = false
+    if (popoverStore.activeJobDetailsId === props.jobId) {
+      popoverStore.clear()
+    }
     hideTimer.value = null
   }, 150)
 }
