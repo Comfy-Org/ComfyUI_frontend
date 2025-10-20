@@ -228,6 +228,14 @@ export const useComfyManagerService = () => {
     return queueTask('disable', params, ui_id, signal)
   }
 
+  const enablePack = async (
+    params: components['schemas']['EnablePackParams'],
+    ui_id?: string,
+    signal?: AbortSignal
+  ): Promise<null> => {
+    return queueTask('enable', params, ui_id, signal)
+  }
+
   const updatePack = async (
     params: components['schemas']['UpdatePackParams'],
     ui_id?: string,
@@ -321,7 +329,7 @@ export const useComfyManagerService = () => {
     getImportFailInfoBulk,
     installPack,
     uninstallPack,
-    enablePack: installPack, // enable is done via install
+    enablePack,
     disablePack,
     updatePack,
     updateAllPacks,

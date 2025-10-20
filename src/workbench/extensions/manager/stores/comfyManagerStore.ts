@@ -317,6 +317,15 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     await enqueueTaskWithLogs(task, t('g.disabling', { id: params.id }))
   }
 
+  const enablePack = async (params: ManagerPackInfo, signal?: AbortSignal) => {
+    const enableParams: components['schemas']['EnablePackParams'] = {
+      cnr_id: params.id
+    }
+    const task = (taskId: string) =>
+      managerService.enablePack(enableParams, taskId, signal)
+    await enqueueTaskWithLogs(task, t('g.enabling', { id: params.id }))
+  }
+
   const getInstalledPackVersion = (packId: string) => {
     const pack = installedPacks.value[packId]
     return pack?.ver
@@ -380,7 +389,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     updatePack,
     updateAllPacks,
     disablePack,
-    enablePack: installPack // Enable is done via install endpoint with a disabled pack
+    enablePack
   }
 })
 
