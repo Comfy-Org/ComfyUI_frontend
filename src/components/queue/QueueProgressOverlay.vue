@@ -401,14 +401,19 @@
       </div>
     </div>
   </div>
+  <ResultGallery
+    v-model:active-index="galleryActiveIndex"
+    :all-gallery-items="galleryItems"
+  />
 </template>
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
+import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { st } from '@/i18n'
@@ -416,6 +421,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import {
   dateKey,
@@ -689,8 +695,21 @@ const onMenuItem = (_item: JobListItem) => {
   // Placeholder for future context menu
 }
 
-const onViewItem = (_item: JobListItem) => {
-  // Stub for view action
+const galleryActiveIndex = ref(-1)
+const galleryItems = shallowRef<ResultItemImpl[]>([])
+
+const onViewItem = (item: JobListItem) => {
+  const items: ResultItemImpl[] = filteredTasks.value.flatMap((t: any) => {
+    const preview = t.previewOutput
+    return preview && preview.supportsPreview ? [preview] : []
+  })
+
+  if (!items.length) return
+
+  galleryItems.value = items
+  const activeUrl: string | undefined = item.taskRef?.previewOutput?.url
+  const idx = activeUrl ? items.findIndex((o) => o.url === activeUrl) : 0
+  galleryActiveIndex.value = idx >= 0 ? idx : 0
 }
 
 const openExpandedFromEmpty = () => {

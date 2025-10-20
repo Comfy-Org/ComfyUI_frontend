@@ -1,73 +1,84 @@
 <template>
-  <BaseJobRow
-    :variant="props.state"
-    :primary-text="primaryText"
-    :secondary-text="rightText"
-    :show-actions-on-hover="true"
-    :show-clear="computedShowClear"
-    :show-menu="computedShowMenu"
-    :progress-total-percent="progressTotalPercent"
-    :progress-current-percent="progressCurrentPercent"
-    @clear="emit('clear')"
-    @menu="emit('menu')"
-    @view="emit('view')"
-  >
-    <template #icon>
-      <div
-        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px]"
-      >
-        <img
-          v-if="iconImageUrl"
-          :src="iconImageUrl"
-          class="h-full w-full object-cover"
-        />
-        <i v-else :class="[iconClass, 'size-4']" />
-      </div>
-    </template>
-    <template #primary>
-      <slot name="primary">
-        <template v-if="props.state === 'running'">
-          <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
-            <template #percent>
-              <span class="font-bold">{{ formattedTotalPercent }}</span>
-            </template>
-          </i18n-t>
-        </template>
-        <template v-else>{{ primaryText }}</template>
-      </slot>
-    </template>
-    <template #secondary>
-      <slot name="secondary">
-        <template
-          v-if="
-            props.state === 'running' &&
-            props.runningNodeName &&
-            props.progressCurrentPercent !== undefined
-          "
+  <div class="relative" @mouseenter="onRowEnter" @mouseleave="onRowLeave">
+    <div
+      v-show="showDetails"
+      class="absolute top-0 right-[calc(100%+var(--spacing-spacing-xs))] z-50"
+      @mouseenter="onPopoverEnter"
+      @mouseleave="onPopoverLeave"
+    >
+      <JobDetailsPopover />
+    </div>
+    <BaseJobRow
+      :variant="props.state"
+      :primary-text="primaryText"
+      :secondary-text="rightText"
+      :show-actions-on-hover="true"
+      :show-clear="computedShowClear"
+      :show-menu="computedShowMenu"
+      :progress-total-percent="progressTotalPercent"
+      :progress-current-percent="progressCurrentPercent"
+      @clear="emit('clear')"
+      @menu="emit('menu')"
+      @view="emit('view')"
+    >
+      <template #icon>
+        <div
+          class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px]"
         >
-          <span
-            class="inline-flex items-center gap-[var(--spacing-spacing-xss)]"
+          <img
+            v-if="iconImageUrl"
+            :src="iconImageUrl"
+            class="h-full w-full object-cover"
+          />
+          <i v-else :class="[iconClass, 'size-4']" />
+        </div>
+      </template>
+      <template #primary>
+        <slot name="primary">
+          <template v-if="props.state === 'running'">
+            <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
+              <template #percent>
+                <span class="font-bold">{{ formattedTotalPercent }}</span>
+              </template>
+            </i18n-t>
+          </template>
+          <template v-else>{{ primaryText }}</template>
+        </slot>
+      </template>
+      <template #secondary>
+        <slot name="secondary">
+          <template
+            v-if="
+              props.state === 'running' &&
+              props.runningNodeName &&
+              props.progressCurrentPercent !== undefined
+            "
           >
-            <span class="inline-block max-w-[10rem] truncate">{{
-              props.runningNodeName
-            }}</span>
-            <span>{{
-              t('sideToolbar.queueProgressOverlay.colonPercent', {
-                percent: formattedCurrentPercent
-              })
-            }}</span>
-          </span>
-        </template>
-        <template v-else>{{ rightText }}</template>
-      </slot>
-    </template>
-  </BaseJobRow>
+            <span
+              class="inline-flex items-center gap-[var(--spacing-spacing-xss)]"
+            >
+              <span class="inline-block max-w-[10rem] truncate">{{
+                props.runningNodeName
+              }}</span>
+              <span>{{
+                t('sideToolbar.queueProgressOverlay.colonPercent', {
+                  percent: formattedCurrentPercent
+                })
+              }}</span>
+            </span>
+          </template>
+          <template v-else>{{ rightText }}</template>
+        </slot>
+      </template>
+    </BaseJobRow>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import JobDetailsPopover from '@/components/queue/overlay/JobDetailsPopover.vue'
 import type { JobState } from '@/types/queue'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 import { iconForJobState, shouldShowClear } from '@/utils/queueUtil'
@@ -106,6 +117,30 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+
+const showDetails = ref(false)
+const hideTimer = ref<number | null>(null)
+const clearHideTimer = () => {
+  if (hideTimer.value !== null) {
+    clearTimeout(hideTimer.value)
+    hideTimer.value = null
+  }
+}
+const openDetails = () => {
+  clearHideTimer()
+  showDetails.value = true
+}
+const scheduleHideDetails = () => {
+  clearHideTimer()
+  hideTimer.value = window.setTimeout(() => {
+    showDetails.value = false
+    hideTimer.value = null
+  }, 150)
+}
+const onRowEnter = openDetails
+const onRowLeave = scheduleHideDetails
+const onPopoverEnter = openDetails
+const onPopoverLeave = scheduleHideDetails
 
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
