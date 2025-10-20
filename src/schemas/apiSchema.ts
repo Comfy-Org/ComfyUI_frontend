@@ -520,7 +520,9 @@ const zSettings = z.object({
   'main.sub.setting.name': z.any(),
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),
-  'LiteGraph.Pointer.TrackpadGestures': z.boolean()
+  'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
+  /** Onboarding survey data */
+  onboarding_survey: z.record(z.unknown()).optional()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

@@ -2104,7 +2104,7 @@
       "desc": "Zero setup required. Works on any device.",
       "explain": "Generate multiple outputs at once. Share workflows with ease.",
       "learnAboutButton": "Learn about Cloud",
-      "wantToRun": "Want to run comfyUI locally instead?",
+      "wantToRun": "Want to run ComfyUI locally instead?",
       "download": "Download ComfyUI"
     },
     "checkingStatus": "Checking your account status...",
@@ -2121,7 +2121,7 @@
   "cloudStart_desc": "Zero setup required. Works on any device.",
   "cloudStart_explain": "Generate multiple outputs at once. Share workflows with ease.",
   "cloudStart_learnAboutButton": "Learn about Cloud",
-  "cloudStart_wantToRun": "Want to run comfyUI locally instead?",
+  "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
   "cloudStart_download": "Download ComfyUI",
   "cloudStart_invited": "YOU'RE INVITED",
   "cloudStart_invited_signin": "Sign in to continue onto Cloud.",

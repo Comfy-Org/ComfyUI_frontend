@@ -222,6 +222,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { getSurveyCompletedStatus, submitSurvey } from '@/api/auth'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -233,6 +235,11 @@ onMounted(async () => {
     if (surveyCompleted) {
       // User already completed survey, redirect to waitlist
       await router.replace({ name: 'cloud-waitlist' })
+    } else {
+      // Track survey opened event
+      if (isCloud) {
+        useTelemetry()?.trackSurvey('opened')
+      }
     }
   } catch (error) {
     console.error('Failed to check survey status:', error)
@@ -342,7 +349,25 @@ const onSubmitSurvey = async () => {
           : surveyData.value.industry,
       making: surveyData.value.making
     }
+
     await submitSurvey(payload)
+
+    // Track survey submitted event with responses
+    if (isCloud) {
+      useTelemetry()?.trackSurvey('submitted', {
+        industry: payload.industry,
+        team_size: undefined, // Not collected in this survey
+        use_case: payload.useCase,
+        familiarity: payload.familiarity,
+        intended_use:
+          payload.useCase === 'personal'
+            ? 'personal'
+            : payload.useCase === 'client'
+              ? 'client'
+              : 'inhouse'
+      })
+    }
+
     await router.push({ name: 'cloud-user-check' })
   } finally {
     isSubmitting.value = false

@@ -100,6 +100,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
@@ -155,6 +157,11 @@ const signUpWithEmail = async (values: SignUpData) => {
 }
 
 onMounted(async () => {
+  // Track signup screen opened
+  if (isCloud) {
+    useTelemetry()?.trackSignupOpened()
+  }
+
   userIsInChina.value = await isInChina()
 })
 </script>
