@@ -80,21 +80,22 @@ export function useSettingUI(
     )
   }
 
-  const subscriptionPanel: SettingPanelItem | null = !isCloud
-    ? null
-    : {
-        node: {
-          key: 'subscription',
-          label: 'PlanCredits',
-          children: []
-        },
-        component: defineAsyncComponent(
-          () =>
-            import(
-              '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
-            )
-        )
-      }
+  const subscriptionPanel: SettingPanelItem | null =
+    !isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION
+      ? null
+      : {
+          node: {
+            key: 'subscription',
+            label: 'PlanCredits',
+            children: []
+          },
+          component: defineAsyncComponent(
+            () =>
+              import(
+                '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
+              )
+          )
+        }
 
   const userPanel: SettingPanelItem = {
     node: {
@@ -148,7 +149,9 @@ export function useSettingUI(
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
-      ...(isCloud && subscriptionPanel ? [subscriptionPanel] : [])
+      ...(isCloud && __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION && subscriptionPanel
+        ? [subscriptionPanel]
+        : [])
     ].filter((panel) => panel.component)
   )
 
@@ -180,10 +183,16 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        ...(isLoggedIn.value && isCloud && subscriptionPanel
+        ...(isLoggedIn.value &&
+        isCloud &&
+        __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION &&
+        subscriptionPanel
           ? [subscriptionPanel.node]
           : []),
-        ...(isLoggedIn.value && !isCloud ? [creditsPanel.node] : [])
+        ...(isLoggedIn.value &&
+        !(isCloud && __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION)
+          ? [creditsPanel.node]
+          : [])
       ].map(translateCategory)
     },
     // Normal settings stored in the settingStore

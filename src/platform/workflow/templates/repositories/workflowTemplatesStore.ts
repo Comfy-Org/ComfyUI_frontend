@@ -30,6 +30,11 @@ export const useWorkflowTemplatesStore = defineStore(
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const isLoaded = ref(false)
+    const knownTemplateNames = ref(new Set<string>())
+
+    const getTemplateByName = (name: string): EnhancedTemplate | undefined => {
+      return enhancedTemplates.value.find((template) => template.name === name)
+    }
 
     // Store filter mappings for dynamic categories
     type FilterData = {
@@ -432,6 +437,13 @@ export const useWorkflowTemplatesStore = defineStore(
           customTemplates.value = await api.getWorkflowTemplates()
           const locale = i18n.global.locale.value
           coreTemplates.value = await api.getCoreWorkflowTemplates(locale)
+
+          const coreNames = coreTemplates.value.flatMap((category) =>
+            category.templates.map((template) => template.name)
+          )
+          const customNames = Object.values(customTemplates.value).flat()
+          knownTemplateNames.value = new Set([...coreNames, ...customNames])
+
           isLoaded.value = true
         }
       } catch (error) {
@@ -446,7 +458,9 @@ export const useWorkflowTemplatesStore = defineStore(
       templateFuse,
       filterTemplatesByCategory,
       isLoaded,
-      loadWorkflowTemplates
+      loadWorkflowTemplates,
+      knownTemplateNames,
+      getTemplateByName
     }
   }
 )

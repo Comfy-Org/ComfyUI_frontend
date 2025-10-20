@@ -32,6 +32,10 @@ const DISTRIBUTION = (process.env.DISTRIBUTION || 'localhost') as
   | 'localhost'
   | 'cloud'
 
+const BUILD_FLAGS = {
+  REQUIRE_SUBSCRIPTION: process.env.REQUIRE_SUBSCRIPTION === 'true'
+}
+
 export default defineConfig({
   base: '',
   server: {
@@ -267,7 +271,9 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
+    __BUILD_FLAGS__: JSON.stringify(BUILD_FLAGS),
+    __MIXPANEL_TOKEN__: JSON.stringify(process.env.MIXPANEL_TOKEN || '')
   },
 
   resolve: {

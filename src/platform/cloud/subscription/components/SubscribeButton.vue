@@ -15,6 +15,8 @@ import Button from 'primevue/button'
 import { onBeforeUnmount, ref } from 'vue'
 
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 
 withDefaults(
   defineProps<{
@@ -82,6 +84,10 @@ const stopPolling = () => {
 }
 
 const handleSubscribe = async () => {
+  if (isCloud) {
+    useTelemetry()?.trackSubscription('subscribe_clicked')
+  }
+
   isLoading.value = true
   try {
     await subscribe()

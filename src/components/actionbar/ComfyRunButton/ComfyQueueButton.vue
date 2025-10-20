@@ -88,6 +88,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import {
   useQueuePendingTaskCountStore,
@@ -148,10 +149,15 @@ const hasPendingTasks = computed(
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
-  const commandId =
-    'shiftKey' in e && e.shiftKey
-      ? 'Comfy.QueuePromptFront'
-      : 'Comfy.QueuePrompt'
+  const isShiftPressed = 'shiftKey' in e && e.shiftKey
+  const commandId = isShiftPressed
+    ? 'Comfy.QueuePromptFront'
+    : 'Comfy.QueuePrompt'
+
+  if (isCloud) {
+    useTelemetry()?.trackRunButton({ subscribe_to_run: false })
+  }
+
   await commandStore.execute(commandId)
 }
 </script>

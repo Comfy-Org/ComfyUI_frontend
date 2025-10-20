@@ -10,5 +10,5 @@ export const WidgetInputBaseClass = cn([
   // Rounded
   'rounded-lg',
   // Hover
-  'hover:outline-blue-500/80'
+  'hover:bg-node-component-surface-hovered'
 ])

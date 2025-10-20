@@ -19,6 +19,10 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }))
 }))
 
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: vi.fn(() => null)
+}))
+
 vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   useFirebaseAuthActions: vi.fn(() => ({
     reportError: mockReportError,

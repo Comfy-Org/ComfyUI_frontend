@@ -9,6 +9,9 @@ globalThis.__ALGOLIA_APP_ID__ = ''
 globalThis.__ALGOLIA_API_KEY__ = ''
 globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
+globalThis.__BUILD_FLAGS__ = {
+  REQUIRE_SUBSCRIPTION: true
+}
 
 // Mock Worker for extendable-media-recorder
 globalThis.Worker = vi.fn().mockImplementation(() => ({

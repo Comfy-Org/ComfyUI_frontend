@@ -488,7 +488,7 @@ export const useDialogService = () => {
   }
 
   function showSubscriptionRequiredDialog() {
-    if (!isCloud) {
+    if (!isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION) {
       return
     }
 

@@ -7,6 +7,7 @@ import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import {
   FirebaseAuthStoreError,
@@ -26,7 +27,7 @@ interface CloudSubscriptionStatusResponse {
 const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
 
 const isActiveSubscription = computed(() => {
-  if (!isCloud) return true
+  if (!isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION) return true
 
   return subscriptionStatus.value?.is_active ?? false
 })
@@ -78,6 +79,10 @@ export function useSubscription() {
   }, reportError)
 
   const showSubscriptionDialog = () => {
+    if (isCloud) {
+      useTelemetry()?.trackSubscription('modal_opened')
+    }
+
     dialogService.showSubscriptionRequiredDialog()
   }
 
