@@ -31,25 +31,8 @@ jobs:
           node-version: lts/*
           cache: 'pnpm'
 
-      - name: Cache tool outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            tsconfig.tsbuildinfo
-          key: update-manager-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            update-manager-tools-cache-${{ runner.os }}-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Cache ComfyUI-Manager repository
-        uses: actions/cache@v4
-        with:
-          path: ComfyUI-Manager
-          key: comfyui-manager-repo-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: |
-            comfyui-manager-repo-${{ runner.os }}-
 
       - name: Checkout ComfyUI-Manager repository
         uses: actions/checkout@v5
