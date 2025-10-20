@@ -102,7 +102,9 @@ import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
 
@@ -113,14 +115,32 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)
+const toastStore = useToastStore()
 
 const navigateToLogin = () => {
   void router.push({ name: 'cloud-login', query: route.query })
 }
 
 const onSuccess = async () => {
-  // The invite code will be handled after the user is logged in
-  await router.push({ path: '/', query: route.query })
+  toastStore.add({
+    severity: 'success',
+    summary: 'Sign up Completed',
+    life: 2000
+  })
+  // Check if email verification is needed
+  const { isEmailVerified } = useFirebaseAuthStore()
+  const inviteCode = route.query.inviteCode as string | undefined
+
+  if (!isEmailVerified) {
+    // Redirect to email verification with fromAuth flag
+    await router.push({
+      name: 'cloud-verify-email',
+      query: { inviteCode, fromAuth: 'true' }
+    })
+  } else {
+    // The invite code will be handled after the user is logged in
+    await router.push({ path: '/', query: route.query })
+  }
 }
 
 // Custom error handler for inline display

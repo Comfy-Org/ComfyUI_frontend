@@ -178,6 +178,7 @@ router.beforeEach(async (to, _from, next) => {
       // Check email verification first
       const authStore = useFirebaseAuthStore()
       if (!authStore.isEmailVerified) {
+        // Don't pass fromAuth here since this is from root navigation, not auth flow
         return next({ name: 'cloud-verify-email' })
       }
 

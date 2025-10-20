@@ -112,6 +112,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { translateAuthError } from '@/utils/authErrorTranslation'
@@ -122,6 +123,7 @@ const route = useRoute()
 const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const authError = ref('')
+const toastStore = useToastStore()
 
 const hasInviteCode = computed(() => !!route.query.inviteCode)
 
@@ -130,6 +132,11 @@ const navigateToSignup = () => {
 }
 
 const onSuccess = async () => {
+  toastStore.add({
+    severity: 'success',
+    summary: 'Login Completed',
+    life: 2000
+  })
   // Check if there's an invite code
   const inviteCode = route.query.inviteCode as string | undefined
   const { isEmailVerified } = useFirebaseAuthStore()
