@@ -5,6 +5,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { HistoryTaskItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { TaskItemImpl } from '@/stores/queueStore'
+import { truncateFilename } from '@/utils/formatUtil'
 
 import { mapTaskOutputToAssetItem } from './assetMappers'
 
@@ -31,7 +32,15 @@ export function useAssetsApi() {
       // For input directory, just return assets without history
       if (directory === 'input') {
         const assets = await assetService.getAssetsByTag(directory)
-        return assets
+        // Process assets to truncate long filenames for display
+        return assets.map((asset) => ({
+          ...asset,
+          name: truncateFilename(asset.name, 20),
+          user_metadata: {
+            ...asset.user_metadata,
+            originalFilename: asset.name.length > 20 ? asset.name : undefined
+          }
+        }))
       }
 
       // For output directory, fetch history data and convert to AssetItem format
