@@ -16,17 +16,24 @@
     </h1>
 
     <!-- Body copy -->
-    <p class="text-foreground/80 mt-6 text-base">
+    <p class="text-foreground/80 mt-6 mb-0 text-base">
       {{ t('cloudVerifyEmail_sent') }}
     </p>
-    <p class="mt-3 text-base font-medium">{{ authStore.userEmail }}</p>
+    <p class="mt-2 text-base font-medium">{{ authStore.userEmail }}</p>
 
-    <p class="text-foreground/80 mt-6 text-base">
+    <p class="text-foreground/80 mt-6 text-base whitespace-pre-line">
       {{ t('cloudVerifyEmail_clickToContinue') }}
     </p>
 
-    <p class="text-foreground/80 mt-10 text-base">
+    <p class="text-foreground/80 mt-6 text-base whitespace-pre-line">
+      {{ t('cloudVerifyEmail_tip') }}
+    </p>
+
+    <p class="text-foreground/80 mt-6 mb-0 text-base">
       {{ t('cloudVerifyEmail_didntReceive') }}
+    </p>
+
+    <p class="text-foreground/80 mt-1 text-base">
       <span class="cursor-pointer text-blue-400 no-underline" @click="onSend">
         {{ t('cloudVerifyEmail_resend') }}</span
       >
@@ -51,6 +58,7 @@ const auth = useFirebaseAuth()!
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+const toastStore = useToastStore()
 
 let intervalId: number | null = null
 let timeoutId: number | null = null
@@ -114,16 +122,17 @@ async function onSend() {
       useTelemetry()?.trackEmailVerification('requested')
     }
 
-    useToastStore().add({
-      severity: 'success',
-      summary: t('cloudVerifyEmail_toast_success', {
-        email: authStore.userEmail
-      })
+    toastStore.add({
+      severity: 'info',
+      summary: t('cloudVerifyEmail_toast_title'),
+      detail: t('cloudVerifyEmail_toast_summary'),
+      life: 2000
     })
   } catch (e) {
-    useToastStore().add({
+    toastStore.add({
       severity: 'error',
-      summary: t('cloudVerifyEmail_toast_failed')
+      summary: t('cloudVerifyEmail_toast_failed'),
+      life: 2000
     })
   }
 }
@@ -140,8 +149,18 @@ onMounted(async () => {
     return redirectToNextStep()
   }
 
-  // Send initial verification email
-  await onSend()
+  // Only send verification email automatically if coming from signup/login flow
+  // Check if 'fromAuth' query parameter is present
+  const fromAuth = route.query.fromAuth === 'true'
+  if (fromAuth) {
+    await onSend()
+    // Remove fromAuth query parameter after sending email to prevent re-sending on refresh
+    const { fromAuth: _, ...remainingQuery } = route.query
+    await router.replace({
+      name: route.name as string,
+      query: remainingQuery
+    })
+  }
 
   // Start polling to check email verification status
   intervalId = window.setInterval(async () => {
