@@ -13,10 +13,7 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import { FIREBASE_CONFIG } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
-/**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
- */
+import '@/platform/auth/serviceWorker'
 import { isCloud } from '@/platform/distribution/types'
 import router from '@/router'
 
@@ -25,6 +22,10 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
+/**
+ * CRITICAL: Load remote config FIRST for cloud builds to ensure
+ * window.__CONFIG__is available for all modules during initialization
+ */
 if (isCloud) {
   const { loadRemoteConfig } = await import(
     '@/platform/remoteConfig/remoteConfig'
