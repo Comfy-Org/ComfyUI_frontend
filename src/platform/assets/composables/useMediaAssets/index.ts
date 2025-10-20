@@ -12,6 +12,3 @@ import { useInternalFilesApi } from './useInternalFilesApi'
 export function useMediaAssets(): IAssetsProvider {
   return isCloud ? useAssetsApi() : useInternalFilesApi()
 }
-
-// Re-export the interface for consumers
-export type { IAssetsProvider } from './IAssetsProvider'
