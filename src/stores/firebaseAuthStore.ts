@@ -6,6 +6,7 @@ import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
+  getAdditionalUserInfo,
   onAuthStateChanged,
   sendPasswordResetEmail,
   setPersistence,
@@ -21,6 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -250,8 +252,13 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track successful sign-in completion
-    useTelemetry()?.trackSignUp('completed', { signup_method: 'email' })
+    // Track all auth events (login)
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: false
+      })
+    }
 
     return result
   }
@@ -266,8 +273,13 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track successful sign-up completion
-    useTelemetry()?.trackSignUp('completed', { signup_method: 'email' })
+    // Track all auth events (signup)
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: true
+      })
+    }
 
     return result
   }
@@ -278,8 +290,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track successful Google sign-in completion
-    useTelemetry()?.trackSignUp('completed', { signup_method: 'google' })
+    // Track all auth events (Google SSO)
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser = additionalUserInfo?.isNewUser ?? false
+      useTelemetry()?.trackAuth({
+        method: 'google',
+        is_new_user: isNewUser
+      })
+    }
 
     return result
   }
@@ -290,8 +309,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       { createCustomer: true }
     )
 
-    // Track successful GitHub sign-in completion
-    useTelemetry()?.trackSignUp('completed', { signup_method: 'github' })
+    // Track all auth events (GitHub SSO)
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser = additionalUserInfo?.isNewUser ?? false
+      useTelemetry()?.trackAuth({
+        method: 'github',
+        is_new_user: isNewUser
+      })
+    }
 
     return result
   }

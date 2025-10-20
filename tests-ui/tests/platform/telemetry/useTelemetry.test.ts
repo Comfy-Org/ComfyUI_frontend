@@ -32,10 +32,7 @@ describe('useTelemetry', () => {
   it('should have correct TelemetryEvents constants', async () => {
     const { TelemetryEvents } = await import('@/platform/telemetry/types')
 
-    expect(TelemetryEvents.USER_SIGN_UP_OPENED).toBe('user_sign_up_opened')
-    expect(TelemetryEvents.USER_SIGN_UP_COMPLETED).toBe(
-      'user_sign_up_completed'
-    )
+    expect(TelemetryEvents.USER_AUTH_COMPLETED).toBe('user_auth_completed')
     expect(TelemetryEvents.RUN_BUTTON_CLICKED).toBe('run_button_clicked')
     expect(TelemetryEvents.SUBSCRIPTION_REQUIRED_MODAL_OPENED).toBe(
       'subscription_required_modal_opened'

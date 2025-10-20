@@ -1,14 +1,14 @@
 /**
  * Telemetry Provider Interface
  *
- * ⚠️ CRITICAL: OSS Build Safety ⚠️
+ * CRITICAL: OSS Build Safety
  * This module is excluded from OSS builds via conditional compilation.
  * When DISTRIBUTION is unset (OSS builds), Vite's tree-shaking removes this code entirely,
  * ensuring the open source build contains no telemetry dependencies.
  *
  * To verify OSS builds are clean:
  * 1. `DISTRIBUTION= pnpm build` (OSS build)
- * 2. `rg -r dist "telemetry|mixpanel"` (should find nothing)
+ * 2. `grep -RinE --include='*.js' 'trackWorkflow|trackEvent|mixpanel' dist/` (should find nothing)
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
@@ -16,7 +16,8 @@
  * Authentication metadata for sign-up tracking
  */
 export interface AuthMetadata {
-  signup_method?: 'email' | 'google' | 'github'
+  method?: 'email' | 'google' | 'github'
+  is_new_user?: boolean
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -35,23 +36,31 @@ export interface SurveyResponses {
 }
 
 /**
- * Run context for subscription tracking
+ * Execution context for workflow tracking
  */
-export interface RunContext {
-  subscribe_to_run: boolean
-  workflow_type?: 'template' | 'custom'
+export interface ExecutionContext {
+  is_template: boolean
   workflow_name?: string
-  is_first_run?: boolean
+  // Template metadata (only present when is_template = true)
+  template_source?: string
+  template_category?: string
+  template_tags?: string[]
+  template_models?: string[]
+  template_use_case?: string
+  template_license?: string
 }
 
 /**
  * Template metadata for workflow tracking
  */
 export interface TemplateMetadata {
-  workflow_id?: string
   workflow_name: string
-  category?: string
-  source?: string
+  template_source?: string
+  template_category?: string
+  template_tags?: string[]
+  template_models?: string[]
+  template_use_case?: string
+  template_license?: string
 }
 
 /**
@@ -59,11 +68,11 @@ export interface TemplateMetadata {
  */
 export interface TelemetryProvider {
   // Authentication flow events
-  trackSignUp(stage: 'opened' | 'completed', metadata?: AuthMetadata): void
+  trackAuth(metadata: AuthMetadata): void
 
   // Subscription flow events
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void
-  trackRunButton(subscribeToRun: boolean, context?: Partial<RunContext>): void
+  trackRunButton(options?: { subscribe_to_run?: boolean }): void
 
   // Survey flow events
   trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -73,6 +82,9 @@ export interface TelemetryProvider {
 
   // Template workflow events
   trackTemplate(metadata: TemplateMetadata): void
+
+  // Workflow execution events
+  trackWorkflowExecution(): void
 }
 
 /**
@@ -80,8 +92,7 @@ export interface TelemetryProvider {
  */
 export const TelemetryEvents = {
   // Authentication Flow
-  USER_SIGN_UP_OPENED: 'user_sign_up_opened',
-  USER_SIGN_UP_COMPLETED: 'user_sign_up_completed',
+  USER_AUTH_COMPLETED: 'user_auth_completed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'run_button_clicked',
@@ -98,8 +109,21 @@ export const TelemetryEvents = {
   USER_EMAIL_VERIFY_COMPLETED: 'user_email_verify_completed',
 
   // Enhanced Template Tracking
-  TEMPLATE_WORKFLOW_OPENED: 'template_workflow_opened'
+  TEMPLATE_WORKFLOW_OPENED: 'template_workflow_opened',
+
+  // Workflow Execution Tracking
+  WORKFLOW_EXECUTION_STARTED: 'workflow_execution_started'
 } as const
 
 export type TelemetryEventName =
   (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+
+/**
+ * Union type for all possible telemetry event properties
+ */
+export type TelemetryEventProperties =
+  | Record<string, unknown>
+  | AuthMetadata
+  | SurveyResponses
+  | TemplateMetadata
+  | ExecutionContext
