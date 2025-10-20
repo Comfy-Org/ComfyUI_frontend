@@ -106,18 +106,11 @@ const handleEnable = () => {
   if (!nodePack.id) {
     throw new Error('Node ID is required for enabling')
   }
-  return enablePack.call({
+  return enablePack({
     id: nodePack.id,
     version:
       version.value ??
-      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
-    selected_version:
-      version.value ??
-      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
-    repository: nodePack.repository ?? '',
-    channel: 'default' as ManagerComponents['schemas']['ManagerChannel'],
-    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
-    skip_post_install: false
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
   })
 }
 
