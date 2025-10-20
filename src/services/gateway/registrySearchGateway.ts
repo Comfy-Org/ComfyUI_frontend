@@ -69,9 +69,6 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
       const timeSinceLastAttempt =
         Date.now() - providerState.lastAttempt.getTime()
       if (timeSinceLastAttempt > CIRCUIT_BREAKER_TIMEOUT) {
-        console.info(
-          `Retrying ${providerState.name} provider after circuit breaker timeout`
-        )
         return true
       }
     }

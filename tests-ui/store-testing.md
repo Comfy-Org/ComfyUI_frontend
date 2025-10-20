@@ -21,7 +21,7 @@ Basic setup for testing Pinia stores:
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkflowStore } from '@/domains/workflow/ui/stores/workflowStore'
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>

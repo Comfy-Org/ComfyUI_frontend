@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative w-full h-full"
+    class="relative h-full w-full"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
@@ -59,14 +59,14 @@
     />
     <div
       v-if="enable3DViewer"
-      class="absolute top-12 right-2 z-20 pointer-events-auto"
+      class="pointer-events-auto absolute top-12 right-2 z-20"
     >
       <ViewerControls :node="node" />
     </div>
 
     <div
       v-if="showRecordingControls"
-      class="absolute right-2 z-20 pointer-events-auto"
+      class="pointer-events-auto absolute right-2 z-20"
       :class="{
         'top-12': !enable3DViewer,
         'top-24': enable3DViewer
@@ -95,16 +95,16 @@ import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import {
+import type {
   CameraType,
   Load3DNodeType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
 
 const { t } = useI18n()
 const { widget } = defineProps<{

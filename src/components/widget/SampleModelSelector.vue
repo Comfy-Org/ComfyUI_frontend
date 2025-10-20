@@ -1,9 +1,9 @@
 <template>
-  <BaseWidgetLayout :content-title="$t('Checkpoints')">
+  <BaseModalLayout :content-title="$t('Checkpoints')">
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
-          <i-lucide:puzzle class="text-neutral" />
+          <i class="text-neutral icon-[lucide--puzzle]" />
         </template>
         <template #header-title>
           <span class="text-neutral text-base">{{ t('g.title') }}</span>
@@ -12,14 +12,14 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" class="max-w-[384px]" />
+      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
     </template>
 
     <template #header-right-area>
       <div class="flex gap-2">
         <IconTextButton type="primary" label="Upload Model" @click="() => {}">
           <template #icon>
-            <i-lucide:upload />
+            <i class="icon-[lucide--upload]" />
           </template>
         </IconTextButton>
         <MoreButton>
@@ -34,7 +34,7 @@
               "
             >
               <template #icon>
-                <i-lucide:download />
+                <i class="icon-[lucide--download]" />
               </template>
             </IconTextButton>
             <IconTextButton
@@ -47,7 +47,7 @@
               "
             >
               <template #icon>
-                <i-lucide:scroll />
+                <i class="icon-[lucide--scroll]" />
               </template>
             </IconTextButton>
           </template>
@@ -56,7 +56,7 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative px-6 pt-2 pb-4 flex gap-2">
+      <div class="relative flex gap-2 px-6 pb-4">
         <MultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
@@ -79,7 +79,7 @@
           class="w-[135px]"
         >
           <template #icon>
-            <i-lucide:filter />
+            <i class="icon-[lucide--filter]" />
           </template>
         </SingleSelect>
       </div>
@@ -87,27 +87,19 @@
 
     <template #content>
       <!-- Card Examples -->
-      <!-- <div class="min-h-0 px-6 py-4 overflow-y-auto scrollbar-hide"> -->
-      <!-- <h2 class="text-xxl py-4 pt-0 m-0">{{ $t('Checkpoints') }}</h2> -->
-      <div class="flex flex-wrap gap-2">
-        <CardContainer
-          v-for="i in 100"
-          :key="i"
-          ratio="square"
-          :max-width="480"
-          :min-width="230"
-        >
+      <div :style="gridStyle">
+        <CardContainer v-for="i in 100" :key="i" size="regular">
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
-                <div class="w-full h-full bg-blue-500"></div>
+                <div class="h-full w-full bg-blue-500"></div>
               </template>
               <template #top-right>
                 <IconButton
                   class="!bg-white !text-neutral-900"
                   @click="() => {}"
                 >
-                  <i-lucide:info />
+                  <i class="icon-[lucide--info]" />
                 </IconButton>
               </template>
               <template #bottom-right>
@@ -115,7 +107,7 @@
                 <SquareChip label="1.2 MB" />
                 <SquareChip label="LoRA">
                   <template #icon>
-                    <i-lucide:folder />
+                    <i class="icon-[lucide--folder]" />
                   </template>
                 </SquareChip>
               </template>
@@ -126,17 +118,16 @@
           </template>
         </CardContainer>
       </div>
-      <!-- </div> -->
     </template>
 
     <template #rightPanel>
       <RightSidePanel></RightSidePanel>
     </template>
-  </BaseWidgetLayout>
+  </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
-import { provide, ref, watch } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -149,11 +140,12 @@ import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
-import BaseWidgetLayout from '@/components/widget/layout/BaseWidgetLayout.vue'
+import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
-import { NavGroupData, NavItemData } from '@/types/navTypes'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
 
 const frameworkOptions = ref([
   { name: 'Vue', value: 'vue' },
@@ -175,20 +167,20 @@ const sortOptions = ref([
 ])
 
 const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-  { id: 'installed', label: 'Installed' },
+  { id: 'installed', label: 'Installed', icon: 'icon-[lucide--download]' },
   {
     title: 'TAGS',
     items: [
-      { id: 'tag-sd15', label: 'SD 1.5' },
-      { id: 'tag-sdxl', label: 'SDXL' },
-      { id: 'tag-utility', label: 'Utility' }
+      { id: 'tag-sd15', label: 'SD 1.5', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-sdxl', label: 'SDXL', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-utility', label: 'Utility', icon: 'icon-[lucide--tag]' }
     ]
   },
   {
     title: 'CATEGORIES',
     items: [
-      { id: 'cat-models', label: 'Models' },
-      { id: 'cat-nodes', label: 'Nodes' }
+      { id: 'cat-models', label: 'Models', icon: 'icon-[lucide--layers]' },
+      { id: 'cat-nodes', label: 'Nodes', icon: 'icon-[lucide--grid-3x3]' }
     ]
   }
 ])
@@ -209,11 +201,5 @@ const selectedSort = ref<string>('popular')
 
 const selectedNavItem = ref<string | null>('installed')
 
-watch(searchText, (newQuery) => {
-  console.log('searchText:', searchText.value, newQuery)
-})
-
-watch(searchQuery, (newQuery) => {
-  console.log('searchQuery:', searchQuery.value, newQuery)
-})
+const gridStyle = computed(() => createGridStyle())
 </script>

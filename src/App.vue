@@ -2,7 +2,7 @@
   <router-view />
   <ProgressSpinner
     v-if="isLoading"
-    class="absolute inset-0 flex justify-center items-center h-[unset]"
+    class="absolute inset-0 flex h-[unset] items-center justify-center"
   />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
@@ -15,9 +15,9 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 import { electronAPI, isElectron } from './utils/envUtil'
 
@@ -44,7 +44,6 @@ const showContextMenu = (event: MouseEvent) => {
 onMounted(() => {
   // @ts-expect-error fixme ts strict error
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
-  console.log('ComfyUI Front-end version:', config.app_version)
 
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { TreeNode } from '@/types/treeExplorerTypes'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 describe('buildTree', () => {

@@ -122,9 +122,6 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "匯出工作流程（API 格式）"
   },
-  "Comfy_Feedback": {
-    "label": "提供回饋"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "將選取內容轉換為子圖"
   },
@@ -214,6 +211,9 @@
   },
   "Comfy_OpenWorkflow": {
     "label": "開啟工作流程"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "發布子圖"
   },
   "Comfy_QueuePrompt": {
     "label": "將提示詞加入佇列"

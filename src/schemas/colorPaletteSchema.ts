@@ -100,7 +100,7 @@ export const paletteSchema = z
   })
   .passthrough()
 
-export const completedPaletteSchema = z
+const completedPaletteSchema = z
   .object({
     id: z.string(),
     name: z.string(),

@@ -1,7 +1,8 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
@@ -27,7 +28,7 @@ import { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
-export interface FilteredItems {
+interface FilteredItems {
   nodes: Set<LGraphNode>
   reroutes: Set<Reroute>
   groups: Set<LGraphGroup>
@@ -116,7 +117,7 @@ export function getBoundaryLinks(
 
           const resolved = LLink.resolve(input.link, graph)
           if (!resolved) {
-            console.debug(`Failed to resolve link ID [${input.link}]`)
+            console.warn(`Failed to resolve link ID [${input.link}]`)
             continue
           }
 

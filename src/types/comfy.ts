@@ -1,15 +1,19 @@
-import { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type {
+  IContextMenuValue,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SettingParams } from '@/platform/settings/types'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
+import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
-import type { SettingParams } from '@/types/settingTypes'
 
-export type Widgets = Record<string, ComfyWidgetConstructor>
+type Widgets = Record<string, ComfyWidgetConstructor>
 
 export interface AboutPageBadge {
   label: string
@@ -17,7 +21,7 @@ export interface AboutPageBadge {
   icon: string
 }
 
-export type MenuCommandGroup = {
+type MenuCommandGroup = {
   /**
    * The path to the menu group.
    */
@@ -27,6 +31,14 @@ export type MenuCommandGroup = {
    * Note: Commands must be defined in `commands` array in the extension.
    */
   commands: string[]
+}
+
+export interface TopbarBadge {
+  text: string
+  /**
+   * Optional badge label (e.g., "BETA", "ALPHA", "NEW")
+   */
+  label?: string
 }
 
 export type MissingNodeType =
@@ -71,6 +83,10 @@ export interface ComfyExtension {
    */
   aboutPageBadges?: AboutPageBadge[]
   /**
+   * Badges to add to the top bar
+   */
+  topbarBadges?: TopbarBadge[]
+  /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
    */
@@ -104,6 +120,20 @@ export interface ComfyExtension {
    * @returns An array of command ids to add to the selection toolbox
    */
   getSelectionToolboxCommands?(selectedItem: Positionable): string[]
+
+  /**
+   * Allows the extension to add context menu items to canvas right-click menus
+   * @param canvas The canvas instance
+   * @returns An array of context menu items to add
+   */
+  getCanvasMenuItems?(canvas: LGraphCanvas): IContextMenuValue[]
+
+  /**
+   * Allows the extension to add context menu items to node right-click menus
+   * @param node The node being right-clicked
+   * @returns An array of context menu items to add
+   */
+  getNodeMenuItems?(node: LGraphNode): IContextMenuValue[]
 
   /**
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**
@@ -165,6 +195,13 @@ export interface ComfyExtension {
   afterConfigureGraph?(
     missingNodeTypes: MissingNodeType[]
   ): Promise<void> | void
+
+  /**
+   * Fired whenever authentication resolves, providing the anonymized user id..
+   * Extensions can register at any time and will receive the latest value immediately.
+   * This is an experimental API and may be changed or removed in the future.
+   */
+  onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
 
   [key: string]: any
 }

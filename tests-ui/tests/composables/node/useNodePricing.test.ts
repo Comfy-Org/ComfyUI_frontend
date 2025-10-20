@@ -115,6 +115,26 @@ describe('useNodePricing', () => {
       expect(price).toBe('$1.40/Run')
     })
 
+    it('should return low price for kling-v2-turbo model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingTextToVideoNode', [
+        { name: 'mode', value: 'pro / 5s / v2-5-turbo' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.35/Run')
+    })
+
+    it('should return high price for kling-v2-turbo model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingTextToVideoNode', [
+        { name: 'mode', value: 'pro / 10s / v2-5-turbo' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.70/Run')
+    })
+
     it('should return standard price for kling-v1-6 model', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('KlingTextToVideoNode', [
@@ -153,6 +173,18 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('$1.40/Run')
+    })
+
+    it('should return high price for kling-v2-5-turbo model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingImage2VideoNode', [
+        { name: 'model_name', value: 'v2-5-turbo' },
+        { name: 'mode', value: 'pro mode / 10s duration / kling-v2-5-turbo' },
+        { name: 'duration', value: '10' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.70/Run')
     })
 
     it('should return standard price for kling-v1-6 model', () => {
@@ -269,7 +301,115 @@ describe('useNodePricing', () => {
       expect(price).toBe('$0.04-0.12/Run (varies with size & quality)')
     })
   })
+  // ============================== OpenAIVideoSora2 ==============================
+  describe('dynamic pricing - OpenAIVideoSora2', () => {
+    it('should require model, duration & size when widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [])
+      expect(getNodeDisplayPrice(node)).toBe('Set model, duration & size')
+    })
 
+    it('should require duration when duration is invalid or zero', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const nodeNaN = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2-pro' },
+        { name: 'duration', value: 'oops' },
+        { name: 'size', value: '720x1280' }
+      ])
+      expect(getNodeDisplayPrice(nodeNaN)).toBe('Set model, duration & size')
+
+      const nodeZero = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2-pro' },
+        { name: 'duration', value: 0 },
+        { name: 'size', value: '720x1280' }
+      ])
+      expect(getNodeDisplayPrice(nodeZero)).toBe('Set model, duration & size')
+    })
+
+    it('should require size when size is missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2-pro' },
+        { name: 'duration', value: 8 }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe('Set model, duration & size')
+    })
+
+    it('should compute pricing for sora-2-pro with 1024x1792', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2-pro' },
+        { name: 'duration', value: 8 },
+        { name: 'size', value: '1024x1792' }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe('$4.00/Run') // 0.5 * 8
+    })
+
+    it('should compute pricing for sora-2-pro with 720x1280', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2-pro' },
+        { name: 'duration', value: 12 },
+        { name: 'size', value: '720x1280' }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe('$3.60/Run') // 0.3 * 12
+    })
+
+    it('should reject unsupported size for sora-2-pro', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2-pro' },
+        { name: 'duration', value: 8 },
+        { name: 'size', value: '640x640' }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe(
+        'Invalid size. Must be 720x1280, 1280x720, 1024x1792, or 1792x1024.'
+      )
+    })
+
+    it('should compute pricing for sora-2 (720x1280 only)', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2' },
+        { name: 'duration', value: 10 },
+        { name: 'size', value: '720x1280' }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe('$1.00/Run') // 0.1 * 10
+    })
+
+    it('should reject non-720 sizes for sora-2', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2' },
+        { name: 'duration', value: 8 },
+        { name: 'size', value: '1024x1792' }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe(
+        'sora-2 supports only 720x1280 or 1280x720'
+      )
+    })
+    it('should accept duration_s alias for duration', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'sora-2-pro' },
+        { name: 'duration_s', value: 4 },
+        { name: 'size', value: '1792x1024' }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe('$2.00/Run') // 0.5 * 4
+    })
+
+    it('should be case-insensitive for model and size', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIVideoSora2', [
+        { name: 'model', value: 'SoRa-2-PrO' },
+        { name: 'duration', value: 12 },
+        { name: 'size', value: '1280x720' }
+      ])
+      expect(getNodeDisplayPrice(node)).toBe('$3.60/Run') // 0.3 * 12
+    })
+  })
+
+  // ============================== MinimaxHailuoVideoNode ==============================
   describe('dynamic pricing - MinimaxHailuoVideoNode', () => {
     it('should return $0.28 for 6s duration and 768P resolution', () => {
       const { getNodeDisplayPrice } = useNodePricing()
@@ -505,7 +645,7 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - Veo3VideoGenerationNode', () => {
-    it('should return $2.00 for veo-3.0-fast-generate-001 without audio', () => {
+    it('should return $0.80 for veo-3.0-fast-generate-001 without audio', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('Veo3VideoGenerationNode', [
         { name: 'model', value: 'veo-3.0-fast-generate-001' },
@@ -513,40 +653,40 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$2.00/Run')
+      expect(price).toBe('$0.80/Run')
     })
 
-    it('should return $3.20 for veo-3.0-fast-generate-001 with audio', () => {
+    it('should return $1.20 for veo-3.0-fast-generate-001 with audio', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('Veo3VideoGenerationNode', [
         { name: 'model', value: 'veo-3.0-fast-generate-001' },
+        { name: 'generate_audio', value: true }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.20/Run')
+    })
+
+    it('should return $1.60 for veo-3.0-generate-001 without audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-generate-001' },
+        { name: 'generate_audio', value: false }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.60/Run')
+    })
+
+    it('should return $3.20 for veo-3.0-generate-001 with audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-generate-001' },
         { name: 'generate_audio', value: true }
       ])
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('$3.20/Run')
-    })
-
-    it('should return $4.00 for veo-3.0-generate-001 without audio', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('Veo3VideoGenerationNode', [
-        { name: 'model', value: 'veo-3.0-generate-001' },
-        { name: 'generate_audio', value: false }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$4.00/Run')
-    })
-
-    it('should return $6.00 for veo-3.0-generate-001 with audio', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('Veo3VideoGenerationNode', [
-        { name: 'model', value: 'veo-3.0-generate-001' },
-        { name: 'generate_audio', value: true }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$6.00/Run')
     })
 
     it('should return range when widgets are missing', () => {
@@ -555,7 +695,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$2.00-6.00/Run (varies with model & audio generation)'
+        '$0.80-3.20/Run (varies with model & audio generation)'
       )
     })
 
@@ -567,7 +707,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$2.00-6.00/Run (varies with model & audio generation)'
+        '$0.80-3.20/Run (varies with model & audio generation)'
       )
     })
 
@@ -579,7 +719,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$2.00-6.00/Run (varies with model & audio generation)'
+        '$0.80-3.20/Run (varies with model & audio generation)'
       )
     })
   })
@@ -1778,6 +1918,275 @@ describe('useNodePricing', () => {
           expect(getNodeDisplayPrice(node)).toBe(expected)
         })
       })
+    })
+  })
+
+  describe('dynamic pricing - ByteDanceSeedreamNode', () => {
+    it('should return fallback when widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceSeedreamNode', [])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.03/Run ($0.03 for one output image)')
+    })
+
+    it('should return $0.03/Run when sequential generation is disabled', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceSeedreamNode', [
+        { name: 'sequential_image_generation', value: 'disabled' },
+        { name: 'max_images', value: 5 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.03/Run')
+    })
+
+    it('should multiply by max_images when sequential generation is enabled', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceSeedreamNode', [
+        { name: 'sequential_image_generation', value: 'enabled' },
+        { name: 'max_images', value: 4 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.12/Run ($0.03 for one output image)')
+    })
+  })
+
+  describe('dynamic pricing - ByteDance Seedance video nodes', () => {
+    it('should return base 10s range for PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.18-$1.22/Run')
+    })
+
+    it('should scale to half for 5s PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '5' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.59-$0.61/Run')
+    })
+
+    it('should scale for 8s PRO 480p on ByteDanceImageToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '8' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.18-$0.19/Run')
+    })
+
+    it('should scale correctly for 12s PRO 720p on ByteDanceFirstLastFrameNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '12' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.61-$0.67/Run')
+    })
+
+    it('should collapse to a single value when min and max round equal for LITE 480p 3s on ByteDanceImageReferenceNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageReferenceNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'duration', value: '3' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05/Run') // 0.17..0.18 scaled by 0.3 both round to 0.05
+    })
+
+    it('should return Token-based when required widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const missingModel = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+      const missingResolution = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' }
+      ])
+      const missingDuration = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      expect(getNodeDisplayPrice(missingModel)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingResolution)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingDuration)).toBe('Token-based')
+    })
+  })
+
+  describe('dynamic pricing - WanTextToVideoApi', () => {
+    it('should return $1.50 for 10s at 1080p', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanTextToVideoApi', [
+        { name: 'duration', value: '10' },
+        { name: 'size', value: '1080p: 4:3 (1632x1248)' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.50/Run') // 0.15 * 10
+    })
+
+    it('should return $0.50 for 5s at 720p', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanTextToVideoApi', [
+        { name: 'duration', value: 5 },
+        { name: 'size', value: '720p: 16:9 (1280x720)' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.50/Run') // 0.10 * 5
+    })
+
+    it('should return $0.15 for 3s at 480p', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanTextToVideoApi', [
+        { name: 'duration', value: '3' },
+        { name: 'size', value: '480p: 1:1 (624x624)' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.15/Run') // 0.05 * 3
+    })
+
+    it('should fall back when widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const missingBoth = createMockNode('WanTextToVideoApi', [])
+      const missingSize = createMockNode('WanTextToVideoApi', [
+        { name: 'duration', value: '5' }
+      ])
+      const missingDuration = createMockNode('WanTextToVideoApi', [
+        { name: 'size', value: '1080p' }
+      ])
+
+      expect(getNodeDisplayPrice(missingBoth)).toBe('$0.05-0.15/second')
+      expect(getNodeDisplayPrice(missingSize)).toBe('$0.05-0.15/second')
+      expect(getNodeDisplayPrice(missingDuration)).toBe('$0.05-0.15/second')
+    })
+
+    it('should fall back on invalid duration', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanTextToVideoApi', [
+        { name: 'duration', value: 'invalid' },
+        { name: 'size', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05-0.15/second')
+    })
+
+    it('should fall back on unknown resolution', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanTextToVideoApi', [
+        { name: 'duration', value: '10' },
+        { name: 'size', value: '2K' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05-0.15/second')
+    })
+  })
+
+  describe('dynamic pricing - WanImageToVideoApi', () => {
+    it('should return $0.80 for 8s at 720p', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanImageToVideoApi', [
+        { name: 'duration', value: 8 },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.80/Run') // 0.10 * 8
+    })
+
+    it('should return $0.60 for 12s at 480P', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanImageToVideoApi', [
+        { name: 'duration', value: '12' },
+        { name: 'resolution', value: '480P' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.60/Run') // 0.05 * 12
+    })
+
+    it('should return $1.50 for 10s at 1080p', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanImageToVideoApi', [
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.50/Run') // 0.15 * 10
+    })
+
+    it('should handle "5s" string duration at 1080P', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanImageToVideoApi', [
+        { name: 'duration', value: '5s' },
+        { name: 'resolution', value: '1080P' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.75/Run') // 0.15 * 5
+    })
+
+    it('should fall back when widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const missingBoth = createMockNode('WanImageToVideoApi', [])
+      const missingRes = createMockNode('WanImageToVideoApi', [
+        { name: 'duration', value: '5' }
+      ])
+      const missingDuration = createMockNode('WanImageToVideoApi', [
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      expect(getNodeDisplayPrice(missingBoth)).toBe('$0.05-0.15/second')
+      expect(getNodeDisplayPrice(missingRes)).toBe('$0.05-0.15/second')
+      expect(getNodeDisplayPrice(missingDuration)).toBe('$0.05-0.15/second')
+    })
+
+    it('should fall back on invalid duration', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanImageToVideoApi', [
+        { name: 'duration', value: 'invalid' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05-0.15/second')
+    })
+
+    it('should fall back on unknown resolution', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('WanImageToVideoApi', [
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: 'weird-res' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05-0.15/second')
     })
   })
 })

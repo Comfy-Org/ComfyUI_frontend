@@ -3,7 +3,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/utils/nodeHelpUtil'
 
-export class NodeHelpService {
+class NodeHelpService {
   async fetchNodeHelp(node: ComfyNodeDefImpl, locale: string): Promise<string> {
     const nodeSource = getNodeSource(node.python_module)
 

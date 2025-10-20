@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -182,7 +182,7 @@ export class UserFile {
   }
 }
 
-export interface LoadedUserFile extends UserFile {
+interface LoadedUserFile extends UserFile {
   isLoaded: true
   originalContent: string
   content: string

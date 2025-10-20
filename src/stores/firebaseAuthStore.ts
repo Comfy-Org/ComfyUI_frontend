@@ -1,14 +1,12 @@
 import { FirebaseError } from 'firebase/app'
 import {
-  type Auth,
   AuthErrorCodes,
   GithubAuthProvider,
   GoogleAuthProvider,
-  type User,
-  type UserCredential,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
+  getAdditionalUserInfo,
   onAuthStateChanged,
   sendPasswordResetEmail,
   setPersistence,
@@ -17,16 +15,19 @@ import {
   signOut,
   updatePassword
 } from 'firebase/auth'
+import type { Auth, User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { type AuthHeader } from '@/types/authTypes'
-import { operations } from '@/types/comfyRegistryTypes'
+import type { AuthHeader } from '@/types/authTypes'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -62,10 +63,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
+  googleProvider.addScope('email')
   googleProvider.setCustomParameters({
     prompt: 'select_account'
   })
   const githubProvider = new GithubAuthProvider()
+  githubProvider.addScope('user:email')
   githubProvider.setCustomParameters({
     prompt: 'select_account'
   })
@@ -242,35 +245,78 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const login = async (
     email: string,
     password: string
-  ): Promise<UserCredential> =>
-    executeAuthAction(
+  ): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) =>
         signInWithEmailAndPassword(authInstance, email, password),
       { createCustomer: true }
     )
 
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: false
+      })
+    }
+
+    return result
+  }
+
   const register = async (
     email: string,
     password: string
   ): Promise<UserCredential> => {
-    return executeAuthAction(
+    const result = await executeAuthAction(
       (authInstance) =>
         createUserWithEmailAndPassword(authInstance, email, password),
       { createCustomer: true }
     )
+
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: true
+      })
+    }
+
+    return result
   }
 
-  const loginWithGoogle = async (): Promise<UserCredential> =>
-    executeAuthAction(
+  const loginWithGoogle = async (): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
       { createCustomer: true }
     )
 
-  const loginWithGithub = async (): Promise<UserCredential> =>
-    executeAuthAction(
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser = additionalUserInfo?.isNewUser ?? false
+      useTelemetry()?.trackAuth({
+        method: 'google',
+        is_new_user: isNewUser
+      })
+    }
+
+    return result
+  }
+
+  const loginWithGithub = async (): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
       { createCustomer: true }
     )
+
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser = additionalUserInfo?.isNewUser ?? false
+      useTelemetry()?.trackAuth({
+        method: 'github',
+        is_new_user: isNewUser
+      })
+    }
+
+    return result
+  }
 
   const logout = async (): Promise<void> =>
     executeAuthAction((authInstance) => signOut(authInstance))

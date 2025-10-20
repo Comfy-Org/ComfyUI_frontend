@@ -10,7 +10,7 @@ import type { Position } from './types'
  * - {@link Mouse.move}
  * - {@link Mouse.up}
  */
-export interface DragOptions {
+interface DragOptions {
   button?: 'left' | 'right' | 'middle'
   clickCount?: number
   steps?: number

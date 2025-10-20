@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Background Image Upload', () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Reset the background image setting before each test

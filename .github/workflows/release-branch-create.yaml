@@ -1,0 +1,175 @@
+name: Release Branch Create
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - 'package.json'
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Check version bump type
+        id: check_version
+        run: |
+          # Get current version from main
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          # Remove 'v' prefix if present (shouldn't be in package.json, but defensive)
+          CURRENT_VERSION=${CURRENT_VERSION#v}
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          # Validate version format
+          if ! [[ "$CURRENT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "ERROR: Invalid version format: $CURRENT_VERSION"
+            exit 1
+          fi
+
+          # Extract major and minor versions
+          MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+          MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+          PATCH=$(echo $CURRENT_VERSION | cut -d. -f3 | cut -d- -f1)
+
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+
+          # Get previous version from the commit before the merge
+          git checkout HEAD^1
+          PREV_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0")
+          # Remove 'v' prefix if present
+          PREV_VERSION=${PREV_VERSION#v}
+
+          # Validate previous version format
+          if ! [[ "$PREV_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "WARNING: Invalid previous version format: $PREV_VERSION, using 0.0.0"
+            PREV_VERSION="0.0.0"
+          fi
+
+          PREV_MINOR=$(echo $PREV_VERSION | cut -d. -f2)
+
+          echo "prev_version=$PREV_VERSION" >> $GITHUB_OUTPUT
+          echo "prev_minor=$PREV_MINOR" >> $GITHUB_OUTPUT
+
+          # Get previous major version for comparison
+          PREV_MAJOR=$(echo $PREV_VERSION | cut -d. -f1)
+
+          # Check if current version is a pre-release
+          if [[ "$CURRENT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            IS_PRERELEASE=true
+          else
+            IS_PRERELEASE=false
+          fi
+
+          # Check if this was a minor version bump or major version bump
+          # But skip if it's a pre-release version
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            echo "is_minor_bump=false" >> $GITHUB_OUTPUT
+            echo "reason=prerelease version" >> $GITHUB_OUTPUT
+          elif [[ "$MAJOR" -gt "$PREV_MAJOR" && "$MINOR" == "0" && "$PATCH" == "0" ]]; then
+            # Major version bump (e.g., 1.99.x → 2.0.0)
+            echo "is_minor_bump=true" >> $GITHUB_OUTPUT
+            BRANCH_NAME="core/${PREV_MAJOR}.${PREV_MINOR}"
+            echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          elif [[ "$MAJOR" == "$PREV_MAJOR" && "$MINOR" -gt "$PREV_MINOR" && "$PATCH" == "0" ]]; then
+            # Minor version bump (e.g., 1.23.x → 1.24.0)
+            echo "is_minor_bump=true" >> $GITHUB_OUTPUT
+            BRANCH_NAME="core/${MAJOR}.${PREV_MINOR}"
+            echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "is_minor_bump=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Return to main branch
+          git checkout main
+
+      - name: Create release branch
+        if: steps.check_version.outputs.is_minor_bump == 'true'
+        run: |
+          BRANCH_NAME="${{ steps.check_version.outputs.branch_name }}"
+
+          # Check if branch already exists
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "⚠️  Branch $BRANCH_NAME already exists, skipping creation"
+            echo "branch_exists=true" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "branch_exists=false" >> $GITHUB_ENV
+          fi
+
+          # Create branch from the commit BEFORE the version bump
+          # This ensures the release branch has the previous minor version
+          git checkout -b "$BRANCH_NAME" HEAD^1
+
+          # Push the new branch
+          git push origin "$BRANCH_NAME"
+
+          echo "✅ Created release branch: $BRANCH_NAME"
+          echo "This branch is now in feature freeze and will only receive:"
+          echo "- Bug fixes"
+          echo "- Critical security patches"
+          echo "- Documentation updates"
+
+
+      - name: Post summary
+        if: steps.check_version.outputs.is_minor_bump == 'true'
+        run: |
+          BRANCH_NAME="${{ steps.check_version.outputs.branch_name }}"
+          PREV_VERSION="${{ steps.check_version.outputs.prev_version }}"
+          CURRENT_VERSION="${{ steps.check_version.outputs.current_version }}"
+
+          if [[ "${{ env.branch_exists }}" == "true" ]]; then
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🌿 Release Branch Already Exists
+
+          The release branch for the previous minor version already exists:
+          EOF
+          else
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🌿 Release Branch Created
+
+          A new release branch has been created for the previous minor version:
+          EOF
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          - **Branch**: \`$BRANCH_NAME\`
+          - **Version**: \`$PREV_VERSION\` (feature frozen)
+          - **Main branch**: \`$CURRENT_VERSION\` (active development)
+
+          ### Branch Policy
+
+          The \`$BRANCH_NAME\` branch is now in **feature freeze** and will only accept:
+          - 🐛 Bug fixes
+          - 🔒 Security patches
+          - 📚 Documentation updates
+
+          All new features should continue to be developed against \`main\`.
+
+          ### Backporting Changes
+
+          To backport a fix to this release branch:
+          1. Create your fix on \`main\` first
+          2. Cherry-pick to \`$BRANCH_NAME\`
+          3. Create a PR targeting \`$BRANCH_NAME\`
+          4. Use the \`Release\` label on the PR
+          EOF

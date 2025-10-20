@@ -122,9 +122,6 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Exportar flujo de trabajo (formato API)"
   },
-  "Comfy_Feedback": {
-    "label": "Dar retroalimentación"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir selección en subgrafo"
   },
@@ -215,6 +212,9 @@
   "Comfy_OpenWorkflow": {
     "label": "Abrir Flujo de Trabajo"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "Publicar subgrafo"
+  },
   "Comfy_QueuePrompt": {
     "label": "Prompt de Cola"
   },
@@ -285,7 +285,7 @@
     "label": "Alternar panel inferior de controles de vista"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "Mostrar diálogo de atajos de teclado"
+    "label": "Mostrar diálogo de combinaciones de teclas"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Alternar Modo de Enfoque"

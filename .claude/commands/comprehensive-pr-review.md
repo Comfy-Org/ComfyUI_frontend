@@ -67,9 +67,9 @@ This is critical for better file inspection:
 
 Use git locally for much faster analysis:
 
-1. Get list of changed files: `git diff --name-only "origin/$BASE_BRANCH" > changed_files.txt`
-2. Get the full diff: `git diff "origin/$BASE_BRANCH" > pr_diff.txt`
-3. Get detailed file changes with status: `git diff --name-status "origin/$BASE_BRANCH" > file_changes.txt`
+1. Get list of changed files: `git diff --name-only "$BASE_SHA" > changed_files.txt`
+2. Get the full diff: `git diff "$BASE_SHA" > pr_diff.txt`
+3. Get detailed file changes with status: `git diff --name-status "$BASE_SHA" > file_changes.txt`
 
 ### Step 1.5: Create Analysis Cache
 

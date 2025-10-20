@@ -1,5 +1,5 @@
-import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
@@ -35,7 +35,7 @@ const createContainer = () => {
 const createTimeout = (ms: number) =>
   new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
 
-export const useNodePreview = <T extends MediaElement>(
+const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
 ) => {
@@ -98,7 +98,7 @@ export const useNodePreview = <T extends MediaElement>(
 /**
  * Attaches a preview image to a node.
  */
-export const useNodeImage = (node: LGraphNode) => {
+export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'image'
 
   const loadElement = (url: string): Promise<HTMLImageElement | null> =>
@@ -112,6 +112,7 @@ export const useNodeImage = (node: LGraphNode) => {
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
     node.imgs = elements
+    callback?.()
   }
 
   return useNodePreview(node, {
@@ -126,7 +127,7 @@ export const useNodeImage = (node: LGraphNode) => {
 /**
  * Attaches a preview video to a node.
  */
-export const useNodeVideo = (node: LGraphNode) => {
+export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'video'
   let minHeight = DEFAULT_VIDEO_SIZE
   let minWidth = DEFAULT_VIDEO_SIZE
@@ -187,6 +188,7 @@ export const useNodeVideo = (node: LGraphNode) => {
     }
 
     node.videoContainer.replaceChildren(videoElement)
+    callback?.()
   }
 
   return useNodePreview(node, {

@@ -25,12 +25,14 @@ export interface IWidgetOptions<TValues = unknown[]> {
   property?: string
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
+  /** If `true`, the widget will not be rendered by the Vue renderer. */
+  canvasOnly?: boolean
 
   values?: TValues
   callback?: IWidget['callback']
 }
 
-export interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
+interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
   min: number
   max: number
   step2: number
@@ -38,7 +40,7 @@ export interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
   marker_color?: CanvasColour
 }
 
-export interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
+interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
   min: number
   max: number
   step2: number
@@ -65,6 +67,18 @@ export type IWidget =
   | ISliderWidget
   | IButtonWidget
   | IKnobWidget
+  | IFileUploadWidget
+  | IColorWidget
+  | IMarkdownWidget
+  | IImageWidget
+  | ITreeSelectWidget
+  | IMultiSelectWidget
+  | IChartWidget
+  | IGalleriaWidget
+  | IImageCompareWidget
+  | ISelectButtonWidget
+  | ITextareaWidget
+  | IAssetWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -133,9 +147,90 @@ export interface IButtonWidget
 }
 
 /** A custom widget - accepts any value and has no built-in special handling */
-export interface ICustomWidget extends IBaseWidget<string | object, 'custom'> {
+interface ICustomWidget extends IBaseWidget<string | object, 'custom'> {
   type: 'custom'
   value: string | object
+}
+
+/** File upload widget for selecting and uploading files */
+export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
+  type: 'fileupload'
+  value: string
+  label?: string
+}
+
+/** Color picker widget for selecting colors */
+export interface IColorWidget extends IBaseWidget<string, 'color'> {
+  type: 'color'
+  value: string
+}
+
+/** Markdown widget for displaying formatted text */
+export interface IMarkdownWidget extends IBaseWidget<string, 'markdown'> {
+  type: 'markdown'
+  value: string
+}
+
+/** Image display widget */
+interface IImageWidget extends IBaseWidget<string, 'image'> {
+  type: 'image'
+  value: string
+}
+
+/** Tree select widget for hierarchical selection */
+export interface ITreeSelectWidget
+  extends IBaseWidget<string | string[], 'treeselect'> {
+  type: 'treeselect'
+  value: string | string[]
+}
+
+/** Multi-select widget for selecting multiple options */
+export interface IMultiSelectWidget
+  extends IBaseWidget<string[], 'multiselect'> {
+  type: 'multiselect'
+  value: string[]
+}
+
+/** Chart widget for displaying data visualizations */
+export interface IChartWidget extends IBaseWidget<object, 'chart'> {
+  type: 'chart'
+  value: object
+}
+
+/** Gallery widget for displaying multiple images */
+export interface IGalleriaWidget extends IBaseWidget<string[], 'galleria'> {
+  type: 'galleria'
+  value: string[]
+}
+
+/** Image comparison widget for comparing two images side by side */
+export interface IImageCompareWidget
+  extends IBaseWidget<string[], 'imagecompare'> {
+  type: 'imagecompare'
+  value: string[]
+}
+
+/** Select button widget for selecting from a group of buttons */
+export interface ISelectButtonWidget
+  extends IBaseWidget<
+    string,
+    'selectbutton',
+    RequiredProps<IWidgetOptions<string[]>, 'values'>
+  > {
+  type: 'selectbutton'
+  value: string
+}
+
+/** Textarea widget for multi-line text input */
+export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
+  type: 'textarea'
+  value: string
+}
+
+export interface IAssetWidget
+  extends IBaseWidget<string, 'asset', IWidgetOptions<string[]>> {
+  type: 'asset'
+  value: string
 }
 
 /**
@@ -158,6 +253,8 @@ export interface IBaseWidget<
   TType extends string = string,
   TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
 > {
+  [symbol: symbol]: boolean
+
   linkedWidgets?: IBaseWidget[]
 
   name: string
@@ -211,6 +308,13 @@ export interface IBaseWidget<
 
   hidden?: boolean
   advanced?: boolean
+  /**
+   * This property is automatically computed on graph change
+   * and should not be changed.
+   * Promoted widgets have a colored border
+   * @see /core/graph/subgraph/proxyWidget.registerProxyWidgets
+   */
+  promoted?: boolean
 
   tooltip?: string
 
@@ -252,6 +356,14 @@ export interface IBaseWidget<
     H: number,
     lowQuality?: boolean
   ): void
+
+  /**
+   * Compatibility method for widgets implementing the draw
+   * method when displayed in non-canvas renderers.
+   * Set by the current renderer implementation.
+   * When called, performs a draw operation.
+   */
+  triggerDraw?: () => void
 
   /**
    * Compute the size of the widget. Overrides {@link IBaseWidget.computeSize}.

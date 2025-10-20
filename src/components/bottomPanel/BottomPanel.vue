@@ -1,19 +1,44 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex h-full flex-col">
     <Tabs
       :key="$i18n.locale"
       v-model:value="bottomPanelStore.activeBottomPanelTabId"
+      style="--p-tabs-tablist-background: var(--comfy-menu-bg)"
     >
-      <TabList pt:tab-list="border-none">
-        <div class="w-full flex justify-between">
+      <TabList
+        pt:tab-list="border-none h-full flex items-center py-2 border-b-1 border-solid"
+        class="bg-transparent"
+      >
+        <div class="flex w-full justify-between">
           <div class="tabs-container">
             <Tab
               v-for="tab in bottomPanelStore.bottomPanelTabs"
               :key="tab.id"
               :value="tab.id"
-              class="p-3 border-none"
+              class="m-1 mx-2 border-none"
+              :class="{
+                'tab-list-single-item':
+                  bottomPanelStore.bottomPanelTabs.length === 1
+              }"
+              :pt:root="
+                (x: TabPassThroughMethodOptions) => ({
+                  class: {
+                    'p-3 rounded-lg': true,
+                    'pointer-events-none':
+                      bottomPanelStore.bottomPanelTabs.length === 1
+                  },
+                  style: {
+                    color: 'var(--fg-color)',
+                    backgroundColor:
+                      !x.context.active ||
+                      bottomPanelStore.bottomPanelTabs.length === 1
+                        ? ''
+                        : 'var(--bg-color)'
+                  }
+                })
+              "
             >
-              <span class="font-bold">
+              <span class="font-normal">
                 {{ getTabDisplayTitle(tab) }}
               </span>
             </Tab>
@@ -41,7 +66,7 @@
       </TabList>
     </Tabs>
     <!-- h-0 to force the div to grow -->
-    <div class="grow h-0">
+    <div class="h-0 grow">
       <ExtensionSlot
         v-if="
           bottomPanelStore.bottomPanelVisible &&
@@ -56,6 +81,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Tab from 'primevue/tab'
+import type { TabPassThroughMethodOptions } from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import Tabs from 'primevue/tabs'
 import { computed } from 'vue'
@@ -95,3 +121,9 @@ const closeBottomPanel = () => {
   bottomPanelStore.activePanel = null
 }
 </script>
+
+<style scoped>
+:deep(.p-tablist-active-bar) {
+  display: none;
+}
+</style>

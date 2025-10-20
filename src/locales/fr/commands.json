@@ -122,9 +122,6 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Exporter le flux de travail (format API)"
   },
-  "Comfy_Feedback": {
-    "label": "Retour d'information"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir la sélection en sous-graphe"
   },
@@ -214,6 +211,9 @@
   },
   "Comfy_OpenWorkflow": {
     "label": "Ouvrir le flux de travail"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "Publier le sous-graphe"
   },
   "Comfy_QueuePrompt": {
     "label": "Invite de file d'attente"

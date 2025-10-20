@@ -1,11 +1,13 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { type UserConfig, defineConfig } from 'vite'
+import { defineConfig } from 'vite'
+import type { UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -15,20 +17,45 @@ dotenv.config()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
+const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
+const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+
+const DISTRIBUTION = (process.env.DISTRIBUTION || 'localhost') as
+  | 'desktop'
+  | 'localhost'
+  | 'cloud'
+
+const BUILD_FLAGS = {
+  REQUIRE_SUBSCRIPTION: process.env.REQUIRE_SUBSCRIPTION === 'true'
+}
 
 export default defineConfig({
   base: '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
-      ignored: ['**/coverage/**', '**/playwright-report/**']
+      ignored: [
+        './browser_tests/**',
+        './node_modules/**',
+        './tests-ui/**',
+        '.eslintcache',
+        '*.config.{ts,mts}',
+        '**/.git/**',
+        '**/.github/**',
+        '**/.nx/**',
+        '**/*.{test,spec}.ts',
+        '**/coverage/**',
+        '**/dist/**',
+        '**/playwright-report/**',
+        '**/test-results/**'
+      ]
     },
     proxy: {
       '/internal': {
@@ -128,7 +155,7 @@ export default defineConfig({
     Icons({
       compiler: 'vue3',
       customCollections: {
-        comfy: FileSystemIconLoader('src/assets/icons/custom')
+        comfy: FileSystemIconLoader('packages/design-system/src/icons')
       }
     }),
 
@@ -143,25 +170,88 @@ export default defineConfig({
       deep: true,
       extensions: ['vue'],
       directoryAsNamespace: true
-    })
+    }),
+
+    // Bundle analyzer - generates dist/stats.html after build
+    // Only enabled when ANALYZE_BUNDLE=true
+    ...(ANALYZE_BUNDLE
+      ? [
+          visualizer({
+            filename: 'dist/stats.html',
+            open: false,
+            gzipSize: true,
+            brotliSize: true,
+            template: 'treemap' // or 'sunburst', 'network'
+          })
+        ]
+      : [])
   ],
 
   build: {
     minify: SHOULD_MINIFY ? 'esbuild' : false,
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: GENERATE_SOURCEMAP,
     rollupOptions: {
-      // Disabling tree-shaking
-      // Prevent vite remove unused exports
-      treeshake: false
+      treeshake: true,
+      output: {
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+
+          if (id.includes('primevue') || id.includes('@primeuix')) {
+            return 'vendor-primevue'
+          }
+
+          if (id.includes('@tiptap')) {
+            return 'vendor-tiptap'
+          }
+
+          if (id.includes('chart.js')) {
+            return 'vendor-chart'
+          }
+
+          if (id.includes('three') || id.includes('@xterm')) {
+            return 'vendor-visualization'
+          }
+
+          if (id.includes('/vue') || id.includes('pinia')) {
+            return 'vendor-vue'
+          }
+
+          return 'vendor-other'
+        }
+      }
     }
   },
 
   esbuild: {
-    minifyIdentifiers: false,
+    minifyIdentifiers: SHOULD_MINIFY,
     keepNames: true,
     minifySyntax: SHOULD_MINIFY,
-    minifyWhitespace: SHOULD_MINIFY
+    minifyWhitespace: SHOULD_MINIFY,
+    pure: SHOULD_MINIFY
+      ? [
+          'console.log',
+          'console.debug',
+          'console.info',
+          'console.trace',
+          'console.dir',
+          'console.dirxml',
+          'console.group',
+          'console.groupCollapsed',
+          'console.groupEnd',
+          'console.table',
+          'console.time',
+          'console.timeEnd',
+          'console.timeLog',
+          'console.count',
+          'console.countReset',
+          'console.profile',
+          'console.profileEnd',
+          'console.clear'
+        ]
+      : []
   },
 
   test: {
@@ -180,16 +270,23 @@ export default defineConfig({
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
-    __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true'
+    __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
+    __BUILD_FLAGS__: JSON.stringify(BUILD_FLAGS),
+    __MIXPANEL_TOKEN__: JSON.stringify(process.env.MIXPANEL_TOKEN || '')
   },
 
   resolve: {
     alias: {
+      '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
+      '@/utils/networkUtil':
+        '/packages/shared-frontend-utils/src/networkUtil.ts',
       '@': '/src'
     }
   },
 
   optimizeDeps: {
-    exclude: ['@comfyorg/comfyui-electron-types']
+    exclude: ['@comfyorg/comfyui-electron-types'],
+    entries: ['index.html']
   }
 }) satisfies UserConfig as UserConfig

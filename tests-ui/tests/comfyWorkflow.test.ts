@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
-import { validateComfyWorkflow } from '@/schemas/comfyWorkflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'tests-ui/workflows'

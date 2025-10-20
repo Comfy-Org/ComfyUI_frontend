@@ -7,7 +7,7 @@ import {
   useLogsTerminalTab
 } from '@/composables/bottomPanelTabs/useTerminalTabs'
 import { useCommandStore } from '@/stores/commandStore'
-import { ComfyExtension } from '@/types/comfy'
+import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'
 

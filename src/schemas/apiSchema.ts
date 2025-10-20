@@ -1,9 +1,11 @@
 import { z } from 'zod'
-import { fromZodError } from 'zod-validation-error'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
+import {
+  zComfyWorkflow,
+  zNodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
-import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflowSchema'
 import { zKeybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -280,18 +282,6 @@ export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
 export type TaskItem = z.infer<typeof zTaskItem>
 
-export function validateTaskItem(taskItem: unknown) {
-  const result = zTaskItem.safeParse(taskItem)
-  if (!result.success) {
-    const zodError = fromZodError(result.error)
-    // TODO accept a callback to report error.
-    console.warn(
-      `Invalid TaskItem: ${JSON.stringify(taskItem)}\n${zodError.message}`
-    )
-  }
-  return result
-}
-
 const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
@@ -331,7 +321,7 @@ const zDeviceStats = z.object({
   torch_vram_free: z.number()
 })
 
-export const zSystemStats = z.object({
+const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
     python_version: z.string(),
@@ -380,6 +370,7 @@ const zSettings = z.object({
   'Comfy.DevMode': z.boolean(),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
+  'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),
   'Comfy.DisableSliders': z.boolean(),
   'Comfy.DOMClippingEnabled': z.boolean(),
@@ -424,19 +415,16 @@ const zSettings = z.object({
   'Comfy.Sidebar.Location': z.enum(['left', 'right']),
   'Comfy.Sidebar.Size': z.enum(['small', 'normal']),
   'Comfy.Sidebar.UnifiedWidth': z.boolean(),
+  'Comfy.Sidebar.Style': z.enum(['floating', 'connected']),
   'Comfy.SnapToGrid.GridSize': z.number(),
   'Comfy.TextareaWidget.FontSize': z.number(),
   'Comfy.TextareaWidget.Spellcheck': z.boolean(),
-  'Comfy.UseNewMenu': z.enum(['Disabled', 'Top', 'Bottom']),
+  'Comfy.UseNewMenu': z.enum(['Disabled', 'Top']),
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
   'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
-  'Comfy.Workflow.WorkflowTabsPosition': z.enum([
-    'Sidebar',
-    'Topbar',
-    'Topbar (2nd-row)'
-  ]),
+  'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),
   'Comfy.Window.UnloadConfirmation': z.boolean(),
@@ -478,6 +466,10 @@ const zSettings = z.object({
   'Comfy.Minimap.RenderBypassState': z.boolean(),
   'Comfy.Minimap.RenderErrorState': z.boolean(),
   'Comfy.Canvas.NavigationMode': z.string(),
+  'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
+  'Comfy.Canvas.MouseWheelScroll': z.string(),
+  'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),

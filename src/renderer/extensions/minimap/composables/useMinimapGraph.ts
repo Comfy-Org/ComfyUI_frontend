@@ -1,17 +1,24 @@
 import { useThrottleFn } from '@vueuse/core'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import type {
+  LGraph,
+  LGraphNode,
+  LGraphTriggerEvent
+} from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
 
+import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
 import type { UpdateFlags } from '../types'
 
 interface GraphCallbacks {
   onNodeAdded?: (node: LGraphNode) => void
   onNodeRemoved?: (node: LGraphNode) => void
   onConnectionChange?: (node: LGraphNode) => void
+  onTrigger?: (event: LGraphTriggerEvent) => void
 }
 
 export function useMinimapGraph(
@@ -27,6 +34,9 @@ export function useMinimapGraph(
     connections: false,
     viewport: false
   })
+
+  // Track LayoutStore version for change detection
+  const layoutStoreVersion = layoutStore.getVersion()
 
   // Map to store original callbacks per graph ID
   const originalCallbacksMap = new Map<string, GraphCallbacks>()
@@ -48,7 +58,8 @@ export function useMinimapGraph(
     const originalCallbacks: GraphCallbacks = {
       onNodeAdded: g.onNodeAdded,
       onNodeRemoved: g.onNodeRemoved,
-      onConnectionChange: g.onConnectionChange
+      onConnectionChange: g.onConnectionChange,
+      onTrigger: g.onTrigger
     }
     originalCallbacksMap.set(g.id, originalCallbacks)
 
@@ -67,6 +78,22 @@ export function useMinimapGraph(
       originalCallbacks.onConnectionChange?.call(this, node)
       void handleGraphChangedThrottled()
     }
+
+    g.onTrigger = function (event: LGraphTriggerEvent) {
+      originalCallbacks.onTrigger?.call(this, event)
+
+      // Listen for visual property changes that affect minimap rendering
+      if (
+        event.type === 'node:property:changed' &&
+        (event.property === 'mode' ||
+          event.property === 'bgcolor' ||
+          event.property === 'color')
+      ) {
+        // Invalidate cache for this node to force redraw
+        nodeStatesCache.delete(String(event.nodeId))
+        void handleGraphChangedThrottled()
+      }
+    }
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
@@ -84,6 +111,7 @@ export function useMinimapGraph(
     g.onNodeAdded = originalCallbacks.onNodeAdded
     g.onNodeRemoved = originalCallbacks.onNodeRemoved
     g.onConnectionChange = originalCallbacks.onConnectionChange
+    g.onTrigger = originalCallbacks.onTrigger
 
     originalCallbacksMap.delete(g.id)
   }
@@ -96,33 +124,42 @@ export function useMinimapGraph(
     let positionChanged = false
     let connectionChanged = false
 
-    if (g._nodes.length !== lastNodeCount.value) {
+    // Use unified data source for change detection
+    const dataSource = MinimapDataSourceFactory.create(g)
+
+    // Check for node count changes
+    const currentNodeCount = dataSource.getNodeCount()
+    if (currentNodeCount !== lastNodeCount.value) {
       structureChanged = true
-      lastNodeCount.value = g._nodes.length
+      lastNodeCount.value = currentNodeCount
     }
 
-    for (const node of g._nodes) {
-      const key = node.id
-      const currentState = `${node.pos[0]},${node.pos[1]},${node.size[0]},${node.size[1]}`
+    // Check for node position/size changes
+    const nodes = dataSource.getNodes()
+    for (const node of nodes) {
+      const nodeId = node.id
+      const currentState = `${node.x},${node.y},${node.width},${node.height}`
 
-      if (nodeStatesCache.get(key) !== currentState) {
+      if (nodeStatesCache.get(nodeId) !== currentState) {
         positionChanged = true
-        nodeStatesCache.set(key, currentState)
+        nodeStatesCache.set(nodeId, currentState)
       }
     }
 
-    const currentLinks = JSON.stringify(g.links || {})
-    if (currentLinks !== linksCache.value) {
-      connectionChanged = true
-      linksCache.value = currentLinks
-    }
-
-    const currentNodeIds = new Set(g._nodes.map((n: LGraphNode) => n.id))
+    // Clean up removed nodes from cache
+    const currentNodeIds = new Set(nodes.map((n) => n.id))
     for (const [nodeId] of nodeStatesCache) {
       if (!currentNodeIds.has(nodeId)) {
         nodeStatesCache.delete(nodeId)
         structureChanged = true
       }
+    }
+
+    // TODO: update when Layoutstore tracks links
+    const currentLinks = JSON.stringify(g.links || {})
+    if (currentLinks !== linksCache.value) {
+      connectionChanged = true
+      linksCache.value = currentLinks
     }
 
     if (structureChanged || positionChanged) {
@@ -140,6 +177,10 @@ export function useMinimapGraph(
   const init = () => {
     setupEventListeners()
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
+
+    watch(layoutStoreVersion, () => {
+      void handleGraphChangedThrottled()
+    })
   }
 
   const destroy = () => {

@@ -11,7 +11,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { Subgraph } from './Subgraph'
+import type { Subgraph } from './Subgraph'
 import type { SubgraphNode } from './SubgraphNode'
 
 export type ExecutionId = string
@@ -57,7 +57,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
   #id: ExecutionId
 
   /**
-   * The path to the acutal node through subgraph instances, represented as a list of all subgraph node IDs (instances),
+   * The path to the actual node through subgraph instances, represented as a list of all subgraph node IDs (instances),
    * followed by the actual original node ID within the subgraph. Each segment is separated by `:`.
    *
    * e.g. `1:2:3`:
@@ -104,7 +104,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     readonly subgraphNodePath: readonly NodeId[],
     /** A flattened map of all DTOs in this node network. Subgraph instances have been expanded into their inner nodes. */
     readonly nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
-    /** The actual subgraph instance that contains this node, otherise undefined. */
+    /** The actual subgraph instance that contains this node, otherwise undefined. */
     readonly subgraphNode?: SubgraphNode
   ) {
     if (!node.graph) throw new NullGraphError()
@@ -271,9 +271,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       // Bypass nodes by finding first input with matching type
       const matchingIndex = this.#getBypassSlotIndex(slot, type)
 
-      // No input types match
-      if (matchingIndex === undefined) {
-        console.debug(
+      // No input types match - bypass not possible
+      if (matchingIndex === -1) {
+        console.warn(
           `[ExecutableNodeDTO.resolveOutput] No input types match type [${type}] for id [${this.id}] slot [${slot}]`,
           this
         )
@@ -294,25 +294,21 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       // Fallback check for nodes performing link redirection
       const virtualLink = this.node.getInputLink(slot)
       if (virtualLink) {
-        const outputNode = this.graph.getNodeById(virtualLink.origin_id)
-        if (!outputNode)
+        const { inputNode } = virtualLink.resolve(this.graph)
+        if (!inputNode)
           throw new InvalidLinkError(
             `Virtual node failed to resolve parent [${this.id}] slot [${slot}]`
           )
 
-        const outputNodeExecutionId = [
+        const inputNodeExecutionId = [
           ...this.subgraphNodePath,
-          outputNode.id
+          inputNode.id
         ].join(':')
-        const outputNodeDto = this.nodesByExecutionId.get(outputNodeExecutionId)
-        if (!outputNodeDto)
-          throw new Error(`No output node DTO found for id [${outputNode.id}]`)
+        const inputNodeDto = this.nodesByExecutionId.get(inputNodeExecutionId)
+        if (!inputNodeDto)
+          throw new Error(`No input node DTO found for id [${inputNode.id}]`)
 
-        return outputNodeDto.resolveOutput(
-          virtualLink.origin_slot,
-          type,
-          visited
-        )
+        return inputNodeDto.resolveInput(virtualLink.target_slot, visited, type)
       }
 
       // Virtual nodes without a matching input should be discarded.
@@ -331,7 +327,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    * Used when bypassing nodes.
    * @param slot The output slot index on this node
    * @param type The type of the final target input (so type list matches are accurate)
-   * @returns The index of the input slot on this node, otherwise `undefined`.
+   * @returns The index of the input slot on this node, otherwise `-1`.
    */
   #getBypassSlotIndex(slot: number, type: ISlotType) {
     const { inputs } = this
@@ -352,15 +348,15 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       return slot
     }
 
+    // Preserve legacy behaviour; use exact match first.
+    const exactMatch = inputs.findIndex((input) => input.type === type)
+    if (exactMatch !== -1) return exactMatch
+
     // Find first matching slot - prefer exact type
-    return (
-      // Preserve legacy behaviour; use exact match first.
-      inputs.findIndex((input) => input.type === type) ??
-      inputs.findIndex(
-        (input) =>
-          LiteGraph.isValidConnection(input.type, outputType) &&
-          LiteGraph.isValidConnection(input.type, type)
-      )
+    return inputs.findIndex(
+      (input) =>
+        LiteGraph.isValidConnection(input.type, outputType) &&
+        LiteGraph.isValidConnection(input.type, type)
     )
   }
 

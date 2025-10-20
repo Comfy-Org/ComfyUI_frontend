@@ -1,11 +1,11 @@
 <template>
   <div
-    class="relative w-full text-xs min-h-[28px] max-h-[200px] rounded-lg px-4 py-2 overflow-y-auto"
+    class="relative max-h-[200px] min-h-[28px] w-full overflow-y-auto rounded-lg px-4 py-2 text-xs"
   >
     <div class="flex items-center gap-2">
-      <div class="flex-1 break-all flex items-center gap-2">
+      <div class="flex flex-1 items-center gap-2 break-all">
         <span v-html="formattedText"></span>
-        <Skeleton v-if="isParentNodeExecuting" class="flex-1! h-4!" />
+        <Skeleton v-if="isParentNodeExecuting" class="h-4! flex-1!" />
       </div>
     </div>
   </div>
@@ -15,7 +15,7 @@
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 

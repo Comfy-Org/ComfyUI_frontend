@@ -20,15 +20,6 @@ export enum HashFunction {
   SHA512 = 'sha512'
 }
 
-export enum AutoLaunch {
-  // Let server decide whether to auto launch based on the current environment
-  Auto = 'auto',
-  // Disable auto launch
-  Disable = 'disable',
-  // Enable auto launch
-  Enable = 'enable'
-}
-
 export enum CudaMalloc {
   // Let server decide whether to use CUDA malloc based on the current environment
   Auto = 'auto',

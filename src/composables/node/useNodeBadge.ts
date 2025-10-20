@@ -3,15 +3,13 @@ import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
-import {
-  BadgePosition,
-  LGraphBadge,
-  type LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { BadgePosition, LGraphBadge } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { adjustColor } from '@/utils/colorUtil'
@@ -88,10 +86,10 @@ export const useNodeBadge = () => {
                   ? `#${node.id}`
                   : '',
                 badgeTextVisible(nodeDef, nodeLifeCycleBadgeMode.value)
-                  ? nodeDef?.nodeLifeCycleBadgeText ?? ''
+                  ? (nodeDef?.nodeLifeCycleBadgeText ?? '')
                   : '',
                 badgeTextVisible(nodeDef, nodeSourceBadgeMode.value)
-                  ? nodeDef?.nodeSource?.badgeText ?? ''
+                  ? (nodeDef?.nodeSource?.badgeText ?? '')
                   : ''
               ]
                 .filter((s) => s.length > 0)

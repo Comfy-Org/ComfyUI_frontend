@@ -1,19 +1,23 @@
 <template>
   <div
     ref="workflowTabRef"
-    class="flex p-2 gap-2 workflow-tab"
+    class="workflow-tab group flex gap-2 p-2"
     v-bind="$attrs"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @click="handleClick"
   >
-    <span class="workflow-label text-sm max-w-[150px] truncate inline-block">
+    <span class="workflow-label inline-block max-w-[150px] truncate text-sm">
       {{ workflowOption.workflow.filename }}
     </span>
     <div class="relative">
-      <span v-if="shouldShowStatusIndicator" class="status-indicator">•</span>
+      <span
+        v-if="shouldShowStatusIndicator"
+        class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
+        >•</span
+      >
       <Button
-        class="close-button p-0 w-auto"
+        class="close-button invisible w-auto p-0"
         icon="pi pi-times"
         text
         severity="secondary"
@@ -40,11 +44,11 @@ import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
-import { useWorkflowService } from '@/services/workflowService'
-import { useSettingStore } from '@/stores/settingStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
@@ -173,18 +177,6 @@ onUnmounted(() => {
   popoverRef.value?.hidePopover()
 })
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-.status-indicator {
-  @apply absolute font-bold;
-  font-size: 1.5rem;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-</style>
 
 <style>
 .p-tooltip.workflow-tab-tooltip {

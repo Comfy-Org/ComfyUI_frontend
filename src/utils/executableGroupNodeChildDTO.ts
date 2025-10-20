@@ -1,11 +1,11 @@
 import type { GroupNodeHandler } from '@/extensions/core/groupNode'
-import {
-  type ExecutableLGraphNode,
-  ExecutableNodeDTO,
-  type ExecutionId,
-  type LGraphNode,
-  type NodeId,
-  type SubgraphNode
+import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraphNode,
+  NodeId,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 
 export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
@@ -18,7 +18,7 @@ export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
     subgraphNodePath: readonly NodeId[],
     /** A flattened map of all DTOs in this node network. Subgraph instances have been expanded into their inner nodes. */
     nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
-    /** The actual subgraph instance that contains this node, otherise undefined. */
+    /** The actual subgraph instance that contains this node, otherwise undefined. */
     subgraphNode?: SubgraphNode | undefined,
     groupNodeHandler?: GroupNodeHandler
   ) {

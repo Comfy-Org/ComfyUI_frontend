@@ -45,7 +45,7 @@ export class ComboWidget
     return typeof this.value === 'number' ? String(this.value) : this.value
   }
 
-  #getValues(node: LGraphNode): Values {
+  private getValues(node: LGraphNode): Values {
     const { values } = this.options
     if (values == null) throw new Error('[ComboWidget]: values is required')
 
@@ -57,7 +57,7 @@ export class ComboWidget
    * @param increment `true` if checking the use of the increment button, `false` for decrement
    * @returns `true` if the value is at the given index, otherwise `false`.
    */
-  #canUseButton(increment: boolean): boolean {
+  private canUseButton(increment: boolean): boolean {
     const { values } = this.options
     // If using legacy duck-typed method, false is the most permissive return value
     if (typeof values === 'function') return false
@@ -78,23 +78,23 @@ export class ComboWidget
    * Handles edge case where the value is both the first and last item in the list.
    */
   override canIncrement(): boolean {
-    return this.#canUseButton(true)
+    return this.canUseButton(true)
   }
 
   override canDecrement(): boolean {
-    return this.#canUseButton(false)
+    return this.canUseButton(false)
   }
 
   override incrementValue(options: WidgetEventOptions): void {
-    this.#tryChangeValue(1, options)
+    this.tryChangeValue(1, options)
   }
 
   override decrementValue(options: WidgetEventOptions): void {
-    this.#tryChangeValue(-1, options)
+    this.tryChangeValue(-1, options)
   }
 
-  #tryChangeValue(delta: number, options: WidgetEventOptions): void {
-    const values = this.#getValues(options.node)
+  private tryChangeValue(delta: number, options: WidgetEventOptions): void {
+    const values = this.getValues(options.node)
     const indexedValues = toArray(values)
 
     // avoids double click event
@@ -128,7 +128,7 @@ export class ComboWidget
     if (x > width - 40) return this.incrementValue({ e, node, canvas })
 
     // Otherwise, show dropdown menu
-    const values = this.#getValues(node)
+    const values = this.getValues(node)
     const values_list = toArray(values)
 
     // Handle center click - show dropdown menu

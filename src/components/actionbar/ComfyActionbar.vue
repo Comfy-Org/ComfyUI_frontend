@@ -1,43 +1,72 @@
 <template>
-  <Panel
-    class="actionbar w-fit"
-    :style="style"
-    :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
-  >
-    <div ref="panelRef" class="actionbar-content flex items-center select-none">
-      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
-      <ComfyQueueButton />
+  <div class="flex h-full items-center">
+    <div
+      v-if="isDragging && !isDocked"
+      class="actionbar-drop-zone m-1.5 flex items-center justify-center self-stretch rounded-md"
+      :class="{
+        'drop-zone-active': isMouseOverDropZone
+      }"
+      @mouseenter="onMouseEnterDropZone"
+      @mouseleave="onMouseLeaveDropZone"
+    >
+      {{ t('actionbar.dockToTop') }}
     </div>
-  </Panel>
+
+    <Panel
+      class="actionbar"
+      :style="style"
+      :class="{
+        fixed: !isDocked,
+        'is-dragging': isDragging,
+        'is-docked static mr-2 border-none bg-transparent p-0': isDocked
+      }"
+    >
+      <div
+        ref="panelRef"
+        class="actionbar-content flex items-center select-none"
+      >
+        <span
+          ref="dragHandleRef"
+          :class="
+            cn(
+              'drag-handle cursor-grab w-3 h-max mr-2',
+              isDragging && 'cursor-grabbing'
+            )
+          "
+        />
+
+        <ComfyRunButton />
+      </div>
+    </Panel>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import {
   useDraggable,
-  useElementBounding,
-  useEventBus,
   useEventListener,
   useLocalStorage,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
-import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import { t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { cn } from '@/utils/tailwindUtil'
 
-import ComfyQueueButton from './ComfyQueueButton.vue'
+import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
-
 const visible = computed(() => position.value !== 'Disabled')
 
-const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
+const tabContainer = document.querySelector('.workflow-tabs-container')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
@@ -53,11 +82,9 @@ const {
   containerElement: document.body,
   onMove: (event) => {
     // Prevent dragging the menu over the top of the tabs
-    if (position.value === 'Top') {
-      const minY = topMenuRef?.value?.getBoundingClientRect().top ?? 40
-      if (event.y < minY) {
-        event.y = minY
-      }
+    const minY = tabContainer?.getBoundingClientRect().bottom ?? 40
+    if (event.y < minY) {
+      event.y = minY
     }
   }
 })
@@ -192,38 +219,37 @@ const adjustMenuPosition = () => {
 
 useEventListener(window, 'resize', adjustMenuPosition)
 
-const topMenuBounds = useElementBounding(topMenuRef)
-const overlapThreshold = 20 // pixels
-const isOverlappingWithTopMenu = computed(() => {
-  if (!panelRef.value) {
-    return false
+// Drop zone state
+const isMouseOverDropZone = ref(false)
+
+// Mouse event handlers for self-contained drop zone
+const onMouseEnterDropZone = () => {
+  if (isDragging.value) {
+    isMouseOverDropZone.value = true
   }
-  const { height } = panelRef.value.getBoundingClientRect()
-  const actionbarBottom = y.value + height
-  const topMenuBottom = topMenuBounds.bottom.value
+}
 
-  const overlapPixels =
-    Math.min(actionbarBottom, topMenuBottom) -
-    Math.max(y.value, topMenuBounds.top.value)
-  return overlapPixels > overlapThreshold
-})
+const onMouseLeaveDropZone = () => {
+  if (isDragging.value) {
+    isMouseOverDropZone.value = false
+  }
+}
 
-watch(isDragging, (newIsDragging) => {
-  if (!newIsDragging) {
-    // Stop dragging
-    isDocked.value = isOverlappingWithTopMenu.value
+// Handle drag state changes
+watch(isDragging, (dragging) => {
+  if (dragging) {
+    // Starting to drag - undock if docked
+    if (isDocked.value) {
+      isDocked.value = false
+    }
   } else {
-    // Start dragging
-    isDocked.value = false
+    // Stopped dragging - dock if mouse is over drop zone
+    if (isMouseOverDropZone.value) {
+      isDocked.value = true
+    }
+    // Reset drop zone state
+    isMouseOverDropZone.value = false
   }
-})
-
-const eventBus = useEventBus<string>('topMenu')
-watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
-  eventBus.emit('updateHighlight', {
-    isDragging: dragging,
-    isOverlapping: overlapping
-  })
 })
 </script>
 
@@ -232,17 +258,27 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 
 .actionbar {
   pointer-events: all;
-  position: fixed;
   z-index: 1000;
 }
 
-.actionbar.is-docked {
-  position: static;
-  @apply bg-transparent border-none p-0;
+.actionbar-drop-zone {
+  width: 265px;
+  border: 2px dashed var(--p-primary-color);
+  opacity: 0.8;
+}
+
+.actionbar-drop-zone.drop-zone-active {
+  background: var(--p-highlight-background-focus);
+  border-color: var(--p-primary-color);
+  border-width: 3px;
+  box-shadow: 0 0 20px var(--p-primary-color);
+  opacity: 1;
+  transform: scale(1.05);
 }
 
 .actionbar.is-dragging {
   user-select: none;
+  pointer-events: none;
 }
 
 :deep(.p-panel-content) {
@@ -255,9 +291,5 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 
 :deep(.p-panel-header) {
   display: none;
-}
-
-.drag-handle {
-  @apply w-3 h-max;
 }
 </style>

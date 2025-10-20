@@ -1,10 +1,11 @@
 import { computedWithControl } from '@vueuse/core'
-import { type ComputedRef, ref } from 'vue'
+import { ref } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-export interface UseComputedWithWidgetWatchOptions {
+interface UseComputedWithWidgetWatchOptions {
   /**
    * Names of widgets to observe for changes.
    * If not provided, all widgets will be observed.

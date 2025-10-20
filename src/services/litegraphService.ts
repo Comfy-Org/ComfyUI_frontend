@@ -4,19 +4,22 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
-  type IContextMenuValue,
-  LGraphBadge,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
   RenderShape,
-  type Subgraph,
   SubgraphNode,
-  type Vector2,
   createBounds
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  Point,
+  Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,
@@ -24,7 +27,11 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -37,13 +44,10 @@ import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isImageNode,
@@ -130,19 +134,6 @@ export const useLitegraphService = () => {
         this.#setInitialSize()
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
-        this.badges.push(
-          new LGraphBadge({
-            text: '',
-            iconOptions: {
-              unicode: '\ue96e',
-              fontFamily: 'PrimeIcons',
-              color: '#ffffff',
-              fontSize: 12
-            },
-            fgColor: '#ffffff',
-            bgColor: '#3b82f6'
-          })
-        )
       }
 
       /**
@@ -483,7 +474,18 @@ export const useLitegraphService = () => {
         ) ?? {}
 
         if (widget) {
-          widget.label = st(nameKey, widget.label ?? inputName)
+          // Check if this is an Asset Browser button widget
+          const isAssetBrowserButton =
+            widget.type === 'button' && widget.value === 'Select model'
+
+          if (isAssetBrowserButton) {
+            // Preserve Asset Browser button label (don't translate)
+            widget.label = String(widget.value)
+          } else {
+            // Apply normal translation for other widgets
+            widget.label = st(nameKey, widget.label ?? inputName)
+          }
+
           widget.options ??= {}
           Object.assign(widget.options, {
             advanced: inputSpec.advanced,
@@ -729,7 +731,7 @@ export const useLitegraphService = () => {
       ]
     }
 
-    node.prototype.getExtraMenuOptions = function (_, options) {
+    node.prototype.getExtraMenuOptions = function (canvas, options) {
       if (this.imgs) {
         // If this node has images then we add an open in new tab item
         let img
@@ -776,7 +778,7 @@ export const useLitegraphService = () => {
         content: 'Bypass',
         callback: () => {
           toggleSelectedNodesMode(LGraphEventMode.BYPASS)
-          app.canvas.setDirty(true, true)
+          canvas.setDirty(true, true)
         }
       })
 
@@ -812,16 +814,86 @@ export const useLitegraphService = () => {
         }
       }
       if (this instanceof SubgraphNode) {
-        options.unshift({
-          content: 'Unpack Subgraph',
-          callback: () => {
-            useNodeOutputStore().revokeSubgraphPreviews(this)
-            this.graph.unpackSubgraph(this)
+        options.unshift(
+          {
+            content: 'Edit Subgraph Widgets',
+            callback: () => {
+              showSubgraphNodeDialog()
+            }
+          },
+          {
+            content: 'Unpack Subgraph',
+            callback: () => {
+              useNodeOutputStore().revokeSubgraphPreviews(this)
+              this.graph.unpackSubgraph(this)
+            }
           }
-        })
+        )
+      }
+      if (this.graph && !this.graph.isRootGraph) {
+        const [x, y] = canvas.graph_mouse
+        const overWidget = this.getWidgetOnPos(x, y, true)
+        if (overWidget) {
+          addWidgetPromotionOptions(options, overWidget, this)
+        }
       }
 
       return []
+    }
+  }
+  function updatePreviews(node: LGraphNode, callback?: () => void) {
+    try {
+      unsafeUpdatePreviews.call(node, callback)
+    } catch (error) {
+      console.error('Error drawing node background', error)
+    }
+  }
+  function unsafeUpdatePreviews(this: LGraphNode, callback?: () => void) {
+    if (this.flags.collapsed) return
+
+    const nodeOutputStore = useNodeOutputStore()
+    const { showAnimatedPreview, removeAnimatedPreview } =
+      useNodeAnimatedImage()
+    const { showCanvasImagePreview, removeCanvasImagePreview } =
+      useNodeCanvasImagePreview()
+
+    const output = nodeOutputStore.getNodeOutputs(this)
+    const preview = nodeOutputStore.getNodePreviews(this)
+
+    const isNewOutput = output && this.images !== output.images
+    const isNewPreview = preview && this.preview !== preview
+
+    if (isNewPreview) this.preview = preview
+    if (isNewOutput) this.images = output.images
+
+    if (isNewOutput || isNewPreview) {
+      this.animatedImages = output?.animated?.find(Boolean)
+
+      const isAnimatedWebp =
+        this.animatedImages &&
+        output?.images?.some((img) => img.filename?.includes('webp'))
+      const isAnimatedPng =
+        this.animatedImages &&
+        output?.images?.some((img) => img.filename?.includes('png'))
+      const isVideo =
+        (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
+        isVideoNode(this)
+      if (isVideo) {
+        useNodeVideo(this, callback).showPreview()
+      } else {
+        useNodeImage(this, callback).showPreview()
+      }
+    }
+
+    // Nothing to do
+    if (!this.imgs?.length) return
+
+    if (this.animatedImages) {
+      removeCanvasImagePreview(this)
+      showAnimatedPreview(this)
+    } else {
+      removeAnimatedPreview(this)
+      showCanvasImagePreview(this)
     }
   }
 
@@ -839,62 +911,8 @@ export const useLitegraphService = () => {
         'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
       )
     }
-
-    function unsafeDrawBackground(this: LGraphNode) {
-      if (this.flags.collapsed) return
-
-      const nodeOutputStore = useNodeOutputStore()
-      const { showAnimatedPreview, removeAnimatedPreview } =
-        useNodeAnimatedImage()
-      const { showCanvasImagePreview, removeCanvasImagePreview } =
-        useNodeCanvasImagePreview()
-
-      const output = nodeOutputStore.getNodeOutputs(this)
-      const preview = nodeOutputStore.getNodePreviews(this)
-
-      const isNewOutput = output && this.images !== output.images
-      const isNewPreview = preview && this.preview !== preview
-
-      if (isNewPreview) this.preview = preview
-      if (isNewOutput) this.images = output.images
-
-      if (isNewOutput || isNewPreview) {
-        this.animatedImages = output?.animated?.find(Boolean)
-
-        const isAnimatedWebp =
-          this.animatedImages &&
-          output?.images?.some((img) => img.filename?.includes('webp'))
-        const isAnimatedPng =
-          this.animatedImages &&
-          output?.images?.some((img) => img.filename?.includes('png'))
-        const isVideo =
-          (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
-          isVideoNode(this)
-        if (isVideo) {
-          useNodeVideo(this).showPreview()
-        } else {
-          useNodeImage(this).showPreview()
-        }
-      }
-
-      // Nothing to do
-      if (!this.imgs?.length) return
-
-      if (this.animatedImages) {
-        removeCanvasImagePreview(this)
-        showAnimatedPreview(this)
-      } else {
-        removeAnimatedPreview(this)
-        showCanvasImagePreview(this)
-      }
-    }
-
     node.prototype.onDrawBackground = function () {
-      try {
-        unsafeDrawBackground.call(this)
-      } catch (error) {
-        console.error('Error drawing node background', error)
-      }
+      updatePreviews(this)
     }
   }
 
@@ -949,6 +967,25 @@ export const useLitegraphService = () => {
   ): LGraphNode {
     options.pos ??= getCanvasCenter()
 
+    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
+      const canvas = canvasStore.getCanvas()
+      const bp = useSubgraphStore().getBlueprint(nodeDef.name)
+      const items: object = {
+        nodes: bp.nodes,
+        subgraphs: bp.definitions?.subgraphs
+      }
+      const results = canvas._deserializeItems(items, {
+        position: options.pos
+      })
+      if (!results) throw new Error('Failed to add subgraph blueprint')
+      const node = results.nodes.values().next().value
+      if (!node)
+        throw new Error(
+          'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+        )
+      return node
+    }
+
     const node = LiteGraph.createNode(
       nodeDef.name,
       nodeDef.display_name,
@@ -963,7 +1000,7 @@ export const useLitegraphService = () => {
     return node
   }
 
-  function getCanvasCenter(): Vector2 {
+  function getCanvasCenter(): Point {
     const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     const [x, y, w, h] = app.canvas.ds.visible_area
     return [x + w / dpi / 2, y + h / dpi / 2]
@@ -1005,6 +1042,7 @@ export const useLitegraphService = () => {
     getCanvasCenter,
     goToNode,
     resetView,
-    fitView
+    fitView,
+    updatePreviews
   }
 }

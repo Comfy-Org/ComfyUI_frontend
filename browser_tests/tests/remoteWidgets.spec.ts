@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { ComfyPage, comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Remote COMBO Widget', () => {
   const mockOptions = ['d', 'c', 'b', 'a']
@@ -190,7 +191,9 @@ test.describe('Remote COMBO Widget', () => {
       await comfyPage.page.keyboard.press('Control+A')
 
       await expect(
-        comfyPage.page.locator('.selection-toolbox .pi-refresh')
+        comfyPage.page.locator(
+          '.selection-toolbox button[data-testid="refresh-button"]'
+        )
       ).toBeVisible()
     })
 

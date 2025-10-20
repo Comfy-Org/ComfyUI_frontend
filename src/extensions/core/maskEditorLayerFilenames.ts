@@ -1,4 +1,4 @@
-export interface ImageLayerFilenames {
+interface ImageLayerFilenames {
   maskedImage: string
   paint: string
   paintedImage: string

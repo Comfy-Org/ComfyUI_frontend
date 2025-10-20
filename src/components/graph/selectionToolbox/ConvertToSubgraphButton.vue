@@ -6,11 +6,12 @@
       showDelay: 1000
     }"
     severity="secondary"
+    data-testid="convert-to-subgraph-button"
     text
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
     <template #icon>
-      <i-lucide:expand />
+      <i class="icon-[lucide--expand] h-4 w-4" />
     </template>
   </Button>
   <Button
@@ -20,11 +21,12 @@
       showDelay: 1000
     }"
     severity="secondary"
+    data-testid="convert-to-subgraph-button"
     text
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
     <template #icon>
-      <i-lucide:shrink />
+      <i class="icon-[lucide--shrink]" />
     </template>
   </Button>
 </template>
@@ -34,25 +36,15 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
+const { isSingleSubgraph, hasAnySelection } = useSelectionState()
 
-const isUnpackVisible = computed(() => {
-  return (
-    canvasStore.selectedItems?.length === 1 &&
-    canvasStore.selectedItems[0] instanceof SubgraphNode
-  )
-})
-const isConvertVisible = computed(() => {
-  return (
-    canvasStore.groupSelected ||
-    canvasStore.rerouteSelected ||
-    canvasStore.nodeSelected
-  )
-})
+const isUnpackVisible = isSingleSubgraph
+const isConvertVisible = computed(
+  () => hasAnySelection.value && !isSingleSubgraph.value
+)
 </script>

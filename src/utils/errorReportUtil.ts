@@ -1,6 +1,6 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SystemStats } from '@/schemas/apiSchema'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 
 export interface ErrorReportData {
   exceptionType: string

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useReleaseService } from '@/services/releaseService'
+import { useReleaseService } from '@/platform/updates/common/releaseService'
 
 // Hoist the mock to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({

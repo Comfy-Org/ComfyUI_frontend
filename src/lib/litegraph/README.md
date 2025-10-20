@@ -146,8 +146,8 @@ Litegraph has no runtime dependencies. The build tooling has been tested on Node
 
 Use GitHub actions to release normal versions.
 
-1. Run the `Release a New Version` action, selecting the version incrment type
-1. Merge the resultion PR
+1. Run the `Release a New Version` action, selecting the version increment type
+1. Merge the resolution PR
 1. A GitHub release is automatically published on merge
 
 ### Pre-release

@@ -1,0 +1,6 @@
+@import '@comfyorg/design-system/css/style.css';
+
+#desktop-app {
+  position: absolute;
+  inset: 0;
+}

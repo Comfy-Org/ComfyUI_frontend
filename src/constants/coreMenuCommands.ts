@@ -23,6 +23,7 @@ export const CORE_MENU_COMMANDS = [
       'Comfy.Memory.UnloadModelsAndExecutionCache'
     ]
   ],
+  [['View'], []],
   [
     ['Help'],
     [

@@ -13,6 +13,7 @@
         class="search-box-input w-full"
         :model-value="modelValue"
         :placeholder="placeholder"
+        :autofocus="autofocus"
         @input="handleInput"
       />
       <InputIcon v-if="!modelValue" :class="icon" />
@@ -27,7 +28,7 @@
     </IconField>
     <div
       v-if="filters?.length"
-      class="search-filters pt-2 flex flex-wrap gap-2"
+      class="search-filters flex flex-wrap gap-2 pt-2"
     >
       <SearchFilterChip
         v-for="filter in filters"
@@ -57,7 +58,8 @@ const {
   icon = 'pi pi-search',
   debounceTime = 300,
   filterIcon,
-  filters = []
+  filters = [],
+  autofocus = false
 } = defineProps<{
   modelValue: string
   placeholder?: string
@@ -65,6 +67,7 @@ const {
   debounceTime?: number
   filterIcon?: string
   filters?: TFilter[]
+  autofocus?: boolean
 }>()
 
 const emit = defineEmits<{

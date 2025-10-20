@@ -1,33 +1,48 @@
 import * as fs from 'fs'
 
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
-import type { ComfyApi } from '../src/scripts/api'
-import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
-import { normalizeI18nKey } from '../src/utils/formatUtil'
+import { normalizeI18nKey } from '../packages/shared-frontend-utils/src/formatUtil'
+import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
+interface WidgetInfo {
+  name?: string
+  label?: string
+}
+
+interface WidgetLabels {
+  [key: string]: Record<string, { name: string }>
+}
+
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
   // Mock view route
-  comfyPage.page.route('**/view**', async (route) => {
+  await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
   })
 
-  const nodeDefs: ComfyNodeDefImpl[] = (
-    Object.values(
-      await comfyPage.page.evaluate(async () => {
-        const api = window['app'].api as ComfyApi
-        return await api.getNodeDefs()
-      })
-    ) as ComfyNodeDef[]
+  // Note: Don't mock the object_info API endpoint - let it hit the actual backend
+
+  const nodeDefs: ComfyNodeDefImpl[] = await comfyPage.page.evaluate(
+    async () => {
+      // @ts-expect-error - app is dynamically added to window
+      const api = window['app'].api
+      const rawNodeDefs = await api.getNodeDefs()
+      const { ComfyNodeDefImpl } = await import('../src/stores/nodeDefStore')
+
+      return (
+        Object.values(rawNodeDefs)
+          // Ignore DevTools nodes (used for internal testing)
+          .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
+          .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
+      )
+    }
   )
-    // Ignore DevTools nodes (used for internal testing)
-    .filter((def) => !def.name.startsWith('DevTools'))
-    .map((def) => new ComfyNodeDefImpl(def))
 
   console.log(`Collected ${nodeDefs.length} node definitions`)
 
@@ -52,7 +67,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   )
 
   async function extractWidgetLabels() {
-    const nodeLabels = {}
+    const nodeLabels: WidgetLabels = {}
 
     for (const nodeDef of nodeDefs) {
       const inputNames = Object.values(nodeDef.inputs).map(
@@ -65,12 +80,15 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         const widgetsMappings = await comfyPage.page.evaluate(
           (args) => {
             const [nodeName, displayName, inputNames] = args
+            // @ts-expect-error - LiteGraph is dynamically added to window
             const node = window['LiteGraph'].createNode(nodeName, displayName)
             if (!node.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
-                .filter((w) => w?.name && !inputNames.includes(w.name))
-                .map((w) => [w.name, w.label])
+                .filter(
+                  (w: WidgetInfo) => w?.name && !inputNames.includes(w.name)
+                )
+                .map((w: WidgetInfo) => [w.name, w.label])
             )
           },
           [nodeDef.name, nodeDef.display_name, inputNames]

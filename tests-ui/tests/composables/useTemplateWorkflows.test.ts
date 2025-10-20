@@ -1,13 +1,16 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
-import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 // Mock the store
-vi.mock('@/stores/workflowTemplatesStore', () => ({
-  useWorkflowTemplatesStore: vi.fn()
-}))
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: vi.fn()
+  })
+)
 
 // Mock the API
 vi.mock('@/scripts/api', () => ({
@@ -28,6 +31,11 @@ vi.mock('@/scripts/app', () => ({
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: vi.fn((key, fallback) => fallback || key)
+  }),
+  createI18n: () => ({
+    global: {
+      t: (key: string) => key
+    }
   })
 }))
 
@@ -222,28 +230,22 @@ describe('useTemplateWorkflows', () => {
     const { getTemplateDescription } = useTemplateWorkflows()
 
     // Default template with localized description
-    const descWithLocalized = getTemplateDescription(
-      {
-        name: 'test',
-        localizedDescription: 'Localized Description',
-        mediaType: 'image',
-        mediaSubtype: 'jpg',
-        description: 'Test'
-      },
-      'default'
-    )
+    const descWithLocalized = getTemplateDescription({
+      name: 'test',
+      localizedDescription: 'Localized Description',
+      mediaType: 'image',
+      mediaSubtype: 'jpg',
+      description: 'Test'
+    })
     expect(descWithLocalized).toBe('Localized Description')
 
     // Custom template with description
-    const customDesc = getTemplateDescription(
-      {
-        name: 'test',
-        description: 'custom-template_description',
-        mediaType: 'image',
-        mediaSubtype: 'jpg'
-      },
-      'custom-module'
-    )
+    const customDesc = getTemplateDescription({
+      name: 'test',
+      description: 'custom-template_description',
+      mediaType: 'image',
+      mediaSubtype: 'jpg'
+    })
     expect(customDesc).toBe('custom template description')
   })
 

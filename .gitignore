@@ -15,6 +15,7 @@ yarn.lock
 # Cache files
 .eslintcache
 .prettiercache
+.stylelintcache
 
 node_modules
 dist
@@ -22,6 +23,8 @@ dist-ssr
 *.local
 # Claude configuration
 .claude/*.local.json
+.claude/*.local.md
+.claude/*.local.txt
 CLAUDE.local.md
 
 # Editor directories and files
@@ -29,6 +32,7 @@ CLAUDE.local.md
 *.code-workspace
 !.vscode/extensions.json
 !.vscode/tailwind.json
+!.vscode/custom-css.json
 !.vscode/settings.json.default
 !.vscode/launch.json.default
 .idea
@@ -44,6 +48,7 @@ components.d.ts
 tests-ui/data/*
 tests-ui/ComfyUI_examples
 tests-ui/workflows/examples
+coverage/
 
 # Browser tests
 /test-results/
@@ -51,6 +56,7 @@ tests-ui/workflows/examples
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
+browser_tests/local/
 
 .env
 
@@ -77,8 +83,8 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
-
-
+# MCP Servers
+.playwright-mcp/*
 
 .nx/cache
 .nx/workspace-data

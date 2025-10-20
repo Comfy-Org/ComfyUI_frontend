@@ -115,11 +115,11 @@ const defaultSettingStore = {
   set: vi.fn().mockResolvedValue(undefined)
 }
 
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => defaultCanvasStore)
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)
 }))
 
@@ -147,7 +147,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     activeSubgraph: null
   }))
@@ -898,10 +898,9 @@ describe('useMinimap', () => {
       const minimap = useMinimap()
       const styles = minimap.containerStyles.value
 
-      expect(styles.width).toBe('250px')
+      expect(styles.width).toBe('253px')
       expect(styles.height).toBe('200px')
-      expect(styles.backgroundColor).toBe('#15161C')
-      expect(styles.border).toBe('1px solid #333')
+      expect(styles.border).toBe('1px solid var(--interface-stroke)')
       expect(styles.borderRadius).toBe('8px')
     })
   })

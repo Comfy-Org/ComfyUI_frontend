@@ -2,10 +2,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
-import type { ComfyWorkflow } from '@/stores/workflowStore'
 
 vi.mock('@/scripts/app', () => {
   const mockCanvas = {
@@ -35,7 +35,7 @@ vi.mock('@/scripts/app', () => {
 })
 
 // Mock canvasStore
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     getCanvas: () => (app as any).canvas
   })

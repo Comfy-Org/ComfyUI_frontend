@@ -10,8 +10,6 @@ export const apiKeySchema = z.object({
     .length(72, t('validation.length', { length: 72 }))
 })
 
-export type ApiKeyData = z.infer<typeof apiKeySchema>
-
 export const signInSchema = z.object({
   email: z
     .string()
@@ -41,8 +39,6 @@ export const updatePasswordSchema = passwordSchema.refine(
     path: ['confirmPassword']
   }
 )
-
-export type UpdatePasswordData = z.infer<typeof updatePasswordSchema>
 
 export const signUpSchema = passwordSchema
   .extend({

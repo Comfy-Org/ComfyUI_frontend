@@ -1,13 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import {
-  Download,
-  Folder,
-  Heart,
-  Info,
-  MoreVertical,
-  Star,
-  Upload
-} from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import IconButton from '../button/IconButton.vue'
@@ -20,7 +11,15 @@ import CardTop from './CardTop.vue'
 
 interface CardStoryArgs {
   // CardContainer props
-  containerRatio: 'square' | 'portrait' | 'tallPortrait'
+  containerSize: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall'
+  variant: 'default' | 'ghost' | 'outline'
+  rounded: 'none' | 'sm' | 'lg' | 'xl'
+  customAspectRatio?: string
+  hasBorder: boolean
+  hasBackground: boolean
+  hasShadow: boolean
+  hasCursor: boolean
+  customClass: string
   maxWidth: number
   minWidth: number
 
@@ -53,18 +52,44 @@ interface CardStoryArgs {
 const meta: Meta<CardStoryArgs> = {
   title: 'Components/Card/Card',
   argTypes: {
-    containerRatio: {
+    containerSize: {
       control: 'select',
-      options: ['square', 'portrait', 'tallPortrait'],
-      description: 'Card container aspect ratio'
+      options: ['mini', 'compact', 'regular', 'portrait', 'tall'],
+      description: 'Card container size preset'
     },
-    maxWidth: {
-      control: { type: 'range', min: 200, max: 600, step: 10 },
-      description: 'Maximum width in pixels'
+    variant: {
+      control: 'select',
+      options: ['default', 'ghost', 'outline'],
+      description: 'Card visual variant'
     },
-    minWidth: {
-      control: { type: 'range', min: 150, max: 400, step: 10 },
-      description: 'Minimum width in pixels'
+    rounded: {
+      control: 'select',
+      options: ['none', 'sm', 'lg', 'xl'],
+      description: 'Border radius size'
+    },
+    customAspectRatio: {
+      control: 'text',
+      description: 'Custom aspect ratio (e.g., "16/9")'
+    },
+    hasBorder: {
+      control: 'boolean',
+      description: 'Add border styling'
+    },
+    hasBackground: {
+      control: 'boolean',
+      description: 'Add background styling'
+    },
+    hasShadow: {
+      control: 'boolean',
+      description: 'Add shadow styling'
+    },
+    hasCursor: {
+      control: 'boolean',
+      description: 'Add cursor pointer'
+    },
+    customClass: {
+      control: 'text',
+      description: 'Additional custom CSS classes'
     },
     topRatio: {
       control: 'select',
@@ -149,14 +174,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     CardTitle,
     CardDescription,
     IconButton,
-    SquareChip,
-    Info,
-    Folder,
-    Heart,
-    Download,
-    Star,
-    Upload,
-    MoreVertical
+    SquareChip
   },
   setup() {
     const favorited = ref(false)
@@ -171,11 +189,17 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     }
   },
   template: `
-    <div class="p-4 min-h-screen bg-zinc-50 dark-theme:bg-zinc-900">
+    <div class="min-h-screen">
       <CardContainer 
-        :ratio="args.containerRatio" 
-        :max-width="args.maxWidth"
-        :min-width="args.minWidth"
+        :size="args.containerSize"
+        :variant="args.variant"
+        :rounded="args.rounded"
+        :custom-aspect-ratio="args.customAspectRatio"
+        :has-border="args.hasBorder"
+        :has-background="args.hasBackground"
+        :has-shadow="args.hasShadow"
+        :has-cursor="args.hasCursor"
+        :class="args.customClass || 'max-w-[320px] mx-auto'"
       >
         <template #top>
           <CardTop :ratio="args.topRatio">
@@ -202,14 +226,14 @@ const createCardTemplate = (args: CardStoryArgs) => ({
                 class="!bg-white/90 !text-neutral-900"
                 @click="() => console.log('Info clicked')"
               >
-                <Info :size="16" />
+                <i class="icon-[lucide--info] size-4" />
               </IconButton>
               <IconButton
                 class="!bg-white/90"
                 :class="favorited ? '!text-red-500' : '!text-neutral-900'"
                 @click="toggleFavorite"
               >
-                <Heart :size="16" :fill="favorited ? 'currentColor' : 'none'" />
+                <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />
               </IconButton>
             </template>
             
@@ -222,7 +246,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
               <SquareChip v-if="args.showFileSize" :label="args.fileSize" />
               <SquareChip v-for="tag in args.tags" :key="tag" :label="tag">
                 <template v-if="tag === 'LoRA'" #icon>
-                  <Folder :size="12" />
+                  <i class="icon-[lucide--folder] size-3" />
                 </template>
               </SquareChip>
             </template>
@@ -230,7 +254,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
         </template>
         
         <template #bottom>
-          <CardBottom class="p-3">
+          <CardBottom>
             <CardTitle v-if="args.showTitle">{{ args.title }}</CardTitle>
             <CardDescription v-if="args.showDescription">{{ args.description }}</CardDescription>
           </CardBottom>
@@ -243,9 +267,15 @@ const createCardTemplate = (args: CardStoryArgs) => ({
 export const Default: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'portrait',
-    maxWidth: 300,
-    minWidth: 200,
+    containerSize: 'portrait',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: false,
     showTopRight: true,
@@ -270,9 +300,15 @@ export const Default: Story = {
 export const SquareCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'square',
-    maxWidth: 400,
-    minWidth: 250,
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
     showTopRight: true,
@@ -297,9 +333,15 @@ export const SquareCard: Story = {
 export const TallPortraitCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'tallPortrait',
-    maxWidth: 280,
-    minWidth: 180,
+    containerSize: 'tall',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: true,
     showTopRight: true,
@@ -324,9 +366,15 @@ export const TallPortraitCard: Story = {
 export const ImageCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'portrait',
-    maxWidth: 350,
-    minWidth: 220,
+    containerSize: 'portrait',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: false,
     showTopRight: true,
@@ -347,12 +395,50 @@ export const ImageCard: Story = {
   }
 }
 
+export const MiniCard: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'mini',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: true,
+    showTitle: true,
+    showDescription: false,
+    title: 'Mini Asset',
+    description: '',
+    backgroundColor: '#06b6d4',
+    showImage: false,
+    imageUrl: '',
+    tags: ['Asset'],
+    showFileSize: true,
+    fileSize: '124 KB',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
 export const MinimalCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'square',
-    maxWidth: 300,
-    minWidth: 200,
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'landscape',
     showTopLeft: false,
     showTopRight: false,
@@ -373,12 +459,209 @@ export const MinimalCard: Story = {
   }
 }
 
+export const GhostVariant: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'compact',
+    variant: 'ghost',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: true,
+    showTitle: true,
+    showDescription: true,
+    title: 'Workflow Template',
+    description: 'Ghost variant for workflow templates',
+    backgroundColor: '#10b981',
+    showImage: false,
+    imageUrl: '',
+    tags: ['Template'],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const OutlineVariant: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'outline',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'landscape',
+    showTopLeft: false,
+    showTopRight: true,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Outline Card',
+    description: 'Card with outline variant styling',
+    backgroundColor: '#f59e0b',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const CustomAspectRatio: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    customAspectRatio: '16/9',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'landscape',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: true,
+    showTitle: true,
+    showDescription: false,
+    title: 'Wide Format Card',
+    description: '',
+    backgroundColor: '#8b5cf6',
+    showImage: false,
+    imageUrl: '',
+    tags: ['Wide'],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const RoundedNone: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'none',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Sharp Corners',
+    description: 'Card with no border radius',
+    backgroundColor: '#dc2626',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const RoundedXL: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'xl',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Extra Rounded',
+    description: 'Card with extra large border radius',
+    backgroundColor: '#059669',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
+export const NoStylesCard: Story = {
+  render: (args: CardStoryArgs) => createCardTemplate(args),
+  args: {
+    containerSize: 'regular',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: false,
+    hasBackground: false,
+    hasShadow: false,
+    hasCursor: true,
+    customClass: 'bg-gradient-to-br from-blue-500 to-purple-600',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: false,
+    showBottomLeft: false,
+    showBottomRight: false,
+    showTitle: true,
+    showDescription: true,
+    title: 'Custom Styled Card',
+    description: 'Card with all default styles removed and custom gradient',
+    backgroundColor: 'transparent',
+    showImage: false,
+    imageUrl: '',
+    tags: [],
+    showFileSize: false,
+    fileSize: '',
+    showFileType: false,
+    fileType: ''
+  }
+}
+
 export const FullFeaturedCard: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),
   args: {
-    containerRatio: 'tallPortrait',
-    maxWidth: 320,
-    minWidth: 240,
+    containerSize: 'tall',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
     topRatio: 'square',
     showTopLeft: true,
     showTopRight: true,
@@ -392,274 +675,10 @@ export const FullFeaturedCard: Story = {
     backgroundColor: '#ef4444',
     showImage: false,
     imageUrl: '',
-    tags: ['Bundle', 'Premium', 'SDXL'],
+    tags: ['Bundle', 'SDXL'],
     showFileSize: true,
     fileSize: '5.4 GB',
     showFileType: true,
     fileType: 'pack'
-  }
-}
-
-export const GridOfCards: Story = {
-  render: () => ({
-    components: {
-      CardContainer,
-      CardTop,
-      CardBottom,
-      CardTitle,
-      CardDescription,
-      IconButton,
-      SquareChip,
-      Info,
-      Folder,
-      Heart,
-      Download
-    },
-    setup() {
-      const cards = ref([
-        {
-          id: 1,
-          title: 'Realistic Vision',
-          description: 'Photorealistic model for portraits',
-          color: 'from-blue-400 to-blue-600',
-          ratio: 'portrait' as const,
-          tags: ['SD 1.5'],
-          size: '2.1 GB'
-        },
-        {
-          id: 2,
-          title: 'DreamShaper XL',
-          description: 'Artistic style model with enhanced details',
-          color: 'from-purple-400 to-pink-600',
-          ratio: 'portrait' as const,
-          tags: ['SDXL'],
-          size: '6.5 GB'
-        },
-        {
-          id: 3,
-          title: 'Anime LoRA',
-          description: 'Character style LoRA',
-          color: 'from-green-400 to-teal-600',
-          ratio: 'portrait' as const,
-          tags: ['LoRA'],
-          size: '144 MB'
-        },
-        {
-          id: 4,
-          title: 'VAE Model',
-          description: 'Enhanced color VAE',
-          color: 'from-orange-400 to-red-600',
-          ratio: 'portrait' as const,
-          tags: ['VAE'],
-          size: '335 MB'
-        },
-        {
-          id: 5,
-          title: 'Workflow Bundle',
-          description: 'Complete workflow setup',
-          color: 'from-indigo-400 to-blue-600',
-          ratio: 'portrait' as const,
-          tags: ['Workflow'],
-          size: '45 KB'
-        },
-        {
-          id: 6,
-          title: 'Embedding Pack',
-          description: 'Negative embeddings collection',
-          color: 'from-yellow-400 to-orange-600',
-          ratio: 'portrait' as const,
-          tags: ['Embedding'],
-          size: '2.3 MB'
-        }
-      ])
-
-      return { cards }
-    },
-    template: `
-      <div class="p-4 min-h-screen bg-zinc-50 dark-theme:bg-zinc-900">
-        <h3 class="text-lg font-semibold mb-4 text-neutral-900 dark-theme:text-neutral-100">Model Gallery</h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          <CardContainer 
-            v-for="card in cards" 
-            :key="card.id"
-            :ratio="card.ratio"
-            :max-width="300"
-            :min-width="180"
-          >
-            <template #top>
-              <CardTop ratio="square">
-                <template #default>
-                  <div 
-                    class="w-full h-full bg-gray-600"
-                    :class="card.color"
-                  ></div>
-                </template>
-                
-                <template #top-right>
-                  <IconButton
-                    class="!bg-white/90 !text-neutral-900"
-                    @click="() => console.log('Info:', card.title)"
-                  >
-                    <Info :size="16" />
-                  </IconButton>
-                </template>
-                
-                <template #bottom-right>
-                  <SquareChip 
-                    v-for="tag in card.tags" 
-                    :key="tag" 
-                    :label="tag"
-                  >
-                    <template v-if="tag === 'LoRA'" #icon>
-                      <Folder :size="12" />
-                    </template>
-                  </SquareChip>
-                  <SquareChip :label="card.size" />
-                </template>
-              </CardTop>
-            </template>
-            
-            <template #bottom>
-              <CardBottom class="p-3">
-                <CardTitle>{{ card.title }}</CardTitle>
-                <CardDescription>{{ card.description }}</CardDescription>
-              </CardBottom>
-            </template>
-          </CardContainer>
-        </div>
-      </div>
-    `
-  })
-}
-
-export const ResponsiveGrid: Story = {
-  render: () => ({
-    components: {
-      CardContainer,
-      CardTop,
-      CardBottom,
-      CardTitle,
-      CardDescription,
-      SquareChip
-    },
-    setup() {
-      const generateCards = (
-        count: number,
-        ratio: 'square' | 'portrait' | 'tallPortrait'
-      ) => {
-        return Array.from({ length: count }, (_, i) => ({
-          id: i + 1,
-          title: `Model ${i + 1}`,
-          description: `Description for model ${i + 1}`,
-          ratio,
-          color: `hsl(${(i * 60) % 360}, 70%, 60%)`
-        }))
-      }
-
-      const squareCards = ref(generateCards(4, 'square'))
-      const portraitCards = ref(generateCards(6, 'portrait'))
-      const tallCards = ref(generateCards(5, 'tallPortrait'))
-
-      return {
-        squareCards,
-        portraitCards,
-        tallCards
-      }
-    },
-    template: `
-      <div class="p-4 space-y-8 min-h-screen bg-zinc-50 dark-theme:bg-zinc-900">
-        <div>
-          <h3 class="text-lg font-semibold mb-4 text-neutral-900 dark-theme:text-neutral-100">Square Cards (1:1)</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <CardContainer 
-              v-for="card in squareCards" 
-              :key="card.id"
-              :ratio="card.ratio"
-              :max-width="400"
-              :min-width="200"
-            >
-              <template #top>
-                <CardTop ratio="landscape">
-                  <div 
-                    class="w-full h-full"
-                    :style="{ backgroundColor: card.color }"
-                  ></div>
-                </CardTop>
-              </template>
-              <template #bottom>
-                <CardBottom class="p-3">
-                  <CardTitle>{{ card.title }}</CardTitle>
-                  <CardDescription>{{ card.description }}</CardDescription>
-                </CardBottom>
-              </template>
-            </CardContainer>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="text-lg font-semibold mb-4 text-neutral-900 dark-theme:text-neutral-100">Portrait Cards (2:3)</h3>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <CardContainer 
-              v-for="card in portraitCards" 
-              :key="card.id"
-              :ratio="card.ratio"
-              :max-width="280"
-              :min-width="160"
-            >
-              <template #top>
-                <CardTop ratio="square">
-                  <div 
-                    class="w-full h-full"
-                    :style="{ backgroundColor: card.color }"
-                  ></div>
-                </CardTop>
-              </template>
-              <template #bottom>
-                <CardBottom class="p-2">
-                  <CardTitle>{{ card.title }}</CardTitle>
-                </CardBottom>
-              </template>
-            </CardContainer>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="text-lg font-semibold mb-4 text-neutral-900 dark-theme:text-neutral-100">Tall Portrait Cards (2:4)</h3>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <CardContainer 
-              v-for="card in tallCards" 
-              :key="card.id"
-              :ratio="card.ratio"
-              :max-width="260"
-              :min-width="150"
-            >
-              <template #top>
-                <CardTop ratio="square">
-                  <template #default>
-                    <div 
-                      class="w-full h-full"
-                      :style="{ backgroundColor: card.color }"
-                    ></div>
-                  </template>
-                  <template #bottom-right>
-                    <SquareChip :label="'#' + card.id" />
-                  </template>
-                </CardTop>
-              </template>
-              <template #bottom>
-                <CardBottom class="p-3">
-                  <CardTitle>{{ card.title }}</CardTitle>
-                  <CardDescription>{{ card.description }}</CardDescription>
-                </CardBottom>
-              </template>
-            </CardContainer>
-          </div>
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    controls: { disable: true },
-    actions: { disable: true }
   }
 }

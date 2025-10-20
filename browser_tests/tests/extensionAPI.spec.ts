@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { SettingParams } from '../../src/types/settingTypes'
+import type { SettingParams } from '../../src/platform/settings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {
@@ -247,7 +247,7 @@ test.describe('Topbar commands', () => {
   test.describe('Dialog', () => {
     test('Should allow showing a prompt dialog', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        window['app'].extensionManager.dialog
+        void window['app'].extensionManager.dialog
           .prompt({
             title: 'Test Prompt',
             message: 'Test Prompt Message'
@@ -267,7 +267,7 @@ test.describe('Topbar commands', () => {
       comfyPage
     }) => {
       await comfyPage.page.evaluate(() => {
-        window['app'].extensionManager.dialog
+        void window['app'].extensionManager.dialog
           .confirm({
             title: 'Test Confirm',
             message: 'Test Confirm Message'
@@ -284,7 +284,7 @@ test.describe('Topbar commands', () => {
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
         window['value'] = 'foo'
-        window['app'].extensionManager.dialog
+        void window['app'].extensionManager.dialog
           .confirm({
             title: 'Test Confirm',
             message: 'Test Confirm Message'

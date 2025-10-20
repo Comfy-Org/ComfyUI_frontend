@@ -11,6 +11,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { RenderLink } from './RenderLink'
@@ -99,6 +100,14 @@ export abstract class MovingLinkBase implements RenderLink {
     this.inputPos = inputNode.getInputPos(inputIndex)
   }
 
+  abstract canConnectToInput(
+    inputNode: NodeLike,
+    input: INodeInputSlot
+  ): boolean
+  abstract canConnectToOutput(
+    outputNode: NodeLike,
+    output: INodeOutputSlot
+  ): boolean
   abstract connectToInput(
     node: LGraphNode,
     input: INodeInputSlot,

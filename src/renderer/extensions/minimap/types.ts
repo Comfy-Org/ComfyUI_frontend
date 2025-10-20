@@ -2,6 +2,7 @@
  * Minimap-specific type definitions
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * Minimal interface for what the minimap needs from the canvas
@@ -29,7 +30,7 @@ export interface MinimapRenderContext {
   height: number
 }
 
-export interface MinimapRenderSettings {
+interface MinimapRenderSettings {
   nodeColors: boolean
   showLinks: boolean
   showGroups: boolean
@@ -66,3 +67,50 @@ export type MinimapSettingsKey =
   | 'Comfy.Minimap.ShowGroups'
   | 'Comfy.Minimap.RenderBypassState'
   | 'Comfy.Minimap.RenderErrorState'
+
+/**
+ * Node data required for minimap rendering
+ */
+export interface MinimapNodeData {
+  id: NodeId
+  x: number
+  y: number
+  width: number
+  height: number
+  bgcolor?: string
+  mode?: number
+  hasErrors?: boolean
+}
+
+/**
+ * Link data required for minimap rendering
+ */
+export interface MinimapLinkData {
+  sourceNode: MinimapNodeData
+  targetNode: MinimapNodeData
+  sourceSlot: number
+  targetSlot: number
+}
+
+/**
+ * Group data required for minimap rendering
+ */
+export interface MinimapGroupData {
+  x: number
+  y: number
+  width: number
+  height: number
+  color?: string
+}
+
+/**
+ * Interface for minimap data sources (Dependency Inversion Principle)
+ */
+export interface IMinimapDataSource {
+  getNodes(): MinimapNodeData[]
+  getLinks(): MinimapLinkData[]
+  getGroups(): MinimapGroupData[]
+  getBounds(): MinimapBounds
+  getNodeCount(): number
+  hasData(): boolean
+}

@@ -23,8 +23,8 @@ import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 
-import { useWorkflowService } from '@/services/workflowService'
-import type { ComfyWorkflow } from '@/stores/workflowStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 const props = defineProps<{
   workflows: ComfyWorkflow[]

@@ -55,7 +55,7 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
  * - widget: Reference to the widget instance
  * - onUpdate:modelValue: The update handler for v-model
  */
-export type ComponentWidgetCustomProps = Record<string, unknown>
+type ComponentWidgetCustomProps = Record<string, unknown>
 
 /**
  * Standard props that are handled separately by DomWidget.vue and should be
@@ -173,6 +173,18 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle
+    } else if (this.promoted && this.isVisible()) {
+      ctx.save()
+      const adjustedMargin = this.margin - 1
+      ctx.beginPath()
+      ctx.strokeStyle = LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+      ctx.strokeRect(
+        adjustedMargin,
+        y + adjustedMargin,
+        widget_width - adjustedMargin * 2,
+        (this.computedHeight ?? widget_height) - 2 * adjustedMargin
+      )
+      ctx.restore()
     }
     this.options.onDraw?.(this)
   }
@@ -374,18 +386,4 @@ LGraphNode.prototype.addDOMWidget = function <
   })
 
   return widget
-}
-
-/**
- * Prunes widgets that are no longer in the graph.
- * @param nodes The nodes to prune widgets for.
- */
-export const pruneWidgets = (nodes: LGraphNode[]) => {
-  const nodeSet = new Set(nodes)
-  const domWidgetStore = useDomWidgetStore()
-  for (const { widget } of domWidgetStore.widgetStates.values()) {
-    if (!nodeSet.has(widget.node)) {
-      domWidgetStore.unregisterWidget(widget.id)
-    }
-  }
 }

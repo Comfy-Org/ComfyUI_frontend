@@ -18,7 +18,7 @@ export interface DrawWidgetOptions {
   showText?: boolean
 }
 
-export interface DrawTruncatingTextOptions extends DrawWidgetOptions {
+interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   /** The canvas context to draw the text on. */
   ctx: CanvasRenderingContext2D
   /** The amount of padding to add to the left of the text. */
@@ -74,6 +74,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   computedDisabled?: boolean
   hidden?: boolean
   advanced?: boolean
+  promoted?: boolean
   tooltip?: string
   element?: HTMLElement
   callback?(
@@ -146,6 +147,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get outline_color() {
+    if (this.promoted) return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
       : LiteGraph.WIDGET_OUTLINE_COLOR

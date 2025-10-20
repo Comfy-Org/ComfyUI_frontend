@@ -4,7 +4,7 @@ import { paramsToCacheKey } from '@/utils/formatUtil'
 
 const DEFAULT_MAX_SIZE = 50
 
-export interface CachedRequestOptions {
+interface CachedRequestOptions {
   /**
    * Maximum number of items to store in the cache
    * @default 50

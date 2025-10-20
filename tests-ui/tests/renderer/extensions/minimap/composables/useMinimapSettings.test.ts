@@ -1,11 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMinimapSettings } from '@/renderer/extensions/minimap/composables/useMinimapSettings'
-import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-vi.mock('@/stores/settingStore')
+vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/workspace/colorPaletteStore')
 
 describe('useMinimapSettings', () => {
@@ -55,10 +55,10 @@ describe('useMinimapSettings', () => {
     const settings = useMinimapSettings()
     const styles = settings.containerStyles.value
 
-    expect(styles.width).toBe('250px')
+    expect(styles.width).toBe('253px')
     expect(styles.height).toBe('200px')
-    expect(styles.backgroundColor).toBe('#15161C') // dark theme color
-    expect(styles.border).toBe('1px solid #333')
+    expect(styles.border).toBe('1px solid var(--interface-stroke)')
+    expect(styles.borderRadius).toBe('8px')
   })
 
   it('should generate light theme container styles', () => {
@@ -74,8 +74,10 @@ describe('useMinimapSettings', () => {
     const settings = useMinimapSettings()
     const styles = settings.containerStyles.value
 
-    expect(styles.backgroundColor).toBe('#FAF9F5') // light theme color
-    expect(styles.border).toBe('1px solid #ccc')
+    expect(styles.width).toBe('253px')
+    expect(styles.height).toBe('200px')
+    expect(styles.border).toBe('1px solid var(--interface-stroke)')
+    expect(styles.borderRadius).toBe('8px')
   })
 
   it('should generate panel styles based on theme', () => {
@@ -91,8 +93,9 @@ describe('useMinimapSettings', () => {
     const settings = useMinimapSettings()
     const styles = settings.panelStyles.value
 
-    expect(styles.backgroundColor).toBe('#15161C')
-    expect(styles.border).toBe('1px solid #333')
+    expect(styles.width).toBe('210px')
+    expect(styles.height).toBe('200px')
+    expect(styles.border).toBe('1px solid var(--interface-stroke)')
     expect(styles.borderRadius).toBe('8px')
   })
 

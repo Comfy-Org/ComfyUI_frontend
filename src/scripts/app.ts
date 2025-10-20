@@ -1,36 +1,45 @@
+import { useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
-import { reactive } from 'vue'
+import { reactive, unref } from 'vue'
+import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
+import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
   LGraphCanvas,
-  LGraphEventMode,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
+import {
+  type ComfyApiWorkflow,
+  type ComfyWorkflowJSON,
+  type ModelFile,
+  type NodeId,
+  isSubgraphDefinition
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
   ResultItem
 } from '@/schemas/apiSchema'
 import {
-  ComfyApiWorkflow,
-  type ComfyWorkflowJSON,
-  type ModelFile,
-  type NodeId,
-  isSubgraphDefinition
-} from '@/schemas/comfyWorkflowSchema'
-import {
   type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
   isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
+import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
@@ -41,7 +50,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -52,16 +60,12 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { ExtensionManager } from '@/types/extensionTypes'
+import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -127,7 +131,7 @@ export class ComfyApp {
   /**
    * List of entries to queue
    */
-  #queueItems: {
+  private queueItems: {
     number: number
     batchCount: number
     queueNodeIds?: NodeExecutionId[]
@@ -135,7 +139,7 @@ export class ComfyApp {
   /**
    * If the queue is currently being processed
    */
-  #processingQueue: boolean = false
+  private processingQueue: boolean = false
 
   /**
    * Content Clipboard
@@ -155,20 +159,34 @@ export class ComfyApp {
   // @ts-expect-error fixme ts strict error
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
-  // @ts-expect-error fixme ts strict error
-  #graph: LGraph
+
+  private rootGraphInternal: LGraph | undefined
+
+  // TODO: Migrate internal usage to the
+  /** @deprecated Use {@link rootGraph} instead */
   get graph() {
-    return this.#graph
+    return this.rootGraphInternal!
   }
+
+  get rootGraph(): LGraph | undefined {
+    if (!this.rootGraphInternal) {
+      console.error('ComfyApp graph accessed before initialization')
+    }
+    return this.rootGraphInternal
+  }
+
   // @ts-expect-error fixme ts strict error
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null = null
-  // @ts-expect-error fixme ts strict error
-  canvasEl: HTMLCanvasElement
+  readonly canvasElRef = shallowRef<HTMLCanvasElement>()
+  get canvasEl() {
+    // TODO: Fix possibly undefined reference
+    return unref(this.canvasElRef)!
+  }
 
-  #configuringGraphLevel: number = 0
+  private configuringGraphLevel: number = 0
   get configuringGraph() {
-    return this.#configuringGraphLevel > 0
+    return this.configuringGraphLevel > 0
   }
   // @ts-expect-error fixme ts strict error
   ctx: CanvasRenderingContext2D
@@ -178,11 +196,10 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
-  bypassBgColor: string
   // Set by Comfy.Clipspace extension
   openClipspace: () => void = () => {}
 
-  #positionConversion?: {
+  private positionConversion?: {
     clientPosToCanvasPos: (pos: Vector2) => Vector2
     canvasPosToClientPos: (pos: Vector2) => Vector2
   }
@@ -283,7 +300,6 @@ export class ComfyApp {
     this.canvasContainer = $el('div.graph-canvas-container')
 
     this.menu = new ComfyAppMenu(this)
-    this.bypassBgColor = '#FF00FF'
 
     /**
      * Stores the execution output data for each node
@@ -321,6 +337,7 @@ export class ComfyApp {
   }
 
   getRandParam() {
+    if (isCloud) return ''
     return '&rand=' + Math.random()
   }
 
@@ -365,11 +382,15 @@ export class ComfyApp {
     const paintedIndex = selectedIndex + 1
     const combinedIndex = selectedIndex + 2
 
+    // for vueNodes mode
+    const images =
+      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
-      images: node.images,
+      images: images,
       selectedIndex: selectedIndex,
       img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
       paintedIndex: paintedIndex,
@@ -396,7 +417,8 @@ export class ComfyApp {
           ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
       }
       if (ComfyApp.clipspace.imgs && node.imgs) {
-        if (node.images && ComfyApp.clipspace.images) {
+        // Update node.images even if it's initially undefined (vueNodes mode)
+        if (ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
             node.images = [
               ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
@@ -498,13 +520,15 @@ export class ComfyApp {
       }
 
       app.graph.setDirtyCanvas(true)
+
+      useNodeOutputStore().updateNodeImages(node)
     }
   }
 
   /**
    * Adds a handler allowing drag+drop of files onto the window to load workflows
    */
-  #addDropHandler() {
+  private addDropHandler() {
     // Get prompt from dropped PNG or json
     document.addEventListener('drop', async (event) => {
       try {
@@ -580,7 +604,7 @@ export class ComfyApp {
   /**
    * Handle keypress
    */
-  #addProcessKeyHandler() {
+  private addProcessKeyHandler() {
     const origProcessKey = LGraphCanvas.prototype.processKey
     LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
       if (!this.graph) return
@@ -594,7 +618,10 @@ export class ComfyApp {
         const keybindingStore = useKeybindingStore()
         const keybinding = keybindingStore.getKeybinding(keyCombo)
 
-        if (keybinding && keybinding.targetElementId === 'graph-canvas') {
+        if (
+          keybinding &&
+          keybinding.targetElementId === 'graph-canvas-container'
+        ) {
           useCommandStore().execute(keybinding.commandId)
 
           this.graph.change()
@@ -619,61 +646,14 @@ export class ComfyApp {
       }
 
       // Fall through to Litegraph defaults
-      // @ts-expect-error fixme ts strict error
-      return origProcessKey.apply(this, arguments)
-    }
-  }
-
-  #addDrawNodeHandler() {
-    const origDrawNode = LGraphCanvas.prototype.drawNode
-    LGraphCanvas.prototype.drawNode = function (node) {
-      const editor_alpha = this.editor_alpha
-      const old_color = node.color
-      const old_bgcolor = node.bgcolor
-
-      if (node.mode === LGraphEventMode.NEVER) {
-        this.editor_alpha = 0.4
-      }
-
-      let bgColor: string
-      if (node.mode === LGraphEventMode.BYPASS) {
-        bgColor = app.bypassBgColor
-        this.editor_alpha = 0.2
-      } else {
-        bgColor = old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
-      }
-
-      const adjustments: ColorAdjustOptions = {}
-
-      const opacity = useSettingStore().get('Comfy.Node.Opacity')
-      if (opacity) adjustments.opacity = opacity
-
-      if (useColorPaletteStore().completedActivePalette.light_theme) {
-        adjustments.lightness = 0.5
-
-        // Lighten title bar of colored nodes on light theme
-        if (old_color) {
-          node.color = adjustColor(old_color, { lightness: 0.5 })
-        }
-      }
-
-      node.bgcolor = adjustColor(bgColor, adjustments)
-
-      // @ts-expect-error fixme ts strict error
-      const res = origDrawNode.apply(this, arguments)
-
-      this.editor_alpha = editor_alpha
-      node.color = old_color
-      node.bgcolor = old_bgcolor
-
-      return res
+      return origProcessKey.apply(this, [e])
     }
   }
 
   /**
    * Handles updates from the API socket
    */
-  #addApiUpdateHandlers() {
+  private addApiUpdateHandlers() {
     api.addEventListener('status', ({ detail }) => {
       this.ui.setStatus(detail)
     })
@@ -747,21 +727,20 @@ export class ComfyApp {
   }
 
   /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
-  #addConfigureHandler() {
+  private addConfigureHandler() {
     const app = this
     const configure = LGraph.prototype.configure
     LGraph.prototype.configure = function (...args) {
-      app.#configuringGraphLevel++
+      app.configuringGraphLevel++
       try {
         return configure.apply(this, args)
       } finally {
-        app.#configuringGraphLevel--
+        app.configuringGraphLevel--
       }
     }
   }
 
-  #addAfterConfigureHandler() {
-    const { graph } = this
+  private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
@@ -793,20 +772,20 @@ export class ComfyApp {
     // @ts-expect-error fixme ts strict error
     this.canvasContainer = document.getElementById('graph-canvas-container')
 
-    this.canvasEl = canvasEl
-    this.resizeCanvas()
+    this.canvasElRef.value = canvasEl
 
     await useWorkspaceStore().workflow.syncWorkflows()
+    await useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
-    this.#addProcessKeyHandler()
-    this.#addConfigureHandler()
-    this.#addApiUpdateHandlers()
+    this.addProcessKeyHandler()
+    this.addConfigureHandler()
+    this.addApiUpdateHandlers()
 
-    this.#graph = new LGraph()
+    const graph = new LGraph()
 
     // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
-    this.graph.events.addEventListener('subgraph-created', (e) => {
+    graph.events.addEventListener('subgraph-created', (e) => {
       try {
         const { subgraph, data } = e.detail
         useSubgraphService().registerNewSubgraph(subgraph, data)
@@ -820,9 +799,10 @@ export class ComfyApp {
       }
     })
 
-    this.#addAfterConfigureHandler()
+    this.addAfterConfigureHandler(graph)
 
-    this.canvas = new LGraphCanvas(canvasEl, this.graph)
+    this.rootGraphInternal = graph
+    this.canvas = new LGraphCanvas(canvasEl, graph)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
@@ -835,63 +815,68 @@ export class ComfyApp {
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
-        // Assertion: Not yet defined in litegraph.
         const { newGraph } = e.detail
 
-        const nodeSet = new Set(newGraph.nodes)
         const widgetStore = useDomWidgetStore()
 
-        // Assertions: UnwrapRef
-        for (const { widget } of widgetStore.activeWidgetStates) {
-          if (!nodeSet.has(widget.node)) {
-            widgetStore.deactivateWidget(widget.id)
-          }
-        }
+        const activeWidgets: Record<
+          string,
+          BaseDOMWidget<object | string>
+        > = Object.fromEntries(
+          newGraph.nodes
+            .flatMap((node) => node.widgets ?? [])
+            .filter((w) => w instanceof DOMWidgetImpl)
+            .map((w) => [w.id, w])
+        )
 
-        for (const { widget } of widgetStore.inactiveWidgetStates) {
-          if (nodeSet.has(widget.node)) {
-            widgetStore.activateWidget(widget.id)
+        for (const [
+          widgetId,
+          widgetState
+        ] of widgetStore.widgetStates.entries()) {
+          if (widgetId in activeWidgets) {
+            widgetState.active = true
+            widgetState.widget = activeWidgets[widgetId]
+          } else {
+            widgetState.active = false
           }
         }
       }
     )
+    registerProxyWidgets(this.canvas)
 
     this.graph.start()
 
     // Ensure the canvas fills the window
-    this.resizeCanvas()
-    window.addEventListener('resize', () => this.resizeCanvas())
-    const ro = new ResizeObserver(() => this.resizeCanvas())
-    ro.observe(this.bodyTop)
-    ro.observe(this.bodyLeft)
-    ro.observe(this.bodyRight)
-    ro.observe(this.bodyBottom)
+    useResizeObserver(this.canvasElRef, ([canvasEl]) => {
+      if (canvasEl.target instanceof HTMLCanvasElement) {
+        this.resizeCanvas(canvasEl.target)
+      }
+    })
 
     await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
 
-    this.#addDrawNodeHandler()
-    this.#addDropHandler()
+    this.addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
 
-    this.#positionConversion = useCanvasPositionConversion(
+    this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
       this.canvas
     )
   }
 
-  resizeCanvas() {
+  private resizeCanvas(canvas: HTMLCanvasElement) {
     // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
     const scale = Math.max(window.devicePixelRatio, 1)
 
     // Clear fixed width and height while calculating rect so it uses 100% instead
-    this.canvasEl.height = this.canvasEl.width = NaN
-    const { width, height } = this.canvasEl.getBoundingClientRect()
-    this.canvasEl.width = Math.round(width * scale)
-    this.canvasEl.height = Math.round(height * scale)
+    canvas.height = canvas.width = NaN
+    const { width, height } = canvas.getBoundingClientRect()
+    canvas.width = Math.round(width * scale)
+    canvas.height = Math.round(height * scale)
     // @ts-expect-error fixme ts strict error
-    this.canvasEl.getContext('2d').scale(scale, scale)
+    canvas.getContext('2d').scale(scale, scale)
     this.canvas?.draw(true, true)
   }
 
@@ -905,7 +890,7 @@ export class ComfyApp {
       LiteGraph.registered_node_types
     )) {
       // Skip if we already have a backend definition or system definition
-      if (name in defs || name in SYSTEM_NODE_DEFS) {
+      if (name in defs || name in SYSTEM_NODE_DEFS || node.skip_list) {
         continue
       }
 
@@ -939,7 +924,7 @@ export class ComfyApp {
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
-  async #getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
+  async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
       ...def,
       display_name: st(
@@ -963,7 +948,7 @@ export class ComfyApp {
    */
   async registerNodes() {
     // Load node definitions from the backend
-    const defs = await this.#getNodeDefs()
+    const defs = await this.getNodeDefs()
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
@@ -1031,14 +1016,14 @@ export class ComfyApp {
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
-  #showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
+  private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
     }
   }
 
   // @ts-expect-error fixme ts strict error
-  #showMissingModelsError(missingModels, paths) {
+  private showMissingModelsError(missingModels, paths) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       useDialogService().showMissingModelsWarning({
         missingModels,
@@ -1058,6 +1043,8 @@ export class ComfyApp {
       checkForRerouteMigration = false
     } = {}
   ) {
+    useWorkflowService().beforeLoadNewGraph()
+
     if (clean !== false) {
       this.clean()
     }
@@ -1093,7 +1080,6 @@ export class ComfyApp {
         severity: 'warn'
       })
     }
-    useWorkflowService().beforeLoadNewGraph()
     useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
@@ -1110,6 +1096,13 @@ export class ComfyApp {
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
     ) => {
+      if (!Array.isArray(nodes)) {
+        console.warn(
+          'Workflow nodes data is missing or invalid, skipping node processing',
+          { nodes, path }
+        )
+        return
+      }
       for (let n of nodes) {
         // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
         if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
@@ -1263,11 +1256,11 @@ export class ComfyApp {
     }
 
     if (missingNodeTypes.length && showMissingNodesDialog) {
-      this.#showMissingNodesError(missingNodeTypes)
+      this.showMissingNodesError(missingNodeTypes)
     }
     if (missingModels.length && showMissingModelsDialog) {
       const paths = await api.getFolderPaths()
-      this.#showMissingModelsError(missingModels, paths)
+      this.showMissingModelsError(missingModels, paths)
     }
     await useExtensionService().invokeExtensionsAsync(
       'afterConfigureGraph',
@@ -1293,14 +1286,14 @@ export class ComfyApp {
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
-    this.#queueItems.push({ number, batchCount, queueNodeIds })
+    this.queueItems.push({ number, batchCount, queueNodeIds })
 
     // Only have one action process the items so each one gets a unique seed correctly
-    if (this.#processingQueue) {
+    if (this.processingQueue) {
       return false
     }
 
-    this.#processingQueue = true
+    this.processingQueue = true
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
@@ -1308,8 +1301,8 @@ export class ComfyApp {
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
-      while (this.#queueItems.length) {
-        const { number, batchCount, queueNodeIds } = this.#queueItems.pop()!
+      while (this.queueItems.length) {
+        const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
@@ -1374,7 +1367,7 @@ export class ComfyApp {
         }
       }
     } finally {
-      this.#processingQueue = false
+      this.processingQueue = false
     }
     api.dispatchCustomEvent('promptQueued', { number, batchCount })
     return !executionStore.lastNodeErrors
@@ -1578,7 +1571,7 @@ export class ComfyApp {
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
     if (missingNodeTypes.length) {
-      this.#showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
+      this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
       return
     }
 
@@ -1685,6 +1678,28 @@ export class ComfyApp {
   }
 
   /**
+   * Collects context menu items from all extensions for canvas menus
+   * @param canvas The canvas instance
+   * @returns Array of context menu items from all extensions
+   */
+  collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
+    return useExtensionService()
+      .invokeExtensions('getCanvasMenuItems', canvas)
+      .flat() as IContextMenuValue[]
+  }
+
+  /**
+   * Collects context menu items from all extensions for node menus
+   * @param node The node being right-clicked
+   * @returns Array of context menu items from all extensions
+   */
+  collectNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
+    return useExtensionService()
+      .invokeExtensions('getNodeMenuItems', node)
+      .flat() as IContextMenuValue[]
+  }
+
+  /**
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
@@ -1697,7 +1712,7 @@ export class ComfyApp {
       useToastStore().add(requestToastMessage)
     }
 
-    const defs = await this.#getNodeDefs()
+    const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
@@ -1757,28 +1772,33 @@ export class ComfyApp {
    * Clean current state
    */
   clean() {
-    this.nodeOutputs = {}
-    const { revokeAllPreviews } = useNodeOutputStore()
-    revokeAllPreviews()
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.resetAllOutputsAndPreviews()
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
 
     useDomWidgetStore().clear()
+
+    // Subgraph does not properly implement `clear` and the parent class's
+    // (`LGraph`) `clear` breaks the subgraph structure.
+    if (this.graph && !this.canvas.subgraph) {
+      this.graph.clear()
+    }
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
-    if (!this.#positionConversion) {
+    if (!this.positionConversion) {
       throw new Error('clientPosToCanvasPos called before setup')
     }
-    return this.#positionConversion.clientPosToCanvasPos(pos)
+    return this.positionConversion.clientPosToCanvasPos(pos)
   }
 
   canvasPosToClientPos(pos: Vector2): Vector2 {
-    if (!this.#positionConversion) {
+    if (!this.positionConversion) {
       throw new Error('canvasPosToClientPos called before setup')
     }
-    return this.#positionConversion.canvasPosToClientPos(pos)
+    return this.positionConversion.canvasPosToClientPos(pos)
   }
 }
 

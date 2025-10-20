@@ -33,12 +33,12 @@ import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { TreeNode } from '@/types/treeExplorerTypes'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,
-  TreeExplorerNode
+  TreeExplorerNode,
+  TreeNode
 } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{

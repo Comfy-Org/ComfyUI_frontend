@@ -1,8 +1,14 @@
-import { LGraph, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
-import type { MinimapRenderContext } from './types'
+import { MinimapDataSourceFactory } from './data/MinimapDataSourceFactory'
+import type {
+  IMinimapDataSource,
+  MinimapNodeData,
+  MinimapRenderContext
+} from './types'
 
 /**
  * Get theme-aware colors for the minimap
@@ -25,23 +31,48 @@ function getMinimapColors() {
 }
 
 /**
+ * Get node color based on settings and node properties (Single Responsibility)
+ */
+function getNodeColor(
+  node: MinimapNodeData,
+  settings: MinimapRenderContext['settings'],
+  colors: ReturnType<typeof getMinimapColors>
+): string {
+  if (settings.renderBypass && node.mode === LGraphEventMode.BYPASS) {
+    return colors.bypassColor
+  }
+
+  if (settings.nodeColors) {
+    if (node.bgcolor) {
+      return colors.isLightTheme
+        ? adjustColor(node.bgcolor, { lightness: 0.5 })
+        : node.bgcolor
+    }
+    return colors.nodeColorDefault
+  }
+
+  return colors.nodeColor
+}
+
+/**
  * Render groups on the minimap
  */
 function renderGroups(
   ctx: CanvasRenderingContext2D,
-  graph: LGraph,
+  dataSource: IMinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
   colors: ReturnType<typeof getMinimapColors>
 ) {
-  if (!graph._groups || graph._groups.length === 0) return
+  const groups = dataSource.getGroups()
+  if (groups.length === 0) return
 
-  for (const group of graph._groups) {
-    const x = (group.pos[0] - context.bounds.minX) * context.scale + offsetX
-    const y = (group.pos[1] - context.bounds.minY) * context.scale + offsetY
-    const w = group.size[0] * context.scale
-    const h = group.size[1] * context.scale
+  for (const group of groups) {
+    const x = (group.x - context.bounds.minX) * context.scale + offsetX
+    const y = (group.y - context.bounds.minY) * context.scale + offsetY
+    const w = group.width * context.scale
+    const h = group.height * context.scale
 
     let color = colors.groupColor
 
@@ -63,45 +94,34 @@ function renderGroups(
  */
 function renderNodes(
   ctx: CanvasRenderingContext2D,
-  graph: LGraph,
+  dataSource: IMinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
   colors: ReturnType<typeof getMinimapColors>
 ) {
-  if (!graph._nodes || graph._nodes.length === 0) return
+  const nodes = dataSource.getNodes()
+  if (nodes.length === 0) return
 
-  // Group nodes by color for batch rendering
+  // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
     string,
     Array<{ x: number; y: number; w: number; h: number; hasErrors?: boolean }>
   >()
 
-  for (const node of graph._nodes) {
-    const x = (node.pos[0] - context.bounds.minX) * context.scale + offsetX
-    const y = (node.pos[1] - context.bounds.minY) * context.scale + offsetY
-    const w = node.size[0] * context.scale
-    const h = node.size[1] * context.scale
+  for (const node of nodes) {
+    const x = (node.x - context.bounds.minX) * context.scale + offsetX
+    const y = (node.y - context.bounds.minY) * context.scale + offsetY
+    const w = node.width * context.scale
+    const h = node.height * context.scale
 
-    let color = colors.nodeColor
-
-    if (context.settings.renderBypass && node.mode === LGraphEventMode.BYPASS) {
-      color = colors.bypassColor
-    } else if (context.settings.nodeColors) {
-      color = colors.nodeColorDefault
-
-      if (node.bgcolor) {
-        color = colors.isLightTheme
-          ? adjustColor(node.bgcolor, { lightness: 0.5 })
-          : node.bgcolor
-      }
-    }
+    const color = getNodeColor(node, context.settings, colors)
 
     if (!nodesByColor.has(color)) {
       nodesByColor.set(color, [])
     }
 
-    nodesByColor.get(color)!.push({ x, y, w, h, hasErrors: node.has_errors })
+    nodesByColor.get(color)!.push({ x, y, w, h, hasErrors: node.hasErrors })
   }
 
   // Batch render nodes by color
@@ -131,13 +151,14 @@ function renderNodes(
  */
 function renderConnections(
   ctx: CanvasRenderingContext2D,
-  graph: LGraph,
+  dataSource: IMinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
   colors: ReturnType<typeof getMinimapColors>
 ) {
-  if (!graph || !graph._nodes) return
+  const links = dataSource.getLinks()
+  if (links.length === 0) return
 
   ctx.strokeStyle = colors.linkColor
   ctx.lineWidth = 0.3
@@ -150,41 +171,28 @@ function renderConnections(
     y2: number
   }> = []
 
-  for (const node of graph._nodes) {
-    if (!node.outputs) continue
+  for (const link of links) {
+    const x1 =
+      (link.sourceNode.x - context.bounds.minX) * context.scale + offsetX
+    const y1 =
+      (link.sourceNode.y - context.bounds.minY) * context.scale + offsetY
+    const x2 =
+      (link.targetNode.x - context.bounds.minX) * context.scale + offsetX
+    const y2 =
+      (link.targetNode.y - context.bounds.minY) * context.scale + offsetY
 
-    const x1 = (node.pos[0] - context.bounds.minX) * context.scale + offsetX
-    const y1 = (node.pos[1] - context.bounds.minY) * context.scale + offsetY
+    const outputX = x1 + link.sourceNode.width * context.scale
+    const outputY = y1 + link.sourceNode.height * context.scale * 0.2
+    const inputX = x2
+    const inputY = y2 + link.targetNode.height * context.scale * 0.2
 
-    for (const output of node.outputs) {
-      if (!output.links) continue
+    // Draw connection line
+    ctx.beginPath()
+    ctx.moveTo(outputX, outputY)
+    ctx.lineTo(inputX, inputY)
+    ctx.stroke()
 
-      for (const linkId of output.links) {
-        const link = graph.links[linkId]
-        if (!link) continue
-
-        const targetNode = graph.getNodeById(link.target_id)
-        if (!targetNode) continue
-
-        const x2 =
-          (targetNode.pos[0] - context.bounds.minX) * context.scale + offsetX
-        const y2 =
-          (targetNode.pos[1] - context.bounds.minY) * context.scale + offsetY
-
-        const outputX = x1 + node.size[0] * context.scale
-        const outputY = y1 + node.size[1] * context.scale * 0.2
-        const inputX = x2
-        const inputY = y2 + targetNode.size[1] * context.scale * 0.2
-
-        // Draw connection line
-        ctx.beginPath()
-        ctx.moveTo(outputX, outputY)
-        ctx.lineTo(inputX, inputY)
-        ctx.stroke()
-
-        connections.push({ x1: outputX, y1: outputY, x2: inputX, y2: inputY })
-      }
-    }
+    connections.push({ x1: outputX, y1: outputY, x2: inputX, y2: inputY })
   }
 
   // Render connection slots on top
@@ -216,8 +224,11 @@ export function renderMinimapToCanvas(
   // Clear canvas
   ctx.clearRect(0, 0, context.width, context.height)
 
+  // Create unified data source (Dependency Inversion)
+  const dataSource = MinimapDataSourceFactory.create(graph)
+
   // Fast path for empty graph
-  if (!graph || !graph._nodes || graph._nodes.length === 0) {
+  if (!dataSource.hasData()) {
     return
   }
 
@@ -227,12 +238,12 @@ export function renderMinimapToCanvas(
 
   // Render in correct order: groups -> links -> nodes
   if (context.settings.showGroups) {
-    renderGroups(ctx, graph, offsetX, offsetY, context, colors)
+    renderGroups(ctx, dataSource, offsetX, offsetY, context, colors)
   }
 
   if (context.settings.showLinks) {
-    renderConnections(ctx, graph, offsetX, offsetY, context, colors)
+    renderConnections(ctx, dataSource, offsetX, offsetY, context, colors)
   }
 
-  renderNodes(ctx, graph, offsetX, offsetY, context, colors)
+  renderNodes(ctx, dataSource, offsetX, offsetY, context, colors)
 }

@@ -6,14 +6,19 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode, type NodeId } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
+import { LGraphNode } from './LGraphNode'
+import type { NodeId } from './LGraphNode'
+import { LLink } from './LLink'
+import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
-import { Reroute, type RerouteId } from './Reroute'
+import { Reroute } from './Reroute'
+import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
@@ -53,6 +58,12 @@ import {
 } from './subgraph/subgraphUtils'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
+  LGraphTriggerAction,
+  LGraphTriggerEvent,
+  LGraphTriggerHandler,
+  LGraphTriggerParam
+} from './types/graphTriggers'
+import type {
   ExportedSubgraph,
   ExposedWidget,
   ISerialisedGraph,
@@ -62,6 +73,11 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+
+export type {
+  LGraphTriggerAction,
+  LGraphTriggerParam
+} from './types/graphTriggers'
 
 export interface LGraphState {
   lastGroupId: number
@@ -252,7 +268,7 @@ export class LGraph
   onExecuteStep?(): void
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
-  onTrigger?(action: string, param: unknown): void
+  onTrigger?: LGraphTriggerHandler
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
@@ -272,8 +288,6 @@ export class LGraph
    * @param o data from previous serialization [optional]
    */
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
-    if (LiteGraph.debug) console.log('Graph created')
-
     /** @see MapProxyHandler */
     const links = this._links
     MapProxyHandler.bindAllMethods(links)
@@ -312,6 +326,7 @@ export class LGraph
     if (this._nodes) {
       for (const _node of this._nodes) {
         _node.onRemoved?.()
+        this.onNodeRemoved?.(_node)
       }
     }
 
@@ -529,7 +544,7 @@ export class LGraph
         this.errors_in_execution = true
         if (LiteGraph.throw_errors) throw error
 
-        if (LiteGraph.debug) console.log('Error during execution:', error)
+        if (LiteGraph.debug) console.error('Error during execution:', error)
         this.stop()
       }
     }
@@ -1125,7 +1140,7 @@ export class LGraph
   /**
    * Snaps the provided items to a grid.
    *
-   * Item positions are reounded to the nearest multiple of {@link LiteGraph.CANVAS_GRID_SIZE}.
+   * Item positions are rounded to the nearest multiple of {@link LiteGraph.CANVAS_GRID_SIZE}.
    *
    * When {@link LiteGraph.alwaysSnapToGrid} is enabled
    * and the grid size is falsy, a default of 1 is used.
@@ -1164,7 +1179,7 @@ export class LGraph
       const ctor = LiteGraph.registered_node_types[node.type]
       if (node.constructor == ctor) continue
 
-      console.log('node being replaced by newer version:', node.type)
+      console.warn('node being replaced by newer version:', node.type)
       const newnode = LiteGraph.createNode(node.type)
       if (!newnode) continue
       _nodes[i] = newnode
@@ -1179,8 +1194,23 @@ export class LGraph
   }
 
   // ********** GLOBALS *****************
+  trigger<A extends LGraphTriggerAction>(
+    action: A,
+    param: LGraphTriggerParam<A>
+  ): void
+  trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
-    this.onTrigger?.(action, param)
+    // Convert to discriminated union format for typed handlers
+    const validEventTypes = new Set([
+      'node:slot-links:changed',
+      'node:slot-errors:changed',
+      'node:property:changed'
+    ])
+
+    if (validEventTypes.has(action) && param && typeof param === 'object') {
+      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+    }
+    // Don't handle unknown events - just ignore them
   }
 
   /** @todo Clean up - never implemented. */
@@ -1226,9 +1256,6 @@ export class LGraph
 
   /* Called when something visually changed (not the graph!) */
   change(): void {
-    if (LiteGraph.debug) {
-      console.log('Graph changed')
-    }
     this.canvasAction((c) => c.setDirty(true, true))
     this.on_change?.(this)
   }
@@ -1336,6 +1363,7 @@ export class LGraph
    * @returns The newly created reroute - typically ignored.
    */
   createReroute(pos: Point, before: LinkSegment): Reroute {
+    const layoutMutations = useLayoutMutations()
     const rerouteId = ++this.state.lastRerouteId
     const linkIds = before instanceof Reroute ? before.linkIds : [before.id]
     const floatingLinkIds =
@@ -1349,6 +1377,16 @@ export class LGraph
       floatingLinkIds
     )
     this.reroutes.set(rerouteId, reroute)
+
+    // Register reroute in Layout Store for spatial tracking
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createReroute(
+      rerouteId,
+      { x: pos[0], y: pos[1] },
+      before.parentId,
+      Array.from(linkIds)
+    )
+
     for (const linkId of linkIds) {
       const link = this._links.get(linkId)
       if (!link) continue
@@ -1379,6 +1417,7 @@ export class LGraph
    * @param id ID of reroute to remove
    */
   removeReroute(id: RerouteId): void {
+    const layoutMutations = useLayoutMutations()
     const { reroutes } = this
     const reroute = reroutes.get(id)
     if (!reroute) return
@@ -1422,6 +1461,11 @@ export class LGraph
     }
 
     reroutes.delete(id)
+
+    // Delete reroute from Layout Store
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.deleteReroute(id)
+
     // This does not belong here; it should be handled by the caller, or run by a remove-many API.
     // https://github.com/Comfy-Org/litegraph.js/issues/898
     this.setDirtyCanvas(false, true)
@@ -1463,6 +1507,12 @@ export class LGraph
     if (items.size === 0)
       throw new Error('Cannot convert to subgraph: nothing to convert')
     const { state, revision, config } = this
+    const firstChild = [...items][0]
+    if (items.size === 1 && firstChild instanceof LGraphGroup) {
+      items = new Set([firstChild])
+      firstChild.recomputeInsideNodes()
+      firstChild.children.forEach((n) => items.add(n))
+    }
 
     const {
       boundaryLinks,
@@ -1600,12 +1650,6 @@ export class LGraph
         } else {
           throw new TypeError('Subgraph input node is not a SubgraphInput')
         }
-        console.debug(
-          'Reconnect input links in parent graph',
-          { ...link },
-          this.links.get(link.id),
-          this.links.get(link.id) === link
-        )
 
         for (const resolved of others) {
           resolved.link.disconnect(this)
@@ -1621,7 +1665,7 @@ export class LGraph
         continue
       }
 
-      const input = subgraphNode.findInputSlotByType(link.type, true, true)
+      const input = subgraphNode.inputs[i - 1]
       outputNode.connectSlots(output, subgraphNode, input, link.parentId)
     }
 
@@ -2105,6 +2149,7 @@ export class LGraph
     data: ISerialisedGraph | SerialisableGraph,
     keep_old?: boolean
   ): boolean | undefined {
+    const layoutMutations = useLayoutMutations()
     const options: LGraphEventMap['configuring'] = {
       data,
       clearGraph: !keep_old
@@ -2206,7 +2251,7 @@ export class LGraph
           let node = LiteGraph.createNode(String(n_info.type), n_info.title)
           if (!node) {
             if (LiteGraph.debug)
-              console.log('Node not found or has errors:', n_info.type)
+              console.warn('Node not found or has errors:', n_info.type)
 
             // in case of error we create a replacement node to avoid losing info
             node = new LGraphNode('')
@@ -2245,6 +2290,9 @@ export class LGraph
         // Drop broken links, and ignore reroutes with no valid links
         if (!reroute.validateLinks(this._links, this.floatingLinks)) {
           this.reroutes.delete(reroute.id)
+          // Clean up layout store
+          layoutMutations.setSource(LayoutSource.Canvas)
+          layoutMutations.deleteReroute(reroute.id)
         }
       }
 

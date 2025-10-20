@@ -1,7 +1,18 @@
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
-import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
+import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import type {
+  ModelFile,
+  ModelFolderInfo
+} from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   DisplayComponentWsMessage,
   EmbeddingsResponse,
@@ -30,15 +41,8 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useToastStore } from '@/stores/toastStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -520,7 +524,7 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
-                window.name = clientId // use window name so it isnt reused when duplicating tabs
+                window.name = clientId // use window name so it isn't reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
@@ -599,11 +603,28 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets the index of core workflow templates.
+   * @param locale Optional locale code (e.g., 'en', 'fr', 'zh') to load localized templates
    */
-  async getCoreWorkflowTemplates(): Promise<WorkflowTemplates[]> {
-    const res = await axios.get(this.fileURL('/templates/index.json'))
-    const contentType = res.headers['content-type']
-    return contentType?.includes('application/json') ? res.data : []
+  async getCoreWorkflowTemplates(
+    locale?: string
+  ): Promise<WorkflowTemplates[]> {
+    const fileName =
+      locale && locale !== 'en' ? `index.${locale}.json` : 'index.json'
+    try {
+      const res = await axios.get(this.fileURL(`/templates/${fileName}`))
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : []
+    } catch (error) {
+      // Fallback to default English version if localized version doesn't exist
+      if (locale && locale !== 'en') {
+        console.warn(
+          `Localized templates for '${locale}' not found, falling back to English`
+        )
+        return this.getCoreWorkflowTemplates()
+      }
+      console.error('Error loading core workflow templates:', error)
+      return []
+    }
   }
 
   /**
@@ -675,14 +696,14 @@ export class ComfyApi extends EventTarget {
    * Gets a list of model folder keys (eg ['checkpoints', 'loras', ...])
    * @returns The list of model folder keys
    */
-  async getModelFolders(): Promise<{ name: string; folders: string[] }[]> {
+  async getModelFolders(): Promise<ModelFolderInfo[]> {
     const res = await this.fetchApi(`/experiment/models`)
     if (res.status === 404) {
       return []
     }
     const folderBlacklist = ['configs', 'custom_nodes']
     return (await res.json()).filter(
-      (folder: string) => !folderBlacklist.includes(folder)
+      (folder: ModelFolderInfo) => !folderBlacklist.includes(folder.name)
     )
   }
 
@@ -691,9 +712,7 @@ export class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(
-    folder: string
-  ): Promise<{ name: string; pathIndex: number }[]> {
+  async getModels(folder: string): Promise<ModelFile[]> {
     const res = await this.fetchApi(`/experiment/models/${folder}`)
     if (res.status === 404) {
       return []
@@ -1019,7 +1038,13 @@ export class ComfyApi extends EventTarget {
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
-    return (await axios.get(this.internalURL('/folder_paths'))).data
+    const response = await axios
+      .get(this.internalURL('/folder_paths'))
+      .catch(() => null)
+    if (!response) {
+      return {} // Fallback: no filesystem paths known when API unavailable
+    }
+    return response.data
   }
 
   /* Frees memory by unloading models and optionally freeing execution cache

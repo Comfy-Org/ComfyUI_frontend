@@ -1,7 +1,8 @@
 <template>
   <div
     ref="containerRef"
-    class="relative overflow-hidden w-full h-full flex items-center justify-center"
+    class="relative flex h-full w-full items-center justify-center overflow-hidden"
+    :class="containerClass"
   >
     <Skeleton
       v-if="!isImageLoaded"
@@ -10,7 +11,7 @@
       class="absolute inset-0"
     />
     <img
-      v-show="isImageLoaded"
+      v-if="cachedSrc"
       ref="imageRef"
       :src="cachedSrc"
       :alt="alt"
@@ -22,9 +23,15 @@
     />
     <div
       v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 dark-theme:bg-surface-800 text-muted"
+      class="absolute inset-0 flex items-center justify-center bg-surface-50 text-muted dark-theme:bg-surface-800"
     >
-      <i class="pi pi-image text-2xl" />
+      <img
+        src="/assets/images/default-template.png"
+        :alt="alt"
+        draggable="false"
+        :class="imageClass"
+        :style="imageStyle"
+      />
     </div>
   </div>
 </template>
@@ -35,17 +42,20 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
+import type { ClassValue } from '@/utils/tailwindUtil'
 
 const {
   src,
   alt = '',
+  containerClass = '',
   imageClass = '',
   imageStyle,
   rootMargin = '300px'
 } = defineProps<{
   src: string
   alt?: string
-  imageClass?: string | string[] | Record<string, boolean>
+  containerClass?: ClassValue
+  imageClass?: ClassValue
   imageStyle?: Record<string, any>
   rootMargin?: string
 }>()
@@ -77,8 +87,8 @@ const shouldLoad = computed(() => isIntersecting.value)
 
 watch(
   shouldLoad,
-  async (shouldLoad) => {
-    if (shouldLoad && src && !cachedSrc.value && !hasError.value) {
+  async (shouldLoadVal) => {
+    if (shouldLoadVal && src && !cachedSrc.value && !hasError.value) {
       try {
         const cachedMedia = await getCachedMedia(src)
         if (cachedMedia.error) {
@@ -93,7 +103,7 @@ watch(
         console.warn('Failed to load cached media:', error)
         cachedSrc.value = src
       }
-    } else if (!shouldLoad) {
+    } else if (!shouldLoadVal) {
       if (cachedSrc.value?.startsWith('blob:')) {
         releaseUrl(src)
       }

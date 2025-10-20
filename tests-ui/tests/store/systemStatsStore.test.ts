@@ -21,18 +21,25 @@ describe('useSystemStatsStore', () => {
   let store: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
+    // Mock API to prevent automatic fetch on store creation
+    vi.mocked(api.getSystemStats).mockResolvedValue(null as any)
     setActivePinia(createPinia())
     store = useSystemStatsStore()
     vi.clearAllMocks()
   })
 
-  it('should initialize with null systemStats', () => {
-    expect(store.systemStats).toBeNull()
-    expect(store.isLoading).toBe(false)
-    expect(store.error).toBeNull()
+  it('should initialize and start fetching immediately', async () => {
+    // useAsyncState with immediate: true starts loading right away
+    // In test environment, the mock resolves immediately so loading might be false already
+    expect(store.systemStats).toBeNull() // Initial value is null
+    expect(store.error).toBeUndefined()
+
+    // Wait for initial fetch to complete
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(store.isInitialized).toBe(true) // Should be initialized after fetch
   })
 
-  describe('fetchSystemStats', () => {
+  describe('refetchSystemStats', () => {
     it('should fetch system stats successfully', async () => {
       const mockStats = {
         system: {
@@ -51,11 +58,12 @@ describe('useSystemStatsStore', () => {
 
       vi.mocked(api.getSystemStats).mockResolvedValue(mockStats)
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
       expect(store.systemStats).toEqual(mockStats)
       expect(store.isLoading).toBe(false)
-      expect(store.error).toBeNull()
+      expect(store.error).toBeUndefined() // useAsyncState uses undefined for no error
+      expect(store.isInitialized).toBe(true)
       expect(api.getSystemStats).toHaveBeenCalled()
     })
 
@@ -63,19 +71,19 @@ describe('useSystemStatsStore', () => {
       const error = new Error('API Error')
       vi.mocked(api.getSystemStats).mockRejectedValue(error)
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
-      expect(store.systemStats).toBeNull()
+      expect(store.systemStats).toBeNull() // Initial value stays null on error
       expect(store.isLoading).toBe(false)
-      expect(store.error).toBe('API Error')
+      expect(store.error).toEqual(error) // useAsyncState stores the actual error object
     })
 
     it('should handle non-Error objects', async () => {
       vi.mocked(api.getSystemStats).mockRejectedValue('String error')
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
-      expect(store.error).toBe('An error occurred while fetching system stats')
+      expect(store.error).toBe('String error') // useAsyncState stores the actual error
     })
 
     it('should set loading state correctly', async () => {
@@ -85,7 +93,7 @@ describe('useSystemStatsStore', () => {
       })
       vi.mocked(api.getSystemStats).mockReturnValue(promise)
 
-      const fetchPromise = store.fetchSystemStats()
+      const fetchPromise = store.refetchSystemStats()
       expect(store.isLoading).toBe(true)
 
       resolvePromise({})
@@ -112,11 +120,12 @@ describe('useSystemStatsStore', () => {
 
       vi.mocked(api.getSystemStats).mockResolvedValue(updatedStats)
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
       expect(store.systemStats).toEqual(updatedStats)
       expect(store.isLoading).toBe(false)
-      expect(store.error).toBeNull()
+      expect(store.error).toBeUndefined()
+      expect(store.isInitialized).toBe(true)
       expect(api.getSystemStats).toHaveBeenCalled()
     })
   })

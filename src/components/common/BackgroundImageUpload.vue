@@ -36,8 +36,8 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/stores/toastStore'
 
 const modelValue = defineModel<string>()
 

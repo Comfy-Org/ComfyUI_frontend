@@ -1,6 +1,6 @@
 import {
-  ComfyNodeDef,
-  InputSpec,
+  type ComfyNodeDef,
+  type InputSpec,
   isComboInputSpecV1
 } from '@/schemas/nodeDefSchema'
 

@@ -1,7 +1,12 @@
 import { expect } from '@playwright/test'
 
-import { ComfyPage, comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
 
 test.describe('Group Node', () => {
   test.describe('Node library sidebar', () => {
@@ -228,6 +233,7 @@ test.describe('Group Node', () => {
     }
 
     const isRegisteredNodeDefStore = async (comfyPage: ComfyPage) => {
+      await comfyPage.menu.nodeLibraryTab.open()
       const groupNodesFolderCt = await comfyPage.menu.nodeLibraryTab
         .getFolder(GROUP_NODE_CATEGORY)
         .count()
@@ -248,8 +254,6 @@ test.describe('Group Node', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.loadWorkflow(WORKFLOW_NAME)
-      await comfyPage.menu.nodeLibraryTab.open()
-
       groupNode = await comfyPage.getFirstNodeRef()
       if (!groupNode)
         throw new Error(`Group node not found in workflow ${WORKFLOW_NAME}`)

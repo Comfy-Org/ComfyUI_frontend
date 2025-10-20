@@ -2,16 +2,19 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { st } from '@/i18n'
-import { getSettingInfo, useSettingStore } from '@/stores/settingStore'
+import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
+import {
+  getSettingInfo,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 
 // Mock dependencies
 vi.mock('@/i18n', () => ({
   st: vi.fn((_: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(),
   getSettingInfo: vi.fn()
 }))

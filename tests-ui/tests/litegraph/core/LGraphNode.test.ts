@@ -84,8 +84,8 @@ describe('LGraphNode', () => {
       }))
     }
     node.configure(configureData)
-    expect(node.pos).toEqual(new Float32Array([50, 60]))
-    expect(node.size).toEqual(new Float32Array([70, 80]))
+    expect(node.pos).toEqual(new Float64Array([50, 60]))
+    expect(node.size).toEqual(new Float64Array([70, 80]))
   })
 
   test('should configure inputs correctly', () => {
@@ -266,7 +266,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -335,7 +335,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -367,7 +367,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -400,7 +400,7 @@ describe('LGraphNode', () => {
       const node = new LGraphNode('TestNode') as unknown as Omit<
         LGraphNode,
         'boundingRect'
-      > & { boundingRect: Float32Array }
+      > & { boundingRect: Float64Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
@@ -571,7 +571,7 @@ describe('LGraphNode', () => {
         name: 'test_in',
         type: 'string',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: [0, 0, 0, 0]
       }
     })
     test('should return position based on title height when collapsed', () => {
@@ -590,11 +590,11 @@ describe('LGraphNode', () => {
 
     test('should return default vertical position when input.pos is undefined and not collapsed', () => {
       node.flags.collapsed = false
-      const inputSlot2 = {
+      const inputSlot2: INodeInputSlot = {
         name: 'test_in_2',
         type: 'number',
         link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
+        boundingRect: [0, 0, 0, 0]
       }
       node.inputs = [inputSlot, inputSlot2]
       const slotIndex = 0
@@ -621,39 +621,10 @@ describe('LGraphNode', () => {
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
       delete (node.constructor as any).slot_start_y
     })
-  })
-
-  describe('getInputPos', () => {
-    test('should call getInputSlotPos with the correct input slot from inputs array', () => {
-      const input0: INodeInputSlot = {
-        name: 'in0',
-        type: 'string',
-        link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0])
-      }
-      const input1: INodeInputSlot = {
-        name: 'in1',
-        type: 'number',
-        link: null,
-        boundingRect: new Float32Array([0, 0, 0, 0]),
-        pos: [5, 45]
-      }
-      node.inputs = [input0, input1]
-      const spy = vi.spyOn(node, 'getInputSlotPos')
-      node.getInputPos(1)
-      expect(spy).toHaveBeenCalledWith(input1)
-      const expectedPos: Point = [100 + 5, 200 + 45]
-      expect(node.getInputPos(1)).toEqual(expectedPos)
-      spy.mockClear()
-      node.getInputPos(0)
-      expect(spy).toHaveBeenCalledWith(input0)
-      const slotIndex = 0
-      const nodeOffsetY = (node.constructor as any).slot_start_y || 0
-      const expectedDefaultY =
-        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
-      const expectedDefaultX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      expect(node.getInputPos(0)).toEqual([expectedDefaultX, expectedDefaultY])
-      spy.mockRestore()
+    test('should not overwrite onMouseDown prototype', () => {
+      expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
+        false
+      )
     })
   })
 })

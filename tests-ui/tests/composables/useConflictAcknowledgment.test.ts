@@ -19,7 +19,7 @@ describe('useConflictAcknowledgment', () => {
     it('should load empty state when localStorage is empty', async () => {
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { acknowledgmentState } = useConflictAcknowledgment()
 
@@ -45,7 +45,7 @@ describe('useConflictAcknowledgment', () => {
       // Need to import the module after localStorage is set
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { acknowledgmentState } = useConflictAcknowledgment()
 
@@ -61,7 +61,7 @@ describe('useConflictAcknowledgment', () => {
     it('should mark conflicts as seen with unified function', async () => {
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { markConflictsAsSeen, acknowledgmentState } =
         useConflictAcknowledgment()
@@ -74,7 +74,7 @@ describe('useConflictAcknowledgment', () => {
     it('should dismiss red dot notification', async () => {
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { dismissRedDotNotification, acknowledgmentState } =
         useConflictAcknowledgment()
@@ -87,7 +87,7 @@ describe('useConflictAcknowledgment', () => {
     it('should dismiss warning banner', async () => {
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { dismissWarningBanner, acknowledgmentState } =
         useConflictAcknowledgment()
@@ -100,7 +100,7 @@ describe('useConflictAcknowledgment', () => {
     it('should mark all conflicts as seen', async () => {
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { markConflictsAsSeen, acknowledgmentState } =
         useConflictAcknowledgment()
@@ -118,7 +118,7 @@ describe('useConflictAcknowledgment', () => {
       // Need fresh module import to ensure clean state
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { shouldShowConflictModal, markConflictsAsSeen } =
         useConflictAcknowledgment()
@@ -132,7 +132,7 @@ describe('useConflictAcknowledgment', () => {
     it('should calculate shouldShowRedDot correctly based on conflicts', async () => {
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { shouldShowRedDot, dismissRedDotNotification } =
         useConflictAcknowledgment()
@@ -147,7 +147,7 @@ describe('useConflictAcknowledgment', () => {
     it('should calculate shouldShowManagerBanner correctly', async () => {
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { shouldShowManagerBanner, dismissWarningBanner } =
         useConflictAcknowledgment()
@@ -165,7 +165,7 @@ describe('useConflictAcknowledgment', () => {
       // Need fresh module import to ensure clean state
       vi.resetModules()
       const { useConflictAcknowledgment } = await import(
-        '@/composables/useConflictAcknowledgment'
+        '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
       )
       const { markConflictsAsSeen, dismissWarningBanner } =
         useConflictAcknowledgment()

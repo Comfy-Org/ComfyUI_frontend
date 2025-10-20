@@ -1,4 +1,4 @@
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export const defaultGraph: ComfyWorkflowJSON = {
   last_node_id: 9,

@@ -8,6 +8,23 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
+interface NodeWithId {
+  id: string | number
+  subgraphId?: string | null
+}
+
+/**
+ * Constructs a locator ID from node data with optional subgraph context.
+ *
+ * @param nodeData - Node data containing id and optional subgraphId
+ * @returns The locator ID string
+ */
+export function getLocatorIdFromNodeData(nodeData: NodeWithId): string {
+  return nodeData.subgraphId
+    ? `${nodeData.subgraphId}:${String(nodeData.id)}`
+    : String(nodeData.id)
+}
+
 /**
  * Parses an execution ID into its component parts.
  *
@@ -394,7 +411,7 @@ export function getAllNonIoNodesInSubgraph(subgraph: Subgraph): LGraphNode[] {
 /**
  * Options for traverseNodesDepthFirst function
  */
-export interface TraverseNodesOptions<T> {
+interface TraverseNodesOptions<T> {
   /** Function called for each node during traversal */
   visitor?: (node: LGraphNode, context: T) => T
   /** Initial context value */
@@ -449,7 +466,7 @@ export function traverseNodesDepthFirst<T = void>(
 /**
  * Options for collectFromNodes function
  */
-export interface CollectFromNodesOptions<T, C> {
+interface CollectFromNodesOptions<T, C> {
   /** Function that returns data to collect for each node */
   collector?: (node: LGraphNode, context: C) => T | null
   /** Function that builds context for child nodes */

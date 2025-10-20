@@ -1,0 +1,104 @@
+name: size report
+
+on:
+  workflow_run:
+    workflows: ['size data']
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to report on'
+        required: true
+        type: number
+      run_id:
+        description: 'Size data workflow run ID'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  size-report:
+    runs-on: ubuntu-latest
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (
+        (github.event_name == 'workflow_run' &&
+         github.event.workflow_run.event == 'pull_request' &&
+         github.event.workflow_run.conclusion == 'success') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 10
+
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24.x'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Download size data
+        uses: dawidd6/action-download-artifact@v11
+        with:
+          name: size-data
+          run_id: ${{ github.event_name == 'workflow_dispatch' && inputs.run_id || github.event.workflow_run.id }}
+          path: temp/size
+
+      - name: Set PR number
+        id: pr-number
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "content=${{ inputs.pr_number }}" >> $GITHUB_OUTPUT
+          else
+            echo "content=$(cat temp/size/number.txt)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set base branch
+        id: pr-base
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "content=main" >> $GITHUB_OUTPUT
+          else
+            echo "content=$(cat temp/size/base.txt)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download previous size data
+        uses: dawidd6/action-download-artifact@v11
+        with:
+          branch: ${{ steps.pr-base.outputs.content }}
+          workflow: size-data.yml
+          event: push
+          name: size-data
+          path: temp/size-prev
+          if_no_artifact_found: warn
+
+      - name: Generate size report
+        run: node scripts/size-report.js > size-report.md
+
+      - name: Read size report
+        id: size-report
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ./size-report.md
+
+      - name: Create or update PR comment
+        uses: actions-cool/maintain-one-comment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          number: ${{ steps.pr-number.outputs.content }}
+          body: |
+            ${{ steps.size-report.outputs.content }}
+            <!-- COMFYUI_FRONTEND_SIZE -->
+          body-include: '<!-- COMFYUI_FRONTEND_SIZE -->'

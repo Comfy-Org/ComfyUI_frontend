@@ -160,7 +160,9 @@ test.describe.skip('Queue sidebar', () => {
       comfyPage
     }) => {
       await comfyPage.nextFrame()
-      expect(comfyPage.menu.queueTab.getGalleryImage(firstImage)).toBeVisible()
+      await expect(
+        comfyPage.menu.queueTab.getGalleryImage(firstImage)
+      ).toBeVisible()
     })
 
     test('maintains active gallery item when new tasks are added', async ({
@@ -174,7 +176,9 @@ test.describe.skip('Queue sidebar', () => {
       const newTask = comfyPage.menu.queueTab.tasks.getByAltText(newImage)
       await newTask.waitFor({ state: 'visible' })
       // The active gallery item should still be the initial image
-      expect(comfyPage.menu.queueTab.getGalleryImage(firstImage)).toBeVisible()
+      await expect(
+        comfyPage.menu.queueTab.getGalleryImage(firstImage)
+      ).toBeVisible()
     })
 
     test.describe('Gallery navigation', () => {
@@ -196,7 +200,9 @@ test.describe.skip('Queue sidebar', () => {
               delay: 256
             })
           await comfyPage.nextFrame()
-          expect(comfyPage.menu.queueTab.getGalleryImage(end)).toBeVisible()
+          await expect(
+            comfyPage.menu.queueTab.getGalleryImage(end)
+          ).toBeVisible()
         })
       })
     })

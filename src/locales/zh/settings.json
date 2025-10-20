@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "使用新菜单",
     "options": {
-      "Bottom": "底部",
       "Disabled": "禁用",
       "Top": "顶部"
     },
@@ -384,17 +383,16 @@
     "name": "已打开工作流的位置",
     "options": {
       "Sidebar": "侧边栏",
-      "Topbar": "顶部栏",
-      "Topbar (2nd-row)": "顶部栏 (第二行)"
+      "Topbar": "顶部栏"
     }
-  },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "低质量渲染缩放阈值",
-    "tooltip": "在缩小时渲染低质量形状"
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "画布允许渲染的最大帧数。限制GPU使用以换取流畅度。如果为0，则使用屏幕刷新率。默认值：0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "缩放节点细节级别 - 字体大小阈值",
+    "tooltip": "控制节点何时切换为低质量LOD渲染。使用字体像素大小来决定何时切换。设置为0可禁用。1-24的数值设置LOD的最小字体大小阈值——数值越高（24px），缩小时越早切换为简化渲染，数值越低（1px），则在缩小时更长时间保持完整节点质量。"
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"

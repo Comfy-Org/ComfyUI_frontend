@@ -1,5 +1,5 @@
 <template>
-  <div :class="containerClasses" :style="containerStyle">
+  <div :class="containerClasses">
     <slot name="top"></slot>
     <slot name="bottom"></slot>
   </div>
@@ -8,35 +8,78 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { cn } from '@/utils/tailwindUtil'
+
 const {
-  ratio = 'square',
-  maxWidth,
-  minWidth
+  size = 'regular',
+  variant = 'default',
+  rounded = 'md',
+  customAspectRatio,
+  hasBorder = true,
+  hasBackground = true,
+  hasShadow = true,
+  hasCursor = true,
+  class: customClass = ''
 } = defineProps<{
-  maxWidth?: number
-  minWidth?: number
-  ratio?: 'square' | 'portrait' | 'tallPortrait'
+  size?: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall'
+  variant?: 'default' | 'ghost' | 'outline'
+  rounded?: 'none' | 'md' | 'lg' | 'xl'
+  customAspectRatio?: string
+  hasBorder?: boolean
+  hasBackground?: boolean
+  hasShadow?: boolean
+  hasCursor?: boolean
+  class?: string
 }>()
 
-const containerClasses = computed(() => {
-  const baseClasses =
-    'flex flex-col bg-white dark-theme:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden'
+// Base structure classes
+const structureClasses = 'flex flex-col overflow-hidden'
 
-  const ratioClasses = {
-    square: 'aspect-256/308',
-    portrait: 'aspect-256/325',
-    tallPortrait: 'aspect-256/353'
+// Rounded corners
+const roundedClasses = {
+  none: 'rounded-none',
+  md: 'rounded',
+  lg: 'rounded-lg',
+  xl: 'rounded-xl'
+} as const
+
+const containerClasses = computed(() => {
+  // Variant styles
+  const variantClasses = {
+    default: cn(
+      hasBackground && 'bg-white dark-theme:bg-zinc-800',
+      hasBorder && 'border border-zinc-200 dark-theme:border-zinc-700',
+      hasShadow && 'shadow-sm',
+      hasCursor && 'cursor-pointer'
+    ),
+    ghost: cn(
+      hasCursor && 'cursor-pointer',
+      'p-2 transition-colors duration-200'
+    ),
+    outline: cn(
+      hasBorder && 'border-2 border-zinc-300 dark-theme:border-zinc-600',
+      hasCursor && 'cursor-pointer',
+      'hover:border-zinc-400 dark-theme:hover:border-zinc-500 transition-colors'
+    )
   }
 
-  return `${baseClasses} ${ratioClasses[ratio]}`
-})
+  // Size/aspect ratio
+  const aspectRatio = customAspectRatio
+    ? `aspect-[${customAspectRatio}]`
+    : {
+        mini: 'aspect-100/120',
+        compact: 'aspect-240/311',
+        regular: 'aspect-256/308',
+        portrait: 'aspect-256/325',
+        tall: 'aspect-256/353'
+      }[size]
 
-const containerStyle = computed(() =>
-  maxWidth || minWidth
-    ? {
-        maxWidth: `${maxWidth}px`,
-        minWidth: `${minWidth}px`
-      }
-    : {}
-)
+  return cn(
+    structureClasses,
+    roundedClasses[rounded],
+    variantClasses[variant],
+    aspectRatio,
+    customClass
+  )
+})
 </script>

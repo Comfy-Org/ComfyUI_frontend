@@ -89,9 +89,6 @@ export enum LGraphEventMode {
 }
 
 export enum EaseFunction {
-  LINEAR = 'linear',
-  EASE_IN_QUAD = 'easeInQuad',
-  EASE_OUT_QUAD = 'easeOutQuad',
   EASE_IN_OUT_QUAD = 'easeInOutQuad'
 }
 

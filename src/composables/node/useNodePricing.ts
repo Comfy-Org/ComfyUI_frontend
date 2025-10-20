@@ -109,6 +109,134 @@ const pixversePricingCalculator = (node: LGraphNode): string => {
   return '$0.9/Run'
 }
 
+const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
+  const modelWidget = node.widgets?.find(
+    (w) => w.name === 'model'
+  ) as IComboWidget
+  const durationWidget = node.widgets?.find(
+    (w) => w.name === 'duration'
+  ) as IComboWidget
+  const resolutionWidget = node.widgets?.find(
+    (w) => w.name === 'resolution'
+  ) as IComboWidget
+
+  if (!modelWidget || !durationWidget || !resolutionWidget) return 'Token-based'
+
+  const model = String(modelWidget.value).toLowerCase()
+  const resolution = String(resolutionWidget.value).toLowerCase()
+  const seconds = parseFloat(String(durationWidget.value))
+  const priceByModel: Record<string, Record<string, [number, number]>> = {
+    'seedance-1-0-pro': {
+      '480p': [0.23, 0.24],
+      '720p': [0.51, 0.56],
+      '1080p': [1.18, 1.22]
+    },
+    'seedance-1-0-lite': {
+      '480p': [0.17, 0.18],
+      '720p': [0.37, 0.41],
+      '1080p': [0.85, 0.88]
+    }
+  }
+
+  const modelKey = model.includes('seedance-1-0-pro')
+    ? 'seedance-1-0-pro'
+    : model.includes('seedance-1-0-lite')
+      ? 'seedance-1-0-lite'
+      : ''
+
+  const resKey = resolution.includes('1080')
+    ? '1080p'
+    : resolution.includes('720')
+      ? '720p'
+      : resolution.includes('480')
+        ? '480p'
+        : ''
+
+  const baseRange =
+    modelKey && resKey ? priceByModel[modelKey]?.[resKey] : undefined
+  if (!baseRange) return 'Token-based'
+
+  const [min10s, max10s] = baseRange
+  const scale = seconds / 10
+  const minCost = min10s * scale
+  const maxCost = max10s * scale
+
+  const minStr = `$${minCost.toFixed(2)}/Run`
+  const maxStr = `$${maxCost.toFixed(2)}/Run`
+
+  return minStr === maxStr
+    ? minStr
+    : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
+}
+
+// ---- constants ----
+const SORA_SIZES = {
+  BASIC: new Set(['720x1280', '1280x720']),
+  PRO: new Set(['1024x1792', '1792x1024'])
+}
+const ALL_SIZES = new Set([...SORA_SIZES.BASIC, ...SORA_SIZES.PRO])
+
+// ---- sora-2 pricing helpers ----
+function validateSora2Selection(
+  modelRaw: string,
+  duration: number,
+  sizeRaw: string
+): string | undefined {
+  const model = modelRaw?.toLowerCase() ?? ''
+  const size = sizeRaw?.toLowerCase() ?? ''
+
+  if (!duration || Number.isNaN(duration)) return 'Set duration (4s / 8s / 12s)'
+  if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
+  if (!ALL_SIZES.has(size))
+    return 'Invalid size. Must be 720x1280, 1280x720, 1024x1792, or 1792x1024.'
+
+  if (model.includes('sora-2-pro')) return undefined
+
+  if (model.includes('sora-2') && !SORA_SIZES.BASIC.has(size))
+    return 'sora-2 supports only 720x1280 or 1280x720'
+
+  if (!model.includes('sora-2')) return 'Unsupported model'
+
+  return undefined
+}
+
+function perSecForSora2(modelRaw: string, sizeRaw: string): number {
+  const model = modelRaw?.toLowerCase() ?? ''
+  const size = sizeRaw?.toLowerCase() ?? ''
+
+  if (model.includes('sora-2-pro')) {
+    return SORA_SIZES.PRO.has(size) ? 0.5 : 0.3
+  }
+  if (model.includes('sora-2')) return 0.1
+
+  return SORA_SIZES.PRO.has(size) ? 0.5 : 0.1
+}
+
+function formatRunPrice(perSec: number, duration: number) {
+  return `$${(perSec * duration).toFixed(2)}/Run`
+}
+
+// ---- pricing calculator ----
+const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
+  const getWidgetValue = (name: string) =>
+    String(node.widgets?.find((w) => w.name === name)?.value ?? '')
+
+  const model = getWidgetValue('model')
+  const size = getWidgetValue('size')
+  const duration = Number(
+    node.widgets?.find((w) => ['duration', 'duration_s'].includes(w.name))
+      ?.value
+  )
+
+  if (!model || !size || !duration) return 'Set model, duration & size'
+
+  const validationError = validateSora2Selection(model, duration, size)
+  if (validationError) return validationError
+
+  const perSec = perSecForSora2(model, size)
+  return formatRunPrice(perSec, duration)
+}
+
 /**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
@@ -134,6 +262,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     FluxProKontextMaxNode: {
       displayPrice: '$0.08/Run'
+    },
+    OpenAIVideoSora2: {
+      displayPrice: sora2PricingCalculator
     },
     IdeogramV1: {
       displayPrice: (node: LGraphNode): string => {
@@ -240,9 +371,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
         const durationValue = String(durationWidget.value)
         const modelValue = String(modelWidget.value)
-        console.log('modelValue', modelValue)
-        console.log('modeValue', modeValue)
-        console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
         if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
@@ -296,12 +424,14 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
         const durationValue = String(durationWidget.value)
         const modelValue = String(modelWidget.value)
-        console.log('modelValue', modelValue)
-        console.log('modeValue', modeValue)
-        console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (
+        if (modelValue.includes('v2-5-turbo')) {
+          if (durationValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (
           modelValue.includes('v2-1-master') ||
           modelValue.includes('v2-master')
         ) {
@@ -451,7 +581,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Pricing matrix from CSV data based on mode string content
-        if (modeValue.includes('v2-1-master')) {
+        if (modeValue.includes('v2-5-turbo')) {
+          if (modeValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (modeValue.includes('v2-1-master')) {
           if (modeValue.includes('10s')) {
             return '$2.80/Run' // price is the same as for v2-master model
           }
@@ -504,9 +639,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const model = String(modelWidget.value)
         const resolution = String(resolutionWidget.value).toLowerCase()
         const duration = String(durationWidget.value)
-        console.log('model', model)
-        console.log('resolution', resolution)
-        console.log('duration', duration)
 
         if (model.includes('ray-flash-2')) {
           if (duration.includes('5s')) {
@@ -971,6 +1103,15 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     StabilityUpscaleFastNode: {
       displayPrice: '$0.01/Run'
     },
+    StabilityTextToAudio: {
+      displayPrice: '$0.20/Run'
+    },
+    StabilityAudioToAudio: {
+      displayPrice: '$0.20/Run'
+    },
+    StabilityAudioInpaint: {
+      displayPrice: '$0.20/Run'
+    },
     VeoVideoGenerationNode: {
       displayPrice: (node: LGraphNode): string => {
         const durationWidget = node.widgets?.find(
@@ -993,21 +1134,27 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         if (!modelWidget || !generateAudioWidget) {
-          return '$2.00-6.00/Run (varies with model & audio generation)'
+          return '$0.80-3.20/Run (varies with model & audio generation)'
         }
 
         const model = String(modelWidget.value)
         const generateAudio =
           String(generateAudioWidget.value).toLowerCase() === 'true'
 
-        if (model.includes('veo-3.0-fast-generate-001')) {
-          return generateAudio ? '$3.20/Run' : '$2.00/Run'
-        } else if (model.includes('veo-3.0-generate-001')) {
-          return generateAudio ? '$6.00/Run' : '$4.00/Run'
+        if (
+          model.includes('veo-3.0-fast-generate-001') ||
+          model.includes('veo-3.1-fast-generate')
+        ) {
+          return generateAudio ? '$1.20/Run' : '$0.80/Run'
+        } else if (
+          model.includes('veo-3.0-generate-001') ||
+          model.includes('veo-3.1-generate')
+        ) {
+          return generateAudio ? '$3.20/Run' : '$1.60/Run'
         }
 
         // Default fallback
-        return '$2.00-6.00/Run'
+        return '$0.80-3.20/Run'
       }
     },
     LumaImageNode: {
@@ -1441,6 +1588,112 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         }
         return 'Token-based'
       }
+    },
+    ByteDanceSeedreamNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const sequentialGenerationWidget = node.widgets?.find(
+          (w) => w.name === 'sequential_image_generation'
+        ) as IComboWidget
+        const maxImagesWidget = node.widgets?.find(
+          (w) => w.name === 'max_images'
+        ) as IComboWidget
+
+        if (!sequentialGenerationWidget || !maxImagesWidget)
+          return '$0.03/Run ($0.03 for one output image)'
+
+        if (
+          String(sequentialGenerationWidget.value).toLowerCase() === 'disabled'
+        ) {
+          return '$0.03/Run'
+        }
+
+        const maxImages = Number(maxImagesWidget.value)
+        if (maxImages === 1) {
+          return '$0.03/Run'
+        }
+        const cost = (0.03 * maxImages).toFixed(2)
+        return `$${cost}/Run ($0.03 for one output image)`
+      }
+    },
+    ByteDanceTextToVideoNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceImageToVideoNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceFirstLastFrameNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceImageReferenceNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    WanTextToVideoApi: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'size'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
+
+        const seconds = parseFloat(String(durationWidget.value))
+        const resolutionStr = String(resolutionWidget.value).toLowerCase()
+
+        const resKey = resolutionStr.includes('1080')
+          ? '1080p'
+          : resolutionStr.includes('720')
+            ? '720p'
+            : resolutionStr.includes('480')
+              ? '480p'
+              : (resolutionStr.match(/^\s*(\d{3,4}p)/)?.[1] ?? '')
+
+        const pricePerSecond: Record<string, number> = {
+          '480p': 0.05,
+          '720p': 0.1,
+          '1080p': 0.15
+        }
+
+        const pps = pricePerSecond[resKey]
+        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
+
+        const cost = (pps * seconds).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    WanImageToVideoApi: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
+
+        const seconds = parseFloat(String(durationWidget.value))
+        const resolution = String(resolutionWidget.value).trim().toLowerCase()
+
+        const pricePerSecond: Record<string, number> = {
+          '480p': 0.05,
+          '720p': 0.1,
+          '1080p': 0.15
+        }
+
+        const pps = pricePerSecond[resolution]
+        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
+
+        const cost = (pps * seconds).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    WanTextToImageApi: {
+      displayPrice: '$0.03/Run'
+    },
+    WanImageToImageApi: {
+      displayPrice: '$0.03/Run'
     }
   }
 
@@ -1482,6 +1735,7 @@ export const useNodePricing = () => {
       MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
+      OpenAIVideoSora2: ['model', 'size', 'duration'],
       OpenAIGPTImage1: ['quality', 'n'],
       IdeogramV1: ['num_images', 'turbo'],
       IdeogramV2: ['num_images', 'turbo'],
@@ -1531,7 +1785,18 @@ export const useNodePricing = () => {
       OpenAIChatNode: ['model'],
       // ByteDance
       ByteDanceImageNode: ['model'],
-      ByteDanceImageEditNode: ['model']
+      ByteDanceImageEditNode: ['model'],
+      ByteDanceSeedreamNode: [
+        'model',
+        'sequential_image_generation',
+        'max_images'
+      ],
+      ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
+      ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
+      ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
+      ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
+      WanTextToVideoApi: ['duration', 'size'],
+      WanImageToVideoApi: ['duration', 'resolution']
     }
     return widgetMap[nodeType] || []
   }

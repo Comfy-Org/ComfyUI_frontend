@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { NodeId } from '../../../src/schemas/comfyWorkflowSchema'
+import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import { ManageGroupNode } from '../../helpers/manageGroupNode'
 import type { ComfyPage } from '../ComfyPage'
 import type { Position, Size } from '../types'
@@ -134,7 +134,7 @@ export class SubgraphSlotReference {
   }
 }
 
-export class NodeSlotReference {
+class NodeSlotReference {
   constructor(
     readonly type: 'input' | 'output',
     readonly index: number,
@@ -151,7 +151,8 @@ export class NodeSlotReference {
         const convertedPos =
           window['app'].canvas.ds.convertOffsetToCanvas(rawPos)
 
-        // Debug logging - convert Float32Arrays to regular arrays for visibility
+        // Debug logging - convert Float64Arrays to regular arrays for visibility
+        // eslint-disable-next-line no-console
         console.log(
           `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
           {
@@ -201,7 +202,7 @@ export class NodeSlotReference {
   }
 }
 
-export class NodeWidgetReference {
+class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference

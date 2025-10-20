@@ -14,7 +14,7 @@
 import Slider from 'primevue/slider'
 
 import { t } from '@/i18n'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')
 

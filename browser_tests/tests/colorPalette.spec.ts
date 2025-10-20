@@ -3,6 +3,10 @@ import { expect } from '@playwright/test'
 import type { Palette } from '../../src/schemas/colorPaletteSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 const customColorPalettes: Record<string, Palette> = {
   obsidian: {
     version: 102,

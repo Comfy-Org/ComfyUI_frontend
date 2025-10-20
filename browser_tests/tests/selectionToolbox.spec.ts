@@ -4,6 +4,9 @@ import { comfyPageFixture } from '../fixtures/ComfyPage'
 
 const test = comfyPageFixture
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
@@ -149,7 +152,7 @@ test.describe('Selection Toolbox', () => {
       // Node should have the selected color class/style
       // Note: Exact verification method depends on how color is applied to nodes
       const selectedNode = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
-      expect(selectedNode.getProperty('color')).not.toBeNull()
+      expect(await selectedNode.getProperty('color')).not.toBeNull()
     })
 
     test('color picker shows current color of selected nodes', async ({

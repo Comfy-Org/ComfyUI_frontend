@@ -1,17 +1,17 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-import { test as base } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
 import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../src/schemas/comfyWorkflowSchema'
+import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
+import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
@@ -44,6 +44,10 @@ class ComfyMenu {
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
       .nth(0)
+  }
+
+  get buttons() {
+    return this.sideToolbar.locator('.side-bar-button')
   }
 
   get nodeLibraryTab() {
@@ -129,7 +133,8 @@ export class ComfyPage {
 
   // Buttons
   public readonly resetViewButton: Locator
-  public readonly queueButton: Locator
+  public readonly queueButton: Locator // Run button in Legacy UI
+  public readonly runButton: Locator // Run button (renamed "Queue" -> "Run")
 
   // Inputs
   public readonly workflowUploadInput: Locator
@@ -144,6 +149,7 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly vueNodes: VueNodeHelpers
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -163,6 +169,9 @@ export class ComfyPage {
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
+    this.runButton = page
+      .getByTestId('queue-button')
+      .getByRole('button', { name: 'Run' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
     this.visibleToasts = page.locator('.p-toast-message:visible')
 
@@ -172,6 +181,7 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
+    this.vueNodes = new VueNodeHelpers(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -451,6 +461,32 @@ export class ComfyPage {
     // Clear toast & close tab
     await this.closeToasts(1)
     await workflowsTab.close()
+  }
+
+  /**
+   * Attach a screenshot to the test report.
+   * By default, screenshots are only taken in non-CI environments.
+   * @param name - Name for the screenshot attachment
+   * @param options - Optional configuration
+   * @param options.runInCI - Whether to take screenshot in CI (default: false)
+   * @param options.fullPage - Whether to capture full page (default: false)
+   */
+  async attachScreenshot(
+    name: string,
+    options: { runInCI?: boolean; fullPage?: boolean } = {}
+  ) {
+    const { runInCI = false, fullPage = false } = options
+
+    // Skip in CI unless explicitly requested
+    if (process.env.CI && !runInCI) {
+      return
+    }
+
+    const testInfo = comfyPageFixture.info()
+    await testInfo.attach(name, {
+      body: await this.page.screenshot({ fullPage }),
+      contentType: 'image/png'
+    })
   }
 
   async resetView() {
@@ -1057,12 +1093,6 @@ export class ComfyPage {
 
     const targetPosition = await targetSlot.getPosition()
 
-    // Debug: Log the positions we're trying to use
-    console.log('Drag positions:', {
-      source: sourcePosition,
-      target: targetPosition
-    })
-
     await this.dragAndDrop(sourcePosition, targetPosition)
     await this.nextFrame()
   }
@@ -1395,7 +1425,7 @@ export class ComfyPage {
   }
 
   async closeDialog() {
-    await this.page.locator('.p-dialog-close-button').click()
+    await this.page.locator('.p-dialog-close-button').click({ force: true })
     await expect(this.page.locator('.p-dialog')).toBeHidden()
   }
 
@@ -1614,7 +1644,7 @@ export const comfyPageFixture = base.extend<{
 
     try {
       await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.UseNewMenu': 'Top',
         // Hide canvas menu/info/selection toolbox by default.
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.Graph.CanvasMenu': false,

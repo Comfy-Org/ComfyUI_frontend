@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import type { WorkflowJSON04 } from '@/schemas/comfyWorkflowSchema'
+import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 describe('migrateReroute', () => {
@@ -19,7 +19,7 @@ describe('migrateReroute', () => {
       'single_connected.json',
       'floating.json',
       'floating_branch.json'
-    ])('should correctly migrate %s', (fileName) => {
+    ])('should correctly migrate %s', async (fileName) => {
       // Load the legacy workflow
       const legacyWorkflow = loadWorkflow(
         `workflows/reroute/legacy/${fileName}`
@@ -29,9 +29,9 @@ describe('migrateReroute', () => {
       const migratedWorkflow = migrateLegacyRerouteNodes(legacyWorkflow)
 
       // Compare with snapshot
-      expect(JSON.stringify(migratedWorkflow, null, 2)).toMatchFileSnapshot(
-        `workflows/reroute/native/${fileName}`
-      )
+      await expect(
+        JSON.stringify(migratedWorkflow, null, 2)
+      ).toMatchFileSnapshot(`workflows/reroute/native/${fileName}`)
     })
   })
 })

@@ -7,10 +7,10 @@ import type {
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
 
-import floatingBranch from './assets/floatingBranch.json'
-import floatingLink from './assets/floatingLink.json'
-import linkedNodes from './assets/linkedNodes.json'
-import reroutesComplex from './assets/reroutesComplex.json'
+import floatingBranch from './assets/floatingBranch.json' with { type: 'json' }
+import floatingLink from './assets/floatingLink.json' with { type: 'json' }
+import linkedNodes from './assets/linkedNodes.json' with { type: 'json' }
+import reroutesComplex from './assets/reroutesComplex.json' with { type: 'json' }
 import {
   basicSerialisableGraph,
   minimalSerialisableGraph,

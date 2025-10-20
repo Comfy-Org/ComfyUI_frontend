@@ -1,34 +1,112 @@
 <template>
-  <div :class="wrapperStyle">
-    <i-lucide:search :class="iconColorStyle" />
+  <div :class="wrapperStyle" @click="focusInput">
+    <i class="icon-[lucide--search]" :class="iconColorStyle" />
     <InputText
-      v-model="searchQuery"
-      :placeholder="placeHolder || 'Search...'"
+      ref="input"
+      v-model="internalSearchQuery"
+      :aria-label="
+        placeholder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+      "
+      :placeholder="
+        placeholder || t('templateWidgets.sort.searchPlaceholder', 'Search...')
+      "
       type="text"
       unstyled
-      class="w-full p-0 border-none outline-hidden bg-transparent text-xs text-neutral dark-theme:text-white"
+      :class="inputStyle"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
-const { placeHolder, showBorder = false } = defineProps<{
-  placeHolder?: string
+import { t } from '@/i18n'
+import { cn } from '@/utils/tailwindUtil'
+
+const SEARCH_DEBOUNCE_DELAY_MS = 300
+
+const {
+  autofocus = false,
+  placeholder,
+  showBorder = false,
+  size = 'md'
+} = defineProps<{
+  autofocus?: boolean
+  placeholder?: string
   showBorder?: boolean
+  size?: 'md' | 'lg'
 }>()
+
 // defineModel without arguments uses 'modelValue' as the prop name
 const searchQuery = defineModel<string>()
 
+// Internal search query state for immediate UI updates
+const internalSearchQuery = ref<string>(searchQuery.value ?? '')
+
+// Create debounced function to update the parent model
+const updateSearchQuery = useDebounceFn((value: string) => {
+  searchQuery.value = value
+}, SEARCH_DEBOUNCE_DELAY_MS)
+
+// Watch internal query changes and trigger debounced update
+watch(internalSearchQuery, (newValue) => {
+  void updateSearchQuery(newValue)
+})
+
+// Sync external changes back to internal state
+watch(searchQuery, (newValue) => {
+  if (newValue !== internalSearchQuery.value) {
+    internalSearchQuery.value = newValue || ''
+  }
+})
+
+const input = ref<{ $el: HTMLElement } | null>()
+const focusInput = () => {
+  if (input.value && input.value.$el) {
+    input.value.$el.focus()
+  }
+}
+
+onMounted(() => autofocus && focusInput())
+
 const wrapperStyle = computed(() => {
-  return showBorder
-    ? 'flex w-full items-center rounded gap-2 bg-white dark-theme:bg-zinc-800 p-1 border border-solid border-zinc-200 dark-theme:border-zinc-700'
-    : 'flex w-full items-center rounded px-2 py-1.5 gap-2 bg-white dark-theme:bg-zinc-800'
+  const baseClasses = [
+    'relative flex w-full items-center gap-2',
+    'bg-white dark-theme:bg-zinc-800',
+    'cursor-text'
+  ]
+
+  if (showBorder) {
+    return cn(
+      ...baseClasses,
+      'rounded p-2',
+      'border border-solid',
+      'border-zinc-200 dark-theme:border-zinc-700'
+    )
+  }
+
+  // Size-specific classes matching button sizes for consistency
+  const sizeClasses = {
+    md: 'h-8 px-2 py-1.5', // Matches button sm size
+    lg: 'h-10 px-4 py-2' // Matches button md size
+  }[size]
+
+  return cn(...baseClasses, 'rounded-lg', sizeClasses)
+})
+
+const inputStyle = computed(() => {
+  return cn(
+    'absolute inset-0 w-full h-full pl-11',
+    'border-none outline-none bg-transparent',
+    'text-sm text-neutral dark-theme:text-white'
+  )
 })
 
 const iconColorStyle = computed(() => {
-  return !showBorder ? 'text-neutral' : 'text-zinc-300 dark-theme:text-zinc-700'
+  return cn(
+    !showBorder ? 'text-neutral' : ['text-zinc-300', 'dark-theme:text-zinc-700']
+  )
 })
 </script>

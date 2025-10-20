@@ -130,25 +130,21 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import {
-  type CSSProperties,
-  type Component,
-  computed,
-  nextTick,
-  onMounted,
-  ref
-} from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useDialogService } from '@/services/dialogService'
-import { type ReleaseNote } from '@/services/releaseService'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Types
 interface MenuItem {
@@ -167,7 +163,8 @@ const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
+  DESKTOP_GUIDE_WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
+  DESKTOP_GUIDE_MACOS: 'https://docs.comfy.org/installation/desktop/macos',
   UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
@@ -191,7 +188,6 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
 
 // Emits
 const emit = defineEmits<{
@@ -222,7 +218,11 @@ const moreItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.desktopUserGuide'),
       visible: isElectron(),
       action: () => {
-        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+        const docsUrl =
+          electronAPI().getPlatform() === 'darwin'
+            ? EXTERNAL_LINKS.DESKTOP_GUIDE_MACOS
+            : EXTERNAL_LINKS.DESKTOP_GUIDE_WINDOWS
+        openExternalLink(docsUrl)
         emit('close')
       }
     },
@@ -266,7 +266,7 @@ const moreMenuItem = computed(() =>
 )
 
 const menuItems = computed<MenuItem[]>(() => {
-  return [
+  const items: MenuItem[] = [
     {
       key: 'docs',
       type: 'item',
@@ -306,28 +306,38 @@ const menuItems = computed<MenuItem[]>(() => {
         void commandStore.execute('Comfy.ContactSupport')
         emit('close')
       }
-    },
-    {
+    }
+  ]
+
+  // Extension manager - only in non-cloud distributions
+  if (!isCloud) {
+    items.push({
       key: 'manager',
       type: 'item',
       icon: PuzzleIcon,
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
-      action: () => {
-        dialogService.showManagerDialog()
+      action: async () => {
+        await useManagerState().openManager({
+          initialTab: ManagerTab.All,
+          showToastOnLegacyError: false
+        })
         emit('close')
       }
-    },
-    {
-      key: 'more',
-      type: 'item',
-      icon: '',
-      label: t('helpCenter.more'),
-      visible: hasVisibleMoreItems.value,
-      action: () => {}, // No action for more item
-      items: moreItems.value
-    }
-  ]
+    })
+  }
+
+  items.push({
+    key: 'more',
+    type: 'item',
+    icon: '',
+    label: t('helpCenter.more'),
+    visible: hasVisibleMoreItems.value,
+    action: () => {}, // No action for more item
+    items: moreItems.value
+  })
+
+  return items
 })
 
 // Utility Functions
@@ -418,6 +428,9 @@ const formatReleaseDate = (dateString?: string): string => {
 }
 
 const shouldShowUpdateButton = (release: ReleaseNote): boolean => {
+  // Hide update buttons in cloud distribution
+  if (isCloud) return false
+
   return (
     releaseStore.shouldShowUpdateButton &&
     release === releaseStore.recentReleases[0]
@@ -518,7 +531,7 @@ onMounted(async () => {
   overflow-y: auto;
   background: var(--p-content-background);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.15);
   border: 1px solid var(--p-content-border-color);
   backdrop-filter: blur(8px);
   position: relative;
@@ -603,7 +616,7 @@ onMounted(async () => {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--p-text-muted-color);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.5rem;
   padding: 0 1rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -661,7 +674,7 @@ onMounted(async () => {
   background: var(--p-content-background);
   border-radius: 12px;
   border: 1px solid var(--p-content-border-color);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.15);
   overflow: hidden;
   transition: opacity 0.15s ease-out;
 }

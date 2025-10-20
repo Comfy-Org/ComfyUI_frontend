@@ -5,6 +5,11 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
+import {
+  promoteRecommendedWidgets,
+  tryToggleWidgetPromotion
+} from '@/core/graph/subgraph/proxyWidgetUtils'
+import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { t } from '@/i18n'
 import {
   LGraphEventMode,
@@ -13,37 +18,49 @@ import {
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { Point } from '@/lib/litegraph/src/litegraph'
+import type { Point } from '@/lib/litegraph/src/litegraph'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  useCanvasStore,
+  useTitleEditorStore
+} from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { selectionBounds } from '@/renderer/core/layout/utils/layoutMath'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useToastStore } from '@/stores/toastStore'
-import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { ManagerTab } from '@/types/comfyManagerTypes'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
 } from '@/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
+import {
+  ManagerUIState,
+  useManagerState
+} from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+
+import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -116,6 +133,15 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.PublishSubgraph',
+      icon: 'pi pi-save',
+      label: 'Publish Subgraph',
+      menubarLabel: 'Publish',
+      function: async () => {
+        await useSubgraphStore().publishSubgraph()
+      }
+    },
+    {
       id: 'Comfy.SaveWorkflowAs',
       icon: 'pi pi-save',
       label: 'Save Workflow As',
@@ -184,8 +210,6 @@ export function useCoreCommands(): ComfyCommand[] {
             const subgraph = app.canvas.subgraph
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
-          } else {
-            app.graph.clear()
           }
           api.dispatchCustomEvent('graphCleared')
         }
@@ -251,7 +275,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: () => {
-        dialogService.showTemplateWorkflowsDialog()
+        useWorkflowTemplateSelectorDialog().show()
       }
     },
     {
@@ -283,21 +307,71 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Experimental.ToggleVueNodes',
+      label: () =>
+        `Experimental: ${
+          useSettingStore().get('Comfy.VueNodes.Enabled') ? 'Disable' : 'Enable'
+        } Vue Nodes`,
+      function: async () => {
+        const settingStore = useSettingStore()
+        const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
+        await settingStore.set('Comfy.VueNodes.Enabled', !current)
+      }
+    },
+    {
       id: 'Comfy.Canvas.FitView',
       icon: 'pi pi-expand',
       label: 'Fit view to selected nodes',
       menubarLabel: 'Zoom to fit',
       category: 'view-controls' as const,
       function: () => {
-        if (app.canvas.empty) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.emptyCanvas'),
-            life: 3000
-          })
-          return
+        const vueNodesEnabled = useSettingStore().get('Comfy.VueNodes.Enabled')
+
+        if (vueNodesEnabled) {
+          // Get nodes from Vue stores
+          const canvasStore = useCanvasStore()
+          const selectedNodeIds = canvasStore.selectedNodeIds
+          const allNodes = layoutStore.getAllNodes().value
+
+          // Get nodes to fit - selected if any, otherwise all
+          const nodesToFit =
+            selectedNodeIds.size > 0
+              ? Array.from(selectedNodeIds)
+                  .map((id) => allNodes.get(id))
+                  .filter((node) => node != null)
+              : Array.from(allNodes.values())
+
+          // Use Vue nodes bounds calculation
+          const bounds = selectionBounds(nodesToFit)
+          if (!bounds) {
+            toastStore.add({
+              severity: 'error',
+              summary: t('toastMessages.emptyCanvas'),
+              life: 3000
+            })
+            return
+          }
+
+          // Convert to LiteGraph format and animate
+          const lgBounds = [
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height
+          ] as const
+          const setDirty = () => app.canvas.setDirty(true, true)
+          app.canvas.ds.animateToBounds(lgBounds, setDirty)
+        } else {
+          if (app.canvas.empty) {
+            toastStore.add({
+              severity: 'error',
+              summary: t('toastMessages.emptyCanvas'),
+              life: 3000
+            })
+            return
+          }
+          app.canvas.fitViewToSelectionAnimated()
         }
-        app.canvas.fitViewToSelectionAnimated()
       }
     },
     {
@@ -379,6 +453,11 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
+
+        if (isCloud) {
+          useTelemetry()?.trackWorkflowExecution()
+        }
+
         await app.queuePrompt(0, batchCount)
       }
     },
@@ -390,6 +469,11 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
+
+        if (isCloud) {
+          useTelemetry()?.trackWorkflowExecution()
+        }
+
         await app.queuePrompt(-1, batchCount)
       }
     },
@@ -720,34 +804,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
-        const managerState = useManagerStateStore().managerUIState
-
-        switch (managerState) {
-          case ManagerUIState.DISABLED:
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
-              )
-            } catch (error) {
-              console.error('error', error)
-              useToastStore().add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: t('manager.legacyMenuNotAvailable'),
-                life: 3000
-              })
-              dialogService.showManagerDialog()
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog()
-            break
-        }
+        await useManagerState().openManager({
+          showToastOnLegacyError: true
+        })
       }
     },
     {
@@ -755,33 +814,25 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-sync',
       label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
-      function: () => {
-        const managerStore = useManagerStateStore()
-        const state = managerStore.managerUIState
+      function: async () => {
+        const managerState = useManagerState()
+        const state = managerState.managerUIState.value
 
-        switch (state) {
-          case ManagerUIState.DISABLED:
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('manager.notAvailable'),
-              life: 3000
-            })
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            useCommandStore()
-              .execute('Comfy.Manager.Menu.ToggleVisibility')
-              .catch(() => {
-                // If legacy command doesn't exist, fall back to extensions panel
-                dialogService.showSettingsDialog('extension')
-              })
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog()
-            break
+        // For DISABLED state, show error toast instead of opening settings
+        if (state === ManagerUIState.DISABLED) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.notAvailable'),
+            life: 3000
+          })
+          return
         }
+
+        await managerState.openManager({
+          initialTab: ManagerTab.UpdateAvailable,
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -790,32 +841,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
       function: async () => {
-        const managerStore = useManagerStateStore()
-        const state = managerStore.managerUIState
-
-        switch (state) {
-          case ManagerUIState.DISABLED:
-            // When manager is disabled, open the extensions panel in settings
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility'
-              )
-            } catch {
-              // If legacy command doesn't exist, fall back to extensions panel
-              dialogService.showSettingsDialog('extension')
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog({
-              initialTab: ManagerTab.Missing
-            })
-            break
-        }
+        await useManagerState().openManager({
+          initialTab: ManagerTab.Missing,
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -875,7 +904,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Graph.ConvertToSubgraph',
-      icon: 'pi pi-sitemap',
+      icon: 'icon-[lucide--shrink]',
       label: 'Convert Selection to Subgraph',
       versionAdded: '1.20.1',
       category: 'essentials' as const,
@@ -897,15 +926,15 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const { node } = res
         canvas.select(node)
+        promoteRecommendedWidgets(node)
         canvasStore.updateSelectedItems()
       }
     },
     {
       id: 'Comfy.Graph.UnpackSubgraph',
-      icon: 'pi pi-sitemap',
+      icon: 'icon-[lucide--expand]',
       label: 'Unpack the selected Subgraph',
-      versionAdded: '1.20.1',
-      category: 'essentials' as const,
+      versionAdded: '1.26.3',
       function: () => {
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
@@ -918,11 +947,28 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Graph.EditSubgraphWidgets',
+      label: 'Edit Subgraph Widgets',
+      icon: 'icon-[lucide--settings-2]',
+      versionAdded: '1.28.5',
+      function: showSubgraphNodeDialog
+    },
+    {
+      id: 'Comfy.Graph.ToggleWidgetPromotion',
+      icon: 'icon-[lucide--arrow-left-right]',
+      label: 'Toggle promotion of hovered widget',
+      versionAdded: '1.30.1',
+      function: tryToggleWidgetPromotion
+    },
+    {
       id: 'Comfy.OpenManagerDialog',
       icon: 'mdi mdi-puzzle-outline',
       label: 'Manager',
-      function: () => {
-        dialogService.showManagerDialog()
+      function: async () => {
+        await useManagerState().openManager({
+          initialTab: ManagerTab.All,
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -987,18 +1033,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        try {
-          await useCommandStore().execute(
-            'Comfy.Manager.CustomNodesManager.ToggleVisibility'
-          )
-        } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
-        }
+        await useManagerState().openManager({
+          legacyCommand: 'Comfy.Manager.CustomNodesManager.ToggleVisibility',
+          showToastOnLegacyError: true,
+          isLegacyOnly: true
+        })
       }
     },
     {
@@ -1007,16 +1046,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        try {
-          await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
-        } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
-        }
+        await useManagerState().openManager({
+          showToastOnLegacyError: true,
+          isLegacyOnly: true
+        })
       }
     },
     {
@@ -1057,6 +1090,60 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         await api.freeMemory({ freeExecutionCache: true })
+      }
+    },
+    {
+      id: 'Comfy.BrowseModelAssets',
+      icon: 'pi pi-folder-open',
+      label: 'Experimental: Browse Model Assets',
+      versionAdded: '1.28.3',
+      function: async () => {
+        if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) {
+          const confirmed = await dialogService.confirm({
+            title: 'Enable Asset API',
+            message:
+              'The Asset API is currently disabled. Would you like to enable it?',
+            type: 'default'
+          })
+
+          if (!confirmed) return
+
+          const settingStore = useSettingStore()
+          await settingStore.set('Comfy.Assets.UseAssetAPI', true)
+          await workflowService.reloadCurrentWorkflow()
+        }
+        const assetBrowserDialog = useAssetBrowserDialog()
+        await assetBrowserDialog.browse({
+          assetType: 'models',
+          title: t('sideToolbar.modelLibrary'),
+          onAssetSelected: (asset) => {
+            const result = createModelNodeFromAsset(asset)
+            if (!result.success) {
+              toastStore.add({
+                severity: 'error',
+                summary: t('g.error'),
+                detail: t('assetBrowser.failedToCreateNode')
+              })
+              console.error('Node creation failed:', result.error)
+            }
+          }
+        })
+      }
+    },
+    {
+      id: 'Comfy.ToggleAssetAPI',
+      icon: 'pi pi-database',
+      label: () =>
+        `Experimental: ${
+          useSettingStore().get('Comfy.Assets.UseAssetAPI')
+            ? 'Disable'
+            : 'Enable'
+        } AssetAPI`,
+      function: async () => {
+        const settingStore = useSettingStore()
+        const current = settingStore.get('Comfy.Assets.UseAssetAPI') ?? false
+        await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
+        await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
     }
   ]

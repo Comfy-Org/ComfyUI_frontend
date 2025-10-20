@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="w-full h-full relative comfy-load-3d">
+  <div ref="container" class="comfy-load-3d relative h-full w-full">
     <LoadingOverlay ref="loadingOverlayRef" />
   </div>
 </template>
@@ -8,15 +8,15 @@
 import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
-import Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
-import {
+import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
+import type {
   CameraType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useLoad3dService } from '@/services/load3dService'
 

@@ -1,14 +1,20 @@
 import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
-import { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
-import {
-  type INodeInputSlot,
-  type ISlotType,
-  type NodeId
+import type {
+  ISubgraphInput,
+  IWidgetLocator
+} from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  ISlotType,
+  NodeId
 } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
@@ -24,12 +30,13 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 
-import {
-  type ExecutableLGraphNode,
-  ExecutableNodeDTO,
-  type ExecutionId
-} from './ExecutableNodeDTO'
+import { ExecutableNodeDTO } from './ExecutableNodeDTO'
+import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
+
+const workflowSvg = new Image()
+workflowSvg.src =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -78,9 +85,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const existingInput = this.inputs.find((i) => i.name == name)
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
-          const { inputNode } = subgraph.links[linkId].resolve(subgraph)
+          const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name == name)
-          if (widget) this.#setWidget(subgraphInput, existingInput, widget)
+          if (widget)
+            this.#setWidget(subgraphInput, existingInput, widget, input?.widget)
           return
         }
         const input = this.addInput(name, type)
@@ -164,7 +172,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     canvas: LGraphCanvas
   ): void {
     if (button.name === 'enter_subgraph') {
-      canvas.openSubgraph(this.subgraph)
+      canvas.openSubgraph(this.subgraph, this)
     } else {
       super.onTitleButtonClick(button, canvas)
     }
@@ -185,13 +193,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     subgraphInput.events.addEventListener(
       'input-connected',
-      () => {
+      (e) => {
         if (input._widget) return
 
         const widget = subgraphInput._widget
         if (!widget) return
 
-        this.#setWidget(subgraphInput, input, widget)
+        const widgetLocator = e.detail.input.widget
+        this.#setWidget(subgraphInput, input, widget, widgetLocator)
       },
       { signal }
     )
@@ -301,7 +310,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = resolved.inputNode.getWidgetFromSlot(resolved.input)
         if (!widget) continue
 
-        this.#setWidget(subgraphInput, input, widget)
+        this.#setWidget(subgraphInput, input, widget, resolved.input.widget)
         break
       }
     }
@@ -310,7 +319,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   #setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
-    widget: Readonly<IBaseWidget>
+    widget: Readonly<IBaseWidget>,
+    inputWidget: IWidgetLocator | undefined
   ) {
     // Use the first matching widget
     const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(
@@ -370,7 +380,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       subgraphNode: this
     })
 
-    input.widget = { name: subgraphInput.name }
+    // NOTE: This code creates linked chains of prototypes for passing across
+    // multiple levels of subgraphs. As part of this, it intentionally avoids
+    // creating new objects. Have care when making changes.
+    input.widget ??= { name: subgraphInput.name }
+    input.widget.name = subgraphInput.name
+    if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
+
     input._widget = promotedWidget
   }
 
@@ -418,7 +434,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const inputSlot = this.subgraph.inputNode.slots[slot]
     const innerLinks = inputSlot.getLinks()
     if (innerLinks.length === 0) {
-      console.debug(
+      console.warn(
         `[SubgraphNode.resolveSubgraphInputLinks] No inner links found for input slot [${slot}] ${inputSlot.name}`,
         this
       )
@@ -435,9 +451,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   resolveSubgraphOutputLink(slot: number): ResolvedConnection | undefined {
     const outputSlot = this.subgraph.outputNode.slots[slot]
     const innerLink = outputSlot.getLinks().at(0)
-    if (innerLink) return innerLink.resolve(this.subgraph)
-
-    console.debug(
+    if (innerLink) {
+      return innerLink.resolve(this.subgraph)
+    }
+    console.warn(
       `[SubgraphNode.resolveSubgraphOutputLink] No inner link found for output slot [${slot}] ${outputSlot.name}`,
       this
     )
@@ -543,6 +560,31 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         input._listenerController.abort()
       }
     }
+  }
+  override drawTitleBox(
+    ctx: CanvasRenderingContext2D,
+    {
+      scale,
+      low_quality = false,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      box_size = 10
+    }: DrawTitleBoxOptions
+  ): void {
+    if (this.onDrawTitleBox) {
+      this.onDrawTitleBox(ctx, title_height, this.renderingSize, scale)
+      return
+    }
+    ctx.save()
+    ctx.fillStyle = '#3b82f6'
+    ctx.beginPath()
+    ctx.roundRect(6, -24.5, 22, 20, 5)
+    ctx.fill()
+    if (!low_quality) {
+      ctx.translate(25, 23)
+      ctx.scale(-1.5, 1.5)
+      ctx.drawImage(workflowSvg, 0, -title_height, box_size, box_size)
+    }
+    ctx.restore()
   }
 
   /**

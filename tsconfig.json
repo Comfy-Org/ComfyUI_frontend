@@ -1,9 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2023",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2023",
+      "ES2023.Array",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
     "incremental": true,
     "sourceMap": true,
@@ -17,21 +22,43 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
+    "allowJs": true,
+    "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ],
+      "@/utils/formatUtil": [
+        "packages/shared-frontend-utils/src/formatUtil.ts"
+      ],
+      "@/utils/networkUtil": [
+        "packages/shared-frontend-utils/src/networkUtil.ts"
+      ]
     },
-    "typeRoots": ["src/types", "node_modules/@types"],
+    "typeRoots": [
+      "src/types",
+      "node_modules/@types",
+      "./node_modules"
+    ],
+    "types": [
+      "vitest/globals"
+    ],
     "outDir": "./dist",
     "rootDir": "./"
   },
   "include": [
-    "src/**/*",
-    "src/**/*.vue",
-    "src/types/**/*.d.ts",
-    "tests-ui/**/*",
+    ".storybook/**/*",
+    "eslint.config.ts",
     "global.d.ts",
+    "knip.config.ts",
+    "src/**/*.vue",
+    "src/**/*",
+    "src/types/**/*.d.ts",
+    "tailwind.config.ts",
+    "tests-ui/**/*",
     "vite.config.mts",
-    ".storybook/**/*"
+    "vitest.config.ts",
+    // "vitest.setup.ts",
   ]
 }

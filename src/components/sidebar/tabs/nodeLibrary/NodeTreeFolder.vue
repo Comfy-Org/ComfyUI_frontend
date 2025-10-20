@@ -10,11 +10,9 @@ import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { BookmarkCustomization } from '@/schemas/apiSchema'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import {
-  InjectKeyExpandedKeys,
-  type RenderedTreeExplorerNode
-} from '@/types/treeExplorerTypes'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { InjectKeyExpandedKeys } from '@/types/treeExplorerTypes'
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>

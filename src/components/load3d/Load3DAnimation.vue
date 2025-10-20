@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative w-full h-full"
+    class="relative h-full w-full"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
@@ -34,7 +34,7 @@
       @up-direction-change="listenUpDirectionChange"
       @recording-status-change="listenRecordingStatusChange"
     />
-    <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
+    <div class="pointer-events-none absolute top-0 left-0 h-full w-full">
       <Load3DControls
         :input-spec="inputSpec"
         :background-color="backgroundColor"
@@ -69,7 +69,7 @@
     </div>
     <div
       v-if="showRecordingControls"
-      class="absolute top-12 right-2 z-20 pointer-events-auto"
+      class="pointer-events-auto absolute top-12 right-2 z-20"
     >
       <RecordingControls
         :node="node"
@@ -93,7 +93,7 @@ import Load3DAnimationScene from '@/components/load3d/Load3DAnimationScene.vue'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import {
+import type {
   AnimationItem,
   CameraType,
   Load3DAnimationNodeType,

@@ -1,8 +1,8 @@
 <template>
   <Toast group="reroute-migration">
     <template #message>
-      <div class="flex flex-col items-start flex-auto">
-        <div class="font-medium text-lg my-4">
+      <div class="flex flex-auto flex-col items-start">
+        <div class="my-4 text-lg font-medium">
           {{ t('toastMessages.migrateToLitegraphReroute') }}
         </div>
         <Button
@@ -23,9 +23,9 @@ import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import { useI18n } from 'vue-i18n'
 
-import type { WorkflowJSON04 } from '@/schemas/comfyWorkflowSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 const { t } = useI18n()

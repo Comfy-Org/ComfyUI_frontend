@@ -4,12 +4,11 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'
-
-import { useCanvasStore } from './graphStore'
-import { useWorkflowStore } from './workflowStore'
 
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph

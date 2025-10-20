@@ -2,9 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useComfyManagerService } from '@/services/comfyManagerService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
@@ -13,7 +13,7 @@ type ManagerDatabaseSource =
   ManagerComponents['schemas']['ManagerDatabaseSource']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 
-vi.mock('@/services/comfyManagerService', () => ({
+vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
 }))
 
@@ -23,7 +23,7 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock('@/composables/useManagerQueue', () => {
+vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
   const enqueueTaskMock = vi.fn()
 
   return {
@@ -437,6 +437,99 @@ describe('useComfyManagerStore', () => {
       expect(store.isPackInstalling('pack-1')).toBe(true)
       expect(store.isPackInstalling('pack-2')).toBe(true)
       expect(store.isPackInstalling('pack-3')).toBe(false)
+    })
+  })
+
+  describe('refreshInstalledList with pack ID normalization', () => {
+    it('normalizes pack IDs by removing version suffixes', async () => {
+      const mockPacks = {
+        'ComfyUI-GGUF@1_1_4': {
+          enabled: false,
+          cnr_id: 'ComfyUI-GGUF',
+          ver: '1.1.4',
+          aux_id: undefined
+        },
+        'ComfyUI-Manager': {
+          enabled: true,
+          cnr_id: 'ComfyUI-Manager',
+          ver: '2.0.0',
+          aux_id: undefined
+        }
+      }
+
+      vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
+        mockPacks
+      )
+
+      const store = useComfyManagerStore()
+      await store.refreshInstalledList()
+
+      // Both packs should be accessible by their base name
+      expect(store.installedPacks['ComfyUI-GGUF']).toEqual({
+        enabled: false,
+        cnr_id: 'ComfyUI-GGUF',
+        ver: '1.1.4',
+        aux_id: undefined
+      })
+      expect(store.installedPacks['ComfyUI-Manager']).toEqual({
+        enabled: true,
+        cnr_id: 'ComfyUI-Manager',
+        ver: '2.0.0',
+        aux_id: undefined
+      })
+
+      // Version suffixed keys should not exist
+      expect(store.installedPacks['ComfyUI-GGUF@1_1_4']).toBeUndefined()
+    })
+
+    it('handles duplicate keys after normalization', async () => {
+      const mockPacks = {
+        'test-pack': {
+          enabled: true,
+          cnr_id: 'test-pack',
+          ver: '1.0.0',
+          aux_id: undefined
+        },
+        'test-pack@1_1_0': {
+          enabled: false,
+          cnr_id: 'test-pack',
+          ver: '1.1.0',
+          aux_id: undefined
+        }
+      }
+
+      vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
+        mockPacks
+      )
+
+      const store = useComfyManagerStore()
+      await store.refreshInstalledList()
+
+      // The normalized key should exist (last one wins with mapKeys)
+      expect(store.installedPacks['test-pack']).toBeDefined()
+      expect(store.installedPacks['test-pack'].ver).toBe('1.1.0')
+    })
+
+    it('preserves version information for disabled packs', async () => {
+      const mockPacks = {
+        'disabled-pack@2_0_0': {
+          enabled: false,
+          cnr_id: 'disabled-pack',
+          ver: '2.0.0',
+          aux_id: undefined
+        }
+      }
+
+      vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
+        mockPacks
+      )
+
+      const store = useComfyManagerStore()
+      await store.refreshInstalledList()
+
+      // Pack should be accessible by base name with version preserved
+      expect(store.getInstalledPackVersion('disabled-pack')).toBe('2.0.0')
+      expect(store.isPackInstalled('disabled-pack')).toBe(true)
     })
   })
 })

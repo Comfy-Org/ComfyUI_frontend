@@ -1,10 +1,10 @@
 <template>
   <div
-    class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96"
+    class="comfy-vue-node-search-container flex w-full min-w-96 items-center justify-center"
   >
     <div
       v-if="enableNodePreview"
-      class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
+      class="comfy-vue-node-preview-container absolute top-[50px] left-[-350px]"
     >
       <NodePreview
         v-if="hoveredSuggestion"
@@ -87,12 +87,9 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
-import {
-  ComfyNodeDefImpl,
-  useNodeDefStore,
-  useNodeFrequencyStore
-} from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import SearchFilterChip from '../common/SearchFilterChip.vue'

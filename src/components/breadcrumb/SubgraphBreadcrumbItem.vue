@@ -6,7 +6,7 @@
       showDelay: 512
     }"
     href="#"
-    class="cursor-pointer p-breadcrumb-item-link"
+    class="p-breadcrumb-item-link h-12 cursor-pointer px-2"
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
@@ -15,7 +15,8 @@
     }"
     @click="handleClick"
   >
-    <span class="p-breadcrumb-item-label">{{ item.label }}</span>
+    <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
+    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu
@@ -25,7 +26,7 @@
     :popup="true"
     :pt="{
       root: {
-        style: 'background-color: var(--comfy-menu-secondary-bg)'
+        style: 'background-color: var(--comfy-menu-bg)'
       },
       itemLink: {
         class: 'py-2'
@@ -36,8 +37,8 @@
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
-    class="fixed z-10000 text-[.8rem] px-2 py-2"
-    @blur="inputBlur(true)"
+    class="fixed z-10000 px-2 py-2 text-[.8rem]"
+    @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"
     @keydown.esc="inputBlur(false)"
@@ -46,16 +47,21 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import Menu, { MenuState } from 'primevue/menu'
+import type { MenuState } from 'primevue/menu'
+import Menu from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
+import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
-import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
 interface Props {
@@ -121,7 +127,7 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       },
-      visible: isRoot
+      visible: isRoot && !props.item.isBlueprint
     },
     {
       separator: true,
@@ -155,10 +161,24 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       separator: true,
+      visible: props.item.key === 'root' && props.item.isBlueprint
+    },
+    {
+      label: t('subgraphStore.publish'),
+      icon: 'pi pi-copy',
+      command: async () => {
+        await workflowService.saveWorkflowAs(workflowStore.activeWorkflow!)
+      },
+      visible: props.item.key === 'root' && props.item.isBlueprint
+    },
+    {
+      separator: true,
       visible: isRoot
     },
     {
-      label: t('breadcrumbsMenu.deleteWorkflow'),
+      label: props.item.isBlueprint
+        ? t('breadcrumbsMenu.deleteBlueprint')
+        : t('breadcrumbsMenu.deleteWorkflow'),
       icon: 'pi pi-times',
       command: async () => {
         await workflowService.deleteWorkflow(workflowStore.activeWorkflow!)
@@ -220,7 +240,6 @@ const inputBlur = async (doRename: boolean) => {
 
 .p-breadcrumb-item-link {
   @apply overflow-hidden;
-  padding: var(--p-breadcrumb-item-padding);
 }
 
 .p-breadcrumb-item-label {

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
+import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type ReleaseNote = components['schemas']['ReleaseNote']
@@ -19,7 +19,7 @@ vi.mock('marked', () => ({
   marked: vi.fn((content) => `<p>${content}</p>`)
 }))
 
-vi.mock('@/stores/releaseStore', () => ({
+vi.mock('@/platform/updates/common/releaseStore', () => ({
   useReleaseStore: vi.fn()
 }))
 
@@ -58,7 +58,9 @@ describe('WhatsNewPopup', () => {
     mockReleaseStore.releases = []
 
     // Mock release store
-    const { useReleaseStore } = await import('@/stores/releaseStore')
+    const { useReleaseStore } = await import(
+      '@/platform/updates/common/releaseStore'
+    )
     vi.mocked(useReleaseStore).mockReturnValue(mockReleaseStore as any)
   })
 

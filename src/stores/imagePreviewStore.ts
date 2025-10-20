@@ -1,7 +1,10 @@
+import { useTimeoutFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import {
+import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type {
   ExecutedWsMessage,
   ResultItem,
   ResultItemType
@@ -9,10 +12,11 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
+
+const PREVIEW_REVOKE_DELAY_MS = 400
 
 const createOutputs = (
   filenames: string[],
@@ -33,17 +37,36 @@ interface SetOutputOptions {
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  const { nodeIdToNodeLocatorId } = useWorkflowStore()
+  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
+  const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
+
+  function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
+    scheduledRevoke[locator]?.stop()
+
+    const { stop } = useTimeoutFn(() => {
+      delete scheduledRevoke[locator]
+      cb()
+    }, PREVIEW_REVOKE_DELAY_MS)
+
+    scheduledRevoke[locator] = { stop }
+  }
+
+  const nodeOutputs = ref<Record<string, ExecutedWsMessage['output']>>({})
+
+  // Reactive state for node preview images - mirrors app.nodePreviewImages
+  const nodePreviewImages = ref<Record<string, string[]>>(
+    app.nodePreviewImages || {}
+  )
 
   function getNodeOutputs(
     node: LGraphNode
   ): ExecutedWsMessage['output'] | undefined {
-    return app.nodeOutputs[nodeIdToNodeLocatorId(node.id)]
+    return app.nodeOutputs[nodeToNodeLocatorId(node)]
   }
 
   function getNodePreviews(node: LGraphNode): string[] | undefined {
-    return app.nodePreviewImages[nodeIdToNodeLocatorId(node.id)]
+    return app.nodePreviewImages[nodeToNodeLocatorId(node)]
   }
 
   /**
@@ -124,6 +147,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     app.nodeOutputs[nodeLocatorId] = outputs
+    nodeOutputs.value[nodeLocatorId] = outputs
   }
 
   function setNodeOutputs(
@@ -136,17 +160,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!filenames || !node) return
 
+    const locatorId = nodeToNodeLocatorId(node)
+    if (!locatorId) return
     if (typeof filenames === 'string') {
-      setNodeOutputsByNodeId(
-        node.id,
+      setOutputsByLocatorId(
+        locatorId,
         createOutputs([filenames], folder, isAnimated)
       )
     } else if (!Array.isArray(filenames)) {
-      setNodeOutputsByNodeId(node.id, filenames)
+      setOutputsByLocatorId(locatorId, filenames)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
       if (!resultItems?.images?.length) return
-      setNodeOutputsByNodeId(node.id, resultItems)
+      setOutputsByLocatorId(locatorId, resultItems)
     }
   }
 
@@ -171,26 +197,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   /**
-   * Set node outputs by node ID.
-   * Uses the current graph context to create the appropriate NodeLocatorId.
-   *
-   * @param nodeId - The node ID
-   * @param outputs - The outputs to store
-   * @param options - Options for setting outputs
-   * @param options.merge - If true, merge with existing outputs (arrays are concatenated)
-   */
-  function setNodeOutputsByNodeId(
-    nodeId: string | number,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
-    options: SetOutputOptions = {}
-  ) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
-    if (!nodeLocatorId) return
-
-    setOutputsByLocatorId(nodeLocatorId, outputs, options)
-  }
-
-  /**
    * Set node preview images by execution ID (hierarchical ID from backend).
    * Converts the execution ID to a NodeLocatorId before storing.
    *
@@ -203,8 +209,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(executionId)
     if (!nodeLocatorId) return
-
+    if (scheduledRevoke[nodeLocatorId]) {
+      scheduledRevoke[nodeLocatorId].stop()
+      delete scheduledRevoke[nodeLocatorId]
+    }
     app.nodePreviewImages[nodeLocatorId] = previewImages
+    nodePreviewImages.value[nodeLocatorId] = previewImages
   }
 
   /**
@@ -219,7 +229,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     previewImages: string[]
   ) {
     const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
+    if (scheduledRevoke[nodeLocatorId]) {
+      scheduledRevoke[nodeLocatorId].stop()
+      delete scheduledRevoke[nodeLocatorId]
+    }
     app.nodePreviewImages[nodeLocatorId] = previewImages
+    nodePreviewImages.value[nodeLocatorId] = previewImages
   }
 
   /**
@@ -231,8 +246,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function revokePreviewsByExecutionId(executionId: string) {
     const nodeLocatorId = executionIdToNodeLocatorId(executionId)
     if (!nodeLocatorId) return
-
-    revokePreviewsByLocatorId(nodeLocatorId)
+    scheduleRevoke(nodeLocatorId, () =>
+      revokePreviewsByLocatorId(nodeLocatorId)
+    )
   }
 
   /**
@@ -250,6 +266,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     delete app.nodePreviewImages[nodeLocatorId]
+    delete nodePreviewImages.value[nodeLocatorId]
   }
 
   /**
@@ -266,6 +283,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       }
     }
     app.nodePreviewImages = {}
+    nodePreviewImages.value = {}
   }
 
   /**
@@ -282,18 +300,87 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
+  /**
+   * Remove node outputs for a specific node
+   * Clears both outputs and preview images
+   */
+  function removeNodeOutputs(nodeId: number | string) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
+    if (!nodeLocatorId) return false
+
+    // Clear from app.nodeOutputs
+    const hadOutputs = !!app.nodeOutputs[nodeLocatorId]
+    delete app.nodeOutputs[nodeLocatorId]
+
+    // Clear from reactive state
+    delete nodeOutputs.value[nodeLocatorId]
+
+    // Clear preview images
+    if (app.nodePreviewImages[nodeLocatorId]) {
+      delete app.nodePreviewImages[nodeLocatorId]
+      delete nodePreviewImages.value[nodeLocatorId]
+    }
+
+    return hadOutputs
+  }
+
+  function restoreOutputs(
+    outputs: Record<string, ExecutedWsMessage['output']>
+  ) {
+    app.nodeOutputs = outputs
+    nodeOutputs.value = outputs
+  }
+
+  function updateNodeImages(node: LGraphNode) {
+    if (!node.images?.length) return
+
+    const nodeLocatorId = nodeIdToNodeLocatorId(node.id)
+
+    if (nodeLocatorId) {
+      const existingOutputs = app.nodeOutputs[nodeLocatorId]
+
+      if (existingOutputs) {
+        const updatedOutputs = {
+          ...existingOutputs,
+          images: node.images
+        }
+
+        app.nodeOutputs[nodeLocatorId] = updatedOutputs
+        nodeOutputs.value[nodeLocatorId] = updatedOutputs
+      }
+    }
+  }
+
+  function resetAllOutputsAndPreviews() {
+    app.nodeOutputs = {}
+    nodeOutputs.value = {}
+    revokeAllPreviews()
+  }
+
   return {
+    // Getters
     getNodeOutputs,
     getNodeImageUrls,
     getNodePreviews,
+    getPreviewParam,
+
+    // Setters
     setNodeOutputs,
     setNodeOutputsByExecutionId,
-    setNodeOutputsByNodeId,
     setNodePreviewsByExecutionId,
     setNodePreviewsByNodeId,
+    updateNodeImages,
+
+    // Cleanup
     revokePreviewsByExecutionId,
     revokeAllPreviews,
     revokeSubgraphPreviews,
-    getPreviewParam
+    removeNodeOutputs,
+    restoreOutputs,
+    resetAllOutputsAndPreviews,
+
+    // State
+    nodeOutputs,
+    nodePreviewImages
   }
 })

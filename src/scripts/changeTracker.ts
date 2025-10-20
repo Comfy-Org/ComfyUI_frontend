@@ -3,11 +3,15 @@ import * as jsondiffpatch from 'jsondiffpatch'
 import log from 'loglevel'
 
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 import { api } from './api'
 import type { ComfyApp } from './app'
@@ -83,7 +87,7 @@ export class ChangeTracker {
       app.canvas.ds.offset = this.ds.offset
     }
     if (this.nodeOutputs) {
-      app.nodeOutputs = this.nodeOutputs
+      useNodeOutputStore().restoreOutputs(this.nodeOutputs)
     }
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
