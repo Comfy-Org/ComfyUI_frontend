@@ -27,7 +27,7 @@
       class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xxs)]"
     >
       <div
-        class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px]"
+        class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
       >
         <slot name="icon">
           <i v-if="iconName" :class="[iconName, 'size-4']" />

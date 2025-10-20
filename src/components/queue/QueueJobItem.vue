@@ -26,7 +26,7 @@
     >
       <template #icon>
         <div
-          class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-[6px]"
+          class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
         >
           <img
             v-if="iconImageUrl"
