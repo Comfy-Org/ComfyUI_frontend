@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # Run Knip with cache via package script
 pnpm knip 1>&2
