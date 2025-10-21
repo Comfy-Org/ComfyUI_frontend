@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -71,11 +72,17 @@ const createMouseEvent = (
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
     // Reset layout store state between tests
     const { layoutStore } = await import(
       '@/renderer/core/layout/store/layoutStore'
     )
     layoutStore.isDraggingVueNodes.value = false
+    const { useCanvasStore } = await import(
+      '@/renderer/core/canvas/canvasStore'
+    )
+    const canvasStore = useCanvasStore()
+    canvasStore.setVueNodePointerInteractionsDisabled(false)
   })
 
   it('should only start drag on left-click', async () => {
