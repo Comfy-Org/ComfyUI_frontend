@@ -21,8 +21,6 @@ function useVueNodeLifecycleIndividual() {
 
   const { startSync } = useLayoutSync()
 
-  // const { fixOverlaps } = useFixVueNodeOverlap()
-
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
     const activeGraph = comfyApp.canvas?.graph
