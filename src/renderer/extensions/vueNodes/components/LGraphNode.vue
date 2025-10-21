@@ -108,12 +108,15 @@
       </div>
     </template>
 
-    <!-- Resize handle -->
-    <div
-      v-if="!isCollapsed"
-      class="absolute right-0 bottom-0 h-3 w-3 cursor-se-resize opacity-0 transition-opacity duration-200 hover:bg-white hover:opacity-20"
-      @pointerdown.stop="startResize"
-    />
+    <!-- Resize handles -->
+    <template v-if="!isCollapsed">
+      <div
+        v-for="handle in cornerResizeHandles"
+        :key="handle.id"
+        :class="cn(baseResizeHandleClasses, handle.classes)"
+        @pointerdown.stop="handleResizePointerDown(handle.direction)($event)"
+      />
+    </template>
   </div>
 </template>
 
@@ -147,7 +150,9 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useNodeResize } from '../composables/useNodeResize'
+import { cornerResizeHandles } from '../interactions/resize/resizeHandlePresets'
+import type { ResizeHandleDirection } from '../interactions/resize/resizeMath'
+import { useNodeResize } from '../interactions/resize/useNodeResize'
 import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
@@ -243,8 +248,12 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-// Use layout system for node position and dragging
-const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+const {
+  position,
+  size,
+  zIndex,
+  moveTo: moveNodeTo
+} = useNodeLayout(() => nodeData.id)
 const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
@@ -282,18 +291,38 @@ onMounted(() => {
   }
 })
 
+const baseResizeHandleClasses =
+  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+const POSITION_EPSILON = 0.01
+
 const { startResize } = useNodeResize(
-  (newSize, element) => {
-    // Apply size directly to DOM element - ResizeObserver will pick this up
+  (result, element) => {
     if (isCollapsed.value) return
 
-    element.style.width = `${newSize.width}px`
-    element.style.height = `${newSize.height}px`
+    // Apply size directly to DOM element - ResizeObserver will pick this up
+    element.style.width = `${result.size.width}px`
+    element.style.height = `${result.size.height}px`
+
+    const currentPosition = position.value
+    const deltaX = Math.abs(result.position.x - currentPosition.x)
+    const deltaY = Math.abs(result.position.y - currentPosition.y)
+
+    if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
+      moveNodeTo(result.position)
+    }
   },
   {
     transformState
   }
 )
+
+const handleResizePointerDown = (direction: ResizeHandleDirection) => {
+  return (event: PointerEvent) => {
+    if (nodeData.flags?.pinned) return
+
+    startResize(event, direction, { ...position.value })
+  }
+}
 
 whenever(isCollapsed, () => {
   const element = nodeContainerRef.value
