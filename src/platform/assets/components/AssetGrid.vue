@@ -37,12 +37,12 @@
     <!-- Loading state -->
     <div
       v-if="loading"
-      class="col-span-full flex items-center justify-center py-16"
+      class="col-span-full flex items-center justify-center py-20"
     >
       <i
         class="icon-[lucide--loader]"
         :class="
-          cn('size-6 animate-spin', 'text-stone-300 dark-theme:text-stone-200')
+          cn('size-12 animate-spin', 'text-stone-300 dark-theme:text-stone-200')
         "
       />
     </div>
