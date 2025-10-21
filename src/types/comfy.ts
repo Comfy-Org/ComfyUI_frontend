@@ -197,9 +197,14 @@ export interface ComfyExtension {
   ): Promise<void> | void
 
   /**
+<<<<<<< HEAD
    * Fired whenever authentication resolves, providing the anonymized user id..
    * Extensions can register at any time and will receive the latest value immediately.
    * This is an experimental API and may be changed or removed in the future.
+=======
+   * Fired whenever authentication resolves, providing the user id.
+   * Extensions can register at any time and will receive the latest value immediately.
+>>>>>>> 775c856bf (port user ID expose hook from 6786d8e to cloud)
    */
   onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
 

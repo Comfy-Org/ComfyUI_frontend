@@ -34,8 +34,19 @@ export const useCurrentUser = () => {
     return null
   })
 
+<<<<<<< HEAD
   const onUserResolved = (callback: (user: AuthUserInfo) => void) =>
     whenever(resolvedUserInfo, callback, { immediate: true })
+=======
+  const onUserResolved = (callback: (user: AuthUserInfo) => void) => {
+    if (resolvedUserInfo.value) {
+      callback(resolvedUserInfo.value)
+    }
+
+    const stop = whenever(resolvedUserInfo, callback)
+    return () => stop()
+  }
+>>>>>>> 775c856bf (port user ID expose hook from 6786d8e to cloud)
 
   const userDisplayName = computed(() => {
     if (isApiKeyLogin.value) {
@@ -132,7 +143,10 @@ export const useCurrentUser = () => {
     resolvedUserInfo,
     handleSignOut,
     handleSignIn,
+<<<<<<< HEAD
     handleDeleteAccount,
+=======
+>>>>>>> 775c856bf (port user ID expose hook from 6786d8e to cloud)
     onUserResolved
   }
 }
