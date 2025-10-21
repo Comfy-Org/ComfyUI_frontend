@@ -14,6 +14,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '../../lib/litegraph/src/types/widgets'
 
 export interface SafeWidgetData {
   name: string
@@ -23,6 +24,11 @@ export interface SafeWidgetData {
   options?: Record<string, unknown>
   callback?: ((value: unknown) => void) | undefined
   spec?: InputSpec
+}
+
+type NumericWidgetOptions = Record<string, unknown> & {
+  step?: number
+  step2?: number
 }
 
 export interface VueNodeData {
@@ -73,6 +79,25 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
         ? String(node.graph.id)
         : null
+    const cloneWidgetOptions = (widget: IBaseWidget) => {
+      const options = widget.options
+        ? ({ ...widget.options } as NumericWidgetOptions)
+        : undefined
+      if (
+        options &&
+        (widget.type === 'number' || widget.type === 'slider') &&
+        options.step2 === undefined &&
+        typeof options.step === 'number'
+      ) {
+        const baseStep = Number.isFinite(options.step)
+          ? (options.step as number)
+          : 10
+        const legacyStep = baseStep === 0 ? 10 : baseStep
+        options.step2 = legacyStep * 0.1
+      }
+      return options
+    }
+
     // Extract safe widget data
     const safeWidgets = node.widgets?.map((widget) => {
       try {
@@ -94,9 +119,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         return {
           name: widget.name,
           type: widget.type,
-          value: value,
+          value,
           label: widget.label,
-          options: widget.options ? { ...widget.options } : undefined,
+          options: cloneWidgetOptions(widget),
           callback: widget.callback,
           spec
         }
