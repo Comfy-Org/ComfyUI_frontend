@@ -150,7 +150,6 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import { cornerResizeHandles } from '../interactions/resize/resizeHandlePresets'
 import type { ResizeHandleDirection } from '../interactions/resize/resizeMath'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
 import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
@@ -294,6 +293,33 @@ onMounted(() => {
 const baseResizeHandleClasses =
   'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 const POSITION_EPSILON = 0.01
+
+const cornerResizeHandles = [
+  {
+    id: 'se',
+    direction: { horizontal: 'right', vertical: 'bottom' } as const,
+    classes: 'right-0 bottom-0 cursor-se-resize'
+  },
+  {
+    id: 'ne',
+    direction: { horizontal: 'right', vertical: 'top' } as const,
+    classes: 'right-0 top-0 cursor-ne-resize'
+  },
+  {
+    id: 'sw',
+    direction: { horizontal: 'left', vertical: 'bottom' } as const,
+    classes: 'left-0 bottom-0 cursor-sw-resize'
+  },
+  {
+    id: 'nw',
+    direction: { horizontal: 'left', vertical: 'top' } as const,
+    classes: 'left-0 top-0 cursor-nw-resize'
+  }
+] satisfies Array<{
+  id: string
+  direction: ResizeHandleDirection
+  classes: string
+}>
 
 const { startResize } = useNodeResize(
   (result, element) => {
