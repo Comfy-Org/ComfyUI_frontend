@@ -39,7 +39,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import QueueJobItem from '@/components/queue/QueueJobItem.vue'
+import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
 import type { JobState } from '@/types/queue'
 
 type JobListItem = {

@@ -77,10 +77,10 @@ import { useI18n } from 'vue-i18n'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 
-import JobContextMenu from './JobContextMenu.vue'
-import JobFiltersBar from './JobFiltersBar.vue'
-import JobGroupsList from './JobGroupsList.vue'
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
+import JobContextMenu from './job/JobContextMenu.vue'
+import JobFiltersBar from './job/JobFiltersBar.vue'
+import JobGroupsList from './job/JobGroupsList.vue'
 
 type JobTab = 'All' | 'Completed' | 'Failed'
 type JobGroup = { key: string; label: string; items: JobListItem[] }

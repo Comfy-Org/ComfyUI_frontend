@@ -62,9 +62,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import QueueOverlayActive from '@/components/queue/overlay/QueueOverlayActive.vue'
-import QueueOverlayEmpty from '@/components/queue/overlay/QueueOverlayEmpty.vue'
-import QueueOverlayExpanded from '@/components/queue/overlay/QueueOverlayExpanded.vue'
+import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
+import QueueOverlayEmpty from '@/components/queue/QueueOverlayEmpty.vue'
+import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'

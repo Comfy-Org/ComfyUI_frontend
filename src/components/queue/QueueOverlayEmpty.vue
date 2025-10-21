@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import CompletionSummaryBanner from '@/components/queue/overlay/CompletionSummaryBanner.vue'
+import CompletionSummaryBanner from '@/components/queue/CompletionSummaryBanner.vue'
 
 type CompletionSummary = {
   mode: 'allSuccess' | 'mixed' | 'allFailed'

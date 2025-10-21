@@ -166,8 +166,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import JobDetailsPopover from '@/components/queue/overlay/JobDetailsPopover.vue'
-import QueueAssetPreview from '@/components/queue/overlay/QueueAssetPreview.vue'
+import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
+import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
 import type { JobState } from '@/types/queue'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 import { iconForJobState, shouldShowClear } from '@/utils/queueUtil'
