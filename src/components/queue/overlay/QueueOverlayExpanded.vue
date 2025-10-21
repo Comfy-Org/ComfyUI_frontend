@@ -13,7 +13,7 @@
       class="flex items-center justify-between px-[var(--spacing-spacing-sm)]"
     >
       <button
-        class="inline-flex items-center gap-[var(--spacing-spacing-xs)] rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+        class="inline-flex grow items-center justify-center gap-[var(--spacing-spacing-xxs)] rounded border-0 bg-[var(--color-charcoal-500)] p-[var(--spacing-spacing-xs)] text-center font-inter text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
         @click="$emit('showAssets')"
       >
