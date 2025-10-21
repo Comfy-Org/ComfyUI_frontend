@@ -168,7 +168,6 @@ import { useI18n } from 'vue-i18n'
 
 import JobDetailsPopover from '@/components/queue/overlay/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/overlay/QueueAssetPreview.vue'
-import { useQueuePopoverStore } from '@/stores/queuePopoverStore'
 import type { JobState } from '@/types/queue'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 import { iconForJobState, shouldShowClear } from '@/utils/queueUtil'
@@ -187,6 +186,7 @@ const props = withDefaults(
     progressTotalPercent?: number
     progressCurrentPercent?: number
     runningNodeName?: string
+    activeDetailsId?: string | null
   }>(),
   {
     workflowId: undefined,
@@ -197,7 +197,8 @@ const props = withDefaults(
     showMenu: undefined,
     progressTotalPercent: undefined,
     progressCurrentPercent: undefined,
-    runningNodeName: undefined
+    runningNodeName: undefined,
+    activeDetailsId: null
   }
 )
 
@@ -205,40 +206,20 @@ const emit = defineEmits<{
   (e: 'clear'): void
   (e: 'menu', event: Event): void
   (e: 'view'): void
+  (e: 'details-enter', jobId: string): void
+  (e: 'details-leave', jobId: string): void
 }>()
 
 const { t, locale } = useI18n()
 
-const popoverStore = useQueuePopoverStore()
-const showDetails = computed(
-  () => popoverStore.activeJobDetailsId === props.jobId
-)
-const hideTimer = ref<number | null>(null)
-const clearHideTimer = () => {
-  if (hideTimer.value !== null) {
-    clearTimeout(hideTimer.value)
-    hideTimer.value = null
-  }
-}
-const openDetails = () => {
-  clearHideTimer()
-  popoverStore.setActive(props.jobId)
-}
-const scheduleHideDetails = () => {
-  clearHideTimer()
-  hideTimer.value = window.setTimeout(() => {
-    if (popoverStore.activeJobDetailsId === props.jobId) {
-      popoverStore.clear()
-    }
-    hideTimer.value = null
-  }, 150)
-}
+const showDetails = computed(() => props.activeDetailsId === props.jobId)
+
 const onRowEnter = () => {
-  if (!isPreviewVisible.value) openDetails()
+  if (!isPreviewVisible.value) emit('details-enter', props.jobId)
 }
-const onRowLeave = scheduleHideDetails
-const onPopoverEnter = openDetails
-const onPopoverLeave = scheduleHideDetails
+const onRowLeave = () => emit('details-leave', props.jobId)
+const onPopoverEnter = () => emit('details-enter', props.jobId)
+const onPopoverLeave = () => emit('details-leave', props.jobId)
 
 const isPreviewVisible = ref(false)
 const previewHideTimer = ref<number | null>(null)

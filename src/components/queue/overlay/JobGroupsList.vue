@@ -25,15 +25,20 @@
         :progress-total-percent="ji.progressTotalPercent"
         :progress-current-percent="ji.progressCurrentPercent"
         :running-node-name="ji.runningNodeName"
+        :active-details-id="activeDetailsId"
         @clear="$emit('clearItem', ji)"
         @menu="(ev) => $emit('menu', ji, ev)"
         @view="$emit('viewItem', ji)"
+        @details-enter="onDetailsEnter"
+        @details-leave="onDetailsLeave"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
 import type { JobState } from '@/types/queue'
 
@@ -59,4 +64,24 @@ defineEmits<{
   (e: 'menu', item: any, ev: Event): void
   (e: 'viewItem', item: any): void
 }>()
+
+const activeDetailsId = ref<string | null>(null)
+const hideTimer = ref<number | null>(null)
+const clearHideTimer = () => {
+  if (hideTimer.value !== null) {
+    clearTimeout(hideTimer.value)
+    hideTimer.value = null
+  }
+}
+const onDetailsEnter = (jobId: string) => {
+  clearHideTimer()
+  activeDetailsId.value = jobId
+}
+const onDetailsLeave = (jobId: string) => {
+  clearHideTimer()
+  hideTimer.value = window.setTimeout(() => {
+    if (activeDetailsId.value === jobId) activeDetailsId.value = null
+    hideTimer.value = null
+  }, 150)
+}
 </script>
