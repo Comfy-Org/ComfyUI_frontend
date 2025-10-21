@@ -6,7 +6,8 @@
           ref="imgRef"
           :src="imageUrl"
           :alt="name"
-          class="h-full w-full object-contain"
+          class="h-full w-full cursor-pointer object-contain"
+          @click="$emit('click')"
           @load="onImgLoad"
         />
         <div
@@ -46,6 +47,10 @@ defineProps<{
   imageUrl: string
   name: string
   timeLabel?: string
+}>()
+
+defineEmits<{
+  (e: 'click'): void
 }>()
 
 const imgRef = ref<HTMLImageElement | null>(null)
