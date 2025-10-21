@@ -1,3 +1,4 @@
+import type { LGraphCanvas } from './LGraphCanvas'
 import type { IContextMenuValue } from './interfaces'
 
 /**
@@ -6,14 +7,19 @@ import type { IContextMenuValue } from './interfaces'
  */
 const ENABLE_LEGACY_SUPPORT = true
 
-type AnyFunction = (...args: any[]) => any
+type ContextMenuValueProvider = (...args: unknown[]) => IContextMenuValue[]
 
 class LegacyMenuCompat {
-  private originalMethods = new Map<string, AnyFunction>()
+  private originalMethods = new Map<string, ContextMenuValueProvider>()
   private hasWarned = new Set<string>()
   private currentExtension: string | null = null
   private isExtracting = false
-  private wrapperMethods = new Map<string, AnyFunction>()
+  private readonly wrapperMethods = new Map<string, ContextMenuValueProvider>()
+  private readonly preWrapperMethods = new Map<
+    string,
+    ContextMenuValueProvider
+  >()
+  private readonly wrapperInstalled = new Map<string, boolean>()
 
   /**
    * Set the name of the extension that is currently being set up.
@@ -26,45 +32,47 @@ class LegacyMenuCompat {
 
   /**
    * Register a wrapper method that should NOT be treated as a legacy monkey-patch.
-   * This is for internal wrappers that add new API items.
    * @param methodName The method name
    * @param wrapperFn The wrapper function
+   * @param preWrapperFn The method that existed before the wrapper
+   * @param prototype The prototype to verify wrapper installation
    */
-  registerWrapper(methodName: string, wrapperFn: AnyFunction) {
+  registerWrapper(
+    methodName: keyof LGraphCanvas,
+    wrapperFn: ContextMenuValueProvider,
+    preWrapperFn: ContextMenuValueProvider,
+    prototype?: LGraphCanvas
+  ) {
     this.wrapperMethods.set(methodName, wrapperFn)
+    this.preWrapperMethods.set(methodName, preWrapperFn)
+    const isInstalled = prototype && prototype[methodName] === wrapperFn
+    this.wrapperInstalled.set(methodName, !!isInstalled)
   }
 
   /**
    * Install compatibility layer to detect monkey-patching
-   * @param prototype The prototype to install on (e.g., LGraphCanvas.prototype)
-   * @param methodName The method name to track (e.g., 'getCanvasMenuOptions')
+   * @param prototype The prototype to install on
+   * @param methodName The method name to track
    */
-  install(prototype: any, methodName: string) {
+  install(prototype: LGraphCanvas, methodName: keyof LGraphCanvas) {
     if (!ENABLE_LEGACY_SUPPORT) return
 
-    // Store original
     const originalMethod = prototype[methodName]
     this.originalMethods.set(methodName, originalMethod)
 
-    // Wrap with getter/setter to detect patches
     let currentImpl = originalMethod
 
     Object.defineProperty(prototype, methodName, {
       get() {
         return currentImpl
       },
-      set: (newImpl: AnyFunction) => {
-        // Log once per unique function
+      set: (newImpl: ContextMenuValueProvider) => {
         const fnKey = `${methodName}:${newImpl.toString().slice(0, 100)}`
-        if (!this.hasWarned.has(fnKey)) {
+        if (!this.hasWarned.has(fnKey) && this.currentExtension) {
           this.hasWarned.add(fnKey)
 
-          const extensionInfo = this.currentExtension
-            ? ` (Extension: "${this.currentExtension}")`
-            : ''
-
           console.warn(
-            `%c[DEPRECATED]%c Monkey-patching ${methodName} is deprecated.${extensionInfo}\n` +
+            `%c[DEPRECATED]%c Monkey-patching ${methodName} is deprecated. (Extension: "${this.currentExtension}")\n` +
               `Please use the new context menu API instead.\n\n` +
               `See: https://docs.comfy.org/custom-nodes/js/context-menu-migration`,
             'color: orange; font-weight: bold',
@@ -80,51 +88,52 @@ class LegacyMenuCompat {
   /**
    * Extract items that were added by legacy monkey patches
    * @param methodName The method name that was monkey-patched
-   * @param context The context to call methods with (e.g., canvas instance)
+   * @param context The context to call methods with
    * @param args Arguments to pass to the methods
    * @returns Array of menu items added by monkey patches
    */
   extractLegacyItems(
-    methodName: string,
-    context: any,
-    ...args: any[]
+    methodName: keyof LGraphCanvas,
+    context: LGraphCanvas,
+    ...args: unknown[]
   ): IContextMenuValue[] {
     if (!ENABLE_LEGACY_SUPPORT) return []
-
-    // Prevent infinite recursion - if we're already extracting, return empty
     if (this.isExtracting) return []
 
     const originalMethod = this.originalMethods.get(methodName)
     if (!originalMethod) return []
 
     try {
-      // Set flag to prevent infinite recursion
       this.isExtracting = true
 
-      // Get baseline from original
       const originalItems = originalMethod.apply(context, args) as
         | IContextMenuValue[]
         | undefined
       if (!originalItems) return []
 
-      // Get current method (potentially patched)
       const currentMethod = context.constructor.prototype[methodName]
       if (!currentMethod || currentMethod === originalMethod) return []
 
-      // If current method is a registered wrapper, don't extract items from it
-      // (the wrapper already handles new API items directly)
       const registeredWrapper = this.wrapperMethods.get(methodName)
       if (registeredWrapper && currentMethod === registeredWrapper) return []
 
-      // Get items from patched method
-      const patchedItems = currentMethod.apply(context, args) as
+      const preWrapperMethod = this.preWrapperMethods.get(methodName)
+      const wrapperWasInstalled = this.wrapperInstalled.get(methodName)
+
+      const shouldSkipWrapper =
+        preWrapperMethod &&
+        wrapperWasInstalled &&
+        currentMethod !== preWrapperMethod
+
+      const methodToCall = shouldSkipWrapper ? preWrapperMethod : currentMethod
+
+      const patchedItems = methodToCall.apply(context, args) as
         | IContextMenuValue[]
         | undefined
       if (!patchedItems) return []
 
-      // Return items that were added (simple slice approach)
       if (patchedItems.length > originalItems.length) {
-        return patchedItems.slice(originalItems.length)
+        return patchedItems.slice(originalItems.length) as IContextMenuValue[]
       }
 
       return []
@@ -132,7 +141,6 @@ class LegacyMenuCompat {
       console.error('[Context Menu Compat] Failed to extract legacy items:', e)
       return []
     } finally {
-      // Always reset the flag
       this.isExtracting = false
     }
   }

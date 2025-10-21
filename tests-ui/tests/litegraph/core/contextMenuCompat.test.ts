@@ -80,6 +80,7 @@ describe('contextMenuCompat', () => {
       const warnSpy = vi.spyOn(console, 'warn')
 
       legacyMenuCompat.install(LGraphCanvas.prototype, methodName)
+      legacyMenuCompat.setCurrentExtension('test.extension')
 
       const patchFunction = function (this: LGraphCanvas, ...args: any[]) {
         const items = (originalGetCanvasMenuOptions as any).apply(this, args)
@@ -284,11 +285,16 @@ describe('contextMenuCompat', () => {
         return items
       }
 
-      // Register the wrapper so it's not treated as a legacy patch
-      legacyMenuCompat.registerWrapper('getCanvasMenuOptions', wrapperMethod)
-
       // Set the wrapper as the current method
       LGraphCanvas.prototype.getCanvasMenuOptions = wrapperMethod
+
+      // Register the wrapper so it's not treated as a legacy patch
+      legacyMenuCompat.registerWrapper(
+        'getCanvasMenuOptions',
+        wrapperMethod,
+        originalMethod,
+        LGraphCanvas.prototype // Wrapper is installed
+      )
 
       // Extract legacy items - should return empty because current method is a registered wrapper
       const legacyItems = legacyMenuCompat.extractLegacyItems(
@@ -308,10 +314,16 @@ describe('contextMenuCompat', () => {
       legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
       // Register a wrapper (but don't set it as the current method)
+      const originalMethod = LGraphCanvas.prototype.getCanvasMenuOptions
       const wrapperMethod = function () {
         return [{ content: 'Wrapper Item', callback: () => {} }]
       }
-      legacyMenuCompat.registerWrapper('getCanvasMenuOptions', wrapperMethod)
+      legacyMenuCompat.registerWrapper(
+        'getCanvasMenuOptions',
+        wrapperMethod,
+        originalMethod
+        // NOT passing prototype, so it won't be marked as installed
+      )
 
       // Monkey-patch with a different function (legacy extension)
       const original = LGraphCanvas.prototype.getCanvasMenuOptions
