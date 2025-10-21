@@ -2069,6 +2069,45 @@
       "buttons": {
         "Close": "Close"
       }
+<<<<<<< HEAD
+=======
+    },
+    "waitlist": {
+      "title": "Cloud Waitlist",
+      "message": "You have been added to the waitlist. We will notify you when access is available."
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "instructions": "Enter your email address and we'll send you a link to reset your password.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "sendResetLink": "Send reset link",
+      "backToLogin": "Back to login",
+      "didntReceiveEmail": "Didn't receive an email? Contact us at",
+      "passwordResetSent": "Password reset email sent",
+      "passwordResetError": "Failed to send password reset email. Please try again.",
+      "emailRequired": "Email is required"
+    },
+    "privateBeta": {
+      "title": "Cloud is currently in private beta",
+      "desc": "Sign in to join the waitlist. We’ll notify you when it’s your turn. Already been notified? Sign in start using Cloud."
+    },
+    "start": {
+      "title": "start creating in seconds",
+      "desc": "Zero setup required. Works on any device.",
+      "explain": "Generate multiple outputs at once. Share workflows with ease.",
+      "learnAboutButton": "Learn about Cloud",
+      "wantToRun": "Want to run comfyUI locally instead?",
+      "download": "Download ComfyUI"
+    },
+    "checkingStatus": "Checking your account status...",
+    "retrying": "Retrying...",
+    "retry": "Try Again",
+    "authTimeout": {
+      "title": "Connection Taking Too Long",
+      "message": "We're having trouble connecting to ComfyUI Cloud. This could be due to a slow connection or temporary service issue.",
+      "restart": "Sign Out & Try Again"
+>>>>>>> 18b3b11b9 (feat: add error handling and timeout recovery to cloud onboarding (#5573))
     }
   }
 }
