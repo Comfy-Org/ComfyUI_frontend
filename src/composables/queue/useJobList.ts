@@ -24,7 +24,7 @@ import {
 
 /** Tabs for job list filtering */
 export const jobTabs = ['All', 'Completed', 'Failed'] as const
-export type JobTab = (typeof jobTabs)[number]
+type JobTab = (typeof jobTabs)[number]
 
 /**
  * UI item in the job list. Mirrors data previously prepared inline.
@@ -43,7 +43,7 @@ export type JobListItem = {
   runningNodeName?: string
 }
 
-export type JobGroup = {
+type JobGroup = {
   key: string
   label: string
   items: JobListItem[]
