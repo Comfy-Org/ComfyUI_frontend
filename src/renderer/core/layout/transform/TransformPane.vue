@@ -45,8 +45,8 @@ const { isLOD } = useLOD(camera)
 
 const canvasElement = computed(() => props.canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
-  settleDelay: 200,
-  trackPan: true
+  settleDelay: 512,
+  trackPan: false // panning doesn't require a reflow because there's no pixel-stretching
 })
 
 provide(TransformStateKey, {
