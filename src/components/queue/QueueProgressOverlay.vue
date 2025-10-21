@@ -387,7 +387,19 @@
 
       <!-- Empty State -->
       <div v-else class="pointer-events-auto">
+        <CompletionSummaryBanner
+          v-if="completionSummary"
+          :mode="completionSummary.mode"
+          :completed-count="completionSummary.completedCount"
+          :failed-count="completionSummary.failedCount"
+          :thumbnail-urls="completionSummary.thumbnailUrls"
+          :aria-label="
+            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+          "
+          @click="onSummaryClick"
+        />
         <button
+          v-else
           type="button"
           class="group flex h-10 w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xss))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] py-[var(--spacing-spacing-xss)] pr-[var(--spacing-spacing-xs)] pl-[calc(var(--spacing-spacing-xs)*2)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
           :aria-label="
@@ -462,7 +474,9 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
+import CompletionSummaryBanner from '@/components/queue/overlay/CompletionSummaryBanner.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -540,6 +554,7 @@ const showBackground = computed(
 )
 
 const isVisible = computed(() => !isFullyInvisible.value)
+const { summary: completionSummary, clearSummary } = useCompletionSummary()
 
 const currentNodeName = computed(() => {
   const node = executionStore.executingNode
@@ -912,6 +927,11 @@ const closeExpanded = () => {
 
 const viewAllJobs = async () => {
   isExpanded.value = true
+}
+
+const onSummaryClick = () => {
+  openExpandedFromEmpty()
+  clearSummary()
 }
 
 /** Opens the Queue sidebar */
