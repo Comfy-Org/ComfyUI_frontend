@@ -23,17 +23,11 @@ import type {
   InputSpec
 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
+import type { GlobalSubgraphData } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
-
-//FIXME: update with full information returned. Move into api
-type GlobalSubgraphResponse = {
-  name: string
-  info: { node_pack: string }
-  data: string
-}
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -163,15 +157,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       subgraphDefCache.value.set(name, nodeDef)
       subgraphCache[name] = bp
     }
-    //FIXME: reuse existing version in workflowstore
     const getUnconflictedPath = (basePath: string): string => {
       return basePath
     }
     async function loadInstalledBlueprints() {
-      const resp = await api.fetchApi('/global_subgraphs')
-      const installedSubs: Record<string, GlobalSubgraphResponse> =
-        await resp.json()
-      for (const [k, v] of Object.entries(installedSubs)) {
+      async function loadGlobalBlueprint([k, v]: [string, GlobalSubgraphData]) {
         const path = getUnconflictedPath(
           SubgraphBlueprint.basePath + v.name + '.json'
         )
@@ -180,11 +170,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
           modified: Date.now(),
           size: -1
         })
-        blueprint.originalContent = blueprint.content = v.data
+        blueprint.originalContent = blueprint.content = await v.data
         blueprint.filename = v.name
         useWorkflowStore().attachWorkflow(blueprint)
         const loaded = await blueprint.load()
-        //TODO: Add more overrides?
         const nodeDef = convertToNodeDef(loaded, {
           python_module: v.info.node_pack,
           display_name: v.name,
@@ -193,6 +182,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         subgraphDefCache.value.set(k, nodeDef)
         subgraphCache[k] = loaded
       }
+      const subgraphs = await api.getGlobalSubgraphs()
+      await Promise.allSettled(
+        Object.entries(subgraphs).map(loadGlobalBlueprint)
+      )
     }
 
     const userSubs = (

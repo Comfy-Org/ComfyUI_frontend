@@ -200,6 +200,12 @@ type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
 type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
+export type GlobalSubgraphData = {
+  name: string
+  info: { node_pack: string }
+  data: string | Promise<string>
+}
+
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
@@ -1020,6 +1026,20 @@ export class ComfyApi extends EventTarget {
       )
     }
     return resp.json()
+  }
+
+  async getGlobalSubgraphData(id: string): Promise<string> {
+    const resp = await api.fetchApi('/global_subgraphs/' + id)
+    const subgraph: GlobalSubgraphData = await resp.json()
+    return subgraph.data
+  }
+  async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
+    const resp = await api.fetchApi('/global_subgraphs')
+    const subgraphs: Record<string, GlobalSubgraphData> = await resp.json()
+    for (const [k, v] of Object.entries(subgraphs)) {
+      if (!v.data) v.data = this.getGlobalSubgraphData(k)
+    }
+    return subgraphs
   }
 
   async getLogs(): Promise<string> {
