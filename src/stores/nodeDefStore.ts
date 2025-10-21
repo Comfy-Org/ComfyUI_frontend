@@ -342,7 +342,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-    // Frontend-only nodes don't have nodeDef
     const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
     const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
