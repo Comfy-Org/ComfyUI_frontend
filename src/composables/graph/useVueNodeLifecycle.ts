@@ -25,8 +25,6 @@ function useVueNodeLifecycleIndividual() {
   const linkSyncManager = useLinkLayoutSync()
   const slotSyncManager = useSlotLayoutSync()
 
-  // const { fixOverlaps } = useFixVueNodeOverlap()
-
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
     const activeGraph = comfyApp.canvas?.graph
@@ -91,6 +89,7 @@ function useVueNodeLifecycleIndividual() {
       if (enabled) {
         initializeNodeManager()
         // Run the overlap fix for vue nodes
+        // TODO: find a better hook that reliably
         setTimeout(() => {
           useFixVueNodeOverlap()
         }, 3000)

@@ -64,7 +64,7 @@ export function useFixVueNodeOverlap() {
 
   if (scaledLgBounds)
     canvas.ds.fitToBounds(scaledLgBounds, {
-      zoom: 0.6
+      zoom: 0.6 //Makes it so the fit to view is slightly zoomed out and not edge to edge.
     })
 
   function scalePosFromCenter(pos: Point): {
