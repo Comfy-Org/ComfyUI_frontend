@@ -42,6 +42,7 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface QueuePromptRequestBody {
@@ -317,7 +318,27 @@ export class ComfyApi extends EventTarget {
     return this.api_base + route
   }
 
-  fetchApi(route: string, options?: RequestInit) {
+  /**
+   * Waits for Firebase auth to be initialized before proceeding
+   */
+  async #waitForAuthInitialization(): Promise<void> {
+    const authStore = useFirebaseAuthStore()
+
+    if (authStore.isInitialized) {
+      return
+    }
+
+    return new Promise<void>((resolve) => {
+      const unwatch = authStore.$subscribe((_, state) => {
+        if (state.isInitialized) {
+          unwatch()
+          resolve()
+        }
+      })
+    })
+  }
+
+  async fetchApi(route: string, options?: RequestInit) {
     if (!options) {
       options = {}
     }
@@ -326,6 +347,30 @@ export class ComfyApi extends EventTarget {
     }
     if (!options.cache) {
       options.cache = 'no-cache'
+    }
+
+    // Wait for Firebase auth to be initialized before making any API request
+    await this.#waitForAuthInitialization()
+
+    // Add Firebase JWT token if user is logged in
+    try {
+      const authHeader = await useFirebaseAuthStore().getAuthHeader()
+      if (authHeader) {
+        if (Array.isArray(options.headers)) {
+          for (const [key, value] of Object.entries(authHeader)) {
+            options.headers.push([key, value])
+          }
+        } else if (options.headers instanceof Headers) {
+          for (const [key, value] of Object.entries(authHeader)) {
+            options.headers.set(key, value)
+          }
+        } else {
+          Object.assign(options.headers, authHeader)
+        }
+      }
+    } catch (error) {
+      // Silently ignore auth errors to avoid breaking API calls
+      console.warn('Failed to get auth header:', error)
     }
 
     if (Array.isArray(options.headers)) {
@@ -402,19 +447,39 @@ export class ComfyApi extends EventTarget {
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
-  #createSocket(isReconnect?: boolean) {
+  async #createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
 
     let opened = false
     let existingSession = window.name
-    if (existingSession) {
-      existingSession = '?clientId=' + existingSession
+
+    // Get auth token if available
+    let authToken: string | undefined
+    try {
+      authToken = await useFirebaseAuthStore().getIdToken()
+    } catch (error) {
+      // Continue without auth token if there's an error
+      console.warn('Could not get auth token for WebSocket connection:', error)
     }
-    this.socket = new WebSocket(
-      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws${existingSession}`
-    )
+
+    // Build WebSocket URL with query parameters
+    let wsUrl = `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws`
+    const params = new URLSearchParams()
+
+    if (existingSession) {
+      params.set('clientId', existingSession)
+    }
+    if (authToken) {
+      params.set('token', authToken)
+    }
+
+    if (params.toString()) {
+      wsUrl += '?' + params.toString()
+    }
+
+    this.socket = new WebSocket(wsUrl)
     this.socket.binaryType = 'arraybuffer'
 
     this.socket.addEventListener('open', () => {
@@ -441,9 +506,9 @@ export class ComfyApi extends EventTarget {
     })
 
     this.socket.addEventListener('close', () => {
-      setTimeout(() => {
+      setTimeout(async () => {
         this.socket = null
-        this.#createSocket(true)
+        await this.#createSocket(true)
       }, 300)
       if (opened) {
         this.dispatchCustomEvent('status', null)

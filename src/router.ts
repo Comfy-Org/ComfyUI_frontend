@@ -4,10 +4,12 @@ import {
   createWebHistory
 } from 'vue-router'
 
+import { isCloud } from '@/platform/distribution/types'
+import { useDialogService } from '@/services/dialogService'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useUserStore } from '@/stores/userStore'
+import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
-
-import { useUserStore } from './stores/userStore'
-import { isElectron } from './utils/envUtil'
 
 const isFileProtocol = window.location.protocol === 'file:'
 const basePath = isElectron() ? '/' : window.location.pathname
@@ -55,5 +57,56 @@ const router = createRouter({
     }
   }
 })
+
+if (isCloud) {
+  // Global authentication guard
+  router.beforeEach(async (_to, _from, next) => {
+    const authStore = useFirebaseAuthStore()
+
+    // Wait for Firebase auth to initialize with timeout
+    if (!authStore.isInitialized) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            unwatch()
+            reject(new Error('Authentication initialization timeout'))
+          }, 16000) // 16 second timeout
+
+          const unwatch = authStore.$subscribe((_, state) => {
+            if (state.isInitialized) {
+              clearTimeout(timeout)
+              unwatch()
+              resolve()
+            }
+          })
+        })
+      } catch (error) {
+        console.error('Auth initialization failed:', error)
+        // Navigate to auth timeout recovery page
+        return next({ name: 'cloud-auth-timeout' })
+      }
+    }
+
+    // Check if user is authenticated (Firebase or API key)
+    const authHeader = await authStore.getAuthHeader()
+
+    if (!authHeader) {
+      // User is not authenticated, show sign-in dialog
+      const dialogService = useDialogService()
+      const loginSuccess = await dialogService.showSignInDialog()
+
+      if (loginSuccess) {
+        // After successful login, proceed to the intended route
+        next()
+      } else {
+        // User cancelled login, stay on current page or redirect to home
+        next(false)
+      }
+    } else {
+      // User is authenticated, proceed
+      next()
+    }
+  })
+}
 
 export default router

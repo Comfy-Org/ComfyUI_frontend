@@ -1,10 +1,12 @@
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -18,6 +20,7 @@ import { usdToMicros } from '@/utils/formatUtil'
 export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
+  const router = useRouter()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -54,6 +57,8 @@ export const useFirebaseAuthActions = () => {
       detail: t('auth.signOut.successDetail'),
       life: 5000
     })
+
+    if (isCloud) await router.push({ name: 'cloud-login' })
   }, reportError)
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
