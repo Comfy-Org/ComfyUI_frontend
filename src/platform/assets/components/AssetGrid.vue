@@ -23,7 +23,7 @@
       :class="
         cn(
           'col-span-full flex flex-col items-center justify-center py-16',
-          'text-stone-300 dark-theme:text-stone-200'
+          'text-text-secondary'
         )
       "
     >
@@ -41,9 +41,7 @@
     >
       <i
         class="icon-[lucide--loader]"
-        :class="
-          cn('size-6 animate-spin', 'text-stone-300 dark-theme:text-stone-200')
-        "
+        :class="cn('size-6 animate-spin', 'text-text-secondary')"
       />
     </div>
   </div>

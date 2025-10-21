@@ -20,7 +20,7 @@
         :tabs="tabs"
       />
       <div
-        class="flex-1 overflow-auto bg-gray-50 dark-theme:bg-neutral-900"
+        class="flex-1 overflow-auto bg-modal-background"
         :class="{
           'transition-all duration-300': isSmallScreen
         }"
@@ -51,9 +51,7 @@
               type="transparent"
               @click="dismissWarningBanner"
             >
-              <i
-                class="pi pi-times text-xs text-neutral-900 dark-theme:text-white"
-              ></i>
+              <i class="pi pi-times text-xs text-text-primary"></i>
             </IconButton>
           </div>
           <RegistrySearchBar

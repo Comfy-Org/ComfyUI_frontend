@@ -4,9 +4,7 @@
     <div class="flex h-full w-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
-        <p
-          class="m-0 mb-4 text-sm leading-4 text-neutral-800 dark-theme:text-white"
-        >
+        <p class="m-0 mb-4 text-sm leading-4 text-text-primary">
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
@@ -16,7 +14,7 @@
       <!-- Import Failed List Wrapper -->
       <div
         v-if="importFailedConflicts.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-modal-panel-surface"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -24,14 +22,12 @@
           @click="toggleImportFailedPanel"
         >
           <div class="flex flex-1">
-            <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
-              >{{ importFailedConflicts.length }}</span
-            >
-            <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
-              >{{ $t('manager.conflicts.importFailedExtensions') }}</span
-            >
+            <span class="mr-2 text-xs font-bold text-text-warning">{{
+              importFailedConflicts.length
+            }}</span>
+            <span class="text-xs font-bold text-text-primary">{{
+              $t('manager.conflicts.importFailedExtensions')
+            }}</span>
           </div>
           <div>
             <Button
@@ -41,7 +37,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="!bg-transparent text-text-secondary"
             />
           </div>
         </div>
@@ -56,7 +52,7 @@
             :key="i"
             class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
-            <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
+            <span class="text-xs text-text-secondary">
               {{ packageName }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>
@@ -65,7 +61,7 @@
       </div>
       <!-- Conflict List Wrapper -->
       <div
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-modal-panel-surface"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -73,14 +69,12 @@
           @click="toggleConflictsPanel"
         >
           <div class="flex flex-1">
-            <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
-              >{{ allConflictDetails.length }}</span
-            >
-            <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
-              >{{ $t('manager.conflicts.conflicts') }}</span
-            >
+            <span class="mr-2 text-xs font-bold text-text-warning">{{
+              allConflictDetails.length
+            }}</span>
+            <span class="text-xs font-bold text-text-primary">{{
+              $t('manager.conflicts.conflicts')
+            }}</span>
           </div>
           <div>
             <Button
@@ -90,7 +84,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="!bg-transparent text-text-secondary"
             />
           </div>
         </div>
@@ -105,17 +99,16 @@
             :key="i"
             class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
-            <span
-              class="text-xs text-neutral-600 dark-theme:text-neutral-300"
-              >{{ getConflictMessage(conflict, t) }}</span
-            >
+            <span class="text-xs text-text-secondary">{{
+              getConflictMessage(conflict, t)
+            }}</span>
             <span class="pi pi-info-circle text-sm"></span>
           </div>
         </div>
       </div>
       <!-- Extension List Wrapper -->
       <div
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-modal-panel-surface"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -123,14 +116,12 @@
           @click="toggleExtensionsPanel"
         >
           <div class="flex flex-1">
-            <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
-              >{{ conflictData.length }}</span
-            >
-            <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
-              >{{ $t('manager.conflicts.extensionAtRisk') }}</span
-            >
+            <span class="mr-2 text-xs font-bold text-text-warning">{{
+              conflictData.length
+            }}</span>
+            <span class="text-xs font-bold text-text-primary">{{
+              $t('manager.conflicts.extensionAtRisk')
+            }}</span>
           </div>
           <div>
             <Button
@@ -140,7 +131,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="!bg-transparent text-text-secondary"
             />
           </div>
         </div>
@@ -155,7 +146,7 @@
             :key="conflictResult.package_id"
             class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
-            <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
+            <span class="text-xs text-text-secondary">
               {{ conflictResult.package_name }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>

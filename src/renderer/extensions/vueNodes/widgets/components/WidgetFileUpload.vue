@@ -52,8 +52,7 @@
         <!-- Edit button -->
         <button
           :aria-label="$t('g.editImage')"
-          class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
-          style="background-color: #262729"
+          class="flex h-6 w-6 items-center justify-center rounded border-none bg-node-component-border transition-all duration-150 focus:outline-none"
           @click="handleEdit"
         >
           <i class="pi pi-pencil text-xs text-white"></i>
@@ -61,8 +60,7 @@
         <!-- Delete button -->
         <button
           :aria-label="$t('g.deleteImage')"
-          class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
-          style="background-color: #262729"
+          class="flex h-6 w-6 items-center justify-center rounded border-none bg-node-component-border transition-all duration-150 focus:outline-none"
           @click="clearFile"
         >
           <i class="pi pi-times text-xs text-white"></i>
@@ -110,8 +108,7 @@
     <!-- Audio player -->
     <div class="group relative px-2">
       <div
-        class="flex items-center gap-4 rounded-lg bg-[#1a1b1e] p-4"
-        style="border: 1px solid #262729"
+        class="flex items-center gap-4 rounded-lg border border-solid border-node-component-border bg-node-component-surface p-4"
       >
         <!-- Audio icon -->
         <div class="flex-shrink-0">
@@ -146,12 +143,10 @@
   <!-- Show normal file upload UI when no image or audio is loaded -->
   <div
     v-else
-    class="flex w-full flex-col gap-1 rounded-lg border border-solid p-1"
-    :style="{ borderColor: '#262729' }"
+    class="flex w-full flex-col gap-1 rounded-lg border border-solid border-node-component-border p-1"
   >
     <div
-      class="rounded-md border border-dashed p-1 transition-colors duration-200 hover:border-slate-300"
-      :style="{ borderColor: '#262729' }"
+      class="rounded-md border border-dashed border-node-component-border p-1 transition-colors duration-200 hover:border-slate-300"
     >
       <div class="flex w-full flex-col items-center gap-2 py-4">
         <span class="text-xs opacity-60"> {{ $t('Drop your file or') }} </span>

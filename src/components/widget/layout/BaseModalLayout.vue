@@ -133,7 +133,7 @@ const toggleRightPanel = () => {
 const layoutClasses = cn(
   'base-widget-layout',
   'rounded-2xl overflow-hidden relative',
-  'bg-gray-50 dark-theme:bg-gray-800'
+  'bg-modal-background'
 )
 
 const rightPanelButtonClasses = computed(() => {
@@ -148,10 +148,7 @@ const closeButtonClasses = cn(
   'transition-opacity duration-200'
 )
 
-const mainContainerClasses = cn(
-  'flex-1 flex',
-  'bg-gray-100 dark-theme:bg-neutral-900'
-)
+const mainContainerClasses = cn('flex-1 flex', 'bg-modal-panel-surface')
 
 const headerClasses = cn(
   'w-full h-18 px-6',

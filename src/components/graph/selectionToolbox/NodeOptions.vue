@@ -259,8 +259,8 @@ const pt = computed(() => ({
   },
   content: {
     class: [
-      'mt-2 text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700',
+      'mt-2 text-text-primary rounded-lg',
+      'shadow-lg border border-interface-stroke',
       'bg-interface-panel-surface'
     ]
   }

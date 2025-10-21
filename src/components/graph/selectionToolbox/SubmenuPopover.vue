@@ -20,15 +20,15 @@
         :key="subOption.label"
         :class="
           isColorSubmenu
-            ? 'w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
-            : 'flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
+            ? 'w-7 h-7 flex items-center justify-center hover:bg-interface-menu-component-surface-hovered rounded cursor-pointer'
+            : 'flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-interface-menu-component-surface-hovered rounded cursor-pointer'
         "
         :title="subOption.label"
         @click="handleSubmenuClick(subOption)"
       >
         <div
           v-if="subOption.color"
-          class="h-5 w-5 rounded-full border border-gray-300 dark-theme:border-zinc-600"
+          class="h-5 w-5 rounded-full border border-interface-stroke"
           :style="{ backgroundColor: subOption.color }"
         />
         <template v-else-if="!subOption.color">
@@ -109,8 +109,8 @@ const submenuPt = computed(() => ({
   },
   content: {
     class: [
-      'text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700',
+      'text-text-primary rounded-lg',
+      'shadow-lg border border-interface-stroke',
       'bg-interface-panel-surface'
     ]
   }
