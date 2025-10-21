@@ -24,16 +24,17 @@
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="z-10 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        class="z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       >
         <InputSlot
+          v-if="widget.slotMetadata"
           :slot-data="{
             name: widget.name,
             type: widget.type,
             boundingRect: [0, 0, 0, 0]
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="widget.slotMetadata?.index ?? 0"
+          :index="widget.slotMetadata.index"
           :dot-only="true"
         />
       </div>
