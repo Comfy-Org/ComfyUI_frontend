@@ -6,6 +6,7 @@ import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
@@ -42,7 +43,6 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface QueuePromptRequestBody {
@@ -322,20 +322,27 @@ export class ComfyApi extends EventTarget {
    * Waits for Firebase auth to be initialized before proceeding
    */
   async #waitForAuthInitialization(): Promise<void> {
-    const authStore = useFirebaseAuthStore()
+    if (isCloud) {
+      const { useFirebaseAuthStore } = await import(
+        '@/stores/firebaseAuthStore'
+      )
+      const authStore = useFirebaseAuthStore()
 
-    if (authStore.isInitialized) {
-      return
+      if (authStore.isInitialized) {
+        return
+      }
+
+      return new Promise<void>((resolve) => {
+        const unwatch = authStore.$subscribe((_, state) => {
+          if (state.isInitialized) {
+            unwatch()
+            resolve()
+          }
+        })
+      })
     }
 
-    return new Promise<void>((resolve) => {
-      const unwatch = authStore.$subscribe((_, state) => {
-        if (state.isInitialized) {
-          unwatch()
-          resolve()
-        }
-      })
-    })
+    return Promise.resolve()
   }
 
   async fetchApi(route: string, options?: RequestInit) {
@@ -349,28 +356,33 @@ export class ComfyApi extends EventTarget {
       options.cache = 'no-cache'
     }
 
-    // Wait for Firebase auth to be initialized before making any API request
-    await this.#waitForAuthInitialization()
+    if (isCloud) {
+      // Wait for Firebase auth to be initialized before making any API request
+      await this.#waitForAuthInitialization()
 
-    // Add Firebase JWT token if user is logged in
-    try {
-      const authHeader = await useFirebaseAuthStore().getAuthHeader()
-      if (authHeader) {
-        if (Array.isArray(options.headers)) {
-          for (const [key, value] of Object.entries(authHeader)) {
-            options.headers.push([key, value])
+      // Add Firebase JWT token if user is logged in
+      try {
+        const { useFirebaseAuthStore } = await import(
+          '@/stores/firebaseAuthStore'
+        )
+        const authHeader = await useFirebaseAuthStore().getAuthHeader()
+        if (authHeader) {
+          if (Array.isArray(options.headers)) {
+            for (const [key, value] of Object.entries(authHeader)) {
+              options.headers.push([key, value])
+            }
+          } else if (options.headers instanceof Headers) {
+            for (const [key, value] of Object.entries(authHeader)) {
+              options.headers.set(key, value)
+            }
+          } else {
+            Object.assign(options.headers, authHeader)
           }
-        } else if (options.headers instanceof Headers) {
-          for (const [key, value] of Object.entries(authHeader)) {
-            options.headers.set(key, value)
-          }
-        } else {
-          Object.assign(options.headers, authHeader)
         }
+      } catch (error) {
+        // Silently ignore auth errors to avoid breaking API calls
+        console.warn('Failed to get auth header:', error)
       }
-    } catch (error) {
-      // Silently ignore auth errors to avoid breaking API calls
-      console.warn('Failed to get auth header:', error)
     }
 
     if (Array.isArray(options.headers)) {
@@ -457,11 +469,19 @@ export class ComfyApi extends EventTarget {
 
     // Get auth token if available
     let authToken: string | undefined
-    try {
-      authToken = await useFirebaseAuthStore().getIdToken()
-    } catch (error) {
-      // Continue without auth token if there's an error
-      console.warn('Could not get auth token for WebSocket connection:', error)
+    if (isCloud) {
+      try {
+        const { useFirebaseAuthStore } = await import(
+          '@/stores/firebaseAuthStore'
+        )
+        authToken = await useFirebaseAuthStore().getIdToken()
+      } catch (error) {
+        // Continue without auth token if there's an error
+        console.warn(
+          'Could not get auth token for WebSocket connection:',
+          error
+        )
+      }
     }
 
     // Build WebSocket URL with query parameters
