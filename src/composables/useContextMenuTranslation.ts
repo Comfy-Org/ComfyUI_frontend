@@ -22,12 +22,13 @@ export const useContextMenuTranslation = () => {
     this: LGraphCanvas,
     ...args: Parameters<typeof f>
   ) {
-    const res = f.apply(this, args) as ReturnType<typeof f>
+    const res: IContextMenuValue<string>[] = f.apply(this, args)
 
     // Add items from new extension API
-    const newApiItems = app.collectCanvasMenuItems(this)
+    const newApiItems = app.collectCanvasMenuItems(
+      this
+    ) as IContextMenuValue<string>[]
     for (const item of newApiItems) {
-      // @ts-expect-error - Generic types differ but runtime compatibility is ensured
       res.push(item)
     }
 
@@ -36,9 +37,8 @@ export const useContextMenuTranslation = () => {
       'getCanvasMenuOptions',
       this,
       ...args
-    )
+    ) as ReturnType<typeof f>
     for (const item of legacyItems) {
-      // @ts-expect-error - Generic types differ but runtime compatibility is ensured
       res.push(item)
     }
 
@@ -53,10 +53,11 @@ export const useContextMenuTranslation = () => {
 
   LGraphCanvas.prototype.getCanvasMenuOptions = getCanvasCenterMenuOptions
 
-  // Register our wrapper so it's not treated as a legacy monkey-patch
   legacyMenuCompat.registerWrapper(
     'getCanvasMenuOptions',
-    getCanvasCenterMenuOptions
+    getCanvasCenterMenuOptions,
+    f,
+    LGraphCanvas.prototype
   )
 
   function translateMenus(
