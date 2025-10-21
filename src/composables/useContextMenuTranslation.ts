@@ -60,6 +60,26 @@ export const useContextMenuTranslation = () => {
     LGraphCanvas.prototype
   )
 
+  // Wrap getNodeMenuOptions to add new API items
+  const nodeMenuFn = LGraphCanvas.prototype.getNodeMenuOptions
+  const getNodeMenuOptionsWithExtensions = function (
+    this: LGraphCanvas,
+    ...args: Parameters<typeof nodeMenuFn>
+  ) {
+    const res = nodeMenuFn.apply(this, args)
+
+    // Add items from new extension API
+    const node = args[0]
+    const newApiItems = app.collectNodeMenuItems(node)
+    for (const item of newApiItems) {
+      res.push(item as (typeof res)[number])
+    }
+
+    return res
+  }
+
+  LGraphCanvas.prototype.getNodeMenuOptions = getNodeMenuOptionsWithExtensions
+
   function translateMenus(
     values: readonly (IContextMenuValue | string | null)[] | undefined,
     options: IContextMenuOptions

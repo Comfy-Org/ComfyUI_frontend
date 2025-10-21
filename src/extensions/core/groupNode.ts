@@ -23,7 +23,6 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { type ComfyExtension } from '@/types/comfy'
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
 import { GROUP } from '@/utils/executableGroupNodeDto'
-import { isLGraphNode } from '@/utils/litegraphUtil'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
@@ -1729,15 +1728,13 @@ const ext: ComfyExtension = {
 
   getCanvasMenuItems(canvas): IContextMenuValue[] {
     const items: IContextMenuValue[] = []
-    const selected = Object.values(canvas.selectedItems ?? {}).filter((item) =>
-      isLGraphNode(item)
-    )
+    const selected = Object.values(canvas.selected_nodes ?? {})
     const convertDisabled =
       selected.length < 2 ||
       !!selected.find((n) => GroupNodeHandler.isGroupNode(n))
 
     items.push({
-      content: `Convert to Group Node`,
+      content: `Convert to Group Node (Deprecated)`,
       disabled: convertDisabled,
       // @ts-expect-error fixme ts strict error - async callback
       callback: () => convertSelectedNodesToGroupNode()
@@ -1766,7 +1763,7 @@ const ext: ComfyExtension = {
 
     return [
       {
-        content: `Convert to Group Node`,
+        content: `Convert to Group Node (Deprecated)`,
         disabled,
         // @ts-expect-error fixme ts strict error - async callback
         callback: () => convertSelectedNodesToGroupNode()
