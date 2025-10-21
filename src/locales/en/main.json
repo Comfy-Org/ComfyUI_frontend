@@ -1203,7 +1203,20 @@
   },
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
-    "inQueue": "In queue..."
+    "inQueue": "In queue...",
+    "jobMenu": {
+      "openAsWorkflowNewTab": "Open as workflow in new tab",
+      "openWorkflowNewTab": "Open workflow in new tab",
+      "copyJobId": "Copy job ID",
+      "cancelJob": "Cancel job",
+      "inspectAsset": "Inspect asset",
+      "addToCurrentWorkflow": "Add to current workflow",
+      "download": "Download",
+      "exportWorkflow": "Export workflow",
+      "delete": "Delete",
+      "copyErrorMessage": "Copy error message",
+      "reportError": "Report error"
+    }
   },
   "menuLabels": {
     "File": "File",

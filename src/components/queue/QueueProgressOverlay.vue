@@ -448,7 +448,7 @@
           v-else
           class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
           :aria-label="entry.label"
-          @click="entry.onClick ? entry.onClick() : onStubMenuAction()"
+          @click="onJobMenuEntryClick(entry)"
         >
           <i
             v-if="entry.icon"
@@ -470,48 +470,29 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
 import CompletionSummaryBanner from '@/components/queue/overlay/CompletionSummaryBanner.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
+import { jobTabs, useJobList } from '@/composables/queue/useJobList'
+import type { JobListItem } from '@/composables/queue/useJobList'
+import { useJobMenu } from '@/composables/queue/useJobMenu'
+import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { useQueueActions } from '@/composables/queue/useQueueActions'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import { st } from '@/i18n'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import {
-  dateKey,
-  formatClockTime,
-  formatShortMonthDay,
-  isToday,
-  isYesterday
-} from '@/utils/dateTimeUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import {
-  buildJobMeta,
-  buildJobTitle,
-  jobStateFromTask
-} from '@/utils/queueUtil'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
-const sidebarTabStore = useSidebarTabStore()
-const workflowStore = useWorkflowStore()
-const workflowService = useWorkflowService()
-const { copyToClipboard } = useCopyToClipboard()
 
 const {
-  totalPercent,
   totalPercentFormatted,
   currentNodePercent,
   totalProgressStyle,
@@ -556,16 +537,6 @@ const showBackground = computed(
 const isVisible = computed(() => !isFullyInvisible.value)
 const { summary: completionSummary, clearSummary } = useCompletionSummary()
 
-const currentNodeName = computed(() => {
-  const node = executionStore.executingNode
-  if (!node) return t('g.emDash')
-  const title = (node.title ?? '').toString().trim()
-  if (title) return title
-  const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
-  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-  return st(key, nodeType)
-})
-
 const headerTitle = computed(() =>
   hasActiveJob.value
     ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
@@ -579,253 +550,20 @@ const showConcurrentIndicator = computed(
   () => concurrentWorkflowCount.value > 1
 )
 
-/** Tabs for job list filtering */
-const jobTabs = ['All', 'Completed', 'Failed'] as const
 const tabLabel = (tab: (typeof jobTabs)[number]) => {
   if (tab === 'All') return t('g.all')
   if (tab === 'Completed') return t('g.completed')
   return t('g.failed')
 }
-const selectedJobTab = ref<(typeof jobTabs)[number]>('All')
-const selectedWorkflowFilter = ref<'all' | 'current'>('all')
+const {
+  selectedJobTab,
+  selectedWorkflowFilter,
+  filteredTasks,
+  groupedJobItems,
+  currentNodeName
+} = useJobList()
 
-type JobListItem = {
-  id: string
-  title: string
-  meta: string
-  state:
-    | 'added'
-    | 'queued'
-    | 'initialization'
-    | 'running'
-    | 'completed'
-    | 'failed'
-  iconName?: string
-  iconImageUrl?: string
-  showClear?: boolean
-  taskRef?: any
-  progressTotalPercent?: number
-  progressCurrentPercent?: number
-  runningNodeName?: string
-}
-
-const useDummy = ref(false)
-const onKeyDown = (e: KeyboardEvent) => {
-  if (e.key === '0') useDummy.value = !useDummy.value
-}
-onMounted(() => window.addEventListener('keydown', onKeyDown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
-
-const allTasksSorted = computed(() => {
-  const all = [
-    ...queueStore.pendingTasks,
-    ...queueStore.runningTasks,
-    ...queueStore.historyTasks
-  ]
-  return all.sort((a, b) => b.queueIndex - a.queueIndex)
-})
-
-const filteredTasks = computed(() => {
-  let tasks = allTasksSorted.value
-  if (selectedJobTab.value === 'Completed') {
-    tasks = tasks.filter(
-      (t) => jobStateFromTask(t, isJobInitializing(t?.promptId)) === 'completed'
-    )
-  } else if (selectedJobTab.value === 'Failed') {
-    tasks = tasks.filter(
-      (t) => jobStateFromTask(t, isJobInitializing(t?.promptId)) === 'failed'
-    )
-  }
-
-  if (selectedWorkflowFilter.value === 'current') {
-    const activeId = workflowStore.activeWorkflow?.activeState?.id
-    if (!activeId) return []
-    tasks = tasks.filter((t: any) => {
-      const wid = t.workflow?.id
-      return !!wid && wid === activeId
-    })
-  }
-  return tasks
-})
-
-const dummyJobItems = computed<JobListItem[]>(() => [
-  {
-    id: 'D-added',
-    title: 'Added task',
-    meta: formatClockTime(Date.now(), locale.value),
-    state: 'added',
-    iconName: 'icon-[lucide--plus]',
-    showClear: true
-  },
-  {
-    id: 'D-queued',
-    title: 'Queued task',
-    meta: formatClockTime(Date.now(), locale.value),
-    state: 'queued',
-    iconName: 'icon-[lucide--clock]',
-    showClear: true
-  },
-  {
-    id: 'D-init',
-    title: 'Initialization task',
-    meta: t('queue.initializingAlmostReady'),
-    state: 'initialization',
-    iconName: 'icon-[lucide--server-crash]',
-    showClear: false
-  },
-  {
-    id: 'D-running',
-    title: 'Running task',
-    meta: t('g.running'),
-    state: 'running',
-    iconName: 'icon-[lucide--zap]',
-    progressTotalPercent: 46,
-    progressCurrentPercent: 21,
-    runningNodeName: 'KSampler',
-    showClear: false
-  },
-  {
-    id: 'D-completed',
-    title: 'Completed result.png',
-    meta: '1.23s',
-    state: 'completed',
-    iconName: 'icon-[lucide--check]',
-    showClear: false
-  },
-  {
-    id: 'D-failed',
-    title: 'Failed task',
-    meta: t('g.failed'),
-    state: 'failed',
-    iconName: 'icon-[lucide--alert-circle]',
-    showClear: true
-  }
-])
-
-const jobItems = computed<JobListItem[]>(() => {
-  if (useDummy.value) return dummyJobItems.value
-  return filteredTasks.value.map((task: any) => {
-    const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
-
-    let iconName: string | undefined
-    let iconImageUrl: string | undefined
-
-    if (state === 'completed') {
-      const previewOutput = task.previewOutput
-      if (previewOutput && previewOutput.isImage) {
-        iconImageUrl = previewOutput.urlWithTimestamp
-      } else {
-        iconName = 'icon-[lucide--check]'
-      }
-    } else if (state === 'running') {
-      iconName = 'icon-[lucide--zap]'
-    } else if (state === 'queued') {
-      iconName = 'icon-[lucide--clock]'
-    } else if (state === 'failed') {
-      iconName = 'icon-[lucide--alert-circle]'
-    }
-
-    const completedPreviewOutput =
-      state === 'completed' ? task.previewOutput : undefined
-    const displayTitle =
-      state === 'completed' && completedPreviewOutput?.filename
-        ? completedPreviewOutput.filename
-        : buildJobTitle(task, t)
-
-    const isActive =
-      String(task.promptId ?? '') ===
-      String(executionStore.activePromptId ?? '')
-    return {
-      id: String(task.promptId),
-      title: displayTitle,
-      meta: buildJobMeta(
-        task,
-        state,
-        queueStore.firstSeenByPromptId,
-        locale.value,
-        t,
-        formatClockTime
-      ),
-      state,
-      iconName,
-      iconImageUrl,
-      showClear: state === 'queued' || state === 'failed',
-      taskRef: task,
-      progressTotalPercent:
-        state === 'running' && isActive ? totalPercent.value : undefined,
-      progressCurrentPercent:
-        state === 'running' && isActive ? currentNodePercent.value : undefined,
-      runningNodeName:
-        state === 'running' && isActive ? currentNodeName.value : undefined
-    } as JobListItem
-  })
-})
-
-type JobGroup = {
-  key: string
-  label: string
-  items: JobListItem[]
-}
-
-/** Returns localized Today/Yesterday (capitalized) or localized Mon DD. */
-const dateLabelForTimestamp = (ts: number) => {
-  if (isToday(ts)) {
-    const s = new Intl.RelativeTimeFormat(locale.value, {
-      numeric: 'auto'
-    }).format(0, 'day')
-    return s ? s[0].toLocaleUpperCase(locale.value) + s.slice(1) : s
-  }
-  if (isYesterday(ts)) {
-    const s = new Intl.RelativeTimeFormat(locale.value, {
-      numeric: 'auto'
-    }).format(-1, 'day')
-    return s ? s[0].toLocaleUpperCase(locale.value) + s.slice(1) : s
-  }
-  return formatShortMonthDay(ts, locale.value)
-}
-
-const jobItemById = computed(() => {
-  const m = new Map<string, JobListItem>()
-  jobItems.value.forEach((ji) => m.set(ji.id, ji))
-  return m
-})
-
-const groupedJobItems = computed<JobGroup[]>(() => {
-  const groups: JobGroup[] = []
-  const index = new Map<string, number>()
-  for (const task of filteredTasks.value) {
-    const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
-    const pid = String(task.promptId ?? '')
-    let ts: number | undefined
-    if (state === 'completed' || state === 'failed') {
-      ts = task.executionEndTimestamp
-    } else {
-      ts = queueStore.firstSeenByPromptId?.[pid]
-    }
-    const effectiveTs = ts ?? Date.now()
-    const key = dateKey(effectiveTs)
-    let groupIdx = index.get(key)
-    if (groupIdx === undefined) {
-      groups.push({ key, label: dateLabelForTimestamp(effectiveTs), items: [] })
-      groupIdx = groups.length - 1
-      index.set(key, groupIdx)
-    }
-    const ji = jobItemById.value.get(String(task.promptId))
-    if (ji) groups[groupIdx].items.push(ji)
-  }
-  return groups
-})
-
-const displayedJobGroups = computed<JobGroup[]>(() => {
-  if (!useDummy.value) return groupedJobItems.value
-  return [
-    {
-      key: 'dummy',
-      label: 'Dummy',
-      items: jobItems.value
-    }
-  ]
-})
+const displayedJobGroups = computed(() => groupedJobItems.value)
 
 const onClearItem = async (item: JobListItem) => {
   if (!item.taskRef) return
@@ -843,79 +581,18 @@ const onMenuItem = (item: JobListItem, event: Event) => {
   }
 }
 
-type MenuEntry =
-  | {
-      kind?: 'item'
-      key: string
-      label: string
-      icon?: string
-      onClick?: () => void | Promise<void>
-    }
-  | { kind: 'divider'; key: string }
+const { jobMenuEntries } = useJobMenu(() => currentMenuItem.value)
 
-const onStubMenuAction = () => {
-  jobItemPopoverRef.value?.hide()
+const onJobMenuEntryClick = async (entry: MenuEntry) => {
+  if (entry.kind === 'divider') return
+  if (entry.onClick) await entry.onClick()
+  if (jobItemPopoverRef.value) jobItemPopoverRef.value.hide()
   isJobMenuOpen.value = false
 }
 
-const onOpenJobWorkflowFromMenu = async () => {
-  const item = currentMenuItem.value
-  if (!item) return
-  const data = item.taskRef?.workflow
-  if (!data) {
-    jobItemPopoverRef.value?.hide()
-    isJobMenuOpen.value = false
-    return
-  }
-  const filename = `Job ${item.id}.json`
-  const temp = workflowStore.createTemporary(filename, data)
-  await workflowService.openWorkflow(temp)
-  jobItemPopoverRef.value?.hide()
-  isJobMenuOpen.value = false
-}
-
-const onCopyJobIdFromMenu = async () => {
-  const item = currentMenuItem.value
-  if (!item) return
-  await copyToClipboard(item.id)
-  jobItemPopoverRef.value?.hide()
-  isJobMenuOpen.value = false
-}
-
-const onCancelFromMenu = async () => {
-  const item = currentMenuItem.value
-  if (!item) return
-  if (useDummy.value) {
-    jobItemPopoverRef.value?.hide()
-    isJobMenuOpen.value = false
-    return
-  }
-  if (item.state === 'running' || item.state === 'initialization') {
-    await api.interrupt(item.id)
-  } else if (item.state === 'queued') {
-    await api.deleteItem('queue', item.id)
-  }
-  await queueStore.update()
-  jobItemPopoverRef.value?.hide()
-  isJobMenuOpen.value = false
-}
-
-const galleryActiveIndex = ref(-1)
-const galleryItems = shallowRef<ResultItemImpl[]>([])
-
-const onViewItem = (item: JobListItem) => {
-  const items: ResultItemImpl[] = filteredTasks.value.flatMap((t: any) => {
-    const preview = t.previewOutput
-    return preview && preview.supportsPreview ? [preview] : []
-  })
-
-  if (!items.length) return
-
-  galleryItems.value = items
-  const activeUrl: string | undefined = item.taskRef?.previewOutput?.url
-  const idx = activeUrl ? items.findIndex((o) => o.url === activeUrl) : 0
-  galleryActiveIndex.value = idx >= 0 ? idx : 0
-}
+const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(
+  () => filteredTasks.value
+)
 
 const openExpandedFromEmpty = () => {
   isExpanded.value = true
@@ -934,29 +611,8 @@ const onSummaryClick = () => {
   clearSummary()
 }
 
-/** Opens the Queue sidebar */
-const openQueueSidebar = () => {
-  sidebarTabStore.activeSidebarTabId = 'queue'
-}
-
-/** Cancels all queued (pending) workflows */
-const cancelQueuedWorkflows = async () => {
-  const pending = [...queueStore.pendingTasks]
-  for (const task of pending) {
-    await api.deleteItem('queue', task.promptId)
-  }
-  await queueStore.update()
-}
-
-const interruptAll = async () => {
-  const tasks = queueStore.runningTasks
-  for (const task of tasks) {
-    await api.interrupt(task.promptId)
-  }
-}
-/** Determines if a job is currently in initialization */
-const isJobInitializing = (promptId: string | number | undefined) =>
-  executionStore.isPromptInitializing(promptId)
+const { openQueueSidebar, cancelQueuedWorkflows, interruptAll } =
+  useQueueActions()
 
 const morePopoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
@@ -995,132 +651,4 @@ const onClearHistoryFromMenu = async () => {
   morePopoverRef.value?.hide()
   isMoreOpen.value = false
 }
-
-const jobMenuOpenWorkflowLabel = computed(() =>
-  st('queue.jobMenu.openAsWorkflowNewTab', 'Open as workflow in new tab')
-)
-const jobMenuOpenWorkflowFailedLabel = computed(() =>
-  st('queue.jobMenu.openWorkflowNewTab', 'Open workflow in new tab')
-)
-const jobMenuCopyJobIdLabel = computed(() =>
-  st('queue.jobMenu.copyJobId', 'Copy job ID')
-)
-const jobMenuCancelLabel = computed(() =>
-  st('queue.jobMenu.cancelJob', 'Cancel job')
-)
-
-const jobMenuEntries = computed<MenuEntry[]>(() => {
-  const state = currentMenuItem.value?.state
-  if (!state) return []
-  if (state === 'completed') {
-    return [
-      {
-        key: 'inspect-asset',
-        label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
-        icon: 'icon-[lucide--zoom-in]',
-        onClick: onStubMenuAction
-      },
-      {
-        key: 'add-to-current',
-        label: st(
-          'queue.jobMenu.addToCurrentWorkflow',
-          'Add to current workflow'
-        ),
-        icon: 'icon-[comfy--node]',
-        onClick: onStubMenuAction
-      },
-      {
-        key: 'download',
-        label: st('queue.jobMenu.download', 'Download'),
-        icon: 'icon-[lucide--download]',
-        onClick: onStubMenuAction
-      },
-      { kind: 'divider', key: 'd1' },
-      {
-        key: 'open-workflow',
-        label: jobMenuOpenWorkflowLabel.value,
-        icon: 'icon-[comfy--workflow]',
-        onClick: onOpenJobWorkflowFromMenu
-      },
-      {
-        key: 'export-workflow',
-        label: st('queue.jobMenu.exportWorkflow', 'Export workflow'),
-        icon: 'icon-[comfy--file-output]',
-        onClick: onStubMenuAction
-      },
-      { kind: 'divider', key: 'd2' },
-      {
-        key: 'copy-id',
-        label: jobMenuCopyJobIdLabel.value,
-        icon: 'icon-[lucide--copy]',
-        onClick: onCopyJobIdFromMenu
-      },
-      { kind: 'divider', key: 'd3' },
-      {
-        key: 'delete',
-        label: st('queue.jobMenu.delete', 'Delete'),
-        icon: 'icon-[lucide--trash-2]',
-        onClick: onStubMenuAction
-      }
-    ]
-  }
-  if (state === 'failed') {
-    return [
-      {
-        key: 'open-workflow',
-        label: jobMenuOpenWorkflowFailedLabel.value,
-        icon: 'icon-[comfy--workflow]',
-        onClick: onOpenJobWorkflowFromMenu
-      },
-      { kind: 'divider', key: 'd1' },
-      {
-        key: 'copy-id',
-        label: jobMenuCopyJobIdLabel.value,
-        icon: 'icon-[lucide--copy]',
-        onClick: onCopyJobIdFromMenu
-      },
-      {
-        key: 'copy-error',
-        label: st('queue.jobMenu.copyErrorMessage', 'Copy error message'),
-        icon: 'icon-[lucide--copy]',
-        onClick: onStubMenuAction
-      },
-      {
-        key: 'report-error',
-        label: st('queue.jobMenu.reportError', 'Report error'),
-        icon: 'icon-[lucide--message-circle-warning]',
-        onClick: onStubMenuAction
-      },
-      { kind: 'divider', key: 'd2' },
-      {
-        key: 'delete',
-        label: st('queue.jobMenu.delete', 'Delete'),
-        icon: 'icon-[lucide--trash-2]',
-        onClick: onStubMenuAction
-      }
-    ]
-  }
-  return [
-    {
-      key: 'open-workflow',
-      label: jobMenuOpenWorkflowLabel.value,
-      icon: 'icon-[comfy--workflow]',
-      onClick: onOpenJobWorkflowFromMenu
-    },
-    { kind: 'divider', key: 'd1' },
-    {
-      key: 'copy-id',
-      label: jobMenuCopyJobIdLabel.value,
-      icon: 'icon-[lucide--copy]',
-      onClick: onCopyJobIdFromMenu
-    },
-    { kind: 'divider', key: 'd2' },
-    {
-      key: 'cancel-job',
-      label: jobMenuCancelLabel.value,
-      icon: 'icon-[lucide--x]',
-      onClick: onCancelFromMenu
-    }
-  ]
-})
 </script>
