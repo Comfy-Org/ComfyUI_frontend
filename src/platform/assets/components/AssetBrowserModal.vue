@@ -136,7 +136,7 @@ const primaryCategoryTag = computed(() => {
 
   if (props.assetType) return props.assetType
 
-  return t('assetBrowser.allModels')
+  return 'models'
 })
 
 const activeCategoryTag = computed(() => {
