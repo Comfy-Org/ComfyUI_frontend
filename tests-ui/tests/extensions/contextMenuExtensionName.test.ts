@@ -38,13 +38,16 @@ describe('Context Menu Extension Name in Warnings', () => {
     vi.restoreAllMocks()
   })
 
-  it('should not include extension name if not set', () => {
+  it('should include extension name for node menu patches', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     // Install compatibility layer
     legacyMenuCompat.install(LGraphCanvas.prototype, 'getNodeMenuOptions')
 
-    // Extension monkey-patches without setting current extension
+    // Simulate what happens during extension setup
+    legacyMenuCompat.setCurrentExtension('AnotherExtension')
+
+    // Extension monkey-patches the method
     const original = LGraphCanvas.prototype.getNodeMenuOptions
     LGraphCanvas.prototype.getNodeMenuOptions = function (...args: any[]) {
       const items = (original as any).apply(this, args)
@@ -52,13 +55,16 @@ describe('Context Menu Extension Name in Warnings', () => {
       return items
     }
 
-    // Verify the warning does NOT include extension info
+    // Clear extension (happens after setup completes)
+    legacyMenuCompat.setCurrentExtension(null)
+
+    // Verify the warning includes extension info
     expect(warnSpy).toHaveBeenCalled()
     const warningMessage = warnSpy.mock.calls[0][0]
 
     expect(warningMessage).toContain('[DEPRECATED]')
     expect(warningMessage).toContain('getNodeMenuOptions')
-    expect(warningMessage).not.toContain('Extension:')
+    expect(warningMessage).toContain('"AnotherExtension"')
 
     vi.restoreAllMocks()
   })
