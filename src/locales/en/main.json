@@ -667,7 +667,6 @@
       "expandCollapsedQueue": "Expand job queue",
       "noActiveJobs": "No active jobs",
       "stubClipTextEncode": "CLIP Text Encode:",
-      
       "jobsCompleted": "{count} job completed | {count} jobs completed",
       "jobsFailed": "{count} job failed | {count} jobs failed"
     },
