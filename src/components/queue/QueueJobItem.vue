@@ -253,6 +253,7 @@ const isHovered = ref(false)
 
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
+  if (props.state === 'added') return 'icon-[lucide--check]'
   return iconForJobState(props.state)
 })
 
@@ -277,6 +278,7 @@ const primaryText = computed(() => {
   if (props.state === 'initialization')
     return t('queue.initializingAlmostReady')
   if (props.state === 'queued') return t('queue.inQueue')
+  if (props.state === 'added') return t('queue.jobAddedToQueue')
   return props.title
 })
 
