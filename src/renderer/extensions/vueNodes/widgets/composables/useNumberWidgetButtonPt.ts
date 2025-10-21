@@ -1,6 +1,6 @@
 const sharedButtonClasses =
-  '!inline-flex !items-center !justify-center !border-0 !bg-transparent text-inherit transition-colors duration-150 ease-in-out ' +
-  'hover:!bg-[var(--node-component-surface-hovered)] active:!bg-[var(--node-component-surface-selected)] ' +
+  '!inline-flex !items-center !justify-center !border-0 bg-transparent text-inherit transition-colors duration-150 ease-in-out ' +
+  'hover:bg-node-component-surface-hovered active:bg-node-component-surface-selected' +
   'disabled:!bg-[var(--node-component-disabled)] disabled:!text-[var(--node-icon-disabled)] disabled:cursor-not-allowed'
 
 export function useNumberWidgetButtonPt(options?: {
