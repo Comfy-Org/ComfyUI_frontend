@@ -1,5 +1,10 @@
 <template>
-  <div class="relative" @mouseenter="onRowEnter" @mouseleave="onRowLeave">
+  <div
+    class="relative"
+    @mouseenter="onRowEnter"
+    @mouseleave="onRowLeave"
+    @contextmenu.stop.prevent="onContextMenu"
+  >
     <div
       v-show="showDetails"
       class="absolute top-0 right-[calc(100%+var(--spacing-spacing-xs))] z-50"
@@ -21,7 +26,7 @@
       :progress-total-percent="progressTotalPercent"
       :progress-current-percent="progressCurrentPercent"
       @clear="emit('clear')"
-      @menu="emit('menu')"
+      @menu="(ev) => emit('menu', ev)"
       @view="emit('view')"
     >
       <template #icon>
@@ -119,7 +124,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'clear'): void
-  (e: 'menu'): void
+  (e: 'menu', event: Event): void
   (e: 'view'): void
 }>()
 
@@ -191,4 +196,8 @@ const computedShowMenu = computed(() => {
   if (props.showMenu !== undefined) return props.showMenu
   return true
 })
+
+const onContextMenu = (event: MouseEvent) => {
+  if (computedShowMenu.value) emit('menu', event)
+}
 </script>

@@ -82,7 +82,7 @@
             type="button"
             class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
             :aria-label="t('g.moreOptions')"
-            @click.stop="emit('menu')"
+            @click.stop="emit('menu', $event)"
           >
             <i class="icon-[lucide--more-horizontal] size-4" />
           </button>
@@ -128,7 +128,7 @@ withDefaults(
 
 const emit = defineEmits<{
   (e: 'clear'): void
-  (e: 'menu'): void
+  (e: 'menu', event: Event): void
   (e: 'view'): void
 }>()
 

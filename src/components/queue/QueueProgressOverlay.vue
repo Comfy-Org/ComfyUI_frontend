@@ -54,24 +54,24 @@
                 root: { class: 'absolute z-50' },
                 content: {
                   class: [
-                    'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
+                    'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg font-inter'
                   ]
                 }
               }"
               @hide="isMoreOpen = false"
             >
               <div
-                class="flex flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)]"
+                class="flex flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)] font-inter"
               >
                 <button
-                  class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+                  class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
                   :aria-label="
                     t('sideToolbar.queueProgressOverlay.showAssetsPanel')
                   "
                   @click="onShowAssetsFromMenu"
                 >
                   <i-comfy:image-ai-edit
-                    class="block size-4 shrink-0 leading-none"
+                    class="block size-4 shrink-0 leading-none text-white"
                     aria-hidden="true"
                   />
                   <span>{{
@@ -79,10 +79,12 @@
                   }}</span>
                 </button>
                 <div
-                  class="mx-[var(--spacing-spacing-xs)] my-[var(--spacing-spacing-xxs)] h-px bg-[var(--color-charcoal-400)]"
-                />
+                  class="px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xxs)]"
+                >
+                  <div class="h-px bg-[var(--color-charcoal-400)]" />
+                </div>
                 <button
-                  class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+                  class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
                   :aria-label="
                     t('sideToolbar.queueProgressOverlay.clearHistory')
                   "
@@ -96,8 +98,10 @@
                   }}</span>
                 </button>
                 <div
-                  class="mx-[var(--spacing-spacing-xs)] mt-[var(--spacing-spacing-xxs)] h-px bg-[var(--color-charcoal-400)]"
-                />
+                  class="px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xxs)]"
+                >
+                  <div class="h-px bg-[var(--color-charcoal-400)]" />
+                </div>
               </div>
             </Popover>
             <button
@@ -202,7 +206,7 @@
                   root: { class: 'absolute z-50' },
                   content: {
                     class: [
-                      'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
+                      'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg font-inter'
                     ]
                   }
                 }"
@@ -270,7 +274,7 @@
             class="flex flex-col gap-[var(--spacing-spacing-md)] px-[var(--spacing-spacing-sm)] pb-[var(--spacing-spacing-md)]"
           >
             <div
-              v-for="group in groupedJobItems"
+              v-for="group in displayedJobGroups"
               :key="group.key"
               class="flex flex-col gap-[var(--spacing-spacing-xs)]"
             >
@@ -295,7 +299,7 @@
                 :progress-current-percent="ji.progressCurrentPercent"
                 :running-node-name="ji.runningNodeName"
                 @clear="onClearItem(ji)"
-                @menu="onMenuItem(ji)"
+                @menu="(ev) => onMenuItem(ji, ev)"
                 @view="onViewItem(ji)"
               />
             </div>
@@ -403,6 +407,49 @@
       </div>
     </div>
   </div>
+  <Popover
+    ref="jobItemPopoverRef"
+    :dismissable="true"
+    :close-on-escape="true"
+    unstyled
+    :pt="{
+      root: { class: 'absolute z-50' },
+      content: {
+        class: [
+          'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg font-inter'
+        ]
+      }
+    }"
+    @hide="isJobMenuOpen = false"
+  >
+    <div
+      class="flex min-w-[14rem] flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)] font-inter"
+    >
+      <template v-for="entry in jobMenuEntries" :key="entry.key">
+        <div
+          v-if="entry.kind === 'divider'"
+          class="px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xxs)]"
+        >
+          <div class="h-px bg-[var(--color-charcoal-400)]" />
+        </div>
+        <button
+          v-else
+          class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+          :aria-label="entry.label"
+          @click="entry.onClick ? entry.onClick() : onStubMenuAction()"
+        >
+          <i
+            v-if="entry.icon"
+            :class="[
+              entry.icon,
+              'block size-4 shrink-0 leading-none text-white'
+            ]"
+          />
+          <span>{{ entry.label }}</span>
+        </button>
+      </template>
+    </div>
+  </Popover>
   <ResultGallery
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -411,14 +458,16 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { st } from '@/i18n'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -444,6 +493,8 @@ const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
+const { copyToClipboard } = useCopyToClipboard()
 
 const {
   totalPercent,
@@ -543,6 +594,13 @@ type JobListItem = {
   runningNodeName?: string
 }
 
+const useDummy = ref(false)
+const onKeyDown = (e: KeyboardEvent) => {
+  if (e.key === '0') useDummy.value = !useDummy.value
+}
+onMounted(() => window.addEventListener('keydown', onKeyDown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
+
 const allTasksSorted = computed(() => {
   const all = [
     ...queueStore.pendingTasks,
@@ -575,8 +633,63 @@ const filteredTasks = computed(() => {
   return tasks
 })
 
-const jobItems = computed<JobListItem[]>(() =>
-  filteredTasks.value.map((task: any) => {
+const dummyJobItems = computed<JobListItem[]>(() => [
+  {
+    id: 'D-added',
+    title: 'Added task',
+    meta: formatClockTime(Date.now(), locale.value),
+    state: 'added',
+    iconName: 'icon-[lucide--plus]',
+    showClear: true
+  },
+  {
+    id: 'D-queued',
+    title: 'Queued task',
+    meta: formatClockTime(Date.now(), locale.value),
+    state: 'queued',
+    iconName: 'icon-[lucide--clock]',
+    showClear: true
+  },
+  {
+    id: 'D-init',
+    title: 'Initialization task',
+    meta: t('queue.initializingAlmostReady'),
+    state: 'initialization',
+    iconName: 'icon-[lucide--server-crash]',
+    showClear: false
+  },
+  {
+    id: 'D-running',
+    title: 'Running task',
+    meta: t('g.running'),
+    state: 'running',
+    iconName: 'icon-[lucide--zap]',
+    progressTotalPercent: 46,
+    progressCurrentPercent: 21,
+    runningNodeName: 'KSampler',
+    showClear: false
+  },
+  {
+    id: 'D-completed',
+    title: 'Completed result.png',
+    meta: '1.23s',
+    state: 'completed',
+    iconName: 'icon-[lucide--check]',
+    showClear: false
+  },
+  {
+    id: 'D-failed',
+    title: 'Failed task',
+    meta: t('g.failed'),
+    state: 'failed',
+    iconName: 'icon-[lucide--alert-circle]',
+    showClear: true
+  }
+])
+
+const jobItems = computed<JobListItem[]>(() => {
+  if (useDummy.value) return dummyJobItems.value
+  return filteredTasks.value.map((task: any) => {
     const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
 
     let iconName: string | undefined
@@ -631,7 +744,7 @@ const jobItems = computed<JobListItem[]>(() =>
         state === 'running' && isActive ? currentNodeName.value : undefined
     } as JobListItem
   })
-)
+})
 
 type JobGroup = {
   key: string
@@ -688,13 +801,88 @@ const groupedJobItems = computed<JobGroup[]>(() => {
   return groups
 })
 
+const displayedJobGroups = computed<JobGroup[]>(() => {
+  if (!useDummy.value) return groupedJobItems.value
+  return [
+    {
+      key: 'dummy',
+      label: 'Dummy',
+      items: jobItems.value
+    }
+  ]
+})
+
 const onClearItem = async (item: JobListItem) => {
   if (!item.taskRef) return
   await queueStore.delete(item.taskRef)
 }
 
-const onMenuItem = (_item: JobListItem) => {
-  // Placeholder for future context menu
+const jobItemPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const isJobMenuOpen = ref(false)
+const currentMenuItem = ref<JobListItem | null>(null)
+const onMenuItem = (item: JobListItem, event: Event) => {
+  currentMenuItem.value = item
+  if (jobItemPopoverRef.value) {
+    jobItemPopoverRef.value.toggle(event)
+    isJobMenuOpen.value = !isJobMenuOpen.value
+  }
+}
+
+type MenuEntry =
+  | {
+      kind?: 'item'
+      key: string
+      label: string
+      icon?: string
+      onClick?: () => void | Promise<void>
+    }
+  | { kind: 'divider'; key: string }
+
+const onStubMenuAction = () => {
+  jobItemPopoverRef.value?.hide()
+  isJobMenuOpen.value = false
+}
+
+const onOpenJobWorkflowFromMenu = async () => {
+  const item = currentMenuItem.value
+  if (!item) return
+  const data = item.taskRef?.workflow
+  if (!data) {
+    jobItemPopoverRef.value?.hide()
+    isJobMenuOpen.value = false
+    return
+  }
+  const filename = `Job ${item.id}.json`
+  const temp = workflowStore.createTemporary(filename, data)
+  await workflowService.openWorkflow(temp)
+  jobItemPopoverRef.value?.hide()
+  isJobMenuOpen.value = false
+}
+
+const onCopyJobIdFromMenu = async () => {
+  const item = currentMenuItem.value
+  if (!item) return
+  await copyToClipboard(item.id)
+  jobItemPopoverRef.value?.hide()
+  isJobMenuOpen.value = false
+}
+
+const onCancelFromMenu = async () => {
+  const item = currentMenuItem.value
+  if (!item) return
+  if (useDummy.value) {
+    jobItemPopoverRef.value?.hide()
+    isJobMenuOpen.value = false
+    return
+  }
+  if (item.state === 'running' || item.state === 'initialization') {
+    await api.interrupt(item.id)
+  } else if (item.state === 'queued') {
+    await api.deleteItem('queue', item.id)
+  }
+  await queueStore.update()
+  jobItemPopoverRef.value?.hide()
+  isJobMenuOpen.value = false
 }
 
 const galleryActiveIndex = ref(-1)
@@ -787,4 +975,132 @@ const onClearHistoryFromMenu = async () => {
   morePopoverRef.value?.hide()
   isMoreOpen.value = false
 }
+
+const jobMenuOpenWorkflowLabel = computed(() =>
+  st('queue.jobMenu.openAsWorkflowNewTab', 'Open as workflow in new tab')
+)
+const jobMenuOpenWorkflowFailedLabel = computed(() =>
+  st('queue.jobMenu.openWorkflowNewTab', 'Open workflow in new tab')
+)
+const jobMenuCopyJobIdLabel = computed(() =>
+  st('queue.jobMenu.copyJobId', 'Copy job ID')
+)
+const jobMenuCancelLabel = computed(() =>
+  st('queue.jobMenu.cancelJob', 'Cancel job')
+)
+
+const jobMenuEntries = computed<MenuEntry[]>(() => {
+  const state = currentMenuItem.value?.state
+  if (!state) return []
+  if (state === 'completed') {
+    return [
+      {
+        key: 'inspect-asset',
+        label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
+        icon: 'icon-[lucide--zoom-in]',
+        onClick: onStubMenuAction
+      },
+      {
+        key: 'add-to-current',
+        label: st(
+          'queue.jobMenu.addToCurrentWorkflow',
+          'Add to current workflow'
+        ),
+        icon: 'icon-[comfy--node]',
+        onClick: onStubMenuAction
+      },
+      {
+        key: 'download',
+        label: st('queue.jobMenu.download', 'Download'),
+        icon: 'icon-[lucide--download]',
+        onClick: onStubMenuAction
+      },
+      { kind: 'divider', key: 'd1' },
+      {
+        key: 'open-workflow',
+        label: jobMenuOpenWorkflowLabel.value,
+        icon: 'icon-[comfy--workflow]',
+        onClick: onOpenJobWorkflowFromMenu
+      },
+      {
+        key: 'export-workflow',
+        label: st('queue.jobMenu.exportWorkflow', 'Export workflow'),
+        icon: 'icon-[comfy--file-output]',
+        onClick: onStubMenuAction
+      },
+      { kind: 'divider', key: 'd2' },
+      {
+        key: 'copy-id',
+        label: jobMenuCopyJobIdLabel.value,
+        icon: 'icon-[lucide--copy]',
+        onClick: onCopyJobIdFromMenu
+      },
+      { kind: 'divider', key: 'd3' },
+      {
+        key: 'delete',
+        label: st('queue.jobMenu.delete', 'Delete'),
+        icon: 'icon-[lucide--trash-2]',
+        onClick: onStubMenuAction
+      }
+    ]
+  }
+  if (state === 'failed') {
+    return [
+      {
+        key: 'open-workflow',
+        label: jobMenuOpenWorkflowFailedLabel.value,
+        icon: 'icon-[comfy--workflow]',
+        onClick: onOpenJobWorkflowFromMenu
+      },
+      { kind: 'divider', key: 'd1' },
+      {
+        key: 'copy-id',
+        label: jobMenuCopyJobIdLabel.value,
+        icon: 'icon-[lucide--copy]',
+        onClick: onCopyJobIdFromMenu
+      },
+      {
+        key: 'copy-error',
+        label: st('queue.jobMenu.copyErrorMessage', 'Copy error message'),
+        icon: 'icon-[lucide--copy]',
+        onClick: onStubMenuAction
+      },
+      {
+        key: 'report-error',
+        label: st('queue.jobMenu.reportError', 'Report error'),
+        icon: 'icon-[lucide--message-circle-warning]',
+        onClick: onStubMenuAction
+      },
+      { kind: 'divider', key: 'd2' },
+      {
+        key: 'delete',
+        label: st('queue.jobMenu.delete', 'Delete'),
+        icon: 'icon-[lucide--trash-2]',
+        onClick: onStubMenuAction
+      }
+    ]
+  }
+  return [
+    {
+      key: 'open-workflow',
+      label: jobMenuOpenWorkflowLabel.value,
+      icon: 'icon-[comfy--workflow]',
+      onClick: onOpenJobWorkflowFromMenu
+    },
+    { kind: 'divider', key: 'd1' },
+    {
+      key: 'copy-id',
+      label: jobMenuCopyJobIdLabel.value,
+      icon: 'icon-[lucide--copy]',
+      onClick: onCopyJobIdFromMenu
+    },
+    { kind: 'divider', key: 'd2' },
+    {
+      key: 'cancel-job',
+      label: jobMenuCancelLabel.value,
+      icon: 'icon-[lucide--x]',
+      onClick: onCancelFromMenu
+    }
+  ]
+})
 </script>
