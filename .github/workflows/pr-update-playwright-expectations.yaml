@@ -60,25 +60,22 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
-
-      # Setup Test Environment, build frontend but do not start server yet
-      - name: Setup ComfyUI server
-        uses: ./.github/actions/setup-comfyui-server
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
-      # Save the entire workspace as cache for update jobs to restore
+      # Save expensive build artifacts (Python env, built frontend, node_modules)
+      # Source code will be checked out fresh in sharded jobs
       - name: Generate cache key
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
       - name: Save cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
         with:
-          path: .
+          path: |
+            ComfyUI
+            dist
+            node_modules
           key: comfyui-setup-${{ steps.cache-key.outputs.key }}
 
   # Sharded snapshot updates
@@ -91,21 +88,28 @@ jobs:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      # Restore test environment from setup job
-      - name: Wait for cache propagation
-        run: sleep 10
+      # Checkout source code fresh (not cached)
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.setup.outputs.branch }}
 
-      - name: Restore cached setup
+      # Restore expensive build artifacts from setup job
+      - name: Restore cached artifacts
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           fail-on-cache-miss: true
-          path: .
+          path: |
+            ComfyUI
+            dist
+            node_modules
           key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
 
-      - name: Setup ComfyUI server
+      - name: Setup ComfyUI server (from cache)
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: true
+          skip_checkout: true
 
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
@@ -158,14 +162,44 @@ jobs:
       # Merge snapshots from all shards into browser_tests directory
       - name: Merge snapshots
         run: |
+          set -euo pipefail
+
           echo "Merging snapshots from all shards..."
+
+          # Verify target directory exists
+          if [ ! -d "browser_tests" ]; then
+            echo "::error::Target directory 'browser_tests' does not exist"
+            exit 1
+          fi
+
+          merged_count=0
           for shard_dir in ./downloaded-snapshots/snapshots-shard-*; do
-            if [ -d "$shard_dir" ]; then
-              echo "Copying from $shard_dir..."
-              cp -r "$shard_dir"/* browser_tests/ 2>/dev/null || true
+            # Check if glob matched any directories
+            if [ ! -e "$shard_dir" ]; then
+              echo "::warning::No shard directories found matching pattern"
+              continue
             fi
+
+            if [ ! -d "$shard_dir" ]; then
+              echo "::warning::Expected directory but found file: $shard_dir"
+              continue
+            fi
+
+            # Check if directory has content (empty is OK - shard might have no changes)
+            if [ -z "$(ls -A "$shard_dir" 2>/dev/null)" ]; then
+              echo "Shard directory $shard_dir is empty (no snapshots updated in this shard)"
+              continue
+            fi
+
+            echo "Copying from $shard_dir..."
+            if ! cp -r "$shard_dir"/* browser_tests/; then
+              echo "::error::Failed to copy snapshots from $shard_dir to browser_tests/"
+              exit 1
+            fi
+            ((merged_count++))
           done
-          echo "Snapshot merge complete"
+
+          echo "Snapshot merge complete. Merged snapshots from $merged_count shard(s)"
 
       - name: Debugging info
         run: |
