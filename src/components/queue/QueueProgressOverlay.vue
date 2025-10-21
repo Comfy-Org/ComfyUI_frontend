@@ -307,116 +307,25 @@
         </div>
       </div>
 
-      <!-- Passive/Active state -->
-      <div
+      <QueueOverlayActive
         v-else-if="hasActiveJob"
-        class="flex flex-col gap-[var(--spacing-spacing-sm)] p-[var(--spacing-spacing-xs)]"
-      >
-        <div class="flex flex-col gap-[var(--spacing-spacing-xss)]">
-          <div
-            class="relative h-2 w-full overflow-hidden rounded-full border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)]"
-          >
-            <div
-              class="absolute inset-0 h-full rounded-full transition-[width]"
-              :style="totalProgressStyle"
-            />
-            <div
-              class="absolute inset-0 h-full rounded-full transition-[width]"
-              :style="currentNodeProgressStyle"
-            />
-          </div>
-          <div
-            class="flex items-start justify-end gap-[var(--spacing-spacing-md)] text-[12px] leading-none"
-          >
-            <div
-              class="flex items-center gap-[var(--spacing-spacing-xss)] text-white opacity-90"
-            >
-              <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
-                <template #percent>
-                  <span class="font-bold">{{ totalPercentFormatted }}</span>
-                </template>
-              </i18n-t>
-            </div>
-            <div
-              class="flex items-center gap-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)]"
-            >
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.currentNode')
-              }}</span>
-              <span class="inline-block max-w-[10rem] truncate">{{
-                currentNodeName
-              }}</span>
-              <span class="flex items-center gap-[var(--spacing-spacing-xss)]">
-                <span>{{ currentNodePercent }}</span>
-                <span>%</span>
-              </span>
-            </div>
-          </div>
-        </div>
+        :total-progress-style="totalProgressStyle"
+        :current-node-progress-style="currentNodeProgressStyle"
+        :total-percent-formatted="totalPercentFormatted"
+        :current-node-percent="currentNodePercent"
+        :current-node-name="currentNodeName"
+        :running-count="runningCount"
+        :bottom-row-class="bottomRowClass"
+        @interrupt-all="interruptAll"
+        @view-all-jobs="viewAllJobs"
+      />
 
-        <div :class="bottomRowClass">
-          <div
-            class="flex items-center gap-[var(--spacing-spacing-xs)] text-[12px] text-white"
-          >
-            <span class="opacity-90">
-              <span class="font-bold">{{ runningCount }}</span>
-              <span class="ml-[var(--spacing-spacing-xss)]">{{
-                t('sideToolbar.queueProgressOverlay.running')
-              }}</span>
-            </span>
-            <button
-              v-if="runningCount > 0"
-              class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
-              :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
-              @click="interruptAll"
-            >
-              <i
-                class="icon-[lucide--x] block size-4 leading-none text-white"
-              />
-            </button>
-          </div>
-
-          <button
-            class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
-            @click="viewAllJobs"
-          >
-            {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else class="pointer-events-auto">
-        <CompletionSummaryBanner
-          v-if="completionSummary"
-          :mode="completionSummary.mode"
-          :completed-count="completionSummary.completedCount"
-          :failed-count="completionSummary.failedCount"
-          :thumbnail-urls="completionSummary.thumbnailUrls"
-          :aria-label="
-            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-          "
-          @click="onSummaryClick"
-        />
-        <button
-          v-else
-          type="button"
-          class="group flex h-10 w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xss))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] py-[var(--spacing-spacing-xss)] pr-[var(--spacing-spacing-xs)] pl-[calc(var(--spacing-spacing-xs)*2)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
-          :aria-label="
-            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-          "
-          @click="openExpandedFromEmpty"
-        >
-          <span class="text-[14px] leading-none font-normal text-white">
-            {{ t('sideToolbar.queueProgressOverlay.noActiveJobs') }}
-          </span>
-          <span
-            class="flex items-center justify-center rounded p-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
-          >
-            <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
-          </span>
-        </button>
-      </div>
+      <QueueOverlayEmpty
+        v-else
+        :summary="completionSummary"
+        @summary-click="onSummaryClick"
+        @expand="openExpandedFromEmpty"
+      />
     </div>
   </div>
   <Popover
@@ -474,7 +383,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueJobItem from '@/components/queue/QueueJobItem.vue'
-import CompletionSummaryBanner from '@/components/queue/overlay/CompletionSummaryBanner.vue'
+import QueueOverlayActive from '@/components/queue/overlay/QueueOverlayActive.vue'
+import QueueOverlayEmpty from '@/components/queue/overlay/QueueOverlayEmpty.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { jobTabs, useJobList } from '@/composables/queue/useJobList'
