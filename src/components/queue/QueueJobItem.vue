@@ -6,7 +6,7 @@
     @contextmenu.stop.prevent="onContextMenu"
   >
     <div
-      v-show="showDetails"
+      v-if="!isPreviewVisible && showDetails"
       class="absolute top-0 right-[calc(100%+var(--spacing-spacing-xs))] z-50"
       @mouseenter="onPopoverEnter"
       @mouseleave="onPopoverLeave"
@@ -14,6 +14,18 @@
       <JobDetailsPopover
         :job-id="props.jobId"
         :workflow-id="props.workflowId"
+      />
+    </div>
+    <div
+      v-if="isPreviewVisible && canShowPreview"
+      class="absolute top-0 right-[calc(100%+var(--spacing-spacing-xs))] z-50"
+      @mouseenter="onPreviewEnter"
+      @mouseleave="onPreviewLeave"
+    >
+      <QueueAssetPreview
+        :image-url="iconImageUrl!"
+        :name="props.title"
+        :time-label="rightText || undefined"
       />
     </div>
     <BaseJobRow
@@ -32,6 +44,8 @@
       <template #icon>
         <div
           class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
+          @mouseenter.stop="onIconEnter"
+          @mouseleave.stop="onIconLeave"
         >
           <img
             v-if="iconImageUrl"
@@ -87,6 +101,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobDetailsPopover from '@/components/queue/overlay/JobDetailsPopover.vue'
+import QueueAssetPreview from '@/components/queue/overlay/QueueAssetPreview.vue'
 import { useQueuePopoverStore } from '@/stores/queuePopoverStore'
 import type { JobState } from '@/types/queue'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
@@ -154,10 +169,40 @@ const scheduleHideDetails = () => {
     hideTimer.value = null
   }, 150)
 }
-const onRowEnter = openDetails
+const onRowEnter = () => {
+  if (!isPreviewVisible.value) openDetails()
+}
 const onRowLeave = scheduleHideDetails
 const onPopoverEnter = openDetails
 const onPopoverLeave = scheduleHideDetails
+
+const isPreviewVisible = ref(false)
+const previewHideTimer = ref<number | null>(null)
+const clearPreviewHideTimer = () => {
+  if (previewHideTimer.value !== null) {
+    clearTimeout(previewHideTimer.value)
+    previewHideTimer.value = null
+  }
+}
+const canShowPreview = computed(
+  () => props.state === 'completed' && !!props.iconImageUrl
+)
+const showPreview = () => {
+  if (!canShowPreview.value) return
+  clearPreviewHideTimer()
+  isPreviewVisible.value = true
+}
+const scheduleHidePreview = () => {
+  clearPreviewHideTimer()
+  previewHideTimer.value = window.setTimeout(() => {
+    isPreviewVisible.value = false
+    previewHideTimer.value = null
+  }, 150)
+}
+const onIconEnter = () => showPreview()
+const onIconLeave = () => scheduleHidePreview()
+const onPreviewEnter = () => showPreview()
+const onPreviewLeave = () => scheduleHidePreview()
 
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
