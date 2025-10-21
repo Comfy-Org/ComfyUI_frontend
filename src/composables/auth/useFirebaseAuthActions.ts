@@ -1,6 +1,7 @@
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
@@ -18,6 +19,7 @@ import { usdToMicros } from '@/utils/formatUtil'
 export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
+  const router = useRouter()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -54,6 +56,12 @@ export const useFirebaseAuthActions = () => {
       detail: t('auth.signOut.successDetail'),
       life: 5000
     })
+
+    // Redirect to login page if we're on cloud domain
+    const hostname = window.location.hostname
+    if (hostname.includes('cloud.comfy.org')) {
+      await router.push({ name: 'cloud-login' })
+    }
   }, reportError)
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
