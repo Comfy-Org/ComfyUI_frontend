@@ -7,7 +7,7 @@
           :src="imageUrl"
           :alt="name"
           class="h-full w-full cursor-pointer object-contain"
-          @click="$emit('click')"
+          @click="$emit('image-click')"
           @load="onImgLoad"
         />
         <div
@@ -43,15 +43,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+defineOptions({ inheritAttrs: false })
+
 defineProps<{
   imageUrl: string
   name: string
   timeLabel?: string
 }>()
 
-defineEmits<{
-  (e: 'click'): void
-}>()
+defineEmits(['image-click'])
 
 const imgRef = ref<HTMLImageElement | null>(null)
 const width = ref<number | null>(null)

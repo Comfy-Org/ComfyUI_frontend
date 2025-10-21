@@ -26,7 +26,7 @@
         :image-url="iconImageUrl!"
         :name="props.title"
         :time-label="rightText || undefined"
-        @click="emit('view')"
+        @image-click="emit('view')"
       />
     </div>
     <div
