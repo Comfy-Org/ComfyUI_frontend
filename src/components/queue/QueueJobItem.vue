@@ -28,20 +28,34 @@
         :time-label="rightText || undefined"
       />
     </div>
-    <BaseJobRow
-      :variant="props.state"
-      :primary-text="primaryText"
-      :secondary-text="rightText"
-      :show-actions-on-hover="true"
-      :show-clear="computedShowClear"
-      :show-menu="computedShowMenu"
-      :progress-total-percent="progressTotalPercent"
-      :progress-current-percent="progressCurrentPercent"
-      @clear="emit('clear')"
-      @menu="(ev) => emit('menu', ev)"
-      @view="emit('view')"
+    <div
+      class="relative flex items-center justify-between gap-[var(--spacing-spacing-xs)] overflow-hidden rounded-[var(--corner-radius-corner-radius-md)] border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-[var(--spacing-spacing-xxs)] text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
+      @mouseenter="isHovered = true"
+      @mouseleave="isHovered = false"
     >
-      <template #icon>
+      <div
+        v-if="
+          props.state === 'running' &&
+          (props.progressTotalPercent !== undefined ||
+            props.progressCurrentPercent !== undefined)
+        "
+        class="absolute inset-0"
+      >
+        <div
+          v-if="props.progressTotalPercent !== undefined"
+          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-[var(--color-interface-panel-job-progress-primary)] transition-[width]"
+          :style="{ width: `${props.progressTotalPercent}%` }"
+        />
+        <div
+          v-if="props.progressCurrentPercent !== undefined"
+          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-[var(--color-interface-panel-job-progress-secondary)] transition-[width]"
+          :style="{ width: `${props.progressCurrentPercent}%` }"
+        />
+      </div>
+
+      <div
+        class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xxs)]"
+      >
         <div
           class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
           @mouseenter.stop="onIconEnter"
@@ -54,45 +68,96 @@
           />
           <i v-else :class="[iconClass, 'size-4']" />
         </div>
-      </template>
-      <template #primary>
-        <slot name="primary">
-          <template v-if="props.state === 'running'">
-            <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
-              <template #percent>
-                <span class="font-bold">{{ formattedTotalPercent }}</span>
-              </template>
-            </i18n-t>
-          </template>
-          <template v-else>{{ primaryText }}</template>
-        </slot>
-      </template>
-      <template #secondary>
-        <slot name="secondary">
-          <template
-            v-if="
-              props.state === 'running' &&
-              props.runningNodeName &&
-              props.progressCurrentPercent !== undefined
-            "
+      </div>
+
+      <div class="relative z-[1] min-w-0 flex-1">
+        <div class="truncate opacity-90" :title="primaryText">
+          <slot name="primary">
+            <template v-if="props.state === 'running'">
+              <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
+                <template #percent>
+                  <span class="font-bold">{{ formattedTotalPercent }}</span>
+                </template>
+              </i18n-t>
+            </template>
+            <template v-else>{{ primaryText }}</template>
+          </slot>
+        </div>
+      </div>
+
+      <div
+        class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xs)] text-[var(--color-slate-100)]"
+      >
+        <Transition
+          mode="out-in"
+          enter-active-class="transition-opacity transition-transform duration-150 ease-out"
+          leave-active-class="transition-opacity transition-transform duration-150 ease-in"
+          enter-from-class="opacity-0 translate-y-0.5"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 translate-y-0.5"
+        >
+          <div
+            v-if="isHovered"
+            key="actions"
+            class="inline-flex items-center gap-[var(--spacing-spacing-xs)] pr-[calc(var(--spacing-spacing-xs)-var(--spacing-spacing-xxs))]"
           >
-            <span
-              class="inline-flex items-center gap-[var(--spacing-spacing-xss)]"
+            <button
+              v-if="props.state !== 'completed' && computedShowClear"
+              type="button"
+              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              :aria-label="t('g.clear')"
+              @click.stop="emit('clear')"
             >
-              <span class="inline-block max-w-[10rem] truncate">{{
-                props.runningNodeName
-              }}</span>
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.colonPercent', {
-                  percent: formattedCurrentPercent
-                })
-              }}</span>
-            </span>
-          </template>
-          <template v-else>{{ rightText }}</template>
-        </slot>
-      </template>
-    </BaseJobRow>
+              <i class="icon-[lucide--x] size-4" />
+            </button>
+            <button
+              v-else-if="props.state === 'completed'"
+              type="button"
+              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              :aria-label="t('menuLabels.View')"
+              @click.stop="emit('view')"
+            >
+              <span>{{ t('menuLabels.View') }}</span>
+            </button>
+            <button
+              v-if="computedShowMenu"
+              type="button"
+              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              :aria-label="t('g.moreOptions')"
+              @click.stop="emit('menu', $event)"
+            >
+              <i class="icon-[lucide--more-horizontal] size-4" />
+            </button>
+          </div>
+          <div v-else key="secondary" class="pr-[var(--spacing-spacing-xs)]">
+            <slot name="secondary">
+              <template
+                v-if="
+                  props.state === 'running' &&
+                  props.runningNodeName &&
+                  props.progressCurrentPercent !== undefined
+                "
+              >
+                <span
+                  class="inline-flex items-center gap-[var(--spacing-spacing-xss)]"
+                >
+                  <span class="inline-block max-w-[10rem] truncate">{{
+                    props.runningNodeName
+                  }}</span>
+                  <span>{{
+                    t('sideToolbar.queueProgressOverlay.colonPercent', {
+                      percent: formattedCurrentPercent
+                    })
+                  }}</span>
+                </span>
+              </template>
+              <template v-else>{{ rightText }}</template>
+            </slot>
+          </div>
+        </Transition>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -106,8 +171,6 @@ import { useQueuePopoverStore } from '@/stores/queuePopoverStore'
 import type { JobState } from '@/types/queue'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 import { iconForJobState, shouldShowClear } from '@/utils/queueUtil'
-
-import BaseJobRow from './BaseJobRow.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -203,6 +266,8 @@ const onIconEnter = () => showPreview()
 const onIconLeave = () => scheduleHidePreview()
 const onPreviewEnter = () => showPreview()
 const onPreviewLeave = () => scheduleHidePreview()
+
+const isHovered = ref(false)
 
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
