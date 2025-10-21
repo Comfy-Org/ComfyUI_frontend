@@ -173,34 +173,51 @@ jobs:
             exit 1
           fi
 
+          # List all downloaded artifacts for debugging
+          echo "Available shard artifacts:"
+          ls -la ./downloaded-snapshots/ || echo "No downloaded-snapshots directory found"
+
           merged_count=0
+          skipped_count=0
+
           for shard_dir in ./downloaded-snapshots/snapshots-shard-*; do
+            echo "Processing: $shard_dir"
+
             # Check if glob matched any directories
             if [ ! -e "$shard_dir" ]; then
               echo "::warning::No shard directories found matching pattern"
-              continue
+              break
             fi
 
             if [ ! -d "$shard_dir" ]; then
               echo "::warning::Expected directory but found file: $shard_dir"
+              skipped_count=$((skipped_count + 1))
               continue
             fi
 
             # Check if directory has content (empty is OK - shard might have no changes)
             if [ -z "$(ls -A "$shard_dir" 2>/dev/null)" ]; then
               echo "Shard directory $shard_dir is empty (no snapshots updated in this shard)"
+              skipped_count=$((skipped_count + 1))
               continue
             fi
 
-            echo "Copying from $shard_dir..."
-            if ! cp -r "$shard_dir"/* browser_tests/; then
-              echo "::error::Failed to copy snapshots from $shard_dir to browser_tests/"
+            echo "Merging snapshots from $shard_dir..."
+
+            # The artifact path 'browser_tests/**/*-snapshots/' uploads relative to browser_tests/
+            # So downloaded artifacts contain 'tests/' directly, not 'browser_tests/tests/'
+            # We need to merge the artifact contents into browser_tests/
+            if ! rsync -a "$shard_dir/" browser_tests/; then
+              echo "::error::Failed to merge snapshots from $shard_dir/ to browser_tests/"
+              echo "Contents of $shard_dir:"
+              find "$shard_dir" -type f | head -20
               exit 1
             fi
-            ((merged_count++))
+            merged_count=$((merged_count + 1))
+            echo "Successfully merged shard $merged_count"
           done
 
-          echo "Snapshot merge complete. Merged snapshots from $merged_count shard(s)"
+          echo "Snapshot merge complete. Merged: $merged_count shard(s), Skipped: $skipped_count shard(s)"
 
       - name: Debugging info
         run: |
