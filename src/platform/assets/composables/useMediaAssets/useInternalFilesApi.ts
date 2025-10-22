@@ -1,9 +1,8 @@
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { HistoryTaskItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { TaskItemImpl } from '@/stores/queueStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 import {
   mapInputFileToAssetItem,
@@ -47,41 +46,20 @@ export function useInternalFilesApi() {
         )
       }
 
-      // For output directory, use history data like QueueSidebarTab
-      const historyResponse = await api.getHistory(200)
+      const queueStore = useQueueStore()
 
-      if (!historyResponse?.History) {
-        return []
-      }
-
-      const assetItems: AssetItem[] = []
-
-      // Process history items using TaskItemImpl like QueueSidebarTab
-      historyResponse.History.forEach((historyItem: HistoryTaskItem) => {
-        // Create TaskItemImpl to use the same logic as QueueSidebarTab
-        const taskItem = new TaskItemImpl(
-          'History',
-          historyItem.prompt,
-          historyItem.status,
-          historyItem.outputs
+      const assetItems: AssetItem[] = queueStore.flatTasks
+        .filter(
+          (task) => task.previewOutput && task.displayStatus === 'Completed'
         )
-
-        // Only process completed tasks
-        if (taskItem.displayStatus === 'Completed' && taskItem.outputs) {
-          // Process each output using flatOutputs like QueueSidebarTab
-          taskItem.flatOutputs.forEach((output) => {
-            // Only include output type files (not temp previews)
-            if (output.type === 'output' && output.supportsPreview) {
-              const assetItem = mapTaskOutputToAssetItem(
-                taskItem,
-                output,
-                false // Don't use display name for internal
-              )
-              assetItems.push(assetItem)
-            }
-          })
-        }
-      })
+        .map((task) => {
+          const output = task.previewOutput!
+          return mapTaskOutputToAssetItem(
+            task,
+            output,
+            false // Don't use display name for internal
+          )
+        })
 
       // Sort by creation date (newest first)
       return assetItems.sort(
