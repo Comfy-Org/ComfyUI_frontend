@@ -301,14 +301,18 @@ test.describe('Settings', () => {
 })
 
 test.describe('Support', () => {
-  test('Should open external zendesk link', async ({ comfyPage }) => {
+  test('Should open external zendesk link with OSS tag', async ({
+    comfyPage
+  }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     const pagePromise = comfyPage.page.context().waitForEvent('page')
     await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
     const newPage = await pagePromise
 
     await newPage.waitForLoadState('networkidle')
-    await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
+    await expect(newPage).toHaveURL(
+      /.*support\.comfy\.org\/hc\/en-us\/requests\/new\?tf_42243568391700=oss.*/
+    )
     await newPage.close()
   })
 })
