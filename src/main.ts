@@ -13,6 +13,7 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import { FIREBASE_CONFIG } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
+import '@/platform/auth/serviceWorker'
 import router from '@/router'
 
 import App from './App.vue'

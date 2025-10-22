@@ -1,11 +1,14 @@
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
+import { t } from '@/i18n'
 import type {
   IContextMenuValue,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
@@ -63,7 +66,15 @@ function getParentNodes(): SubgraphNode[] {
   //or by adding a new event for parent listeners to collect from
   const { navigationStack } = useSubgraphNavigationStore()
   const subgraph = navigationStack.at(-1)
-  if (!subgraph) throw new Error("Can't promote widget when not in subgraph")
+  if (!subgraph) {
+    useToastStore().add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subgraphStore.promoteOutsideSubgraph'),
+      life: 2000
+    })
+    return []
+  }
   const parentGraph = navigationStack.at(-2) ?? subgraph.rootGraph
   return parentGraph.nodes.filter(
     (node): node is SubgraphNode =>
@@ -95,6 +106,21 @@ export function addWidgetPromotionOptions(
       }
     })
   }
+}
+export function tryToggleWidgetPromotion() {
+  const canvas = useCanvasStore().getCanvas()
+  const [x, y] = canvas.graph_mouse
+  const node = canvas.graph?.getNodeOnPos(x, y, canvas.visible_nodes)
+  if (!node) return
+  const widget = node.getWidgetOnPos(x, y, true)
+  const parents = getParentNodes()
+  if (!parents.length || !widget) return
+  const promotableParents = parents.filter(
+    (s) => !getProxyWidgets(s).some(matchesPropertyItem([node, widget]))
+  )
+  if (promotableParents.length > 0)
+    promoteWidget(node, widget, promotableParents)
+  else demoteWidget(node, widget, parents)
 }
 const recommendedNodes = [
   'CLIPTextEncode',

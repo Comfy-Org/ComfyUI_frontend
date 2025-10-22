@@ -1,0 +1,108 @@
+# Setting test expectation screenshots for Playwright
+name: "PR: Update Playwright Expectations"
+
+on:
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: >
+      ( github.event_name == 'pull_request' && github.event.label.name == 'New Browser Test Expectations' ) ||
+      ( github.event.issue.pull_request && 
+        github.event_name == 'issue_comment' &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        ) &&
+        startsWith(github.event.comment.body, '/update-playwright') )
+    steps:
+      - name: Find Update Comment
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad
+        id: "find-update-comment"
+        with:
+          issue-number: ${{ github.event.number || github.event.issue.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Updating Playwright Expectations"
+
+      - name: Add Starting Reaction
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
+        with:
+          comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.number || github.event.issue.number }}
+          body: |
+            Updating Playwright Expectations
+          edit-mode: replace
+          reactions: eyes
+
+      - name: Get Branch SHA
+        id: "get-branch"
+        run: echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
+        env:
+          REPO: ${{ github.repository }}
+          PR_NO: ${{ github.event.number || github.event.issue.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Initial Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.get-branch.outputs.branch }}
+      - name: Setup Frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+      - name: Setup ComfyUI Server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: true
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+      - name: Run Playwright tests and update snapshots
+        id: playwright-tests
+        run: pnpm exec playwright test --update-snapshots
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: ./playwright-report/
+          retention-days: 30
+      - name: Debugging info
+        run: |
+          echo "PR: ${{ github.event.issue.number }}"
+          echo "Branch: ${{ steps.get-branch.outputs.branch }}"
+          git status
+      - name: Commit updated expectations
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add browser_tests
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "[automated] Update test expectations"
+            git push origin ${{ steps.get-branch.outputs.branch }}
+          fi
+
+      - name: Add Done Reaction
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
+        if: github.event_name == 'issue_comment'
+        with:
+          comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.number || github.event.issue.number }}
+          reactions: +1
+          reactions-edit-mode: replace
+
+      - name: Remove New Browser Test Expectations label
+        if: always() && github.event_name == 'pull_request'
+        run: gh pr edit ${{ github.event.pull_request.number }} --remove-label "New Browser Test Expectations"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

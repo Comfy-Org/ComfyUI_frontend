@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "使用新菜单",
     "options": {
-      "Bottom": "底部",
       "Disabled": "禁用",
       "Top": "顶部"
     },
@@ -384,8 +383,7 @@
     "name": "已打开工作流的位置",
     "options": {
       "Sidebar": "侧边栏",
-      "Topbar": "顶部栏",
-      "Topbar (2nd-row)": "顶部栏 (第二行)"
+      "Topbar": "顶部栏"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

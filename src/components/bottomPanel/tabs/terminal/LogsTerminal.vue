@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full bg-black">
+  <div class="h-full w-full bg-transparent">
     <p v-if="errorMessage" class="p-4 text-center">
       {{ errorMessage }}
     </p>
@@ -94,7 +94,6 @@ const terminalCreated = (
 }
 
 :deep(.p-terminal) .xterm-screen {
-  background-color: black;
   overflow-y: hidden;
 }
 </style>

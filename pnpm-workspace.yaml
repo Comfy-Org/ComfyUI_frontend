@@ -62,10 +62,13 @@ catalog:
   jsdom: ^26.1.0
   knip: ^5.62.0
   lint-staged: ^15.2.7
+  markdown-table: ^3.0.4
   nx: 21.4.1
+  picocolors: ^1.1.1
   pinia: ^2.1.7
   postcss-html: ^1.8.0
-  prettier: ^3.3.2
+  prettier: ^3.6.2
+  pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
   rollup-plugin-visualizer: ^6.0.4
@@ -95,11 +98,9 @@ catalog:
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
+  mixpanel-browser: ^2.71.0
 
 cleanupUnusedCatalogs: true
-
-overrides:
-  '@types/eslint': '-'
 
 ignoredBuiltDependencies:
   - '@firebase/util'
@@ -115,3 +116,6 @@ onlyBuiltDependencies:
   - esbuild
   - nx
   - oxc-resolver
+
+overrides:
+  '@types/eslint': '-'

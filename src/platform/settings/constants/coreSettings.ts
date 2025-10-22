@@ -116,6 +116,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.18.1'
   },
   {
+    id: 'Comfy.Sidebar.Style',
+    category: ['Appearance', 'Sidebar', 'Style'],
+    name: 'Sidebar style',
+    type: 'combo',
+    options: ['floating', 'connected'],
+    defaultValue: 'floating'
+  },
+  {
     id: 'Comfy.TextareaWidget.FontSize',
     category: ['Appearance', 'Node Widget', 'TextareaWidget', 'FontSize'],
     name: 'Textarea widget font size',
@@ -155,7 +163,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultsByInstallVersion: {
       '1.25.0': 'legacy'
     },
-    onChange: async (newValue: string) => {
+    onChange: async (newValue: string, oldValue?: string) => {
+      if (!oldValue) return
       const settingStore = useSettingStore()
 
       if (newValue === 'standard') {
@@ -549,12 +558,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'Top',
     name: 'Use new menu',
     type: 'combo',
-    options: ['Disabled', 'Top', 'Bottom'],
+    options: ['Disabled', 'Top'],
     tooltip:
       'Menu bar position. On mobile devices, the menu is always shown at the top.',
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
+        return 'Top'
+      } else if (value === 'Bottom') {
         return 'Top'
       }
       return value
@@ -564,10 +575,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.WorkflowTabsPosition',
     name: 'Opened workflows position',
     type: 'combo',
-    options: ['Sidebar', 'Topbar', 'Topbar (2nd-row)'],
-    // Default to topbar (2nd-row) if the window is less than 1536px(2xl) wide.
-    defaultValue: () =>
-      window.innerWidth < 1536 ? 'Topbar (2nd-row)' : 'Topbar'
+    options: ['Sidebar', 'Topbar'],
+    defaultValue: 'Topbar',
+    migrateDeprecatedValue: (value: string) => {
+      if (value === 'Topbar (2nd-row)') {
+        return 'Topbar'
+      }
+      return value
+    }
   },
   {
     id: 'Comfy.Graph.CanvasMenu',

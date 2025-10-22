@@ -1,6 +1,7 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
@@ -23,10 +24,17 @@ const commonGlobals = {
 } as const
 
 const settings = {
-  'import/resolver': {
-    typescript: true,
-    node: true
-  },
+  'import-x/resolver-next': [
+    createTypeScriptImportResolver({
+      alwaysTryTypes: true,
+      project: [
+        './tsconfig.json',
+        './apps/*/tsconfig.json',
+        './packages/*/tsconfig.json'
+      ],
+      noWarnOnMultipleProjects: true
+    })
+  ],
   tailwindcss: {
     config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
     functions: ['cn', 'clsx', 'tw']
@@ -52,6 +60,7 @@ export default defineConfig([
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
+      'public/auth-sw.js',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
@@ -67,11 +76,8 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
-            'vite.config.mts',
             'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'playwright.config.ts',
-            'playwright.i18n.config.ts'
+            'vite.types.config.mts'
           ]
         }
       }
@@ -247,6 +253,18 @@ export default defineConfig([
   {
     files: ['**/*.{test,spec,stories}.ts', '**/*.stories.vue'],
     rules: {
+      'no-console': 'off'
+    }
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
     }
   }

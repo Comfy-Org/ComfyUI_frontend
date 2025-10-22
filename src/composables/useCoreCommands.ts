@@ -5,7 +5,11 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  promoteRecommendedWidgets,
+  tryToggleWidgetPromotion
+} from '@/core/graph/subgraph/proxyWidgetUtils'
+import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { t } from '@/i18n'
 import {
   LGraphEventMode,
@@ -17,7 +21,9 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -447,6 +453,11 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
+
+        if (isCloud) {
+          useTelemetry()?.trackWorkflowExecution()
+        }
+
         await app.queuePrompt(0, batchCount)
       }
     },
@@ -458,6 +469,11 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
+
+        if (isCloud) {
+          useTelemetry()?.trackWorkflowExecution()
+        }
+
         await app.queuePrompt(-1, batchCount)
       }
     },
@@ -888,7 +904,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Graph.ConvertToSubgraph',
-      icon: 'pi pi-sitemap',
+      icon: 'icon-[lucide--shrink]',
       label: 'Convert Selection to Subgraph',
       versionAdded: '1.20.1',
       category: 'essentials' as const,
@@ -916,10 +932,9 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Graph.UnpackSubgraph',
-      icon: 'pi pi-sitemap',
+      icon: 'icon-[lucide--expand]',
       label: 'Unpack the selected Subgraph',
-      versionAdded: '1.20.1',
-      category: 'essentials' as const,
+      versionAdded: '1.26.3',
       function: () => {
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
@@ -930,6 +945,20 @@ export function useCoreCommands(): ComfyCommand[] {
         useNodeOutputStore().revokeSubgraphPreviews(subgraphNode)
         graph.unpackSubgraph(subgraphNode)
       }
+    },
+    {
+      id: 'Comfy.Graph.EditSubgraphWidgets',
+      label: 'Edit Subgraph Widgets',
+      icon: 'icon-[lucide--settings-2]',
+      versionAdded: '1.28.5',
+      function: showSubgraphNodeDialog
+    },
+    {
+      id: 'Comfy.Graph.ToggleWidgetPromotion',
+      icon: 'icon-[lucide--arrow-left-right]',
+      label: 'Toggle promotion of hovered widget',
+      versionAdded: '1.30.1',
+      function: tryToggleWidgetPromotion
     },
     {
       id: 'Comfy.OpenManagerDialog',

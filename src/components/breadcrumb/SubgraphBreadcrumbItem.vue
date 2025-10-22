@@ -5,8 +5,9 @@
       value: item.label,
       showDelay: 512
     }"
+    draggable="false"
     href="#"
-    class="p-breadcrumb-item-link cursor-pointer"
+    class="p-breadcrumb-item-link h-12 cursor-pointer px-2"
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
@@ -15,7 +16,7 @@
     }"
     @click="handleClick"
   >
-    <span class="p-breadcrumb-item-label">{{ item.label }}</span>
+    <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
     <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
@@ -26,7 +27,7 @@
     :popup="true"
     :pt="{
       root: {
-        style: 'background-color: var(--comfy-menu-secondary-bg)'
+        style: 'background-color: var(--comfy-menu-bg)'
       },
       itemLink: {
         class: 'py-2'
@@ -38,7 +39,7 @@
     ref="itemInputRef"
     v-model="itemLabel"
     class="fixed z-10000 px-2 py-2 text-[.8rem]"
-    @blur="inputBlur(true)"
+    @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"
     @keydown.esc="inputBlur(false)"
@@ -240,7 +241,6 @@ const inputBlur = async (doRename: boolean) => {
 
 .p-breadcrumb-item-link {
   @apply overflow-hidden;
-  padding: var(--p-breadcrumb-item-padding);
 }
 
 .p-breadcrumb-item-label {

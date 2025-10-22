@@ -79,7 +79,6 @@ export type IWidget =
   | ISelectButtonWidget
   | ITextareaWidget
   | IAssetWidget
-  | IAudioRecordWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -228,11 +227,6 @@ export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
   value: string
 }
 
-export interface IAudioRecordWidget extends IBaseWidget<string, 'audiorecord'> {
-  type: 'audiorecord'
-  value: string
-}
-
 export interface IAssetWidget
   extends IBaseWidget<string, 'asset', IWidgetOptions<string[]>> {
   type: 'asset'
@@ -362,6 +356,14 @@ export interface IBaseWidget<
     H: number,
     lowQuality?: boolean
   ): void
+
+  /**
+   * Compatibility method for widgets implementing the draw
+   * method when displayed in non-canvas renderers.
+   * Set by the current renderer implementation.
+   * When called, performs a draw operation.
+   */
+  triggerDraw?: () => void
 
   /**
    * Compute the size of the widget. Overrides {@link IBaseWidget.computeSize}.
