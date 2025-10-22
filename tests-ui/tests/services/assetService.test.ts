@@ -16,15 +16,12 @@ const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: vi.fn(() => ({
-    getRegisteredNodeTypes: vi.fn(
-      () =>
-        new Set([
-          'CheckpointLoaderSimple',
-          'LoraLoader',
-          'VAELoader',
-          'TestNode'
-        ])
-    ),
+    getRegisteredNodeTypes: vi.fn(() => ({
+      CheckpointLoaderSimple: 'ckpt_name',
+      LoraLoader: 'lora_name',
+      VAELoader: 'vae_name',
+      TestNode: ''
+    })),
     getCategoryForNodeType: mockGetCategoryForNodeType,
     modelToNodeMap: {
       checkpoints: [{ nodeDef: { name: 'CheckpointLoaderSimple' } }],

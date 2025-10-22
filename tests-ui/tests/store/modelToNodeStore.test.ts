@@ -347,13 +347,13 @@ describe('useModelToNodeStore', () => {
   })
 
   describe('getRegisteredNodeTypes', () => {
-    it('should return a Set instance', () => {
+    it('should return an object', () => {
       const modelToNodeStore = useModelToNodeStore()
       const result = modelToNodeStore.getRegisteredNodeTypes()
-      expect(result).toBeInstanceOf(Set)
+      expect(result).toBeTypeOf('object')
     })
 
-    it('should return empty set when nodeDefStore is empty', () => {
+    it('should return empty Record when nodeDefStore is empty', () => {
       // Create fresh Pinia for this test to avoid state persistence
       setActivePinia(createPinia())
 
@@ -363,7 +363,7 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
 
       const result = modelToNodeStore.getRegisteredNodeTypes()
-      expect(result.size).toBe(0)
+      expect(result).toStrictEqual({})
 
       // Restore original mock for subsequent tests
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
@@ -378,7 +378,7 @@ describe('useModelToNodeStore', () => {
       const result = modelToNodeStore.getRegisteredNodeTypes()
 
       // Test Set.has() functionality which assetService depends on
-      expect(result['CheckpointLoaderSimple']).toBe('chkpt_name')
+      expect(result['CheckpointLoaderSimple']).toBe('ckpt_name')
       expect(result['LoraLoader']).toBe('lora_name')
       expect(result['NonExistentNode']).toBe(undefined)
     })
