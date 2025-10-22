@@ -117,8 +117,8 @@ function createAssetService() {
    * @returns true if this input should use asset browser
    */
   function isAssetBrowserEligible(
-    nodeType: string = '',
-    widgetName: string = ''
+    nodeType: string | undefined,
+    widgetName: string
   ): boolean {
     if (!nodeType || !widgetName) return false
     return (

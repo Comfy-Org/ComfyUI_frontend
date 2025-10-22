@@ -188,35 +188,19 @@ describe('assetService', () => {
   })
 
   describe('isAssetBrowserEligible', () => {
-    it('should return true for registered node types', () => {
-      expect(
-        assetService.isAssetBrowserEligible(
-          'CheckpointLoaderSimple',
-          'ckpt_name'
-        )
-      ).toBe(true)
-      expect(
-        assetService.isAssetBrowserEligible('LoraLoader', 'lora_name')
-      ).toBe(true)
-      expect(assetService.isAssetBrowserEligible('VAELoader', 'vae_name')).toBe(
-        true
-      )
-    })
-
-    it('should return false for unregistered node types', () => {
-      expect(assetService.isAssetBrowserEligible('UnknownNode', 'widget')).toBe(
-        false
-      )
-      expect(
-        assetService.isAssetBrowserEligible('NotRegistered', 'widget')
-      ).toBe(false)
-      expect(assetService.isAssetBrowserEligible('', '')).toBe(false)
-    })
-    it('should return false for other combo widgets on the registered node', () => {
-      expect(assetService.isAssetBrowserEligible('ClipLoader', 'type')).toBe(
-        false
-      )
-    })
+    it.for<[string, string, boolean, string]>([
+      ['CheckpointLoaderSimple', 'ckpt_name', true, 'valid inputs'],
+      ['LoraLoader', 'lora_name', true, 'valid inputs'],
+      ['VAELoader', 'vae_name', true, 'valid inputs'],
+      ['CheckpointLoaderSimple', 'type', false, 'other combo widgets'],
+      ['UnknownNode', 'widget', false, 'unregistered types'],
+      ['NotRegistered', 'widget', false, 'unregistered types']
+    ])(
+      'isAssetBrowserEligible("%s", "%s") should return %s for %s',
+      ([type, name, expected]) => {
+        expect(assetService.isAssetBrowserEligible(type, name)).toBe(expected)
+      }
+    )
   })
 
   describe('getAssetsForNodeType', () => {

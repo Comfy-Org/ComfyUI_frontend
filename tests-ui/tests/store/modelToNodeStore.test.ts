@@ -377,7 +377,6 @@ describe('useModelToNodeStore', () => {
 
       const result = modelToNodeStore.getRegisteredNodeTypes()
 
-      // Test Set.has() functionality which assetService depends on
       expect(result['CheckpointLoaderSimple']).toBe('ckpt_name')
       expect(result['LoraLoader']).toBe('lora_name')
       expect(result['NonExistentNode']).toBe(undefined)
