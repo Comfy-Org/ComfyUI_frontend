@@ -1,5 +1,3 @@
-import { clamp } from 'es-toolkit/compat'
-
 import type { Point, Size } from '@/renderer/core/layout/types'
 
 export type ResizeHandleDirection = {
@@ -23,8 +21,8 @@ function applyHandleDelta(
 
 function clampToMinSize(size: Size, minSize: Size): Size {
   return {
-    width: clamp(size.width, minSize.width, Number.POSITIVE_INFINITY),
-    height: clamp(size.height, minSize.height, Number.POSITIVE_INFINITY)
+    width: Math.max(size.width, minSize.width),
+    height: Math.max(size.height, minSize.height)
   }
 }
 
