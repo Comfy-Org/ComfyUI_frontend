@@ -63,7 +63,6 @@ catalog:
   knip: ^5.62.0
   lint-staged: ^15.2.7
   markdown-table: ^3.0.4
-  mixpanel-browser: ^2.71.0
   nx: 21.4.1
   oxlint: ^1.23.0
   picocolors: ^1.1.1
