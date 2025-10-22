@@ -31,7 +31,16 @@ export type MenuEntry =
  * - Copy error message
  * - Report error
  */
-export function useJobMenu(currentMenuItem: () => JobListItem | null) {
+/**
+ * Provides job context menu entries and actions.
+ *
+ * @param currentMenuItem Getter for the currently targeted job list item
+ * @param onInspectAsset Callback to trigger when inspecting a completed job's asset
+ */
+export function useJobMenu(
+  currentMenuItem: () => JobListItem | null,
+  onInspectAsset?: (item: JobListItem) => void
+) {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const queueStore = useQueueStore()
@@ -86,7 +95,12 @@ export function useJobMenu(currentMenuItem: () => JobListItem | null) {
           key: 'inspect-asset',
           label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
           icon: 'icon-[lucide--zoom-in]',
-          onClick: undefined
+          onClick: onInspectAsset
+            ? () => {
+                const item = currentMenuItem()
+                if (item) onInspectAsset(item)
+              }
+            : undefined
         },
         {
           key: 'add-to-current',

@@ -95,7 +95,7 @@ defineProps<{
   displayedJobGroups: JobGroup[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'close'): void
   (e: 'showAssets'): void
   (e: 'clearHistory'): void
@@ -112,7 +112,10 @@ const { t } = useI18n()
 const currentMenuItem = ref<JobListItem | null>(null)
 const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
 
-const { jobMenuEntries } = useJobMenu(() => currentMenuItem.value)
+const { jobMenuEntries } = useJobMenu(
+  () => currentMenuItem.value,
+  (item) => emit('viewItem', item)
+)
 
 const onMenuItem = (item: JobListItem, event: Event) => {
   currentMenuItem.value = item
