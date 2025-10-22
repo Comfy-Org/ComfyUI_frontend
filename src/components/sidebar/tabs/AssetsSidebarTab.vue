@@ -64,6 +64,7 @@
             @click="handleAssetSelect(item)"
             @zoom="handleZoomClick(item)"
             @output-count-click="enterFolderView(item)"
+            @asset-deleted="refreshAssets"
           />
         </template>
       </VirtualGrid>
@@ -218,6 +219,7 @@ const mediaAssetsWithKey = computed(() => {
 const refreshAssets = async () => {
   const files = await fetchMediaList(activeTab.value)
   mediaAssets.value = files
+  selectedAsset.value = null // Clear selection after refresh
   if (error.value) {
     console.error('Failed to refresh assets:', error.value)
   }

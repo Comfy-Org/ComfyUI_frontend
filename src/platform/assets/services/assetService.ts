@@ -213,13 +213,34 @@ function createAssetService() {
     )
   }
 
+  /**
+   * Deletes an asset by ID
+   * Only available in cloud environment
+   *
+   * @param id - The asset ID (UUID)
+   * @returns Promise<void>
+   * @throws Error if deletion fails
+   */
+  async function deleteAsset(id: string): Promise<void> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+      method: 'DELETE'
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to delete asset ${id}: Server returned ${res.status}`
+      )
+    }
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
     isAssetBrowserEligible,
     getAssetsForNodeType,
     getAssetDetails,
-    getAssetsByTag
+    getAssetsByTag,
+    deleteAsset
   }
 }
 
