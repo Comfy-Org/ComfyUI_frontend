@@ -9,6 +9,7 @@
       @mouseenter="onMouseEnterDropZone"
       @mouseleave="onMouseLeaveDropZone"
     >
+      <div class="-ml-[200px] h-full w-[200px]" />
       {{ t('actionbar.dockToTop') }}
     </div>
 
