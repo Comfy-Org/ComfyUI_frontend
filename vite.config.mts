@@ -31,7 +31,9 @@ const DISTRIBUTION = (process.env.DISTRIBUTION ||
   (IS_CLOUD_URL ? 'cloud' : 'localhost')) as 'desktop' | 'localhost' | 'cloud'
 
 // Disable Vue DevTools for production cloud distribution
-const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true' || (DISTRIBUTION === 'cloud' && !IS_DEV)
+const DISABLE_VUE_PLUGINS =
+  process.env.DISABLE_VUE_PLUGINS === 'true' ||
+  (DISTRIBUTION === 'cloud' && !IS_DEV)
 
 const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'
