@@ -1,6 +1,7 @@
 /**
  * Utility functions for downloading files
  */
+import { isCloud } from '@/platform/distribution/types'
 
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
@@ -15,15 +16,46 @@ export const downloadFile = (url: string, filename?: string): void => {
   if (!url || typeof url !== 'string' || url.trim().length === 0) {
     throw new Error('Invalid URL provided for download')
   }
+
+  const inferredFilename =
+    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+
+  if (isCloud) {
+    // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
+    void downloadViaBlobFetch(url, inferredFilename).catch((error) => {
+      console.error('Failed to download file', error)
+    })
+    return
+  }
+
   const link = document.createElement('a')
   link.href = url
-  link.download =
-    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+  link.download = inferredFilename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+/**
+ * Download a Blob by creating a temporary object URL and anchor element
+ * @param filename - The filename to suggest to the browser
+ * @param blob - The Blob to download
+ */
+export const downloadBlob = (filename: string, blob: Blob): void => {
+  const url = URL.createObjectURL(blob)
+
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.style.display = 'none'
 
   // Trigger download
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+
+  // Revoke on the next microtask to give the browser time to start the download
+  queueMicrotask(() => URL.revokeObjectURL(url))
 }
 
 /**
@@ -38,4 +70,16 @@ const extractFilenameFromUrl = (url: string): string | null => {
   } catch {
     return null
   }
+}
+
+const downloadViaBlobFetch = async (
+  href: string,
+  filename: string
+): Promise<void> => {
+  const response = await fetch(href)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${href}: ${response.status}`)
+  }
+  const blob = await response.blob()
+  downloadBlob(filename, blob)
 }

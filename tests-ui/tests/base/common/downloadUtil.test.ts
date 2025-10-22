@@ -1,16 +1,40 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import * as downloadUtil from '@/base/common/downloadUtil'
+
+let mockIsCloud = false
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud
+  }
+}))
+
+const { downloadFile } = downloadUtil
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement
+  let fetchMock: ReturnType<typeof vi.fn>
+  let createObjectURLSpy: MockInstance<(obj: Blob | MediaSource) => string>
+  let revokeObjectURLSpy: MockInstance<(url: string) => void>
 
   beforeEach(() => {
+    mockIsCloud = false
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    createObjectURLSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock-url')
+    revokeObjectURLSpy = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
     // Create a mock anchor element
     mockLink = {
       href: '',
       download: '',
-      click: vi.fn()
+      click: vi.fn(),
+      style: { display: '' }
     } as unknown as HTMLAnchorElement
 
     // Spy on DOM methods
@@ -20,6 +44,9 @@ describe('downloadUtil', () => {
   })
 
   afterEach(() => {
+    createObjectURLSpy.mockRestore()
+    revokeObjectURLSpy.mockRestore()
+    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
@@ -35,6 +62,8 @@ describe('downloadUtil', () => {
       expect(document.body.appendChild).toHaveBeenCalledWith(mockLink)
       expect(mockLink.click).toHaveBeenCalled()
       expect(document.body.removeChild).toHaveBeenCalledWith(mockLink)
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should use custom filename when provided', () => {
@@ -45,6 +74,8 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(testUrl)
       expect(mockLink.download).toBe(customFilename)
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should extract filename from URL query parameters', () => {
@@ -55,6 +86,7 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(testUrl)
       expect(mockLink.download).toBe('extracted-image.jpg')
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should use default filename when URL has no filename parameter', () => {
@@ -64,6 +96,7 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(testUrl)
       expect(mockLink.download).toBe('download.png')
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should handle invalid URLs gracefully', () => {
@@ -74,6 +107,8 @@ describe('downloadUtil', () => {
       expect(mockLink.href).toBe(invalidUrl)
       expect(mockLink.download).toBe('download.png')
       expect(mockLink.click).toHaveBeenCalled()
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should prefer custom filename over extracted filename', () => {
@@ -84,6 +119,7 @@ describe('downloadUtil', () => {
       downloadFile(testUrl, customFilename)
 
       expect(mockLink.download).toBe(customFilename)
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should handle URLs with empty filename parameter', () => {
@@ -92,6 +128,7 @@ describe('downloadUtil', () => {
       downloadFile(testUrl)
 
       expect(mockLink.download).toBe('download.png')
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should handle relative URLs by using window.location.origin', () => {
@@ -101,6 +138,8 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(relativeUrl)
       expect(mockLink.download).toBe('relative-image.png')
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
     it('should clean up DOM elements after download', () => {
@@ -111,6 +150,54 @@ describe('downloadUtil', () => {
       // Verify the element was added and then removed
       expect(document.body.appendChild).toHaveBeenCalledWith(mockLink)
       expect(document.body.removeChild).toHaveBeenCalledWith(mockLink)
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
+    })
+
+    it('streams downloads via blob when running in cloud', async () => {
+      mockIsCloud = true
+      const testUrl = 'https://storage.googleapis.com/bucket/file.bin'
+      const blob = new Blob(['test'])
+      const blobFn = vi.fn().mockResolvedValue(blob)
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        blob: blobFn
+      } as unknown as Response)
+
+      downloadFile(testUrl)
+
+      expect(fetchMock).toHaveBeenCalledWith(testUrl)
+      const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
+      await fetchPromise
+      const blobPromise = blobFn.mock.results[0].value as Promise<Blob>
+      await blobPromise
+      await Promise.resolve()
+      expect(blobFn).toHaveBeenCalled()
+      expect(createObjectURLSpy).toHaveBeenCalledWith(blob)
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-url')
+      expect(mockLink.click).toHaveBeenCalled()
+    })
+
+    it('logs an error when cloud fetch fails', async () => {
+      mockIsCloud = true
+      const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 404,
+        blob: vi.fn()
+      } as unknown as Response)
+
+      downloadFile(testUrl)
+
+      expect(fetchMock).toHaveBeenCalledWith(testUrl)
+      const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
+      await fetchPromise
+      await Promise.resolve()
+      expect(consoleSpy).toHaveBeenCalled()
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
+      consoleSpy.mockRestore()
     })
   })
 })
