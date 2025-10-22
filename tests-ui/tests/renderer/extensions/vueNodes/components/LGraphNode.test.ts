@@ -197,11 +197,11 @@ describe('LGraphNode', () => {
     expect(wrapper.classes()).toContain('outline-node-component-outline')
   })
 
-  it('should apply executing animation when executing prop is true', () => {
+  it('should render progress indicator when executing prop is true', () => {
     mockData.mockExecuting = true
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(wrapper.classes()).toContain('animate-pulse')
+    expect(wrapper.classes()).toContain('border-node-stroke-executing')
   })
 })

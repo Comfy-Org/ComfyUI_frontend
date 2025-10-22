@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
+    <label v-if="widget.name" class="text-secondary text-sm">{{
       widget.name
     }}</label>
     <Button

@@ -163,7 +163,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultsByInstallVersion: {
       '1.25.0': 'legacy'
     },
-    onChange: async (newValue: string) => {
+    onChange: async (newValue: string, oldValue?: string) => {
+      if (!oldValue) return
       const settingStore = useSettingStore()
 
       if (newValue === 'standard') {
