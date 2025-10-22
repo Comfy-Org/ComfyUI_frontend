@@ -48,17 +48,28 @@ export function useInternalFilesApi() {
 
       const queueStore = useQueueStore()
 
-      const assetItems: AssetItem[] = queueStore.flatTasks
+      // Use tasks (already grouped by promptId) instead of flatTasks
+      const assetItems: AssetItem[] = queueStore.tasks
         .filter(
           (task) => task.previewOutput && task.displayStatus === 'Completed'
         )
         .map((task) => {
           const output = task.previewOutput!
-          return mapTaskOutputToAssetItem(
+          const assetItem = mapTaskOutputToAssetItem(
             task,
             output,
             false // Don't use display name for internal
           )
+
+          // Add output count and all outputs for folder view
+          assetItem.user_metadata = {
+            ...assetItem.user_metadata,
+            outputCount: task.flatOutputs.filter((o) => o.supportsPreview)
+              .length,
+            allOutputs: task.flatOutputs.filter((o) => o.supportsPreview)
+          }
+
+          return assetItem
         })
 
       // Sort by creation date (newest first)

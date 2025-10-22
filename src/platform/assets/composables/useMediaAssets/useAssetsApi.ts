@@ -41,21 +41,29 @@ export function useAssetsApi() {
         }))
       }
 
-      // For output directory, use QueueStore's flatTasks
       const queueStore = useQueueStore()
 
-      // Get all flat tasks that have preview outputs
-      const assetItems: AssetItem[] = queueStore.flatTasks
+      const assetItems: AssetItem[] = queueStore.tasks
         .filter(
           (task) => task.previewOutput && task.displayStatus === 'Completed'
         )
         .map((task) => {
           const output = task.previewOutput!
-          return mapTaskOutputToAssetItem(
+          const assetItem = mapTaskOutputToAssetItem(
             task,
             output,
             true // Use display name for cloud
           )
+
+          // Add output count and all outputs for folder view
+          assetItem.user_metadata = {
+            ...assetItem.user_metadata,
+            outputCount: task.flatOutputs.filter((o) => o.supportsPreview)
+              .length,
+            allOutputs: task.flatOutputs.filter((o) => o.supportsPreview)
+          }
+
+          return assetItem
         })
 
       return assetItems
