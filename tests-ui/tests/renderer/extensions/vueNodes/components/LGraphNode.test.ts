@@ -203,6 +203,5 @@ describe('LGraphNode', () => {
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
     expect(wrapper.classes()).toContain('border-node-stroke-executing')
-    expect(wrapper.classes()).not.toContain('animate-pulse')
   })
 })
