@@ -2,7 +2,7 @@
   <div
     class="flex flex-col gap-[var(--spacing-spacing-sm)] p-[var(--spacing-spacing-xs)]"
   >
-    <div class="flex flex-col gap-[var(--spacing-spacing-xss)]">
+    <div class="flex flex-col gap-[var(--spacing-spacing-xxs)]">
       <div
         class="relative h-2 w-full overflow-hidden rounded-full border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)]"
       >
@@ -19,7 +19,7 @@
         class="flex items-start justify-end gap-[var(--spacing-spacing-md)] text-[12px] leading-none"
       >
         <div
-          class="flex items-center gap-[var(--spacing-spacing-xss)] text-white opacity-90"
+          class="flex items-center gap-[var(--spacing-spacing-xxs)] text-white opacity-90"
         >
           <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
             <template #percent>
@@ -28,13 +28,13 @@
           </i18n-t>
         </div>
         <div
-          class="flex items-center gap-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)]"
+          class="flex items-center gap-[var(--spacing-spacing-xxs)] text-[var(--color-slate-100)]"
         >
           <span>{{ t('sideToolbar.queueProgressOverlay.currentNode') }}</span>
           <span class="inline-block max-w-[10rem] truncate">{{
             currentNodeName
           }}</span>
-          <span class="flex items-center gap-[var(--spacing-spacing-xss)]">
+          <span class="flex items-center gap-[var(--spacing-spacing-xxs)]">
             <span>{{ currentNodePercent }}</span>
             <span>%</span>
           </span>
@@ -48,7 +48,7 @@
       >
         <span class="opacity-90">
           <span class="font-bold">{{ runningCount }}</span>
-          <span class="ml-[var(--spacing-spacing-xss)]">{{
+          <span class="ml-[var(--spacing-spacing-xxs)]">{{
             t('sideToolbar.queueProgressOverlay.running')
           }}</span>
         </span>
@@ -63,7 +63,7 @@
       </div>
 
       <button
-        class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xss)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+        class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xxs)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
         @click="$emit('viewAllJobs')"
       >
         {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}

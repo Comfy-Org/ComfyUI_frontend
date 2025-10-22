@@ -28,7 +28,7 @@
           class="inline-flex h-6 items-center text-[12px] leading-none text-white opacity-90"
         >
           <span class="font-bold">{{ queuedCount }}</span>
-          <span class="ml-[var(--spacing-spacing-xss)]">{{
+          <span class="ml-[var(--spacing-spacing-xxs)]">{{
             t('sideToolbar.queueProgressOverlay.queuedSuffix')
           }}</span>
         </div>

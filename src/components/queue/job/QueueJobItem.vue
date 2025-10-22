@@ -97,7 +97,7 @@
             <button
               v-if="props.state !== 'completed' && computedShowClear"
               type="button"
-              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('g.clear')"
               @click.stop="emit('clear')"
             >
@@ -106,7 +106,7 @@
             <button
               v-else-if="props.state === 'completed'"
               type="button"
-              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('menuLabels.View')"
               @click.stop="emit('view')"
             >
@@ -115,7 +115,7 @@
             <button
               v-if="computedShowMenu"
               type="button"
-              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('g.moreOptions')"
               @click.stop="emit('menu', $event)"
             >

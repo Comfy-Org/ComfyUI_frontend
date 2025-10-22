@@ -4,12 +4,12 @@
   >
     <div class="min-w-0 flex-1 overflow-x-auto">
       <div
-        class="inline-flex items-center gap-[var(--spacing-spacing-xss)] whitespace-nowrap"
+        class="inline-flex items-center gap-[var(--spacing-spacing-xxs)] whitespace-nowrap"
       >
         <button
           v-for="tab in jobTabs"
           :key="tab"
-          class="h-6 rounded border-0 px-[var(--spacing-spacing-sm)] py-[var(--spacing-spacing-xss)] text-[12px] leading-none hover:opacity-90"
+          class="h-6 rounded border-0 px-[var(--spacing-spacing-sm)] py-[var(--spacing-spacing-xxs)] text-[12px] leading-none hover:opacity-90"
           :class="[
             selectedJobTab === tab
               ? 'bg-[var(--color-charcoal-500)] text-white'
@@ -57,7 +57,7 @@
           class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)]"
         >
           <button
-            class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
             "
@@ -77,7 +77,7 @@
             class="mx-[var(--spacing-spacing-xs)] mt-[var(--spacing-spacing-xxs)] h-px"
           />
           <button
-            class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xss)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
             "

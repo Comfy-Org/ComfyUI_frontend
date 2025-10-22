@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="group flex w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xss))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] p-[var(--spacing-spacing-xxs)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
+    class="group flex w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xxs))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] p-[var(--spacing-spacing-xxs)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
   >
     <span class="inline-flex items-center gap-[var(--spacing-spacing-xs)]">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
@@ -71,7 +71,7 @@
     </span>
 
     <span
-      class="flex items-center justify-center rounded p-[var(--spacing-spacing-xss)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
+      class="flex items-center justify-center rounded p-[var(--spacing-spacing-xxs)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
     >
       <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
     </span>

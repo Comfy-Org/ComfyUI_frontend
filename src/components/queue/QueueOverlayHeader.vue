@@ -8,18 +8,18 @@
       <span>{{ headerTitle }}</span>
       <span
         v-if="showConcurrentIndicator"
-        class="ml-[var(--spacing-spacing-md)] inline-flex items-center gap-[var(--spacing-spacing-xss)] text-blue-100"
+        class="ml-[var(--spacing-spacing-md)] inline-flex items-center gap-[var(--spacing-spacing-xxs)] text-blue-100"
       >
         <span class="inline-block size-2 rounded-full bg-blue-100" />
         <span>
           <span class="font-bold">{{ concurrentWorkflowCount }}</span>
-          <span class="ml-[var(--spacing-spacing-xss)]">{{
+          <span class="ml-[var(--spacing-spacing-xxs)]">{{
             t('sideToolbar.queueProgressOverlay.running')
           }}</span>
         </span>
       </span>
     </div>
-    <div class="flex items-center gap-[var(--spacing-spacing-xss)]">
+    <div class="flex items-center gap-[var(--spacing-spacing-xxs)]">
       <button
         v-tooltip.top="moreTooltipConfig"
         class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
