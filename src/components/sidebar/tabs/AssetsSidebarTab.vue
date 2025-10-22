@@ -8,7 +8,13 @@
         <div class="flex items-center gap-2">
           <span class="font-bold">{{ $t('Job ID') }}:</span>
           <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
-          <i class="mb-1 icon-[lucide--copy] text-sm" @click="copyJobId"></i>
+          <button
+            class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
+            role="button"
+            @click="copyJobId"
+          >
+            <i class="mb-1 icon-[lucide--copy] text-sm"></i>
+          </button>
         </div>
         <div>
           <span>{{ formattedExecutionTime }}</span>
