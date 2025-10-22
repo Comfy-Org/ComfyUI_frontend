@@ -2,9 +2,7 @@ import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { HistoryTaskItem } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
-import { TaskItemImpl } from '@/stores/queueStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { truncateFilename } from '@/utils/formatUtil'
 
 import { mapTaskOutputToAssetItem } from './assetMappers'
@@ -43,41 +41,22 @@ export function useAssetsApi() {
         }))
       }
 
-      // For output directory, fetch history data and convert to AssetItem format
-      const historyResponse = await api.getHistory(200)
+      // For output directory, use QueueStore's flatTasks
+      const queueStore = useQueueStore()
 
-      if (!historyResponse?.History) {
-        return []
-      }
-
-      // Convert history items to AssetItem format
-      const assetItems: AssetItem[] = []
-
-      historyResponse.History.forEach((historyItem: HistoryTaskItem) => {
-        // Create TaskItemImpl to use existing logic
-        const taskItem = new TaskItemImpl(
-          historyItem.taskType,
-          historyItem.prompt,
-          historyItem.status,
-          historyItem.outputs
+      // Get all flat tasks that have preview outputs
+      const assetItems: AssetItem[] = queueStore.flatTasks
+        .filter(
+          (task) => task.previewOutput && task.displayStatus === 'Completed'
         )
-
-        // Only process completed tasks
-        if (taskItem.displayStatus === 'Completed' && taskItem.outputs) {
-          // Process each output
-          taskItem.flatOutputs.forEach((output) => {
-            // Only include output type files (not temp previews)
-            if (output.type === 'output' && output.supportsPreview) {
-              const assetItem = mapTaskOutputToAssetItem(
-                taskItem,
-                output,
-                true // Use display name for cloud
-              )
-              assetItems.push(assetItem)
-            }
-          })
-        }
-      })
+        .map((task) => {
+          const output = task.previewOutput!
+          return mapTaskOutputToAssetItem(
+            task,
+            output,
+            true // Use display name for cloud
+          )
+        })
 
       return assetItems
     } catch (err) {
