@@ -1774,6 +1774,8 @@
     }
   },
   "mediaAsset": {
+    "deleteAssetTitle": "Delete this asset?",
+    "deleteAssetDescription": "This asset will be permanently removed.",
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",
       "jobIdCopyFailed": "Failed to copy Job ID",
