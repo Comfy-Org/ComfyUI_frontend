@@ -91,7 +91,7 @@ const interval = ref<number | null>(null)
 
 const applyZoom = (val: InputNumberInputEvent) => {
   const inputValue = val.value as number
-  if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
+  if (Number.isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
     return
   }
   canvasStore.setAppZoomFromPercentage(inputValue)

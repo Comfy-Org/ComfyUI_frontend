@@ -181,7 +181,7 @@ async function handleRecordingComplete(blob: Blob) {
     localValue.value = path
     lastUploadedPath = path
     onChange(path)
-  } catch (e) {
+  } catch {
     useToastStore().addAlert('Failed to upload recorded audio')
   }
 }

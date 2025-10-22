@@ -208,7 +208,7 @@ const formattedDuration = computed(() => {
 const fileFormat = computed(() => {
   if (!asset?.name) return ''
   const parts = asset.name.split('.')
-  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : ''
+  return parts.length > 1 ? parts.at(-1)!.toUpperCase() : ''
 })
 
 const durationChipClasses = computed(() => {

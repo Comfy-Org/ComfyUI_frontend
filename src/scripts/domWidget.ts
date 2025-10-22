@@ -255,10 +255,10 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     const styles = getComputedStyle(this.element)
     let minHeight =
       this.options.getMinHeight?.() ??
-      parseInt(styles.getPropertyValue('--comfy-widget-min-height'))
+      Number.parseInt(styles.getPropertyValue('--comfy-widget-min-height'))
     let maxHeight =
       this.options.getMaxHeight?.() ??
-      parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
+      Number.parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
 
     let prefHeight: string | number =
       this.options.getHeight?.() ??
@@ -267,19 +267,19 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     if (typeof prefHeight === 'string' && prefHeight.endsWith?.('%')) {
       prefHeight =
         node.size[1] *
-        (parseFloat(prefHeight.substring(0, prefHeight.length - 1)) / 100)
+        (Number.parseFloat(prefHeight.slice(0, prefHeight.length - 1)) / 100)
     } else {
       prefHeight =
-        typeof prefHeight === 'number' ? prefHeight : parseInt(prefHeight)
+        typeof prefHeight === 'number' ? prefHeight : Number.parseInt(prefHeight)
 
-      if (isNaN(minHeight)) {
+      if (Number.isNaN(minHeight)) {
         minHeight = prefHeight
       }
     }
 
     return {
-      minHeight: isNaN(minHeight) ? 50 : minHeight,
-      maxHeight: isNaN(maxHeight) ? undefined : maxHeight,
+      minHeight: Number.isNaN(minHeight) ? 50 : minHeight,
+      maxHeight: Number.isNaN(maxHeight) ? undefined : maxHeight,
       minWidth: 0
     }
   }

@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -13,7 +13,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
-dotenv.config()
+dotenvConfig()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
@@ -105,7 +105,7 @@ export default defineConfig({
 
       '/testsubrouteindex': {
         target: 'http://localhost:5173',
-        rewrite: (path) => path.substring('/testsubrouteindex'.length)
+        rewrite: (path) => path.slice('/testsubrouteindex'.length)
       }
     }
   },

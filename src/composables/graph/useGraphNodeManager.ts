@@ -174,7 +174,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               slotMetadata: slotInfo,
               isDOMWidget: isDOMWidget(widget)
             }
-          } catch (error) {
+          } catch {
             return {
               name: widget.name || 'unknown',
               type: widget.type || 'text',
@@ -265,7 +265,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         ...currentData,
         widgets: updatedWidgets
       })
-    } catch (error) {
+    } catch {
       // Ignore widget update errors to prevent cascade failures
     }
   }

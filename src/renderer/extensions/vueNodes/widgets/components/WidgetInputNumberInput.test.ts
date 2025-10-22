@@ -311,8 +311,8 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
 
   it('handles NaN values gracefully', (context) => {
     context.skip('needs diagnosis')
-    const widget = createMockWidget(NaN, 'int')
-    const wrapper = mountComponent(widget, NaN)
+    const widget = createMockWidget(Number.NaN, 'int')
+    const wrapper = mountComponent(widget, Number.NaN)
 
     const inputNumber = wrapper.findComponent(InputNumber)
     // NaN is not a safe integer, so buttons should be hidden

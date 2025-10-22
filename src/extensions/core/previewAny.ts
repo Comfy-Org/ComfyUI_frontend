@@ -15,6 +15,7 @@ useExtensionService().registerExtension({
       const onNodeCreated = nodeType.prototype.onNodeCreated
 
       nodeType.prototype.onNodeCreated = function () {
+        // oxlint-disable-next-line no-unused-expressions
         onNodeCreated ? onNodeCreated.apply(this, []) : undefined
 
         const showValueWidget = ComfyWidgets['STRING'](
@@ -32,6 +33,7 @@ useExtensionService().registerExtension({
       const onExecuted = nodeType.prototype.onExecuted
 
       nodeType.prototype.onExecuted = function (message) {
+        // oxlint-disable-next-line no-unused-expressions
         onExecuted === null || onExecuted === void 0
           ? void 0
           : onExecuted.apply(this, [message])

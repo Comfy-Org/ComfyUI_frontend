@@ -177,7 +177,7 @@ export function addValueControlWidgets(
         let check
         if (filter.startsWith('/') && filter.endsWith('/')) {
           try {
-            const regex = new RegExp(filter.substring(1, filter.length - 1))
+            const regex = new RegExp(filter.slice(1, filter.length - 1))
             check = (item: string) => regex.test(item)
           } catch (error) {
             console.error(

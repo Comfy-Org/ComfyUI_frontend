@@ -392,7 +392,7 @@ export class ComfyApi extends EventTarget {
         const resp = await this.fetchApi('/prompt')
         const status = (await resp.json()) as StatusWsMessageStatus
         this.dispatchCustomEvent('status', status)
-      } catch (_error) {
+      } catch {
         this.dispatchCustomEvent('status', null)
       }
     }, 1000)
@@ -1088,7 +1088,7 @@ export class ComfyApi extends EventTarget {
           life: 5000
         })
       }
-    } catch (error) {
+    } catch {
       useToastStore().add({
         severity: 'error',
         summary: 'An error occurred while trying to unload models.',

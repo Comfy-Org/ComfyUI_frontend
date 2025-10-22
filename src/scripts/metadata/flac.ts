@@ -3,7 +3,7 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
 
   // Verify the FLAC signature
-  const signature = String.fromCharCode(...new Uint8Array(buffer, 0, 4))
+  const signature = String.fromCodePoint(...new Uint8Array(buffer, 0, 4))
   if (signature !== 'fLaC') {
     console.error('Not a valid FLAC file')
     // @ts-expect-error fixme ts strict error
@@ -64,10 +64,10 @@ function parseVorbisComment(dataView: DataView): Record<string, string> {
     offset += commentLength
 
     const ind = comment.indexOf('=')
-    const key = comment.substring(0, ind)
+    const key = comment.slice(0, ind)
 
     // @ts-expect-error fixme ts strict error
-    comments[key] = comment.substring(ind + 1)
+    comments[key] = comment.slice(ind + 1)
   }
 
   return comments
@@ -76,7 +76,7 @@ function parseVorbisComment(dataView: DataView): Record<string, string> {
 function getString(dataView: DataView, offset: number, length: number): string {
   let string = ''
   for (let i = 0; i < length; i++) {
-    string += String.fromCharCode(dataView.getUint8(offset + i))
+    string += String.fromCodePoint(dataView.getUint8(offset + i))
   }
   return string
 }

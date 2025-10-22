@@ -277,7 +277,7 @@ const toggleMute = () => {
 
 const handleSeek = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const value = parseFloat(target.value)
+  const value = Number.parseFloat(target.value)
   if (audioRef.value && duration.value > 0) {
     const newTime = (value / 100) * duration.value
     audioRef.value.currentTime = newTime

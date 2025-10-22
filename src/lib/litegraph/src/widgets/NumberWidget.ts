@@ -72,13 +72,14 @@ export class NumberWidget
         if (/^[\d\s()*+/-]+|\d+\.\d+$/.test(v)) {
           // Solve the equation if possible
           try {
+            // oxlint-disable-next-line no-eval
             v = eval(v)
           } catch {
             // Ignore eval errors
           }
         }
         const newValue = Number(v)
-        if (!isNaN(newValue)) {
+        if (!Number.isNaN(newValue)) {
           this.setValue(newValue, { e, node, canvas })
         }
       },

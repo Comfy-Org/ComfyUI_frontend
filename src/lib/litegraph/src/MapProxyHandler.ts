@@ -22,8 +22,8 @@ export class MapProxyHandler<V>
   has(target: Map<number | string, V>, p: string | symbol): boolean {
     if (typeof p === 'symbol') return false
 
-    const int = parseInt(p, 10)
-    return target.has(!isNaN(int) ? int : p)
+    const int = Number.parseInt(p, 10)
+    return target.has(!Number.isNaN(int) ? int : p)
   }
 
   ownKeys(target: Map<number | string, V>): ArrayLike<string | symbol> {
@@ -35,8 +35,8 @@ export class MapProxyHandler<V>
     if (p in target) return Reflect.get(target, p, target)
     if (typeof p === 'symbol') return
 
-    const int = parseInt(p, 10)
-    return target.get(!isNaN(int) ? int : p)
+    const int = Number.parseInt(p, 10)
+    return target.get(!Number.isNaN(int) ? int : p)
   }
 
   set(
@@ -46,8 +46,8 @@ export class MapProxyHandler<V>
   ): boolean {
     if (typeof p === 'symbol') return false
 
-    const int = parseInt(p, 10)
-    target.set(!isNaN(int) ? int : p, newValue)
+    const int = Number.parseInt(p, 10)
+    target.set(!Number.isNaN(int) ? int : p, newValue)
     return true
   }
 

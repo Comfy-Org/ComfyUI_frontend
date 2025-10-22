@@ -1,12 +1,5 @@
-import {
-  type MockedFunction,
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockedFunction } from 'vitest'
 import { ref } from 'vue'
 
 import {
@@ -220,7 +213,7 @@ describe('useWidgetValue', () => {
         callback: vi.fn()
       }
 
-      const transform = (value: string) => parseInt(value, 10) || 0
+      const transform = (value: string) => Number.parseInt(value, 10) || 0
       const { onChange } = useWidgetValue({
         widget: numberWidget,
         modelValue: 10,

@@ -201,7 +201,7 @@ describe('SignInForm', () => {
 
         expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(true)
         expect(wrapper.findComponent(Button).exists()).toBe(false)
-      } catch (_error) {
+      } catch {
         // Fallback test - check HTML content if component rendering fails
         mockLoading = true
         const wrapper = mountComponent()

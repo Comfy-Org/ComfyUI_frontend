@@ -155,7 +155,7 @@ export class LoaderManager implements LoaderManagerInterface {
             const materials = await this.mtlLoader.loadAsync(mtlFileName)
             materials.preload()
             this.objLoader.setMaterials(materials)
-          } catch (e) {
+          } catch {
             console.log(
               'No MTL file found or error loading it, continuing without materials'
             )

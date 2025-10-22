@@ -143,7 +143,7 @@ export function useLinkLayoutSync() {
       }
 
       // Render final segment from last reroute to target
-      const lastReroute = reroutes[reroutes.length - 1]
+      const lastReroute = reroutes.at(-1)!
       const finalDistance = Math.sqrt(
         (endPos[0] - lastReroute.pos[0]) ** 2 +
           (endPos[1] - lastReroute.pos[1]) ** 2
@@ -265,11 +265,11 @@ export function useLinkLayoutSync() {
         switch (change.operation.type) {
           case 'moveNode':
           case 'resizeNode':
-            recomputeLinksForNode(parseInt(change.operation.nodeId))
+            recomputeLinksForNode(Number.parseInt(change.operation.nodeId))
             break
           case 'batchUpdateBounds':
             for (const nodeId of change.operation.nodeIds) {
-              recomputeLinksForNode(parseInt(nodeId))
+              recomputeLinksForNode(Number.parseInt(nodeId))
             }
             break
           case 'createLink':

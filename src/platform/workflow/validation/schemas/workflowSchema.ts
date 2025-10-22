@@ -12,8 +12,8 @@ const zSlotIndex = z.union([
   z.number().int(),
   z
     .string()
-    .transform((val) => parseInt(val))
-    .refine((val) => !isNaN(val), {
+    .transform((val) => Number.parseInt(val))
+    .refine((val) => !Number.isNaN(val), {
       message: 'Invalid number'
     })
 ])

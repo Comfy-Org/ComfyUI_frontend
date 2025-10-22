@@ -125,7 +125,7 @@ function dragElement(dragEl): () => void {
       )
 
       positionElement()
-    } catch (_exception) {
+    } catch {
       // robust
     }
   }

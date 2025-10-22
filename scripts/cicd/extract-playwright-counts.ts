@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
 
 interface TestStats {
   expected?: number
@@ -88,7 +88,7 @@ function extractTestCounts(reportDir: string): TestCounts {
             counts.skipped = stats.skipped || 0
             return counts
           }
-        } catch (e) {
+        } catch {
           // Continue to try other formats
         }
       }
@@ -115,7 +115,7 @@ function extractTestCounts(reportDir: string): TestCounts {
             counts.skipped = stats.skipped || 0
             return counts
           }
-        } catch (e) {
+        } catch {
           // Continue to try other formats
         }
       }
@@ -126,10 +126,10 @@ function extractTestCounts(reportDir: string): TestCounts {
         /(\d+)\s+passed[^0-9]*(\d+)\s+failed[^0-9]*(\d+)\s+flaky[^0-9]*(\d+)\s+skipped/i
       )
       if (statsMatch) {
-        counts.passed = parseInt(statsMatch[1]) || 0
-        counts.failed = parseInt(statsMatch[2]) || 0
-        counts.flaky = parseInt(statsMatch[3]) || 0
-        counts.skipped = parseInt(statsMatch[4]) || 0
+        counts.passed = Number.parseInt(statsMatch[1]) || 0
+        counts.failed = Number.parseInt(statsMatch[2]) || 0
+        counts.flaky = Number.parseInt(statsMatch[3]) || 0
+        counts.skipped = Number.parseInt(statsMatch[4]) || 0
         counts.total =
           counts.passed + counts.failed + counts.flaky + counts.skipped
         return counts
@@ -144,12 +144,12 @@ function extractTestCounts(reportDir: string): TestCounts {
         /(\d+)\s+(?:tests?|specs?)\s+(?:total|ran)/i
       )
 
-      if (passedMatch) counts.passed = parseInt(passedMatch[1]) || 0
-      if (failedMatch) counts.failed = parseInt(failedMatch[1]) || 0
-      if (flakyMatch) counts.flaky = parseInt(flakyMatch[1]) || 0
-      if (skippedMatch) counts.skipped = parseInt(skippedMatch[1]) || 0
+      if (passedMatch) counts.passed = Number.parseInt(passedMatch[1]) || 0
+      if (failedMatch) counts.failed = Number.parseInt(failedMatch[1]) || 0
+      if (flakyMatch) counts.flaky = Number.parseInt(flakyMatch[1]) || 0
+      if (skippedMatch) counts.skipped = Number.parseInt(skippedMatch[1]) || 0
       if (totalMatch) {
-        counts.total = parseInt(totalMatch[1]) || 0
+        counts.total = Number.parseInt(totalMatch[1]) || 0
       } else if (
         counts.passed ||
         counts.failed ||

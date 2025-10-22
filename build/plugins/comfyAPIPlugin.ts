@@ -1,4 +1,4 @@
-import path from 'path'
+import path from 'node:path'
 import type { Plugin } from 'vite'
 
 interface ShimResult {
@@ -45,7 +45,7 @@ function transformExports(code: string, id: string): ShimResult {
 function getModuleName(id: string): string {
   // Simple example to derive a module name from the file path
   const parts = id.split('/')
-  const fileName = parts[parts.length - 1]
+  const fileName = parts.at(-1)!
   return fileName.replace(/\.\w+$/, '') // Remove file extension
 }
 

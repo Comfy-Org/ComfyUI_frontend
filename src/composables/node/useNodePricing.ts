@@ -44,7 +44,7 @@ const calculateRunwayDurationPrice = (node: LGraphNode): string => {
 
   const duration = Number(durationWidget.value)
   // If duration is 0 or NaN, don't fall back to 5 seconds - just use 0
-  const validDuration = isNaN(duration) ? 5 : duration
+  const validDuration = Number.isNaN(duration) ? 5 : duration
   const cost = (0.05 * validDuration).toFixed(2)
   return `$${cost}/Run`
 }
@@ -124,7 +124,7 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
 
   const model = String(modelWidget.value).toLowerCase()
   const resolution = String(resolutionWidget.value).toLowerCase()
-  const seconds = parseFloat(String(durationWidget.value))
+  const seconds = Number.parseFloat(String(durationWidget.value))
   const priceByModel: Record<string, Record<string, [number, number]>> = {
     'seedance-1-0-pro': {
       '480p': [0.23, 0.24],
@@ -1638,7 +1638,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
 
-        const seconds = parseFloat(String(durationWidget.value))
+        const seconds = Number.parseFloat(String(durationWidget.value))
         const resolutionStr = String(resolutionWidget.value).toLowerCase()
 
         const resKey = resolutionStr.includes('1080')
@@ -1656,7 +1656,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         }
 
         const pps = pricePerSecond[resKey]
-        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
+        if (Number.isNaN(seconds) || !pps) return '$0.05-0.15/second'
 
         const cost = (pps * seconds).toFixed(2)
         return `$${cost}/Run`
@@ -1673,7 +1673,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
 
-        const seconds = parseFloat(String(durationWidget.value))
+        const seconds = Number.parseFloat(String(durationWidget.value))
         const resolution = String(resolutionWidget.value).trim().toLowerCase()
 
         const pricePerSecond: Record<string, number> = {
@@ -1683,7 +1683,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         }
 
         const pps = pricePerSecond[resolution]
-        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
+        if (Number.isNaN(seconds) || !pps) return '$0.05-0.15/second'
 
         const cost = (pps * seconds).toFixed(2)
         return `$${cost}/Run`

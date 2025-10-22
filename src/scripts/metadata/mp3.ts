@@ -14,7 +14,7 @@ export async function getMp3Metadata(file: File) {
     console.error('Invalid file signature.')
   let header = ''
   while (header.length < arrayBuffer.byteLength) {
-    const page = String.fromCharCode(
+    const page = String.fromCodePoint(
       ...new Uint8Array(arrayBuffer, header.length, header.length + 4096)
     )
     header += page

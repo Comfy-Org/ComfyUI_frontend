@@ -47,7 +47,7 @@ const DEFAULT_VALUE = 'Loading...'
 
 function createMockConfig(overrides = {}): RemoteWidgetConfig {
   return {
-    route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
+    route: `/api/test/${Date.now()}${Math.random().toString(36).slice(2, 15)}`,
     refresh: 0,
     ...overrides
   }
