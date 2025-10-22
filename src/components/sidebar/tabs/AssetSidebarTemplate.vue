@@ -1,12 +1,12 @@
 <template>
   <div
-    class="flex h-full flex-col bg-white dark-theme:bg-zinc-900"
+    class="flex h-full flex-col bg-interface-panel-surface"
     :class="props.class"
   >
     <div>
       <div
         v-if="slots.top"
-        class="flex min-h-12 items-center border-b border-zinc-200 px-4 py-2 dark-theme:border-zinc-700"
+        class="flex min-h-12 items-center border-b border-interface-stroke px-4 py-2"
       >
         <slot name="top" />
       </div>
