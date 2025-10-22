@@ -153,14 +153,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       useWorkflowStore().attachWorkflow(bp)
       registerNodeDef(bp)
     }
-    const getUnconflictedPath = (basePath: string): string => {
-      return basePath
-    }
     async function loadInstalledBlueprints() {
       async function loadGlobalBlueprint([k, v]: [string, GlobalSubgraphData]) {
-        const path = getUnconflictedPath(
-          SubgraphBlueprint.basePath + v.name + '.json'
-        )
+        const path = SubgraphBlueprint.basePath + v.name + '.json'
         const blueprint = new SubgraphBlueprint({
           path,
           modified: Date.now(),
