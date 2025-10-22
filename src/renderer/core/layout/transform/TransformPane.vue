@@ -4,7 +4,7 @@
     :class="
       cn(
         'absolute inset-0 w-full h-full pointer-events-none',
-        isInteracting ? 'transform-pane--interacting' : 'will-change-auto',
+        isInteracting ? 'will-change-transform' : 'will-change-auto',
         isLOD && 'isLOD'
       )
     "
@@ -40,24 +40,13 @@ const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
   settleDelay: 512
 })
 
-const emit = defineEmits<{
-  transformUpdate: []
-}>()
-
 useRafFn(
   () => {
     if (!props.canvas) {
       return
     }
     syncWithCanvas(props.canvas)
-    emit('transformUpdate')
   },
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.transform-pane--interacting {
-  will-change: transform;
-}
-</style>
