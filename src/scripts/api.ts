@@ -44,6 +44,8 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface QueuePromptRequestBody {
@@ -269,9 +271,7 @@ export class ComfyApi extends EventTarget {
    * Cache Firebase auth store composable function.
    */
   private authStoreComposable:
-    | (() => ReturnType<
-        typeof import('@/stores/firebaseAuthStore').useFirebaseAuthStore
-      >)
+    | (() => ReturnType<typeof useFirebaseAuthStore>)
     | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
@@ -335,7 +335,7 @@ export class ComfyApi extends EventTarget {
    * @returns The Firebase auth store instance, or null if not in cloud
    */
   private async getAuthStore(): Promise<ReturnType<
-    typeof import('@/stores/firebaseAuthStore').useFirebaseAuthStore
+    typeof useFirebaseAuthStore
   > | null> {
     if (isCloud) {
       if (!this.authStoreComposable) {
@@ -392,9 +392,7 @@ export class ComfyApi extends EventTarget {
       await this.waitForAuthInitialization()
 
       // Get Firebase JWT token if user is logged in
-      const getAuthHeaderIfAvailable = async (): Promise<
-        import('@/types/authTypes').AuthHeader | null
-      > => {
+      const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
         try {
           const authStore = await this.getAuthStore()
           return authStore ? await authStore.getAuthHeader() : null
