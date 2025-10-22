@@ -371,54 +371,54 @@ export class ComfyApi extends EventTarget {
     }
   }
 
+  private addHeaderEntry(
+    headers: HeadersInit,
+    key: string,
+    value: string
+  ): void {
+    if (Array.isArray(headers)) {
+      headers.push([key, value])
+    } else if (headers instanceof Headers) {
+      headers.set(key, value)
+    } else {
+      headers[key] = value
+    }
+  }
+
   async fetchApi(route: string, options?: RequestInit) {
-    if (!options) {
-      options = {}
-    }
-    if (!options.headers) {
-      options.headers = {}
-    }
-    if (!options.cache) {
-      options.cache = 'no-cache'
-    }
+    const headers: HeadersInit = options?.headers ?? {}
 
     if (isCloud) {
-      // Wait for Firebase auth to be initialized before making any API request
       await this.waitForAuthInitialization()
 
-      // Add Firebase JWT token if user is logged in
-      try {
-        const authStore = await this.getAuthStore()
-        const authHeader = authStore
-          ? await authStore.getAuthHeader()
-          : undefined
-        if (authHeader) {
-          if (Array.isArray(options.headers)) {
-            for (const [key, value] of Object.entries(authHeader)) {
-              options.headers.push([key, value])
-            }
-          } else if (options.headers instanceof Headers) {
-            for (const [key, value] of Object.entries(authHeader)) {
-              options.headers.set(key, value)
-            }
-          } else {
-            Object.assign(options.headers, authHeader)
-          }
+      // Get Firebase JWT token if user is logged in
+      const getAuthHeaderIfAvailable = async (): Promise<
+        import('@/types/authTypes').AuthHeader | null
+      > => {
+        try {
+          const authStore = await this.getAuthStore()
+          return authStore ? await authStore.getAuthHeader() : null
+        } catch (error) {
+          console.warn('Failed to get auth header:', error)
+          return null
         }
-      } catch (error) {
-        // Silently ignore auth errors to avoid breaking API calls
-        console.warn('Failed to get auth header:', error)
+      }
+
+      const authHeader = await getAuthHeaderIfAvailable()
+
+      if (authHeader) {
+        for (const [key, value] of Object.entries(authHeader)) {
+          this.addHeaderEntry(headers, key, value)
+        }
       }
     }
 
-    if (Array.isArray(options.headers)) {
-      options.headers.push(['Comfy-User', this.user])
-    } else if (options.headers instanceof Headers) {
-      options.headers.set('Comfy-User', this.user)
-    } else {
-      options.headers['Comfy-User'] = this.user
-    }
-    return fetch(this.apiURL(route), options)
+    this.addHeaderEntry(headers, 'Comfy-User', this.user)
+    return fetch(this.apiURL(route), {
+      cache: 'no-cache',
+      ...options,
+      headers
+    })
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(
