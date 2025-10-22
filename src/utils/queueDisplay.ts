@@ -13,7 +13,7 @@ type BuildJobDisplayCtx = {
   currentNodeName?: string
 }
 
-export type JobDisplay = {
+type JobDisplay = {
   iconName: string
   iconImageUrl?: string
   primary: string
