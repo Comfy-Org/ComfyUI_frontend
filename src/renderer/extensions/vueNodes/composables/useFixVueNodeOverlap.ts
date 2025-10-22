@@ -4,27 +4,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
 
-//Currently this works well. The performance is good.
-//The issue:
-// 1. It runs every time shouldRenderVueNodes changes from false to true.
-//    a: we might be able to track some localstorage or other variable that essentially will update if it has run, and then check if its already been run
-//       the issue with this is this is not persisted in the workflow, so if a user switches from litegraph to vuenodes and then saves the workflow and gives
-//       it to someone, the workflow is then loaded and there is no way to detect it was already switched. So the code will run again.
-//    b: if we try to store 2 seperate layouts the LG layout and the vue node layout in the workflow this simplifies the check, with positions but would require
-//       us to change the logic on how we actually read the positions and it would mean we would have to monkey patch or have logic to detect workflows version
-// 2. It doesn't run if shouldRenderVueNodes already equals true && loading new workflow
-//    a: we could change the location of where this is run so instead of the useVueNodeLifecycle we instead run it in the load workflow area of the app.
-//       this means that we can check to see if vue nodes is on and then handle the call to this function there. This would mean it solves the run on new workflow
-//       but it wouldnt handle the already in workflow switch from LG to Vue node mode. So that means we would still need to manage that somehow.
-//    b: maybe there is an even better location to run this. The crucial thing to consider is ideally we will need to allow for switching between LG mode and vue node mode.
-//       so if the code mutates the LG level graph.nodes before the vue node switches, we would need to store a reference that this change happened because of the
-//       vue node mode switch, either store the litegraph mode seperately in the app or in the workflow (which has pros and cons) the quesiton is now, would it be drastically
-//       simplier to make it so we dont need to store or preserve the mode when we switch from Vue node mode back to litegraph? My instinct is yes and for now, if that is true
-//       that in this system not needing to manage the switch back from Vue node to LG would be significantly easier than we should not do it. But if it slots into the system
-//       by leveraging this then we should do it.
-// 3. If switching back to litegraph shouldRenderVueNodes = false it doesnt reset the layout back to the litegraph version.
-//    a: this is the same question above as 2(b) we need to first verify that it is even worth it. And if its more challenging to implement and not less.
-
 const SCALE_FACTOR = 1.75
 
 export function useFixVueNodeOverlap() {
