@@ -18,6 +18,7 @@ import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -932,6 +933,7 @@ export class ComfyApp {
     this.addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
+    useTelemetry()?.markAppReady?.()
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
