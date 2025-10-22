@@ -31,7 +31,7 @@ export function useAssetsApi() {
     try {
       // For input directory, just return assets without history
       if (directory === 'input') {
-        const assets = await assetService.getAssetsByTag(directory)
+        const assets = await assetService.getAssetsByTag(directory, false)
         // Process assets to truncate long filenames for display
         return assets.map((asset) => ({
           ...asset,
