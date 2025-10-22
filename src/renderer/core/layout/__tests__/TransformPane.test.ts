@@ -115,22 +115,6 @@ describe('TransformPane', () => {
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
     })
-
-    it('should emit transform update timing', async () => {
-      const mockCanvas = createMockCanvas()
-      const wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      await nextTick()
-
-      // Allow RAF to execute
-      vi.advanceTimersToNextFrame()
-
-      expect(wrapper.emitted('transformUpdate')).toBeTruthy()
-    })
   })
 
   describe('canvas event listeners', () => {
@@ -214,9 +198,7 @@ describe('TransformPane', () => {
       const transformPane = wrapper.find('[data-testid="transform-pane"]')
 
       // Initially should not have interacting class
-      expect(transformPane.classes()).not.toContain(
-        'transform-pane--interacting'
-      )
+      expect(transformPane.classes()).not.toContain('will-change-transform')
     })
 
     it('should handle pointer events for node delegation', async () => {

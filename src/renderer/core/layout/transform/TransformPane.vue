@@ -36,24 +36,13 @@ const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
   settleDelay: 512
 })
 
-const emit = defineEmits<{
-  transformUpdate: []
-}>()
-
 useRafFn(
   () => {
     if (!props.canvas) {
       return
     }
     syncWithCanvas(props.canvas)
-    emit('transformUpdate')
   },
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.transform-pane--interacting {
-  will-change: transform;
-}
-</style>
