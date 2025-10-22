@@ -45,6 +45,7 @@
           <MediaAssetActions
             @menu-state-changed="isMenuOpen = $event"
             @inspect="handleZoomClick"
+            @asset-deleted="handleAssetDelete"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
           />
@@ -179,6 +180,7 @@ const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
 const emit = defineEmits<{
   zoom: [asset: AssetItem]
   'output-count-click': []
+  'asset-deleted': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
@@ -337,5 +339,9 @@ const handleImageLoaded = (dimensions: { width: number; height: number }) => {
 
 const handleOutputCountClick = () => {
   emit('output-count-click')
+}
+
+const handleAssetDelete = () => {
+  emit('asset-deleted')
 }
 </script>

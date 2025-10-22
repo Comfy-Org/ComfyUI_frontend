@@ -2191,6 +2191,8 @@
     "browseAssets": "Browse Assets",
     "noAssetsFound": "No assets found",
     "tryAdjustingFilters": "Try adjusting your search or filters",
+    "deleteAssetTitle": "Delete this asset?",
+    "deleteAssetDescription": "This asset will be permanently removed.",
     "loadingModels": "Loading {type}...",
     "connectionError": "Please check your connection and try again",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
