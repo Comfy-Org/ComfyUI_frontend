@@ -30,10 +30,8 @@ const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
 const DISTRIBUTION = (process.env.DISTRIBUTION ||
   (IS_CLOUD_URL ? 'cloud' : 'localhost')) as 'desktop' | 'localhost' | 'cloud'
 
-const DISABLE_VUE_PLUGINS =
-  DISTRIBUTION === 'cloud'
-    ? !IS_DEV || process.env.DISABLE_VUE_PLUGINS === 'true' // Disable Vue DevTools for production cloud distribution
-    : process.env.DISABLE_VUE_PLUGINS === 'true'
+// Disable Vue DevTools for production cloud distribution
+const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true' || (DISTRIBUTION === 'cloud' && !IS_DEV)
 
 const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'
