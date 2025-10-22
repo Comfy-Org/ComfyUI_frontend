@@ -5,7 +5,6 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { st } from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
 import {
@@ -16,11 +15,8 @@ import {
   isYesterday
 } from '@/utils/dateTimeUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import {
-  buildJobMeta,
-  buildJobTitle,
-  jobStateFromTask
-} from '@/utils/queueUtil'
+import { buildJobDisplay } from '@/utils/queueDisplay'
+import { jobStateFromTask } from '@/utils/queueUtil'
 
 /** Tabs for job list filtering */
 export const jobTabs = ['All', 'Completed', 'Failed'] as const
@@ -133,50 +129,29 @@ export function useJobList() {
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTasks.value.map((task: any) => {
       const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
-
-      let iconName: string | undefined
-      let iconImageUrl: string | undefined
-
-      if (state === 'completed') {
-        const previewOutput = task.previewOutput
-        if (previewOutput && previewOutput.isImage) {
-          iconImageUrl = previewOutput.urlWithTimestamp
-        } else {
-          iconName = 'icon-[lucide--check]'
-        }
-      } else if (state === 'running') {
-        iconName = 'icon-[lucide--zap]'
-      } else if (state === 'queued') {
-        iconName = 'icon-[lucide--clock]'
-      } else if (state === 'failed') {
-        iconName = 'icon-[lucide--alert-circle]'
-      }
-
-      const completedPreviewOutput: ResultItemImpl | undefined =
-        state === 'completed' ? task.previewOutput : undefined
-      const displayTitle =
-        state === 'completed' && completedPreviewOutput?.filename
-          ? completedPreviewOutput.filename
-          : buildJobTitle(task, t)
-
       const isActive =
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
+
+      const display = buildJobDisplay(task, state, {
+        t,
+        locale: locale.value,
+        firstSeenByPromptId: queueStore.firstSeenByPromptId,
+        formatClockTimeFn: formatClockTime,
+        isActive,
+        totalPercent: isActive ? totalPercent.value : undefined,
+        currentNodePercent: isActive ? currentNodePercent.value : undefined,
+        currentNodeName: isActive ? currentNodeName.value : undefined
+      })
+
       return {
         id: String(task.promptId),
-        title: displayTitle,
-        meta: buildJobMeta(
-          task,
-          state,
-          queueStore.firstSeenByPromptId,
-          locale.value,
-          t,
-          formatClockTime
-        ),
+        title: display.primary,
+        meta: display.secondary,
         state,
-        iconName,
-        iconImageUrl,
-        showClear: state === 'queued' || state === 'failed',
+        iconName: display.iconName,
+        iconImageUrl: display.iconImageUrl,
+        showClear: display.showClear,
         taskRef: task,
         progressTotalPercent:
           state === 'running' && isActive ? totalPercent.value : undefined,

@@ -73,16 +73,7 @@
 
       <div class="relative z-[1] min-w-0 flex-1">
         <div class="truncate opacity-90" :title="primaryText">
-          <slot name="primary">
-            <template v-if="props.state === 'running'">
-              <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
-                <template #percent>
-                  <span class="font-bold">{{ formattedTotalPercent }}</span>
-                </template>
-              </i18n-t>
-            </template>
-            <template v-else>{{ primaryText }}</template>
-          </slot>
+          <slot name="primary">{{ primaryText }}</slot>
         </div>
       </div>
 
@@ -132,29 +123,7 @@
             </button>
           </div>
           <div v-else key="secondary" class="pr-[var(--spacing-spacing-xs)]">
-            <slot name="secondary">
-              <template
-                v-if="
-                  props.state === 'running' &&
-                  props.runningNodeName &&
-                  props.progressCurrentPercent !== undefined
-                "
-              >
-                <span
-                  class="inline-flex items-center gap-[var(--spacing-spacing-xss)]"
-                >
-                  <span class="inline-block max-w-[10rem] truncate">{{
-                    props.runningNodeName
-                  }}</span>
-                  <span>{{
-                    t('sideToolbar.queueProgressOverlay.colonPercent', {
-                      percent: formattedCurrentPercent
-                    })
-                  }}</span>
-                </span>
-              </template>
-              <template v-else>{{ rightText }}</template>
-            </slot>
+            <slot name="secondary">{{ rightText }}</slot>
           </div>
         </Transition>
       </div>
@@ -169,8 +138,7 @@ import { useI18n } from 'vue-i18n'
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
 import type { JobState } from '@/types/queue'
-import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
-import { iconForJobState, shouldShowClear } from '@/utils/queueUtil'
+import { iconForJobState } from '@/utils/queueDisplay'
 
 const props = withDefaults(
   defineProps<{
@@ -210,7 +178,7 @@ const emit = defineEmits<{
   (e: 'details-leave', jobId: string): void
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const showDetails = computed(() => props.activeDetailsId === props.jobId)
 
@@ -253,38 +221,17 @@ const isHovered = ref(false)
 
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
-  if (props.state === 'added') return 'icon-[lucide--check]'
   return iconForJobState(props.state)
 })
 
 const rightText = computed(() => props.rightText)
-const runningTotalPercent = computed(() =>
-  clampPercentInt(props.progressTotalPercent)
-)
 
-const formattedTotalPercent = computed(() =>
-  formatPercent0(locale.value, runningTotalPercent.value)
-)
+const primaryText = computed(() => props.title)
 
-const runningCurrentPercent = computed(() =>
-  clampPercentInt(props.progressCurrentPercent)
-)
-
-const formattedCurrentPercent = computed(() =>
-  formatPercent0(locale.value, runningCurrentPercent.value)
-)
-
-const primaryText = computed(() => {
-  if (props.state === 'initialization')
-    return t('queue.initializingAlmostReady')
-  if (props.state === 'queued') return t('queue.inQueue')
-  if (props.state === 'added') return t('queue.jobAddedToQueue')
-  return props.title
+const computedShowClear = computed(() => {
+  if (props.showClear !== undefined) return props.showClear
+  return props.state !== 'completed'
 })
-
-const computedShowClear = computed(() =>
-  shouldShowClear(props.state, props.showClear)
-)
 
 const computedShowMenu = computed(() => {
   if (props.showMenu !== undefined) return props.showMenu
