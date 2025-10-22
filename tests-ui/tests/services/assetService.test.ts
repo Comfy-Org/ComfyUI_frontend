@@ -193,16 +193,32 @@ describe('assetService', () => {
   describe('isAssetBrowserEligible', () => {
     it('should return true for registered node types', () => {
       expect(
-        assetService.isAssetBrowserEligible('CheckpointLoaderSimple')
+        assetService.isAssetBrowserEligible(
+          'CheckpointLoaderSimple',
+          'ckpt_name'
+        )
       ).toBe(true)
-      expect(assetService.isAssetBrowserEligible('LoraLoader')).toBe(true)
-      expect(assetService.isAssetBrowserEligible('VAELoader')).toBe(true)
+      expect(
+        assetService.isAssetBrowserEligible('LoraLoader', 'lora_name')
+      ).toBe(true)
+      expect(assetService.isAssetBrowserEligible('VAELoader', 'vae_name')).toBe(
+        true
+      )
     })
 
     it('should return false for unregistered node types', () => {
-      expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('NotRegistered')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('UnknownNode', 'widget')).toBe(
+        false
+      )
+      expect(
+        assetService.isAssetBrowserEligible('NotRegistered', 'widget')
+      ).toBe(false)
+      expect(assetService.isAssetBrowserEligible('', '')).toBe(false)
+    })
+    it('should return false for other combo widgets on the registered node', () => {
+      expect(assetService.isAssetBrowserEligible('ClipLoader', 'type')).toBe(
+        false
+      )
     })
   })
 

@@ -288,7 +288,7 @@ describe('useModelToNodeStore', () => {
 
       // Non-existent nodes are filtered out from registered types
       const types = modelToNodeStore.getRegisteredNodeTypes()
-      expect(types.has('NonExistentLoader')).toBe(false)
+      expect(types['NonExistentLoader']).toBe(undefined)
 
       expect(
         modelToNodeStore.getCategoryForNodeType('NonExistentLoader')
@@ -371,16 +371,16 @@ describe('useModelToNodeStore', () => {
       })
     })
 
-    it('should contain node types for efficient Set.has() lookups', () => {
+    it('should contain node types to resolve widget name', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
       const result = modelToNodeStore.getRegisteredNodeTypes()
 
       // Test Set.has() functionality which assetService depends on
-      expect(result.has('CheckpointLoaderSimple')).toBe(true)
-      expect(result.has('LoraLoader')).toBe(true)
-      expect(result.has('NonExistentNode')).toBe(false)
+      expect(result['CheckpointLoaderSimple']).toBe('chkpt_name')
+      expect(result['LoraLoader']).toBe('lora_name')
+      expect(result['NonExistentNode']).toBe(undefined)
     })
   })
 

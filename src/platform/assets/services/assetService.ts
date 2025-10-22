@@ -115,9 +115,16 @@ function createAssetService() {
    * @param nodeType - The ComfyUI node comfyClass (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
    * @returns true if this input should use asset browser
    */
-  function isAssetBrowserEligible(nodeType: string = ''): boolean {
+  function isAssetBrowserEligible(
+    nodeType: string = '',
+    widgetName: string
+  ): boolean {
     return (
-      !!nodeType && useModelToNodeStore().getRegisteredNodeTypes().has(nodeType)
+      (nodeType &&
+        widgetName &&
+        useModelToNodeStore().getRegisteredNodeTypes()[nodeType] ===
+          widgetName) ||
+      false
     )
   }
 
