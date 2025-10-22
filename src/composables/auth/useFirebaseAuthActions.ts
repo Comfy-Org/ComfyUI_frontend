@@ -58,7 +58,14 @@ export const useFirebaseAuthActions = () => {
       life: 5000
     })
 
-    if (isCloud && router) await router.push({ name: 'cloud-login' })
+    if (isCloud && router) {
+      try {
+        await router.push({ name: 'cloud-login' })
+      } catch (error) {
+        // needed for local development until we bring in cloud login pages.
+        window.location.reload()
+      }
+    }
   }, reportError)
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
