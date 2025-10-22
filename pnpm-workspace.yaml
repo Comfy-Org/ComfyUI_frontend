@@ -89,7 +89,7 @@ catalog:
   vite-plugin-inspect: ^0.8.9
   vite-plugin-vue-devtools: ^7.7.6
   vitest: ^3.2.4
-  vue: 3.6.0-alpha.2
+  vue: https://pkg.pr.new/vuejs/core/vue@20b5240
   vue-component-type-helpers: ^3.1.0
   vue-eslint-parser: ^10.2.0
   vue-i18n: ^9.14.3
