@@ -55,6 +55,7 @@
     "@nx/vite": "catalog:",
     "@pinia/testing": "catalog:",
     "@playwright/test": "catalog:",
+    "@prettier/plugin-oxc": "catalog:",
     "@storybook/addon-docs": "catalog:",
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",

@@ -7,12 +7,5 @@
   "importOrder": ["^@core/(.*)$", "<THIRD_PARTY_MODULES>", "^@/(.*)$", "^[./]"],
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
-  "overrides": [
-    {
-      "files": "*.{js,cjs,mjs,ts,cts,mts,tsx,vue}",
-      "options": {
-        "plugins": ["@trivago/prettier-plugin-sort-imports"]
-      }
-    }
-  ]
+  "plugins": ["@prettier/plugin-oxc", "@trivago/prettier-plugin-sort-imports"]
 }
