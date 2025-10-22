@@ -20,7 +20,6 @@ import { usdToMicros } from '@/utils/formatUtil'
 export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
-  const router = isCloud ? useRouter() : undefined
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -58,8 +57,9 @@ export const useFirebaseAuthActions = () => {
       life: 5000
     })
 
-    if (isCloud && router) {
+    if (isCloud) {
       try {
+        const router = useRouter()
         await router.push({ name: 'cloud-login' })
       } catch (error) {
         // needed for local development until we bring in cloud login pages.

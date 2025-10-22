@@ -70,7 +70,7 @@ if (isCloud) {
     if (!authStore.isInitialized) {
       try {
         const { isInitialized } = storeToRefs(authStore)
-        await until(isInitialized).toBe(true, { timeout: 16000 })
+        await until(isInitialized).toBe(true, { timeout: 16_000 })
       } catch (error) {
         console.error('Auth initialization failed:', error)
         return next({ name: 'cloud-auth-timeout' })
@@ -86,7 +86,9 @@ if (isCloud) {
     // Show sign-in for unauthenticated users
     const dialogService = useDialogService()
     const loginSuccess = await dialogService.showSignInDialog()
-    next(loginSuccess ? undefined : false)
+
+    if (loginSuccess) return next()
+    return next(false)
   })
 }
 

@@ -1,18 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
+// Mock global fetch
+vi.stubGlobal('fetch', vi.fn())
+
 describe('api.fetchApi', () => {
   beforeEach(() => {
-    // Mock global fetch
-    global.fetch = vi.fn()
+    vi.resetAllMocks()
 
     // Reset api state
     api.user = 'test-user'
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('header handling', () => {
@@ -44,8 +42,8 @@ describe('api.fetchApi', () => {
       await api.fetchApi('/test', { headers })
 
       expect(mockFetch).toHaveBeenCalled()
-      const callHeaders = mockFetch.mock.calls[0][1]?.headers as Headers
-      expect(callHeaders.get('Comfy-User')).toBe('test-user')
+      const callHeaders = mockFetch.mock.calls[0][1]?.headers
+      expect(callHeaders).toEqual(headers)
     })
 
     it('should add Comfy-User header with array headers', async () => {
@@ -57,10 +55,7 @@ describe('api.fetchApi', () => {
       await api.fetchApi('/test', { headers })
 
       expect(mockFetch).toHaveBeenCalled()
-      const callHeaders = mockFetch.mock.calls[0][1]?.headers as [
-        string,
-        string
-      ][]
+      const callHeaders = mockFetch.mock.calls[0][1]?.headers
       expect(callHeaders).toContainEqual(['Comfy-User', 'test-user'])
     })
 
@@ -87,6 +82,27 @@ describe('api.fetchApi', () => {
         })
       )
     })
+
+    it('should not allow developer-specified headers to be overridden by options', async () => {
+      const mockFetch = vi
+        .mocked(global.fetch)
+        .mockResolvedValue(new Response())
+
+      await api.fetchApi('/test', {
+        headers: {
+          'Comfy-User': 'fennec-girl'
+        }
+      })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/test'),
+        expect.objectContaining({
+          headers: {
+            'Comfy-User': 'test-user'
+          }
+        })
+      )
+    })
   })
 
   describe('default options', () => {
@@ -105,7 +121,7 @@ describe('api.fetchApi', () => {
       )
     })
 
-    it('should initialize empty headers object if not provided', async () => {
+    it('should include required headers even when no headers option is provided', async () => {
       const mockFetch = vi
         .mocked(global.fetch)
         .mockResolvedValue(new Response())

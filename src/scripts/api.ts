@@ -204,6 +204,16 @@ type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
 type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
+function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
+  if (Array.isArray(headers)) {
+    headers.push([key, value])
+  } else if (headers instanceof Headers) {
+    headers.set(key, value)
+  } else {
+    headers[key] = value
+  }
+}
+
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
@@ -270,9 +280,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Cache Firebase auth store composable function.
    */
-  private authStoreComposable:
-    | (() => ReturnType<typeof useFirebaseAuthStore>)
-    | null = null
+  private authStoreComposable?: typeof useFirebaseAuthStore
 
   reportedUnknownMessageTypes = new Set<string>()
 
@@ -334,9 +342,7 @@ export class ComfyApi extends EventTarget {
    * Returns null for non-cloud distributions.
    * @returns The Firebase auth store instance, or null if not in cloud
    */
-  private async getAuthStore(): Promise<ReturnType<
-    typeof useFirebaseAuthStore
-  > | null> {
+  private async getAuthStore() {
     if (isCloud) {
       if (!this.authStoreComposable) {
         const module = await import('@/stores/firebaseAuthStore')
@@ -345,8 +351,6 @@ export class ComfyApi extends EventTarget {
 
       return this.authStoreComposable()
     }
-
-    return null
   }
 
   /**
@@ -371,20 +375,6 @@ export class ComfyApi extends EventTarget {
     }
   }
 
-  private addHeaderEntry(
-    headers: HeadersInit,
-    key: string,
-    value: string
-  ): void {
-    if (Array.isArray(headers)) {
-      headers.push([key, value])
-    } else if (headers instanceof Headers) {
-      headers.set(key, value)
-    } else {
-      headers[key] = value
-    }
-  }
-
   async fetchApi(route: string, options?: RequestInit) {
     const headers: HeadersInit = options?.headers ?? {}
 
@@ -406,12 +396,12 @@ export class ComfyApi extends EventTarget {
 
       if (authHeader) {
         for (const [key, value] of Object.entries(authHeader)) {
-          this.addHeaderEntry(headers, key, value)
+          addHeaderEntry(headers, key, value)
         }
       }
     }
 
-    this.addHeaderEntry(headers, 'Comfy-User', this.user)
+    addHeaderEntry(headers, 'Comfy-User', this.user)
     return fetch(this.apiURL(route), {
       cache: 'no-cache',
       ...options,
@@ -491,12 +481,21 @@ export class ComfyApi extends EventTarget {
     let opened = false
     let existingSession = window.name
 
-    // Get auth token if available
-    let authToken: string | undefined
+    // Build WebSocket URL with query parameters
+    const params = new URLSearchParams()
+
+    if (existingSession) {
+      params.set('clientId', existingSession)
+    }
+
+    // Get auth token and set cloud params if available
     if (isCloud) {
       try {
         const authStore = await this.getAuthStore()
-        authToken = authStore ? await authStore.getIdToken() : undefined
+        const authToken = await authStore?.getIdToken()
+        if (authToken) {
+          params.set('token', authToken)
+        }
       } catch (error) {
         // Continue without auth token if there's an error
         console.warn(
@@ -506,18 +505,8 @@ export class ComfyApi extends EventTarget {
       }
     }
 
-    // Build WebSocket URL with query parameters
-    const params = new URLSearchParams()
-
-    if (existingSession) {
-      params.set('clientId', existingSession)
-    }
-    if (isCloud && authToken) {
-      params.set('token', authToken)
-    }
-
-    const protocol = window.location.protocol === 'https:' ? 's' : ''
-    const baseUrl = `ws${protocol}://${this.api_host}${this.api_base}/ws`
+    const protocol = 'ws' + (window.location.protocol === 'https:' ? 's' : '')
+    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 

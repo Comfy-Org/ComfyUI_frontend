@@ -30,13 +30,16 @@ const DISTRIBUTION = (process.env.DISTRIBUTION || 'localhost') as
 
 const DISABLE_VUE_PLUGINS =
   DISTRIBUTION === 'cloud'
-    ? true // Disable Vue DevTools for cloud distribution
+    ? !IS_DEV || process.env.DISABLE_VUE_PLUGINS === 'true' // Disable Vue DevTools for production cloud distribution
     : process.env.DISABLE_VUE_PLUGINS === 'true'
 
-const DEV_SERVER_COMFYUI_URL =
+const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'
-    ? process.env.DEV_SERVER_COMFYUI_URL || 'https://stagingcloud.comfy.org'
-    : process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+    ? 'https://stagingcloud.comfy.org'
+    : 'http://127.0.0.1:8188'
+
+const DEV_SERVER_COMFYUI_URL =
+  process.env.DEV_SERVER_COMFYUI_URL || DEV_SEVER_FALLBACK_URL
 
 // Optional: Add API key to .env as STAGING_API_KEY if needed for cloud authentication
 const addAuthHeaders = (proxy: any) => {
@@ -47,6 +50,30 @@ const addAuthHeaders = (proxy: any) => {
     }
   })
 }
+
+// Cloud endpoint configuration overrides
+const cloudSecureConfig =
+  DISTRIBUTION === 'cloud'
+    ? {
+        secure: false
+      }
+    : {}
+
+const cloudProxyConfig =
+  DISTRIBUTION === 'cloud'
+    ? {
+        ...cloudSecureConfig,
+        changeOrigin: true
+      }
+    : {}
+
+const cloudProxyConfigWithAuth =
+  DISTRIBUTION === 'cloud'
+    ? {
+        ...cloudProxyConfig,
+        configure: addAuthHeaders
+      }
+    : {}
 
 const BUILD_FLAGS = {
   REQUIRE_SUBSCRIPTION: process.env.REQUIRE_SUBSCRIPTION === 'true'
@@ -76,35 +103,27 @@ export default defineConfig({
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...(DISTRIBUTION === 'cloud' && {
-          changeOrigin: true,
-          secure: false,
-          configure: addAuthHeaders
-        })
+        ...cloudProxyConfigWithAuth
       },
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...(DISTRIBUTION === 'cloud' && {
-          changeOrigin: true,
-          secure: false,
-          configure: (proxy, _options) => {
-            addAuthHeaders(proxy)
-          }
-        }),
-        // Return empty array for extensions API as these modules
-        // are not on vite's dev server.
+        ...cloudProxyConfigWithAuth,
         bypass: (req, res, _options) => {
+          // Return empty array for extensions API as these modules
+          // are not on vite's dev server.
           if (req.url === '/api/extensions') {
             res.end(JSON.stringify([]))
             return false
           }
+
           // Bypass multi-user auth check from staging (cloud only)
           if (DISTRIBUTION === 'cloud' && req.url === '/api/users') {
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({})) // Return empty object to simulate single-user mode
             return false
           }
+
           return null
         }
       },
@@ -112,48 +131,33 @@ export default defineConfig({
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...(DISTRIBUTION === 'cloud' && {
-          changeOrigin: true,
-          secure: false,
-          configure: addAuthHeaders
-        })
+        ...cloudProxyConfigWithAuth
       },
 
       '/workflow_templates': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...(DISTRIBUTION === 'cloud' && {
-          changeOrigin: true,
-          secure: false,
-          configure: addAuthHeaders
-        })
+        ...cloudProxyConfigWithAuth
       },
 
       // Proxy extension assets (images/videos) under /extensions to the ComfyUI backend
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...(DISTRIBUTION === 'cloud' && {
-          secure: false
-        })
+        ...cloudSecureConfig
       },
 
       // Proxy docs markdown from backend
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...(DISTRIBUTION === 'cloud' && {
-          secure: false
-        })
+        ...cloudSecureConfig
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
               target: DEV_SERVER_COMFYUI_URL,
-              ...(DISTRIBUTION === 'cloud' && {
-                changeOrigin: true,
-                secure: false
-              })
+              ...cloudProxyConfig
             }
           }
         : {}),
