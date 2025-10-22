@@ -21,16 +21,32 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
-const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
-
-const DEV_SERVER_COMFYUI_URL =
-  process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
 
 const DISTRIBUTION = (process.env.DISTRIBUTION || 'localhost') as
   | 'desktop'
   | 'localhost'
   | 'cloud'
+
+const DISABLE_VUE_PLUGINS =
+  DISTRIBUTION === 'cloud'
+    ? true // Disable Vue DevTools for cloud distribution
+    : process.env.DISABLE_VUE_PLUGINS === 'true'
+
+const DEV_SERVER_COMFYUI_URL =
+  DISTRIBUTION === 'cloud'
+    ? process.env.DEV_SERVER_COMFYUI_URL || 'https://stagingcloud.comfy.org'
+    : process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+
+// Optional: Add API key to .env as STAGING_API_KEY if needed for cloud authentication
+const addAuthHeaders = (proxy: any) => {
+  proxy.on('proxyReq', (proxyReq: any, _req: any, _res: any) => {
+    const apiKey = process.env.STAGING_API_KEY
+    if (apiKey) {
+      proxyReq.setHeader('X-API-KEY', apiKey)
+    }
+  })
+}
 
 const BUILD_FLAGS = {
   REQUIRE_SUBSCRIPTION: process.env.REQUIRE_SUBSCRIPTION === 'true'
@@ -59,16 +75,35 @@ export default defineConfig({
     },
     proxy: {
       '/internal': {
-        target: DEV_SERVER_COMFYUI_URL
+        target: DEV_SERVER_COMFYUI_URL,
+        ...(DISTRIBUTION === 'cloud' && {
+          changeOrigin: true,
+          secure: false,
+          configure: addAuthHeaders
+        })
       },
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
+        ...(DISTRIBUTION === 'cloud' && {
+          changeOrigin: true,
+          secure: false,
+          configure: (proxy, _options) => {
+            addAuthHeaders(proxy)
+          }
+        }),
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
         bypass: (req, res, _options) => {
           if (req.url === '/api/extensions') {
             res.end(JSON.stringify([]))
+            return false
+          }
+          // Bypass multi-user auth check from staging (cloud only)
+          if (DISTRIBUTION === 'cloud' && req.url === '/api/users') {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({})) // Return empty object to simulate single-user mode
+            return false
           }
           return null
         }
@@ -76,29 +111,49 @@ export default defineConfig({
 
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
-        ws: true
+        ws: true,
+        ...(DISTRIBUTION === 'cloud' && {
+          changeOrigin: true,
+          secure: false,
+          configure: addAuthHeaders
+        })
       },
 
       '/workflow_templates': {
-        target: DEV_SERVER_COMFYUI_URL
+        target: DEV_SERVER_COMFYUI_URL,
+        ...(DISTRIBUTION === 'cloud' && {
+          changeOrigin: true,
+          secure: false,
+          configure: addAuthHeaders
+        })
       },
 
       // Proxy extension assets (images/videos) under /extensions to the ComfyUI backend
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
-        changeOrigin: true
+        changeOrigin: true,
+        ...(DISTRIBUTION === 'cloud' && {
+          secure: false
+        })
       },
 
       // Proxy docs markdown from backend
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
-        changeOrigin: true
+        changeOrigin: true,
+        ...(DISTRIBUTION === 'cloud' && {
+          secure: false
+        })
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
-              target: DEV_SERVER_COMFYUI_URL
+              target: DEV_SERVER_COMFYUI_URL,
+              ...(DISTRIBUTION === 'cloud' && {
+                changeOrigin: true,
+                secure: false
+              })
             }
           }
         : {}),
