@@ -19,7 +19,7 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="group flex flex-1 items-stretch"
+      class="group flex items-stretch has-[.widget-expands]:flex-1"
     >
       <!-- Widget Input Slot Dot -->
 
