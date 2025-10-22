@@ -85,7 +85,7 @@ type Props = {
   mode: 'allSuccess' | 'mixed' | 'allFailed'
   completedCount: number
   failedCount: number
-  thumbnailUrls: string[]
+  thumbnailUrls?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
