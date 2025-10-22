@@ -9,7 +9,7 @@ export function clone<T>(obj: T): T {
     if (typeof structuredClone !== 'undefined') {
       return structuredClone(obj)
     }
-  } catch (error) {
+  } catch (_error) {
     // structuredClone is stricter than using JSON.parse/stringify so fallback to that
   }
 

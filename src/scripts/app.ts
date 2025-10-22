@@ -1334,7 +1334,7 @@ export class ComfyApp {
                       .activeWorkflow as ComfyWorkflow
                   })
                 }
-              } catch (error) {}
+              } catch (_error) {}
             }
           } catch (error: unknown) {
             useDialogService().showErrorDialog(error, {
@@ -1606,7 +1606,7 @@ export class ComfyApp {
                 // @ts-expect-error fixme ts strict error
                 toSlot = node.inputs?.length - 1
               }
-            } catch (error) {}
+            } catch (_error) {}
           }
           if (toSlot != null || toSlot !== -1) {
             // @ts-expect-error fixme ts strict error
@@ -1644,7 +1644,7 @@ export class ComfyApp {
                 // @ts-expect-error fixme ts strict error
                 toSlot = node.inputs?.length - 1
               }
-            } catch (error) {}
+            } catch (_error) {}
           }
           if (toSlot != null || toSlot !== -1) {
             // @ts-expect-error fixme ts strict error

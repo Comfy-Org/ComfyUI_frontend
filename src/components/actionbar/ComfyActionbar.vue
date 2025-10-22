@@ -71,12 +71,7 @@ const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const {
-  x,
-  y,
-  style: style,
-  isDragging
-} = useDraggable(panelRef, {
+const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body,

@@ -392,7 +392,7 @@ export class ComfyApi extends EventTarget {
         const resp = await this.fetchApi('/prompt')
         const status = (await resp.json()) as StatusWsMessageStatus
         this.dispatchCustomEvent('status', status)
-      } catch (error) {
+      } catch (_error) {
         this.dispatchCustomEvent('status', null)
       }
     }, 1000)

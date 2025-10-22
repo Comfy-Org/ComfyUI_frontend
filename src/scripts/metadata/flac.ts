@@ -51,8 +51,7 @@ function parseVorbisComment(dataView: DataView): Record<string, string> {
   let offset = 0
   const vendorLength = dataView.getUint32(offset, true)
   offset += 4
-  // @ts-expect-error unused variable
-  const vendorString = getString(dataView, offset, vendorLength)
+  // Skip vendor string
   offset += vendorLength
 
   const userCommentListLength = dataView.getUint32(offset, true)

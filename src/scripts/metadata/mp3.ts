@@ -21,8 +21,10 @@ export async function getMp3Metadata(file: File) {
     if (page.match('\u00ff\u00fb')) break
   }
   let workflow, prompt
+  // eslint-disable-next-line no-control-regex
   let prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
   if (prompt_s) prompt = JSON.parse(prompt_s)
+  // eslint-disable-next-line no-control-regex
   let workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
   if (workflow_s) workflow = JSON.parse(workflow_s)
   return { prompt, workflow }

@@ -18,10 +18,12 @@ export async function getOggMetadata(file: File) {
     if (oggs > 1) break
   }
   let workflow, prompt
+  // eslint-disable-next-line no-control-regex
   let prompt_s = header
     .match(/prompt=(\{.*?(\}.*?\u0000))/s)?.[1]
     ?.match(/\{.*\}/)?.[0]
   if (prompt_s) prompt = JSON.parse(prompt_s)
+  // eslint-disable-next-line no-control-regex
   let workflow_s = header
     .match(/workflow=(\{.*?(\}.*?\u0000))/s)?.[1]
     ?.match(/\{.*\}/)?.[0]

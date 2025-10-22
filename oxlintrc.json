@@ -3,6 +3,7 @@
   "rules": {
     "typescript/no-explicit-any": "off",
     "typescript/no-unused-vars": "off",
+    "no-control-regex": "off",
     "unicorn/prefer-at": "warn",
     "unicorn/prefer-string-slice": "warn",
     "unicorn/prefer-code-point": "warn",
