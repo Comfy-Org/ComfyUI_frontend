@@ -141,6 +141,9 @@ catalogs:
     eslint-plugin-import-x:
       specifier: ^4.16.1
       version: 4.16.1
+    eslint-plugin-oxlint:
+      specifier: ^1.24.0
+      version: 1.24.0
     eslint-plugin-prettier:
       specifier: ^5.5.4
       version: 5.5.4
@@ -181,7 +184,7 @@ catalogs:
       specifier: ^3.0.4
       version: 3.0.4
     mixpanel-browser:
-      specifier: ^2.71.0
+      specifier: ^2.59.0
       version: 2.71.0
     nx:
       specifier: 21.4.1
@@ -558,6 +561,9 @@ importers:
       eslint-plugin-import-x:
         specifier: 'catalog:'
         version: 4.16.1(@typescript-eslint/utils@8.44.0(eslint@9.35.0(jiti@2.4.2))(typescript@5.9.2))(eslint-import-resolver-node@0.3.9)(eslint@9.35.0(jiti@2.4.2))
+      eslint-plugin-oxlint:
+        specifier: 'catalog:'
+        version: 1.24.0
       eslint-plugin-prettier:
         specifier: 'catalog:'
         version: 5.5.4(eslint-config-prettier@10.1.8(eslint@9.35.0(jiti@2.4.2)))(eslint@9.35.0(jiti@2.4.2))(prettier@3.6.2)
@@ -4778,6 +4784,9 @@ packages:
       '@typescript-eslint/parser':
         optional: true
 
+  eslint-plugin-oxlint@1.24.0:
+    resolution: {integrity: sha512-eK41VTdYfq8HJH5tGxC6EMdfmCpzXbM5SAqyAU9HProtb5YRCxM9vT2PUfLbGw9EptUvPGF4o9cVUvK9hCCB1g==}
+
   eslint-plugin-prettier@5.5.4:
     resolution: {integrity: sha512-swNtI95SToIz05YINMA6Ox5R057IMAmWZ26GqPxusAp1TZzj+IdY9tXNWWD3vkF/wEqydCONcwjTFpxybBqZsg==}
     engines: {node: ^14.18.0 || >=16.0.0}
@@ -5737,6 +5746,9 @@ packages:
 
   jsonc-parser@3.2.0:
     resolution: {integrity: sha512-gfFQZrcTc8CnKXp6Y4/CBT3fTc0OVuDofpre4aEeEpSBPV5X5v4+Vmx+8snU7RLPrNHPKSgLxGo9YuQzz20o+w==}
+
+  jsonc-parser@3.3.1:
+    resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
 
   jsondiffpatch@0.6.0:
     resolution: {integrity: sha512-3QItJOXp2AP1uv7waBkao5nCvhEv+QmJAd38Ybq7wNI74Q+BBmnLn4EDKz6yI9xGAIQoUF87qHt+kc1IVxB4zQ==}
@@ -12596,6 +12608,10 @@ snapshots:
       - supports-color
     optional: true
 
+  eslint-plugin-oxlint@1.24.0:
+    dependencies:
+      jsonc-parser: 3.3.1
+
   eslint-plugin-prettier@5.5.4(eslint-config-prettier@10.1.8(eslint@9.35.0(jiti@2.4.2)))(eslint@9.35.0(jiti@2.4.2))(prettier@3.6.2):
     dependencies:
       eslint: 9.35.0(jiti@2.4.2)
@@ -13660,6 +13676,8 @@ snapshots:
       semver: 7.7.2
 
   jsonc-parser@3.2.0: {}
+
+  jsonc-parser@3.3.1: {}
 
   jsondiffpatch@0.6.0:
     dependencies:
