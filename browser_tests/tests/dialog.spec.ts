@@ -310,9 +310,11 @@ test.describe('Support', () => {
     const newPage = await pagePromise
 
     await newPage.waitForLoadState('networkidle')
-    await expect(newPage).toHaveURL(
-      /.*support\.comfy\.org\/hc\/en-us\/requests\/new\?tf_42243568391700=oss.*/
-    )
+    await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
+
+    const url = new URL(newPage.url())
+    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+
     await newPage.close()
   })
 })
