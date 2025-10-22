@@ -195,11 +195,21 @@ function createAssetService() {
    * Gets assets filtered by a specific tag
    *
    * @param tag - The tag to filter by (e.g., 'models')
+   * @param includePublic - Whether to include public assets (default: true)
    * @returns Promise<AssetItem[]> - Full asset objects filtered by tag, excluding missing assets
    */
-  async function getAssetsByTag(tag: string): Promise<AssetItem[]> {
+  async function getAssetsByTag(
+    tag: string,
+    includePublic: boolean = true
+  ): Promise<AssetItem[]> {
+    const queryParams = new URLSearchParams({
+      include_tags: tag,
+      limit: DEFAULT_LIMIT.toString(),
+      include_public: includePublic ? 'true' : 'false'
+    })
+
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${tag}&limit=${DEFAULT_LIMIT}`,
+      `${ASSETS_ENDPOINT}?${queryParams.toString()}`,
       `assets for tag ${tag}`
     )
 
