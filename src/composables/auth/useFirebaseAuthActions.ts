@@ -20,7 +20,7 @@ import { usdToMicros } from '@/utils/formatUtil'
 export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
-  const router = useRouter()
+  const router = isCloud ? useRouter() : undefined
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -58,7 +58,7 @@ export const useFirebaseAuthActions = () => {
       life: 5000
     })
 
-    if (isCloud) await router.push({ name: 'cloud-login' })
+    if (isCloud && router) await router.push({ name: 'cloud-login' })
   }, reportError)
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
