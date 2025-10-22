@@ -140,8 +140,7 @@ export const buildJobDisplay = (
   if (state === 'completed') {
     const time = task.executionTimeInSeconds
     const preview = task.previewOutput
-    const iconImageUrl =
-      preview && preview.isImage ? preview.urlWithTimestamp : undefined
+    const iconImageUrl = preview && preview.isImage ? preview.url : undefined
     return {
       iconName: iconForJobState(state),
       iconImageUrl,
