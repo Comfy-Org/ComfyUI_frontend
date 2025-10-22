@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st } from '@/i18n'
@@ -128,6 +129,17 @@ export function useJobMenu(
     node.graph?.setDirtyCanvas(true, true)
   }
 
+  /**
+   * Trigger a download of the job's previewable output asset.
+   */
+  const downloadPreviewAsset = () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+    if (!result) return
+    downloadFile(result.url)
+  }
+
   const jobMenuOpenWorkflowLabel = computed(() =>
     st('queue.jobMenu.openAsWorkflowNewTab', 'Open as workflow in new tab')
   )
@@ -170,7 +182,7 @@ export function useJobMenu(
           key: 'download',
           label: st('queue.jobMenu.download', 'Download'),
           icon: 'icon-[lucide--download]',
-          onClick: undefined
+          onClick: downloadPreviewAsset
         },
         { kind: 'divider', key: 'd1' },
         {
