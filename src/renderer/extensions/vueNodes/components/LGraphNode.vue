@@ -274,19 +274,17 @@ const handleContextMenu = (event: MouseEvent) => {
 
 onMounted(() => {
   // Set initial DOM size from layout store, but respect intrinsic content minimum
-  if (size.value && nodeContainerRef.value && transformState) {
-    const intrinsicMin = calculateIntrinsicSize(
-      nodeContainerRef.value,
-      transformState.camera.z
-    )
-
-    // Use the larger of stored size or intrinsic minimum
-    const finalWidth = Math.max(size.value.width, intrinsicMin.width)
-    const finalHeight = Math.max(size.value.height, intrinsicMin.height)
-
-    nodeContainerRef.value.style.width = `${finalWidth}px`
-    nodeContainerRef.value.style.height = `${finalHeight}px`
-  }
+  // if (size.value && nodeContainerRef.value && transformState) {
+  //   const intrinsicMin = calculateIntrinsicSize(
+  //     nodeContainerRef.value,
+  //     transformState.camera.z
+  //   )
+  //   // Use the larger of stored size or intrinsic minimum
+  //   const finalWidth = Math.max(size.value.width, intrinsicMin.width)
+  //   const finalHeight = Math.max(size.value.height, intrinsicMin.height)
+  //   nodeContainerRef.value.style.width = `${finalWidth}px`
+  //   nodeContainerRef.value.style.height = `${finalHeight}px`
+  // }
 })
 
 const baseResizeHandleClasses =
