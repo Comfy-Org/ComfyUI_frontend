@@ -1,3 +1,4 @@
+import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
@@ -264,6 +265,15 @@ export class ComfyApi extends EventTarget {
   user: string
   socket: WebSocket | null = null
 
+  /**
+   * Cache Firebase auth store composable function.
+   */
+  private authStoreComposable:
+    | (() => ReturnType<
+        typeof import('@/stores/firebaseAuthStore').useFirebaseAuthStore
+      >)
+    | null = null
+
   reportedUnknownMessageTypes = new Set<string>()
 
   /**
@@ -319,30 +329,46 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Waits for Firebase auth to be initialized before proceeding
+   * Gets the Firebase auth store instance using cached composable function.
+   * Caches the composable function on first call, then reuses it.
+   * Returns null for non-cloud distributions.
+   * @returns The Firebase auth store instance, or null if not in cloud
    */
-  async #waitForAuthInitialization(): Promise<void> {
+  private async getAuthStore(): Promise<ReturnType<
+    typeof import('@/stores/firebaseAuthStore').useFirebaseAuthStore
+  > | null> {
     if (isCloud) {
-      const { useFirebaseAuthStore } = await import(
-        '@/stores/firebaseAuthStore'
-      )
-      const authStore = useFirebaseAuthStore()
-
-      if (authStore.isInitialized) {
-        return
+      if (!this.authStoreComposable) {
+        const module = await import('@/stores/firebaseAuthStore')
+        this.authStoreComposable = module.useFirebaseAuthStore
       }
 
-      return new Promise<void>((resolve) => {
-        const unwatch = authStore.$subscribe((_, state) => {
-          if (state.isInitialized) {
-            unwatch()
-            resolve()
-          }
-        })
-      })
+      return this.authStoreComposable()
     }
 
-    return Promise.resolve()
+    return null
+  }
+
+  /**
+   * Waits for Firebase auth to be initialized before proceeding.
+   * Includes 10-second timeout to prevent infinite hanging.
+   */
+  private async waitForAuthInitialization(): Promise<void> {
+    if (isCloud) {
+      const authStore = await this.getAuthStore()
+      if (!authStore) return
+
+      if (authStore.isInitialized) return
+
+      try {
+        await Promise.race([
+          until(authStore.isInitialized),
+          promiseTimeout(10000)
+        ])
+      } catch {
+        console.warn('Firebase auth initialization timeout after 10 seconds')
+      }
+    }
   }
 
   async fetchApi(route: string, options?: RequestInit) {
@@ -358,14 +384,14 @@ export class ComfyApi extends EventTarget {
 
     if (isCloud) {
       // Wait for Firebase auth to be initialized before making any API request
-      await this.#waitForAuthInitialization()
+      await this.waitForAuthInitialization()
 
       // Add Firebase JWT token if user is logged in
       try {
-        const { useFirebaseAuthStore } = await import(
-          '@/stores/firebaseAuthStore'
-        )
-        const authHeader = await useFirebaseAuthStore().getAuthHeader()
+        const authStore = await this.getAuthStore()
+        const authHeader = authStore
+          ? await authStore.getAuthHeader()
+          : undefined
         if (authHeader) {
           if (Array.isArray(options.headers)) {
             for (const [key, value] of Object.entries(authHeader)) {
@@ -459,7 +485,7 @@ export class ComfyApi extends EventTarget {
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
-  async #createSocket(isReconnect?: boolean) {
+  private async createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
@@ -471,10 +497,8 @@ export class ComfyApi extends EventTarget {
     let authToken: string | undefined
     if (isCloud) {
       try {
-        const { useFirebaseAuthStore } = await import(
-          '@/stores/firebaseAuthStore'
-        )
-        authToken = await useFirebaseAuthStore().getIdToken()
+        const authStore = await this.getAuthStore()
+        authToken = authStore ? await authStore.getIdToken() : undefined
       } catch (error) {
         // Continue without auth token if there's an error
         console.warn(
@@ -521,7 +545,7 @@ export class ComfyApi extends EventTarget {
     this.socket.addEventListener('close', () => {
       setTimeout(async () => {
         this.socket = null
-        await this.#createSocket(true)
+        await this.createSocket(true)
       }, 300)
       if (opened) {
         this.dispatchCustomEvent('status', null)
@@ -657,7 +681,7 @@ export class ComfyApi extends EventTarget {
    * Initialises sockets and realtime updates
    */
   init() {
-    this.#createSocket()
+    this.createSocket()
   }
 
   /**
