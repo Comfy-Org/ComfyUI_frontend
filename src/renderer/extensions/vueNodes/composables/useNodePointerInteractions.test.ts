@@ -78,11 +78,6 @@ describe('useNodePointerInteractions', () => {
       '@/renderer/core/layout/store/layoutStore'
     )
     layoutStore.isDraggingVueNodes.value = false
-    const { useCanvasStore } = await import(
-      '@/renderer/core/canvas/canvasStore'
-    )
-    const canvasStore = useCanvasStore()
-    canvasStore.setVueNodePointerInteractionsDisabled(false)
   })
 
   it('should only start drag on left-click', async () => {
