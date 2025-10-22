@@ -80,11 +80,7 @@ function useVueNodeLifecycleIndividual() {
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
-        // Run the overlap fix for vue nodes
-        // TODO: find a better hook that reliably
-        setTimeout(() => {
-          useFixVueNodeOverlap()
-        }, 3000)
+        useFixVueNodeOverlap()
       } else {
         disposeNodeManagerAndSyncs()
       }
