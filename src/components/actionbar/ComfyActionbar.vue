@@ -18,10 +18,7 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div
-        ref="panelRef"
-        class="actionbar-content flex items-center select-none"
-      >
+      <div ref="panelRef" class="flex items-center select-none">
         <span
           ref="dragHandleRef"
           :class="
@@ -259,7 +256,7 @@ const actionbarClass = computed(() =>
 )
 const panelClass = computed(() =>
   cn(
-    'pointer-events-auto z1000',
+    'actionbar pointer-events-auto z1000',
     isDragging.value && 'select-none pointer-events-none',
     isDocked.value ? 'p-0 static mr-2 border-none bg-transparent' : 'fixed'
   )
