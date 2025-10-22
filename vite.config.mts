@@ -122,7 +122,7 @@ export default defineConfig({
       {
         name: 'vue',
         pattern: 'vue',
-        entry: './dist/vue.esm-browser.prod.js'
+        entry: './dist/vue.runtime-with-vapor.esm-browser.prod.js'
       },
       {
         name: 'vue-i18n',
