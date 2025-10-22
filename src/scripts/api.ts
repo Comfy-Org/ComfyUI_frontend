@@ -1032,7 +1032,7 @@ export class ComfyApi extends EventTarget {
     const resp = await api.fetchApi('/global_subgraphs/' + id)
     if (resp.status !== 200) return ''
     const subgraph: GlobalSubgraphData = await resp.json()
-    return subgraph.data
+    return subgraph?.data ?? ''
   }
   async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
     const resp = await api.fetchApi('/global_subgraphs')
