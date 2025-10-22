@@ -29,24 +29,10 @@
         </IconTextButton>
       </div>
       <!-- Normal Tab View -->
-      <div v-else class="flex items-center gap-2 pt-4 pb-1">
-        <TextButton
-          :label="$t('sideToolbar.labels.imported')"
-          :type="activeTab === 'input' ? 'secondary' : 'transparent'"
-          @click.stop="activeTab = 'input'"
-        />
-        <TextButton
-          :label="$t('sideToolbar.labels.generated')"
-          :type="activeTab === 'output' ? 'secondary' : 'transparent'"
-          @click.stop="activeTab = 'output'"
-        />
-      </div>
-      <!-- <Tabs v-else v-model:value="activeTab" class="w-full">
-        <TabList class="border-b border-neutral-300">
-          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
-          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-        </TabList>
-      </Tabs> -->
+      <TabList v-else v-model="activeTab" class="pt-4 pb-1">
+        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+        <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+      </TabList>
     </template>
     <template #body>
       <VirtualGrid
@@ -105,10 +91,11 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
