@@ -1,3 +1,5 @@
+import { until } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import {
   createRouter,
   createWebHashHistory,
@@ -63,49 +65,28 @@ if (isCloud) {
   router.beforeEach(async (_to, _from, next) => {
     const authStore = useFirebaseAuthStore()
 
-    // Wait for Firebase auth to initialize with timeout
+    // Wait for Firebase auth to initialize
+    // Timeout after 16 seconds
     if (!authStore.isInitialized) {
       try {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            unwatch()
-            reject(new Error('Authentication initialization timeout'))
-          }, 16000) // 16 second timeout
-
-          const unwatch = authStore.$subscribe((_, state) => {
-            if (state.isInitialized) {
-              clearTimeout(timeout)
-              unwatch()
-              resolve()
-            }
-          })
-        })
+        const { isInitialized } = storeToRefs(authStore)
+        await until(isInitialized).toBe(true, { timeout: 16000 })
       } catch (error) {
         console.error('Auth initialization failed:', error)
-        // Navigate to auth timeout recovery page
         return next({ name: 'cloud-auth-timeout' })
       }
     }
 
-    // Check if user is authenticated (Firebase or API key)
+    // Pass authenticated users
     const authHeader = await authStore.getAuthHeader()
-
-    if (!authHeader) {
-      // User is not authenticated, show sign-in dialog
-      const dialogService = useDialogService()
-      const loginSuccess = await dialogService.showSignInDialog()
-
-      if (loginSuccess) {
-        // After successful login, proceed to the intended route
-        next()
-      } else {
-        // User cancelled login, stay on current page or redirect to home
-        next(false)
-      }
-    } else {
-      // User is authenticated, proceed
-      next()
+    if (authHeader) {
+      return next()
     }
+
+    // Show sign-in for unauthenticated users
+    const dialogService = useDialogService()
+    const loginSuccess = await dialogService.showSignInDialog()
+    next(loginSuccess ? undefined : false)
   })
 }
 
