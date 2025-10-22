@@ -45,8 +45,33 @@ const config: KnipConfig = {
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
     // Service worker - registered at runtime via navigator.serviceWorker.register()
-    'public/auth-sw.js'
+    'public/auth-sw.js',
+    // Library utilities that may be used by extensions
+    'src/lib/litegraph/src/measure.ts',
+    'src/lib/litegraph/src/widgets/DisconnectedWidget.ts',
+    // Electron-specific utilities
+    'src/constants/uvMirrors.ts',
+    'src/utils/electronMirrorCheck.ts',
+    // Audio utilities for extensions
+    'src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts',
+    // Types and utilities used in public API or by extensions
+    'src/renderer/extensions/vueNodes/composables/slotLinkDragContext.ts',
+    'src/types/spatialIndex.ts',
+    'src/scripts/defaultGraph.ts',
+    'src/scripts/ui.ts',
+    'src/services/litegraphService.ts',
+    'src/utils/executableGroupNodeDto.ts',
+    'src/utils/litegraphUtil.ts',
+    'src/utils/typeGuardUtil.ts',
+    'src/utils/vintageClipboard.ts',
+    'src/composables/functional/useChainCallback.ts',
+    'src/lib/litegraph/src/litegraph.ts',
+    'src/platform/workflow/validation/schemas/workflowSchema.ts'
   ],
+  ignoreExportsUsedInFile: {
+    interface: true,
+    type: true
+  },
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
     css: (text: string) =>
