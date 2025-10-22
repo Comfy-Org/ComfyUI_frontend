@@ -60,6 +60,7 @@
             @click="handleAssetSelect(item)"
             @zoom="handleZoomClick(item)"
             @output-count-click="enterFolderView(item)"
+            @asset-deleted="refreshAssets"
           />
         </template>
       </VirtualGrid>
