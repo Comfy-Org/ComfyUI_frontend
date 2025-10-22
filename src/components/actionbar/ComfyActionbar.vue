@@ -13,7 +13,10 @@
       class="pointer-events-auto z-1000"
       :style="style"
       :class="panelClass"
-      :pt="{ header: { class: 'hidden' }, content: { class: 'p-1' } }"
+      :pt="{
+        header: { class: 'hidden' },
+        content: { class: isDocked ? 'p-0' : 'p-1' }
+      }"
     >
       <div
         ref="panelRef"
