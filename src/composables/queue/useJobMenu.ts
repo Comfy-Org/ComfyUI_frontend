@@ -207,7 +207,7 @@ export function useJobMenu(
         { kind: 'divider', key: 'd3' },
         {
           key: 'delete',
-          label: st('queue.jobMenu.delete', 'Delete'),
+          label: st('queue.jobMenu.deleteAsset', 'Delete asset'),
           icon: 'icon-[lucide--trash-2]',
           onClick: undefined
         }
@@ -243,8 +243,8 @@ export function useJobMenu(
         { kind: 'divider', key: 'd2' },
         {
           key: 'delete',
-          label: st('queue.jobMenu.delete', 'Delete'),
-          icon: 'icon-[lucide--trash-2]',
+          label: st('queue.jobMenu.removeJob', 'Remove job'),
+          icon: 'icon-[lucide--circle-minus]',
           onClick: undefined
         }
       ]
