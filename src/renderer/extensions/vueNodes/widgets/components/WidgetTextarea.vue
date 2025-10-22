@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="grow-parent relative">
     <Textarea
       v-model="localValue"
       v-bind="filteredProps"
