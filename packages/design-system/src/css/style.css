@@ -35,6 +35,7 @@
   --spacing-spacing-xs: 8px;
   --spacing-spacing-sm: 12px;
   --spacing-spacing-md: 16px;
+  --spacing-spacing-lg: 24px;
 
   /* Corner Radius Tokens */
   --corner-radius-corner-radius-md: 8px;
