@@ -8,7 +8,11 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/main.ts',
         'src/scripts/ui/menu/index.ts',
-        'src/types/index.ts'
+        'src/types/index.ts',
+        // Include extension entry points to detect dependencies like 'three'
+        'src/extensions/**/*.ts',
+        // Include core renderer components to detect dependencies like 'yjs'
+        'src/renderer/**/*.ts'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
     },
