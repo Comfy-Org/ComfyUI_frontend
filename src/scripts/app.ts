@@ -5,6 +5,7 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -29,6 +30,7 @@ import {
   type NodeId,
   isSubgraphDefinition
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useFixVueNodeOverlap } from '@/renderer/extensions/vueNodes/composables/useFixVueNodeOverlap'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -1181,6 +1183,20 @@ export class ComfyApp {
     try {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
+
+      const vueMode = useVueFeatureFlags().shouldRenderVueNodes.value
+
+      // Initialize extra if needed
+      if (!this.graph.extra) {
+        this.graph.extra = {}
+      }
+
+      // Run overlap fix only if in Vue mode and not already scaled
+      if (vueMode && !this.graph.extra.vueNodesScaled) {
+        useFixVueNodeOverlap()
+        this.graph.extra.vueNodesScaled = true
+      }
+
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
