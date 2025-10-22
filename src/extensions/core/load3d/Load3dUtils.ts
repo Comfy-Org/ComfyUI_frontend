@@ -77,10 +77,7 @@ class Load3dUtils {
     if (folder_separator === -1) {
       return ['', path]
     }
-    return [
-      path.slice(0, folder_separator),
-      path.slice(folder_separator + 1)
-    ]
+    return [path.slice(0, folder_separator), path.slice(folder_separator + 1)]
   }
 
   static getResourceURL(

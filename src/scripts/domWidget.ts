@@ -270,7 +270,9 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
         (Number.parseFloat(prefHeight.slice(0, prefHeight.length - 1)) / 100)
     } else {
       prefHeight =
-        typeof prefHeight === 'number' ? prefHeight : Number.parseInt(prefHeight)
+        typeof prefHeight === 'number'
+          ? prefHeight
+          : Number.parseInt(prefHeight)
 
       if (Number.isNaN(minHeight)) {
         minHeight = prefHeight
