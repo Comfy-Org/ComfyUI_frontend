@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col gap-2 pr-3',
+        'lg-node-widgets flex flex-col flex-1 gap-2 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -19,7 +19,7 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container group flex items-center"
+      class="group flex flex-1 items-stretch"
     >
       <!-- Widget Input Slot Dot -->
 
