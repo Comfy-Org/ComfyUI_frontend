@@ -507,12 +507,19 @@ export class ComfyApi extends EventTarget {
     }
 
     // Build WebSocket URL with query parameters
+    const params = new URLSearchParams()
+
+    if (existingSession) {
+      params.set('clientId', existingSession)
+    }
+    if (isCloud && authToken) {
+      params.set('token', authToken)
+    }
+
     const protocol = window.location.protocol === 'https:' ? 's' : ''
-    const baseUrl = this.api_host + this.api_base
-    const clientId = isCloud ? (authToken ?? '') : existingSession
-    const wsUrl = isCloud
-      ? `ws${protocol}://${baseUrl}/ws?existingSession=${existingSession}&clientId=${clientId}`
-      : `ws${protocol}://${baseUrl}/ws?clientId=${clientId}`
+    const baseUrl = `ws${protocol}://${this.api_host}${this.api_base}/ws`
+    const query = params.toString()
+    const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
     this.socket = new WebSocket(wsUrl)
     this.socket.binaryType = 'arraybuffer'
