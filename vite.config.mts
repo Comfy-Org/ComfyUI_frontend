@@ -23,10 +23,12 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 
-const DISTRIBUTION = (process.env.DISTRIBUTION || 'localhost') as
-  | 'desktop'
-  | 'localhost'
-  | 'cloud'
+// Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
+const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
+const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
+
+const DISTRIBUTION = (process.env.DISTRIBUTION ||
+  (IS_CLOUD_URL ? 'cloud' : 'localhost')) as 'desktop' | 'localhost' | 'cloud'
 
 const DISABLE_VUE_PLUGINS =
   DISTRIBUTION === 'cloud'
@@ -39,7 +41,7 @@ const DEV_SEVER_FALLBACK_URL =
     : 'http://127.0.0.1:8188'
 
 const DEV_SERVER_COMFYUI_URL =
-  process.env.DEV_SERVER_COMFYUI_URL || DEV_SEVER_FALLBACK_URL
+  DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 
 // Optional: Add API key to .env as STAGING_API_KEY if needed for cloud authentication
 const addAuthHeaders = (proxy: any) => {
