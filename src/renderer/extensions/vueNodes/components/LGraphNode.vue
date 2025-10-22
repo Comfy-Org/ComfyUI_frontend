@@ -18,7 +18,6 @@
         borderClass,
         outlineClass,
         {
-          'animate-pulse': executing,
           'before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
