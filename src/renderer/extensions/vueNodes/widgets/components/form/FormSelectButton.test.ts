@@ -313,7 +313,7 @@ describe('FormSelectButton Core Component', () => {
       const buttons = wrapper.findAll('button')
       expect(buttons[0].classes()).not.toContain('bg-white') // Selected styling disabled
       expect(buttons[0].classes()).toContain('opacity-50')
-      expect(buttons[0].classes()).toContain('text-zinc-500')
+      expect(buttons[0].classes()).toContain('text-secondary')
     })
   })
 
@@ -372,7 +372,7 @@ describe('FormSelectButton Core Component', () => {
 
       const unselectedButton = wrapper.findAll('button')[1]
       expect(unselectedButton.classes()).toContain('bg-transparent')
-      expect(unselectedButton.classes()).toContain('text-zinc-500')
+      expect(unselectedButton.classes()).toContain('text-secondary')
     })
 
     it('applies hover effects to enabled unselected buttons', () => {

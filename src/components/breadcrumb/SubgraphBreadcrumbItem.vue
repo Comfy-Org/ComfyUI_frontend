@@ -5,6 +5,7 @@
       value: item.label,
       showDelay: 512
     }"
+    draggable="false"
     href="#"
     class="p-breadcrumb-item-link h-12 cursor-pointer px-2"
     :class="{

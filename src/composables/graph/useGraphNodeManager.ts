@@ -126,14 +126,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Extract safe widget data
     const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
-    node.inputs?.forEach((input, index) => {
-      if (!input?.widget?.name) return
-      slotMetadata.set(input.widget.name, {
-        index,
-        linked: input.link != null
-      })
-    })
-
     const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
     Object.defineProperty(node, 'widgets', {
       get() {
@@ -144,8 +136,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       }
     })
 
-    const safeWidgets = reactiveComputed<SafeWidgetData[]>(
-      () =>
+    const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+      node.inputs?.forEach((input, index) => {
+        if (!input?.widget?.name) return
+        slotMetadata.set(input.widget.name, {
+          index,
+          linked: input.link != null
+        })
+      })
+      return (
         node.widgets?.map((widget) => {
           try {
             // TODO: Use widget.getReactiveData() once TypeScript types are updated
@@ -183,7 +182,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
             }
           }
         }) ?? []
-    )
+      )
+    })
 
     const nodeType =
       node.type ||

@@ -420,9 +420,7 @@ onMounted(async () => {
       throw error
     }
   }
-  CORE_SETTINGS.forEach((setting) => {
-    settingStore.addSetting(setting)
-  })
+  CORE_SETTINGS.forEach(settingStore.addSetting)
 
   await newUserService().initializeIfNewUser(settingStore)
 

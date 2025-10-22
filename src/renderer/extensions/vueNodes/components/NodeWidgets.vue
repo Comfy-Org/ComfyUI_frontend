@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col gap-2 pr-3',
+        'lg-node-widgets flex flex-col flex-1 gap-2 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -19,21 +19,22 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container group flex items-center"
+      class="group flex flex-1 items-stretch"
     >
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="z-10 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        class="z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       >
         <InputSlot
+          v-if="widget.slotMetadata"
           :slot-data="{
             name: widget.name,
             type: widget.type,
             boundingRect: [0, 0, 0, 0]
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="widget.slotMetadata?.index ?? 0"
+          :index="widget.slotMetadata.index"
           :dot-only="true"
         />
       </div>

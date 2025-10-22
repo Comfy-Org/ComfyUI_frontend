@@ -21,10 +21,9 @@
             'opacity-50 cursor-not-allowed': disabled,
             'cursor-pointer': !disabled
           },
-          {
-            'text-neutral-900': isSelected(option) && !disabled,
-            'text-zinc-500': !isSelected(option) || disabled
-          }
+          isSelected(option) && !disabled
+            ? 'text-neutral-900'
+            : 'text-secondary'
         )
       "
       :disabled="disabled"

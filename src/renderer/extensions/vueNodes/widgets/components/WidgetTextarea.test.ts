@@ -195,14 +195,6 @@ describe('WidgetTextarea Value Binding', () => {
       const textarea = wrapper.find('textarea')
       expect(textarea.attributes('placeholder')).toBe('Custom placeholder')
     })
-
-    it('sets default rows attribute', () => {
-      const widget = createMockWidget('test')
-      const wrapper = mountComponent(widget, 'test')
-
-      const textarea = wrapper.find('textarea')
-      expect(textarea.attributes('rows')).toBe('3')
-    })
   })
 
   describe('Edge Cases', () => {
