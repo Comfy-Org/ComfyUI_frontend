@@ -1,95 +1,76 @@
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import { nextTick } from 'vue'
+
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { createBounds } from '@/lib/litegraph/src/measure'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
 
-/* eslint-disable no-console */
+const SCALE_FACTOR = 1.75
 
-const SCALE_FACTOR = 1.5
-
-export function useFixVueNodeOverlap() {
-  const allVueNodes = layoutStore.getAllNodes().value
+export async function useFixVueNodeOverlap() {
   const canvas = comfyApp.canvas
   const graph = canvas.graph
 
-  const { moveNode } = useLayoutMutations()
-
   if (!graph || !graph.nodes) return
 
-  const lgOriginalNodesPosAndBounds = graph?.nodes.map((node) => ({
-    id: node.id,
-    position: node.pos,
-    boundinRect: node.boundingRect
-  }))
+  await nextTick() //Wait for vue nodes render lifecycle before running the fix
+
+  const allVueNodes = layoutStore.getAllNodes().value
 
   const lgBounds = createBounds(graph.nodes)
-
   const lgBoundsCenterX = lgBounds![0] + lgBounds![2] / 2
   const lgBoundsCenterY = lgBounds![1] + lgBounds![3] / 2
 
-  const lgScaledNodesPosAndBounds = lgOriginalNodesPosAndBounds?.map(
-    (posAndBounds) => {
-      const { position } = scalePosFromCenter(posAndBounds.position)
-      return {
-        id: posAndBounds.id,
-        position,
-        boundingRect: posAndBounds.boundinRect
-      }
-    }
+  const lgNodesById = new Map(
+    graph.nodes.map((node) => [String(node.id), node])
   )
 
-  const scaledLgBounds = createBounds(lgScaledNodesPosAndBounds)
+  const yjsMoveNodeUpdates: NodeBoundsUpdate[] = []
+  const scaledNodesForBounds: Array<{ boundingRect: Rect }> = []
 
-  lgScaledNodesPosAndBounds.forEach((scaledPosAndBounds) => {
-    allVueNodes.forEach((vueNode) => {
-      if (String(scaledPosAndBounds.id) === String(vueNode.id)) {
-        const newPos = {
-          x: scaledPosAndBounds.position[0],
-          y: scaledPosAndBounds.position[1]
-        }
-        moveNode(vueNode.id, newPos)
+  for (const vueNode of allVueNodes.values()) {
+    const lgNode = lgNodesById.get(String(vueNode.id))
+    if (!lgNode) continue
+
+    const vectorX = lgNode.pos[0] - lgBoundsCenterX
+    const vectorY = lgNode.pos[1] - lgBoundsCenterY
+    const newX = lgBoundsCenterX + vectorX * SCALE_FACTOR
+    const newY = lgBoundsCenterY + vectorY * SCALE_FACTOR
+
+    yjsMoveNodeUpdates.push({
+      nodeId: vueNode.id,
+      bounds: {
+        x: newX,
+        y: newY,
+        width: vueNode.bounds.width,
+        height: vueNode.bounds.height
       }
     })
-  })
 
-  graph.groups.forEach((group) => {
-    const { position } = scalePosFromCenter(group.pos)
-    const newWidth = group.size[0] * SCALE_FACTOR
-    const newHeight = group.size[1] * SCALE_FACTOR
-
-    group.pos = [position[0], position[1]]
-    group.size = [newWidth, newHeight]
-  })
-
-  if (scaledLgBounds)
-    canvas.ds.fitToBounds(scaledLgBounds, {
-      zoom: 0.6 //Makes it so the fit to view is slightly zoomed out and not edge to edge.
+    scaledNodesForBounds.push({
+      boundingRect: [newX, newY, vueNode.bounds.width, vueNode.bounds.height]
     })
-
-  function scalePosFromCenter(pos: Point): {
-    position: Point
-  } {
-    const vectorX = pos[0] - lgBoundsCenterX
-    const vectorY = pos[1] - lgBoundsCenterY
-
-    const scaledVectorX = vectorX * SCALE_FACTOR
-    const scaledVectorY = vectorY * SCALE_FACTOR
-
-    const newPosition: Point = [
-      lgBoundsCenterX + scaledVectorX,
-      lgBoundsCenterY + scaledVectorY
-    ]
-
-    return {
-      position: newPosition
-    }
   }
 
-  console.log(
-    'Litegraoh Original Node Pos and Bounds',
-    lgOriginalNodesPosAndBounds
-  )
-  console.log('Litegraoh Scaled Node Pos and Bounds', lgScaledNodesPosAndBounds)
-  console.log('All Vue Nodes', allVueNodes)
+  layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
+
+  const scaledLgBounds = createBounds(scaledNodesForBounds)
+
+  graph.groups.forEach((group) => {
+    const vectorX = group.pos[0] - lgBoundsCenterX
+    const vectorY = group.pos[1] - lgBoundsCenterY
+
+    group.pos = [
+      lgBoundsCenterX + vectorX * SCALE_FACTOR,
+      lgBoundsCenterY + vectorY * SCALE_FACTOR
+    ]
+    group.size = [group.size[0] * SCALE_FACTOR, group.size[1] * SCALE_FACTOR]
+  })
+
+  if (scaledLgBounds) {
+    canvas.ds.fitToBounds(scaledLgBounds, {
+      zoom: 0.5 //Makes it so the fit to view is slightly zoomed out and not edge to edge.
+    })
+  }
 }
