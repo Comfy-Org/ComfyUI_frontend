@@ -251,8 +251,8 @@ watch(isDragging, (dragging) => {
 const actionbarClass = computed(() =>
   cn(
     'w-[265px] border-dashed border-blue-500 opacity-80',
-    'actionbar-drop-zone m-1.5 flex items-center justify-center self-stretch',
-    'rounded-md before:content-[] before:w-50 before:-ml-50 before:h-full',
+    'm-1.5 flex items-center justify-center self-stretch',
+    'rounded-md before:w-50 before:-ml-50 before:h-full',
     isMouseOverDropZone.value &&
       'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
   )
@@ -260,9 +260,8 @@ const actionbarClass = computed(() =>
 const panelClass = computed(() =>
   cn(
     'pointer-events-auto z1000',
-    !isDocked.value && 'fixed',
     isDragging.value && 'select-none pointer-events-none',
-    isDocked.value && 'p-0 static mr-2 border-none bg-transparent'
+    isDocked.value ? 'p-0 static mr-2 border-none bg-transparent' : 'fixed'
   )
 )
 </script>
