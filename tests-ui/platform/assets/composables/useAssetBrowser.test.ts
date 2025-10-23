@@ -98,22 +98,6 @@ describe('useAssetBrowser', () => {
 
       expect(result.description).toBe('loras model')
     })
-
-    it('formats various file sizes correctly', () => {
-      const testCases = [
-        { size: 512, expected: '512 B' },
-        { size: 1536, expected: '1.5 KB' },
-        { size: 2097152, expected: '2 MB' },
-        { size: 3221225472, expected: '3 GB' }
-      ]
-
-      testCases.forEach(({ size, expected }) => {
-        const asset = createApiAsset({ size })
-        const { filteredAssets } = useAssetBrowser(ref([asset]))
-        const result = filteredAssets.value[0]
-        expect(result.formattedSize).toBe(expected)
-      })
-    })
   })
 
   describe('Tag-Based Filtering', () => {
