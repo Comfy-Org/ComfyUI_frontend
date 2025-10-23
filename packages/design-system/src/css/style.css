@@ -324,7 +324,42 @@
   }
 }
 
-/* Everything below here to be cleaned up over time. */
+
+/* ===================== Scrollbar Utilities (Tailwind) =====================
+   Usage: Add `scrollbar-custom` class to scrollable containers.
+   The scrollbar styling adapts to light/dark theme automatically.
+============================================================================ */
+
+@utility scrollbar-custom {
+  overflow-y: auto;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--dialog-surface) transparent;
+
+  /* WebKit */
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background-color: transparent;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--dialog-surface);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--dialog-surface);
+  }
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+/* =================== End Custom Scrollbar (cross-browser) =================== */
+
+/* Everthing below here to be cleaned up over time. */
 
 body {
   width: 100vw;
