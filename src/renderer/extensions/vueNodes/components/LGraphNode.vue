@@ -113,6 +113,8 @@
       <div
         v-for="handle in cornerResizeHandles"
         :key="handle.id"
+        role="button"
+        :aria-label="handle.ariaLabel"
         :class="cn(baseResizeHandleClasses, handle.classes)"
         @pointerdown.stop="handleResizePointerDown(handle.direction)($event)"
       />
@@ -124,6 +126,7 @@
 import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -168,6 +171,8 @@ interface LGraphNodeProps {
 }
 
 const { nodeData, error = null } = defineProps<LGraphNodeProps>()
+
+const { t } = useI18n()
 
 const {
   handleNodeCollapse,
@@ -293,28 +298,33 @@ type CornerResizeHandle = {
   id: string
   direction: ResizeHandleDirection
   classes: string
+  ariaLabel: string
 }
 
 const cornerResizeHandles: CornerResizeHandle[] = [
   {
     id: 'se',
     direction: { horizontal: 'right', vertical: 'bottom' },
-    classes: 'right-0 bottom-0 cursor-se-resize'
+    classes: 'right-0 bottom-0 cursor-se-resize',
+    ariaLabel: t('g.resizeFromBottomRight')
   },
   {
     id: 'ne',
     direction: { horizontal: 'right', vertical: 'top' },
-    classes: 'right-0 top-0 cursor-ne-resize'
+    classes: 'right-0 top-0 cursor-ne-resize',
+    ariaLabel: t('g.resizeFromTopRight')
   },
   {
     id: 'sw',
     direction: { horizontal: 'left', vertical: 'bottom' },
-    classes: 'left-0 bottom-0 cursor-sw-resize'
+    classes: 'left-0 bottom-0 cursor-sw-resize',
+    ariaLabel: t('g.resizeFromBottomLeft')
   },
   {
     id: 'nw',
     direction: { horizontal: 'left', vertical: 'top' },
-    classes: 'left-0 top-0 cursor-nw-resize'
+    classes: 'left-0 top-0 cursor-nw-resize',
+    ariaLabel: t('g.resizeFromTopLeft')
   }
 ]
 
