@@ -6,7 +6,6 @@ on:
     types: [labeled]
   issue_comment:
     types: [created]
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -76,7 +75,6 @@ jobs:
           path: |
             ComfyUI
             dist
-            node_modules
           key: comfyui-setup-${{ steps.cache-key.outputs.key }}
 
   # Sharded snapshot updates
@@ -103,14 +101,12 @@ jobs:
           path: |
             ComfyUI
             dist
-            node_modules
           key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
 
       - name: Setup ComfyUI server (from cache)
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: true
-          skip_checkout: true
 
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend

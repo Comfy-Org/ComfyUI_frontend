@@ -9,10 +9,6 @@ inputs:
     description: 'Whether to launch the server after setup'
     required: false
     default: 'false'
-  skip_checkout:
-    description: 'Skip checking out ComfyUI repo (use when restoring from cache)'
-    required: false
-    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -20,7 +16,6 @@ runs:
 
     # Checkout ComfyUI repo, install the dev_tools node and start server
     - name: Checkout ComfyUI
-      if: ${{ inputs.skip_checkout != 'true' }}
       uses: actions/checkout@v5
       with:
         repository: 'comfyanonymous/ComfyUI'
@@ -43,7 +38,6 @@ runs:
         python-version: '3.10'
 
     - name: Install Python requirements
-      if: ${{ inputs.skip_checkout != 'true' }}
       shell: bash
       working-directory: ComfyUI
       run: |
