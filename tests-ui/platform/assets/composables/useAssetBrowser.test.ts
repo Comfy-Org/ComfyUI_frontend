@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -48,10 +48,9 @@ describe('useAssetBrowser', () => {
         tags: ['models', 'loras']
       })
 
-      const { selectedCategory, categoryFilteredAssets } = useAssetBrowser([
-        checkpointAsset,
-        loraAsset
-      ])
+      const { selectedCategory, categoryFilteredAssets } = useAssetBrowser(
+        ref([checkpointAsset, loraAsset])
+      )
 
       // Initially should show all assets
       expect(categoryFilteredAssets.value).toHaveLength(2)
@@ -73,7 +72,7 @@ describe('useAssetBrowser', () => {
         user_metadata: { description: 'Test model' }
       })
 
-      const { filteredAssets } = useAssetBrowser([apiAsset])
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
       const result = filteredAssets.value[0] // Get the transformed asset from filteredAssets
 
       // Preserves API properties
@@ -94,7 +93,7 @@ describe('useAssetBrowser', () => {
         user_metadata: undefined
       })
 
-      const { filteredAssets } = useAssetBrowser([apiAsset])
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
       const result = filteredAssets.value[0]
 
       expect(result.description).toBe('loras model')
@@ -109,7 +108,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '3', tags: ['models', 'checkpoints'] })
       ]
 
-      const { selectedCategory, filteredAssets } = useAssetBrowser(assets)
+      const { selectedCategory, filteredAssets } = useAssetBrowser(ref(assets))
 
       selectedCategory.value = 'checkpoints'
       await nextTick()
@@ -128,7 +127,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '2', tags: ['models', 'loras'] })
       ]
 
-      const { selectedCategory, filteredAssets } = useAssetBrowser(assets)
+      const { selectedCategory, filteredAssets } = useAssetBrowser(ref(assets))
 
       selectedCategory.value = 'all'
       await nextTick()
@@ -145,7 +144,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ name: 'photorealistic_v2.safetensors' })
       ]
 
-      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
       searchQuery.value = 'realistic'
       await nextTick()
@@ -170,7 +169,7 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
       searchQuery.value = 'fantasy'
       await nextTick()
@@ -182,7 +181,7 @@ describe('useAssetBrowser', () => {
     it('handles empty search results', async () => {
       const assets = [createApiAsset({ name: 'test.safetensors' })]
 
-      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
       searchQuery.value = 'nonexistent'
       await nextTick()
@@ -208,8 +207,9 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { searchQuery, selectedCategory, filteredAssets } =
-        useAssetBrowser(assets)
+      const { searchQuery, selectedCategory, filteredAssets } = useAssetBrowser(
+        ref(assets)
+      )
 
       searchQuery.value = 'realistic'
       selectedCategory.value = 'checkpoints'
@@ -230,7 +230,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ name: 'beta.safetensors' })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(assets)
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
       updateFilters({ sortBy: 'name', fileFormats: [], baseModels: [] })
       await nextTick()
@@ -250,7 +250,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ created_at: '2024-02-01T00:00:00Z' })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(assets)
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
       updateFilters({ sortBy: 'recent', fileFormats: [], baseModels: [] })
       await nextTick()
@@ -272,7 +272,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'checkpoints'] }) // duplicate
       ]
 
-      const { availableCategories } = useAssetBrowser(assets)
+      const { availableCategories } = useAssetBrowser(ref(assets))
 
       expect(availableCategories.value).toEqual([
         { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
@@ -291,7 +291,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'vae'] })
       ]
 
-      const { availableCategories } = useAssetBrowser(assets)
+      const { availableCategories } = useAssetBrowser(ref(assets))
 
       expect(availableCategories.value).toEqual([
         { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
@@ -305,7 +305,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'checkpoints'] })
       ]
 
-      const { availableCategories } = useAssetBrowser(assets)
+      const { availableCategories } = useAssetBrowser(ref(assets))
 
       expect(availableCategories.value).toEqual([
         { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
@@ -319,7 +319,7 @@ describe('useAssetBrowser', () => {
 
     it('computes content title from selected category', () => {
       const assets = [createApiAsset({ tags: ['models', 'checkpoints'] })]
-      const { selectedCategory, contentTitle } = useAssetBrowser(assets)
+      const { selectedCategory, contentTitle } = useAssetBrowser(ref(assets))
 
       // Default
       expect(contentTitle.value).toBe('All Models')
