@@ -29,6 +29,11 @@ export function createMarkdownRenderer(baseUrl?: string): Renderer {
     const titleAttr = title ? ` title="${title}"` : ''
     return `<img src="${src}" alt="${text}"${titleAttr} />`
   }
+  renderer.link = ({ href, title, tokens }) => {
+    const text = renderer.parser.parseInline(tokens)
+    const titleAttr = title ? ` title="${title}"` : ''
+    return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`
+  }
   return renderer
 }
 
@@ -48,6 +53,6 @@ export function renderMarkdownToHtml(
 
   return DOMPurify.sanitize(html, {
     ADD_TAGS: ALLOWED_TAGS,
-    ADD_ATTR: ALLOWED_ATTRS
+    ADD_ATTR: [...ALLOWED_ATTRS, 'target', 'rel']
   })
 }
