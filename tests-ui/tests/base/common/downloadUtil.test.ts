@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { MockInstance } from 'vitest'
 
-import * as downloadUtil from '@/base/common/downloadUtil'
+import { downloadFile } from '@/base/common/downloadUtil'
 
 let mockIsCloud = false
 
@@ -11,24 +10,24 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-const { downloadFile } = downloadUtil
+// Global stubs
+const createObjectURLSpy = vi
+  .spyOn(URL, 'createObjectURL')
+  .mockReturnValue('blob:mock-url')
+const revokeObjectURLSpy = vi
+  .spyOn(URL, 'revokeObjectURL')
+  .mockImplementation(() => {})
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement
   let fetchMock: ReturnType<typeof vi.fn>
-  let createObjectURLSpy: MockInstance<(obj: Blob | MediaSource) => string>
-  let revokeObjectURLSpy: MockInstance<(url: string) => void>
 
   beforeEach(() => {
     mockIsCloud = false
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
-    createObjectURLSpy = vi
-      .spyOn(URL, 'createObjectURL')
-      .mockReturnValue('blob:mock-url')
-    revokeObjectURLSpy = vi
-      .spyOn(URL, 'revokeObjectURL')
-      .mockImplementation(() => {})
+    createObjectURLSpy.mockClear().mockReturnValue('blob:mock-url')
+    revokeObjectURLSpy.mockClear().mockImplementation(() => {})
     // Create a mock anchor element
     mockLink = {
       href: '',
@@ -44,10 +43,7 @@ describe('downloadUtil', () => {
   })
 
   afterEach(() => {
-    createObjectURLSpy.mockRestore()
-    revokeObjectURLSpy.mockRestore()
     vi.unstubAllGlobals()
-    vi.restoreAllMocks()
   })
 
   describe('downloadFile', () => {
