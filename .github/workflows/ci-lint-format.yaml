@@ -39,6 +39,9 @@ jobs:
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix
 
+      - name: Run Stylelint with auto-fix
+        run: pnpm stylelint:fix
+
       - name: Run Prettier with auto-format
         run: pnpm format
 
@@ -63,6 +66,7 @@ jobs:
       - name: Final validation
         run: |
           pnpm lint
+          pnpm stylelint
           pnpm format:check
           pnpm knip
 
