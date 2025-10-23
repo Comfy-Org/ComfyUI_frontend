@@ -1,16 +1,48 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.mediaAssets')">
+  <AssetsSidebarTemplate>
+    <template #top>
+      <span v-if="!isInFolderView" class="font-bold">
+        {{ $t('sideToolbar.mediaAssets') }}
+      </span>
+      <div v-else class="flex w-full items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="font-bold">{{ $t('Job ID') }}:</span>
+          <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
+          <button
+            class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
+            role="button"
+            @click="copyJobId"
+          >
+            <i class="mb-1 icon-[lucide--copy] text-sm"></i>
+          </button>
+        </div>
+        <div>
+          <span>{{ formattedExecutionTime }}</span>
+        </div>
+      </div>
+    </template>
     <template #header>
-      <Tabs v-model:value="activeTab" class="w-full">
-        <TabList class="border-b border-neutral-300">
-          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
-          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-        </TabList>
-      </Tabs>
+      <!-- Job Detail View Header -->
+      <div v-if="isInFolderView" class="pt-4 pb-2">
+        <IconTextButton
+          :label="$t('sideToolbar.backToAssets')"
+          type="secondary"
+          @click="exitFolderView"
+        >
+          <template #icon>
+            <i class="icon-[lucide--arrow-left] size-4" />
+          </template>
+        </IconTextButton>
+      </div>
+      <!-- Normal Tab View -->
+      <TabList v-else v-model="activeTab" class="pt-4 pb-1">
+        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+        <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+      </TabList>
     </template>
     <template #body>
       <VirtualGrid
-        v-if="mediaAssets.length"
+        v-if="displayAssets.length"
         :items="mediaAssetsWithKey"
         :grid-style="{
           display: 'grid',
@@ -23,8 +55,11 @@
           <MediaAssetCard
             :asset="item"
             :selected="selectedAsset?.id === item.id"
+            :show-output-count="shouldShowOutputCount(item)"
+            :output-count="getOutputCount(item)"
             @click="handleAssetSelect(item)"
             @zoom="handleZoomClick(item)"
+            @output-count-click="enterFolderView(item)"
           />
         </template>
       </VirtualGrid>
@@ -45,7 +80,7 @@
         />
       </div>
     </template>
-  </SidebarTabTemplate>
+  </AssetsSidebarTemplate>
   <ResultGallery
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -54,23 +89,49 @@
 
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import Tabs from 'primevue/tabs'
+import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
 
+import IconTextButton from '@/components/button/IconTextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
+import { t } from '@/i18n'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+
+import AssetsSidebarTemplate from './AssetSidebarTemplate.vue'
 
 const activeTab = ref<'input' | 'output'>('input')
 const selectedAsset = ref<AssetItem | null>(null)
+const folderPromptId = ref<string | null>(null)
+const folderExecutionTime = ref<number | undefined>(undefined)
+const isInFolderView = computed(() => folderPromptId.value !== null)
+
+const getOutputCount = (item: AssetItem): number => {
+  const count = item.user_metadata?.outputCount
+  return typeof count === 'number' && count > 0 ? count : 0
+}
+
+const shouldShowOutputCount = (item: AssetItem): boolean => {
+  if (activeTab.value !== 'output' || isInFolderView.value) {
+    return false
+  }
+  return getOutputCount(item) > 1
+}
+
+const formattedExecutionTime = computed(() => {
+  if (!folderExecutionTime.value) return ''
+  return formatDuration(folderExecutionTime.value * 1000)
+})
+
+const toast = useToast()
 
 const inputAssets = useMediaAssets('input')
 const outputAssets = useMediaAssets('output')
@@ -84,7 +145,9 @@ const mediaAssets = computed(() => currentAssets.value.media.value)
 
 const galleryActiveIndex = ref(-1)
 const galleryItems = computed(() => {
-  return mediaAssets.value.map((asset) => {
+  // Convert AssetItems to ResultItemImpl format for gallery
+  // Use displayAssets instead of mediaAssets to show correct items based on view mode
+  return displayAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -105,9 +168,23 @@ const galleryItems = computed(() => {
   })
 })
 
+// Store folder view assets separately
+const folderAssets = ref<AssetItem[]>([])
+
+// Get display assets based on view mode
+const displayAssets = computed(() => {
+  if (isInFolderView.value) {
+    // Show all assets from the folder view
+    return folderAssets.value
+  }
+
+  // Normal view: show grouped assets (already have outputCount from API)
+  return mediaAssets.value
+})
+
 // Add key property for VirtualGrid
 const mediaAssetsWithKey = computed(() => {
-  return mediaAssets.value.map((asset) => ({
+  return displayAssets.value.map((asset) => ({
     ...asset,
     key: asset.id
   }))
@@ -138,9 +215,71 @@ const handleAssetSelect = (asset: AssetItem) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
-  const index = mediaAssets.value.findIndex((a) => a.id === asset.id)
+  // Find the index of the clicked asset
+  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
+  }
+}
+
+const enterFolderView = (asset: AssetItem) => {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (!metadata) {
+    console.warn('Invalid output asset metadata')
+    return
+  }
+
+  const { promptId, allOutputs, executionTimeInSeconds } = metadata
+
+  if (!promptId || !Array.isArray(allOutputs) || allOutputs.length === 0) {
+    console.warn('Missing required folder view data')
+    return
+  }
+
+  folderPromptId.value = promptId
+  folderExecutionTime.value = executionTimeInSeconds
+
+  folderAssets.value = allOutputs.map((output) => ({
+    id: `${promptId}-${output.nodeId}-${output.filename}`,
+    name: output.filename,
+    size: 0,
+    created_at: asset.created_at,
+    tags: ['output'],
+    preview_url: output.url,
+    user_metadata: {
+      promptId,
+      nodeId: output.nodeId,
+      subfolder: output.subfolder,
+      executionTimeInSeconds,
+      workflow: metadata.workflow
+    }
+  }))
+}
+
+const exitFolderView = () => {
+  folderPromptId.value = null
+  folderExecutionTime.value = undefined
+  folderAssets.value = []
+}
+
+const copyJobId = async () => {
+  if (folderPromptId.value) {
+    try {
+      await navigator.clipboard.writeText(folderPromptId.value)
+      toast.add({
+        severity: 'success',
+        summary: t('mediaAsset.jobIdToast.copied'),
+        detail: t('mediaAsset.jobIdToast.jobIdCopied'),
+        life: 2000
+      })
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('mediaAsset.jobIdToast.error'),
+        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
+        life: 3000
+      })
+    }
   }
 }
 </script>

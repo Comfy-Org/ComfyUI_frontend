@@ -19,12 +19,24 @@ async function fetchInputAssets(directory: string): Promise<AssetItem[]> {
  */
 function fetchOutputAssets(): AssetItem[] {
   const queueStore = useQueueStore()
-  return queueStore.flatTasks
+
+  const assetItems: AssetItem[] = queueStore.tasks
     .filter((task) => task.previewOutput && task.displayStatus === 'Completed')
     .map((task) => {
       const output = task.previewOutput!
-      return mapTaskOutputToAssetItem(task, output)
+      const assetItem = mapTaskOutputToAssetItem(task, output)
+
+      // Add output count and all outputs for folder view
+      assetItem.user_metadata = {
+        ...assetItem.user_metadata,
+        outputCount: task.flatOutputs.filter((o) => o.supportsPreview).length,
+        allOutputs: task.flatOutputs.filter((o) => o.supportsPreview)
+      }
+
+      return assetItem
     })
+
+  return assetItems
 }
 
 /**
