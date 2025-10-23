@@ -1,8 +1,11 @@
 <template>
   <button
+    :id="tabId"
     :class="tabClasses"
     role="tab"
     :aria-selected="isActive"
+    :aria-controls="panelId"
+    :tabindex="0"
     @click="handleClick"
   >
     <slot />
@@ -15,13 +18,15 @@ import { computed, inject } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const { value } = defineProps<{
+const { value, panelId } = defineProps<{
   value: string
+  panelId?: string
 }>()
 
 const currentValue = inject<Ref<string>>('tabs-value')
 const updateValue = inject<(value: string) => void>('tabs-update')
 
+const tabId = computed(() => `tab-${value}`)
 const isActive = computed(() => currentValue?.value === value)
 
 const tabClasses = computed(() => {

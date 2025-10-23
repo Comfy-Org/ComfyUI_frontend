@@ -55,12 +55,8 @@
           <MediaAssetCard
             :asset="item"
             :selected="selectedAsset?.id === item.id"
-            :show-output-count="
-              activeTab === 'output' &&
-              !isInFolderView &&
-              (item.user_metadata?.outputCount as number) > 1
-            "
-            :output-count="(item.user_metadata?.outputCount as number) || 0"
+            :show-output-count="shouldShowOutputCount(item)"
+            :output-count="getOutputCount(item)"
             @click="handleAssetSelect(item)"
             @zoom="handleZoomClick(item)"
             @output-count-click="enterFolderView(item)"
@@ -102,8 +98,10 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
+import { t } from '@/i18n'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -115,6 +113,18 @@ const selectedAsset = ref<AssetItem | null>(null)
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
+
+const getOutputCount = (item: AssetItem): number => {
+  const count = item.user_metadata?.outputCount
+  return typeof count === 'number' && count > 0 ? count : 0
+}
+
+const shouldShowOutputCount = (item: AssetItem): boolean => {
+  if (activeTab.value !== 'output' || isInFolderView.value) {
+    return false
+  }
+  return getOutputCount(item) > 1
+}
 
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
@@ -213,31 +223,37 @@ const handleZoomClick = (asset: AssetItem) => {
 }
 
 const enterFolderView = (asset: AssetItem) => {
-  const promptId = asset.user_metadata?.promptId as string
-  const allOutputs = asset.user_metadata?.allOutputs as any[]
-
-  if (promptId && allOutputs) {
-    folderPromptId.value = promptId
-    folderExecutionTime.value = asset.user_metadata
-      ?.executionTimeInSeconds as number
-
-    // Convert all outputs to AssetItem format for folder view
-    folderAssets.value = allOutputs.map((output) => ({
-      id: `${promptId}-${output.nodeId}-${output.filename}`,
-      name: output.filename,
-      size: 0,
-      created_at: asset.created_at, // Use parent asset's created_at
-      tags: ['output'],
-      preview_url: output.url,
-      user_metadata: {
-        promptId,
-        nodeId: output.nodeId,
-        subfolder: output.subfolder,
-        executionTimeInSeconds: asset.user_metadata?.executionTimeInSeconds,
-        workflow: asset.user_metadata?.workflow
-      }
-    }))
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (!metadata) {
+    console.warn('Invalid output asset metadata')
+    return
   }
+
+  const { promptId, allOutputs, executionTimeInSeconds } = metadata
+
+  if (!promptId || !Array.isArray(allOutputs) || allOutputs.length === 0) {
+    console.warn('Missing required folder view data')
+    return
+  }
+
+  folderPromptId.value = promptId
+  folderExecutionTime.value = executionTimeInSeconds
+
+  folderAssets.value = allOutputs.map((output) => ({
+    id: `${promptId}-${output.nodeId}-${output.filename}`,
+    name: output.filename,
+    size: 0,
+    created_at: asset.created_at,
+    tags: ['output'],
+    preview_url: output.url,
+    user_metadata: {
+      promptId,
+      nodeId: output.nodeId,
+      subfolder: output.subfolder,
+      executionTimeInSeconds,
+      workflow: metadata.workflow
+    }
+  }))
 }
 
 const exitFolderView = () => {
@@ -252,15 +268,15 @@ const copyJobId = async () => {
       await navigator.clipboard.writeText(folderPromptId.value)
       toast.add({
         severity: 'success',
-        summary: 'Copied',
-        detail: 'Job ID copied to clipboard',
+        summary: t('mediaAsset.jobIdToast.copied'),
+        detail: t('mediaAsset.jobIdToast.jobIdCopied'),
         life: 2000
       })
     } catch (error) {
       toast.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to copy Job ID',
+        summary: t('mediaAsset.jobIdToast.error'),
+        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
         life: 3000
       })
     }

@@ -1,4 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
@@ -25,25 +26,13 @@ export function mapTaskOutputToAssetItem(
   taskItem: TaskItemImpl,
   output: ResultItemImpl
 ): AssetItem {
-  const metadata: Record<string, any> = {
+  const metadata: OutputAssetMetadata = {
     promptId: taskItem.promptId,
     nodeId: output.nodeId,
-    subfolder: output.subfolder
-  }
-
-  // Add execution time if available
-  if (taskItem.executionTimeInSeconds) {
-    metadata.executionTimeInSeconds = taskItem.executionTimeInSeconds
-  }
-
-  // Add format if available
-  if (output.format) {
-    metadata.format = output.format
-  }
-
-  // Add workflow if available
-  if (taskItem.workflow) {
-    metadata.workflow = taskItem.workflow
+    subfolder: output.subfolder,
+    executionTimeInSeconds: taskItem.executionTimeInSeconds,
+    format: output.format,
+    workflow: taskItem.workflow
   }
 
   return {

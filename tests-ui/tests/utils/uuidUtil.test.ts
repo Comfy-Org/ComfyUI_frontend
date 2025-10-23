@@ -26,10 +26,16 @@ describe('uuidUtil', () => {
       expect(result).toBeNull()
     })
 
-    it('should return null for invalid UUID format', () => {
-      const str = '12345678-1234-1234-1234-123456789abc-extra'
+    it('should extract valid UUID even with extra content', () => {
+      const str = '12345678-1234-5234-a234-123456789abc-extra'
       const result = extractUuidFromString(str)
-      expect(result).toBe('12345678-1234-1234-1234-123456789abc')
+      expect(result).toBe('12345678-1234-5234-a234-123456789abc')
+    })
+
+    it('should return null for invalid UUID format', () => {
+      const str = '12345678-1234-1234-1234-123456789xyz-extra' // xyz is not valid hex
+      const result = extractUuidFromString(str)
+      expect(result).toBeNull()
     })
 
     it('should handle UUID without trailing content', () => {

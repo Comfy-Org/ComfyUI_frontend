@@ -7,7 +7,6 @@ import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { extractPromptIdFromAssetId } from '@/utils/uuidUtil'
 
-import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 
@@ -24,7 +23,7 @@ export function useMediaAssetActions() {
     if (!asset) return
 
     try {
-      const assetType = (asset as AssetItem).tags?.[0] || 'output'
+      const assetType = asset.tags?.[0] || 'output'
       const filename = asset.name
       const downloadUrl = api.apiURL(
         `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
@@ -77,14 +76,14 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: 'Job ID copied to clipboard',
+        detail: t('mediaAsset.jobIdToast.jobIdCopied'),
         life: 2000
       })
     } catch (error) {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: 'Failed to copy job ID',
+        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
         life: 3000
       })
     }

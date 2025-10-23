@@ -2073,6 +2073,14 @@
       "loadingAsset": "Loading asset"
     }
   },
+  "mediaAsset": {
+    "jobIdToast": {
+      "jobIdCopied": "Job ID copied to clipboard",
+      "jobIdCopyFailed": "Failed to copy Job ID",
+      "copied": "Copied",
+      "error": "Error"
+    }
+  },
   "actionbar": {
     "dockToTop": "Dock to top"
   },

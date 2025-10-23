@@ -1,8 +1,6 @@
 <template>
-  <div class="w-full">
-    <div class="flex items-center gap-2 pb-1">
-      <slot />
-    </div>
+  <div role="tablist" class="flex w-full items-center gap-2 pb-1">
+    <slot />
   </div>
 </template>
 

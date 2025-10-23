@@ -113,7 +113,7 @@ const showWorkflowOptions = computed(() => context.value.type)
 
 // Only show Copy Job ID for output assets (not for imported/input assets)
 const showCopyJobId = computed(() => {
-  const assetType = (asset.value as any)?.tags?.[0] || context.value?.type
+  const assetType = asset.value?.tags?.[0] || context.value?.type
   return assetType !== 'input'
 })
 
