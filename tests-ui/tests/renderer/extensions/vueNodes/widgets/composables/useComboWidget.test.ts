@@ -163,7 +163,8 @@ describe('useComboWidget', () => {
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
-      'CheckpointLoaderSimple'
+      'CheckpointLoaderSimple',
+      'ckpt_name'
     )
     expect(widget).toBe(mockWidget)
   })
