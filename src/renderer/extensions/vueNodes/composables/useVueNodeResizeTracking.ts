@@ -90,10 +90,10 @@ const resizeObserver = new ResizeObserver((entries) => {
     // This ensures consistency with manual resize operations
     const borderBox = Array.isArray(entry.borderBoxSize)
       ? entry.borderBoxSize[0]
-      : entry.contentBoxSize?.[0] ?? {
+      : (entry.contentBoxSize?.[0] ?? {
           inlineSize: entry.contentRect.width,
           blockSize: entry.contentRect.height
-        }
+        })
     const width = borderBox.inlineSize
     const height = borderBox.blockSize
 
