@@ -161,4 +161,5 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const proxyWidgets: ProxyWidgetsProperty =
     filteredWidgets.map(widgetItemToProperty)
   subgraphNode.properties.proxyWidgets = proxyWidgets
+  subgraphNode.computeSize(subgraphNode.size)
 }
