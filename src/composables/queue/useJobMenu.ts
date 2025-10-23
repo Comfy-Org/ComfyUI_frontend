@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -12,12 +13,14 @@ import type {
   ResultItemType
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { appendJsonExt } from '@/utils/formatUtil'
 
 export type MenuEntry =
   | {
@@ -166,6 +169,33 @@ export function useJobMenu(
     downloadFile(result.url)
   }
 
+  /**
+   * Export the workflow JSON attached to the job.
+   */
+  const exportJobWorkflow = async () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const data = item.taskRef?.workflow
+    if (!data) return
+
+    const settingStore = useSettingStore()
+    let filename = `Job ${item.id}.json`
+
+    if (settingStore.get('Comfy.PromptFilename')) {
+      const input = await useDialogService().prompt({
+        title: t('workflowService.exportWorkflow'),
+        message: t('workflowService.enterFilename') + ':',
+        defaultValue: filename
+      })
+      if (!input) return
+      filename = appendJsonExt(input)
+    }
+
+    const json = JSON.stringify(data, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    downloadBlob(filename, blob)
+  }
+
   const jobMenuOpenWorkflowLabel = computed(() =>
     st('queue.jobMenu.openAsWorkflowNewTab', 'Open as workflow in new tab')
   )
@@ -221,7 +251,7 @@ export function useJobMenu(
           key: 'export-workflow',
           label: st('queue.jobMenu.exportWorkflow', 'Export workflow'),
           icon: 'icon-[comfy--file-output]',
-          onClick: undefined
+          onClick: exportJobWorkflow
         },
         { kind: 'divider', key: 'd2' },
         {
