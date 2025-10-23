@@ -112,6 +112,11 @@ export const useExecutionStore = defineStore('execution', () => {
     Record<string, Record<string, NodeProgressState>>
   >({})
 
+  /**
+   * Map of prompt_id to workflow ID for quick lookup across the app.
+   */
+  const promptIdToWorkflowId = ref<Map<string, string>>(new Map())
+
   const initializingPromptIds = ref<Set<string>>(new Set())
 
   const mergeExecutionProgressStates = (
@@ -494,6 +499,21 @@ export const useExecutionStore = defineStore('execution', () => {
       ...queuedPrompt.nodes
     }
     queuedPrompt.workflow = workflow
+    const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
+    if (wid) {
+      promptIdToWorkflowId.value.set(String(id), String(wid))
+    }
+  }
+
+  /**
+   * Register or update a mapping from prompt_id to workflow ID.
+   */
+  function registerPromptWorkflowIdMapping(
+    promptId: string,
+    workflowId: string
+  ) {
+    if (!promptId || !workflowId) return
+    promptIdToWorkflowId.value.set(String(promptId), String(workflowId))
   }
 
   /**
@@ -550,11 +570,13 @@ export const useExecutionStore = defineStore('execution', () => {
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
+    registerPromptWorkflowIdMapping,
     uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
     executionIdToNodeLocatorId,
-    nodeLocatorIdToExecutionId
+    nodeLocatorIdToExecutionId,
+    promptIdToWorkflowId
   }
 })

@@ -19,6 +19,7 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useExecutionStore } from '@/stores/executionStore'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
@@ -460,18 +461,23 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
+      const executionStore = useExecutionStore()
       const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
         tasks
-          .map(
-            (task: TaskItem) =>
-              new TaskItemImpl(
-                task.taskType,
-                task.prompt,
-                // status and outputs only exist on history tasks
-                'status' in task ? task.status : undefined,
-                'outputs' in task ? task.outputs : undefined
-              )
-          )
+          .map((task: TaskItem) => {
+            const ti = new TaskItemImpl(
+              task.taskType,
+              task.prompt,
+              'status' in task ? task.status : undefined,
+              'outputs' in task ? task.outputs : undefined
+            )
+            const wid = ti.workflow?.id
+            const pid = String(ti.promptId)
+            if (wid && pid) {
+              executionStore.registerPromptWorkflowIdMapping(pid, String(wid))
+            }
+            return ti
+          })
           .sort((a, b) => b.queueIndex - a.queueIndex)
 
       runningTasks.value = toClassAll(queue.Running)
