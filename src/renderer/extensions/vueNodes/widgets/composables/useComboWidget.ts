@@ -76,7 +76,7 @@ const addComboWidget = (
       'asset',
       inputSpec.name,
       displayLabel,
-      async function () {
+      async function (this: IBaseWidget) {
         if (!isAssetWidget(widget)) {
           throw new Error(`Expected asset widget but received ${widget.type}`)
         }
