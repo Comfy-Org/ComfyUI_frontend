@@ -18,14 +18,13 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
 /**
  * Type guard to check if metadata is OutputAssetMetadata
  */
-export function isOutputAssetMetadata(
-  metadata: any
+function isOutputAssetMetadata(
+  metadata: Record<string, unknown> | undefined
 ): metadata is OutputAssetMetadata {
+  if (!metadata) return false
   return (
-    metadata &&
-    typeof metadata === 'object' &&
     typeof metadata.promptId === 'string' &&
-    typeof metadata.nodeId === 'string'
+    (typeof metadata.nodeId === 'string' || typeof metadata.nodeId === 'number')
   )
 }
 
@@ -33,7 +32,7 @@ export function isOutputAssetMetadata(
  * Safely extract output asset metadata
  */
 export function getOutputAssetMetadata(
-  userMetadata: any
+  userMetadata: Record<string, unknown> | undefined
 ): OutputAssetMetadata | null {
   if (isOutputAssetMetadata(userMetadata)) {
     return userMetadata

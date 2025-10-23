@@ -1,4 +1,4 @@
-import { validate as uuidValidate, version as uuidVersion } from 'uuid'
+import { validate as uuidValidate } from 'uuid'
 
 /**
  * UUID utility functions
@@ -32,15 +32,6 @@ export function extractUuidFromString(str: string): string | null {
  */
 export function isValidUuid(str: string): boolean {
   return uuidValidate(str)
-}
-
-/**
- * Check if a string is a valid UUID v4
- * @param str - The string to check
- * @returns true if the string is a valid UUID v4
- */
-export function isValidUuidV4(str: string): boolean {
-  return uuidValidate(str) && uuidVersion(str) === 4
 }
 
 /**
