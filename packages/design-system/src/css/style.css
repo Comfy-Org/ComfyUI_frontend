@@ -200,7 +200,7 @@
   --node-stroke-executing: var(--color-blue-100);
   --text-secondary: var(--color-stone-100);
   --text-primary: var(--color-charcoal-700);
-  --input-surface: rgba(0, 0, 0, 0.15);
+  --input-surface: rgb(0 0 0 / 0.15);
 }
 
 .dark-theme {
@@ -247,7 +247,7 @@
   --node-stroke-executing: var(--color-blue-100);
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-pure-white);
-  --input-surface: rgba(130, 130, 130, 0.1);
+  --input-surface: rgb(130 130 130 / 0.1);
 }
 
 @theme inline {
@@ -1139,7 +1139,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .isLOD .lg-node-header {
-  border-radius: 0px;
+  border-radius: 0;
   pointer-events: none;
 }
 
