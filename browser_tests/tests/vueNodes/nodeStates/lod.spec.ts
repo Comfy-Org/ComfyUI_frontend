@@ -23,7 +23,10 @@ test.describe('Vue Nodes - LOD', () => {
 
     const vueNodesContainer = comfyPage.vueNodes.nodes
     const textboxesInNodes = vueNodesContainer.getByRole('textbox')
-    const buttonsInNodes = vueNodesContainer.getByRole('button')
+    // Select buttons within node body (excludes resize handles)
+    const buttonsInNodes = vueNodesContainer
+      .locator('[data-testid^="node-body-"]')
+      .getByRole('button')
 
     await expect(textboxesInNodes.first()).toBeVisible()
     await expect(buttonsInNodes.first()).toBeVisible()
