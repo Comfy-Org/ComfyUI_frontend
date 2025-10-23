@@ -1,3 +1,4 @@
+import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -145,18 +146,7 @@ class ManageTemplates extends ComfyDialog {
 
     const json = JSON.stringify({ templates: this.templates }, null, 2) // convert the data to a JSON string
     const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = $el('a', {
-      href: url,
-      download: 'node_templates.json',
-      style: { display: 'none' },
-      parent: document.body
-    })
-    a.click()
-    setTimeout(function () {
-      a.remove()
-      window.URL.revokeObjectURL(url)
-    }, 0)
+    downloadBlob('node_templates.json', blob)
   }
 
   override show() {
@@ -298,19 +288,9 @@ class ManageTemplates extends ComfyDialog {
                       const blob = new Blob([json], {
                         type: 'application/json'
                       })
-                      const url = URL.createObjectURL(blob)
-                      const a = $el('a', {
-                        href: url,
-                        // @ts-expect-error fixme ts strict error
-                        download: (nameInput.value || t.name) + '.json',
-                        style: { display: 'none' },
-                        parent: document.body
-                      })
-                      a.click()
-                      setTimeout(function () {
-                        a.remove()
-                        window.URL.revokeObjectURL(url)
-                      }, 0)
+                      // @ts-expect-error fixme ts strict error
+                      const name = (nameInput.value || t.name) + '.json'
+                      downloadBlob(name, blob)
                     }
                   }),
                   $el('button', {

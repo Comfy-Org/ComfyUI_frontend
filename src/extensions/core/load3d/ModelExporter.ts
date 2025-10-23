@@ -3,6 +3,7 @@ import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -38,13 +39,7 @@ export class ModelExporter {
     try {
       const response = await fetch(url)
       const blob = await response.blob()
-
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
-      link.download = desiredFilename
-      link.click()
-
-      URL.revokeObjectURL(link.href)
+      downloadBlob(desiredFilename, blob)
     } catch (error) {
       console.error('Error downloading from URL:', error)
       useToastStore().addAlert(t('toastMessages.failedToDownloadFile'))
@@ -152,19 +147,11 @@ export class ModelExporter {
 
   private static saveArrayBuffer(buffer: ArrayBuffer, filename: string): void {
     const blob = new Blob([buffer], { type: 'application/octet-stream' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
+    downloadBlob(filename, blob)
   }
 
   private static saveString(text: string, filename: string): void {
     const blob = new Blob([text], { type: 'text/plain' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
+    downloadBlob(filename, blob)
   }
 }
