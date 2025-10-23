@@ -35,6 +35,7 @@
     </Dialog>
 
     <AutoCompletePlus
+      ref="acpref"
       :model-value="filters"
       class="comfy-vue-node-search-box z-10 grow"
       scroll-height="40vh"
@@ -42,7 +43,6 @@
       :input-id="inputId"
       append-to="self"
       :suggestions="suggestions"
-      :min-length="0"
       :delay="100"
       :loading="!nodeFrequencyStore.isLoaded"
       complete-on-focus
@@ -50,6 +50,7 @@
       force-selection
       multiple
       :option-label="'display_name'"
+      @clear="search('')"
       @complete="search($event.query)"
       @option-select="emit('addNode', $event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
@@ -105,6 +106,7 @@ const { filters, searchLimit = 64 } = defineProps<{
   filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
   searchLimit?: number
 }>()
+const acpref = ref()
 
 const nodeSearchFilterVisible = ref(false)
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
@@ -140,7 +142,11 @@ const reFocusInput = async () => {
   }
 }
 
-onMounted(reFocusInput)
+onMounted(() => {
+  acpref.value.hide = () => {}
+  search('')
+  acpref.value.show()
+})
 const onAddFilter = (
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {
