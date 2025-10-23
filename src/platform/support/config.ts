@@ -4,7 +4,7 @@ import { isCloud } from '@/platform/distribution/types'
  * Zendesk ticket form field ID for the distribution tag.
  * This field is used to categorize support requests by their source (cloud vs OSS).
  */
-export const DISTRIBUTION_FIELD_ID = 'tf_42243568391700'
+const DISTRIBUTION_FIELD_ID = 'tf_42243568391700'
 
 /**
  * Support URLs for the ComfyUI platform.

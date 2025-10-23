@@ -1,7 +1,6 @@
 import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { DISTRIBUTION_FIELD_ID } from '../../src/platform/support/config'
 import type { Keybinding } from '../../src/schemas/keyBindingSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
@@ -314,7 +313,7 @@ test.describe('Support', () => {
     await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
 
     const url = new URL(newPage.url())
-    expect(url.searchParams.get(DISTRIBUTION_FIELD_ID)).toBe('oss')
+    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
 
     await newPage.close()
   })
