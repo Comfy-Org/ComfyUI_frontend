@@ -23,7 +23,7 @@
     </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="pt-4 pb-1">
+      <div v-if="isInFolderView" class="pt-4 pb-2">
         <IconTextButton
           :label="$t('sideToolbar.backToAssets')"
           type="secondary"
@@ -158,53 +158,17 @@ const galleryItems = computed(() => {
   })
 })
 
-// Group assets by promptId for output tab
-const groupedAssets = computed(() => {
-  if (activeTab.value !== 'output' || isInFolderView.value) {
-    return null
-  }
-
-  const groups = new Map<string, AssetItem[]>()
-
-  mediaAssets.value.forEach((asset) => {
-    const promptId = asset.user_metadata?.promptId as string
-    if (promptId) {
-      if (!groups.has(promptId)) {
-        groups.set(promptId, [])
-      }
-      groups.get(promptId)!.push(asset)
-    }
-  })
-
-  return groups
-})
+// Store folder view assets separately
+const folderAssets = ref<AssetItem[]>([])
 
 // Get display assets based on view mode
 const displayAssets = computed(() => {
-  if (isInFolderView.value && folderPromptId.value) {
-    // Show all assets from the selected prompt
-    return mediaAssets.value.filter(
-      (asset) => asset.user_metadata?.promptId === folderPromptId.value
-    )
+  if (isInFolderView.value) {
+    // Show all assets from the folder view
+    return folderAssets.value
   }
 
-  if (activeTab.value === 'output' && groupedAssets.value) {
-    // Show only the first asset from each prompt group
-    const firstAssets: AssetItem[] = []
-    groupedAssets.value.forEach((assets) => {
-      if (assets.length > 0) {
-        // Add output count to the first asset
-        const firstAsset = { ...assets[0] }
-        firstAsset.user_metadata = {
-          ...firstAsset.user_metadata,
-          outputCount: assets.length
-        }
-        firstAssets.push(firstAsset)
-      }
-    })
-    return firstAssets
-  }
-
+  // Normal view: show grouped assets (already have outputCount from API)
   return mediaAssets.value
 })
 
@@ -250,22 +214,36 @@ const handleZoomClick = (asset: AssetItem) => {
 
 const enterFolderView = (asset: AssetItem) => {
   const promptId = asset.user_metadata?.promptId as string
-  if (promptId) {
+  const allOutputs = asset.user_metadata?.allOutputs as any[]
+
+  if (promptId && allOutputs) {
     folderPromptId.value = promptId
-    // Get execution time from the first asset of this prompt
-    const promptAssets = mediaAssets.value.filter(
-      (a) => a.user_metadata?.promptId === promptId
-    )
-    if (promptAssets.length > 0) {
-      folderExecutionTime.value = promptAssets[0].user_metadata
-        ?.executionTimeInSeconds as number
-    }
+    folderExecutionTime.value = asset.user_metadata
+      ?.executionTimeInSeconds as number
+
+    // Convert all outputs to AssetItem format for folder view
+    folderAssets.value = allOutputs.map((output) => ({
+      id: `${promptId}-${output.nodeId}-${output.filename}`,
+      name: output.filename,
+      size: 0,
+      created_at: asset.created_at, // Use parent asset's created_at
+      tags: ['output'],
+      preview_url: output.url,
+      user_metadata: {
+        promptId,
+        nodeId: output.nodeId,
+        subfolder: output.subfolder,
+        executionTimeInSeconds: asset.user_metadata?.executionTimeInSeconds,
+        workflow: asset.user_metadata?.workflow
+      }
+    }))
   }
 }
 
 const exitFolderView = () => {
   folderPromptId.value = null
   folderExecutionTime.value = undefined
+  folderAssets.value = []
 }
 
 const copyJobId = async () => {

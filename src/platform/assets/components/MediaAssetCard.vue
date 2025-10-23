@@ -86,14 +86,11 @@
         </template>
 
         <!-- Output count (bottom-right) - show on hover even when playing -->
-        <template
-          v-if="showOutputCount && outputCount && outputCount > 1"
-          #bottom-right
-        >
+        <template v-if="showOutputCount" #bottom-right>
           <IconTextButton
             type="secondary"
             size="sm"
-            :label="String(outputCount || 0)"
+            :label="String(outputCount)"
             @click.stop="handleOutputCountClick"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
@@ -312,8 +309,6 @@ const showFileFormatChip = computed(
     !!fileFormat.value &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
 )
-
-// Remove the redundant showOutputCount computed since we're using prop directly
 
 const handleCardClick = () => {
   if (adaptedAsset.value) {
