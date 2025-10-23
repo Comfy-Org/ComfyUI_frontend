@@ -25,5 +25,5 @@ export const jobStateFromTask = (
     case 'Cancelled':
       return 'failed'
   }
-  return 'queued'
+  return 'failed'
 }
