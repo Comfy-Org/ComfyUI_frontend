@@ -1,11 +1,11 @@
 <template>
-  <div v-if="!workspaceStore.focusMode" class="ml-2 flex pt-2">
+  <div v-if="!workspaceStore.focusMode" class="ml-2 flex pt-1">
     <div class="min-w-0 flex-1">
       <SubgraphBreadcrumb />
     </div>
 
     <div
-      class="actionbar-container pointer-events-auto mx-2 flex h-12 items-center rounded-lg px-2 shadow-md"
+      class="actionbar-container pointer-events-auto mx-1 flex h-12 items-center rounded-lg px-2 shadow-md"
     >
       <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
       <div
