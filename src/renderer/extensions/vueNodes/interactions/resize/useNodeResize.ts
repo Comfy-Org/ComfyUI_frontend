@@ -101,15 +101,18 @@ export function useNodeResize(
       )
         return
 
+      const startPointer = resizeStartPointer.value
+      const session = resizeSession.value
+
       const delta = toCanvasDelta(
-        resizeStartPointer.value,
+        startPointer,
         { x: moveEvent.clientX, y: moveEvent.clientY },
         transformState.camera.z
       )
 
       const nodeElement = target.closest('[data-node-id]')
       if (nodeElement instanceof HTMLElement) {
-        const outcome = resizeSession.value(
+        const outcome = session(
           delta,
           shouldSnap(moveEvent) ? applySnapToSize : undefined
         )
