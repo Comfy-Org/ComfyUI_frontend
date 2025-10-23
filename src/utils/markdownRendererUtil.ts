@@ -32,7 +32,7 @@ export function createMarkdownRenderer(baseUrl?: string): Renderer {
   renderer.link = ({ href, title, tokens }) => {
     const text = renderer.parser.parseInline(tokens)
     const titleAttr = title ? ` title="${title}"` : ''
-    return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`
+    return `<a href="${href}" ${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`
   }
   return renderer
 }
