@@ -10,12 +10,12 @@ function applyHandleDelta(
   delta: Point,
   handle: ResizeHandleDirection
 ): Size {
-  const horizontalFactor = handle.horizontal === 'right' ? 1 : -1
-  const verticalFactor = handle.vertical === 'bottom' ? 1 : -1
+  const horizontalMultiplier = handle.horizontal === 'right' ? 1 : -1
+  const verticalMultiplier = handle.vertical === 'bottom' ? 1 : -1
 
   return {
-    width: startSize.width + delta.x * horizontalFactor,
-    height: startSize.height + delta.y * verticalFactor
+    width: startSize.width + delta.x * horizontalMultiplier,
+    height: startSize.height + delta.y * verticalMultiplier
   }
 }
 
