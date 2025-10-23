@@ -141,7 +141,6 @@ jobs:
   merge-and-commit:
     needs: [setup, update-snapshots-sharded]
     runs-on: ubuntu-latest
-    if: always()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
