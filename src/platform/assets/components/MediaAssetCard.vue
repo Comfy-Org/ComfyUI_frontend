@@ -39,7 +39,7 @@
             :asset="adaptedAsset"
             :context="{ type: assetType }"
             @view="handleZoomClick"
-            @download="actions.downloadAsset(asset.id)"
+            @download="actions.downloadAsset()"
             @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
@@ -51,6 +51,7 @@
         <template v-if="showActionsOverlay" #top-left>
           <MediaAssetActions
             @menu-state-changed="isMenuOpen = $event"
+            @inspect="handleZoomClick"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
           />
@@ -89,8 +90,8 @@
           <IconTextButton
             type="secondary"
             size="sm"
-            label="0"
-            @click.stop="actions.openMoreOutputs(asset?.id || '')"
+            :label="String(outputCount)"
+            @click.stop="handleOutputCountClick"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
           >
@@ -172,14 +173,17 @@ function getBottomComponent(kind: MediaKind) {
   return mediaComponents.bottom[kind] || mediaComponents.bottom.image
 }
 
-const { asset, loading, selected } = defineProps<{
+const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
+  showOutputCount?: boolean
+  outputCount?: number
 }>()
 
 const emit = defineEmits<{
   zoom: [asset: AssetItem]
+  'output-count-click': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
@@ -277,7 +281,11 @@ const showHoverActions = computed(
   () => !loading && !!asset && isCardOrOverlayHovered.value
 )
 
-const showActionsOverlay = false
+const showActionsOverlay = computed(
+  () =>
+    showHoverActions.value &&
+    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+)
 
 const showZoomOverlay = computed(
   () =>
@@ -302,10 +310,6 @@ const showFileFormatChip = computed(
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
 )
 
-const showOutputCount = computed(
-  () => false // Remove output count for simplified version
-)
-
 const handleCardClick = () => {
   if (adaptedAsset.value) {
     actions.selectAsset(adaptedAsset.value)
@@ -328,5 +332,9 @@ const handleZoomClick = () => {
 
 const handleImageLoaded = (width: number, height: number) => {
   imageDimensions.value = { width, height }
+}
+
+const handleOutputCountClick = () => {
+  emit('output-count-click')
 }
 </script>
