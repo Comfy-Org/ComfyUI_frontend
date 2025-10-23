@@ -29,9 +29,7 @@
         </template>
       </VirtualGrid>
       <div v-else-if="loading">
-        <ProgressSpinner
-          style="width: 50px; left: 50%; transform: translateX(-50%)"
-        />
+        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
       <div v-else>
         <NoResultsPlaceholder
@@ -59,7 +57,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import Tabs from 'primevue/tabs'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
@@ -69,28 +67,33 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { getMediaTypeFromFilenamePlural } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 const activeTab = ref<'input' | 'output'>('input')
-const mediaAssets = ref<AssetItem[]>([])
 const selectedAsset = ref<AssetItem | null>(null)
 
-// Use unified media assets implementation that handles cloud/internal automatically
-const { loading, error, fetchMediaList } = useMediaAssets()
+const inputAssets = useMediaAssets('input')
+const outputAssets = useMediaAssets('output')
+
+const currentAssets = computed(() =>
+  activeTab.value === 'input' ? inputAssets : outputAssets
+)
+const loading = computed(() => currentAssets.value.loading.value)
+const error = computed(() => currentAssets.value.error.value)
+const mediaAssets = computed(() => currentAssets.value.media.value)
 
 const galleryActiveIndex = ref(-1)
 const galleryItems = computed(() => {
-  // Convert AssetItems to ResultItemImpl format for gallery
   return mediaAssets.value.map((asset) => {
+    const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
       subfolder: '',
       type: 'output',
       nodeId: '0',
-      mediaType: getMediaTypeFromFilenamePlural(asset.name)
+      mediaType: mediaType === 'image' ? 'images' : mediaType
     })
 
-    // Override the url getter to use asset.preview_url
     Object.defineProperty(resultItem, 'url', {
       get() {
         return asset.preview_url || ''
@@ -111,20 +114,19 @@ const mediaAssetsWithKey = computed(() => {
 })
 
 const refreshAssets = async () => {
-  const files = await fetchMediaList(activeTab.value)
-  mediaAssets.value = files
+  await currentAssets.value.fetchMediaList()
   if (error.value) {
     console.error('Failed to refresh assets:', error.value)
   }
 }
 
-watch(activeTab, () => {
-  void refreshAssets()
-})
-
-onMounted(() => {
-  void refreshAssets()
-})
+watch(
+  activeTab,
+  () => {
+    void refreshAssets()
+  },
+  { immediate: true }
+)
 
 const handleAssetSelect = (asset: AssetItem) => {
   // Toggle selection
@@ -136,7 +138,6 @@ const handleAssetSelect = (asset: AssetItem) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
-  // Find the index of the clicked asset
   const index = mediaAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index

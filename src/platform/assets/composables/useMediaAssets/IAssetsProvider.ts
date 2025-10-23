@@ -7,16 +7,23 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
  * Defines the common API for both cloud and internal file implementations
  */
 export interface IAssetsProvider {
+  /** Current media assets */
+  media: Ref<AssetItem[]>
+
   /** Loading state indicator */
   loading: Ref<boolean>
 
-  /** Error state, null when no error */
-  error: Ref<string | null>
+  /** Error state */
+  error: Ref<unknown>
 
   /**
-   * Fetch list of media assets from the specified directory
-   * @param directory - 'input' or 'output'
+   * Fetch list of media assets
    * @returns Promise resolving to array of AssetItem
    */
-  fetchMediaList: (directory: 'input' | 'output') => Promise<AssetItem[]>
+  fetchMediaList: () => Promise<AssetItem[]>
+
+  /**
+   * Refresh the media list (alias for fetchMediaList)
+   */
+  refresh: () => Promise<AssetItem[]>
 }

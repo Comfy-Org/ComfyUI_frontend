@@ -1766,7 +1766,11 @@
     "sortAZ": "A-Z",
     "sortZA": "Z-A",
     "sortRecent": "Recent",
-    "sortPopular": "Popular"
+    "sortPopular": "Popular",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} asset",
+      "loadingAsset": "Loading asset"
+    }
   },
   "actionbar": {
     "dockToTop": "Dock to top"

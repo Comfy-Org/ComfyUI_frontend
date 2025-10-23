@@ -1,16 +1,16 @@
 <template>
   <div
-    class="relative h-full w-full overflow-hidden rounded bg-zinc-200 dark-theme:bg-zinc-700/50"
+    class="relative size-full overflow-hidden rounded bg-zinc-200 dark-theme:bg-zinc-700/50"
   >
     <img
-      v-if="shouldShowImage"
+      v-if="!error"
       :src="asset.src"
       :alt="asset.name"
-      class="h-full w-full object-contain"
+      class="size-full object-contain"
     />
     <div
       v-else
-      class="flex h-full w-full items-center justify-center bg-zinc-200 dark-theme:bg-zinc-700/50"
+      class="flex size-full items-center justify-center bg-zinc-200 dark-theme:bg-zinc-700/50"
     >
       <i class="pi pi-image text-3xl text-gray-400" />
     </div>
@@ -18,8 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { useImage, whenever } from '@vueuse/core'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
@@ -28,25 +27,18 @@ const { asset } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'image-loaded': [dimensions: { width: number; height: number }]
+  'image-loaded': [width: number, height: number]
 }>()
 
-// Use same image loading logic as AssetCard
 const { state, error, isReady } = useImage({
   src: asset.src ?? '',
   alt: asset.name
 })
 
-const shouldShowImage = computed(() => asset.src && !error.value)
-
-// Emit dimensions when image is loaded
-watch(isReady, (ready) => {
-  if (ready && state.value) {
-    const width = state.value.naturalWidth
-    const height = state.value.naturalHeight
-    if (width && height) {
-      emit('image-loaded', { width, height })
-    }
-  }
-})
+whenever(
+  () =>
+    isReady.value && state.value?.naturalWidth && state.value?.naturalHeight,
+  () =>
+    emit('image-loaded', state.value!.naturalWidth, state.value!.naturalHeight)
+)
 </script>
