@@ -13,8 +13,10 @@
         class="[&:not(:has(*>*:not(:empty)))]:hidden"
       ></div>
       <ComfyActionbar />
-      <LoginButton v-if="!isLoggedIn" />
-      <CurrentUserButton v-else class="shrink-0" />
+      <template v-if="isDesktop">
+        <LoginButton v-if="!isLoggedIn" />
+        <CurrentUserButton v-else class="shrink-0" />
+      </template>
     </div>
   </div>
 </template>
@@ -29,9 +31,11 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const { isLoggedIn } = useCurrentUser()
+const isDesktop = isElectron()
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
