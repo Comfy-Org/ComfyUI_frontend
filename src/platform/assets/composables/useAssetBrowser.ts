@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
@@ -65,7 +66,10 @@ export interface AssetDisplayItem extends AssetItem {
  * Asset Browser composable
  * Manages search, filtering, asset transformation and selection logic
  */
-export function useAssetBrowser(assets: AssetItem[] = []) {
+export function useAssetBrowser(
+  assetsSource: Ref<AssetItem[] | undefined> = ref<AssetItem[] | undefined>([])
+) {
+  const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
   // State
   const searchQuery = ref('')
   const selectedCategory = ref('all')
@@ -116,9 +120,10 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
   }
 
   const availableCategories = computed(() => {
-    const categories = assets
-      .filter((asset) => asset.tags[0] === 'models' && asset.tags[1])
+    const categories = assets.value
+      .filter((asset) => asset.tags[0] === 'models')
       .map((asset) => asset.tags[1])
+      .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
 
     const uniqueCategories = Array.from(new Set(categories))
       .sort()
@@ -152,7 +157,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
 
   // Category-filtered assets for filter options (before search/format/base model filters)
   const categoryFilteredAssets = computed(() => {
-    return assets.filter(filterByCategory(selectedCategory.value))
+    return assets.value.filter(filterByCategory(selectedCategory.value))
   })
 
   const filteredAssets = computed(() => {
@@ -161,8 +166,8 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
 
-    // Sort assets
-    filtered.sort((a, b) => {
+    const sortedAssets = [...filtered]
+    sortedAssets.sort((a, b) => {
       switch (filters.value.sortBy) {
         case 'name-desc':
           return b.name.localeCompare(a.name)
@@ -179,7 +184,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     })
 
     // Transform to display format
-    return filtered.map(transformAssetForDisplay)
+    return sortedAssets.map(transformAssetForDisplay)
   })
 
   function updateFilters(newFilters: FilterState) {
