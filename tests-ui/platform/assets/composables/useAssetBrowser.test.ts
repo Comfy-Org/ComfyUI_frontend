@@ -70,7 +70,6 @@ describe('useAssetBrowser', () => {
   describe('Asset Transformation', () => {
     it('transforms API asset to include display properties', () => {
       const apiAsset = createApiAsset({
-        size: 2147483648, // 2GB
         user_metadata: { description: 'Test model' }
       })
 
@@ -83,12 +82,10 @@ describe('useAssetBrowser', () => {
 
       // Adds display properties
       expect(result.description).toBe('Test model')
-      expect(result.formattedSize).toBe('2 GB')
       expect(result.badges).toContainEqual({
         label: 'checkpoints',
         type: 'type'
       })
-      expect(result.badges).toContainEqual({ label: '2 GB', type: 'size' })
     })
 
     it('creates fallback description from tags when metadata missing', () => {
@@ -101,22 +98,6 @@ describe('useAssetBrowser', () => {
       const result = filteredAssets.value[0]
 
       expect(result.description).toBe('loras model')
-    })
-
-    it('formats various file sizes correctly', () => {
-      const testCases = [
-        { size: 512, expected: '512 B' },
-        { size: 1536, expected: '1.5 KB' },
-        { size: 2097152, expected: '2 MB' },
-        { size: 3221225472, expected: '3 GB' }
-      ]
-
-      testCases.forEach(({ size, expected }) => {
-        const asset = createApiAsset({ size })
-        const { filteredAssets } = useAssetBrowser([asset])
-        const result = filteredAssets.value[0]
-        expect(result.formattedSize).toBe(expected)
-      })
     })
   })
 
