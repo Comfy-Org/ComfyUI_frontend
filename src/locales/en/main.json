@@ -597,6 +597,7 @@
     "templates": "Templates",
     "assets": "Assets",
     "mediaAssets": "Media Assets",
+    "backToAssets": "Back to all assets",
     "labels": {
       "queue": "Queue",
       "nodes": "Nodes",
@@ -2070,6 +2071,14 @@
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
+    }
+  },
+  "mediaAsset": {
+    "jobIdToast": {
+      "jobIdCopied": "Job ID copied to clipboard",
+      "jobIdCopyFailed": "Failed to copy Job ID",
+      "copied": "Copied",
+      "error": "Error"
     }
   },
   "actionbar": {
