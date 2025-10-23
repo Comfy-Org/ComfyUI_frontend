@@ -7,7 +7,6 @@ import {
   getAssetBaseModel,
   getAssetDescription
 } from '@/platform/assets/utils/assetMetadataUtils'
-import { formatSize } from '@/utils/formatUtil'
 
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
@@ -54,7 +53,6 @@ type AssetBadge = {
 // Display properties for transformed assets
 export interface AssetDisplayItem extends AssetItem {
   description: string
-  formattedSize: string
   badges: AssetBadge[]
   stats: {
     formattedDate?: string
@@ -85,9 +83,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       getAssetDescription(asset) ||
       `${typeTag || t('assetBrowser.unknown')} model`
 
-    // Format file size
-    const formattedSize = formatSize(asset.size)
-
     // Create badges from tags and metadata
     const badges: AssetBadge[] = []
 
@@ -105,9 +100,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       })
     }
 
-    // Size badge
-    badges.push({ label: formattedSize, type: 'size' })
-
     // Create display stats from API data
     const stats = {
       formattedDate: d(new Date(asset.created_at), { dateStyle: 'short' }),
@@ -118,7 +110,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return {
       ...asset,
       description,
-      formattedSize,
       badges,
       stats
     }
