@@ -1,6 +1,14 @@
 <template>
-  <div class="flex-auto rounded-sm bg-node-component-surface p-1">
-    {{ badgeText }}
+  <div
+    v-if="badgeData.icon || badgeData.text"
+    class="flex-auto rounded-sm bg-node-component-surface p-1"
+    :style="{
+      color: badgeData.fgColor,
+      backgroundColor: badgeData.bgColor
+    }"
+  >
+    <component :is="badgeData.icon" v-if="badgeData.icon" />
+    {{ badgeData.text }}
   </div>
 </template>
 <script setup lang="ts">
@@ -13,5 +21,5 @@ const { badge } = defineProps<{
   badge: MaybeRefOrGetter<LGraphBadge>
 }>()
 
-const badgeText = computed(() => toValue(badge).text)
+const badgeData = computed(() => toValue(badge))
 </script>
