@@ -2,7 +2,14 @@
   <CardContainer
     ref="cardContainerRef"
     role="button"
-    :aria-label="asset ? `${asset.name} - ${fileKind} asset` : 'Loading asset'"
+    :aria-label="
+      asset
+        ? $t('assetBrowser.ariaLabel.assetCard', {
+            name: asset.name,
+            type: fileKind
+          })
+        : $t('assetBrowser.ariaLabel.loadingAsset')
+    "
     :tabindex="loading ? -1 : 0"
     size="mini"
     variant="ghost"
@@ -82,7 +89,7 @@
           <IconTextButton
             type="secondary"
             size="sm"
-            :label="'0'"
+            label="0"
             @click.stop="actions.openMoreOutputs(asset?.id || '')"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
@@ -136,6 +143,7 @@ import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { getAssetType } from '../composables/useMediaAssets/assetMappers'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
@@ -188,9 +196,9 @@ const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
 
-// Get asset type from tags[0]
+// Get asset type from tags
 const assetType = computed(() => {
-  return (asset?.tags?.[0] as 'input' | 'output') || 'input'
+  return getAssetType(asset?.tags)
 })
 
 // Determine file type from extension
@@ -212,11 +220,7 @@ const adaptedAsset = computed(() => {
     duration: asset.user_metadata?.duration
       ? Number(asset.user_metadata.duration)
       : undefined,
-    dimensions:
-      imageDimensions.value ||
-      (asset.user_metadata?.dimensions as
-        | { width: number; height: number }
-        | undefined)
+    dimensions: imageDimensions.value
   }
 })
 
@@ -274,11 +278,6 @@ const showHoverActions = computed(
 )
 
 const showActionsOverlay = false
-// const showActionsOverlay = computed(
-//   () =>
-//     showHoverActions.value &&
-//     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-// )
 
 const showZoomOverlay = computed(
   () =>
@@ -327,7 +326,7 @@ const handleZoomClick = () => {
   }
 }
 
-const handleImageLoaded = (dimensions: { width: number; height: number }) => {
-  imageDimensions.value = dimensions
+const handleImageLoaded = (width: number, height: number) => {
+  imageDimensions.value = { width, height }
 }
 </script>

@@ -534,27 +534,6 @@ export function getMediaTypeFromFilename(
 }
 
 /**
- * @deprecated Use getMediaTypeFromFilename instead - returns plural form for legacy compatibility
- * @param filename The filename to analyze
- * @returns The media type in plural form: 'images', 'videos', 'audios', '3D'
- */
-export function getMediaTypeFromFilenamePlural(filename: string): string {
-  const type = getMediaTypeFromFilename(filename)
-  switch (type) {
-    case 'image':
-      return 'images'
-    case 'video':
-      return 'videos'
-    case 'audio':
-      return 'audios'
-    case '3D':
-      return '3D'
-    default:
-      return 'images'
-  }
-}
-
-/**
  * @deprecated Use getMediaTypeFromFilename instead - kept for backward compatibility
  * @param filename The filename to analyze
  * @returns The media kind: 'image', 'video', 'audio', or '3D'
