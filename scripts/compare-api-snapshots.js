@@ -206,9 +206,7 @@ function compareItems(prev, curr, category) {
       })
     }
 
-    if (
-      JSON.stringify(prev.parameters) !== JSON.stringify(curr.parameters)
-    ) {
+    if (JSON.stringify(prev.parameters) !== JSON.stringify(curr.parameters)) {
       differences.push({
         type: 'parameters_changed',
         from: prev.parameters,

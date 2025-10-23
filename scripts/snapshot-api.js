@@ -187,33 +187,23 @@ function extractApiSurface(sourceFile) {
   function hasExportModifier(node) {
     return (
       node.modifiers &&
-      node.modifiers.some(
-        (mod) => mod.kind === ts.SyntaxKind.ExportKeyword
-      )
+      node.modifiers.some((mod) => mod.kind === ts.SyntaxKind.ExportKeyword)
     )
   }
 
   function hasStaticModifier(node) {
     return (
       node.modifiers &&
-      node.modifiers.some(
-        (mod) => mod.kind === ts.SyntaxKind.StaticKeyword
-      )
+      node.modifiers.some((mod) => mod.kind === ts.SyntaxKind.StaticKeyword)
     )
   }
 
   function getVisibility(node) {
     if (!node.modifiers) return 'public'
-    if (
-      node.modifiers.some(
-        (mod) => mod.kind === ts.SyntaxKind.PrivateKeyword
-      )
-    )
+    if (node.modifiers.some((mod) => mod.kind === ts.SyntaxKind.PrivateKeyword))
       return 'private'
     if (
-      node.modifiers.some(
-        (mod) => mod.kind === ts.SyntaxKind.ProtectedKeyword
-      )
+      node.modifiers.some((mod) => mod.kind === ts.SyntaxKind.ProtectedKeyword)
     )
       return 'protected'
     return 'public'
