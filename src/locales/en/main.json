@@ -1219,6 +1219,15 @@
       "removeJob": "Remove job",
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
+    },
+    "jobDetails": {
+      "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
+      "eta": {
+        "seconds": "~{count} second | ~{count} seconds",
+        "secondsRange": "~{lo}-{hi} seconds",
+        "minutes": "~{count} minute | ~{count} minutes",
+        "minutesRange": "~{lo}-{hi} minutes"
+      }
     }
   },
   "menuLabels": {

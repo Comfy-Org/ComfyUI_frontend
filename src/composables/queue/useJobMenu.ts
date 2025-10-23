@@ -6,8 +6,13 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st } from '@/i18n'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type {
+  ExecutionErrorWsMessage,
+  ResultItem,
+  ResultItemType
+} from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -77,6 +82,27 @@ export function useJobMenu(
       await api.deleteItem('queue', item.id)
     }
     await queueStore.update()
+  }
+
+  const copyErrorMessage = async () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const msgs = item.taskRef?.status?.messages as any[] | undefined
+    const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
+      | ExecutionErrorWsMessage
+      | undefined
+    const message = err?.exception_message
+    if (message) await copyToClipboard(String(message))
+  }
+
+  const reportError = () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const msgs = item.taskRef?.status?.messages as any[] | undefined
+    const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
+      | ExecutionErrorWsMessage
+      | undefined
+    if (err) useDialogService().showExecutionErrorDialog(err)
   }
 
   // This is very magical only because it matches the respective backend implementation
@@ -232,13 +258,13 @@ export function useJobMenu(
           key: 'copy-error',
           label: st('queue.jobMenu.copyErrorMessage', 'Copy error message'),
           icon: 'icon-[lucide--copy]',
-          onClick: undefined
+          onClick: copyErrorMessage
         },
         {
           key: 'report-error',
           label: st('queue.jobMenu.reportError', 'Report error'),
           icon: 'icon-[lucide--message-circle-warning]',
-          onClick: undefined
+          onClick: reportError
         },
         { kind: 'divider', key: 'd2' },
         {
