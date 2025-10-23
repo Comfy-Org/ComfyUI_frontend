@@ -247,12 +247,7 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const {
-  position,
-  size,
-  zIndex,
-  moveTo: moveNodeTo
-} = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
