@@ -1186,12 +1186,10 @@ export class ComfyApp {
 
       const vueMode = useVueFeatureFlags().shouldRenderVueNodes.value
 
-      // Initialize extra if needed
       if (!this.graph.extra) {
         this.graph.extra = {}
       }
 
-      // Run overlap fix only if in Vue mode and not already scaled
       if (vueMode && !this.graph.extra.vueNodesScaled) {
         useFixVueNodeOverlap()
         this.graph.extra.vueNodesScaled = true

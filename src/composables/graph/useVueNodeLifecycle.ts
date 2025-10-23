@@ -81,12 +81,10 @@ function useVueNodeLifecycleIndividual() {
       if (enabled) {
         initializeNodeManager()
 
-        // Check flag before running overlap fix
         const graph = comfyApp.canvas.graph
         if (graph && !graph.extra) {
           graph.extra = {}
         }
-
         if (graph && !graph.extra.vueNodesScaled) {
           useFixVueNodeOverlap()
           graph.extra.vueNodesScaled = true
