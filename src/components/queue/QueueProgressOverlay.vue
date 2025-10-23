@@ -4,7 +4,7 @@
     :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
   >
     <div
-      class="pointer-events-auto w-[310px] min-w-[310px] rounded-lg border font-inter transition-colors duration-200 ease-in-out"
+      class="pointer-events-auto w-[350px] min-w-[310px] rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
