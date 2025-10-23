@@ -7,8 +7,9 @@ import { useInternalFilesApi } from './useInternalFilesApi'
 /**
  * Factory function that returns the appropriate media assets implementation
  * based on the current distribution (cloud vs internal)
+ * @param directory - The directory to fetch assets from
  * @returns IAssetsProvider implementation
  */
-export function useMediaAssets(): IAssetsProvider {
-  return isCloud ? useAssetsApi() : useInternalFilesApi()
+export function useMediaAssets(directory: 'input' | 'output'): IAssetsProvider {
+  return isCloud ? useAssetsApi(directory) : useInternalFilesApi(directory)
 }

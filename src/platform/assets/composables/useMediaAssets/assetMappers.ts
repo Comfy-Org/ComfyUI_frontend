@@ -1,7 +1,18 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
-import type { TaskItemImpl } from '@/stores/queueStore'
-import { truncateFilename } from '@/utils/formatUtil'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+
+/**
+ * Extract asset type from tags array
+ * @param tags The tags array from AssetItem
+ * @returns The asset type ('input' or 'output')
+ */
+export function getAssetType(tags?: string[]): AssetContext['type'] {
+  const tag = tags?.[0]
+  if (tag === 'output') return 'output'
+  return 'input'
+}
 
 /**
  * Maps a TaskItemImpl output to an AssetItem format
@@ -12,8 +23,7 @@ import { truncateFilename } from '@/utils/formatUtil'
  */
 export function mapTaskOutputToAssetItem(
   taskItem: TaskItemImpl,
-  output: any,
-  useDisplayName: boolean = false
+  output: ResultItemImpl
 ): AssetItem {
   const metadata: Record<string, any> = {
     promptId: taskItem.promptId,
@@ -36,16 +46,9 @@ export function mapTaskOutputToAssetItem(
     metadata.workflow = taskItem.workflow
   }
 
-  // Store original filename if using display name
-  if (useDisplayName) {
-    metadata.originalFilename = output.filename
-  }
-
   return {
     id: `${taskItem.promptId}-${output.nodeId}-${output.filename}`,
-    name: useDisplayName
-      ? truncateFilename(output.filename, 20)
-      : output.filename,
+    name: output.filename,
     size: 0, // Size not available from history API
     created_at: taskItem.executionStartTimestamp
       ? new Date(taskItem.executionStartTimestamp).toISOString()

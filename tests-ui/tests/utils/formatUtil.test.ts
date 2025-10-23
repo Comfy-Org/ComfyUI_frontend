@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  getMediaTypeFromFilename,
-  getMediaTypeFromFilenamePlural,
-  truncateFilename
-} from '@/utils/formatUtil'
+import { getMediaTypeFromFilename, truncateFilename } from '@/utils/formatUtil'
 
 describe('formatUtil', () => {
   describe('truncateFilename', () => {
@@ -115,33 +111,28 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('/path/to/image.png')).toBe('image')
         expect(getMediaTypeFromFilename('C:\\Windows\\video.mp4')).toBe('video')
       })
-    })
-  })
 
-  describe('getMediaTypeFromFilenamePlural', () => {
-    it('should return plural form for images', () => {
-      expect(getMediaTypeFromFilenamePlural('test.png')).toBe('images')
-      expect(getMediaTypeFromFilenamePlural('photo.jpg')).toBe('images')
-    })
+      it('should handle null and undefined gracefully', () => {
+        expect(getMediaTypeFromFilename(null as any)).toBe('image')
+        expect(getMediaTypeFromFilename(undefined as any)).toBe('image')
+      })
 
-    it('should return plural form for videos', () => {
-      expect(getMediaTypeFromFilenamePlural('video.mp4')).toBe('videos')
-      expect(getMediaTypeFromFilenamePlural('clip.webm')).toBe('videos')
-    })
+      it('should handle special characters in filenames', () => {
+        expect(getMediaTypeFromFilename('test@#$.png')).toBe('image')
+        expect(getMediaTypeFromFilename('video (1).mp4')).toBe('video')
+        expect(getMediaTypeFromFilename('[2024] audio.mp3')).toBe('audio')
+      })
 
-    it('should return plural form for audios', () => {
-      expect(getMediaTypeFromFilenamePlural('song.mp3')).toBe('audios')
-      expect(getMediaTypeFromFilenamePlural('sound.wav')).toBe('audios')
-    })
+      it('should handle very long filenames', () => {
+        const longFilename = 'a'.repeat(1000) + '.png'
+        expect(getMediaTypeFromFilename(longFilename)).toBe('image')
+      })
 
-    it('should return 3D as is (no plural)', () => {
-      expect(getMediaTypeFromFilenamePlural('model.obj')).toBe('3D')
-      expect(getMediaTypeFromFilenamePlural('scene.fbx')).toBe('3D')
-    })
-
-    it('should default to images for unknown types', () => {
-      expect(getMediaTypeFromFilenamePlural('document.pdf')).toBe('images')
-      expect(getMediaTypeFromFilenamePlural('')).toBe('images')
+      it('should handle mixed case extensions', () => {
+        expect(getMediaTypeFromFilename('test.PnG')).toBe('image')
+        expect(getMediaTypeFromFilename('video.Mp4')).toBe('video')
+        expect(getMediaTypeFromFilename('audio.WaV')).toBe('audio')
+      })
     })
   })
 })

@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { useAsyncState } from '@vueuse/core'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
@@ -10,75 +10,75 @@ import {
 } from './assetMappers'
 
 /**
- * Composable for fetching media assets from local environment
- * Uses the same logic as QueueSidebarTab for history processing
+ * Fetch input directory files from the internal API
  */
-export function useInternalFilesApi() {
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+async function fetchInputFiles(directory: string): Promise<AssetItem[]> {
+  const response = await fetch(api.internalURL(`/files/${directory}`), {
+    headers: {
+      'Comfy-User': api.user
+    }
+  })
 
-  /**
-   * Fetch list of files from input or output directory with execution time
-   * @param directory - 'input' or 'output'
-   * @returns Array of AssetItem with execution time in user_metadata
-   */
-  const fetchMediaList = async (
-    directory: 'input' | 'output'
-  ): Promise<AssetItem[]> => {
-    loading.value = true
-    error.value = null
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${directory} files`)
+  }
 
-    try {
-      // For input directory, fetch files without history
-      if (directory === 'input') {
-        const response = await fetch(api.internalURL(`/files/${directory}`), {
-          headers: {
-            'Comfy-User': api.user
-          }
-        })
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${directory} files`)
-        }
-        const filenames: string[] = await response.json()
+  const filenames: string[] = await response.json()
+  return filenames.map((name, index) =>
+    mapInputFileToAssetItem(name, index, directory as 'input')
+  )
+}
 
-        return filenames.map((name, index) =>
-          mapInputFileToAssetItem(name, index, directory)
-        )
-      }
+/**
+ * Fetch output files from the queue store
+ */
+function fetchOutputFiles(): AssetItem[] {
+  const queueStore = useQueueStore()
+  return queueStore.flatTasks
+    .filter((task) => task.previewOutput && task.displayStatus === 'Completed')
+    .map((task) => {
+      const output = task.previewOutput!
+      return mapTaskOutputToAssetItem(task, output)
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+}
 
-      const queueStore = useQueueStore()
-
-      const assetItems: AssetItem[] = queueStore.flatTasks
-        .filter(
-          (task) => task.previewOutput && task.displayStatus === 'Completed'
-        )
-        .map((task) => {
-          const output = task.previewOutput!
-          return mapTaskOutputToAssetItem(
-            task,
-            output,
-            false // Don't use display name for internal
-          )
-        })
-
-      // Sort by creation date (newest first)
-      return assetItems.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-      console.error(`Error fetching ${directory} assets:`, errorMessage)
-      error.value = errorMessage
-      return []
-    } finally {
-      loading.value = false
+/**
+ * Composable for fetching media assets from local environment
+ * Creates an independent instance for each directory
+ */
+export function useInternalFilesApi(directory: 'input' | 'output') {
+  const fetchAssets = async (): Promise<AssetItem[]> => {
+    if (directory === 'input') {
+      return fetchInputFiles(directory)
+    } else {
+      return fetchOutputFiles()
     }
   }
 
+  const {
+    state: media,
+    isLoading: loading,
+    error,
+    execute: fetchMediaList
+  } = useAsyncState(fetchAssets, [], {
+    immediate: false,
+    resetOnExecute: false,
+    onError: (err) => {
+      console.error(`Error fetching ${directory} assets:`, err)
+    }
+  })
+
+  const refresh = () => fetchMediaList()
+
   return {
+    media,
     loading,
     error,
-    fetchMediaList
+    fetchMediaList,
+    refresh
   }
 }
