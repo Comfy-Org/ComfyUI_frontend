@@ -7,12 +7,28 @@ import { isCloud } from '@/platform/distribution/types'
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
 
 /**
+ * Trigger a download by creating a temporary anchor element
+ * @param href - The URL or blob URL to download
+ * @param filename - The filename to suggest to the browser
+ */
+function triggerLinkDownload(href: string, filename: string): void {
+  const link = document.createElement('a')
+  link.href = href
+  link.download = filename
+  link.style.display = 'none'
+
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+/**
  * Download a file from a URL by creating a temporary anchor element
  * @param url - The URL of the file to download (must be a valid URL string)
  * @param filename - Optional filename override (will use URL filename or default if not provided)
  * @throws {Error} If the URL is invalid or empty
  */
-export const downloadFile = (url: string, filename?: string): void => {
+export function downloadFile(url: string, filename?: string): void {
   if (!url || typeof url !== 'string' || url.trim().length === 0) {
     throw new Error('Invalid URL provided for download')
   }
@@ -28,12 +44,7 @@ export const downloadFile = (url: string, filename?: string): void => {
     return
   }
 
-  const link = document.createElement('a')
-  link.href = url
-  link.download = inferredFilename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  triggerLinkDownload(url, inferredFilename)
 }
 
 /**
@@ -41,18 +52,10 @@ export const downloadFile = (url: string, filename?: string): void => {
  * @param filename - The filename to suggest to the browser
  * @param blob - The Blob to download
  */
-export const downloadBlob = (filename: string, blob: Blob): void => {
+export function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob)
 
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.style.display = 'none'
-
-  // Trigger download
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  triggerLinkDownload(url, filename)
 
   // Revoke on the next microtask to give the browser time to start the download
   queueMicrotask(() => URL.revokeObjectURL(url))
