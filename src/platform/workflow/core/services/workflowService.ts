@@ -1,5 +1,6 @@
 import { toRaw } from 'vue'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
@@ -14,7 +15,6 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
