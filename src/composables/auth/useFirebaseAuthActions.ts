@@ -1,9 +1,14 @@
 import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
@@ -51,6 +56,16 @@ export const useFirebaseAuthActions = () => {
       detail: t('auth.signOut.successDetail'),
       life: 5000
     })
+
+    if (isCloud) {
+      try {
+        const router = useRouter()
+        await router.push({ name: 'cloud-login' })
+      } catch (error) {
+        // needed for local development until we bring in cloud login pages.
+        window.location.reload()
+      }
+    }
   }, reportError)
 
   const sendPasswordReset = wrapWithErrorHandlingAsync(
@@ -122,6 +137,47 @@ export const useFirebaseAuthActions = () => {
     reportError
   )
 
+  /**
+   * Recovery strategy for Firebase auth/requires-recent-login errors.
+   * Prompts user to reauthenticate and retries the operation after successful login.
+   */
+  const createReauthenticationRecovery = <
+    TArgs extends unknown[],
+    TReturn
+  >(): ErrorRecoveryStrategy<TArgs, TReturn> => {
+    const dialogService = useDialogService()
+
+    return {
+      shouldHandle: (error: unknown) =>
+        error instanceof FirebaseError &&
+        error.code === AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN,
+
+      recover: async (
+        _error: unknown,
+        retry: (...args: TArgs) => Promise<TReturn> | TReturn,
+        args: TArgs
+      ) => {
+        const confirmed = await dialogService.confirm({
+          title: t('auth.reauthRequired.title'),
+          message: t('auth.reauthRequired.message'),
+          type: 'default'
+        })
+
+        if (!confirmed) {
+          return
+        }
+
+        await authStore.logout()
+
+        const signedIn = await dialogService.showSignInDialog()
+
+        if (signedIn) {
+          await retry(...args)
+        }
+      }
+    }
+  }
+
   const updatePassword = wrapWithErrorHandlingAsync(
     async (newPassword: string) => {
       await authStore.updatePassword(newPassword)
@@ -132,18 +188,25 @@ export const useFirebaseAuthActions = () => {
         life: 5000
       })
     },
-    reportError
+    reportError,
+    undefined,
+    [createReauthenticationRecovery<[string], void>()]
   )
 
-  const deleteAccount = wrapWithErrorHandlingAsync(async () => {
-    await authStore.deleteAccount()
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.deleteAccount.success'),
-      detail: t('auth.deleteAccount.successDetail'),
-      life: 5000
-    })
-  }, reportError)
+  const deleteAccount = wrapWithErrorHandlingAsync(
+    async () => {
+      await authStore.deleteAccount()
+      toastStore.add({
+        severity: 'success',
+        summary: t('auth.deleteAccount.success'),
+        detail: t('auth.deleteAccount.successDetail'),
+        life: 5000
+      })
+    },
+    reportError,
+    undefined,
+    [createReauthenticationRecovery<[], void>()]
+  )
 
   return {
     logout,
@@ -157,6 +220,7 @@ export const useFirebaseAuthActions = () => {
     signUpWithEmail,
     updatePassword,
     deleteAccount,
-    accessError
+    accessError,
+    reportError
   }
 }

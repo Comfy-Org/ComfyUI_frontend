@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "Использовать новое меню",
     "options": {
-      "Bottom": "Внизу",
       "Disabled": "Отключено",
       "Top": "Вверху"
     },
@@ -384,8 +383,7 @@
     "name": "Положение открытых рабочих процессов",
     "options": {
       "Sidebar": "Боковая панель",
-      "Topbar": "Верхняя панель",
-      "Topbar (2nd-row)": "Топбар (2-й ряд)"
+      "Topbar": "Верхняя панель"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "Yeni menüyü kullan",
     "options": {
-      "Bottom": "Alt",
       "Disabled": "Devre dışı",
       "Top": "Üst"
     },
@@ -384,8 +383,7 @@
     "name": "Açılan iş akışları konumu",
     "options": {
       "Sidebar": "Kenar Çubuğu",
-      "Topbar": "Üst Çubuk",
-      "Topbar (2nd-row)": "Üst Çubuk (2. sıra)"
+      "Topbar": "Üst Çubuk"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

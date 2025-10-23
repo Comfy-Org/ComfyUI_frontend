@@ -5,6 +5,7 @@
       value: item.label,
       showDelay: 512
     }"
+    draggable="false"
     href="#"
     class="p-breadcrumb-item-link h-12 cursor-pointer px-2"
     :class="{
@@ -38,7 +39,7 @@
     ref="itemInputRef"
     v-model="itemLabel"
     class="fixed z-10000 px-2 py-2 text-[.8rem]"
-    @blur="inputBlur(true)"
+    @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"
     @keydown.esc="inputBlur(false)"

@@ -16,15 +16,12 @@ const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: vi.fn(() => ({
-    getRegisteredNodeTypes: vi.fn(
-      () =>
-        new Set([
-          'CheckpointLoaderSimple',
-          'LoraLoader',
-          'VAELoader',
-          'TestNode'
-        ])
-    ),
+    getRegisteredNodeTypes: vi.fn(() => ({
+      CheckpointLoaderSimple: 'ckpt_name',
+      LoraLoader: 'lora_name',
+      VAELoader: 'vae_name',
+      TestNode: ''
+    })),
     getCategoryForNodeType: mockGetCategoryForNodeType,
     modelToNodeMap: {
       checkpoints: [{ nodeDef: { name: 'CheckpointLoaderSimple' } }],
@@ -191,19 +188,19 @@ describe('assetService', () => {
   })
 
   describe('isAssetBrowserEligible', () => {
-    it('should return true for registered node types', () => {
-      expect(
-        assetService.isAssetBrowserEligible('CheckpointLoaderSimple')
-      ).toBe(true)
-      expect(assetService.isAssetBrowserEligible('LoraLoader')).toBe(true)
-      expect(assetService.isAssetBrowserEligible('VAELoader')).toBe(true)
-    })
-
-    it('should return false for unregistered node types', () => {
-      expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('NotRegistered')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('')).toBe(false)
-    })
+    it.for<[string, string, boolean, string]>([
+      ['CheckpointLoaderSimple', 'ckpt_name', true, 'valid inputs'],
+      ['LoraLoader', 'lora_name', true, 'valid inputs'],
+      ['VAELoader', 'vae_name', true, 'valid inputs'],
+      ['CheckpointLoaderSimple', 'type', false, 'other combo widgets'],
+      ['UnknownNode', 'widget', false, 'unregistered types'],
+      ['NotRegistered', 'widget', false, 'unregistered types']
+    ])(
+      'isAssetBrowserEligible("%s", "%s") should return %s for %s',
+      ([type, name, expected]) => {
+        expect(assetService.isAssetBrowserEligible(type, name)).toBe(expected)
+      }
+    )
   })
 
   describe('getAssetsForNodeType', () => {
@@ -297,7 +294,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetsByTag('models')
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models&limit=500'
+        '/assets?include_tags=models&limit=500&include_public=true'
       )
       expect(result).toEqual(testAssets)
     })
@@ -354,6 +351,30 @@ describe('assetService', () => {
       expect(result[0]).toEqual(fullAsset)
       expect(result[0]).toHaveProperty('asset_hash', 'blake3:full123')
       expect(result[0]).toHaveProperty('user_metadata')
+    })
+
+    it('should exclude public assets when includePublic is false', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('input', false)
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=input&limit=500&include_public=false'
+      )
+      expect(result).toEqual(testAssets)
+    })
+
+    it('should include public assets when includePublic is true', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints, MOCK_ASSETS.loras]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('models', true)
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models&limit=500&include_public=true'
+      )
+      expect(result).toEqual(testAssets)
     })
   })
 })

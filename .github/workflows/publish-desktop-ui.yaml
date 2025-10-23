@@ -44,6 +44,7 @@ jobs:
       contents: read
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      ENABLE_MINIFY: 'true'
     steps:
       - name: Validate inputs
         env:
@@ -159,20 +160,6 @@ jobs:
 
           echo "publish_dir=$PUBLISH_DIR" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
-
-      - name: Pack (preview only)
-        shell: bash
-        working-directory: ${{ steps.pkg.outputs.publish_dir }}
-        run: |
-          set -euo pipefail
-          npm pack --json | tee pack-result.json
-
-      - name: Upload package tarball artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-ui-npm-tarball-${{ inputs.version }}
-          path: ${{ steps.pkg.outputs.publish_dir }}/*.tgz
-          if-no-files-found: error
 
       - name: Check if version already on npm
         id: check_npm

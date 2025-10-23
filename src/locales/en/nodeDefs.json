@@ -1532,10 +1532,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -10373,6 +10375,11 @@
       "type": {
         "name": "type"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceDiT": {
@@ -11280,6 +11287,29 @@
     "inputs": {
       "model": {
         "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
+  "TemporalScoreRescaling": {
+    "display_name": "TSR - Temporal Score Rescaling",
+    "description": "[Post-CFG Function]\nTSR - Temporal Score Rescaling (2510.01184)\n\nRescaling the model's score or noise to steer the sampling diversity.\n",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "tsr_k": {
+        "name": "tsr_k",
+        "tooltip": "Controls the rescaling strength.\nLower k produces more detailed results; higher k produces smoother results in image generation. Setting k = 1 disables rescaling."
+      },
+      "tsr_sigma": {
+        "name": "tsr_sigma",
+        "tooltip": "Controls how early rescaling takes effect.\nLarger values take effect earlier."
       }
     },
     "outputs": {

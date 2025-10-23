@@ -3,7 +3,7 @@
   <div class="px-2 py-4">
     <img
       src="/assets/images/comfy-logo-single.svg"
-      alt="ComfyOrg Logo"
+      :alt="$t('g.comfyOrgLogoAlt')"
       width="32"
       height="32"
     />

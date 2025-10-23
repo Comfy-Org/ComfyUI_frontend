@@ -1,4 +1,5 @@
 import { merge } from 'es-toolkit/compat'
+import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
@@ -13,6 +14,7 @@ import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordCon
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -485,6 +487,37 @@ export const useDialogService = () => {
     })
   }
 
+  function showSubscriptionRequiredDialog() {
+    if (!isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION) {
+      return
+    }
+
+    dialogStore.showDialog({
+      key: 'subscription-required',
+      component: defineAsyncComponent(
+        () =>
+          import(
+            '@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue'
+          )
+      ),
+      props: {
+        onClose: () => {
+          dialogStore.closeDialog({ key: 'subscription-required' })
+        }
+      },
+      dialogComponentProps: {
+        closable: true,
+        style: 'width: 700px;',
+        pt: {
+          header: { class: '!p-0 !m-0' },
+          content: {
+            class: 'overflow-hidden !p-0 !m-0'
+          }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -495,6 +528,7 @@ export const useDialogService = () => {
     showManagerProgressDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
+    showSubscriptionRequiredDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,

@@ -334,7 +334,6 @@
   "Comfy_UseNewMenu": {
     "name": "使用新選單",
     "options": {
-      "Bottom": "下方",
       "Disabled": "停用",
       "Top": "上方"
     },
@@ -384,8 +383,7 @@
     "name": "已開啟工作流程的位置",
     "options": {
       "Sidebar": "側邊欄",
-      "Topbar": "頂部欄",
-      "Topbar (2nd-row)": "頂部欄（第二列）"
+      "Topbar": "頂部欄"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

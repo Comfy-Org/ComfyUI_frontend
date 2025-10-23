@@ -474,3 +474,72 @@ export function formatDuration(milliseconds: number): string {
 
   return parts.join(' ')
 }
+
+// Module scope constants to avoid re-initialization on every call
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']
+const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi']
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac']
+const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb']
+
+/**
+ * Truncates a filename while preserving the extension
+ * @param filename The filename to truncate
+ * @param maxLength Maximum length for the filename without extension
+ * @returns Truncated filename with extension preserved
+ */
+export function truncateFilename(
+  filename: string,
+  maxLength: number = 20
+): string {
+  if (!filename || filename.length <= maxLength) {
+    return filename
+  }
+
+  const lastDotIndex = filename.lastIndexOf('.')
+  const nameWithoutExt =
+    lastDotIndex > -1 ? filename.substring(0, lastDotIndex) : filename
+  const extension = lastDotIndex > -1 ? filename.substring(lastDotIndex) : ''
+
+  // If the name without extension is short enough, return as is
+  if (nameWithoutExt.length <= maxLength) {
+    return filename
+  }
+
+  // Calculate how to split the truncation
+  const halfLength = Math.floor((maxLength - 3) / 2) // -3 for '...'
+  const start = nameWithoutExt.substring(0, halfLength)
+  const end = nameWithoutExt.substring(nameWithoutExt.length - halfLength)
+
+  return `${start}...${end}${extension}`
+}
+
+/**
+ * Determines the media type from a filename's extension (singular form)
+ * @param filename The filename to analyze
+ * @returns The media type: 'image', 'video', 'audio', or '3D'
+ */
+export function getMediaTypeFromFilename(
+  filename: string
+): 'image' | 'video' | 'audio' | '3D' {
+  if (!filename) return 'image'
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (!ext) return 'image'
+
+  if (IMAGE_EXTENSIONS.includes(ext)) return 'image'
+  if (VIDEO_EXTENSIONS.includes(ext)) return 'video'
+  if (AUDIO_EXTENSIONS.includes(ext)) return 'audio'
+  if (THREE_D_EXTENSIONS.includes(ext)) return '3D'
+
+  return 'image'
+}
+
+/**
+ * @deprecated Use getMediaTypeFromFilename instead - kept for backward compatibility
+ * @param filename The filename to analyze
+ * @returns The media kind: 'image', 'video', 'audio', or '3D'
+ */
+export function getMediaKindFromFilename(
+  filename: string
+): 'image' | 'video' | 'audio' | '3D' {
+  return getMediaTypeFromFilename(filename)
+}

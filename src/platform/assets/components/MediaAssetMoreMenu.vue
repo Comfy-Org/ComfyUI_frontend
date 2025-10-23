@@ -63,6 +63,7 @@
     <MediaAssetButtonDivider v-if="showWorkflowOptions" />
 
     <IconTextButton
+      v-if="showCopyJobId"
       type="transparent"
       class="dark-theme:text-white"
       label="Copy job ID"
@@ -73,7 +74,7 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider />
+    <MediaAssetButtonDivider v-if="showCopyJobId" />
 
     <IconTextButton
       type="transparent"
@@ -94,7 +95,6 @@ import { computed, inject } from 'vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetButtonDivider from './MediaAssetButtonDivider.vue'
 
@@ -102,16 +102,23 @@ const { close } = defineProps<{
   close: () => void
 }>()
 
+const emit = defineEmits<{
+  inspect: []
+}>()
+
 const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
-const galleryStore = useMediaAssetGalleryStore()
 
 const showWorkflowOptions = computed(() => context.value.type)
 
+// Only show Copy Job ID for output assets (not for imported/input assets)
+const showCopyJobId = computed(() => {
+  const assetType = asset.value?.tags?.[0] || context.value?.type
+  return assetType !== 'input'
+})
+
 const handleInspect = () => {
-  if (asset.value) {
-    galleryStore.openSingle(asset.value)
-  }
+  emit('inspect')
   close()
 }
 
@@ -124,7 +131,7 @@ const handleAddToWorkflow = () => {
 
 const handleDownload = () => {
   if (asset.value) {
-    actions.downloadAsset(asset.value.id)
+    actions.downloadAsset()
   }
   close()
 }
@@ -143,9 +150,9 @@ const handleExportWorkflow = () => {
   close()
 }
 
-const handleCopyJobId = () => {
+const handleCopyJobId = async () => {
   if (asset.value) {
-    actions.copyAssetUrl(asset.value.id)
+    await actions.copyJobId()
   }
   close()
 }

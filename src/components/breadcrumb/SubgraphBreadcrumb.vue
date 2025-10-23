@@ -17,7 +17,8 @@
       ref="breadcrumbRef"
       class="w-fit rounded-lg p-0"
       :model="items"
-      aria-label="Graph navigation"
+      :pt="{ item: { class: 'pointer-events-auto' } }"
+      :aria-label="$t('g.graphNavigation')"
     >
       <template #item="{ item }">
         <SubgraphBreadcrumbItem

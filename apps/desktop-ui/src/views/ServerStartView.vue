@@ -2,14 +2,14 @@
   <BaseViewTemplate dark>
     <div class="relative min-h-screen">
       <!-- Terminal Background Layer (always visible during loading) -->
-      <div v-if="!isError" class="fixed inset-0 overflow-hidden z-0">
+      <div v-if="!isError" class="fixed inset-0 z-0 overflow-hidden">
         <div class="h-full w-full">
           <BaseTerminal @created="terminalCreated" />
         </div>
       </div>
 
       <!-- Semi-transparent overlay -->
-      <div v-if="!isError" class="fixed inset-0 bg-neutral-900/80 z-5"></div>
+      <div v-if="!isError" class="fixed inset-0 z-5 bg-neutral-900/80"></div>
 
       <!-- Smooth radial gradient overlay -->
       <div
@@ -45,9 +45,9 @@
         <!-- Error Section (positioned at bottom) -->
         <div
           v-if="isError"
-          class="absolute bottom-20 left-0 right-0 flex flex-col items-center gap-4"
+          class="absolute right-0 bottom-20 left-0 flex flex-col items-center gap-4"
         >
-          <div class="flex gap-4 justify-center">
+          <div class="flex justify-center gap-4">
             <Button
               icon="pi pi-flag"
               :label="$t('serverStart.reportIssue')"
@@ -66,26 +66,15 @@
               @click="troubleshoot"
             />
           </div>
-
-          <div class="text-center">
-            <button
-              v-if="!terminalVisible"
-              class="text-sm text-neutral-500 hover:text-neutral-300 transition-colors flex items-center gap-2 mx-auto"
-              @click="terminalVisible = true"
-            >
-              <i class="pi pi-search"></i>
-              {{ $t('serverStart.showTerminal') }}
-            </button>
-          </div>
         </div>
 
         <!-- Terminal Output (positioned at bottom when manually toggled in error state) -->
         <div
           v-if="terminalVisible && isError"
-          class="absolute bottom-4 left-4 right-4 max-w-4xl mx-auto z-10"
+          class="absolute right-4 bottom-4 left-4 z-10 mx-auto max-w-4xl"
         >
           <div
-            class="bg-neutral-900/95 rounded-lg p-4 border border-neutral-700 h-[300px]"
+            class="h-[300px] rounded-lg border border-neutral-700 bg-neutral-900/95 p-4"
           >
             <BaseTerminal @created="terminalCreated" />
           </div>
@@ -96,11 +85,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  InstallStage,
-  type InstallStageInfo,
-  type InstallStageName,
-  ProgressStatus
+import { InstallStage, ProgressStatus } from '@comfyorg/comfyui-electron-types'
+import type {
+  InstallStageInfo,
+  InstallStageName
 } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'

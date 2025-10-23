@@ -1,24 +1,19 @@
 <template>
-  <div
-    v-if="!workspaceStore.focusMode"
-    class="pointer-events-none ml-2 flex gap-4 pt-2 pr-2"
-  >
-    <div class="pointer-events-auto min-w-0 flex-1">
+  <div v-if="!workspaceStore.focusMode" class="ml-2 flex pt-2">
+    <div class="min-w-0 flex-1">
       <SubgraphBreadcrumb />
     </div>
 
-    <div class="pointer-events-none flex flex-col items-end gap-2">
+    <div class="flex flex-col items-end gap-2">
       <div
-        class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg px-2 shadow-md"
-      >
-        <div
-          ref="legacyCommandsContainerRef"
-          class="[&:not(:has(*>*:not(:empty)))]:hidden"
-        ></div>
-        <ComfyActionbar />
+        ref="legacyCommandsContainerRef"
+        class="[&:not(:has(*>*:not(:empty)))]:hidden"
+      ></div>
+      <ComfyActionbar />
+      <template v-if="isDesktop">
         <LoginButton v-if="!isLoggedIn" />
         <CurrentUserButton v-else class="shrink-0" />
-      </div>
+      </template>
       <QueueProgressOverlay />
     </div>
   </div>
@@ -35,9 +30,11 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const { isLoggedIn } = useCurrentUser()
+const isDesktop = isElectron()
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()

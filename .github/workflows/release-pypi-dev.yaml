@@ -25,17 +25,6 @@ jobs:
           node-version: 'lts/*'
           cache: 'pnpm'
 
-      - name: Cache tool outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache
-            dist
-            tsconfig.tsbuildinfo
-          key: dev-release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            dev-release-tools-cache-${{ runner.os }}-
-
       - name: Get current version
         id: current_version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
@@ -44,6 +33,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+          ENABLE_MINIFY: 'true'
           USE_PROD_CONFIG: 'true'
         run: |
           pnpm install --frozen-lockfile
