@@ -20,6 +20,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
+  LGraphBadge,
   LGraphNode,
   LGraphTriggerAction,
   LGraphTriggerEvent,
@@ -52,6 +53,7 @@ export interface VueNodeData {
   selected: boolean
   executing: boolean
   apiNode?: boolean
+  badges?: (LGraphBadge | (() => LGraphBadge))[]
   subgraphId?: string | null
   widgets?: SafeWidgetData[]
   inputs?: INodeInputSlot[]
@@ -194,6 +196,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       'Unknown'
 
     const apiNode = node.constructor?.nodeData?.api_node ?? false
+    const badges = node.badges
 
     return {
       id: String(node.id),
@@ -204,6 +207,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       executing: false, // Will be updated separately based on execution state
       subgraphId,
       apiNode,
+      badges,
       hasErrors: !!node.has_errors,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
