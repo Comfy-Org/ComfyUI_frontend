@@ -137,11 +137,13 @@ vi.mock('@/platform/assets/components/AssetGrid.vue', () => ({
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key
+    t: (key: string, params?: Record<string, string>) =>
+      params ? `${key}:${JSON.stringify(params)}` : key
   }),
   createI18n: () => ({
     global: {
-      t: (key: string) => key
+      t: (key: string, params?: Record<string, string>) =>
+        params ? `${key}:${JSON.stringify(params)}` : key
     }
   })
 }))
