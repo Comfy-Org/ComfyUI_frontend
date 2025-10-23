@@ -16,15 +16,12 @@ const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: vi.fn(() => ({
-    getRegisteredNodeTypes: vi.fn(
-      () =>
-        new Set([
-          'CheckpointLoaderSimple',
-          'LoraLoader',
-          'VAELoader',
-          'TestNode'
-        ])
-    ),
+    getRegisteredNodeTypes: vi.fn(() => ({
+      CheckpointLoaderSimple: 'ckpt_name',
+      LoraLoader: 'lora_name',
+      VAELoader: 'vae_name',
+      TestNode: ''
+    })),
     getCategoryForNodeType: mockGetCategoryForNodeType,
     modelToNodeMap: {
       checkpoints: [{ nodeDef: { name: 'CheckpointLoaderSimple' } }],
@@ -191,19 +188,19 @@ describe('assetService', () => {
   })
 
   describe('isAssetBrowserEligible', () => {
-    it('should return true for registered node types', () => {
-      expect(
-        assetService.isAssetBrowserEligible('CheckpointLoaderSimple')
-      ).toBe(true)
-      expect(assetService.isAssetBrowserEligible('LoraLoader')).toBe(true)
-      expect(assetService.isAssetBrowserEligible('VAELoader')).toBe(true)
-    })
-
-    it('should return false for unregistered node types', () => {
-      expect(assetService.isAssetBrowserEligible('UnknownNode')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('NotRegistered')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('')).toBe(false)
-    })
+    it.for<[string, string, boolean, string]>([
+      ['CheckpointLoaderSimple', 'ckpt_name', true, 'valid inputs'],
+      ['LoraLoader', 'lora_name', true, 'valid inputs'],
+      ['VAELoader', 'vae_name', true, 'valid inputs'],
+      ['CheckpointLoaderSimple', 'type', false, 'other combo widgets'],
+      ['UnknownNode', 'widget', false, 'unregistered types'],
+      ['NotRegistered', 'widget', false, 'unregistered types']
+    ])(
+      'isAssetBrowserEligible("%s", "%s") should return %s for %s',
+      ([type, name, expected]) => {
+        expect(assetService.isAssetBrowserEligible(type, name)).toBe(expected)
+      }
+    )
   })
 
   describe('getAssetsForNodeType', () => {
