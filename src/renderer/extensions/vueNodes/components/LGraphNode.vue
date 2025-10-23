@@ -9,7 +9,7 @@
     :class="
       cn(
         'bg-node-component-surface',
-        'lg-node absolute rounded-2xl touch-none flex flex-col',
+        'lg-node absolute rounded-2xl touch-none flex flex-col group',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -286,7 +286,7 @@ onMounted(() => {
 })
 
 const baseResizeHandleClasses =
-  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-3 w-3 opacity-0 group-hover:opacity-100 hover:bg-white hover:opacity-20 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 transition-opacity duration-200'
 const POSITION_EPSILON = 0.01
 
 type CornerResizeHandle = {
