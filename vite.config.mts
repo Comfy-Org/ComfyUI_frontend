@@ -27,8 +27,14 @@ const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
 const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
 
-const DISTRIBUTION = (process.env.DISTRIBUTION ||
-  (IS_CLOUD_URL ? 'cloud' : 'localhost')) as 'desktop' | 'localhost' | 'cloud'
+const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
+  process.env.DISTRIBUTION === 'desktop' ||
+  process.env.DISTRIBUTION === 'localhost' ||
+  process.env.DISTRIBUTION === 'cloud'
+    ? process.env.DISTRIBUTION
+    : IS_CLOUD_URL
+      ? 'cloud'
+      : 'localhost'
 
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
@@ -43,39 +49,9 @@ const DEV_SEVER_FALLBACK_URL =
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 
-// Optional: Add API key to .env as STAGING_API_KEY if needed for cloud authentication
-const addAuthHeaders = (proxy: any) => {
-  proxy.on('proxyReq', (proxyReq: any, _req: any, _res: any) => {
-    const apiKey = process.env.STAGING_API_KEY
-    if (apiKey) {
-      proxyReq.setHeader('X-API-KEY', apiKey)
-    }
-  })
-}
-
-// Cloud endpoint configuration overrides
-const cloudSecureConfig =
-  DISTRIBUTION === 'cloud'
-    ? {
-        secure: false
-      }
-    : {}
-
+// Cloud proxy configuration
 const cloudProxyConfig =
-  DISTRIBUTION === 'cloud'
-    ? {
-        ...cloudSecureConfig,
-        changeOrigin: true
-      }
-    : {}
-
-const cloudProxyConfigWithAuth =
-  DISTRIBUTION === 'cloud'
-    ? {
-        ...cloudProxyConfig,
-        configure: addAuthHeaders
-      }
-    : {}
+  DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
 const BUILD_FLAGS = {
   REQUIRE_SUBSCRIPTION: process.env.REQUIRE_SUBSCRIPTION === 'true'
@@ -105,12 +81,12 @@ export default defineConfig({
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfigWithAuth
+        ...cloudProxyConfig
       },
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfigWithAuth,
+        ...cloudProxyConfig,
         bypass: (req, res, _options) => {
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
@@ -133,26 +109,24 @@ export default defineConfig({
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...cloudProxyConfigWithAuth
+        ...cloudProxyConfig
       },
 
       '/workflow_templates': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfigWithAuth
+        ...cloudProxyConfig
       },
 
-      // Proxy extension assets (images/videos) under /extensions to the ComfyUI backend
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudSecureConfig
+        ...cloudProxyConfig
       },
 
-      // Proxy docs markdown from backend
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudSecureConfig
+        ...cloudProxyConfig
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
