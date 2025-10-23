@@ -87,6 +87,15 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('rel="noopener noreferrer"')
     })
 
+    it('should handle bare URLs (autolinks)', () => {
+      const markdown = 'Visit https://example.com for more info.'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).toContain('href="https://example.com"')
+      expect(html).toContain('target="_blank"')
+      expect(html).toContain('rel="noopener noreferrer"')
+    })
+
     it('should render complex markdown with links, images, and text', () => {
       const markdown = `
 # Release Notes
