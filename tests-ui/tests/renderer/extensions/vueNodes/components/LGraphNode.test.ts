@@ -51,9 +51,11 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   useNodeLayout: () => ({
     position: { x: 100, y: 50 },
     size: { width: 200, height: 100 },
+    zIndex: 0,
     startDrag: vi.fn(),
     handleDrag: vi.fn(),
-    endDrag: vi.fn()
+    endDrag: vi.fn(),
+    moveTo: vi.fn()
   })
 }))
 
@@ -77,7 +79,7 @@ vi.mock('@/renderer/extensions/vueNodes/preview/useNodePreviewState', () => ({
   }))
 }))
 
-vi.mock('../composables/useNodeResize', () => ({
+vi.mock('../interactions/resize/useNodeResize', () => ({
   useNodeResize: vi.fn(() => ({
     startResize: vi.fn(),
     isResizing: computed(() => false)
@@ -197,11 +199,11 @@ describe('LGraphNode', () => {
     expect(wrapper.classes()).toContain('outline-node-component-outline')
   })
 
-  it('should apply executing animation when executing prop is true', () => {
+  it('should render progress indicator when executing prop is true', () => {
     mockData.mockExecuting = true
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(wrapper.classes()).toContain('animate-pulse')
+    expect(wrapper.classes()).toContain('border-node-stroke-executing')
   })
 })

@@ -3,28 +3,18 @@
     <div
       class="lg-node pointer-events-none absolute rounded-2xl border border-solid border-node-component-border bg-node-component-surface outline-2 -outline-offset-2 outline-transparent"
     >
-      <NodeHeader :node-data="nodeData" :readonly="readonly" />
+      <NodeHeader :node-data="nodeData" />
 
       <div class="mx-0 mb-4 h-px w-full bg-node-component-border" />
 
       <div class="flex flex-col gap-4 pb-4">
-        <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeSlots :node-data="nodeData" />
 
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
+        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <NodeContent
           v-if="hasCustomContent"
           :node-data="nodeData"
-          :readonly="readonly"
           :image-urls="nodeImageUrls"
         />
       </div>
@@ -68,7 +58,7 @@ const nodeData = computed<VueNodeData>(() => {
               Array.isArray(input.options) &&
               input.options.length > 0
             ? input.options[0]
-            : undefined,
+            : '',
       options: {
         ...input,
         hidden: input.hidden,
@@ -119,7 +109,6 @@ const nodeData = computed<VueNodeData>(() => {
   }
 })
 
-const readonly = true
 const hasCustomContent = false
 const nodeImageUrls = ['']
 </script>

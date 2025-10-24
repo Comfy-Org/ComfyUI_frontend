@@ -12,7 +12,7 @@
           v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
           class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
         />
-        <div class="flex">
+        <div class="flex h-full items-center">
           <WorkflowTabs />
           <TopbarBadges />
         </div>
@@ -420,9 +420,7 @@ onMounted(async () => {
       throw error
     }
   }
-  CORE_SETTINGS.forEach((setting) => {
-    settingStore.addSetting(setting)
-  })
+  CORE_SETTINGS.forEach(settingStore.addSetting)
 
   await newUserService().initializeIfNewUser(settingStore)
 

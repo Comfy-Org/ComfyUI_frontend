@@ -2,10 +2,7 @@
   <div class="flex h-full items-center">
     <div
       v-if="isDragging && !isDocked"
-      class="actionbar-drop-zone m-1.5 flex items-center justify-center self-stretch rounded-md"
-      :class="{
-        'drop-zone-active': isMouseOverDropZone
-      }"
+      :class="actionbarClass"
       @mouseenter="onMouseEnterDropZone"
       @mouseleave="onMouseLeaveDropZone"
     >
@@ -13,18 +10,15 @@
     </div>
 
     <Panel
-      class="actionbar"
+      class="pointer-events-auto z-1000"
       :style="style"
-      :class="{
-        fixed: !isDocked,
-        'is-dragging': isDragging,
-        'is-docked static mr-2 border-none bg-transparent p-0': isDocked
+      :class="panelClass"
+      :pt="{
+        header: { class: 'hidden' },
+        content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div
-        ref="panelRef"
-        class="actionbar-content flex items-center select-none"
-      >
+      <div ref="panelRef" class="flex items-center select-none">
         <span
           ref="dragHandleRef"
           :class="
@@ -251,45 +245,20 @@ watch(isDragging, (dragging) => {
     isMouseOverDropZone.value = false
   }
 })
+const actionbarClass = computed(() =>
+  cn(
+    'w-[265px] border-dashed border-blue-500 opacity-80',
+    'm-1.5 flex items-center justify-center self-stretch',
+    'rounded-md before:w-50 before:-ml-50 before:h-full',
+    isMouseOverDropZone.value &&
+      'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
+  )
+)
+const panelClass = computed(() =>
+  cn(
+    'actionbar pointer-events-auto z1000',
+    isDragging.value && 'select-none pointer-events-none',
+    isDocked.value ? 'p-0 static mr-2 border-none bg-transparent' : 'fixed'
+  )
+)
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-.actionbar {
-  pointer-events: all;
-  z-index: 1000;
-}
-
-.actionbar-drop-zone {
-  width: 265px;
-  border: 2px dashed var(--p-primary-color);
-  opacity: 0.8;
-}
-
-.actionbar-drop-zone.drop-zone-active {
-  background: var(--p-highlight-background-focus);
-  border-color: var(--p-primary-color);
-  border-width: 3px;
-  box-shadow: 0 0 20px var(--p-primary-color);
-  opacity: 1;
-  transform: scale(1.05);
-}
-
-.actionbar.is-dragging {
-  user-select: none;
-  pointer-events: none;
-}
-
-:deep(.p-panel-content) {
-  @apply p-1;
-}
-
-.is-docked :deep(.p-panel-content) {
-  @apply p-0;
-}
-
-:deep(.p-panel-header) {
-  display: none;
-}
-</style>

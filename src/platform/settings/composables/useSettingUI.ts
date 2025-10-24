@@ -81,7 +81,7 @@ export function useSettingUI(
   }
 
   const subscriptionPanel: SettingPanelItem | null =
-    !isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION
+    !isCloud || !window.__CONFIG__?.subscription_required
       ? null
       : {
           node: {
@@ -149,7 +149,9 @@ export function useSettingUI(
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
-      ...(isCloud && __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION && subscriptionPanel
+      ...(isCloud &&
+      window.__CONFIG__?.subscription_required &&
+      subscriptionPanel
         ? [subscriptionPanel]
         : [])
     ].filter((panel) => panel.component)
@@ -185,12 +187,12 @@ export function useSettingUI(
         userPanel.node,
         ...(isLoggedIn.value &&
         isCloud &&
-        __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION &&
+        window.__CONFIG__?.subscription_required &&
         subscriptionPanel
           ? [subscriptionPanel.node]
           : []),
         ...(isLoggedIn.value &&
-        !(isCloud && __BUILD_FLAGS__.REQUIRE_SUBSCRIPTION)
+        !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
           : [])
       ].map(translateCategory)
