@@ -6,7 +6,8 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col has-[.widget-expands]:flex-1 gap-2 pr-3',
+        'lg-node-widgets flex flex-col gap-2 pr-3',
+        hasWidgetNeedingVerticalSpace && 'min-h-0 flex-1',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -19,7 +20,14 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="group flex items-stretch has-[.widget-expands]:flex-1"
+      :class="
+        cn(
+          'lg-widget-container group flex',
+          widget.needsVerticalSpace
+            ? 'min-h-0 flex-1 items-stretch'
+            : 'items-center'
+        )
+      "
     >
       <!-- Widget Input Slot Dot -->
 
@@ -45,7 +53,7 @@
         :widget="widget.simplified"
         :model-value="widget.value"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-        class="flex-1"
+        :class="cn('flex-1', widget.needsVerticalSpace && 'min-h-0')"
         @update:model-value="widget.updateHandler"
       />
     </div>
@@ -114,7 +122,14 @@ interface ProcessedWidget {
   updateHandler: (value: unknown) => void
   tooltipConfig: any
   slotMetadata?: WidgetSlotMetadata
+  needsVerticalSpace: boolean
 }
+
+const hasWidgetNeedingVerticalSpace = computed((): boolean => {
+  if (!nodeData?.widgets) return false
+  const widgets = nodeData.widgets as SafeWidgetData[]
+  return widgets.some((w) => w.options?.needsVerticalSpace === true)
+})
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
@@ -167,6 +182,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const tooltipText = getWidgetTooltip(widget)
     const tooltipConfig = createTooltipConfig(tooltipText)
 
+    // Check if this widget needs vertical space
+    const needsVerticalSpace = widget.options?.needsVerticalSpace === true
+
     result.push({
       name: widget.name,
       type: widget.type,
@@ -175,7 +193,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       value: widget.value,
       updateHandler,
       tooltipConfig,
-      slotMetadata
+      slotMetadata,
+      needsVerticalSpace
     })
   }
 

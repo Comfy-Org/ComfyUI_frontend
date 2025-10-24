@@ -102,6 +102,11 @@ export interface DOMWidgetOptions<V extends object | string>
    */
   beforeResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
   afterResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
+  /**
+   * Whether this widget needs vertical space (flex-1 layout).
+   * When true, the widget will expand to fill available vertical space.
+   */
+  needsVerticalSpace?: boolean
 }
 
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
