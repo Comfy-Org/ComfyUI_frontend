@@ -1,25 +1,20 @@
 <template>
   <div
-    v-if="badgeData.icon || badgeData.text"
+    v-if="badge.icon || badge.text"
     class="flex-auto rounded-sm bg-node-component-surface p-1"
     :style="{
-      color: badgeData.fgColor,
-      backgroundColor: badgeData.bgColor
+      color: badge.fgColor,
+      backgroundColor: badge.bgColor
     }"
   >
-    <component :is="badgeData.icon" v-if="badgeData.icon" />
-    {{ badgeData.text }}
+    <component :is="badge.icon" v-if="badge.icon" />
+    {{ badge.text }}
   </div>
 </template>
 <script setup lang="ts">
-import { computed, toValue } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
-
 import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 
 const { badge } = defineProps<{
-  badge: MaybeRefOrGetter<LGraphBadge>
+  badge: LGraphBadge
 }>()
-
-const badgeData = computed(() => toValue(badge))
 </script>
