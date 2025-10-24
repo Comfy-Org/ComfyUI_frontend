@@ -353,7 +353,6 @@ const ext: ComfyExtension = {
     items.push({
       content: `Save Selected as Template`,
       disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
-      // @ts-expect-error fixme ts strict error
       callback: async () => {
         const name = await useDialogService().prompt({
           title: t('nodeTemplates.saveAsTemplate'),
@@ -365,8 +364,7 @@ const ext: ComfyExtension = {
         clipboardAction(() => {
           app.canvas.copyToClipboard()
           let data = localStorage.getItem('litegrapheditor_clipboard')
-          // @ts-expect-error fixme ts strict error
-          data = JSON.parse(data)
+          data = JSON.parse(data || '{}')
           const nodeIds = Object.keys(app.canvas.selected_nodes)
           for (let i = 0; i < nodeIds.length; i++) {
             const node = app.graph.getNodeById(nodeIds[i])
