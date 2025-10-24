@@ -8042,7 +8042,7 @@ export class LGraphCanvas
     }
   }
 
-  getCanvasMenuOptions(): IContextMenuValue<string>[] {
+  getCanvasMenuOptions(): IContextMenuValue[] {
     let options: IContextMenuValue<string>[]
     if (this.getMenuOptions) {
       options = this.getMenuOptions()

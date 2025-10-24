@@ -17,17 +17,15 @@ export const useContextMenuTranslation = () => {
   // Install compatibility layer BEFORE any extensions load
   legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
-  const f = LGraphCanvas.prototype.getCanvasMenuOptions
+  const { getCanvasMenuOptions } = LGraphCanvas.prototype
   const getCanvasCenterMenuOptions = function (
     this: LGraphCanvas,
-    ...args: Parameters<typeof f>
+    ...args: Parameters<typeof getCanvasMenuOptions>
   ) {
-    const res: IContextMenuValue<string>[] = f.apply(this, args)
+    const res: IContextMenuValue[] = getCanvasMenuOptions.apply(this, args)
 
     // Add items from new extension API
-    const newApiItems = app.collectCanvasMenuItems(
-      this
-    ) as IContextMenuValue<string>[]
+    const newApiItems = app.collectCanvasMenuItems(this)
     for (const item of newApiItems) {
       res.push(item)
     }
@@ -37,7 +35,7 @@ export const useContextMenuTranslation = () => {
       'getCanvasMenuOptions',
       this,
       ...args
-    ) as ReturnType<typeof f>
+    )
     for (const item of legacyItems) {
       res.push(item)
     }
@@ -56,7 +54,7 @@ export const useContextMenuTranslation = () => {
   legacyMenuCompat.registerWrapper(
     'getCanvasMenuOptions',
     getCanvasCenterMenuOptions,
-    f,
+    getCanvasMenuOptions,
     LGraphCanvas.prototype
   )
 
@@ -72,7 +70,7 @@ export const useContextMenuTranslation = () => {
     const node = args[0]
     const newApiItems = app.collectNodeMenuItems(node)
     for (const item of newApiItems) {
-      res.push(item as (typeof res)[number])
+      res.push(item)
     }
 
     return res
