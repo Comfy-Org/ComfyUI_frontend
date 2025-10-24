@@ -77,8 +77,10 @@ function mapHistoryToAssets(historyItems: any[]): AssetItem[] {
   return assetItems
 }
 
+const PAGE_SIZE = 50
+
 export const useAssetsStore = defineStore('assets', () => {
-  const PAGE_SIZE = 50
+  let historyAbortController: AbortController | null = null
 
   // Input assets state (using useAsyncState for simplicity)
   const fetchInputFiles = isCloud
@@ -98,15 +100,23 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  // History assets state (following ManagerContent pattern)
   const historyAssets = ref<AssetItem[]>([])
   const historyPageNumber = ref(0)
   const historyLoading = ref(false)
   const historyError = ref<Error | null>(null)
   const hasMoreHistory = ref(true)
 
+  const historyAssetIds = ref(new Set<string>())
+
   const fetchHistoryPage = async (pageNumber: number, append = false) => {
     if (historyLoading.value || (!hasMoreHistory.value && append)) return
+
+    // Cancel any ongoing request
+    if (historyAbortController) {
+      historyAbortController.abort()
+    }
+
+    historyAbortController = new AbortController()
 
     historyLoading.value = true
     historyError.value = null
@@ -121,18 +131,26 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       if (append && historyAssets.value.length > 0) {
-        // Merge without duplicates
-        const existingIds = new Set(historyAssets.value.map((a) => a.id))
-        const uniqueNewItems = newItems.filter((a) => !existingIds.has(a.id))
+        const uniqueNewItems = newItems.filter(
+          (a) => !historyAssetIds.value.has(a.id)
+        )
+
+        uniqueNewItems.forEach((a) => historyAssetIds.value.add(a.id))
         historyAssets.value = [...historyAssets.value, ...uniqueNewItems]
       } else {
+        // Reset for first page
         historyAssets.value = newItems
+        historyAssetIds.value.clear()
+        newItems.forEach((a) => historyAssetIds.value.add(a.id))
       }
-    } catch (err) {
-      historyError.value = err as Error
-      console.error('Error fetching history assets:', err)
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        historyError.value = err as Error
+        console.error('Error fetching history assets:', err)
+      }
     } finally {
       historyLoading.value = false
+      historyAbortController = null
     }
   }
 
