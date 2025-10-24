@@ -891,10 +891,16 @@ export class ComfyApi extends EventTarget {
    * @returns Prompt history including node outputs
    */
   async getHistory(
-    max_items: number = 200
+    max_items: number = 200,
+    offset?: number
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      const res = await this.fetchApi(`/history?max_items=${max_items}`)
+      const params = new URLSearchParams()
+      params.append('max_items', max_items.toString())
+      if (offset !== undefined) {
+        params.append('offset', offset.toString())
+      }
+      const res = await this.fetchApi(`/history?${params.toString()}`)
       const json: Promise<HistoryTaskItem[]> = await res.json()
       return {
         History: Object.values(json).map((item) => ({

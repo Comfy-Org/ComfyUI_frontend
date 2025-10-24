@@ -1,5 +1,6 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 import {
   mapInputFileToAssetItem,
@@ -73,15 +74,13 @@ function mapHistoryToAssets(historyItems: any[]): AssetItem[] {
     assetItems.push(assetItem)
   }
 
-  return assetItems.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
+  return assetItems
 }
 
 export const useAssetsStore = defineStore('assets', () => {
-  const maxHistoryItems = 200
+  const PAGE_SIZE = 50
 
+  // Input assets state (using useAsyncState for simplicity)
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
     : fetchInputFilesFromAPI
@@ -99,23 +98,56 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const fetchHistoryAssets = async (): Promise<AssetItem[]> => {
-    const history = await api.getHistory(maxHistoryItems)
-    return mapHistoryToAssets(history.History)
+  // History assets state (following ManagerContent pattern)
+  const historyAssets = ref<AssetItem[]>([])
+  const historyPageNumber = ref(0)
+  const historyLoading = ref(false)
+  const historyError = ref<Error | null>(null)
+  const hasMoreHistory = ref(true)
+
+  const fetchHistoryPage = async (pageNumber: number, append = false) => {
+    if (historyLoading.value || (!hasMoreHistory.value && append)) return
+
+    historyLoading.value = true
+    historyError.value = null
+
+    try {
+      const offset = pageNumber * PAGE_SIZE
+      const history = await api.getHistory(PAGE_SIZE, offset)
+      const newItems = mapHistoryToAssets(history.History)
+
+      if (newItems.length < PAGE_SIZE) {
+        hasMoreHistory.value = false
+      }
+
+      if (append && historyAssets.value.length > 0) {
+        // Merge without duplicates
+        const existingIds = new Set(historyAssets.value.map((a) => a.id))
+        const uniqueNewItems = newItems.filter((a) => !existingIds.has(a.id))
+        historyAssets.value = [...historyAssets.value, ...uniqueNewItems]
+      } else {
+        historyAssets.value = newItems
+      }
+    } catch (err) {
+      historyError.value = err as Error
+      console.error('Error fetching history assets:', err)
+    } finally {
+      historyLoading.value = false
+    }
   }
 
-  const {
-    state: historyAssets,
-    isLoading: historyLoading,
-    error: historyError,
-    execute: updateHistory
-  } = useAsyncState(fetchHistoryAssets, [], {
-    immediate: false,
-    resetOnExecute: false,
-    onError: (err) => {
-      console.error('Error fetching history assets:', err)
-    }
-  })
+  // Reset and fetch first page
+  const updateHistory = async () => {
+    historyPageNumber.value = 0
+    hasMoreHistory.value = true
+    await fetchHistoryPage(0, false)
+  }
+
+  // Load more history (increment page and append)
+  const loadMoreHistory = async () => {
+    historyPageNumber.value++
+    await fetchHistoryPage(historyPageNumber.value, true)
+  }
 
   return {
     // States
@@ -128,6 +160,9 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Actions
     updateInputs,
-    updateHistory
+    updateHistory,
+    hasMoreHistory,
+    historyPageNumber,
+    loadMoreHistory
   }
 })
