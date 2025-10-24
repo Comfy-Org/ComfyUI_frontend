@@ -41,44 +41,95 @@
       </TabList>
     </template>
     <template #body>
-      <VirtualGrid
-        v-if="displayAssets.length"
-        :items="mediaAssetsWithKey"
-        :grid-style="{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          padding: '0.5rem',
-          gap: '0.5rem'
-        }"
-      >
-        <template #item="{ item }">
-          <MediaAssetCard
-            :asset="item"
-            :selected="selectedAsset?.id === item.id"
-            :show-output-count="shouldShowOutputCount(item)"
-            :output-count="getOutputCount(item)"
-            @click="handleAssetSelect(item)"
-            @zoom="handleZoomClick(item)"
-            @output-count-click="enterFolderView(item)"
-            @asset-deleted="refreshAssets"
+      <div v-if="displayAssets.length" class="relative size-full">
+        <VirtualGrid
+          v-if="displayAssets.length"
+          :items="mediaAssetsWithKey"
+          :grid-style="{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            padding: '0.5rem',
+            gap: '0.5rem'
+          }"
+        >
+          <template #item="{ item }">
+            <MediaAssetCard
+              :asset="item"
+              :selected="isSelected(item.id)"
+              :show-output-count="shouldShowOutputCount(item)"
+              :output-count="getOutputCount(item)"
+              @click="handleAssetSelect(item)"
+              @zoom="handleZoomClick(item)"
+              @output-count-click="enterFolderView(item)"
+              @asset-deleted="refreshAssets"
+            />
+          </template>
+        </VirtualGrid>
+        <div v-else-if="loading">
+          <ProgressSpinner
+            class="absolute left-1/2 w-[50px] -translate-x-1/2"
           />
-        </template>
-      </VirtualGrid>
-      <div v-else-if="loading">
-        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
+        </div>
+        <div v-else>
+          <NoResultsPlaceholder
+            icon="pi pi-info-circle"
+            :title="
+              $t(
+                activeTab === 'input'
+                  ? 'sideToolbar.noImportedFiles'
+                  : 'sideToolbar.noGeneratedFiles'
+              )
+            "
+            :message="$t('sideToolbar.noFilesFoundMessage')"
+          />
+        </div>
       </div>
-      <div v-else>
-        <NoResultsPlaceholder
-          icon="pi pi-info-circle"
-          :title="
-            $t(
-              activeTab === 'input'
-                ? 'sideToolbar.noImportedFiles'
-                : 'sideToolbar.noGeneratedFiles'
-            )
-          "
-          :message="$t('sideToolbar.noFilesFoundMessage')"
-        />
+    </template>
+    <template #footer>
+      <div
+        v-if="hasSelection && activeTab === 'output'"
+        class="flex h-18 w-full items-center justify-between px-4"
+      >
+        <div>
+          <TextButton
+            v-if="isHoveringSelectionCount"
+            :label="$t('mediaAsset.selection.deselectAll')"
+            type="transparent"
+            @click="clearSelection"
+            @mouseleave="isHoveringSelectionCount = false"
+          />
+          <span
+            v-else
+            class="cursor-pointer px-3 text-sm"
+            @mouseenter="isHoveringSelectionCount = true"
+          >
+            {{
+              $t('mediaAsset.selection.selectedCount', { count: selectedCount })
+            }}
+          </span>
+        </div>
+        <div class="flex gap-2">
+          <IconTextButton
+            :label="$t('mediaAsset.selection.deleteSelected')"
+            type="secondary"
+            icon-position="right"
+            @click="handleDeleteSelected"
+          >
+            <template #icon>
+              <i class="icon-[lucide--trash-2] size-4" />
+            </template>
+          </IconTextButton>
+          <IconTextButton
+            :label="$t('mediaAsset.selection.downloadSelected')"
+            type="secondary"
+            icon-position="right"
+            @click="handleDownloadSelected"
+          >
+            <template #icon>
+              <i class="icon-[lucide--download] size-4" />
+            </template>
+          </IconTextButton>
+        </div>
       </div>
     </template>
   </AssetsSidebarTemplate>
@@ -94,11 +145,13 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
+import { useAssetSelection } from '@/composables/useAssetSelection'
 import { t } from '@/i18n'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -110,7 +163,6 @@ import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import AssetsSidebarTemplate from './AssetSidebarTemplate.vue'
 
 const activeTab = ref<'input' | 'output'>('input')
-const selectedAsset = ref<AssetItem | null>(null)
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
@@ -136,6 +188,22 @@ const toast = useToast()
 
 const inputAssets = useMediaAssets('input')
 const outputAssets = useMediaAssets('output')
+
+// Asset selection
+const {
+  isSelected,
+  handleAssetClick,
+  hasSelection,
+  selectedCount,
+  clearSelection,
+  getSelectedAssets
+} = useAssetSelection()
+
+// Asset actions - will be used for individual assets later
+// const { downloadAsset, deleteAsset } = useMediaAssetActions()
+
+// Hover state for selection count
+const isHoveringSelectionCount = ref(false)
 
 const currentAssets = computed(() =>
   activeTab.value === 'input' ? inputAssets : outputAssets
@@ -213,17 +281,15 @@ const refreshAssets = async () => {
 watch(
   activeTab,
   () => {
+    clearSelection()
     void refreshAssets()
   },
   { immediate: true }
 )
 
 const handleAssetSelect = (asset: AssetItem) => {
-  if (selectedAsset.value?.id === asset.id) {
-    selectedAsset.value = null
-  } else {
-    selectedAsset.value = asset
-  }
+  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
+  handleAssetClick(asset, index, displayAssets.value)
 }
 
 const handleZoomClick = (asset: AssetItem) => {
@@ -272,6 +338,7 @@ const exitFolderView = () => {
   folderPromptId.value = null
   folderExecutionTime.value = undefined
   folderAssets.value = []
+  clearSelection()
 }
 
 const copyJobId = async () => {
@@ -293,5 +360,19 @@ const copyJobId = async () => {
       })
     }
   }
+}
+
+const handleDownloadSelected = () => {
+  const selectedAssets = getSelectedAssets(displayAssets.value)
+  // TODO: Implement actual download logic
+  // eslint-disable-next-line no-console
+  console.log('Download selected assets:', selectedAssets)
+}
+
+const handleDeleteSelected = async () => {
+  const selectedAssets = getSelectedAssets(displayAssets.value)
+  // TODO: Implement actual delete logic
+  // eslint-disable-next-line no-console
+  console.log('Delete selected assets:', selectedAssets)
 }
 </script>
