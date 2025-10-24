@@ -34,8 +34,8 @@
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
-        backgroundColor: nodeBodyBackgroundColor,
-        opacity: nodeOpacity
+        opacity: nodeOpacity,
+        '--node-component-surface': nodeBodyBackgroundColor
       },
       dragStyle
     ]"
