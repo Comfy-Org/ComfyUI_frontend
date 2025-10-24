@@ -100,8 +100,13 @@
           />
           <span
             v-else
-            class="cursor-pointer px-3 text-sm"
+            role="button"
+            tabindex="0"
+            :aria-label="$t('mediaAsset.selection.deselectAll')"
+            class="cursor-pointer px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
             @mouseenter="isHoveringSelectionCount = true"
+            @keydown.enter="clearSelection"
+            @keydown.space.prevent="clearSelection"
           >
             {{
               $t('mediaAsset.selection.selectedCount', { count: selectedCount })
@@ -142,7 +147,7 @@
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
@@ -196,7 +201,8 @@ const {
   hasSelection,
   selectedCount,
   clearSelection,
-  getSelectedAssets
+  getSelectedAssets,
+  reset: resetSelection
 } = useAssetSelection()
 
 // Asset actions - will be used for individual assets later
@@ -340,6 +346,11 @@ const exitFolderView = () => {
   folderAssets.value = []
   clearSelection()
 }
+
+// Clean up selection when component unmounts
+onUnmounted(() => {
+  resetSelection()
+})
 
 const copyJobId = async () => {
   if (folderPromptId.value) {

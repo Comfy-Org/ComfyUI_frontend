@@ -21,7 +21,14 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
   }
 
   function setSelection(assetIds: string[]) {
-    selectedAssetIds.value = new Set(assetIds)
+    // Only update if there's an actual change to prevent unnecessary re-renders
+    const newSet = new Set(assetIds)
+    if (
+      newSet.size !== selectedAssetIds.value.size ||
+      !assetIds.every((id) => selectedAssetIds.value.has(id))
+    ) {
+      selectedAssetIds.value = newSet
+    }
   }
 
   function clearSelection() {
@@ -45,6 +52,12 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     lastSelectedIndex.value = index
   }
 
+  // Reset function for cleanup
+  function reset() {
+    selectedAssetIds.value.clear()
+    lastSelectedIndex.value = -1
+  }
+
   return {
     // State
     selectedAssetIds: computed(() => selectedAssetIds.value),
@@ -62,6 +75,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     clearSelection,
     toggleSelection,
     isSelected,
-    setLastSelectedIndex
+    setLastSelectedIndex,
+    reset
   }
 })

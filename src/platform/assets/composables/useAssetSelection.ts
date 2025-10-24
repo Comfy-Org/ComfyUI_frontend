@@ -24,6 +24,12 @@ export function useAssetSelection() {
     index: number,
     allAssets: AssetItem[]
   ) {
+    // Input validation
+    if (!asset?.id || index < 0 || index >= allAssets.length) {
+      console.warn('Invalid asset selection parameters')
+      return
+    }
+
     const assetId = asset.id
 
     // Shift + Click: Range selection
@@ -31,11 +37,13 @@ export function useAssetSelection() {
       const start = Math.min(selectionStore.lastSelectedIndex, index)
       const end = Math.max(selectionStore.lastSelectedIndex, index)
 
-      // Get IDs of assets in range
+      // Batch operation for better performance
       const rangeIds = allAssets.slice(start, end + 1).map((a) => a.id)
+      const existingIds = Array.from(selectionStore.selectedAssetIds)
+      const combinedIds = [...new Set([...existingIds, ...rangeIds])]
 
-      // Add range to selection (keep existing selections)
-      rangeIds.forEach((id) => selectionStore.addToSelection(id))
+      // Single update instead of multiple forEach operations
+      selectionStore.setSelection(combinedIds)
 
       // Don't update lastSelectedIndex for shift selection
       return
@@ -84,6 +92,7 @@ export function useAssetSelection() {
     selectAll,
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
+    reset: () => selectionStore.reset(),
 
     // Key states (for UI feedback)
     shiftKey,
