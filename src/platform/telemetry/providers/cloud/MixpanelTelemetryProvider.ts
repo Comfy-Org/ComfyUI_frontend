@@ -3,6 +3,8 @@ import type { OverridedMixpanel } from 'mixpanel-browser'
 import type {
   AuthMetadata,
   ExecutionContext,
+  ExecutionErrorMetadata,
+  ExecutionSuccessMetadata,
   RunButtonProperties,
   SurveyResponses,
   TelemetryEventName,
@@ -46,7 +48,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private _composablesReady = false
 
   constructor() {
-    const token = __MIXPANEL_TOKEN__
+    const token = window.__CONFIG__?.mixpanel_token
 
     if (token) {
       try {
@@ -76,7 +78,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         this.isEnabled = false
       }
     } else {
-      console.warn('Mixpanel token not provided')
+      console.warn('Mixpanel token not provided in runtime config')
       this.isEnabled = false
     }
   }
@@ -392,7 +394,15 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
 
     const context = this.getExecutionContext()
-    this.trackEvent(TelemetryEvents.WORKFLOW_EXECUTION_STARTED, context)
+    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
+  }
+
+  trackExecutionError(metadata: ExecutionErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.EXECUTION_ERROR, metadata)
+  }
+
+  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
+    this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
   }
 
   getExecutionContext(): ExecutionContext {

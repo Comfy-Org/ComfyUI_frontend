@@ -39,6 +39,22 @@ export interface TopbarBadge {
    * Optional badge label (e.g., "BETA", "ALPHA", "NEW")
    */
   label?: string
+  /**
+   * Visual variant for the badge
+   * - info: Default informational badge (white label, gray background)
+   * - warning: Warning badge (orange theme, higher emphasis)
+   * - error: Error/alert badge (red theme, highest emphasis)
+   */
+  variant?: 'info' | 'warning' | 'error'
+  /**
+   * Optional icon class (e.g., "pi-exclamation-triangle")
+   * If not provided, variant will determine the default icon
+   */
+  icon?: string
+  /**
+   * Optional tooltip text to show on hover
+   */
+  tooltip?: string
 }
 
 export type MissingNodeType =
