@@ -1,13 +1,12 @@
 <template>
   <div
     v-if="badge.icon || badge.text"
-    class="flex-auto rounded-sm bg-node-component-surface p-1"
+    class="flex flex-auto items-center rounded-sm bg-node-component-surface px-1 py-0.5"
     :style="{
       color: badge.fgColor,
       backgroundColor: badge.bgColor
     }"
   >
-    <component :is="badge.icon" v-if="badge.icon" />
     {{ badge.text }}
   </div>
 </template>
