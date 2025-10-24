@@ -2,19 +2,23 @@
 import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
 
+import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { extractPromptIdFromAssetId } from '@/utils/uuidUtil'
 
+import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 export function useMediaAssetActions() {
   const toast = useToast()
+  const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
 
   const selectAsset = (asset: AssetMeta) => {
@@ -50,6 +54,35 @@ export function useMediaAssetActions() {
     }
   }
 
+  /**
+   * Show confirmation dialog and delete asset if confirmed
+   * @param asset The asset to delete
+   * @returns true if the asset was deleted, false otherwise
+   */
+  const confirmDelete = async (asset: AssetItem): Promise<boolean> => {
+    const assetType = asset.tags?.[0] || 'output'
+
+    return new Promise((resolve) => {
+      dialogStore.showDialog({
+        key: 'delete-asset-confirmation',
+        title: t('mediaAsset.deleteAssetTitle'),
+        component: ConfirmationDialogContent,
+        props: {
+          message: t('mediaAsset.deleteAssetDescription'),
+          type: 'delete',
+          itemList: [asset.name],
+          onConfirm: async () => {
+            const success = await deleteAsset(asset.id, assetType)
+            resolve(success)
+          },
+          onCancel: () => {
+            resolve(false)
+          }
+        }
+      })
+    })
+  }
+
   const deleteAsset = async (assetId: string, assetType: string) => {
     const assetsStore = useAssetsStore()
 
@@ -69,7 +102,7 @@ export function useMediaAssetActions() {
         toast.add({
           severity: 'success',
           summary: t('g.success'),
-          detail: 'Asset deleted successfully',
+          detail: t('mediaAsset.assetDeletedSuccessfully'),
           life: 2000
         })
         return true
@@ -79,8 +112,7 @@ export function useMediaAssetActions() {
           toast.add({
             severity: 'warn',
             summary: t('g.warning'),
-            detail:
-              'Deleting imported files is only supported in cloud version',
+            detail: t('mediaAsset.deletingImportedFilesCloudOnly'),
             life: 3000
           })
           return false
@@ -95,20 +127,20 @@ export function useMediaAssetActions() {
         toast.add({
           severity: 'success',
           summary: t('g.success'),
-          detail: 'Asset deleted successfully',
+          detail: t('mediaAsset.assetDeletedSuccessfully'),
           life: 2000
         })
         return true
       }
-
-      throw new Error('Unable to determine asset type')
     } catch (error) {
       console.error('Failed to delete asset:', error)
       toast.add({
         severity: 'error',
         summary: t('g.error'),
         detail:
-          error instanceof Error ? error.message : 'Failed to delete asset',
+          error instanceof Error
+            ? error.message
+            : t('mediaAsset.failedToDeleteAsset'),
         life: 3000
       })
       return false
@@ -172,6 +204,7 @@ export function useMediaAssetActions() {
   return {
     selectAsset,
     downloadAsset,
+    confirmDelete,
     deleteAsset,
     playAsset,
     copyJobId,
