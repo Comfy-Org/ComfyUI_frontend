@@ -76,7 +76,7 @@ const addComboWidget = (
       'asset',
       inputSpec.name,
       displayLabel,
-      async () => {
+      async function (this: IBaseWidget) {
         if (!isAssetWidget(widget)) {
           throw new Error(`Expected asset widget but received ${widget.type}`)
         }
@@ -111,7 +111,7 @@ const addComboWidget = (
             }
 
             const oldValue = widget.value
-            widget.value = validatedFilename.data
+            this.value = validatedFilename.data
             node.onWidgetChanged?.(
               widget.name,
               validatedFilename.data,

@@ -5,6 +5,8 @@ import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -309,6 +311,11 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
+    if (isCloud && activePromptId.value) {
+      useTelemetry()?.trackExecutionSuccess({
+        jobId: activePromptId.value
+      })
+    }
     const pid = e.detail.prompt_id
     resetExecutionState(pid)
   }
@@ -379,6 +386,14 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
+    if (isCloud) {
+      useTelemetry()?.trackExecutionError({
+        jobId: e.detail.prompt_id,
+        nodeId: String(e.detail.node_id),
+        nodeType: e.detail.node_type,
+        error: e.detail.exception_message
+      })
+    }
     const pid = e.detail?.prompt_id
     // Clear initialization for errored prompt if present
     if (e.detail?.prompt_id) clearInitializationByPromptId(e.detail.prompt_id)

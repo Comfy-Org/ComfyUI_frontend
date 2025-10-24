@@ -120,13 +120,57 @@ jobs:
         run: pnpm exec playwright test --update-snapshots --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         continue-on-error: true
 
-      # Upload updated snapshots from this shard
-      - name: Upload updated snapshots
+      # Identify and stage only changed snapshot files
+      - name: Stage changed snapshot files
+        id: changed-snapshots
+        run: |
+          echo "=========================================="
+          echo "STAGING CHANGED SNAPSHOTS (Shard ${{ matrix.shardIndex }})"
+          echo "=========================================="
+          
+          # Get list of changed snapshot files
+          changed_files=$(git diff --name-only browser_tests/ 2>/dev/null | grep -E '\-snapshots/' || echo "")
+          
+          if [ -z "$changed_files" ]; then
+            echo "No snapshot changes in this shard"
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "✓ Found changed files:"
+          echo "$changed_files"
+          file_count=$(echo "$changed_files" | wc -l)
+          echo "Count: $file_count"
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+          echo ""
+          
+          # Create staging directory
+          mkdir -p /tmp/changed_snapshots_shard
+          
+          # Copy only changed files, preserving directory structure
+          # Strip 'browser_tests/' prefix to avoid double nesting
+          echo "Copying changed files to staging directory..."
+          while IFS= read -r file; do
+            # Remove 'browser_tests/' prefix
+            file_without_prefix="${file#browser_tests/}"
+            # Create parent directories
+            mkdir -p "/tmp/changed_snapshots_shard/$(dirname "$file_without_prefix")"
+            # Copy file
+            cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
+            echo "  → $file_without_prefix"
+          done <<< "$changed_files"
+          
+          echo ""
+          echo "Staged files for upload:"
+          find /tmp/changed_snapshots_shard -type f
+
+      # Upload ONLY the changed files from this shard
+      - name: Upload changed snapshots
         uses: actions/upload-artifact@v4
-        if: always()
+        if: steps.changed-snapshots.outputs.has-changes == 'true'
         with:
           name: snapshots-shard-${{ matrix.shardIndex }}
-          path: browser_tests/**/*-snapshots/
+          path: /tmp/changed_snapshots_shard/
           retention-days: 1
 
       - name: Upload test report
@@ -147,20 +191,31 @@ jobs:
         with:
           ref: ${{ needs.setup.outputs.branch }}
 
-      # Download all snapshot artifacts from shards
-      - name: Download all snapshots
+      # Download all changed snapshot files from shards
+      - name: Download snapshot artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: snapshots-shard-*
           path: ./downloaded-snapshots
           merge-multiple: false
 
-      # Merge snapshots from all shards into browser_tests directory
-      - name: Merge snapshots
+      - name: List downloaded files
+        run: |
+          echo "=========================================="
+          echo "DOWNLOADED SNAPSHOT FILES"
+          echo "=========================================="
+          find ./downloaded-snapshots -type f
+          echo ""
+          echo "Total files: $(find ./downloaded-snapshots -type f | wc -l)"
+
+      # Merge only the changed files into browser_tests
+      - name: Merge changed snapshots
         run: |
           set -euo pipefail
 
-          echo "Merging snapshots from all shards..."
+          echo "=========================================="
+          echo "MERGING CHANGED SNAPSHOTS"
+          echo "=========================================="
 
           # Verify target directory exists
           if [ ! -d "browser_tests" ]; then
@@ -168,73 +223,79 @@ jobs:
             exit 1
           fi
 
-          # List all downloaded artifacts for debugging
-          echo "Available shard artifacts:"
-          ls -la ./downloaded-snapshots/ || echo "No downloaded-snapshots directory found"
-
           merged_count=0
-          skipped_count=0
 
-          for shard_dir in ./downloaded-snapshots/snapshots-shard-*; do
-            echo "Processing: $shard_dir"
-
-            # Check if glob matched any directories
-            if [ ! -e "$shard_dir" ]; then
-              echo "::warning::No shard directories found matching pattern"
-              break
-            fi
-
+          # For each shard's changed files, copy them directly
+          for shard_dir in ./downloaded-snapshots/snapshots-shard-*/; do
             if [ ! -d "$shard_dir" ]; then
-              echo "::warning::Expected directory but found file: $shard_dir"
-              skipped_count=$((skipped_count + 1))
               continue
             fi
 
-            # Check if directory has content (empty is OK - shard might have no changes)
-            if [ -z "$(ls -A "$shard_dir" 2>/dev/null)" ]; then
-              echo "Shard directory $shard_dir is empty (no snapshots updated in this shard)"
-              skipped_count=$((skipped_count + 1))
+            shard_name=$(basename "$shard_dir")
+            file_count=$(find "$shard_dir" -type f | wc -l)
+            
+            if [ "$file_count" -eq 0 ]; then
+              echo "  $shard_name: no files"
               continue
             fi
 
-            echo "Merging snapshots from $shard_dir..."
-
-            # The artifact path 'browser_tests/**/*-snapshots/' uploads relative to browser_tests/
-            # So downloaded artifacts contain 'tests/' directly, not 'browser_tests/tests/'
-            # We need to merge the artifact contents into browser_tests/
-            if ! rsync -a "$shard_dir/" browser_tests/; then
-              echo "::error::Failed to merge snapshots from $shard_dir/ to browser_tests/"
-              echo "Contents of $shard_dir:"
-              find "$shard_dir" -type f | head -20
-              exit 1
-            fi
+            echo "Processing $shard_name ($file_count file(s))..."
+            
+            # Copy files directly, preserving directory structure
+            # Since files are already in correct structure (no browser_tests/ prefix), just copy them all
+            cp -v -r "$shard_dir"* browser_tests/ 2>&1 | sed 's/^/  /'
+            
             merged_count=$((merged_count + 1))
-            echo "Successfully merged shard $merged_count"
+            echo "  ✓ Merged"
+            echo ""
           done
 
-          echo "Snapshot merge complete. Merged: $merged_count shard(s), Skipped: $skipped_count shard(s)"
+          echo "=========================================="
+          echo "MERGE COMPLETE"
+          echo "=========================================="
+          echo "Shards merged: $merged_count"
 
-      - name: Debugging info
+      - name: Show changes
         run: |
-          echo "PR: ${{ needs.setup.outputs.pr-number }}"
-          echo "Branch: ${{ needs.setup.outputs.branch }}"
-          git status
+          echo "=========================================="
+          echo "CHANGES SUMMARY"
+          echo "=========================================="
+          echo ""
+          echo "Changed files in browser_tests:"
+          git diff --name-only browser_tests/ | head -20 || echo "No changes"
+          echo ""
+          echo "Total changes:"
+          git diff --name-only browser_tests/ | wc -l || echo "0"
 
       - name: Commit updated expectations
+        id: commit
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add browser_tests
-          if git diff --cached --quiet; then
+          
+          if git diff --quiet browser_tests/; then
             echo "No changes to commit"
-          else
-            git commit -m "[automated] Update test expectations"
-            git push origin ${{ needs.setup.outputs.branch }}
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          
+          echo "=========================================="
+          echo "COMMITTING CHANGES"
+          echo "=========================================="
+          
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+          
+          git add browser_tests/
+          git commit -m "[automated] Update test expectations"
+          
+          echo "Pushing to ${{ needs.setup.outputs.branch }}..."
+          git push origin ${{ needs.setup.outputs.branch }}
+          
+          echo "✓ Commit and push successful"
 
       - name: Add Done Reaction
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
-        if: github.event_name == 'issue_comment'
+        if: github.event_name == 'issue_comment' && steps.commit.outputs.has-changes == 'true'
         with:
           comment-id: ${{ needs.setup.outputs.comment-id }}
           issue-number: ${{ needs.setup.outputs.pr-number }}
