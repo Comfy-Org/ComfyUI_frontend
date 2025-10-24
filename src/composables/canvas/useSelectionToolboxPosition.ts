@@ -238,7 +238,7 @@ export function useSelectionToolboxPosition(
     const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
-    return litegraphDragging || vueNodeDragging
+    return litegraphDragging 
   })
 
   watch(isDragging, handleDragStateChange)
