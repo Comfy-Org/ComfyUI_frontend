@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
@@ -228,16 +229,17 @@ const refreshAssets = async () => {
   }
 }
 
-const handleApproachEnd = async () => {
+const handleApproachEnd = useDebounceFn(async () => {
   // Only load more for output tab and when not in folder view
   if (
     activeTab.value === 'output' &&
     !isInFolderView.value &&
-    assetsStore.hasMoreHistory
+    assetsStore.hasMoreHistory &&
+    !assetsStore.historyLoading
   ) {
     await assetsStore.loadMoreHistory()
   }
-}
+}, 200)
 
 watch(
   activeTab,
@@ -248,7 +250,6 @@ watch(
 )
 
 const handleAssetSelect = (asset: AssetItem) => {
-  // Toggle selection
   if (selectedAsset.value?.id === asset.id) {
     selectedAsset.value = null
   } else {

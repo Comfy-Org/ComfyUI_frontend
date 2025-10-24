@@ -895,11 +895,15 @@ export class ComfyApi extends EventTarget {
     offset?: number
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      const params = new URLSearchParams()
-      params.append('max_items', max_items.toString())
+      // Use URLSearchParams for safe query parameter construction
+      const params = new URLSearchParams({
+        max_items: max_items.toString()
+      })
+
       if (offset !== undefined) {
         params.append('offset', offset.toString())
       }
+
       const res = await this.fetchApi(`/history?${params.toString()}`)
       const json: Promise<HistoryTaskItem[]> = await res.json()
       return {
