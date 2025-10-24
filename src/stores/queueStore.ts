@@ -481,8 +481,8 @@ export const useQueueStore = defineStore('queue', () => {
       runningTasks.value = toClassAll(queue.Running)
       pendingTasks.value = toClassAll(queue.Pending)
 
-      const allIndex = new Set<number>(
-        history.History.map((item: TaskItem) => item.prompt.priority)
+      const allIndex = new Set<string>(
+        history.History.map((item: TaskItem) => item.prompt.prompt_id)
       )
       const newHistoryItems = toClassAll(
         history.History.filter(
@@ -492,7 +492,7 @@ export const useQueueStore = defineStore('queue', () => {
         )
       )
       const existingHistoryItems = historyTasks.value.filter((item) =>
-        allIndex.has(item.queueIndex)
+        allIndex.has(item.promptId)
       )
       const sortedTasks = [...newHistoryItems, ...existingHistoryItems]
         .slice(0, maxHistoryItems.value)
