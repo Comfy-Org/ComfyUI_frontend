@@ -1,6 +1,6 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
   mapInputFileToAssetItem,
@@ -74,15 +74,15 @@ function mapHistoryToAssets(historyItems: any[]): AssetItem[] {
     assetItems.push(assetItem)
   }
 
-  return assetItems.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
+  return assetItems
 }
 
-export const useAssetsStore = defineStore('assets', () => {
-  const maxHistoryItems = 200
+const PAGE_SIZE = 50
 
+export const useAssetsStore = defineStore('assets', () => {
+  let historyAbortController: AbortController | null = null
+
+  // Input assets state (using useAsyncState for simplicity)
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
     : fetchInputFilesFromAPI
@@ -100,23 +100,72 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const fetchHistoryAssets = async (): Promise<AssetItem[]> => {
-    const history = await api.getHistory(maxHistoryItems)
-    return mapHistoryToAssets(history.History)
+  const historyAssets = ref<AssetItem[]>([])
+  const historyPageNumber = ref(0)
+  const historyLoading = ref(false)
+  const historyError = ref<Error | null>(null)
+  const hasMoreHistory = ref(true)
+
+  const historyAssetIds = ref(new Set<string>())
+
+  const fetchHistoryPage = async (pageNumber: number, append = false) => {
+    if (historyLoading.value || (!hasMoreHistory.value && append)) return
+
+    // Cancel any ongoing request
+    if (historyAbortController) {
+      historyAbortController.abort()
+    }
+
+    historyAbortController = new AbortController()
+
+    historyLoading.value = true
+    historyError.value = null
+
+    try {
+      const offset = pageNumber * PAGE_SIZE
+      const history = await api.getHistory(PAGE_SIZE, offset)
+      const newItems = mapHistoryToAssets(history.History)
+
+      if (newItems.length < PAGE_SIZE) {
+        hasMoreHistory.value = false
+      }
+
+      if (append && historyAssets.value.length > 0) {
+        const uniqueNewItems = newItems.filter(
+          (a) => !historyAssetIds.value.has(a.id)
+        )
+
+        uniqueNewItems.forEach((a) => historyAssetIds.value.add(a.id))
+        historyAssets.value = [...historyAssets.value, ...uniqueNewItems]
+      } else {
+        // Reset for first page
+        historyAssets.value = newItems
+        historyAssetIds.value.clear()
+        newItems.forEach((a) => historyAssetIds.value.add(a.id))
+      }
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        historyError.value = err as Error
+        console.error('Error fetching history assets:', err)
+      }
+    } finally {
+      historyLoading.value = false
+      historyAbortController = null
+    }
   }
 
-  const {
-    state: historyAssets,
-    isLoading: historyLoading,
-    error: historyError,
-    execute: updateHistory
-  } = useAsyncState(fetchHistoryAssets, [], {
-    immediate: false,
-    resetOnExecute: false,
-    onError: (err) => {
-      console.error('Error fetching history assets:', err)
-    }
-  })
+  // Reset and fetch first page
+  const updateHistory = async () => {
+    historyPageNumber.value = 0
+    hasMoreHistory.value = true
+    await fetchHistoryPage(0, false)
+  }
+
+  // Load more history (increment page and append)
+  const loadMoreHistory = async () => {
+    historyPageNumber.value++
+    await fetchHistoryPage(historyPageNumber.value, true)
+  }
 
   const isLoading = computed(() => inputLoading.value || historyLoading.value)
 
@@ -133,10 +182,13 @@ export const useAssetsStore = defineStore('assets', () => {
     inputError,
     historyError,
     isLoading,
+    hasMoreHistory,
+    historyPageNumber,
 
     // Actions
     updateInputs,
     updateHistory,
+    loadMoreHistory,
     update
   }
 })

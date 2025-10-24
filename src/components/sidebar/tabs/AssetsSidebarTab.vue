@@ -41,29 +41,42 @@
       </TabList>
     </template>
     <template #body>
-      <VirtualGrid
-        v-if="displayAssets.length"
-        :items="mediaAssetsWithKey"
-        :grid-style="{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          padding: '0.5rem',
-          gap: '0.5rem'
-        }"
-      >
-        <template #item="{ item }">
-          <MediaAssetCard
-            :asset="item"
-            :selected="selectedAsset?.id === item.id"
-            :show-output-count="shouldShowOutputCount(item)"
-            :output-count="getOutputCount(item)"
-            @click="handleAssetSelect(item)"
-            @zoom="handleZoomClick(item)"
-            @output-count-click="enterFolderView(item)"
-          />
-        </template>
-      </VirtualGrid>
-      <div v-else-if="loading">
+      <div v-if="displayAssets.length" class="relative size-full">
+        <VirtualGrid
+          :items="mediaAssetsWithKey"
+          :grid-style="{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            padding: '0.5rem',
+            gap: '0.5rem'
+          }"
+          @approach-end="handleApproachEnd"
+        >
+          <template #item="{ item }">
+            <MediaAssetCard
+              :asset="item"
+              :selected="selectedAsset?.id === item.id"
+              :show-output-count="shouldShowOutputCount(item)"
+              :output-count="getOutputCount(item)"
+              @click="handleAssetSelect(item)"
+              @zoom="handleZoomClick(item)"
+              @output-count-click="enterFolderView(item)"
+            />
+          </template>
+        </VirtualGrid>
+        <!-- Loading more indicator -->
+        <div
+          v-if="
+            activeTab === 'output' &&
+            assetsStore.historyLoading &&
+            assetsStore.historyAssets.length > 0
+          "
+          class="flex w-full justify-center py-4"
+        >
+          <ProgressSpinner class="w-8" />
+        </div>
+      </div>
+      <div v-else-if="loading && !displayAssets.length">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
       <div v-else>
@@ -88,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
@@ -103,6 +117,7 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/useMediaAssets'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -132,16 +147,29 @@ const formattedExecutionTime = computed(() => {
 })
 
 const toast = useToast()
+const assetsStore = useAssetsStore()
 
+// Keep backward compatibility with useMediaAssets for input tab
 const inputAssets = useMediaAssets('input')
-const outputAssets = useMediaAssets('output')
 
 const currentAssets = computed(() =>
-  activeTab.value === 'input' ? inputAssets : outputAssets
+  activeTab.value === 'input' ? inputAssets : null
 )
-const loading = computed(() => currentAssets.value.loading.value)
-const error = computed(() => currentAssets.value.error.value)
-const mediaAssets = computed(() => currentAssets.value.media.value)
+const loading = computed(() =>
+  activeTab.value === 'input'
+    ? currentAssets.value?.loading.value
+    : assetsStore.historyLoading
+)
+const error = computed(() =>
+  activeTab.value === 'input'
+    ? currentAssets.value?.error.value
+    : assetsStore.historyError
+)
+const mediaAssets = computed(() =>
+  activeTab.value === 'input'
+    ? currentAssets.value?.media.value || []
+    : assetsStore.historyAssets
+)
 
 const galleryActiveIndex = ref(-1)
 const galleryItems = computed(() => {
@@ -191,11 +219,27 @@ const mediaAssetsWithKey = computed(() => {
 })
 
 const refreshAssets = async () => {
-  await currentAssets.value.fetchMediaList()
+  if (activeTab.value === 'input') {
+    await currentAssets.value?.fetchMediaList()
+  } else {
+    await assetsStore.updateHistory()
+  }
   if (error.value) {
     console.error('Failed to refresh assets:', error.value)
   }
 }
+
+const handleApproachEnd = useDebounceFn(async () => {
+  // Only load more for output tab and when not in folder view
+  if (
+    activeTab.value === 'output' &&
+    !isInFolderView.value &&
+    assetsStore.hasMoreHistory &&
+    !assetsStore.historyLoading
+  ) {
+    await assetsStore.loadMoreHistory()
+  }
+}, 200)
 
 watch(
   activeTab,
@@ -206,7 +250,6 @@ watch(
 )
 
 const handleAssetSelect = (asset: AssetItem) => {
-  // Toggle selection
   if (selectedAsset.value?.id === asset.id) {
     selectedAsset.value = null
   } else {
