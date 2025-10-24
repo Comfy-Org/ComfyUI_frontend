@@ -148,13 +148,16 @@ jobs:
           mkdir -p /tmp/changed_snapshots_shard
           
           # Copy only changed files, preserving directory structure
+          # Strip 'browser_tests/' prefix to avoid double nesting
           echo "Copying changed files to staging directory..."
           while IFS= read -r file; do
+            # Remove 'browser_tests/' prefix
+            file_without_prefix="${file#browser_tests/}"
             # Create parent directories
-            mkdir -p "/tmp/changed_snapshots_shard/$(dirname "$file")"
+            mkdir -p "/tmp/changed_snapshots_shard/$(dirname "$file_without_prefix")"
             # Copy file
-            cp "$file" "/tmp/changed_snapshots_shard/$file"
-            echo "  → $file"
+            cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
+            echo "  → $file_without_prefix"
           done <<< "$changed_files"
           
           echo ""
@@ -188,8 +191,8 @@ jobs:
         with:
           ref: ${{ needs.setup.outputs.branch }}
 
-      # Download all snapshot artifacts from shards
-      - name: Download all snapshots
+      # Download all changed snapshot files from shards
+      - name: Download snapshot artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: snapshots-shard-*
@@ -239,7 +242,7 @@ jobs:
             echo "Processing $shard_name ($file_count file(s))..."
             
             # Copy files directly, preserving directory structure
-            # Since we only have changed files, just copy them all
+            # Since files are already in correct structure (no browser_tests/ prefix), just copy them all
             cp -v -r "$shard_dir"* browser_tests/ 2>&1 | sed 's/^/  /'
             
             merged_count=$((merged_count + 1))
@@ -263,22 +266,36 @@ jobs:
           echo ""
           echo "Total changes:"
           git diff --name-only browser_tests/ | wc -l || echo "0"
-          
+
       - name: Commit updated expectations
+        id: commit
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add browser_tests
-          if git diff --cached --quiet; then
+          
+          if git diff --quiet browser_tests/; then
             echo "No changes to commit"
-          else
-            git commit -m "[automated] Update test expectations"
-            git push origin ${{ needs.setup.outputs.branch }}
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          
+          echo "=========================================="
+          echo "COMMITTING CHANGES"
+          echo "=========================================="
+          
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+          
+          git add browser_tests/
+          git commit -m "[automated] Update test expectations"
+          
+          echo "Pushing to ${{ needs.setup.outputs.branch }}..."
+          git push origin ${{ needs.setup.outputs.branch }}
+          
+          echo "✓ Commit and push successful"
 
       - name: Add Done Reaction
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
-        if: github.event_name == 'issue_comment'
+        if: github.event_name == 'issue_comment' && steps.commit.outputs.has-changes == 'true'
         with:
           comment-id: ${{ needs.setup.outputs.comment-id }}
           issue-number: ${{ needs.setup.outputs.pr-number }}
