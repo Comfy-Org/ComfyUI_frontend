@@ -3,6 +3,7 @@ import { toRaw } from 'vue'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+<<<<<<< HEAD:src/platform/workflow/core/services/workflowService.ts
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -12,10 +13,23 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+=======
+import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
+import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import { api } from '@/scripts/api'
+>>>>>>> 7649feb47 ([feat] Update history API to v2 array format and add comprehensive tests):src/services/workflowService.ts
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+<<<<<<< HEAD:src/platform/workflow/core/services/workflowService.ts
+=======
+import { TaskItemImpl } from '@/stores/queueStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+>>>>>>> 7649feb47 ([feat] Update history API to v2 array format and add comprehensive tests):src/services/workflowService.ts
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
@@ -142,6 +156,32 @@ export const useWorkflowService = () => {
    */
   const loadBlankWorkflow = async () => {
     await app.loadGraphData(blankGraph)
+  }
+
+  /**
+   * Load a workflow from a task item (queue/history)
+   * For history items, fetches workflow data from /history_v2/{prompt_id}
+   * @param task The task item to load the workflow from
+   */
+  const loadTaskWorkflow = async (task: TaskItemImpl) => {
+    let workflowData = task.workflow
+
+    // History items don't include workflow data - fetch from API
+    if (task.isHistory) {
+      const promptId = task.prompt.prompt_id
+      if (promptId) {
+        workflowData = (await api.getWorkflowFromHistory(promptId)) || undefined
+      }
+    }
+
+    if (!workflowData) {
+      return
+    }
+
+    await app.loadGraphData(toRaw(workflowData))
+    if (task.outputs) {
+      app.nodeOutputs = toRaw(task.outputs)
+    }
   }
 
   /**
@@ -392,6 +432,7 @@ export const useWorkflowService = () => {
     saveWorkflow,
     loadDefaultWorkflow,
     loadBlankWorkflow,
+    loadTaskWorkflow,
     reloadCurrentWorkflow,
     openWorkflow,
     closeWorkflow,
