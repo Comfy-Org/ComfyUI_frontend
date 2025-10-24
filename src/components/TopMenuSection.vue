@@ -15,6 +15,7 @@
       <ComfyActionbar />
       <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
       <LoginButton v-else-if="isDesktop" />
+      <QueueProgressOverlay />
     </div>
   </div>
 </template>
@@ -24,6 +25,7 @@ import { onMounted, ref } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
