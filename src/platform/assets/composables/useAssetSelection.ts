@@ -2,7 +2,7 @@ import { useKeyModifier } from '@vueuse/core'
 import { computed } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useAssetSelectionStore } from '@/stores/assetSelectionStore'
+import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
