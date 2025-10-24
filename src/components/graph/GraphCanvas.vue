@@ -2,8 +2,23 @@
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
-    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
+  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
+    <template v-if="showUI && workflowTabsPosition === 'Topbar'" #workflow-tabs>
+      <div
+        class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
+      >
+        <!-- Native drag area for Electron -->
+        <div
+          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
+          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
+        />
+        <div class="flex h-full items-center">
+          <WorkflowTabs />
+          <TopbarBadges />
+        </div>
+      </div>
+    </template>
+    <template v-if="showUI" #side-toolbar>
       <SideToolbar />
     </template>
     <template v-if="!workspaceStore.focusMode" #bottom-panel>
@@ -23,7 +38,6 @@
       />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
   <canvas
     id="graph-canvas"
     ref="canvasRef"
@@ -91,6 +105,8 @@ import NodeOptions from '@/components/graph/selectionToolbox/NodeOptions.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
+import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
@@ -129,6 +145,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isNativeWindow } from '@/utils/envUtil'
 
 const emit = defineEmits<{
   ready: []
@@ -162,6 +179,10 @@ const selectionToolboxEnabled = computed(() =>
 )
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
+
+const showUI = computed(
+  () => !workspaceStore.focusMode && betaMenuEnabled.value
+)
 
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()

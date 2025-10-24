@@ -1,6 +1,17 @@
 import { vi } from 'vitest'
 import 'vue'
 
+// Augment Window interface for tests
+declare global {
+  interface Window {
+    __CONFIG__: {
+      mixpanel_token?: string
+      subscription_required?: boolean
+      server_health_alert?: string
+    }
+  }
+}
+
 // Define global variables for tests
 // @ts-expect-error - Global variables are defined in global.d.ts
 globalThis.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
@@ -15,8 +26,11 @@ globalThis.__ALGOLIA_API_KEY__ = ''
 // @ts-expect-error - Global variables are defined in global.d.ts
 globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
-globalThis.__BUILD_FLAGS__ = {
-  REQUIRE_SUBSCRIPTION: true
+
+// Define runtime config for tests
+window.__CONFIG__ = {
+  subscription_required: true,
+  mixpanel_token: 'test-token'
 }
 
 // Mock Worker for extendable-media-recorder
