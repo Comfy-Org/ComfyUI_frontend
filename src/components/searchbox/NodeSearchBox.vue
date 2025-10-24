@@ -35,6 +35,7 @@
     </Dialog>
 
     <AutoCompletePlus
+      ref="autoCompletePlus"
       :model-value="filters"
       class="comfy-vue-node-search-box z-10 grow"
       scroll-height="40vh"
@@ -42,7 +43,6 @@
       :input-id="inputId"
       append-to="self"
       :suggestions="suggestions"
-      :min-length="0"
       :delay="100"
       :loading="!nodeFrequencyStore.isLoaded"
       complete-on-focus
@@ -106,6 +106,7 @@ const { filters, searchLimit = 64 } = defineProps<{
   searchLimit?: number
 }>()
 
+const autoCompletePlus = ref()
 const nodeSearchFilterVisible = ref(false)
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
@@ -140,7 +141,13 @@ const reFocusInput = async () => {
   }
 }
 
-onMounted(reFocusInput)
+onMounted(() => {
+  inputElement ??= document.getElementById(inputId) as HTMLInputElement
+  if (inputElement) inputElement.focus()
+  autoCompletePlus.value.hide = () => search('')
+  search('')
+  autoCompletePlus.value.show()
+})
 const onAddFilter = (
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {
