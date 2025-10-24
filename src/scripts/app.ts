@@ -775,7 +775,8 @@ export class ComfyApp {
     this.canvasElRef.value = canvasEl
 
     await useWorkspaceStore().workflow.syncWorkflows()
-    await useSubgraphStore().fetchSubgraphs()
+    //Doesn't need to block. Blueprints will load async
+    void useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
