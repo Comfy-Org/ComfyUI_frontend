@@ -1,13 +1,14 @@
 <template>
-  <div class="relative">
+  <div class="widget-expands relative">
     <Textarea
       v-model="localValue"
       v-bind="filteredProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs lod-toggle')"
+      :class="
+        cn(WidgetInputBaseClass, 'size-full text-xs lod-toggle resize-none')
+      "
       :placeholder="placeholder || widget.name || ''"
       :aria-label="widget.name"
-      size="small"
-      rows="3"
+      fluid
       data-capture-wheel="true"
       @update:model-value="onChange"
     />

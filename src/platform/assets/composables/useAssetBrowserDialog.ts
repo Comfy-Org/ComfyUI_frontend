@@ -1,7 +1,5 @@
-import { t } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { DialogComponentProps } from '@/stores/dialogStore'
 
@@ -51,33 +49,6 @@ export const useAssetBrowserDialog = () => {
       dialogStore.closeDialog({ key: dialogKey })
     }
 
-    const assets: AssetItem[] = await assetService
-      .getAssetsForNodeType(props.nodeType)
-      .catch((error) => {
-        console.error(
-          'Failed to fetch assets for node type:',
-          props.nodeType,
-          error
-        )
-        return []
-      })
-
-    // Extract node type category from first asset's tags (e.g., "loras", "checkpoints")
-    // Tags are ordered: ["models", "loras"] so take the second tag
-    const nodeTypeCategory =
-      assets[0]?.tags?.find((tag) => tag !== 'models') ?? 'models'
-
-    const acronyms = new Set(['VAE', 'CLIP', 'GLIGEN'])
-    const categoryLabel = nodeTypeCategory
-      .split('_')
-      .map((word) => {
-        const uc = word.toUpperCase()
-        return acronyms.has(uc) ? uc : word
-      })
-      .join(' ')
-
-    const title = t('assetBrowser.allCategory', { category: categoryLabel })
-
     dialogStore.showDialog({
       key: dialogKey,
       component: AssetBrowserModal,
@@ -85,8 +56,6 @@ export const useAssetBrowserDialog = () => {
         nodeType: props.nodeType,
         inputName: props.inputName,
         currentValue: props.currentValue,
-        assets,
-        title,
         onSelect: handleAssetSelected,
         onClose: () => dialogStore.closeDialog({ key: dialogKey })
       },
@@ -100,25 +69,12 @@ export const useAssetBrowserDialog = () => {
       dialogStore.closeDialog({ key: dialogKey })
     }
 
-    const assets = await assetService
-      .getAssetsByTag(options.assetType)
-      .catch((error) => {
-        console.error(
-          'Failed to fetch assets for tag:',
-          options.assetType,
-          error
-        )
-        return []
-      })
-
     dialogStore.showDialog({
       key: dialogKey,
       component: AssetBrowserModal,
       props: {
-        nodeType: undefined,
-        inputName: undefined,
-        assets,
         showLeftPanel: true,
+        assetType: options.assetType,
         title: options.title,
         onSelect: handleAssetSelected,
         onClose: () => dialogStore.closeDialog({ key: dialogKey })

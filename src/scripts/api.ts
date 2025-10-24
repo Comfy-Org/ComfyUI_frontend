@@ -1,3 +1,4 @@
+import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
@@ -6,6 +7,7 @@ import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
@@ -42,6 +44,8 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface QueuePromptRequestBody {
@@ -200,6 +204,16 @@ type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
 type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
+function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
+  if (Array.isArray(headers)) {
+    headers.push([key, value])
+  } else if (headers instanceof Headers) {
+    headers.set(key, value)
+  } else {
+    headers[key] = value
+  }
+}
+
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
@@ -263,6 +277,11 @@ export class ComfyApi extends EventTarget {
   user: string
   socket: WebSocket | null = null
 
+  /**
+   * Cache Firebase auth store composable function.
+   */
+  private authStoreComposable?: typeof useFirebaseAuthStore
+
   reportedUnknownMessageTypes = new Set<string>()
 
   /**
@@ -317,25 +336,77 @@ export class ComfyApi extends EventTarget {
     return this.api_base + route
   }
 
-  fetchApi(route: string, options?: RequestInit) {
-    if (!options) {
-      options = {}
+  /**
+   * Gets the Firebase auth store instance using cached composable function.
+   * Caches the composable function on first call, then reuses it.
+   * Returns null for non-cloud distributions.
+   * @returns The Firebase auth store instance, or null if not in cloud
+   */
+  private async getAuthStore() {
+    if (isCloud) {
+      if (!this.authStoreComposable) {
+        const module = await import('@/stores/firebaseAuthStore')
+        this.authStoreComposable = module.useFirebaseAuthStore
+      }
+
+      return this.authStoreComposable()
     }
-    if (!options.headers) {
-      options.headers = {}
+  }
+
+  /**
+   * Waits for Firebase auth to be initialized before proceeding.
+   * Includes 10-second timeout to prevent infinite hanging.
+   */
+  private async waitForAuthInitialization(): Promise<void> {
+    if (isCloud) {
+      const authStore = await this.getAuthStore()
+      if (!authStore) return
+
+      if (authStore.isInitialized) return
+
+      try {
+        await Promise.race([
+          until(authStore.isInitialized),
+          promiseTimeout(10000)
+        ])
+      } catch {
+        console.warn('Firebase auth initialization timeout after 10 seconds')
+      }
     }
-    if (!options.cache) {
-      options.cache = 'no-cache'
+  }
+
+  async fetchApi(route: string, options?: RequestInit) {
+    const headers: HeadersInit = options?.headers ?? {}
+
+    if (isCloud) {
+      await this.waitForAuthInitialization()
+
+      // Get Firebase JWT token if user is logged in
+      const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
+        try {
+          const authStore = await this.getAuthStore()
+          return authStore ? await authStore.getAuthHeader() : null
+        } catch (error) {
+          console.warn('Failed to get auth header:', error)
+          return null
+        }
+      }
+
+      const authHeader = await getAuthHeaderIfAvailable()
+
+      if (authHeader) {
+        for (const [key, value] of Object.entries(authHeader)) {
+          addHeaderEntry(headers, key, value)
+        }
+      }
     }
 
-    if (Array.isArray(options.headers)) {
-      options.headers.push(['Comfy-User', this.user])
-    } else if (options.headers instanceof Headers) {
-      options.headers.set('Comfy-User', this.user)
-    } else {
-      options.headers['Comfy-User'] = this.user
-    }
-    return fetch(this.apiURL(route), options)
+    addHeaderEntry(headers, 'Comfy-User', this.user)
+    return fetch(this.apiURL(route), {
+      cache: 'no-cache',
+      ...options,
+      headers
+    })
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(
@@ -402,19 +473,44 @@ export class ComfyApi extends EventTarget {
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
-  #createSocket(isReconnect?: boolean) {
+  private async createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
 
     let opened = false
     let existingSession = window.name
+
+    // Build WebSocket URL with query parameters
+    const params = new URLSearchParams()
+
     if (existingSession) {
-      existingSession = '?clientId=' + existingSession
+      params.set('clientId', existingSession)
     }
-    this.socket = new WebSocket(
-      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws${existingSession}`
-    )
+
+    // Get auth token and set cloud params if available
+    if (isCloud) {
+      try {
+        const authStore = await this.getAuthStore()
+        const authToken = await authStore?.getIdToken()
+        if (authToken) {
+          params.set('token', authToken)
+        }
+      } catch (error) {
+        // Continue without auth token if there's an error
+        console.warn(
+          'Could not get auth token for WebSocket connection:',
+          error
+        )
+      }
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const query = params.toString()
+    const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
+
+    this.socket = new WebSocket(wsUrl)
     this.socket.binaryType = 'arraybuffer'
 
     this.socket.addEventListener('open', () => {
@@ -441,9 +537,9 @@ export class ComfyApi extends EventTarget {
     })
 
     this.socket.addEventListener('close', () => {
-      setTimeout(() => {
+      setTimeout(async () => {
         this.socket = null
-        this.#createSocket(true)
+        await this.createSocket(true)
       }, 300)
       if (opened) {
         this.dispatchCustomEvent('status', null)
@@ -579,7 +675,7 @@ export class ComfyApi extends EventTarget {
    * Initialises sockets and realtime updates
    */
   init() {
-    this.#createSocket()
+    this.createSocket()
   }
 
   /**

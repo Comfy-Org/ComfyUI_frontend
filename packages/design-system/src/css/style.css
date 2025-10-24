@@ -200,7 +200,7 @@
   --node-stroke-executing: var(--color-blue-100);
   --text-secondary: var(--color-stone-100);
   --text-primary: var(--color-charcoal-700);
-  --input-surface: rgba(0, 0, 0, 0.15);
+  --input-surface: rgb(0 0 0 / 0.15);
 }
 
 .dark-theme {
@@ -247,7 +247,7 @@
   --node-stroke-executing: var(--color-blue-100);
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-pure-white);
-  --input-surface: rgba(130, 130, 130, 0.1);
+  --input-surface: rgb(130 130 130 / 0.1);
 }
 
 @theme inline {
@@ -258,9 +258,15 @@
   --color-button-surface: var(--button-surface);
   --color-button-surface-contrast: var(--button-surface-contrast);
   --color-dialog-surface: var(--dialog-surface);
-  --color-interface-menu-component-surface-hovered: var(--interface-menu-component-surface-hovered);
-  --color-interface-menu-component-surface-selected: var(--interface-menu-component-surface-selected);
-  --color-interface-menu-keybind-surface-default: var(--interface-menu-keybind-surface-default);
+  --color-interface-menu-component-surface-hovered: var(
+    --interface-menu-component-surface-hovered
+  );
+  --color-interface-menu-component-surface-selected: var(
+    --interface-menu-component-surface-selected
+  );
+  --color-interface-menu-keybind-surface-default: var(
+    --interface-menu-keybind-surface-default
+  );
   --color-interface-panel-surface: var(--interface-panel-surface);
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
@@ -324,7 +330,42 @@
   }
 }
 
-/* Everything below here to be cleaned up over time. */
+
+/* ===================== Scrollbar Utilities (Tailwind) =====================
+   Usage: Add `scrollbar-custom` class to scrollable containers.
+   The scrollbar styling adapts to light/dark theme automatically.
+============================================================================ */
+
+@utility scrollbar-custom {
+  overflow-y: auto;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--dialog-surface) transparent;
+
+  /* WebKit */
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background-color: transparent;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--dialog-surface);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--dialog-surface);
+  }
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+/* =================== End Custom Scrollbar (cross-browser) =================== */
+
+/* Everthing below here to be cleaned up over time. */
 
 body {
   width: 100vw;
@@ -1139,7 +1180,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .isLOD .lg-node-header {
-  border-radius: 0px;
+  border-radius: 0;
   pointer-events: none;
 }
 

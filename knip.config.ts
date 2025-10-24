@@ -34,9 +34,7 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons',
-    // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@primevue/icons'
   ],
   ignore: [
     // Auto generated manager types
