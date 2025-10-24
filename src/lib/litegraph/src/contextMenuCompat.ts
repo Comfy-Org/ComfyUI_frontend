@@ -80,8 +80,7 @@ class LegacyMenuCompat {
           )
         }
         currentImpl = newImpl
-      },
-      configurable: true
+      }
     })
   }
 

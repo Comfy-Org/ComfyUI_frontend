@@ -1667,6 +1667,9 @@ async function convertSelectedNodesToGroupNode() {
   return await GroupNodeHandler.fromNodes(nodes)
 }
 
+const convertDisabled = (selected: LGraphNode[]) =>
+  selected.length < 2 || !!selected.find((n) => GroupNodeHandler.isGroupNode(n))
+
 function ungroupSelectedGroupNodes() {
   const nodes = Object.values(app.canvas.selected_nodes ?? {})
   for (const node of nodes) {
@@ -1729,13 +1732,11 @@ const ext: ComfyExtension = {
   getCanvasMenuItems(canvas): IContextMenuValue[] {
     const items: IContextMenuValue[] = []
     const selected = Object.values(canvas.selected_nodes ?? {})
-    const convertDisabled =
-      selected.length < 2 ||
-      !!selected.find((n) => GroupNodeHandler.isGroupNode(n))
+    const convertEnabled = !convertDisabled(selected)
 
     items.push({
       content: `Convert to Group Node (Deprecated)`,
-      disabled: convertDisabled,
+      disabled: !convertEnabled,
       // @ts-expect-error fixme ts strict error - async callback
       callback: () => convertSelectedNodesToGroupNode()
     })
@@ -1757,14 +1758,12 @@ const ext: ComfyExtension = {
     }
 
     const selected = Object.values(app.canvas.selected_nodes ?? {})
-    const disabled =
-      selected.length < 2 ||
-      !!selected.find((n) => GroupNodeHandler.isGroupNode(n))
+    const convertEnabled = !convertDisabled(selected)
 
     return [
       {
         content: `Convert to Group Node (Deprecated)`,
-        disabled,
+        disabled: !convertEnabled,
         // @ts-expect-error fixme ts strict error - async callback
         callback: () => convertSelectedNodesToGroupNode()
       }
