@@ -77,9 +77,9 @@ describe('Context Menu Extension API', () => {
       extensionStore.registerExtension(ext1)
       extensionStore.registerExtension(ext2)
 
-      const items = extensionService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
-        .flat() as IContextMenuValue[]
+        .flat()
 
       expect(items).toHaveLength(3)
       expect(items[0]).toMatchObject({ content: 'Canvas Item 1' })
@@ -105,9 +105,9 @@ describe('Context Menu Extension API', () => {
 
       extensionStore.registerExtension(extension)
 
-      const items = extensionService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
-        .flat() as IContextMenuValue[]
+        .flat()
 
       expect(items).toHaveLength(3)
       expect(items[0].content).toBe('Menu with Submenu')
@@ -127,9 +127,9 @@ describe('Context Menu Extension API', () => {
       extensionStore.registerExtension(canvasExtension)
       extensionStore.registerExtension(extensionWithoutCanvasMenu)
 
-      const items = extensionService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
-        .flat() as IContextMenuValue[]
+        .flat()
 
       expect(items).toHaveLength(1)
       expect(items[0].content).toBe('Canvas Item 1')
@@ -144,13 +144,13 @@ describe('Context Menu Extension API', () => {
       extensionStore.registerExtension(extension)
 
       // Collect items multiple times (simulating repeated menu opens)
-      const items1 = extensionService
+      const items1: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
-        .flat() as IContextMenuValue[]
+        .flat()
 
-      const items2 = extensionService
+      const items2: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
-        .flat() as IContextMenuValue[]
+        .flat()
 
       // Both collections should have the same items (no duplication)
       expect(items1).toHaveLength(2)
@@ -178,9 +178,9 @@ describe('Context Menu Extension API', () => {
       extensionStore.registerExtension(ext1)
       extensionStore.registerExtension(ext2)
 
-      const items = extensionService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getNodeMenuItems', mockNode)
-        .flat() as IContextMenuValue[]
+        .flat()
 
       expect(items).toHaveLength(3)
       expect(items[0]).toMatchObject({ content: 'Node Item 1' })
@@ -203,9 +203,9 @@ describe('Context Menu Extension API', () => {
 
       extensionStore.registerExtension(extension)
 
-      const items = extensionService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getNodeMenuItems', mockNode)
-        .flat() as IContextMenuValue[]
+        .flat()
 
       expect(items[0].content).toBe('Node Menu with Submenu')
       expect(items[0].submenu?.options).toHaveLength(2)
@@ -220,9 +220,9 @@ describe('Context Menu Extension API', () => {
       extensionStore.registerExtension(nodeExtension)
       extensionStore.registerExtension(extensionWithoutNodeMenu)
 
-      const items = extensionService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getNodeMenuItems', mockNode)
-        .flat() as IContextMenuValue[]
+        .flat()
 
       expect(items).toHaveLength(1)
       expect(items[0].content).toBe('Node Item 1')
