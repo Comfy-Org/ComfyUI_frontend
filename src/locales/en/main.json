@@ -1779,6 +1779,13 @@
       "jobIdCopyFailed": "Failed to copy Job ID",
       "copied": "Copied",
       "error": "Error"
+    },
+    "selection": {
+      "selectedCount": "Assets Selected: {count}",
+      "deselectAll": "Deselect all",
+      "downloadSelected": "Download",
+      "deleteSelected": "Delete",
+      "downloadStarted": "Downloading {count} files..."
     }
   },
   "actionbar": {
