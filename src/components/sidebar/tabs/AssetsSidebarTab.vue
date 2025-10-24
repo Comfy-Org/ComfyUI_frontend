@@ -95,7 +95,7 @@
             v-if="isHoveringSelectionCount"
             :label="$t('mediaAsset.selection.deselectAll')"
             type="transparent"
-            @click="clearSelection"
+            @click="handleDeselectAll"
             @mouseleave="isHoveringSelectionCount = false"
           />
           <span
@@ -105,8 +105,8 @@
             :aria-label="$t('mediaAsset.selection.deselectAll')"
             class="cursor-pointer px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
             @mouseenter="isHoveringSelectionCount = true"
-            @keydown.enter="clearSelection"
-            @keydown.space.prevent="clearSelection"
+            @keydown.enter="handleDeselectAll"
+            @keydown.space.prevent="handleDeselectAll"
           >
             {{
               $t('mediaAsset.selection.selectedCount', { count: selectedCount })
@@ -351,6 +351,11 @@ const exitFolderView = () => {
 onUnmounted(() => {
   resetSelection()
 })
+
+const handleDeselectAll = () => {
+  clearSelection()
+  isHoveringSelectionCount.value = false
+}
 
 const copyJobId = async () => {
   if (folderPromptId.value) {
