@@ -386,7 +386,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   trackWorkflowExecution(): void {
     if (this.isOnboardingMode) {
       // During onboarding, track basic execution without workflow context
-      this.trackEvent(TelemetryEvents.WORKFLOW_EXECUTION_STARTED, {
+      this.trackEvent(TelemetryEvents.EXECUTION_START, {
         is_template: false,
         workflow_name: undefined
       })

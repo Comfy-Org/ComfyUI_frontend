@@ -129,6 +129,7 @@ export interface TelemetryProvider {
  */
 export const TelemetryEvents = {
   // Authentication Flow
+  USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
 
   // Subscription Flow
