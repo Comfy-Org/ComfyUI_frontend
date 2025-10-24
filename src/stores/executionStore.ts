@@ -298,14 +298,9 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const pid = e.detail.prompt_id
-    if (pid) {
-      const map = { ...nodeProgressStatesByPrompt.value }
-      delete map[pid]
-      nodeProgressStatesByPrompt.value = map
-    }
     if (activePromptId.value)
       clearInitializationByPromptId(activePromptId.value)
-    resetExecutionState()
+    resetExecutionState(pid)
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
@@ -315,12 +310,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const pid = e.detail.prompt_id
-    if (pid) {
-      const map = { ...nodeProgressStatesByPrompt.value }
-      delete map[pid]
-      nodeProgressStatesByPrompt.value = map
-    }
-    resetExecutionState()
+    resetExecutionState(pid)
   }
 
   function handleExecuting(e: CustomEvent<NodeId | null>): void {
@@ -390,14 +380,9 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
     const pid = e.detail?.prompt_id
-    if (pid) {
-      const map = { ...nodeProgressStatesByPrompt.value }
-      delete map[pid]
-      nodeProgressStatesByPrompt.value = map
-    }
     // Clear initialization for errored prompt if present
     if (e.detail?.prompt_id) clearInitializationByPromptId(e.detail.prompt_id)
-    resetExecutionState()
+    resetExecutionState(pid)
   }
 
   /**
@@ -434,8 +419,14 @@ export const useExecutionStore = defineStore('execution', () => {
   /**
    * Reset execution-related state after a run completes or is stopped.
    */
-  function resetExecutionState() {
+  function resetExecutionState(pid?: string | null) {
     nodeProgressStates.value = {}
+    const promptId = pid ?? activePromptId.value ?? null
+    if (promptId) {
+      const map = { ...nodeProgressStatesByPrompt.value }
+      delete map[promptId]
+      nodeProgressStatesByPrompt.value = map
+    }
     if (activePromptId.value) {
       delete queuedPrompts.value[activePromptId.value]
     }
