@@ -24,20 +24,15 @@
 
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
-import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { isCloud } from '@/platform/distribution/types'
-import { useDialogStore } from '@/stores/dialogStore'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
-
-const { t } = useI18n()
 
 const emit = defineEmits<{
   menuStateChanged: [isOpen: boolean]
@@ -47,7 +42,6 @@ const emit = defineEmits<{
 
 const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
-const dialogStore = useDialogStore()
 
 const assetType = computed(() => {
   return context?.value?.type || asset.value?.tags?.[0] || 'output'
@@ -59,25 +53,13 @@ const showDeleteButton = computed(() => {
   )
 })
 
-const handleDelete = () => {
-  if (!asset.value?.id || !assetType.value) return
+const handleDelete = async () => {
+  if (!asset.value) return
 
-  dialogStore.showDialog({
-    key: 'delete-asset-confirmation',
-    title: t('mediaAsset.deleteAssetTitle'),
-    component: ConfirmationDialogContent,
-    props: {
-      message: t('mediaAsset.deleteAssetDescription'),
-      type: 'delete',
-      itemList: [asset.value.name],
-      onConfirm: async () => {
-        const success = await actions.deleteAsset(asset.value!, assetType.value)
-        if (success) {
-          emit('asset-deleted')
-        }
-      }
-    }
-  })
+  const success = await actions.confirmDelete(asset.value)
+  if (success) {
+    emit('asset-deleted')
+  }
 }
 
 const handleDownload = () => {

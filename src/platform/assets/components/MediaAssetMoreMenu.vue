@@ -93,12 +93,9 @@
 
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { isCloud } from '@/platform/distribution/types'
-import { useDialogStore } from '@/stores/dialogStore'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
@@ -115,8 +112,6 @@ const emit = defineEmits<{
 
 const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
-const dialogStore = useDialogStore()
-const { t } = useI18n()
 
 const assetType = computed(() => {
   return asset.value?.tags?.[0] || context.value?.type || 'output'
@@ -178,25 +173,14 @@ const handleCopyJobId = async () => {
   close()
 }
 
-const handleDelete = () => {
-  if (!asset.value?.id || !assetType.value) return
+const handleDelete = async () => {
+  if (!asset.value) return
 
   close() // Close the menu first
 
-  // Show confirmation dialog
-  dialogStore.showDialog({
-    key: 'delete-asset-confirmation',
-    title: t('assetBrowser.deleteAssetTitle'),
-    component: ConfirmationDialogContent,
-    props: {
-      message: t('assetBrowser.deleteAssetDescription'),
-      type: 'delete',
-      itemList: [asset.value.name],
-      onConfirm: async () => {
-        await actions.deleteAsset(asset.value!, assetType.value)
-        emit('asset-deleted')
-      }
-    }
-  })
+  const success = await actions.confirmDelete(asset.value)
+  if (success) {
+    emit('asset-deleted')
+  }
 }
 </script>
