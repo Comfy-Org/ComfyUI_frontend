@@ -1,6 +1,6 @@
 <template>
   <div
-    class="widget-markdown relative w-full cursor-text"
+    class="widget-expands widget-markdown relative w-full cursor-text"
     @click="startEditing"
   >
     <!-- Display mode: Rendered markdown -->
