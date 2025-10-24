@@ -11,6 +11,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
+import { useFixVueNodeOverlap } from '@/renderer/extensions/vueNodes/composables/useFixVueNodeOverlap'
 import { app as comfyApp } from '@/scripts/app'
 
 function useVueNodeLifecycleIndividual() {
@@ -87,6 +88,15 @@ function useVueNodeLifecycleIndividual() {
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
+
+        const graph = comfyApp.canvas.graph
+        if (graph && !graph.extra) {
+          graph.extra = {}
+        }
+        if (graph && !graph.extra.vueNodesScaled) {
+          useFixVueNodeOverlap()
+          graph.extra.vueNodesScaled = true
+        }
       } else {
         disposeNodeManagerAndSyncs()
       }
