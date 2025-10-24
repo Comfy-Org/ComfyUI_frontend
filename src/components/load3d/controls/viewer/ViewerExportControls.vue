@@ -8,7 +8,7 @@
   </Select>
 
   <Button severity="secondary" text rounded @click="exportModel(exportFormat)">
-    {{ t('load3d.export') }}
+    {{ $t('load3d.export') }}
   </Button>
 </template>
 
@@ -16,8 +16,6 @@
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import { ref } from 'vue'
-
-import { t } from '@/i18n'
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void

@@ -7,7 +7,7 @@
       >
         <i
           v-tooltip.right="{
-            value: t('load3d.lightIntensity'),
+            value: $t('load3d.lightIntensity'),
             showDelay: 300
           }"
           class="pi pi-sun text-lg text-white"
@@ -24,7 +24,6 @@
           :min="lightIntensityMinimum"
           :max="lightIntensityMaximum"
           :step="lightAdjustmentIncrement"
-          @change="updateLightIntensity"
         />
       </div>
     </div>
@@ -32,27 +31,19 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { t } from '@/i18n'
+import type { MaterialMode } from '@/extensions/core/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-const vTooltip = Tooltip
+const lightIntensity = defineModel<number>('lightIntensity')
+const materialMode = defineModel<MaterialMode>('materialMode')
 
-const props = defineProps<{
-  lightIntensity: number
-  showLightIntensityButton: boolean
-}>()
-
-const emit = defineEmits<{
-  (e: 'updateLightIntensity', value: number): void
-}>()
-
-const lightIntensity = ref(props.lightIntensity)
-const showLightIntensityButton = ref(props.showLightIntensityButton)
+const showLightIntensityButton = computed(
+  () => materialMode.value === 'original'
+)
 const showLightIntensity = ref(false)
 
 const lightIntensityMaximum = useSettingStore().get(
@@ -65,26 +56,8 @@ const lightAdjustmentIncrement = useSettingStore().get(
   'Comfy.Load3D.LightAdjustmentIncrement'
 )
 
-watch(
-  () => props.lightIntensity,
-  (newValue) => {
-    lightIntensity.value = newValue
-  }
-)
-
-watch(
-  () => props.showLightIntensityButton,
-  (newValue) => {
-    showLightIntensityButton.value = newValue
-  }
-)
-
 const toggleLightIntensity = () => {
   showLightIntensity.value = !showLightIntensity.value
-}
-
-const updateLightIntensity = () => {
-  emit('updateLightIntensity', lightIntensity.value)
 }
 
 const closeLightSlider = (e: MouseEvent) => {
