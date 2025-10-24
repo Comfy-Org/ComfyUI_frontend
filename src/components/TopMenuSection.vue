@@ -13,10 +13,8 @@
         class="[&:not(:has(*>*:not(:empty)))]:hidden"
       ></div>
       <ComfyActionbar />
-      <template v-if="isDesktop">
-        <LoginButton v-if="!isLoggedIn" />
-        <CurrentUserButton v-else class="shrink-0" />
-      </template>
+      <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
+      <LoginButton v-else-if="isDesktop" />
     </div>
   </div>
 </template>
