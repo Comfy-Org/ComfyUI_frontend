@@ -43,7 +43,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
    ```
 
 3. Configure environment (optional):
-   Create a `.env` file in the project root based on the provided [.env.example](.env.example) file.
+   Create a `.env` file in the project root based on the provided [.env_example](.env_example) file.
 
    **Note about ports**: By default, the dev server expects the ComfyUI backend at `localhost:8188`. If your ComfyUI instance runs on a different port, update this in your `.env` file.
 
