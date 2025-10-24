@@ -21,6 +21,19 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
+/**
+ * CRITICAL: Load remote config FIRST for cloud builds to ensure
+ * window.__CONFIG__is available for all modules during initialization
+ */
+import { isCloud } from '@/platform/distribution/types'
+
+if (isCloud) {
+  const { loadRemoteConfig } = await import(
+    '@/platform/remoteConfig/remoteConfig'
+  )
+  await loadRemoteConfig()
+}
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fixme ts strict error
