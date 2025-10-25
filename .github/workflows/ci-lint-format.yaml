@@ -33,26 +33,14 @@ jobs:
           node-version: 'lts/*'
           cache: 'pnpm'
 
-      - name: Cache tool outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache
-            .eslintcache
-            tsconfig.tsbuildinfo
-            .prettierCache
-            .knip-cache
-          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
-          restore-keys: |
-            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            lint-format-cache-${{ runner.os }}-
-            ci-tools-cache-${{ runner.os }}-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix
+
+      - name: Run Stylelint with auto-fix
+        run: pnpm stylelint:fix
 
       - name: Run Prettier with auto-format
         run: pnpm format
@@ -78,6 +66,7 @@ jobs:
       - name: Final validation
         run: |
           pnpm lint
+          pnpm stylelint
           pnpm format:check
           pnpm knip
 

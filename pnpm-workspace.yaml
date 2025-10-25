@@ -16,6 +16,7 @@ catalog:
   '@nx/vite': 21.4.1
   '@pinia/testing': ^0.1.5
   '@playwright/test': ^1.52.0
+  '@prettier/plugin-oxc': ^0.0.4
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
   '@primeuix/utils': ^0.3.2

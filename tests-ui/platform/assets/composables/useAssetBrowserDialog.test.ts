@@ -15,17 +15,6 @@ vi.mock('@/i18n', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetsForNodeType: vi.fn().mockResolvedValue([]),
-    getAssetsByTag: vi.fn().mockResolvedValue([])
-  }
-}))
-
-const { assetService } = await import('@/platform/assets/services/assetService')
-const mockGetAssetsByTag = vi.mocked(assetService.getAssetsByTag)
-const mockGetAssetsForNodeType = vi.mocked(assetService.getAssetsForNodeType)
-
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-123',
@@ -116,7 +105,8 @@ describe('useAssetBrowserDialog', () => {
         expect.objectContaining({
           key: 'global-asset-browser',
           props: expect.objectContaining({
-            showLeftPanel: true
+            showLeftPanel: true,
+            assetType: 'models'
           })
         })
       )
@@ -169,91 +159,21 @@ describe('useAssetBrowserDialog', () => {
       const dialogCall = mockShowDialog.mock.calls[0][0]
       expect(dialogCall.props.title).toBe('Custom Model Browser')
     })
-
-    it('calls getAssetsByTag with correct assetType parameter', async () => {
-      setupDialogMocks()
-      const assetBrowserDialog = useAssetBrowserDialog()
-      await assetBrowserDialog.browse({
-        assetType: 'models'
-      })
-
-      expect(mockGetAssetsByTag).toHaveBeenCalledWith('models')
-    })
-
-    it('passes fetched assets to dialog props', async () => {
-      const { mockShowDialog } = setupDialogMocks()
-      const assetBrowserDialog = useAssetBrowserDialog()
-      const mockAssets = [
-        createMockAsset({ id: 'asset-1', name: 'model1.safetensors' }),
-        createMockAsset({ id: 'asset-2', name: 'model2.safetensors' })
-      ]
-
-      mockGetAssetsByTag.mockResolvedValueOnce(mockAssets)
-      await assetBrowserDialog.browse({
-        assetType: 'models'
-      })
-
-      const dialogCall = mockShowDialog.mock.calls[0][0]
-      expect(dialogCall.props.assets).toEqual(mockAssets)
-    })
-
-    it('handles asset fetch errors gracefully', async () => {
-      const { mockShowDialog } = setupDialogMocks()
-      const assetBrowserDialog = useAssetBrowserDialog()
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-
-      mockGetAssetsByTag.mockRejectedValueOnce(new Error('Network error'))
-      await assetBrowserDialog.browse({
-        assetType: 'models'
-      })
-
-      expect(mockShowDialog).toHaveBeenCalled()
-      const dialogCall = mockShowDialog.mock.calls[0][0]
-      expect(dialogCall.props.assets).toEqual([])
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Failed to fetch assets for tag:',
-        'models',
-        expect.any(Error)
-      )
-
-      consoleErrorSpy.mockRestore()
-    })
   })
 
-  describe('.show() title formatting', () => {
-    it('formats title with VAE acronym uppercase', async () => {
+  describe('.show() behavior', () => {
+    it('opens dialog without pre-fetched assets', async () => {
       const { mockShowDialog } = setupDialogMocks()
-      mockGetAssetsForNodeType.mockResolvedValueOnce([
-        createMockAsset({ tags: ['models', 'vae'] })
-      ])
-
       const assetBrowserDialog = useAssetBrowserDialog()
+
       await assetBrowserDialog.show({
-        nodeType: 'VAELoader',
-        inputName: 'vae_name'
+        nodeType: 'CheckpointLoaderSimple',
+        inputName: 'ckpt_name'
       })
 
       const dialogCall = mockShowDialog.mock.calls[0][0]
-      expect(dialogCall.props.title).toContain('VAE')
-    })
-
-    it('replaces underscores with spaces in tag names', async () => {
-      const { mockShowDialog } = setupDialogMocks()
-      mockGetAssetsForNodeType.mockResolvedValueOnce([
-        createMockAsset({ tags: ['models', 'style_models'] })
-      ])
-
-      const assetBrowserDialog = useAssetBrowserDialog()
-      await assetBrowserDialog.show({
-        nodeType: 'StyleModelLoader',
-        inputName: 'style_model_name'
-      })
-
-      const dialogCall = mockShowDialog.mock.calls[0][0]
-      expect(dialogCall.props.title).toContain('style models')
+      expect(dialogCall.props.nodeType).toBe('CheckpointLoaderSimple')
+      expect(dialogCall.props.assets).toBeUndefined()
     })
   })
 })

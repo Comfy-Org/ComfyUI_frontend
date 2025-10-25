@@ -44,7 +44,7 @@ function handleSortSelected(item: SortOption) {
 </script>
 
 <template>
-  <div class="flex gap-2 px-4 text-zinc-400">
+  <div class="text-secondary flex gap-2 px-4">
     <label
       :class="
         cn(

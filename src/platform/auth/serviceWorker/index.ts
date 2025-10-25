@@ -5,5 +5,5 @@ import { isCloud } from '@/platform/distribution/types'
  * Tree-shaken for desktop/localhost builds via compile-time constant.
  */
 if (isCloud) {
-  void import('./register')
+  await import('./register')
 }

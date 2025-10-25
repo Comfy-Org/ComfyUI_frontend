@@ -21,20 +21,37 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
-const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 
+// Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
+const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
+const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
+
+const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
+  process.env.DISTRIBUTION === 'desktop' ||
+  process.env.DISTRIBUTION === 'localhost' ||
+  process.env.DISTRIBUTION === 'cloud'
+    ? process.env.DISTRIBUTION
+    : IS_CLOUD_URL
+      ? 'cloud'
+      : 'localhost'
+
+// Disable Vue DevTools for production cloud distribution
+const DISABLE_VUE_PLUGINS =
+  process.env.DISABLE_VUE_PLUGINS === 'true' ||
+  (DISTRIBUTION === 'cloud' && !IS_DEV)
+
+const DEV_SEVER_FALLBACK_URL =
+  DISTRIBUTION === 'cloud'
+    ? 'https://stagingcloud.comfy.org'
+    : 'http://127.0.0.1:8188'
+
 const DEV_SERVER_COMFYUI_URL =
-  process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+  DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 
-const DISTRIBUTION = (process.env.DISTRIBUTION || 'localhost') as
-  | 'desktop'
-  | 'localhost'
-  | 'cloud'
-
-const BUILD_FLAGS = {
-  REQUIRE_SUBSCRIPTION: process.env.REQUIRE_SUBSCRIPTION === 'true'
-}
+// Cloud proxy configuration
+const cloudProxyConfig =
+  DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
 export default defineConfig({
   base: '',
@@ -59,46 +76,60 @@ export default defineConfig({
     },
     proxy: {
       '/internal': {
-        target: DEV_SERVER_COMFYUI_URL
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
       },
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
-        // Return empty array for extensions API as these modules
-        // are not on vite's dev server.
+        ...cloudProxyConfig,
         bypass: (req, res, _options) => {
+          // Return empty array for extensions API as these modules
+          // are not on vite's dev server.
           if (req.url === '/api/extensions') {
             res.end(JSON.stringify([]))
+            return false
           }
+
+          // Bypass multi-user auth check from staging (cloud only)
+          if (DISTRIBUTION === 'cloud' && req.url === '/api/users') {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({})) // Return empty object to simulate single-user mode
+            return false
+          }
+
           return null
         }
       },
 
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
-        ws: true
+        ws: true,
+        ...cloudProxyConfig
       },
 
       '/workflow_templates': {
-        target: DEV_SERVER_COMFYUI_URL
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
       },
 
-      // Proxy extension assets (images/videos) under /extensions to the ComfyUI backend
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
-        changeOrigin: true
+        changeOrigin: true,
+        ...cloudProxyConfig
       },
 
-      // Proxy docs markdown from backend
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
-        changeOrigin: true
+        changeOrigin: true,
+        ...cloudProxyConfig
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
-              target: DEV_SERVER_COMFYUI_URL
+              target: DEV_SERVER_COMFYUI_URL,
+              ...cloudProxyConfig
             }
           }
         : {}),
@@ -271,9 +302,7 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __BUILD_FLAGS__: JSON.stringify(BUILD_FLAGS),
-    __MIXPANEL_TOKEN__: JSON.stringify(process.env.MIXPANEL_TOKEN || '')
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
   },
 
   resolve: {

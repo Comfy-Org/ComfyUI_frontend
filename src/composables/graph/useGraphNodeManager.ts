@@ -20,6 +20,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
+  LGraphBadge,
   LGraphNode,
   LGraphTriggerAction,
   LGraphTriggerEvent,
@@ -51,6 +52,8 @@ export interface VueNodeData {
   mode: number
   selected: boolean
   executing: boolean
+  apiNode?: boolean
+  badges?: (LGraphBadge | (() => LGraphBadge))[]
   subgraphId?: string | null
   widgets?: SafeWidgetData[]
   inputs?: INodeInputSlot[]
@@ -117,7 +120,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   // Extract safe data from LiteGraph node for Vue consumption
-  const extractVueNodeData = (node: LGraphNode): VueNodeData => {
+  function extractVueNodeData(node: LGraphNode): VueNodeData {
     // Determine subgraph ID - null for root graph, string for subgraphs
     const subgraphId =
       node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
@@ -125,14 +128,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         : null
     // Extract safe widget data
     const slotMetadata = new Map<string, WidgetSlotMetadata>()
-
-    node.inputs?.forEach((input, index) => {
-      if (!input?.widget?.name) return
-      slotMetadata.set(input.widget.name, {
-        index,
-        linked: input.link != null
-      })
-    })
 
     const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
     Object.defineProperty(node, 'widgets', {
@@ -144,8 +139,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       }
     })
 
-    const safeWidgets = reactiveComputed<SafeWidgetData[]>(
-      () =>
+    const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+      node.inputs?.forEach((input, index) => {
+        if (!input?.widget?.name) return
+        slotMetadata.set(input.widget.name, {
+          index,
+          linked: input.link != null
+        })
+      })
+      return (
         node.widgets?.map((widget) => {
           try {
             // TODO: Use widget.getReactiveData() once TypeScript types are updated
@@ -183,7 +185,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
             }
           }
         }) ?? []
-    )
+      )
+    })
 
     const nodeType =
       node.type ||
@@ -191,6 +194,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       node.constructor?.title ||
       node.constructor?.name ||
       'Unknown'
+
+    const apiNode = node.constructor?.nodeData?.api_node ?? false
+    const badges = node.badges
 
     return {
       id: String(node.id),
@@ -200,6 +206,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
       subgraphId,
+      apiNode,
+      badges,
       hasErrors: !!node.has_errors,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,

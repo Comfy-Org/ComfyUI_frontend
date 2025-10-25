@@ -51,20 +51,8 @@ export async function addStylesheet(
   })
 }
 
-export function downloadBlob(filename: string, blob: Blob) {
-  const url = URL.createObjectURL(blob)
-  const a = $el('a', {
-    href: url,
-    download: filename,
-    style: { display: 'none' },
-    parent: document.body
-  })
-  a.click()
-  setTimeout(function () {
-    a.remove()
-    window.URL.revokeObjectURL(url)
-  }, 0)
-}
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export { downloadBlob } from '@/base/common/downloadUtil'
 
 export function uploadFile(accept: string) {
   return new Promise<File>((resolve, reject) => {

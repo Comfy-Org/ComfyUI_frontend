@@ -1,11 +1,11 @@
 <template>
   <div
-    class="widget-markdown relative w-full cursor-text"
+    class="widget-expands widget-markdown relative w-full cursor-text"
     @click="startEditing"
   >
     <!-- Display mode: Rendered markdown -->
     <div
-      class="comfy-markdown-content lod-toggle min-h-[60px] w-full overflow-y-auto rounded-lg px-4 py-2 text-sm hover:bg-[var(--p-content-hover-background)]"
+      class="comfy-markdown-content lod-toggle h-full min-h-[60px] w-full overflow-y-auto rounded-lg px-4 py-2 text-sm hover:bg-[var(--p-content-hover-background)]"
       :class="isEditing === false ? 'visible' : 'invisible'"
       v-html="renderedHtml"
     />

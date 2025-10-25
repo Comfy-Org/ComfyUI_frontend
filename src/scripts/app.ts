@@ -379,8 +379,8 @@ export class ComfyApp {
       selectedIndex = node.imageIndex
     }
 
-    const paintedIndex = selectedIndex + 1
-    const combinedIndex = selectedIndex + 2
+    const paintedIndex = imgs ? imgs.length + 1 : 1
+    const combinedIndex = imgs ? imgs.length + 2 : 2
 
     // for vueNodes mode
     const images =
@@ -775,7 +775,8 @@ export class ComfyApp {
     this.canvasElRef.value = canvasEl
 
     await useWorkspaceStore().workflow.syncWorkflows()
-    await useSubgraphStore().fetchSubgraphs()
+    //Doesn't need to block. Blueprints will load async
+    void useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()

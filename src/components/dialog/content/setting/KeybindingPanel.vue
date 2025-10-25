@@ -89,7 +89,7 @@
           ref="keybindingInput"
           class="mb-2 text-center"
           :model-value="newBindingKeyCombo?.toString() ?? ''"
-          placeholder="Press keys for new binding"
+          :placeholder="$t('g.pressKeysForNewBinding')"
           autocomplete="off"
           fluid
           @keydown.stop.prevent="captureKeybinding"
