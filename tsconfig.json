@@ -35,6 +35,9 @@
       ],
       "@/utils/networkUtil": [
         "packages/shared-frontend-utils/src/networkUtil.ts"
+      ],
+      "@tests-ui/*": [
+        "tests-ui/*"
       ]
     },
     "typeRoots": [

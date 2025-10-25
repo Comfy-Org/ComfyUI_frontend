@@ -10,13 +10,13 @@ import { zRawHistoryItemV2 } from '@/schemas/apiSchema'
 import {
   expectedV1Fixture,
   historyV2Fixture
-} from '../../../../fixtures/historyFixtures'
+} from '@tests-ui/fixtures/historyFixtures'
 
 describe('mapHistoryV2toHistory', () => {
   describe('fixture validation', () => {
     it('should have valid fixture data', () => {
       // Validate all items in the fixture to ensure test data is correct
-      historyV2Fixture.history.forEach((item) => {
+      historyV2Fixture.history.forEach((item: unknown) => {
         expect(() => zRawHistoryItemV2.parse(item)).not.toThrow()
       })
     })
