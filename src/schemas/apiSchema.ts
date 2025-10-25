@@ -13,6 +13,7 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
+export type PromptId = z.infer<typeof zPromptId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
 
@@ -173,7 +174,7 @@ const zExtraPngInfo = z
 const zExtraData = z.object({
   /** extra_pnginfo can be missing is backend execution gets a validation error. */
   extra_pnginfo: zExtraPngInfo.optional(),
-  client_id: z.string()
+  client_id: z.string().optional()
 })
 const zOutputsToExecute = z.array(zNodeId)
 
@@ -269,6 +270,39 @@ const zTaskType = z.union([
   z.literal('Pending'),
   z.literal('History')
 ])
+
+// api history v2 schema
+const zTaskPromptV2 = z.object({
+  priority: zQueueIndex,
+  prompt_id: zPromptId,
+  extra_data: zExtraData
+})
+
+// Raw history item from backend (without taskType)
+const zRawHistoryItemV2 = z.object({
+  prompt_id: zPromptId,
+  prompt: zTaskPromptV2,
+  status: zStatus.optional(),
+  outputs: zTaskOutput,
+  meta: zTaskMeta.optional()
+})
+
+// New API response format: { history: [{prompt_id: "...", ...}, ...] }
+const zHistoryResponseV2 = z.object({
+  history: z.array(zRawHistoryItemV2)
+})
+
+// Shallow schema for runtime validation (only validates structure, not items)
+const zHistoryResponseV2Shallow = z.object({
+  history: z.array(z.unknown())
+})
+
+export type RawHistoryItemV2 = z.infer<typeof zRawHistoryItemV2>
+export type HistoryResponseV2 = z.infer<typeof zHistoryResponseV2>
+export type TaskPromptV2 = z.infer<typeof zTaskPromptV2>
+
+// Export schemas for runtime validation
+export { zHistoryResponseV2Shallow, zRawHistoryItemV2 }
 
 export type TaskType = z.infer<typeof zTaskType>
 export type TaskPrompt = z.infer<typeof zTaskPrompt>
