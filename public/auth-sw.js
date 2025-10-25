@@ -54,18 +54,36 @@ self.addEventListener('fetch', (event) => {
           headers.set(key, value)
         }
 
-        return fetch(
+        // Fetch with manual redirect to handle cross-origin redirects (e.g., GCS signed URLs)
+        const response = await fetch(
           new Request(event.request.url, {
             method: event.request.method,
             headers: headers,
-            mode: 'same-origin',
             credentials: event.request.credentials,
             cache: 'no-store',
-            redirect: event.request.redirect,
+            redirect: 'manual',
             referrer: event.request.referrer,
             integrity: event.request.integrity
           })
         )
+
+        // If redirected to external storage (GCS), follow without auth headers
+        // The signed URL contains its own authentication in query params
+        if (
+          response.type === 'opaqueredirect' ||
+          response.status === 302 ||
+          response.status === 301
+        ) {
+          const location = response.headers.get('location')
+          if (location) {
+            return fetch(location, {
+              method: 'GET',
+              redirect: 'follow'
+            })
+          }
+        }
+
+        return response
       } catch (error) {
         console.error('[Auth SW] Request failed:', error)
         return fetch(event.request)
