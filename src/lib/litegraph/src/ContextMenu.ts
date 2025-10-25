@@ -15,7 +15,7 @@ export interface ContextMenu<TValue = unknown> {
 /**
  * ContextMenu from LiteGUI
  */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
+
 export class ContextMenu<TValue = unknown> {
   options: IContextMenuOptions<TValue>
   parentMenu?: ContextMenu<TValue>
@@ -274,7 +274,7 @@ export class ContextMenu<TValue = unknown> {
     }
 
     // menu option clicked
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+
     const that = this
     function inner_onclick(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value

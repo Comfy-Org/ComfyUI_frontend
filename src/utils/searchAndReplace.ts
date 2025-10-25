@@ -47,8 +47,8 @@ export function applyTextReplacements(
       console.warn('Unable to find widget', split[1], 'on node', split[0], node)
       return match
     }
+    // eslint-disable-next-line no-control-regex
     return ((widget.value ?? '') + '').replaceAll(
-      // eslint-disable-next-line no-control-regex
       /[/?<>\\:*|"\x00-\x1F\x7F]/g,
       '_'
     )

@@ -272,5 +272,7 @@ export default defineConfig([
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
     }
-  }
+  },
+  // Turn off ESLint rules that are already handled by oxlint
+  oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
 ])
