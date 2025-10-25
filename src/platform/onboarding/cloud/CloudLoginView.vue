@@ -2,15 +2,6 @@
   <div class="flex h-full items-center justify-center p-8">
     <div class="max-w-[100vw] p-2 lg:w-96">
       <template v-if="!hasInviteCode">
-        <div class="rounded-lg bg-[#2d2e32] p-4">
-          <h4 class="m-0 pb-2 text-lg">
-            {{ t('cloudPrivateBeta_title') }}
-          </h4>
-          <p class="m-0 text-base leading-6">
-            {{ t('cloudPrivateBeta_desc') }}
-          </p>
-        </div>
-
         <!-- Header -->
         <div class="mt-6 mb-8 flex flex-col gap-4">
           <h1 class="my-0 text-xl leading-normal font-medium">
@@ -87,15 +78,6 @@
           >
             {{ t('cloudWaitlist_contactLink') }}</a
           >.
-        </p>
-        <p class="mt-5 text-sm text-gray-600">
-          {{ t('cloudStart_invited_signup_title') }}
-          <span
-            class="cursor-pointer text-blue-400 no-underline"
-            @click="navigateToSignup"
-          >
-            {{ t('cloudStart_invited_signup_description') }}</span
-          >
         </p>
       </template>
     </div>
