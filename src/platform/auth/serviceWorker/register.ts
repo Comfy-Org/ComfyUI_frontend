@@ -8,7 +8,8 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
  * Intercepts /api/view requests to add auth headers for browser-native requests.
  */
 async function registerAuthServiceWorker(): Promise<void> {
-  if (!('serviceWorker' in navigator)) {
+  // Only register in production. Development uses Vite proxy instead.
+  if (import.meta.env.DEV || !('serviceWorker' in navigator)) {
     return
   }
 
