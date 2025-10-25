@@ -31,9 +31,9 @@ defineExpose({
         cn(
           'bg-slate-300 rounded-full',
           'transition-all duration-150',
-          'cursor-crosshair',
           'border border-solid border-node-component-slot-dot-outline',
-          'group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5] group-hover/slot:scale-125',
+          !multi &&
+            'cursor-crosshair group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5] group-hover/slot:scale-125',
           multi ? 'w-3 h-6' : 'size-3'
         )
       "

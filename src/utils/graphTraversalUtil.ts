@@ -46,7 +46,7 @@ export function getLocalNodeIdFromExecutionId(
   executionId: string
 ): string | null {
   const parts = parseExecutionId(executionId)
-  return parts ? parts[parts.length - 1] : null
+  return parts ? parts.at(-1)! : null
 }
 
 /**

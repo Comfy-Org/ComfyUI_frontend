@@ -15,8 +15,8 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-vi.mock('marked', () => ({
-  marked: vi.fn((content) => `<p>${content}</p>`)
+vi.mock('@/utils/markdownRendererUtil', () => ({
+  renderMarkdownToHtml: vi.fn((content) => `<p>${content}</p>`)
 }))
 
 vi.mock('@/platform/updates/common/releaseStore', () => ({
@@ -119,7 +119,7 @@ describe('WhatsNewPopup', () => {
   })
 
   describe('content rendering', () => {
-    it('should render release content using marked', async () => {
+    it('should render release content using renderMarkdownToHtml', async () => {
       mockReleaseStore.shouldShowPopup = true
       mockReleaseStore.recentRelease = {
         id: 1,
@@ -132,7 +132,7 @@ describe('WhatsNewPopup', () => {
 
       const wrapper = createWrapper()
 
-      // Check that the content is rendered (marked is mocked to return processed content)
+      // Check that the content is rendered (renderMarkdownToHtml is mocked to return processed content)
       expect(wrapper.find('.content-text').exists()).toBe(true)
       const contentHtml = wrapper.find('.content-text').html()
       expect(contentHtml).toContain('<p># Release Notes')

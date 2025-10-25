@@ -247,9 +247,7 @@ class ConversionContext {
       ] as RerouteNode
       const rerouteNodes = this.#getRerouteChain(endingRerouteNode)
       const startingLink =
-        this.linkById[
-          rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
-        ]
+        this.linkById[rerouteNodes.at(-1)?.inputs?.[0]?.link ?? -1]
       if (startingLink) {
         // Valid link found, create a new link
         links.push(this.#createNewLink(startingLink, endingLink, rerouteNodes))
@@ -272,9 +270,7 @@ class ConversionContext {
     for (const rerouteNode of floatingEndingRerouteNodes) {
       const rerouteNodes = this.#getRerouteChain(rerouteNode)
       const startingLink =
-        this.linkById[
-          rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
-        ]
+        this.linkById[rerouteNodes.at(-1)?.inputs?.[0]?.link ?? -1]
       if (startingLink) {
         floatingLinks.push(
           this.#createNewOutputFloatingLink(startingLink, rerouteNodes)

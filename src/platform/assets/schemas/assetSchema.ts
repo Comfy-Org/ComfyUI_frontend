@@ -4,9 +4,9 @@ import { z } from 'zod'
 const zAsset = z.object({
   id: z.string(),
   name: z.string(),
-  asset_hash: z.string().optional(),
+  asset_hash: z.string().nullish(),
   size: z.number(),
-  mime_type: z.string().optional(),
+  mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
   preview_url: z.string().optional(),

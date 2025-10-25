@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
-import { execSync } from 'child_process'
-import * as fs from 'fs'
 import { globSync } from 'glob'
+import { execSync } from 'node:child_process'
+import * as fs from 'node:fs'
 
 interface LocaleData {
   [key: string]: any

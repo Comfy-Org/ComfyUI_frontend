@@ -1,13 +1,12 @@
 // TODO: Fix these tests after migration
 import { afterEach, describe, expect, vi } from 'vitest'
 
-import type { LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
-import {
-  type CanvasPointerEvent,
-  LGraphNode,
-  LLink,
-  LinkConnector,
-  type RerouteId
+import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasPointerEvent,
+  LGraph,
+  Reroute,
+  RerouteId
 } from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from './fixtures/testExtensions'
@@ -41,7 +40,7 @@ const test = baseTest.extend<TestContext>({
     await use(reroutesComplexGraph)
   },
   setConnectingLinks: async (
-    // eslint-disable-next-line no-empty-pattern
+    // oxlint-disable-next-line no-empty-pattern
     {},
     use: (mock: ReturnType<typeof vi.fn>) => Promise<void>
   ) => {
@@ -173,7 +172,9 @@ const test = baseTest.extend<TestContext>({
 
   getNextLinkIds: async ({ graph }, use) => {
     await use((linkIds, expectedExtraLinks = 0) => {
-      const indexes = [...new Array(linkIds.size + expectedExtraLinks).keys()]
+      const indexes = [
+        ...Array.from({ length: linkIds.size + expectedExtraLinks }).keys()
+      ]
       return indexes.map((index) => graph.last_link_id + index + 1)
     })
   },

@@ -24,7 +24,7 @@ test.describe('User Select View', () => {
   })
 
   test('Can create new user', async ({ userSelectPage, page }) => {
-    const randomUser = `test-user-${Math.random().toString(36).substring(2, 7)}`
+    const randomUser = `test-user-${Math.random().toString(36).slice(2, 7)}`
     await page.goto(userSelectPage.url)
     await expect(page).toHaveURL(userSelectPage.selectionUrl)
     await userSelectPage.newUserInput.fill(randomUser)

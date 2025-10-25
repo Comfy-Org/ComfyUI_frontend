@@ -59,7 +59,7 @@
 
     <teleport v-if="isHovered" to="#node-library-node-preview-container">
       <div class="node-lib-node-preview" :style="nodePreviewStyle">
-        <NodePreview ref="previewRef" :node-def="nodeDef" />
+        <NodePreview :node-def="nodeDef" />
       </div>
     </teleport>
   </div>
@@ -132,11 +132,12 @@ function deleteBlueprint() {
   void useSubgraphStore().deleteBlueprint(props.node.data.name)
 }
 
-const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
 const nodePreviewStyle = ref<CSSProperties>({
-  position: 'absolute',
+  position: 'fixed',
   top: '0px',
-  left: '0px'
+  left: '0px',
+  pointerEvents: 'none',
+  zIndex: 1001
 })
 
 const handleNodeHover = async () => {
@@ -144,19 +145,15 @@ const handleNodeHover = async () => {
   if (!hoverTarget) return
 
   const targetRect = hoverTarget.getBoundingClientRect()
+  const margin = 40
 
-  const previewHeight = previewRef.value?.$el.offsetHeight || 0
-  const availableSpaceBelow = window.innerHeight - targetRect.bottom
-
-  nodePreviewStyle.value.top =
-    previewHeight > availableSpaceBelow
-      ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
-      : `${targetRect.top - 40}px`
-  if (sidebarLocation.value === 'left') {
-    nodePreviewStyle.value.left = `${targetRect.right}px`
-  } else {
-    nodePreviewStyle.value.left = `${targetRect.left - 400}px`
-  }
+  nodePreviewStyle.value.top = `${targetRect.top}px`
+  nodePreviewStyle.value.left =
+    sidebarLocation.value === 'left'
+      ? `${targetRect.right + margin}px`
+      : `${targetRect.left - margin}px`
+  nodePreviewStyle.value.transform =
+    sidebarLocation.value === 'right' ? 'translateX(-100%)' : undefined
 }
 
 const container = ref<HTMLElement | null>(null)

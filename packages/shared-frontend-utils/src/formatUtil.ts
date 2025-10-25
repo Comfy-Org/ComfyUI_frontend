@@ -72,7 +72,7 @@ export function formatSize(value?: number) {
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 }
 
 /**
@@ -247,7 +247,7 @@ const format =
 
 export function formatDate(text: string, date: Date) {
   return text.replace(new RegExp(format, 'g'), (text: string): string => {
-    if (text === 'yy') return (date.getFullYear() + '').substring(2)
+    if (text === 'yy') return (date.getFullYear() + '').slice(2)
     if (text === 'yyyy') return date.getFullYear().toString()
     if (text[0] in parts) {
       const p = parts[text[0] as keyof typeof parts](date)
@@ -337,7 +337,7 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
     const repoPath = repoPathMatch?.[1]?.replace(/^\//, '') || ''
 
     return `https://huggingface.co/${repoPath}`
-  } catch (error) {
+  } catch {
     return url
   }
 }

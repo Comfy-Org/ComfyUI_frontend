@@ -1,11 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import {
-  type LayoutChange,
-  LayoutSource,
-  type NodeLayout
-} from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutChange, NodeLayout } from '@/renderer/core/layout/types'
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -170,7 +167,7 @@ describe('layoutStore CRDT operations', () => {
       expect(changes.length).toBeGreaterThanOrEqual(1)
     })
 
-    const lastChange = changes[changes.length - 1]
+    const lastChange = changes.at(-1)!
     expect(lastChange.source).toBe('vue')
     expect(lastChange.operation.actor).toBe('user-123')
 
@@ -202,11 +199,11 @@ describe('layoutStore CRDT operations', () => {
     // Wait for onChange callback to be called (uses setTimeout internally)
     await vi.waitFor(() => {
       expect(changes.length).toBeGreaterThan(0)
-      const lastChange = changes[changes.length - 1]
+      const lastChange = changes.at(-1)!
       expect(lastChange.operation.type).toBe('batchUpdateBounds')
     })
 
-    const lastChange = changes[changes.length - 1]
+    const lastChange = changes.at(-1)!
     if (lastChange.operation.type === 'batchUpdateBounds') {
       expect(lastChange.nodeIds).toContain(nodeId)
       expect(lastChange.operation.bounds[nodeId]?.bounds).toEqual(newBounds)

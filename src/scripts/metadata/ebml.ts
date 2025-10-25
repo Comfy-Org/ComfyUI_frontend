@@ -245,7 +245,7 @@ const parseJsonText = (
   if (jsonEndPos === null) return null
 
   try {
-    return JSON.parse(jsonText.substring(0, jsonEndPos))
+    return JSON.parse(jsonText.slice(0, jsonEndPos))
   } catch {
     return null
   }

@@ -19,7 +19,7 @@ export function useDownload(url: string, fileName?: string) {
 
       const size = response.headers.get('content-length')
       if (size) {
-        setFileSize(parseInt(size))
+        setFileSize(Number.parseInt(size))
       } else {
         console.error('"content-length" header not found')
         return null

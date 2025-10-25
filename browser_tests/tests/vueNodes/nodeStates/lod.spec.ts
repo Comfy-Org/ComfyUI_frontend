@@ -23,10 +23,10 @@ test.describe('Vue Nodes - LOD', () => {
 
     const vueNodesContainer = comfyPage.vueNodes.nodes
     const textboxesInNodes = vueNodesContainer.getByRole('textbox')
-    const buttonsInNodes = vueNodesContainer.getByRole('button')
+    const comboboxesInNodes = vueNodesContainer.getByRole('combobox')
 
     await expect(textboxesInNodes.first()).toBeVisible()
-    await expect(buttonsInNodes.first()).toBeVisible()
+    await expect(comboboxesInNodes.first()).toBeVisible()
 
     await comfyPage.zoom(120, 10)
     await comfyPage.nextFrame()
@@ -34,7 +34,7 @@ test.describe('Vue Nodes - LOD', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('vue-nodes-lod-active.png')
 
     await expect(textboxesInNodes.first()).toBeHidden()
-    await expect(buttonsInNodes.first()).toBeHidden()
+    await expect(comboboxesInNodes.first()).toBeHidden()
 
     await comfyPage.zoom(-120, 10)
     await comfyPage.nextFrame()
@@ -43,6 +43,6 @@ test.describe('Vue Nodes - LOD', () => {
       'vue-nodes-lod-inactive.png'
     )
     await expect(textboxesInNodes.first()).toBeVisible()
-    await expect(buttonsInNodes.first()).toBeVisible()
+    await expect(comboboxesInNodes.first()).toBeVisible()
   })
 })

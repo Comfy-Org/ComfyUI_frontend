@@ -141,7 +141,12 @@ describe('UsageLogsTable', () => {
       return new Date(dateString).toLocaleDateString()
     })
     mockCustomerEventsService.hasAdditionalInfo.mockImplementation((event) => {
-      const { amount, api_name, model, ...otherParams } = event.params || {}
+      const {
+        amount: _amount,
+        api_name: _api_name,
+        model: _model,
+        ...otherParams
+      } = event.params || {}
       return Object.keys(otherParams).length > 0
     })
     mockCustomerEventsService.getTooltipContent.mockImplementation(() => {

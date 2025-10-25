@@ -59,7 +59,7 @@ app.registerExtension({
 
         if (e.touches?.length !== 1) touchZooming = false
         if (touchTime && !e.touches?.length) {
-          if (new Date().getTime() - touchTime.getTime() > 600) {
+          if (Date.now() - touchTime.getTime() > 600) {
             if (e.target === app.canvasEl) {
               const touch = {
                 button: 2, // Right click

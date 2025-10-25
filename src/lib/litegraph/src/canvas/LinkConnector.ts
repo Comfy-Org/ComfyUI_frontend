@@ -673,7 +673,7 @@ export class LinkConnector {
         // If we just connected to an EmptySubgraphOutput, check if we should reuse the slot
         if (output instanceof EmptySubgraphOutput && ioNode.slots.length > 0) {
           // Get the last created slot (newest one)
-          const createdSlot = ioNode.slots[ioNode.slots.length - 1]
+          const createdSlot = ioNode.slots.at(-1)!
 
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphOutput to create a new slot
@@ -719,7 +719,7 @@ export class LinkConnector {
         // If we just connected to an EmptySubgraphInput, check if we should reuse the slot
         if (input instanceof EmptySubgraphInput && ioNode.slots.length > 0) {
           // Get the last created slot (newest one)
-          const createdSlot = ioNode.slots[ioNode.slots.length - 1]
+          const createdSlot = ioNode.slots.at(-1)!
 
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphInput to create a new slot

@@ -753,7 +753,7 @@ var styles = `
 
 var styleSheet = document.createElement('style')
 styleSheet.type = 'text/css'
-styleSheet.innerText = styles
+styleSheet.textContent = styles
 document.head.appendChild(styleSheet)
 
 enum BrushShape {
@@ -1139,7 +1139,7 @@ class MaskEditorDialog extends ComfyDialog {
     const arrayBuffer = new ArrayBuffer(byteString.length)
     const uint8Array = new Uint8Array(arrayBuffer)
     for (let i = 0; i < byteString.length; i++) {
-      uint8Array[i] = byteString.charCodeAt(i)
+      uint8Array[i] = byteString.codePointAt(i)!
     }
     return new Blob([arrayBuffer], { type: contentType })
   }
@@ -2705,7 +2705,7 @@ class BrushTool {
       cumulativeDistances[i] = cumulativeDistances[i - 1] + dist
     }
 
-    const totalLength = cumulativeDistances[cumulativeDistances.length - 1]
+    const totalLength = cumulativeDistances.at(-1)!
     const numPoints = Math.floor(totalLength / distance)
 
     for (let i = 0; i <= numPoints; i++) {
@@ -2721,7 +2721,7 @@ class BrushTool {
       }
 
       if (idx >= points.length - 1) {
-        result.push(points[points.length - 1])
+        result.push(points.at(-1)!)
         continue
       }
 
@@ -3001,7 +3001,7 @@ class UIManager {
   }
 
   async initUI() {
-    this.saveButton.innerText = t('g.save')
+    this.saveButton.textContent = t('g.save')
     this.saveButton.disabled = false
 
     await this.setImages(this.imgCanvas) //probably change method to initImageCanvas
@@ -3107,7 +3107,7 @@ class UIManager {
       1,
       (await this.messageBroker.pull('brushSettings')).size,
       (_, value) => {
-        this.messageBroker.publish('setBrushSize', parseInt(value))
+        this.messageBroker.publish('setBrushSize', Number.parseInt(value))
         this.updateBrushPreview()
       }
     )
@@ -3120,7 +3120,7 @@ class UIManager {
       0.01,
       (await this.messageBroker.pull('brushSettings')).opacity,
       (_, value) => {
-        this.messageBroker.publish('setBrushOpacity', parseFloat(value))
+        this.messageBroker.publish('setBrushOpacity', Number.parseFloat(value))
         this.updateBrushPreview()
       }
     )
@@ -3133,7 +3133,7 @@ class UIManager {
       0.01,
       (await this.messageBroker.pull('brushSettings')).hardness,
       (_, value) => {
-        this.messageBroker.publish('setBrushHardness', parseFloat(value))
+        this.messageBroker.publish('setBrushHardness', Number.parseFloat(value))
         this.updateBrushPreview()
       }
     )
@@ -3148,14 +3148,14 @@ class UIManager {
       (_, value) => {
         this.messageBroker.publish(
           'setBrushSmoothingPrecision',
-          parseInt(value)
+          Number.parseInt(value)
         )
       }
     )
 
     const resetBrushSettingsButton = document.createElement('button')
     resetBrushSettingsButton.id = 'resetBrushSettingsButton'
-    resetBrushSettingsButton.innerText = t('maskEditor.Reset to Default')
+    resetBrushSettingsButton.textContent = t('maskEditor.Reset to Default')
 
     resetBrushSettingsButton.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Arc)
@@ -3185,7 +3185,7 @@ class UIManager {
 
     // Add the color picker title
     const colorPickerTitle = document.createElement('span')
-    colorPickerTitle.innerText = 'Color Selector'
+    colorPickerTitle.textContent = 'Color Selector'
     colorPickerTitle.classList.add('maskEditor_sidePanelSubTitle') // Mimic brush shape title style
     color_picker_container.appendChild(colorPickerTitle)
 
@@ -3221,7 +3221,10 @@ class UIManager {
       1,
       tolerance,
       (_, value) => {
-        this.messageBroker.publish('setPaintBucketTolerance', parseInt(value))
+        this.messageBroker.publish(
+          'setPaintBucketTolerance',
+          Number.parseInt(value)
+        )
       }
     )
 
@@ -3234,7 +3237,7 @@ class UIManager {
       1,
       fillOpacity,
       (_, value) => {
-        this.messageBroker.publish('setFillOpacity', parseInt(value))
+        this.messageBroker.publish('setFillOpacity', Number.parseInt(value))
       }
     )
 
@@ -3263,7 +3266,10 @@ class UIManager {
       1,
       tolerance,
       (_, value) => {
-        this.messageBroker.publish('setColorSelectTolerance', parseInt(value))
+        this.messageBroker.publish(
+          'setColorSelectTolerance',
+          Number.parseInt(value)
+        )
       }
     )
 
@@ -3275,7 +3281,10 @@ class UIManager {
       1,
       100, // Default to 100%
       (_, value) => {
-        this.messageBroker.publish('setSelectionOpacity', parseInt(value))
+        this.messageBroker.publish(
+          'setSelectionOpacity',
+          Number.parseInt(value)
+        )
       }
     )
 
@@ -3316,7 +3325,7 @@ class UIManager {
       1,
       0,
       (_, value) => {
-        this.messageBroker.publish('setMaskTolerance', parseInt(value))
+        this.messageBroker.publish('setMaskTolerance', Number.parseInt(value))
       }
     )
 
@@ -3427,12 +3436,12 @@ class UIManager {
     layer_selection_container.classList.add(accentColor)
     layer_selection_container.classList.add('maskEditor_layerRow')
 
-    this.layerButtons.mask.innerText = 'Activate Layer'
+    this.layerButtons.mask.textContent = 'Activate Layer'
     this.layerButtons.mask.addEventListener('click', async () => {
       this.setActiveLayer('mask')
     })
 
-    this.layerButtons.rgb.innerText = 'Activate Layer'
+    this.layerButtons.rgb.textContent = 'Activate Layer'
     this.layerButtons.rgb.addEventListener('click', async () => {
       this.setActiveLayer('rgb')
     })
@@ -3497,7 +3506,7 @@ class UIManager {
     blending_options.forEach((option) => {
       var option_element = document.createElement('option')
       option_element.value = option
-      option_element.innerText = option
+      option_element.textContent = option
       mask_layer_dropdown.appendChild(option_element)
 
       if (option == this.maskBlendMode) {
@@ -3525,7 +3534,7 @@ class UIManager {
       0.01,
       this.mask_opacity,
       (_, value) => {
-        this.mask_opacity = parseFloat(value)
+        this.mask_opacity = Number.parseFloat(value)
         this.maskCanvas.style.opacity = String(this.mask_opacity)
 
         if (this.mask_opacity == 0) {
@@ -3641,7 +3650,7 @@ class UIManager {
   private createHeadline(title: string) {
     var headline = document.createElement('h3')
     headline.classList.add('maskEditor_sidePanelTitle')
-    headline.innerText = title
+    headline.textContent = title
 
     return headline
   }
@@ -3660,7 +3669,7 @@ class UIManager {
   private createContainerTitle(title: string) {
     var container_title = document.createElement('span')
     container_title.classList.add('maskEditor_sidePanelSubTitle')
-    container_title.innerText = title
+    container_title.textContent = title
 
     return container_title
   }
@@ -3743,7 +3752,7 @@ class UIManager {
     options.forEach((option) => {
       var option_element = document.createElement('option')
       option_element.value = option
-      option_element.innerText = option
+      option_element.textContent = option
       dropdown.appendChild(option_element)
     })
 
@@ -3783,7 +3792,7 @@ class UIManager {
 
     var top_bar_title = document.createElement('h1')
     top_bar_title.id = 'maskEditor_topBarTitle'
-    top_bar_title.innerText = 'ComfyUI'
+    top_bar_title.textContent = 'ComfyUI'
 
     top_bar_title_container.appendChild(top_bar_title)
 
@@ -3813,7 +3822,7 @@ class UIManager {
     var top_bar_invert_button = document.createElement('button')
     top_bar_invert_button.id = 'maskEditor_topBarInvertButton'
     top_bar_invert_button.classList.add(buttonAccentColor)
-    top_bar_invert_button.innerText = t('maskEditor.Invert')
+    top_bar_invert_button.textContent = t('maskEditor.Invert')
     top_bar_invert_button.addEventListener('click', () => {
       this.messageBroker.publish('invert')
     })
@@ -3821,7 +3830,7 @@ class UIManager {
     var top_bar_clear_button = document.createElement('button')
     top_bar_clear_button.id = 'maskEditor_topBarClearButton'
     top_bar_clear_button.classList.add(buttonAccentColor)
-    top_bar_clear_button.innerText = t('maskEditor.Clear')
+    top_bar_clear_button.textContent = t('maskEditor.Clear')
 
     top_bar_clear_button.addEventListener('click', () => {
       this.maskCtx.clearRect(
@@ -3837,7 +3846,7 @@ class UIManager {
     var top_bar_save_button = document.createElement('button')
     top_bar_save_button.id = 'maskEditor_topBarSaveButton'
     top_bar_save_button.classList.add(buttonAccentColor)
-    top_bar_save_button.innerText = t('g.save')
+    top_bar_save_button.textContent = t('g.save')
     this.saveButton = top_bar_save_button
 
     top_bar_save_button.addEventListener('click', () => {
@@ -3847,7 +3856,7 @@ class UIManager {
     var top_bar_cancel_button = document.createElement('button')
     top_bar_cancel_button.id = 'maskEditor_topBarCancelButton'
     top_bar_cancel_button.classList.add(buttonAccentColor)
-    top_bar_cancel_button.innerText = t('g.cancel')
+    top_bar_cancel_button.textContent = t('g.cancel')
 
     top_bar_cancel_button.addEventListener('click', () => {
       this.maskEditor.destroy()
@@ -3968,12 +3977,12 @@ class UIManager {
 
       var toolPanel_zoomText = document.createElement('span')
       toolPanel_zoomText.id = 'maskEditor_toolPanelZoomText'
-      toolPanel_zoomText.innerText = '100%'
+      toolPanel_zoomText.textContent = '100%'
       this.zoomTextHTML = toolPanel_zoomText
 
       var toolPanel_DimensionsText = document.createElement('span')
       toolPanel_DimensionsText.id = 'maskEditor_toolPanelDimensionsText'
-      toolPanel_DimensionsText.innerText = ' '
+      toolPanel_DimensionsText.textContent = ' '
       this.dimensionsTextHTML = toolPanel_DimensionsText
 
       toolPanel_zoomIndicator.appendChild(toolPanel_zoomText)
@@ -4190,7 +4199,7 @@ class UIManager {
     rgbCanvas.width = this.image.width
     rgbCanvas.height = this.image.height
 
-    this.dimensionsTextHTML.innerText = `${this.image.width}x${this.image.height}`
+    this.dimensionsTextHTML.textContent = `${this.image.width}x${this.image.height}`
 
     await this.invalidateCanvas(this.image, mask_image, this.paint_image)
     this.messageBroker.publish('initZoomPan', [this.image, this.rootElement])
@@ -4426,7 +4435,7 @@ class UIManager {
   }
 
   setSaveButtonText(text: string) {
-    this.saveButton.innerText = text
+    this.saveButton.textContent = text
   }
 
   handlePaintBucketCursor(isPaintBucket: boolean) {
@@ -4474,11 +4483,11 @@ class UIManager {
   }
 
   setZoomText(zoomText: string) {
-    this.zoomTextHTML.innerText = zoomText
+    this.zoomTextHTML.textContent = zoomText
   }
 
   setDimensionsText(dimensionsText: string) {
-    this.dimensionsTextHTML.innerText = dimensionsText
+    this.dimensionsTextHTML.textContent = dimensionsText
   }
 }
 
@@ -4780,7 +4789,7 @@ class PanAndZoomManager {
 
     this.messageBroker.publish('setBrushVisibility', false)
     if (event.touches.length === 2) {
-      const currentTime = new Date().getTime()
+      const currentTime = Date.now()
       const tapTimeDiff = currentTime - this.lastTwoFingerTap
 
       if (tapTimeDiff < this.DOUBLE_TAP_DELAY) {

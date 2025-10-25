@@ -9,7 +9,7 @@ export function clone<T>(obj: T): T {
     if (typeof structuredClone !== 'undefined') {
       return structuredClone(obj)
     }
-  } catch (error) {
+  } catch {
     // structuredClone is stricter than using JSON.parse/stringify so fallback to that
   }
 
@@ -33,7 +33,7 @@ export async function addStylesheet(
   return new Promise((res, rej) => {
     let url
     if (urlOrFile.endsWith('.js')) {
-      url = urlOrFile.substr(0, urlOrFile.length - 2) + 'css'
+      url = urlOrFile.slice(0, urlOrFile.length - 2) + 'css'
     } else {
       url = new URL(
         urlOrFile,
@@ -51,20 +51,8 @@ export async function addStylesheet(
   })
 }
 
-export function downloadBlob(filename: string, blob: Blob) {
-  const url = URL.createObjectURL(blob)
-  const a = $el('a', {
-    href: url,
-    download: filename,
-    style: { display: 'none' },
-    parent: document.body
-  })
-  a.click()
-  setTimeout(function () {
-    a.remove()
-    window.URL.revokeObjectURL(url)
-  }, 0)
-}
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export { downloadBlob } from '@/base/common/downloadUtil'
 
 export function uploadFile(accept: string) {
   return new Promise<File>((resolve, reject) => {

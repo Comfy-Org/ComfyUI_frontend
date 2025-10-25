@@ -269,7 +269,7 @@ export class SceneManager implements SceneManagerInterface {
     width: number,
     height: number
   ): Promise<{ scene: string; mask: string; normal: string; lineart: string }> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         const originalWidth = this.renderer.domElement.width
         const originalHeight = this.renderer.domElement.height

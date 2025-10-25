@@ -18,14 +18,14 @@ export function getFromPngBuffer(buffer: ArrayBuffer) {
     // Get the length of the chunk
     const length = dataView.getUint32(offset)
     // Get the chunk type
-    const type = String.fromCharCode(...pngData.slice(offset + 4, offset + 8))
+    const type = String.fromCodePoint(...pngData.slice(offset + 4, offset + 8))
     if (type === 'tEXt' || type == 'comf' || type === 'iTXt') {
       // Get the keyword
       let keyword_end = offset + 8
       while (pngData[keyword_end] !== 0) {
         keyword_end++
       }
-      const keyword = String.fromCharCode(
+      const keyword = String.fromCodePoint(
         ...pngData.slice(offset + 8, keyword_end)
       )
       // Get the text

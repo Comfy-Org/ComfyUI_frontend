@@ -19,7 +19,7 @@ export class Topbar {
   async getActiveTabName(): Promise<string> {
     return this.page
       .locator('.workflow-tabs .p-togglebutton-checked')
-      .innerText()
+      .textContent()
   }
 
   /**

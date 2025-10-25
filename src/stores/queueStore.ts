@@ -85,7 +85,7 @@ export class ResultItemImpl {
   }
 
   get urlWithTimestamp(): string {
-    return `${this.url}&t=${+new Date()}`
+    return `${this.url}&t=${Date.now()}`
   }
 
   get isVhsFormat(): boolean {

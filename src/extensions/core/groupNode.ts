@@ -548,7 +548,7 @@ export class GroupNodeConfig {
 
       // @ts-expect-error fixme ts strict error
       let name = this.oldToNewWidgetMap[sourceNodeId]['value']
-      name = name.substr(0, name.length - 6)
+      name = name.slice(0, name.length - 6)
       primitiveConfig[1].control_after_generate = true
       primitiveConfig[1].control_prefix = name
 
@@ -1011,8 +1011,7 @@ export class GroupNodeHandler {
         for (let i = 0; i < c.nodes.length; i++) {
           let id = innerNodes?.[i]?.id
           // Use existing IDs if they are set on the inner nodes
-          // @ts-expect-error id can be string or number
-          if (id == null || isNaN(id)) {
+          if (id == null || Number.isNaN(id)) {
             // @ts-expect-error fixme ts strict error
             id = undefined
           } else {

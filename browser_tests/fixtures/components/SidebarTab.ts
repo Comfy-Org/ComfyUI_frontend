@@ -104,7 +104,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async getActiveWorkflowName() {
     return await this.root
       .locator('.comfyui-workflows-open .p-tree-node-selected .node-label')
-      .innerText()
+      .textContent()
   }
 
   async getTopLevelSavedWorkflowNames() {

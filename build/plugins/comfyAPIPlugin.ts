@@ -1,9 +1,37 @@
-import path from 'path'
+import path from 'node:path'
 import type { Plugin } from 'vite'
 
 interface ShimResult {
   code: string
   exports: string[]
+}
+
+const SKIP_WARNING_FILES = new Set(['scripts/app', 'scripts/api'])
+
+/** Files that will be removed in v1.34 */
+const DEPRECATED_FILES = [
+  'scripts/ui',
+  'extensions/core/maskEditorOld',
+  'extensions/core/groupNode'
+] as const
+
+function getWarningMessage(
+  fileKey: string,
+  shimFileName: string
+): string | null {
+  if (SKIP_WARNING_FILES.has(fileKey)) {
+    return null
+  }
+
+  const isDeprecated = DEPRECATED_FILES.some((deprecatedPath) =>
+    fileKey.startsWith(deprecatedPath)
+  )
+
+  if (isDeprecated) {
+    return `[ComfyUI Deprecated] Importing from "${shimFileName}" is deprecated and will be removed in v1.34.`
+  }
+
+  return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
 function isLegacyFile(id: string): boolean {
@@ -45,7 +73,7 @@ function transformExports(code: string, id: string): ShimResult {
 function getModuleName(id: string): string {
   // Simple example to derive a module name from the file path
   const parts = id.split('/')
-  const fileName = parts[parts.length - 1]
+  const fileName = parts.at(-1)!
   return fileName.replace(/\.\w+$/, '') // Remove file extension
 }
 
@@ -63,12 +91,22 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
           const relativePath = path.relative(path.join(projectRoot, 'src'), id)
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
-          const shimComment = `// Shim for ${relativePath}\n`
+          let shimContent = `// Shim for ${relativePath}\n`
+
+          const fileKey = relativePath.replace(/\.ts$/, '').replace(/\\/g, '/')
+          const warningMessage = getWarningMessage(fileKey, shimFileName)
+
+          if (warningMessage) {
+            // It will only display once because it is at the root of the file.
+            shimContent += `console.warn('${warningMessage}');\n`
+          }
+
+          shimContent += result.exports.join('')
 
           this.emitFile({
             type: 'asset',
             fileName: shimFileName,
-            source: shimComment + result.exports.join('')
+            source: shimContent
           })
         }
 

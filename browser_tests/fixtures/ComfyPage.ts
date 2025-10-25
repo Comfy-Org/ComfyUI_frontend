@@ -1,7 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
-import * as fs from 'fs'
+import * as fs from 'node:fs'
 
 import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
@@ -358,7 +358,7 @@ export class ComfyPage {
     await this.page.evaluate(
       ({ commandId, commandStr }) => {
         const app = window['app']
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
+        const randomSuffix = Math.random().toString(36).slice(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
 
         app.registerExtension({
@@ -366,6 +366,7 @@ export class ComfyPage {
           commands: [
             {
               id: commandId,
+              // oxlint-disable-next-line no-eval
               function: eval(commandStr)
             }
           ]
@@ -379,7 +380,7 @@ export class ComfyPage {
     await this.page.evaluate(
       ({ keyCombo, commandStr }) => {
         const app = window['app']
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
+        const randomSuffix = Math.random().toString(36).slice(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
         const commandId = `TestCommand_${randomSuffix}`
 
@@ -394,6 +395,7 @@ export class ComfyPage {
           commands: [
             {
               id: commandId,
+              // oxlint-disable-next-line no-eval
               function: eval(commandStr)
             }
           ]

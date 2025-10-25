@@ -18,7 +18,6 @@
         borderClass,
         outlineClass,
         {
-          'animate-pulse': executing,
           'before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
@@ -35,8 +34,8 @@
       {
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
-        backgroundColor: nodeBodyBackgroundColor,
-        opacity: nodeOpacity
+        opacity: nodeOpacity,
+        '--node-component-surface': nodeBodyBackgroundColor
       },
       dragStyle
     ]"
@@ -45,10 +44,6 @@
     @contextmenu="handleContextMenu"
   >
     <div class="flex items-center">
-      <template v-if="isCollapsed">
-        <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
-        <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
-      </template>
       <NodeHeader
         :node-data="nodeData"
         :collapsed="isCollapsed"
@@ -108,12 +103,17 @@
       </div>
     </template>
 
-    <!-- Resize handle -->
-    <div
-      v-if="!isCollapsed"
-      class="absolute right-0 bottom-0 h-3 w-3 cursor-se-resize opacity-0 transition-opacity duration-200 hover:bg-white hover:opacity-20"
-      @pointerdown.stop="startResize"
-    />
+    <!-- Resize handles -->
+    <template v-if="!isCollapsed">
+      <div
+        v-for="handle in cornerResizeHandles"
+        :key="handle.id"
+        role="button"
+        :aria-label="handle.ariaLabel"
+        :class="cn(baseResizeHandleClasses, handle.classes)"
+        @pointerdown.stop="handleResizePointerDown(handle.direction)($event)"
+      />
+    </template>
   </div>
 </template>
 
@@ -121,6 +121,7 @@
 import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -147,14 +148,14 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useNodeResize } from '../composables/useNodeResize'
+import type { ResizeHandleDirection } from '../interactions/resize/resizeMath'
+import { useNodeResize } from '../interactions/resize/useNodeResize'
 import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
-import SlotConnectionDot from './SlotConnectionDot.vue'
 
 // Extended props for main node component
 interface LGraphNodeProps {
@@ -164,6 +165,8 @@ interface LGraphNodeProps {
 }
 
 const { nodeData, error = null } = defineProps<LGraphNodeProps>()
+
+const { t } = useI18n()
 
 const {
   handleNodeCollapse,
@@ -243,8 +246,7 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-// Use layout system for node position and dragging
-const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
@@ -282,18 +284,72 @@ onMounted(() => {
   }
 })
 
+const baseResizeHandleClasses =
+  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+const POSITION_EPSILON = 0.01
+
+type CornerResizeHandle = {
+  id: string
+  direction: ResizeHandleDirection
+  classes: string
+  ariaLabel: string
+}
+
+const cornerResizeHandles: CornerResizeHandle[] = [
+  {
+    id: 'se',
+    direction: { horizontal: 'right', vertical: 'bottom' },
+    classes: 'right-0 bottom-0 cursor-se-resize',
+    ariaLabel: t('g.resizeFromBottomRight')
+  },
+  {
+    id: 'ne',
+    direction: { horizontal: 'right', vertical: 'top' },
+    classes: 'right-0 top-0 cursor-ne-resize',
+    ariaLabel: t('g.resizeFromTopRight')
+  },
+  {
+    id: 'sw',
+    direction: { horizontal: 'left', vertical: 'bottom' },
+    classes: 'left-0 bottom-0 cursor-sw-resize',
+    ariaLabel: t('g.resizeFromBottomLeft')
+  },
+  {
+    id: 'nw',
+    direction: { horizontal: 'left', vertical: 'top' },
+    classes: 'left-0 top-0 cursor-nw-resize',
+    ariaLabel: t('g.resizeFromTopLeft')
+  }
+]
+
 const { startResize } = useNodeResize(
-  (newSize, element) => {
-    // Apply size directly to DOM element - ResizeObserver will pick this up
+  (result, element) => {
     if (isCollapsed.value) return
 
-    element.style.width = `${newSize.width}px`
-    element.style.height = `${newSize.height}px`
+    // Apply size directly to DOM element - ResizeObserver will pick this up
+    element.style.width = `${result.size.width}px`
+    element.style.height = `${result.size.height}px`
+
+    const currentPosition = position.value
+    const deltaX = Math.abs(result.position.x - currentPosition.x)
+    const deltaY = Math.abs(result.position.y - currentPosition.y)
+
+    if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
+      moveNodeTo(result.position)
+    }
   },
   {
     transformState
   }
 )
+
+const handleResizePointerDown = (direction: ResizeHandleDirection) => {
+  return (event: PointerEvent) => {
+    if (nodeData.flags?.pinned) return
+
+    startResize(event, direction, { ...position.value })
+  }
+}
 
 whenever(isCollapsed, () => {
   const element = nodeContainerRef.value

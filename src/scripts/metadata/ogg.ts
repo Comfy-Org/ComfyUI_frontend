@@ -5,12 +5,12 @@ export async function getOggMetadata(file: File) {
   )
   reader.readAsArrayBuffer(file)
   const arrayBuffer = (await read_process) as ArrayBuffer
-  const signature = String.fromCharCode(...new Uint8Array(arrayBuffer, 0, 4))
+  const signature = String.fromCodePoint(...new Uint8Array(arrayBuffer, 0, 4))
   if (signature !== 'OggS') console.error('Invalid file signature.')
   let oggs = 0
   let header = ''
   while (header.length < arrayBuffer.byteLength) {
-    const page = String.fromCharCode(
+    const page = String.fromCodePoint(
       ...new Uint8Array(arrayBuffer, header.length, header.length + 4096)
     )
     if (page.match('OggS\u0000')) oggs++
@@ -18,10 +18,12 @@ export async function getOggMetadata(file: File) {
     if (oggs > 1) break
   }
   let workflow, prompt
+  // eslint-disable-next-line no-control-regex
   let prompt_s = header
     .match(/prompt=(\{.*?(\}.*?\u0000))/s)?.[1]
     ?.match(/\{.*\}/)?.[0]
   if (prompt_s) prompt = JSON.parse(prompt_s)
+  // eslint-disable-next-line no-control-regex
   let workflow_s = header
     .match(/workflow=(\{.*?(\}.*?\u0000))/s)?.[1]
     ?.match(/\{.*\}/)?.[0]

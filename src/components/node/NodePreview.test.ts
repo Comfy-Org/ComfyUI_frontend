@@ -173,7 +173,8 @@ describe('NodePreview', () => {
     })
 
     it('does not render description element when description is undefined', () => {
-      const { description, ...nodeDefWithoutDescription } = mockNodeDef
+      const { description: _description, ...nodeDefWithoutDescription } =
+        mockNodeDef
       const wrapper = mountComponent(
         nodeDefWithoutDescription as ComfyNodeDefV2
       )

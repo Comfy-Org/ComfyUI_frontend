@@ -45,16 +45,11 @@ export const signUpSchema = passwordSchema
     email: z
       .string()
       .email(t('validation.invalidEmail'))
-      .min(1, t('validation.required')),
-    personalDataConsent: z.boolean()
+      .min(1, t('validation.required'))
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: t('validation.password.match'),
     path: ['confirmPassword']
-  })
-  .refine((data) => data.personalDataConsent === true, {
-    message: t('validation.personalDataConsentRequired'),
-    path: ['personalDataConsent']
   })
 
 export type SignUpData = z.infer<typeof signUpSchema>

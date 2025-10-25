@@ -5,8 +5,8 @@ import {
   readdirSync,
   rmSync,
   writeFileSync
-} from 'fs'
-import { dirname, join } from 'path'
+} from 'node:fs'
+import { dirname, join } from 'node:path'
 
 // Ensure directories exist
 function ensureDir(dir: string) {

@@ -126,7 +126,7 @@ app.registerExtension({
       // Upload image to temp storage
       // @ts-expect-error fixme ts strict error
       const blob = await new Promise<Blob>((r) => canvas.toBlob(r))
-      const name = `${+new Date()}.png`
+      const name = `${Date.now()}.png`
       const file = new File([blob], name)
       const body = new FormData()
       body.append('image', file)

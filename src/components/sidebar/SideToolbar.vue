@@ -180,7 +180,7 @@ onMounted(() => {
  * but need to reference sidebar dimensions for proper positioning.
  */
 :root {
-  --sidebar-padding: 8px;
+  --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
 
   --sidebar-default-floating-width: 56px;

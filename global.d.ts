@@ -4,12 +4,19 @@ declare const __SENTRY_DSN__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
-declare const __MIXPANEL_TOKEN__: string
 
-type BuildFeatureFlags = {
-  REQUIRE_SUBSCRIPTION: boolean
+interface Window {
+  __CONFIG__: {
+    mixpanel_token?: string
+    subscription_required?: boolean
+    server_health_alert?: {
+      message: string
+      tooltip?: string
+      severity?: 'info' | 'warning' | 'error'
+      badge?: string
+    }
+  }
 }
-declare const __BUILD_FLAGS__: BuildFeatureFlags
 
 interface Navigator {
   /**

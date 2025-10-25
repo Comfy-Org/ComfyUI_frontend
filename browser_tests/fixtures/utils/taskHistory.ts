@@ -1,7 +1,7 @@
 import type { Request, Route } from '@playwright/test'
 import _ from 'es-toolkit/compat'
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
 import { v4 as uuidv4 } from 'uuid'
 
 import type {

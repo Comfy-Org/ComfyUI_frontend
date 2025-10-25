@@ -13,7 +13,7 @@ export class ComfyActionbar {
 
   async isDocked() {
     const className = await this.root.getAttribute('class')
-    return className?.includes('is-docked') ?? false
+    return className?.includes('static') ?? false
   }
 }
 

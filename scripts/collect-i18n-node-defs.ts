@@ -1,9 +1,9 @@
-import * as fs from 'fs'
+import * as fs from 'node:fs'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import { normalizeI18nKey } from '../packages/shared-frontend-utils/src/formatUtil'
 import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 
 const localePath = './src/locales/en/main.json'
@@ -173,7 +173,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
       .map((nodeDef) => {
         const inputs = {
           ...extractInputs(nodeDef),
-          ...(nodeDefLabels[nodeDef.name] ?? {})
+          ...nodeDefLabels[nodeDef.name]
         }
 
         return [

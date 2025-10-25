@@ -144,7 +144,7 @@ export const useDialogService = () => {
         : error.stack?.match(/(\/extensions\/.*\.js)/)?.[1]
 
     const extensionFile = filename
-      ? filename.substring(filename.indexOf('/extensions/'))
+      ? filename.slice(filename.indexOf('/extensions/'))
       : undefined
 
     return {
@@ -488,7 +488,7 @@ export const useDialogService = () => {
   }
 
   function showSubscriptionRequiredDialog() {
-    if (!isCloud || !__BUILD_FLAGS__.REQUIRE_SUBSCRIPTION) {
+    if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
 

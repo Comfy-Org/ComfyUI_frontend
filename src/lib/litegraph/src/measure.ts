@@ -334,7 +334,7 @@ export function createBounds(
     bounds[2] = Math.max(bounds[2], rect[0] + rect[2])
     bounds[3] = Math.max(bounds[3], rect[1] + rect[3])
   }
-  if (!bounds.every((x) => isFinite(x))) return null
+  if (!bounds.every((x) => Number.isFinite(x))) return null
 
   return [
     bounds[0] - padding,

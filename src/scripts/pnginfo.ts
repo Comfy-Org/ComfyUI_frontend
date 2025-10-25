@@ -21,7 +21,7 @@ export function getAvifMetadata(file: File): Promise<Record<string, string>> {
 // @ts-expect-error fixme ts strict error
 function parseExifData(exifData) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
-  const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
+  const isLittleEndian = String.fromCodePoint(...exifData.slice(0, 2)) === 'II'
 
   // Function to read 16-bit and 32-bit integers from binary data
   // @ts-expect-error fixme ts strict error
@@ -103,12 +103,12 @@ export function getWebpMetadata(file) {
       // Loop through the chunks in the WEBP file
       while (offset < webp.length) {
         const chunk_length = dataView.getUint32(offset + 4, true)
-        const chunk_type = String.fromCharCode(
+        const chunk_type = String.fromCodePoint(
           ...webp.slice(offset, offset + 4)
         )
         if (chunk_type === 'EXIF') {
           if (
-            String.fromCharCode(...webp.slice(offset + 8, offset + 8 + 6)) ==
+            String.fromCodePoint(...webp.slice(offset + 8, offset + 8 + 6)) ==
             'Exif\0\0'
           ) {
             offset += 6
@@ -167,7 +167,7 @@ export async function importA1111(graph, parameters) {
   if (p > -1) {
     const embeddings = await api.getEmbeddings()
     const opts = parameters
-      .substr(p)
+      .slice(p)
       .split('\n')[1]
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
@@ -176,15 +176,15 @@ export async function importA1111(graph, parameters) {
       .reduce((p, n) => {
         const s = n.split(':')
         if (s[1].endsWith(',')) {
-          s[1] = s[1].substr(0, s[1].length - 1)
+          s[1] = s[1].slice(0, s[1].length - 1)
         }
         p[s[0].trim().toLowerCase()] = s[1].trim()
         return p
       }, {})
     const p2 = parameters.lastIndexOf('\nNegative prompt:', p)
     if (p2 > -1) {
-      let positive = parameters.substr(0, p2).trim()
-      let negative = parameters.substring(p2 + 18, p).trim()
+      let positive = parameters.slice(0, p2).trim()
+      let negative = parameters.slice(p2 + 18, p).trim()
 
       const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')
       const clipSkipNode = LiteGraph.createNode('CLIPSetLastLayer')
@@ -231,8 +231,8 @@ export async function importA1111(graph, parameters) {
         // @ts-expect-error fixme ts strict error
         text = text.replace(/<lora:([^:]+:[^>]+)>/g, function (m, c) {
           const s = c.split(':')
-          const weight = parseFloat(s[1])
-          if (isNaN(weight)) {
+          const weight = Number.parseFloat(s[1])
+          if (Number.isNaN(weight)) {
             console.warn('Invalid LORA', m)
           } else {
             loras.push({ name: s[0], weight })

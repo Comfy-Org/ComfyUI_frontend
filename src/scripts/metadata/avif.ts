@@ -40,7 +40,7 @@ const parseInfeBox = (dataView: DataView, start: number): AvifInfeBox => {
 
     item_protection_index = dataView.getUint16(offset)
     offset += 2
-    item_type = String.fromCharCode(
+    item_type = String.fromCodePoint(
       ...new Uint8Array(dataView.buffer, dataView.byteOffset + offset, 4)
     )
     offset += 4
@@ -89,7 +89,7 @@ const parseIinfBox = (
   const entries: AvifInfeBox[] = []
   for (let i = 0; i < entry_count; i++) {
     const boxSize = dataView.getUint32(offset)
-    const boxType = String.fromCharCode(
+    const boxType = String.fromCodePoint(
       ...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4)
     )
 
@@ -195,7 +195,7 @@ function findBox(
   while (offset < end) {
     if (offset + 8 > end) break
     const boxLength = dataView.getUint32(offset)
-    const boxType = String.fromCharCode(
+    const boxType = String.fromCodePoint(
       ...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4)
     )
 
@@ -321,7 +321,7 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
 // @ts-expect-error fixme ts strict error
 function parseExifData(exifData) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
-  const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
+  const isLittleEndian = String.fromCodePoint(...exifData.slice(0, 2)) === 'II'
 
   // Function to read 16-bit and 32-bit integers from binary data
   // @ts-expect-error fixme ts strict error

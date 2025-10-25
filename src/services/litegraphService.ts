@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
@@ -756,18 +757,10 @@ export const useLitegraphService = () => {
             {
               content: 'Save Image',
               callback: () => {
-                const a = document.createElement('a')
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
-                a.href = url.toString()
-                a.setAttribute(
-                  'download',
-                  // @ts-expect-error fixme ts strict error
-                  new URLSearchParams(url.search).get('filename')
-                )
-                document.body.append(a)
-                a.click()
-                requestAnimationFrame(() => a.remove())
+                const filename = new URLSearchParams(url.search).get('filename')
+                downloadFile(url.toString(), filename ?? undefined)
               }
             }
           )

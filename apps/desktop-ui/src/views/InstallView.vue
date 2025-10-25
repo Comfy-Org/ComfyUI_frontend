@@ -1,10 +1,10 @@
 <template>
   <BaseViewTemplate dark>
     <!-- Fixed height container with flexbox layout for proper content management -->
-    <div class="w-full h-full flex flex-col">
+    <div class="flex h-full w-full flex-col">
       <Stepper
         v-model:value="currentStep"
-        class="flex flex-col h-full"
+        class="flex h-full flex-col"
         @update:value="handleStepChange"
       >
         <!-- Main content area that grows to fill available space -->
@@ -37,7 +37,7 @@
 
         <!-- Install footer with navigation -->
         <InstallFooter
-          class="w-full max-w-2xl my-6 mx-auto"
+          class="mx-auto my-6 w-full max-w-2xl"
           :current-step
           :can-proceed
           :disable-location-step="noGpu"
@@ -99,8 +99,8 @@ const handleStepChange = (value: string | number) => {
 }
 
 const setHighestStep = (value: string | number) => {
-  const int = typeof value === 'number' ? value : parseInt(value, 10)
-  if (!isNaN(int) && int > highestStep.value) highestStep.value = int
+  const int = typeof value === 'number' ? value : Number.parseInt(value, 10)
+  if (!Number.isNaN(int) && int > highestStep.value) highestStep.value = int
 }
 
 const hasError = computed(() => pathError.value !== '')
@@ -124,7 +124,7 @@ const canProceed = computed(() => {
 
 // Navigation methods
 const goToNextStep = () => {
-  const nextStep = (parseInt(currentStep.value) + 1).toString()
+  const nextStep = (Number.parseInt(currentStep.value) + 1).toString()
   currentStep.value = nextStep
   setHighestStep(nextStep)
   electronAPI().Events.trackEvent('install_stepper_change', {
@@ -133,7 +133,7 @@ const goToNextStep = () => {
 }
 
 const goToPreviousStep = () => {
-  const prevStep = (parseInt(currentStep.value) - 1).toString()
+  const prevStep = (Number.parseInt(currentStep.value) - 1).toString()
   currentStep.value = prevStep
   electronAPI().Events.trackEvent('install_stepper_change', {
     step: prevStep

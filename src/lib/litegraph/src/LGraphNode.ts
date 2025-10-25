@@ -217,7 +217,6 @@ export interface LGraphNode {
  * @param title a name for the node
  * @param type a type for the node
  */
-
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
@@ -3679,7 +3678,7 @@ export class LGraphNode
         }
         ctx.font = savedFont // Restore font after button measurements
         if (buttonsWidth > 0) {
-          buttonsWidth += 10 // Extra margin before buttons
+          buttonsWidth -= 20 // Reduce by empty padding
           availableWidth -= buttonsWidth
         }
       }
@@ -3689,7 +3688,7 @@ export class LGraphNode
 
       if (this.collapsed) {
         // For collapsed nodes, limit to 20 chars as before
-        displayTitle = title.substr(0, 20)
+        displayTitle = title.slice(0, 20)
       } else if (availableWidth > 0) {
         // For regular nodes, truncate based on available width
         displayTitle = truncateText(ctx, title, availableWidth)

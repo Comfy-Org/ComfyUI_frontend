@@ -92,7 +92,7 @@ export class SubgraphSlotReference {
         // const slotY = node.pos[1] + 30 + nextSlotIndex * slotHeight
 
         // Find last slot position
-        const lastSlot = slots.at(-1)
+        const lastSlot = slots.at(-1)!
         let slotX: number
         let slotY: number
 

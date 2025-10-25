@@ -14,15 +14,17 @@ export async function getMp3Metadata(file: File) {
     console.error('Invalid file signature.')
   let header = ''
   while (header.length < arrayBuffer.byteLength) {
-    const page = String.fromCharCode(
+    const page = String.fromCodePoint(
       ...new Uint8Array(arrayBuffer, header.length, header.length + 4096)
     )
     header += page
     if (page.match('\u00ff\u00fb')) break
   }
   let workflow, prompt
+  // eslint-disable-next-line no-control-regex
   let prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
   if (prompt_s) prompt = JSON.parse(prompt_s)
+  // eslint-disable-next-line no-control-regex
   let workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
   if (workflow_s) workflow = JSON.parse(workflow_s)
   return { prompt, workflow }

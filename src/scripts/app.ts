@@ -379,8 +379,8 @@ export class ComfyApp {
       selectedIndex = node.imageIndex
     }
 
-    const paintedIndex = selectedIndex + 1
-    const combinedIndex = selectedIndex + 2
+    const paintedIndex = imgs ? imgs.length + 1 : 1
+    const combinedIndex = imgs ? imgs.length + 2 : 2
 
     // for vueNodes mode
     const images =
@@ -775,7 +775,8 @@ export class ComfyApp {
     this.canvasElRef.value = canvasEl
 
     await useWorkspaceStore().workflow.syncWorkflows()
-    await useSubgraphStore().fetchSubgraphs()
+    //Doesn't need to block. Blueprints will load async
+    void useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -871,7 +872,7 @@ export class ComfyApp {
     const scale = Math.max(window.devicePixelRatio, 1)
 
     // Clear fixed width and height while calculating rect so it uses 100% instead
-    canvas.height = canvas.width = NaN
+    canvas.height = canvas.width = Number.NaN
     const { width, height } = canvas.getBoundingClientRect()
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(height * scale)
@@ -1334,7 +1335,7 @@ export class ComfyApp {
                       .activeWorkflow as ComfyWorkflow
                   })
                 }
-              } catch (error) {}
+              } catch {}
             }
           } catch (error: unknown) {
             useDialogService().showErrorDialog(error, {
@@ -1388,7 +1389,7 @@ export class ComfyApp {
       if (!f) return f
       const p = f.lastIndexOf('.')
       if (p === -1) return f
-      return f.substring(0, p)
+      return f.slice(0, p)
     }
     const fileName = removeExt(file.name)
     if (file.type === 'image/png') {
@@ -1581,7 +1582,7 @@ export class ComfyApp {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
       if (!node) continue
-      node.id = isNaN(+id) ? id : +id
+      node.id = Number.isNaN(+id) ? id : +id
       node.title = data._meta?.title ?? node.title
       app.graph.add(node)
     }
@@ -1606,7 +1607,7 @@ export class ComfyApp {
                 // @ts-expect-error fixme ts strict error
                 toSlot = node.inputs?.length - 1
               }
-            } catch (error) {}
+            } catch {}
           }
           if (toSlot != null || toSlot !== -1) {
             // @ts-expect-error fixme ts strict error
@@ -1644,7 +1645,7 @@ export class ComfyApp {
                 // @ts-expect-error fixme ts strict error
                 toSlot = node.inputs?.length - 1
               }
-            } catch (error) {}
+            } catch {}
           }
           if (toSlot != null || toSlot !== -1) {
             // @ts-expect-error fixme ts strict error

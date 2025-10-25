@@ -107,7 +107,7 @@ onMounted(async () => {
   }
 
   try {
-    const [logs] = await Promise.all([api.getLogs()])
+    const logs = await api.getLogs()
 
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,

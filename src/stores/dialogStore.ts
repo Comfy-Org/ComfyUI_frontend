@@ -116,9 +116,7 @@ export const useDialogStore = defineStore('dialog', () => {
     dialogStack.value.splice(index, 1)
 
     activeKey.value =
-      dialogStack.value.length > 0
-        ? dialogStack.value[dialogStack.value.length - 1].key
-        : null
+      dialogStack.value.length > 0 ? dialogStack.value.at(-1)!.key : null
 
     updateCloseOnEscapeStates()
   }

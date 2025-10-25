@@ -58,7 +58,7 @@ describe('useSubgraphStore', () => {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       Object.keys(filenames).map((filename) => ({
         path: filename,
-        modified: new Date().getTime(),
+        modified: Date.now(),
         size: 1 // size !== -1 for remote workflows
       }))
     )

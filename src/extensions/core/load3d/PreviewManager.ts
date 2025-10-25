@@ -183,8 +183,8 @@ export class PreviewManager implements PreviewManagerInterface {
       return null
     }
 
-    const width = parseFloat(this.previewContainer.style.width)
-    const height = parseFloat(this.previewContainer.style.height)
+    const width = Number.parseFloat(this.previewContainer.style.width)
+    const height = Number.parseFloat(this.previewContainer.style.height)
 
     const left = this.getRenderer().domElement.clientWidth - width
 

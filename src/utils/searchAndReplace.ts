@@ -13,7 +13,7 @@ export function applyTextReplacements(
     if (split.length !== 2) {
       // Special handling for dates
       if (split[0].startsWith('date:')) {
-        return formatDate(split[0].substring(5), new Date())
+        return formatDate(split[0].slice(5), new Date())
       }
 
       if (text !== 'width' && text !== 'height') {

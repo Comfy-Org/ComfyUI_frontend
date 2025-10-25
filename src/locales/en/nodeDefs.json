@@ -2369,96 +2369,6 @@
       }
     }
   },
-  "FluxProCannyNode": {
-    "display_name": "Flux.1 Canny Control Image",
-    "description": "Generate image using a control image (canny).",
-    "inputs": {
-      "control_image": {
-        "name": "control_image"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt for the image generation"
-      },
-      "prompt_upsampling": {
-        "name": "prompt_upsampling",
-        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
-      },
-      "canny_low_threshold": {
-        "name": "canny_low_threshold",
-        "tooltip": "Low threshold for Canny edge detection; ignored if skip_processing is True"
-      },
-      "canny_high_threshold": {
-        "name": "canny_high_threshold",
-        "tooltip": "High threshold for Canny edge detection; ignored if skip_processing is True"
-      },
-      "skip_preprocessing": {
-        "name": "skip_preprocessing",
-        "tooltip": "Whether to skip preprocessing; set to True if control_image already is canny-fied, False if it is a raw image."
-      },
-      "guidance": {
-        "name": "guidance",
-        "tooltip": "Guidance strength for the image generation process"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of steps for the image generation process"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "FluxProDepthNode": {
-    "display_name": "Flux.1 Depth Control Image",
-    "description": "Generate image using a control image (depth).",
-    "inputs": {
-      "control_image": {
-        "name": "control_image"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt for the image generation"
-      },
-      "prompt_upsampling": {
-        "name": "prompt_upsampling",
-        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
-      },
-      "skip_preprocessing": {
-        "name": "skip_preprocessing",
-        "tooltip": "Whether to skip preprocessing; set to True if control_image already is depth-ified, False if it is a raw image."
-      },
-      "guidance": {
-        "name": "guidance",
-        "tooltip": "Guidance strength for the image generation process"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of steps for the image generation process"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "FluxProExpandNode": {
     "display_name": "Flux.1 Expand Image",
     "description": "Outpaints image based on prompt.",
@@ -11662,10 +11572,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11718,10 +11630,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11736,10 +11650,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11755,10 +11671,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "retarget task_id"
+        "name": "retarget task_id",
+        "tooltip": null
       }
     }
   },
@@ -11771,10 +11689,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "rig task_id"
+        "name": "rig task_id",
+        "tooltip": null
       }
     }
   },
@@ -11820,10 +11740,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11851,10 +11773,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },

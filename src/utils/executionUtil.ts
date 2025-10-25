@@ -121,7 +121,7 @@ export const graphToPrompt = async (
       inputs[input.name] = [
         String(resolvedInput.origin_id),
         // @ts-expect-error link.origin_slot is already number.
-        parseInt(resolvedInput.origin_slot)
+        Number.parseInt(resolvedInput.origin_slot)
       ]
     }
 

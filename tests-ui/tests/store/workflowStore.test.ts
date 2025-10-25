@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
-  type LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -45,7 +47,7 @@ describe('useWorkflowStore', () => {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       filenames.map((filename) => ({
         path: filename,
-        modified: new Date().getTime(),
+        modified: Date.now(),
         size: 1 // size !== -1 for remote workflows
       }))
     )

@@ -47,7 +47,7 @@ export function useCachedRequest<TParams, TResult>(
       cache.set(cacheKey, result)
 
       return result
-    } catch (err) {
+    } catch {
       // Set cache on error to prevent retrying bad requests
       cache.set(cacheKey, null)
       return null

@@ -5381,7 +5381,7 @@ export class LGraphCanvas
     if (text == null) return
 
     // Hard-coded tooltip limit
-    text = text.substring(0, 30)
+    text = text.slice(0, 30)
 
     ctx.font = '14px Courier New'
     const info = ctx.measureText(text)
@@ -6484,7 +6484,6 @@ export class LGraphCanvas
       optPass || {}
     )
     const dirty = () => this.#dirty()
-
     const that = this
     const { graph } = this
     const { afterRerouteId } = opts
@@ -6856,7 +6855,6 @@ export class LGraphCanvas
     Object.assign(options, searchOptions)
 
     // console.log(options);
-
     const that = this
     const graphcanvas = LGraphCanvas.active_canvas
     const { canvas } = graphcanvas

@@ -253,7 +253,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   /**
    * Update node position directly (without drag)
    */
-  function moveTo(position: Point) {
+  function moveNodeTo(position: Point) {
     mutations.setSource(LayoutSource.Vue)
     mutations.moveNode(nodeId, position)
   }
@@ -269,7 +269,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     isDragging,
 
     // Mutations
-    moveTo,
+    moveNodeTo,
 
     // Drag handlers
     startDrag,

@@ -24,6 +24,6 @@ export const imageLayerFilenamesIfApplicable = (
   )
   if (!isPaintedMaskedImageFilename) return undefined
   const suffix = inputImageFilename.slice(paintedMaskedImagePrefix.length)
-  const timestamp = parseInt(suffix.split('.')[0], 10)
+  const timestamp = Number.parseInt(suffix.split('.')[0], 10)
   return imageLayerFilenamesByTimestamp(timestamp)
 }
