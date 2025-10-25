@@ -136,8 +136,8 @@ describe('useAssetBrowser', () => {
     })
   })
 
-  describe('Search Functionality', () => {
-    it('searches across asset name', async () => {
+  describe('Fuzzy Search Functionality', () => {
+    it('searches across asset name with exact match', async () => {
       const assets = [
         createApiAsset({ name: 'realistic_vision.safetensors' }),
         createApiAsset({ name: 'anime_style.ckpt' }),
@@ -149,44 +149,147 @@ describe('useAssetBrowser', () => {
       searchQuery.value = 'realistic'
       await nextTick()
 
-      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
       expect(
-        filteredAssets.value.every((asset) =>
+        filteredAssets.value.some((asset) =>
           asset.name.toLowerCase().includes('realistic')
         )
       ).toBe(true)
     })
 
-    it('searches in user metadata description', async () => {
+    it('searches across asset tags', async () => {
       const assets = [
         createApiAsset({
           name: 'model1.safetensors',
-          user_metadata: { description: 'fantasy artwork model' }
+          tags: ['models', 'checkpoints']
         }),
         createApiAsset({
           name: 'model2.safetensors',
-          user_metadata: { description: 'portrait photography' }
+          tags: ['models', 'loras']
         })
       ]
 
       const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
-      searchQuery.value = 'fantasy'
+      searchQuery.value = 'checkpoints'
       await nextTick()
 
-      expect(filteredAssets.value).toHaveLength(1)
-      expect(filteredAssets.value[0].name).toBe('model1.safetensors')
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(filteredAssets.value[0].tags).toContain('checkpoints')
     })
 
-    it('handles empty search results', async () => {
+    it('supports fuzzy matching with typos', async () => {
+      const assets = [
+        createApiAsset({ name: 'checkpoint_model.safetensors' }),
+        createApiAsset({ name: 'lora_model.safetensors' })
+      ]
+
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
+
+      // Intentional typo - fuzzy search should still find it
+      searchQuery.value = 'chckpoint'
+      await nextTick()
+
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(filteredAssets.value[0].name).toContain('checkpoint')
+    })
+
+    it('handles empty search by returning all assets', async () => {
+      const assets = [
+        createApiAsset({ name: 'test1.safetensors' }),
+        createApiAsset({ name: 'test2.safetensors' })
+      ]
+
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
+
+      searchQuery.value = ''
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+    })
+
+    it('handles no search results', async () => {
       const assets = [createApiAsset({ name: 'test.safetensors' })]
 
       const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
-      searchQuery.value = 'nonexistent'
+      searchQuery.value = 'completelydifferentstring123'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(0)
+    })
+
+    it('performs case-insensitive search', async () => {
+      const assets = [
+        createApiAsset({ name: 'RealisticVision.safetensors' }),
+        createApiAsset({ name: 'anime_style.ckpt' })
+      ]
+
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
+
+      searchQuery.value = 'REALISTIC'
+      await nextTick()
+
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(filteredAssets.value[0].name).toContain('Realistic')
+    })
+
+    it('combines fuzzy search with format filter', async () => {
+      const assets = [
+        createApiAsset({ name: 'my_checkpoint_model.safetensors' }),
+        createApiAsset({ name: 'my_checkpoint_model.ckpt' }),
+        createApiAsset({ name: 'different_lora.safetensors' })
+      ]
+
+      const { searchQuery, updateFilters, filteredAssets } = useAssetBrowser(
+        ref(assets)
+      )
+
+      searchQuery.value = 'checkpoint'
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: ['safetensors'],
+        baseModels: []
+      })
+      await nextTick()
+
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(
+        filteredAssets.value.every((asset) =>
+          asset.name.endsWith('.safetensors')
+        )
+      ).toBe(true)
+      expect(
+        filteredAssets.value.some((asset) => asset.name.includes('checkpoint'))
+      ).toBe(true)
+    })
+
+    it('combines fuzzy search with base model filter', async () => {
+      const assets = [
+        createApiAsset({
+          name: 'realistic_sd15.safetensors',
+          user_metadata: { base_model: 'SD1.5' }
+        }),
+        createApiAsset({
+          name: 'realistic_sdxl.safetensors',
+          user_metadata: { base_model: 'SDXL' }
+        })
+      ]
+
+      const { searchQuery, updateFilters, filteredAssets } = useAssetBrowser(
+        ref(assets)
+      )
+
+      searchQuery.value = 'realistic'
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: ['SDXL']
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(1)
+      expect(filteredAssets.value[0].name).toBe('realistic_sdxl.safetensors')
     })
   })
 
