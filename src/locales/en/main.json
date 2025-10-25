@@ -1955,7 +1955,7 @@
       "benefit2": "Up to 30 min runtime per job"
     },
     "required": {
-        "title": "Subscribe to",
+      "title": "Subscribe to",
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
       "subscribe": "Subscribe"
     },

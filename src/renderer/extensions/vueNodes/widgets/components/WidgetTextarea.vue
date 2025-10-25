@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="widget-expands relative">
     <Textarea
       v-model="localValue"
       v-bind="filteredProps"

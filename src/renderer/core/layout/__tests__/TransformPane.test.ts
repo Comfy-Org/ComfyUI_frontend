@@ -155,17 +155,17 @@ describe('TransformPane', () => {
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.addEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
         'pointerdown',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.addEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
         'pointerup',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.addEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
         'pointercancel',
         expect.any(Function),
         expect.any(Object)
@@ -188,17 +188,17 @@ describe('TransformPane', () => {
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
         'pointerdown',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
         'pointerup',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
         'pointercancel',
         expect.any(Function),
         expect.any(Object)
