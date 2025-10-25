@@ -19,25 +19,22 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="group flex items-stretch has-[.widget-expands]:flex-1"
+      class="group flex items-center has-[.widget-expands]:flex-1"
     >
       <!-- Widget Input Slot Dot -->
 
-      <div
+      <InputSlot
+        v-if="widget.slotMetadata"
         class="z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-      >
-        <InputSlot
-          v-if="widget.slotMetadata"
-          :slot-data="{
-            name: widget.name,
-            type: widget.type,
-            boundingRect: [0, 0, 0, 0]
-          }"
-          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="widget.slotMetadata.index"
-          :dot-only="true"
-        />
-      </div>
+        :slot-data="{
+          name: widget.name,
+          type: widget.type,
+          boundingRect: [0, 0, 0, 0]
+        }"
+        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :index="widget.slotMetadata.index"
+        :dot-only="true"
+      />
       <!-- Widget Component -->
       <component
         :is="widget.vueComponent"
