@@ -63,9 +63,6 @@
   --color-sand-200: #d6cfc2;
   --color-sand-300: #888682;
 
-  --color-pure-black: #000000;
-  --color-pure-white: #ffffff;
-
   --color-slate-100: #9c9eab;
   --color-slate-200: #9fa2bd;
   --color-slate-300: #5b5e7d;
@@ -145,8 +142,8 @@
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
 
-  --button-surface: var(--color-pure-white);
-  --button-surface-contrast: var(--color-pure-black);
+  --button-surface: var(--color-white);
+  --button-surface-contrast: var(--color-black);
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -164,9 +161,9 @@
   --interface-menu-component-surface-hovered: var(--color-gray-200);
   --interface-menu-component-surface-selected: var(--color-gray-400);
   --interface-menu-keybind-surface-default: var(--color-gray-500);
-  --interface-panel-surface: var(--color-pure-white);
+  --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-gray-300);
-  --nav-background: var(--color-pure-white);
+  --nav-background: var(--color-white);
   --node-border: var(--color-gray-300);
   --node-component-border: var(--color-gray-400);
   --node-component-disabled: var(--color-alpha-stone-100-20);
@@ -204,10 +201,10 @@
 }
 
 .dark-theme {
-  --accent-primary: var(--color-pure-white);
+  --accent-primary: var(--color-white);
   --backdrop: var(--color-neutral-900);
   --button-surface: var(--color-charcoal-600);
-  --button-surface-contrast: var(--color-pure-white);
+  --button-surface-contrast: var(--color-white);
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-gray-800);
@@ -242,11 +239,11 @@
   --node-divider: var(--color-charcoal-500);
   --node-icon-disabled: var(--color-alpha-stone-100-20);
   --node-stroke: var(--color-stone-200);
-  --node-stroke-selected: var(--color-pure-white);
+  --node-stroke-selected: var(--color-white);
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-blue-100);
   --text-secondary: var(--color-slate-100);
-  --text-primary: var(--color-pure-white);
+  --text-primary: var(--color-white);
   --input-surface: rgb(130 130 130 / 0.1);
 }
 
