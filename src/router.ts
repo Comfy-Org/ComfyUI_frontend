@@ -5,6 +5,7 @@ import {
 } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 
+import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
@@ -104,6 +105,9 @@ const router = createRouter({
 
 // Global authentication guard
 router.beforeEach(async (to, _from, next) => {
+  // Skip cloud-specific auth guard for non-cloud builds (e.g., Playwright tests)
+  if (!isCloud) return next()
+
   const authStore = useFirebaseAuthStore()
 
   // Wait for Firebase auth to initialize with timeout

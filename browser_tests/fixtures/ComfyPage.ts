@@ -285,6 +285,33 @@ export class ComfyPage {
   } = {}) {
     await this.goto()
 
+    // Mock remote config endpoint for cloud builds
+    // Cloud builds (rh-test) call /api/features on startup, which blocks initialization
+    // if the endpoint doesn't exist or times out. Try real backend first, fallback to empty config.
+    await this.page.route('**/api/features', async (route) => {
+      try {
+        // Try to get response from real backend
+        const response = await route.fetch()
+        if (response.ok()) {
+          await route.fulfill({ response })
+        } else {
+          // Backend doesn't have endpoint, return empty config
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({})
+          })
+        }
+      } catch {
+        // Network error, return empty config
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({})
+        })
+      }
+    })
+
     // Mock release endpoint to prevent changelog popups
     if (mockReleases) {
       await this.page.route('**/releases**', async (route) => {
