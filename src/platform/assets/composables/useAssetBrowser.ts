@@ -149,14 +149,13 @@ export function useAssetBrowser(
     return assets.value.filter(filterByCategory(selectedCategory.value))
   })
 
-  // Fuzzy search with useFuse
   const fuseOptions: UseFuseOptions<AssetItem> = {
     fuseOptions: {
       keys: [
         { name: 'name', weight: 0.4 },
         { name: 'tags', weight: 0.3 }
       ],
-      threshold: 0.4, // Higher threshold for more typo tolerance (0.0 = exact, 1.0 = match anything)
+      threshold: 0.4, // Higher threshold for typo tolerance (0.0 = exact, 1.0 = match all)
       ignoreLocation: true, // Search anywhere in the string, not just at the beginning
       includeScore: true
     },
