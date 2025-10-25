@@ -4,11 +4,14 @@ import { api } from '@/scripts/api'
 
 describe('API Feature Flags', () => {
   let mockWebSocket: any
-  const wsEventHandlers: { [key: string]: (event: any) => void } = {}
+  let wsEventHandlers: { [key: string]: (event: any) => void }
 
   beforeEach(() => {
     // Use fake timers
     vi.useFakeTimers()
+
+    // Reset event handlers
+    wsEventHandlers = {}
 
     // Mock WebSocket
     mockWebSocket = {
@@ -27,6 +30,7 @@ describe('API Feature Flags', () => {
     global.WebSocket = vi.fn().mockImplementation(() => mockWebSocket) as any
 
     // Reset API state
+    api.socket = null
     api.serverFeatureFlags = {}
 
     // Mock getClientFeatureFlags to return test feature flags
@@ -45,7 +49,10 @@ describe('API Feature Flags', () => {
   describe('Feature flags negotiation', () => {
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
-      const initPromise = api.init()
+      api.init()
+
+      // Wait for async socket creation to complete
+      await vi.runAllTimersAsync()
 
       // Simulate connection open
       wsEventHandlers['open'](new Event('open'))
@@ -88,8 +95,6 @@ describe('API Feature Flags', () => {
         })
       })
 
-      await initPromise
-
       // Check that server features were stored
       expect(api.serverFeatureFlags).toEqual({
         supports_preview_metadata: true,
@@ -103,7 +108,10 @@ describe('API Feature Flags', () => {
 
     it('should handle server without feature flags support', async () => {
       // Initialize API connection
-      const initPromise = api.init()
+      api.init()
+
+      // Wait for async socket creation to complete
+      await vi.runAllTimersAsync()
 
       // Simulate connection open
       wsEventHandlers['open'](new Event('open'))
@@ -129,8 +137,6 @@ describe('API Feature Flags', () => {
           data: {}
         })
       })
-
-      await initPromise
 
       // Server features should remain empty
       expect(api.serverFeatureFlags).toEqual({})

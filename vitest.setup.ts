@@ -1,6 +1,18 @@
 import { vi } from 'vitest'
 import 'vue'
 
+// Mock firebaseAuthStore to break circular dependency in rh-test branch
+// Circular chain: api -> firebaseAuthStore -> dialogService -> components -> settingStore -> app -> ComfyUI -> api
+// This is a test-only fix to prevent module initialization failures
+vi.mock('@/stores/firebaseAuthStore', () => ({
+  useFirebaseAuthStore: vi.fn(() => ({
+    getAuthHeader: vi.fn(),
+    getIdToken: vi.fn(),
+    isAuthenticated: false,
+    user: null
+  }))
+}))
+
 // Augment Window interface for tests
 declare global {
   interface Window {
