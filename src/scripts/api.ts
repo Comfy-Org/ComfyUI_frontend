@@ -900,8 +900,23 @@ export class ComfyApi extends EventTarget {
     max_items: number = 200
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      const res = await this.fetchApi(`/history?max_items=${max_items}`)
-      const json: Promise<HistoryTaskItem[]> = await res.json()
+      const fetchHistoryData = async (): Promise<HistoryTaskItem[]> => {
+        if (isCloud) {
+          const res = await this.fetchApi(`/history_v2?max_items=${max_items}`)
+          const rawData = await res.json()
+          const { mapHistoryV2toHistory } = await import(
+            '@/platform/cloud/utils/historyAdapter'
+          )
+          return mapHistoryV2toHistory(rawData)
+        }
+
+        const res = await this.fetchApi(`/history?max_items=${max_items}`)
+        const rawData = await res.json()
+        return rawData
+      }
+
+      const json = await fetchHistoryData()
+
       return {
         History: Object.values(json).map((item) => ({
           ...item,
