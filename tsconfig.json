@@ -21,9 +21,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "downlevelIteration": true,
     "noImplicitOverride": true,
-    "allowJs": true,
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
