@@ -393,7 +393,7 @@ export interface IContextMenuOptions<TValue = unknown, TExtra = unknown>
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
     extra?: unknown
-  ): void | boolean
+  ): void | boolean | Promise<void | boolean>
 }
 
 export interface IContextMenuValue<
@@ -416,7 +416,7 @@ export interface IContextMenuValue<
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
     extra?: TExtra
-  ): void | boolean
+  ): void | boolean | Promise<void | boolean>
 }
 
 interface IContextMenuSubmenu<TValue = unknown>

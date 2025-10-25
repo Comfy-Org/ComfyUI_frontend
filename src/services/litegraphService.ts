@@ -658,7 +658,6 @@ export const useLitegraphService = () => {
       return [
         {
           content: 'Copy Image',
-          // @ts-expect-error: async callback is not accepted by litegraph
           callback: async () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
