@@ -7,6 +7,14 @@ import * as vuefire from 'vuefire'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
+// Override the global mock for this test file - we need the real implementation here
+vi.mock('@/stores/firebaseAuthStore', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/stores/firebaseAuthStore')
+  >('@/stores/firebaseAuthStore')
+  return actual
+})
+
 // Mock fetch
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)

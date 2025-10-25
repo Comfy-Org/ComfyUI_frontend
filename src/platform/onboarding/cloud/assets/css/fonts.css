@@ -27,7 +27,7 @@
   font-weight: 900;
   font-style: italic;
   text-transform: uppercase;
-  text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 4px 4px rgb(0 0 0 / 0.25);
   /* Figma has leading-trim/text-edge which CSS doesn't support; emulate with tight line-height */
   line-height: 1.1;
 }
