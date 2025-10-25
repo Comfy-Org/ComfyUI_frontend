@@ -9,6 +9,7 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import type { UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
+import Inspect from 'vite-plugin-inspect'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
@@ -145,13 +146,14 @@ export default defineConfig({
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
+    Inspect(),
     tailwindcss(),
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
       {
         name: 'vue',
         pattern: 'vue',
-        entry: './dist/vue.esm-browser.prod.js'
+        entry: './dist/vue.runtime-with-vapor.esm-browser.prod.js'
       },
       {
         name: 'vue-i18n',

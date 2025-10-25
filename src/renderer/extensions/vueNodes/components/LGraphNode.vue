@@ -117,7 +117,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" vapor>
 import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
