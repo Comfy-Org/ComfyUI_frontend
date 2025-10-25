@@ -83,8 +83,9 @@ app
   })
 
 // Register auth service worker after Pinia is initialized (cloud-only)
+// Wait for registration to complete before mounting to ensure SW controls the page
 if (isCloud) {
-  void import('@/platform/auth/serviceWorker')
+  await import('@/platform/auth/serviceWorker')
 }
 
 app.mount('#vue-app')
