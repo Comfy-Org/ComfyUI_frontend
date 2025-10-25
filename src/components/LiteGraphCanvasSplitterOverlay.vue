@@ -42,7 +42,7 @@
           <slot name="topmenu" :sidebar-panel-visible="sidebarPanelVisible" />
 
           <Splitter
-            class="splitter-overlay splitter-overlay-bottom mr-2 mb-2 ml-2 flex-1"
+            class="splitter-overlay splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
             layout="vertical"
             :pt:gutter="
               'rounded-tl-lg rounded-tr-lg ' +

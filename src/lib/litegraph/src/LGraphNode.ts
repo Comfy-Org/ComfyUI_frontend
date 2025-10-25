@@ -3679,7 +3679,7 @@ export class LGraphNode
         }
         ctx.font = savedFont // Restore font after button measurements
         if (buttonsWidth > 0) {
-          buttonsWidth += 10 // Extra margin before buttons
+          buttonsWidth -= 20 // Reduce by empty padding
           availableWidth -= buttonsWidth
         }
       }

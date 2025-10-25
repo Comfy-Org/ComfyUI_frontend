@@ -1,32 +1,40 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-// Mock @/i18n for useAssetBrowser and AssetFilterBar
+const mockAssetService = vi.hoisted(() => ({
+  getAssetsForNodeType: vi.fn(),
+  getAssetsByTag: vi.fn(),
+  getAssetDetails: vi.fn((id: string) =>
+    Promise.resolve({
+      id,
+      name: 'Test Model',
+      user_metadata: {
+        filename: 'Test Model'
+      }
+    })
+  )
+}))
+
 vi.mock('@/i18n', () => ({
-  t: (key: string) => key,
+  t: (key: string, params?: Record<string, string>) =>
+    params ? `${key}:${JSON.stringify(params)}` : key,
   d: (date: Date) => date.toLocaleDateString()
 }))
 
-// Mock assetService for useAssetBrowser
 vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetDetails: vi.fn((id: string) =>
-      Promise.resolve({
-        id,
-        name: 'Test Model',
-        user_metadata: {
-          filename: 'Test Model'
-        }
-      })
-    )
-  }
+  assetService: mockAssetService
 }))
 
-// Mock external dependencies with minimal functionality needed for business logic tests
+vi.mock('@/stores/modelToNodeStore', () => ({
+  useModelToNodeStore: () => ({
+    getCategoryForNodeType: () => 'checkpoints'
+  })
+}))
+
 vi.mock('@/components/input/SearchBox.vue', () => ({
   default: {
     name: 'SearchBox',
@@ -106,7 +114,7 @@ vi.mock('@/platform/assets/components/AssetFilterBar.vue', () => ({
 vi.mock('@/platform/assets/components/AssetGrid.vue', () => ({
   default: {
     name: 'AssetGrid',
-    props: ['assets'],
+    props: ['assets', 'loading'],
     emits: ['asset-select'],
     template: `
       <div data-testid="asset-grid">
@@ -129,11 +137,13 @@ vi.mock('@/platform/assets/components/AssetGrid.vue', () => ({
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key
+    t: (key: string, params?: Record<string, string>) =>
+      params ? `${key}:${JSON.stringify(params)}` : key
   }),
   createI18n: () => ({
     global: {
-      t: (key: string) => key
+      t: (key: string, params?: Record<string, string>) =>
+        params ? `${key}:${JSON.stringify(params)}` : key
     }
   })
 }))
@@ -160,18 +170,12 @@ describe('AssetBrowserModal', () => {
     }
   })
 
-  const createWrapper = (
-    assets: AssetItem[] = [],
-    props: Record<string, unknown> = {}
-  ) => {
+  const createWrapper = (props: Record<string, unknown>) => {
     const pinia = createPinia()
     setActivePinia(pinia)
 
     return mount(AssetBrowserModal, {
-      props: {
-        assets: assets,
-        ...props
-      },
+      props,
       global: {
         plugins: [pinia],
         stubs: {
@@ -186,153 +190,178 @@ describe('AssetBrowserModal', () => {
     })
   }
 
+  beforeEach(() => {
+    mockAssetService.getAssetsForNodeType.mockReset()
+    mockAssetService.getAssetsByTag.mockReset()
+  })
+
   describe('Integration with useAssetBrowser', () => {
-    it('passes filteredAssets from composable to AssetGrid', () => {
+    it('passes filtered assets from composable to AssetGrid', async () => {
       const assets = [
         createTestAsset('asset1', 'Model A', 'checkpoints'),
         createTestAsset('asset2', 'Model B', 'loras')
       ]
-      const wrapper = createWrapper(assets)
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+
+      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
 
       const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const gridAssets = assetGrid.props('assets')
+      const gridAssets = assetGrid.props('assets') as AssetItem[]
 
       expect(gridAssets).toHaveLength(2)
       expect(gridAssets[0].id).toBe('asset1')
     })
 
-    it('passes categoryFilteredAssets to AssetFilterBar', () => {
+    it('passes category-filtered assets to AssetFilterBar', async () => {
       const assets = [
         createTestAsset('c1', 'model.safetensors', 'checkpoints'),
         createTestAsset('l1', 'lora.pt', 'loras')
       ]
-      const wrapper = createWrapper(assets, { showLeftPanel: true })
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+
+      const wrapper = createWrapper({
+        nodeType: 'CheckpointLoaderSimple',
+        showLeftPanel: true
+      })
+      await flushPromises()
 
       const filterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
-      const filterBarAssets = filterBar.props('assets')
+      const filterBarAssets = filterBar.props('assets') as AssetItem[]
 
-      // Should initially show all assets
       expect(filterBarAssets).toHaveLength(2)
+    })
+  })
+
+  describe('Data fetching', () => {
+    it('fetches assets for node type', async () => {
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
+
+      createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
+
+      expect(mockAssetService.getAssetsForNodeType).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple'
+      )
+    })
+
+    it('fetches assets for tag when node type not provided', async () => {
+      mockAssetService.getAssetsByTag.mockResolvedValueOnce([])
+
+      createWrapper({ assetType: 'loras' })
+      await flushPromises()
+
+      expect(mockAssetService.getAssetsByTag).toHaveBeenCalledWith('loras')
     })
   })
 
   describe('Asset Selection', () => {
     it('emits asset-select event when asset is selected', async () => {
-      const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
-      const wrapper = createWrapper(assets)
+      const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
 
-      // Click on first asset
-      await wrapper.find('[data-testid="asset-asset1"]').trigger('click')
+      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
 
-      const emitted = wrapper.emitted('asset-select')
-      expect(emitted).toBeDefined()
-      expect(emitted).toHaveLength(1)
+      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
+      await assetGrid.vm.$emit('asset-select', assets[0])
 
-      const emittedAsset = emitted![0][0] as AssetItem
-      expect(emittedAsset.id).toBe('asset1')
+      expect(wrapper.emitted('asset-select')).toEqual([[assets[0]]])
     })
 
     it('executes onSelect callback when provided', async () => {
-      const onSelectSpy = vi.fn()
-      const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
-      const wrapper = createWrapper(assets, { onSelect: onSelectSpy })
+      const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
 
-      // Click on first asset
-      await wrapper.find('[data-testid="asset-asset1"]').trigger('click')
+      const onSelect = vi.fn()
+      const wrapper = createWrapper({
+        nodeType: 'CheckpointLoaderSimple',
+        onSelect
+      })
+      await flushPromises()
 
-      expect(onSelectSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'asset1',
-          name: 'Test Model'
-        })
-      )
+      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
+      await assetGrid.vm.$emit('asset-select', assets[0])
+
+      expect(onSelect).toHaveBeenCalledWith(assets[0])
     })
   })
 
   describe('Left Panel Conditional Logic', () => {
-    it('hides left panel by default when showLeftPanel prop is undefined', () => {
-      const singleCategoryAssets = [
-        createTestAsset('single1', 'Asset 1', 'checkpoints'),
-        createTestAsset('single2', 'Asset 2', 'checkpoints')
-      ]
-      const wrapper = createWrapper(singleCategoryAssets)
+    it('hides left panel by default when showLeftPanel is undefined', async () => {
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
 
-      expect(wrapper.find('[data-testid="left-panel"]').exists()).toBe(false)
+      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
+
+      const leftPanel = wrapper.find('[data-testid="left-panel"]')
+      expect(leftPanel.exists()).toBe(false)
     })
 
-    it('shows left panel when showLeftPanel prop is explicitly true', () => {
-      const singleCategoryAssets = [
-        createTestAsset('single1', 'Asset 1', 'checkpoints')
-      ]
+    it('shows left panel when showLeftPanel prop is explicitly true', async () => {
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
 
-      // Force show even with single category
-      const wrapper = createWrapper(singleCategoryAssets, {
+      const wrapper = createWrapper({
+        nodeType: 'CheckpointLoaderSimple',
         showLeftPanel: true
       })
-      expect(wrapper.find('[data-testid="left-panel"]').exists()).toBe(true)
+      await flushPromises()
 
-      // Force hide even with multiple categories
-      wrapper.unmount()
-      const multiCategoryAssets = [
-        createTestAsset('asset1', 'Checkpoint', 'checkpoints'),
-        createTestAsset('asset2', 'LoRA', 'loras')
-      ]
-      const wrapper2 = createWrapper(multiCategoryAssets, {
-        showLeftPanel: false
-      })
-      expect(wrapper2.find('[data-testid="left-panel"]').exists()).toBe(false)
+      const leftPanel = wrapper.find('[data-testid="left-panel"]')
+      expect(leftPanel.exists()).toBe(true)
     })
   })
 
   describe('Filter Options Reactivity', () => {
     it('updates filter options when category changes', async () => {
       const assets = [
-        createTestAsset('c1', 'model.safetensors', 'checkpoints'),
-        createTestAsset('c2', 'another.safetensors', 'checkpoints'),
-        createTestAsset('l1', 'lora.pt', 'loras')
+        createTestAsset('asset1', 'Model A', 'checkpoints'),
+        createTestAsset('asset2', 'Model B', 'loras')
       ]
-      const wrapper = createWrapper(assets, { showLeftPanel: true })
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
 
-      // Initially on "all" category - should have both .safetensors and .pt
+      const wrapper = createWrapper({
+        nodeType: 'CheckpointLoaderSimple',
+        showLeftPanel: true
+      })
+      await flushPromises()
+
       const filterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
-      expect(filterBar.exists()).toBe(true)
+      expect(filterBar.props('assets')).toHaveLength(2)
 
-      // Switch to checkpoints category
-      const checkpointsNav = wrapper.find(
-        '[data-testid="nav-item-checkpoints"]'
-      )
-      expect(checkpointsNav.exists()).toBe(true)
-      await checkpointsNav.trigger('click')
+      const leftPanel = wrapper.findComponent({ name: 'LeftSidePanel' })
+      await leftPanel.vm.$emit('update:modelValue', 'loras')
+      await wrapper.vm.$nextTick()
 
-      // Filter bar should receive only checkpoint assets now
-      const updatedFilterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
-      const filterBarAssets = updatedFilterBar.props('assets')
-
-      expect(filterBarAssets).toHaveLength(2)
-      expect(
-        filterBarAssets.every((a: AssetItem) => a.tags.includes('checkpoints'))
-      ).toBe(true)
+      expect(filterBar.props('assets')).toHaveLength(1)
     })
   })
 
   describe('Title Management', () => {
-    it('passes custom title to BaseModalLayout when title prop provided', () => {
-      const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
-      const customTitle = 'Model Library'
-      const wrapper = createWrapper(assets, { title: customTitle })
+    it('passes custom title to BaseModalLayout when title prop provided', async () => {
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
 
-      const baseModal = wrapper.findComponent({ name: 'BaseModalLayout' })
-      expect(baseModal.props('contentTitle')).toBe(customTitle)
+      const wrapper = createWrapper({
+        nodeType: 'CheckpointLoaderSimple',
+        title: 'Custom Title'
+      })
+      await flushPromises()
+
+      const layout = wrapper.findComponent({ name: 'BaseModalLayout' })
+      expect(layout.props('contentTitle')).toBe('Custom Title')
     })
 
-    it('passes computed contentTitle to BaseModalLayout when no title prop', () => {
-      const assets = [createTestAsset('asset1', 'Test Model', 'checkpoints')]
-      const wrapper = createWrapper(assets)
+    it('passes computed contentTitle to BaseModalLayout when no title prop', async () => {
+      const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
+      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
 
-      const baseModal = wrapper.findComponent({ name: 'BaseModalLayout' })
-      // Should use contentTitle from useAssetBrowser (e.g., "All Models")
-      expect(baseModal.props('contentTitle')).toBeTruthy()
-      expect(baseModal.props('contentTitle')).not.toBe('')
+      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
+
+      const layout = wrapper.findComponent({ name: 'BaseModalLayout' })
+      expect(layout.props('contentTitle')).toBe(
+        'assetBrowser.allCategory:{"category":"Checkpoints"}'
+      )
     })
   })
 })

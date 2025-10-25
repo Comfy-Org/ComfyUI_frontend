@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
+
 import { type EventManagerInterface } from './interfaces'
 
 export class RecordingManager {
@@ -149,17 +151,7 @@ export class RecordingManager {
 
     try {
       const blob = new Blob(this.recordedChunks, { type: 'video/webm' })
-
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      document.body.appendChild(a)
-      a.style.display = 'none'
-      a.href = url
-      a.download = filename
-      a.click()
-
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      downloadBlob(filename, blob)
 
       this.eventManager.emitEvent('recordingExported', null)
     } catch (error) {

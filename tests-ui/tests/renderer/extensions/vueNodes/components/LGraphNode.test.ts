@@ -51,9 +51,11 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   useNodeLayout: () => ({
     position: { x: 100, y: 50 },
     size: { width: 200, height: 100 },
+    zIndex: 0,
     startDrag: vi.fn(),
     handleDrag: vi.fn(),
-    endDrag: vi.fn()
+    endDrag: vi.fn(),
+    moveTo: vi.fn()
   })
 }))
 
@@ -77,7 +79,7 @@ vi.mock('@/renderer/extensions/vueNodes/preview/useNodePreviewState', () => ({
   }))
 }))
 
-vi.mock('../composables/useNodeResize', () => ({
+vi.mock('../interactions/resize/useNodeResize', () => ({
   useNodeResize: vi.fn(() => ({
     startResize: vi.fn(),
     isResizing: computed(() => false)

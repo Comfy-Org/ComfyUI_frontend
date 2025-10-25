@@ -12,7 +12,6 @@ const createAssetData = (
   ...baseAsset,
   description:
     'High-quality realistic images with perfect detail and natural lighting effects for professional photography',
-  formattedSize: '2.1 GB',
   badges: [
     { label: 'checkpoints', type: 'type' },
     { label: '2.1 GB', type: 'size' }

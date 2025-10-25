@@ -64,11 +64,11 @@
 </template>
 
 <script setup lang="ts">
-import { marked } from 'marked'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatVersionAnchor } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
@@ -108,17 +108,13 @@ const changelogUrl = computed(() => {
   return baseUrl
 })
 
-// Format release content for display using marked
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
     return `<p>${t('whatsNewPopup.noReleaseNotes')}</p>`
   }
 
   try {
-    // Use marked to parse markdown to HTML
-    return marked(latestRelease.value.content, {
-      gfm: true // Enable GitHub Flavored Markdown
-    })
+    return renderMarkdownToHtml(latestRelease.value.content)
   } catch (error) {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks

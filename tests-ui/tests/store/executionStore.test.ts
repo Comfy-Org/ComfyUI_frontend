@@ -1,22 +1,31 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 
+// Create mock functions that will be shared
+const mockNodeExecutionIdToNodeLocatorId = vi.fn()
+const mockNodeIdToNodeLocatorId = vi.fn()
+const mockNodeLocatorIdToNodeExecutionId = vi.fn()
+
 // Mock the workflowStore
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeExecutionIdToNodeLocatorId: vi.fn(),
-    nodeIdToNodeLocatorId: vi.fn(),
-    nodeLocatorIdToNodeExecutionId: vi.fn()
-  }))
-}))
+vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
+  const { ComfyWorkflow } = await vi.importActual<
+    typeof import('@/platform/workflow/management/stores/workflowStore')
+  >('@/platform/workflow/management/stores/workflowStore')
+  return {
+    ComfyWorkflow,
+    useWorkflowStore: vi.fn(() => ({
+      nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
+      nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
+      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+    }))
+  }
+})
 
 // Remove any previous global types
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Window {}
 }
 
@@ -37,7 +46,8 @@ vi.mock('@/composables/node/useNodeProgressText', () => ({
 vi.mock('@/scripts/app', () => ({
   app: {
     graph: {
-      getNodeById: vi.fn()
+      getNodeById: vi.fn(),
+      _nodes: [] // Add _nodes array for workflowStore iteration
     },
     revokePreviews: vi.fn(),
     nodePreviewImages: {}
@@ -98,24 +108,16 @@ describe('executionStore - display_component handling', () => {
 
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
-  let workflowStore: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-
-    // Create the mock workflowStore instance
-    const mockWorkflowStore = {
-      nodeExecutionIdToNodeLocatorId: vi.fn(),
-      nodeIdToNodeLocatorId: vi.fn(),
-      nodeLocatorIdToNodeExecutionId: vi.fn()
-    }
-
-    // Mock the useWorkflowStore function to return our mock
-    vi.mocked(useWorkflowStore).mockReturnValue(mockWorkflowStore as any)
-
-    workflowStore = mockWorkflowStore as any
-    store = useExecutionStore()
     vi.clearAllMocks()
+    // Reset mock implementations
+    mockNodeExecutionIdToNodeLocatorId.mockReset()
+    mockNodeIdToNodeLocatorId.mockReset()
+    mockNodeLocatorIdToNodeExecutionId.mockReset()
+
+    setActivePinia(createPinia())
+    store = useExecutionStore()
   })
 
   describe('executionIdToNodeLocatorId', () => {
@@ -168,24 +170,20 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   describe('nodeLocatorIdToExecutionId', () => {
     it('should convert NodeLocatorId to execution ID', () => {
       const mockExecutionId = '123:456'
-      vi.spyOn(workflowStore, 'nodeLocatorIdToNodeExecutionId').mockReturnValue(
-        mockExecutionId as any
-      )
+      mockNodeLocatorIdToNodeExecutionId.mockReturnValue(mockExecutionId)
 
       const result = store.nodeLocatorIdToExecutionId(
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
       )
 
-      expect(workflowStore.nodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(
+      expect(mockNodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
       )
       expect(result).toBe(mockExecutionId)
     })
 
     it('should return null when conversion fails', () => {
-      vi.spyOn(workflowStore, 'nodeLocatorIdToNodeExecutionId').mockReturnValue(
-        null
-      )
+      mockNodeLocatorIdToNodeExecutionId.mockReturnValue(null)
 
       const result = store.nodeLocatorIdToExecutionId('invalid:format')
 

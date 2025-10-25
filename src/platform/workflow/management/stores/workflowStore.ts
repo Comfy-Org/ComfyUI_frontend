@@ -83,11 +83,11 @@ export class ComfyWorkflow extends UserFile {
    * @param force Whether to force loading the content even if it is already loaded.
    * @returns this
    */
-  override async load({
-    force = false
-  }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
+  override async load({ force = false }: { force?: boolean } = {}): Promise<
+    this & LoadedComfyWorkflow
+  > {
     await super.load({ force })
-    if (!force && this.isLoaded) return this as LoadedComfyWorkflow
+    if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
 
     if (!this.originalContent) {
       throw new Error('[ASSERT] Workflow content should be loaded')
@@ -100,7 +100,7 @@ export class ComfyWorkflow extends UserFile {
         /* initialState= */ JSON.parse(this.originalContent)
       )
     )
-    return this as LoadedComfyWorkflow
+    return this as this & LoadedComfyWorkflow
   }
 
   override unload(): void {

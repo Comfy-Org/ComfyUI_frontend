@@ -1,5 +1,6 @@
 import { toRaw } from 'vue'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
@@ -13,7 +14,6 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

@@ -54,4 +54,4 @@ function setupCacheInvalidation(): void {
   })
 }
 
-void registerAuthServiceWorker()
+await registerAuthServiceWorker()
