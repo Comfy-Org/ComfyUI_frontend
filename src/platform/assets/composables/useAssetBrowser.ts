@@ -1,7 +1,7 @@
-import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
+import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
