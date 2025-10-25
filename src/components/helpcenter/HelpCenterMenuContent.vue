@@ -75,7 +75,7 @@
       <div
         v-if="hasReleases"
         role="group"
-        :aria-label="$t('helpCenter.noRecentReleases')"
+        :aria-label="$t('helpCenter.recentReleases')"
       >
         <article
           v-for="release in releaseStore.recentReleases"
