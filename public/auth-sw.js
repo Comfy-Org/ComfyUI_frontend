@@ -54,7 +54,6 @@ self.addEventListener('fetch', (event) => {
           headers.set(key, value)
         }
 
-        // Fetch with manual redirect to handle cross-origin redirects (e.g., GCS signed URLs)
         const response = await fetch(
           new Request(event.request.url, {
             method: event.request.method,
@@ -67,34 +66,19 @@ self.addEventListener('fetch', (event) => {
           })
         )
 
-        // Handle redirects to external storage (e.g., GCS signed URLs)
-        if (response.type === 'opaqueredirect') {
-          // Opaqueredirect: redirect occurred but response is opaque (headers not accessible)
-          // Re-fetch the original /api/view URL with redirect: 'follow' and mode: 'no-cors'
-          // - mode: 'no-cors' allows cross-origin fetches without CORS headers (GCS doesn't have CORS)
-          // - Returns opaque response, which works fine for images/videos/audio
-          // - Browser will send auth headers to /api/view (same-origin)
-          // - Browser will receive 302 redirect to GCS
-          // - Browser will follow redirect using GCS signed URL authentication
-          return fetch(event.request.url, {
-            method: 'GET',
-            headers: headers,
-            redirect: 'follow',
-            mode: 'no-cors'
-          })
-        }
-
-        // Non-opaque redirect (status visible) - shouldn't normally happen with redirect: 'manual'
-        // but handle as fallback
+        // Handle redirects to GCS
         if (response.status === 302 || response.status === 301) {
           const location = response.headers.get('location')
           if (location) {
-            // Follow redirect manually - do NOT include auth headers for external URLs
             return fetch(location, {
               method: 'GET',
-              redirect: 'follow'
+              mode: 'no-cors'
             })
           }
+        }
+
+        if (response.type === 'opaqueredirect') {
+          return fetch(event.request)
         }
 
         return response
