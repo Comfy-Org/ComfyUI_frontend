@@ -78,7 +78,7 @@ export const DESKTOP_MAINTENANCE_TASKS: Readonly<MaintenanceTask>[] = [
       try {
         await electron.uv.installRequirements()
         return true
-      } catch (error) {
+      } catch {
         return false
       }
     },

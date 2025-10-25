@@ -13,7 +13,7 @@ function dataURLToBlob(dataURL) {
   const arrayBuffer = new ArrayBuffer(byteString.length)
   const uint8Array = new Uint8Array(arrayBuffer)
   for (let i = 0; i < byteString.length; i++) {
-    uint8Array[i] = byteString.charCodeAt(i)
+    uint8Array[i] = byteString.codePointAt(i)!
   }
   return new Blob([arrayBuffer], { type: contentType })
 }
@@ -173,7 +173,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
   createButton(name, callback): HTMLButtonElement {
     var button = document.createElement('button')
     button.style.pointerEvents = 'auto'
-    button.innerText = name
+    button.textContent = name
     button.addEventListener('click', callback)
     return button
   }
@@ -496,9 +496,9 @@ export class MaskEditorDialogOld extends ComfyDialog {
     document.addEventListener('keydown', MaskEditorDialogOld.handleKeyDown)
 
     if (ComfyApp.clipspace_return_node) {
-      this.saveButton.innerText = 'Save to node'
+      this.saveButton.textContent = 'Save to node'
     } else {
-      this.saveButton.innerText = 'Save'
+      this.saveButton.textContent = 'Save'
     }
     this.saveButton.disabled = false
 
@@ -737,7 +737,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
   }
 
   updateWhenBrushColorModeChanged() {
-    this.colorButton.innerText = this.getColorButtonText()
+    this.colorButton.textContent = this.getColorButtonText()
 
     // update mask canvas css styles
 
@@ -1195,7 +1195,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     formData.append('type', 'input')
     formData.append('subfolder', 'clipspace')
 
-    this.saveButton.innerText = 'Saving...'
+    this.saveButton.textContent = 'Saving...'
     this.saveButton.disabled = true
     await uploadMask(item, formData)
     ComfyApp.onClipspaceEditorSave()

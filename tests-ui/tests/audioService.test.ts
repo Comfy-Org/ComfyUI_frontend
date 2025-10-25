@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  type AudioRecordingError,
-  useAudioService
-} from '@/services/audioService'
+import { useAudioService } from '@/services/audioService'
+import type { AudioRecordingError } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
@@ -312,7 +310,7 @@ describe('useAudioService', () => {
 
   describe('edge cases', () => {
     it('should handle very large blobs', async () => {
-      const largeData = new Array(1000000).fill('a').join('')
+      const largeData = Array.from({ length: 1_000_000 }).fill('a').join('')
       const largeBlob = new Blob([largeData], { type: 'audio/wav' })
 
       const result = await service.convertBlobToFileAndSubmit(largeBlob)

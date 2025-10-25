@@ -1,11 +1,10 @@
-import * as fs from 'fs'
+import * as fs from 'node:fs'
 
+import { formatCamelCase, normalizeI18nKey } from '@/utils/formatUtil'
+
+// eslint-disable-next-line import-x/no-relative-packages
 import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import {
-  formatCamelCase,
-  normalizeI18nKey
-} from '../packages/shared-frontend-utils/src/formatUtil'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { FormItem, SettingParams } from '../src/platform/settings/types'
@@ -161,7 +160,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
         // Do merge for settingsCategories as there are some manual translations
         // for special panels like "About" and "Keybinding".
         settingsCategories: {
-          ...(locale.settingsCategories ?? {}),
+          ...locale.settingsCategories,
           ...allSettingCategoriesLocale
         },
         serverConfigItems: allServerConfigsLocale,

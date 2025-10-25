@@ -90,7 +90,7 @@ function executionIdToNodeLocatorId(nodeId: string | number): NodeLocatorId {
 
   // It's an execution node ID
   const parts = nodeIdStr.split(':')
-  const localNodeId = parts[parts.length - 1]
+  const localNodeId = parts.at(-1)!
   const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
   const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
   return nodeLocatorId

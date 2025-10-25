@@ -2,7 +2,7 @@
   <BaseViewTemplate dark>
     <!-- Installation Path Section -->
     <div
-      class="comfy-installer grow flex flex-col gap-4 text-neutral-300 max-w-110"
+      class="comfy-installer flex max-w-110 grow flex-col gap-4 text-neutral-300"
     >
       <h2 class="text-2xl font-semibold text-neutral-100">
         {{ $t('install.manualConfiguration.title') }}
@@ -71,7 +71,7 @@ const restartApp = (message?: string) => electron.restartApp(message)
 
 onMounted(async () => {
   basePath.value = await electron.getBasePath()
-  if (basePath.value.indexOf('/') === -1) sep.value = '\\'
+  if (!basePath.value.includes('/')) sep.value = '\\'
 })
 </script>
 

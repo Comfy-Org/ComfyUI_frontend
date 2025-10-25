@@ -4,6 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": [
+      "ES2022",
       "ES2023",
       "ES2023.Array",
       "DOM",
@@ -53,6 +54,8 @@
     "eslint.config.ts",
     "global.d.ts",
     "knip.config.ts",
+    "playwright.config.ts",
+    "playwright.i18n.config.ts",
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",

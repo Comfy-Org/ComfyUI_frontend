@@ -32,7 +32,7 @@ export function useLayoutSync() {
         const layout = layoutStore.getNodeLayoutRef(nodeId).value
         if (!layout) continue
 
-        const liteNode = canvas.graph?.getNodeById(parseInt(nodeId))
+        const liteNode = canvas.graph?.getNodeById(Number.parseInt(nodeId))
         if (!liteNode) continue
 
         if (

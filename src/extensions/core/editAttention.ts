@@ -19,8 +19,8 @@ app.registerExtension({
     })
 
     function incrementWeight(weight: string, delta: number): string {
-      const floatWeight = parseFloat(weight)
-      if (isNaN(floatWeight)) return weight
+      const floatWeight = Number.parseFloat(weight)
+      if (Number.isNaN(floatWeight)) return weight
       const newWeight = floatWeight + delta
       return String(Number(newWeight.toFixed(10)))
     }
@@ -80,7 +80,7 @@ app.registerExtension({
     function editAttention(event: KeyboardEvent) {
       // @ts-expect-error Runtime narrowing not impl.
       const inputField: HTMLTextAreaElement = event.composedPath()[0]
-      const delta = parseFloat(editAttentionDelta.value)
+      const delta = Number.parseFloat(editAttentionDelta.value)
 
       if (inputField.tagName !== 'TEXTAREA') return
       if (!(event.key === 'ArrowUp' || event.key === 'ArrowDown')) return
@@ -90,7 +90,7 @@ app.registerExtension({
 
       let start = inputField.selectionStart
       let end = inputField.selectionEnd
-      let selectedText = inputField.value.substring(start, end)
+      let selectedText = inputField.value.slice(start, end)
 
       // If there is no selection, attempt to find the nearest enclosure, or select the current word
       if (!selectedText) {
@@ -98,7 +98,7 @@ app.registerExtension({
         if (nearestEnclosure) {
           start = nearestEnclosure.start
           end = nearestEnclosure.end
-          selectedText = inputField.value.substring(start, end)
+          selectedText = inputField.value.slice(start, end)
         } else {
           // Select the current word, find the start and end of the word
           const delimiters = ' .,\\/!?%^*;:{}=-_`~()\r\n\t'
@@ -117,14 +117,14 @@ app.registerExtension({
             end++
           }
 
-          selectedText = inputField.value.substring(start, end)
+          selectedText = inputField.value.slice(start, end)
           if (!selectedText) return
         }
       }
 
       // If the selection ends with a space, remove it
-      if (selectedText[selectedText.length - 1] === ' ') {
-        selectedText = selectedText.substring(0, selectedText.length - 1)
+      if (selectedText.at(-1) === ' ') {
+        selectedText = selectedText.slice(0, selectedText.length - 1)
         end -= 1
       }
 
@@ -135,14 +135,11 @@ app.registerExtension({
       ) {
         start -= 1
         end += 1
-        selectedText = inputField.value.substring(start, end)
+        selectedText = inputField.value.slice(start, end)
       }
 
       // If the selection is not enclosed in parentheses, add them
-      if (
-        selectedText[0] !== '(' ||
-        selectedText[selectedText.length - 1] !== ')'
-      ) {
+      if (selectedText[0] !== '(' || selectedText.at(-1) !== ')') {
         selectedText = `(${selectedText})`
       }
 

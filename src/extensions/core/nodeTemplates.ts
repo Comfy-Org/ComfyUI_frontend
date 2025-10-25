@@ -94,7 +94,7 @@ class ManageTemplates extends ComfyDialog {
     if (res.status === 200) {
       try {
         templates = await res.json()
-      } catch (error) {}
+      } catch {}
     } else if (res.status !== 404) {
       console.error(res.status + ' ' + res.statusText)
     }

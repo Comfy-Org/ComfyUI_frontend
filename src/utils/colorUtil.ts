@@ -57,15 +57,15 @@ export function hexToRgb(hex: string): RGB {
     b = 0
   // 3 digits
   if (hex.length == 4) {
-    r = parseInt(hex[1] + hex[1], 16)
-    g = parseInt(hex[2] + hex[2], 16)
-    b = parseInt(hex[3] + hex[3], 16)
+    r = Number.parseInt(hex[1] + hex[1], 16)
+    g = Number.parseInt(hex[2] + hex[2], 16)
+    b = Number.parseInt(hex[3] + hex[3], 16)
   }
   // 6 digits
   else if (hex.length == 7) {
-    r = parseInt(hex.slice(1, 3), 16)
-    g = parseInt(hex.slice(3, 5), 16)
-    b = parseInt(hex.slice(5, 7), 16)
+    r = Number.parseInt(hex.slice(1, 3), 16)
+    g = Number.parseInt(hex.slice(3, 5), 16)
+    b = Number.parseInt(hex.slice(5, 7), 16)
   }
   return { r, g, b }
 }
@@ -199,7 +199,7 @@ const isHSLA = (color: unknown): color is HSLA => {
   return ['h', 's', 'l', 'a'].every(
     (key) =>
       typeof (color as Record<string, unknown>)[key] === 'number' &&
-      !isNaN((color as Record<string, number>)[key])
+      !Number.isNaN((color as Record<string, number>)[key])
   )
 }
 
@@ -290,7 +290,7 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
       const [r, g, b] = match.map(Number)
       const hsl = rgbToHsl({ r, g, b })
 
-      const a = format === 'rgba' && match[3] ? parseFloat(match[3]) : 1
+      const a = format === 'rgba' && match[3] ? Number.parseFloat(match[3]) : 1
 
       return {
         h: Math.round(hsl.h * 360),
@@ -305,7 +305,7 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
       match = color.match(/\d+(\.\d+)?/g)
       if (!match || match.length < 3) return null
       const [h, s, l] = match.map(Number)
-      const a = format === 'hsla' && match[3] ? parseFloat(match[3]) : 1
+      const a = format === 'hsla' && match[3] ? Number.parseFloat(match[3]) : 1
       return { h, s, l, a }
     }
     default:

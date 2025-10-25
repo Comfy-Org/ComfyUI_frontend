@@ -128,10 +128,10 @@ watch(breadcrumbElement, (el) => {
           const itemsWithIcon = items.filter((item) =>
             item.querySelector('.p-breadcrumb-item-link-icon-visible')
           ).length
-          const separators = el.querySelectorAll(
-            '.p-breadcrumb-separator'
-          ) as NodeListOf<HTMLElement>
-          const separator = separators[separators.length - 1] as HTMLElement
+          const separators = [
+            ...el.querySelectorAll<HTMLElement>('.p-breadcrumb-separator')
+          ]
+          const separator = separators.at(-1)!
           const separatorWidth = separator.offsetWidth
 
           // items + separators + gaps + icons

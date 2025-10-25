@@ -68,7 +68,7 @@ export function useSlotLayoutSync() {
     unsubscribeLayoutChange.value?.()
     unsubscribeLayoutChange.value = layoutStore.onChange((change) => {
       for (const nodeId of change.nodeIds) {
-        const node = graph.getNodeById(parseInt(nodeId))
+        const node = graph.getNodeById(Number.parseInt(nodeId))
         if (node) {
           computeAndRegisterSlots(node)
         }
@@ -100,7 +100,7 @@ export function useSlotLayoutSync() {
         event.type === 'node:property:changed' &&
         event.property === 'flags.collapsed'
       ) {
-        const node = graph.getNodeById(parseInt(String(event.nodeId)))
+        const node = graph.getNodeById(Number.parseInt(String(event.nodeId)))
         if (node) {
           computeAndRegisterSlots(node)
         }

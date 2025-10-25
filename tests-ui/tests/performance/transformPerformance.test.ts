@@ -288,7 +288,7 @@ describeIfNotCI.skip('Transform Performance', () => {
       expect(syncTime).toBeLessThan(15) // 1000 syncs in under 15ms
 
       // Verify final state is correct
-      const lastUpdate = transformUpdates[transformUpdates.length - 1]
+      const lastUpdate = transformUpdates.at(-1)!
       expect(transformState.camera.x).toBe(lastUpdate.offset[0])
       expect(transformState.camera.y).toBe(lastUpdate.offset[1])
       expect(transformState.camera.z).toBe(lastUpdate.scale)

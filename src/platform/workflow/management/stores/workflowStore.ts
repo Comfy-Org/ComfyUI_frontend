@@ -53,7 +53,7 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override get key() {
-    return this.path.substring(ComfyWorkflow.basePath.length)
+    return this.path.slice(ComfyWorkflow.basePath.length)
   }
 
   get activeState(): ComfyWorkflowJSON | null {
@@ -613,7 +613,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const parts = parseNodeExecutionId(nodeExecutionId)
     if (!parts || parts.length === 0) return null
 
-    const nodeId = parts[parts.length - 1]
+    const nodeId = parts.at(-1)!
     const subgraphNodeIds = parts.slice(0, -1)
 
     if (subgraphNodeIds.length === 0) {
@@ -626,7 +626,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         comfyApp.graph,
         subgraphNodeIds.map((id) => String(id))
       )
-      const immediateSubgraph = subgraphs[subgraphs.length - 1]
+      const immediateSubgraph = subgraphs.at(-1)!
       return createNodeLocatorId(immediateSubgraph.id, nodeId)
     } catch {
       return null
@@ -699,7 +699,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           comfyApp.graph,
           path.slice(0, idx + 1).map((id) => String(id))
         )
-        return subgraphs[subgraphs.length - 1] === targetSubgraph
+        return subgraphs.at(-1) === targetSubgraph
       })
     ) {
       return null

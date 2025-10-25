@@ -166,7 +166,7 @@ describe('useFirebaseAuthStore', () => {
 
     try {
       await store.login('test@example.com', 'wrong-password')
-    } catch (e) {
+    } catch {
       // Error expected
     }
 

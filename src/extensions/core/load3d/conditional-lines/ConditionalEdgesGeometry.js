@@ -25,7 +25,9 @@ export class ConditionalEdgesGeometry extends BufferGeometry {
     if (geometry.index) {
       index = geometry.index
     } else {
-      const arr = new Array(position.count / 3).fill().map((_, i) => i)
+      const arr = Array.from({ length: position.count / 3 })
+        .fill()
+        .map((_, i) => i)
       index = new BufferAttribute(new Uint32Array(arr), 1, false)
     }
 

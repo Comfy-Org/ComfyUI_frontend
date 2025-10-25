@@ -76,14 +76,16 @@ export function parseNodeLocatorId(
     // Simple node ID (root graph)
     return {
       subgraphUuid: null,
-      localNodeId: isNaN(Number(id)) ? id : Number(id)
+      localNodeId: Number.isNaN(Number(id)) ? id : Number(id)
     }
   }
 
   const [subgraphUuid, localNodeId] = parts
   return {
     subgraphUuid,
-    localNodeId: isNaN(Number(localNodeId)) ? localNodeId : Number(localNodeId)
+    localNodeId: Number.isNaN(Number(localNodeId))
+      ? localNodeId
+      : Number(localNodeId)
   }
 }
 
@@ -110,7 +112,7 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
 
   return id
     .split(':')
-    .map((part) => (isNaN(Number(part)) ? part : Number(part)))
+    .map((part) => (Number.isNaN(Number(part)) ? part : Number(part)))
 }
 
 /**

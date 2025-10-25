@@ -33,7 +33,7 @@ export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
       }
       parent = map[id]
     }
-    parent.leaf = keys[keys.length - 1] !== ''
+    parent.leaf = keys.at(-1) !== ''
     parent.data = item
   }
   return root
@@ -94,11 +94,9 @@ export function sortedTree(
       const sortedChildren = [...node.children].sort((a, b) =>
         (a.label ?? '').localeCompare(b.label ?? '')
       )
-      newNode.children = [
-        ...sortedChildren.map((child) =>
-          sortedTree(child, { groupLeaf: false })
-        )
-      ]
+      newNode.children = sortedChildren.map((child) =>
+        sortedTree(child, { groupLeaf: false })
+      )
     }
   }
 

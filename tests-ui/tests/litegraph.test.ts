@@ -4,7 +4,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
-  const lastNode = nodes[nodes.length - 1]
+  const lastNode = nodes.at(-1)!
   nodes[0] = lastNode
   nodes[nodes.length - 1] = firstNode
   return nodes

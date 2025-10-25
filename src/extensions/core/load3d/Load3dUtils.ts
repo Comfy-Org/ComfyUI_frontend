@@ -77,10 +77,7 @@ class Load3dUtils {
     if (folder_separator === -1) {
       return ['', path]
     }
-    return [
-      path.substring(0, folder_separator),
-      path.substring(folder_separator + 1)
-    ]
+    return [path.slice(0, folder_separator), path.slice(folder_separator + 1)]
   }
 
   static getResourceURL(
@@ -92,7 +89,7 @@ class Load3dUtils {
       'filename=' + encodeURIComponent(filename),
       'type=' + type,
       'subfolder=' + subfolder,
-      app.getRandParam().substring(1)
+      app.getRandParam().slice(1)
     ].join('&')
 
     return `/view?${params}`

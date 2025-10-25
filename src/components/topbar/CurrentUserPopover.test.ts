@@ -192,7 +192,7 @@ describe('CurrentUserPopover', () => {
 
     // Find all buttons and get the top-up button (last one)
     const buttons = wrapper.findAllComponents(Button)
-    const topUpButton = buttons[buttons.length - 1]
+    const topUpButton = buttons.at(-1)!
 
     // Click the top-up button
     await topUpButton.trigger('click')

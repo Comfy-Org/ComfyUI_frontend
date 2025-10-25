@@ -1,8 +1,8 @@
 <template>
   <BaseViewTemplate dark>
-    <div class="h-full p-8 2xl:p-16 flex flex-col items-center justify-center">
+    <div class="flex h-full flex-col items-center justify-center p-8 2xl:p-16">
       <div
-        class="bg-neutral-800 rounded-lg shadow-lg p-6 w-full max-w-[600px] flex flex-col gap-6"
+        class="flex w-full max-w-[600px] flex-col gap-6 rounded-lg bg-neutral-800 p-6 shadow-lg"
       >
         <h2 class="text-3xl font-semibold text-neutral-100">
           {{ $t('install.helpImprove') }}
@@ -15,7 +15,7 @@
           <a
             href="https://comfy.org/privacy"
             target="_blank"
-            class="text-blue-400 hover:text-blue-300 underline"
+            class="text-blue-400 underline hover:text-blue-300"
           >
             {{ $t('install.privacyPolicy') }} </a
           >.
@@ -33,7 +33,7 @@
             }}
           </span>
         </div>
-        <div class="flex pt-6 justify-end">
+        <div class="flex justify-end pt-6">
           <Button
             :label="$t('g.ok')"
             icon="pi pi-check"
@@ -68,7 +68,7 @@ const updateConsent = async () => {
   isUpdating.value = true
   try {
     await electronAPI().setMetricsConsent(allowMetrics.value)
-  } catch (error) {
+  } catch {
     toast.add({
       severity: 'error',
       summary: t('install.errorUpdatingConsent'),

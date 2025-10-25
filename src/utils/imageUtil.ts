@@ -18,7 +18,7 @@ export const fitDimensionsToNodeWidth = (
   minHeight: number = 64
 ): { minHeight: number; minWidth: number } => {
   const intrinsicAspectRatio = width / height
-  if (!intrinsicAspectRatio || isNaN(intrinsicAspectRatio))
+  if (!intrinsicAspectRatio || Number.isNaN(intrinsicAspectRatio))
     return { minHeight: 0, minWidth: 0 }
 
   // Set min. height s.t. image spans node's x-axis while maintaining aspect ratio

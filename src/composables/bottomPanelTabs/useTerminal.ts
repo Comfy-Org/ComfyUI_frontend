@@ -58,14 +58,14 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
       onResize?: () => void
     }) {
       const ensureValidRows = (rows: number | undefined): number => {
-        if (rows == null || isNaN(rows)) {
+        if (rows == null || Number.isNaN(rows)) {
           return (root.value?.clientHeight ?? 80) / 20
         }
         return rows
       }
 
       const ensureValidCols = (cols: number | undefined): number => {
-        if (cols == null || isNaN(cols)) {
+        if (cols == null || Number.isNaN(cols)) {
           // Sometimes this is NaN if so, estimate.
           return (root.value?.clientWidth ?? 80) / 8
         }
