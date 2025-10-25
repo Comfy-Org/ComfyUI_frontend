@@ -13,7 +13,34 @@ async function registerAuthServiceWorker(): Promise<void> {
   }
 
   try {
-    await navigator.serviceWorker.register('/auth-sw.js')
+    // Use dev service worker in development mode (rewrites to configured backend URL with token in query param)
+    // Use production service worker in production (same-origin requests with Authorization header)
+    const swPath = import.meta.env.DEV ? '/auth-dev-sw.js' : '/auth-sw.js'
+    const registration = await navigator.serviceWorker.register(swPath)
+
+    // Configure base URL for dev service worker
+    if (import.meta.env.DEV) {
+      console.warn('[Auth DEV SW] Registering development serviceworker')
+      // Use the same URL that Vite proxy is using
+      const baseUrl = __DEV_SERVER_COMFYUI_URL__
+      navigator.serviceWorker.controller?.postMessage({
+        type: 'SET_BASE_URL',
+        baseUrl
+      })
+
+      // Also set base URL when service worker becomes active
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        newWorker?.addEventListener('statechange', () => {
+          if (newWorker.state === 'activated') {
+            navigator.serviceWorker.controller?.postMessage({
+              type: 'SET_BASE_URL',
+              baseUrl
+            })
+          }
+        })
+      })
+    }
 
     setupAuthHeaderProvider()
     setupCacheInvalidation()
