@@ -17,7 +17,11 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconTextButton type="primary" label="Upload Model" @click="() => {}">
+        <IconTextButton
+          type="primary"
+          :label="$t('g.upload')"
+          @click="() => {}"
+        >
           <template #icon>
             <i class="icon-[lucide--upload]" />
           </template>

@@ -2,7 +2,7 @@
   <SidebarIcon
     icon="pi pi-sign-out"
     :tooltip="tooltip"
-    label="sideToolbar.logout"
+    :label="$t('sideToolbar.logout')"
     @click="logout"
   />
 </template>
