@@ -23,8 +23,10 @@ export default defineConfig({
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
-      reporter: ['text', 'json', 'html']
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './.vitest/coverage'
     },
+    reporters: ['html', 'json'],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

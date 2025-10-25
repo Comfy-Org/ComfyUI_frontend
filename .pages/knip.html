@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Knip Report</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      padding: 2rem;
+      background: #1a1a1a;
+      color: #f0f0f0;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #4a9eff;
+      border-bottom: 3px solid #4a9eff;
+      padding-bottom: 1rem;
+    }
+    .status {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      margin: 1rem 0;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .error {
+      background: #d32f2f;
+      color: #ffebee;
+    }
+    .loading {
+      background: #f57c00;
+      color: #fff3e0;
+    }
+    #content {
+      background: #2a2a2a;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #404040;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <h1>🧹 Knip Code Quality Report</h1>
+
+  <div id="status" class="status loading">Loading report...</div>
+
+  <div id="content"></div>
+
+  <script>
+    async function loadReport() {
+      const statusEl = document.getElementById('status')
+      const contentEl = document.getElementById('content')
+
+      try {
+        const response = await fetch('./knip/report.md')
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const reportText = await response.text()
+        statusEl.style.display = 'none'
+
+        // Wait for marked to be available
+        if (typeof marked !== 'undefined') {
+          contentEl.innerHTML = marked.parse(reportText)
+        } else {
+          contentEl.innerHTML = `<pre>${reportText}</pre>`
+        }
+      } catch (error) {
+        statusEl.className = 'status error'
+        statusEl.textContent = `Failed to load report: ${error.message}`
+
+        contentEl.innerHTML = '<p>The Knip report could not be loaded. This might happen if:</p><ul><li>The report generation failed during build</li><li>No unused code was detected</li><li>Network connectivity issues</li></ul>'
+      }
+    }
+
+    // Wait for marked library to load before running
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadReport)
+    } else {
+      loadReport()
+    }
+  </script>
+</body>
+</html>

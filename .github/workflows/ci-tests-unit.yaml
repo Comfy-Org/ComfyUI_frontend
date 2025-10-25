@@ -3,7 +3,7 @@ description: "Unit and component testing with Vitest"
 
 on:
   push:
-    branches: [main, master, dev*, core/*, desktop/*]
+    branches: [main, master, dev*, core/*, desktop/*, sno-deploy-ghpage]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
 
@@ -34,3 +34,20 @@ jobs:
 
       - name: Run Vitest tests
         run: pnpm test:unit
+
+      - name: Generate test reports (on main or debug branch)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/sno-deploy-ghpage'
+        run: |
+          mkdir -p ./vitest-reports
+          pnpm exec vitest \
+            --reporter=json --outputFile.json="./vitest-reports/results.json" \
+            --reporter=html --outputFile.html="./vitest-reports/index.html" \
+            --run
+
+      - name: Upload Vitest reports artifact (on main or debug branch)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/sno-deploy-ghpage'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-reports
+          path: vitest-reports/
+          retention-days: 7

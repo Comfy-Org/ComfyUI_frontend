@@ -3,7 +3,7 @@ description: "End-to-end testing with Playwright across multiple browsers, deplo
 
 on:
   push:
-    branches: [main, master, core/*, desktop/*]
+    branches: [main, master, core/*, desktop/*, sno-deploy-ghpage]
   pull_request:
     branches-ignore:
       [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]

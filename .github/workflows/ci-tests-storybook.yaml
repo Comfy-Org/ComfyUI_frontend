@@ -4,7 +4,9 @@ description: "Builds Storybook and runs visual regression testing via Chromatic,
 on:
   workflow_dispatch: # Allow manual triggering
   pull_request:
-    branches: [main]
+    branches: [main, sno-deploy-ghpage]
+  push:
+    branches: [sno-deploy-ghpage]
 
 jobs:
   # Post starting comment for non-forked PRs
@@ -31,7 +33,7 @@ jobs:
   # Build Storybook for all PRs (free Cloudflare deployment)
   storybook-build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
       workflow-url: ${{ steps.workflow-url.outputs.url }}

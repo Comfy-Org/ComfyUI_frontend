@@ -12,10 +12,6 @@ const config: KnipConfig = {
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
     },
-    'apps/desktop-ui': {
-      entry: ['src/main.ts', 'src/i18n.ts'],
-      project: ['src/**/*.{js,ts,vue}', '*.{js,ts,mts}']
-    },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -42,6 +38,7 @@ const config: KnipConfig = {
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
+    '.pages/vite.config.ts',
     // Service worker - registered at runtime via navigator.serviceWorker.register()
     'public/auth-sw.js'
   ],

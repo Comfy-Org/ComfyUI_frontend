@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playwright E2E Test Reports</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 3rem;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .status {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      margin: 1rem auto;
+      border-radius: 6px;
+      font-weight: 500;
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      display: block;
+    }
+
+    .error {
+      background: #d32f2f;
+      color: #ffebee;
+    }
+
+    .loading {
+      background: #f57c00;
+      color: #fff3e0;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .card h2 {
+      color: #333;
+      font-size: 1.5rem;
+      text-transform: capitalize;
+    }
+
+    .pass-rate {
+      background: #10b981;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .pass-rate.has-failures {
+      background: #ef4444;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stat .label {
+      font-size: 0.875rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat .value {
+      font-size: 1.75rem;
+      font-weight: bold;
+    }
+
+    .stat.passed .value {
+      color: #10b981;
+    }
+
+    .stat.failed .value {
+      color: #ef4444;
+    }
+
+    .stat.skipped .value {
+      color: #f59e0b;
+    }
+
+    .stat.flaky .value {
+      color: #8b5cf6;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎭 Playwright E2E Test Reports</h1>
+
+    <div id="status" class="status loading">Loading reports...</div>
+
+    <div id="content" class="cards-grid"></div>
+  </div>
+
+  <script>
+    async function getTestStats(browserName) {
+      try {
+        const reportJsonPath = `./playwright-reports/${browserName}/report.json`
+        const response = await fetch(reportJsonPath)
+
+        if (!response.ok) {
+          console.warn(`No report.json found for ${browserName}`)
+          return null
+        }
+
+        const reportData = await response.json()
+
+        let passed = 0
+        let failed = 0
+        let skipped = 0
+        let flaky = 0
+
+        // Parse Playwright JSON report format
+        if (reportData.suites) {
+          const countResults = (suites) => {
+            for (const suite of suites) {
+              if (suite.specs) {
+                for (const spec of suite.specs) {
+                  if (!spec.tests || spec.tests.length === 0) continue
+
+                  const test = spec.tests[0]
+                  const results = test.results || []
+
+                  // Check if test is flaky (has both pass and fail results)
+                  const hasPass = results.some((r) => r.status === 'passed')
+                  const hasFail = results.some((r) => r.status === 'failed')
+
+                  if (hasPass && hasFail) {
+                    flaky++
+                  } else if (results.some((r) => r.status === 'passed')) {
+                    passed++
+                  } else if (results.some((r) => r.status === 'failed')) {
+                    failed++
+                  } else if (results.some((r) => r.status === 'skipped')) {
+                    skipped++
+                  }
+                }
+              }
+              if (suite.suites) {
+                countResults(suite.suites)
+              }
+            }
+          }
+
+          countResults(reportData.suites)
+        }
+
+        return { passed, failed, skipped, flaky }
+      } catch (error) {
+        console.error(`Error reading report for ${browserName}:`, error.message)
+        return null
+      }
+    }
+
+    function createCard(browserName, stats) {
+      if (!stats) return ''
+
+      const total = stats.passed + stats.failed + stats.skipped + stats.flaky
+      const passRate = total > 0 ? ((stats.passed / total) * 100).toFixed(1) : 0
+
+      return `
+      <a href="./playwright-reports/${browserName}/index.html" class="card">
+        <div class="card-header">
+          <h2>${browserName}</h2>
+          <span class="pass-rate ${stats.failed > 0 ? 'has-failures' : ''}">${passRate}%</span>
+        </div>
+        <div class="stats">
+          <div class="stat passed">
+            <span class="label">Passed</span>
+            <span class="value">${stats.passed}</span>
+          </div>
+          <div class="stat failed">
+            <span class="label">Failed</span>
+            <span class="value">${stats.failed}</span>
+          </div>
+          <div class="stat skipped">
+            <span class="label">Skipped</span>
+            <span class="value">${stats.skipped}</span>
+          </div>
+          <div class="stat flaky">
+            <span class="label">Flaky</span>
+            <span class="value">${stats.flaky}</span>
+          </div>
+        </div>
+      </a>
+      `
+    }
+
+    async function loadReports() {
+      const statusEl = document.getElementById('status')
+      const contentEl = document.getElementById('content')
+
+      try {
+        // Known browser configurations from the workflow
+        const browsers = ['chromium', 'chromium-2x', 'chromium-0.5x', 'mobile-chrome']
+
+        const cards = []
+
+        for (const browser of browsers) {
+          const stats = await getTestStats(browser)
+          if (stats) {
+            cards.push(createCard(browser, stats))
+            console.log(`✓ Found report for ${browser}:`, stats)
+          }
+        }
+
+        if (cards.length === 0) {
+          throw new Error('No valid browser reports found')
+        }
+
+        statusEl.style.display = 'none'
+        contentEl.innerHTML = cards.join('')
+      } catch (error) {
+        statusEl.className = 'status error'
+        statusEl.textContent = `Failed to load reports: ${error.message}`
+
+        contentEl.innerHTML = '<p style="color: white; text-align: center;">The Playwright reports could not be loaded. This might happen if:</p><ul style="color: white; text-align: center; list-style: none;"><li>The report generation failed during build</li><li>No test reports are available yet</li><li>Network connectivity issues</li></ul>'
+      }
+    }
+
+    // Load reports when page loads
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadReports)
+    } else {
+      loadReports()
+    }
+  </script>
+</body>
+</html>

@@ -92,3 +92,9 @@ storybook-static
 .github/instructions/nx.instructions.md
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+
+# Generated reports in .pages (exclude generated, keep HTML templates)
+/.pages/*/**/*
+/.pages-dist/
+
+.vercel
