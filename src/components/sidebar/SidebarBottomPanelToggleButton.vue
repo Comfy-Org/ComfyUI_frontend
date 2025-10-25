@@ -1,6 +1,6 @@
 <template>
   <SidebarIcon
-    label="sideToolbar.labels.console"
+    :label="$t('sideToolbar.labels.console')"
     :tooltip="$t('menu.toggleBottomPanel')"
     :selected="bottomPanelStore.activePanel == 'terminal'"
     @click="bottomPanelStore.toggleBottomPanel"
