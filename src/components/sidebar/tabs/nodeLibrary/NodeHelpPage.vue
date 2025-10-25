@@ -16,7 +16,7 @@
       <ProgressSpinner
         v-if="isLoading"
         class="m-auto"
-        aria-label="Loading help"
+        :aria-label="$t('g.loading')"
       />
       <!-- Markdown fetched successfully -->
       <div
