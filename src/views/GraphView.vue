@@ -54,6 +54,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/services/keybindingService'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -80,6 +81,7 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 
@@ -188,11 +190,17 @@ const init = () => {
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
-  await queueStore.update()
+  await Promise.all([
+    queueStore.update(),
+    assetsStore.updateHistory() // Update history assets when status changes
+  ])
 }
 
 const onExecutionSuccess = async () => {
-  await queueStore.update()
+  await Promise.all([
+    queueStore.update(),
+    assetsStore.updateHistory() // Update history assets on execution success
+  ])
 }
 
 const reconnectingMessage: ToastMessageOptions = {

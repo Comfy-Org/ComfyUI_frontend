@@ -54,7 +54,7 @@ const {
 }>()
 
 const topStyle = computed(() => {
-  const baseClasses = 'relative p-0'
+  const baseClasses = 'relative p-0 overflow-hidden'
 
   const ratioClasses = {
     square: 'aspect-square',
