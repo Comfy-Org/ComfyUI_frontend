@@ -16,7 +16,6 @@
     "unicorn/prefer-optional-catch-binding": "warn",
     "unicorn/prefer-string-starts-ends-with": "warn",
     "unicorn/throw-new-error": "warn",
-    // To Fix and Enable
     "no-unused-private-class-members": "off",
     "typescript/no-unnecessary-parameter-property-assignment": "off",
     "typescript/no-this-alias": "off",
