@@ -27,28 +27,6 @@
 
     <PasswordFields />
 
-    <!-- Personal Data Consent Checkbox -->
-    <FormField
-      v-slot="$field"
-      name="personalDataConsent"
-      class="flex items-center gap-2"
-    >
-      <Checkbox
-        input-id="comfy-org-sign-up-personal-data-consent"
-        :binary="true"
-        :invalid="$field.invalid"
-      />
-      <label
-        for="comfy-org-sign-up-personal-data-consent"
-        class="text-base font-medium opacity-80"
-      >
-        {{ t('auth.signup.personalDataConsentLabel') }}
-      </label>
-      <small v-if="$field.error" class="-mt-4 text-red-500">{{
-        $field.error.message
-      }}</small>
-    </FormField>
-
     <!-- Auth Error Message -->
     <Message v-if="authError" severity="error">
       {{ authError }}
@@ -68,7 +46,6 @@ import type { FormSubmitEvent } from '@primevue/forms'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { useI18n } from 'vue-i18n'
