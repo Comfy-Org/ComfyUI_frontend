@@ -9,7 +9,7 @@
     :class="
       cn(
         'bg-node-component-surface',
-        'lg-node absolute rounded-2xl touch-none flex flex-col group',
+        'lg-node absolute rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -44,10 +44,6 @@
     @contextmenu="handleContextMenu"
   >
     <div class="flex items-center">
-      <template v-if="isCollapsed">
-        <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
-        <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
-      </template>
       <NodeHeader
         :node-data="nodeData"
         :collapsed="isCollapsed"
@@ -160,7 +156,6 @@ import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
-import SlotConnectionDot from './SlotConnectionDot.vue'
 
 // Extended props for main node component
 interface LGraphNodeProps {
