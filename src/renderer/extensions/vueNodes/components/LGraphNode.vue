@@ -275,10 +275,7 @@ const handleContextMenu = (event: MouseEvent) => {
 onMounted(() => {
   // Set initial DOM size from layout store, but respect intrinsic content minimum
   if (size.value && nodeContainerRef.value && transformState) {
-    const intrinsicMin = calculateIntrinsicSize(
-      nodeContainerRef.value,
-      transformState.camera.z
-    )
+    const intrinsicMin = calculateIntrinsicSize(nodeContainerRef.value)
 
     // Use the larger of stored size or intrinsic minimum
     const finalWidth = Math.max(size.value.width, intrinsicMin.width)

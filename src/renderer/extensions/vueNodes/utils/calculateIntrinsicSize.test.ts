@@ -32,10 +32,8 @@ describe('calculateIntrinsicSize', () => {
       toJSON: () => ({})
     })
 
-    const scale = 2
-    const result = calculateIntrinsicSize(element, scale)
+    const result = calculateIntrinsicSize(element)
 
-    // Should divide by scale to convert from screen to canvas coordinates
     expect(result).toEqual({
       width: 150, // 300 / 2
       height: 75 // 150 / 2
@@ -60,7 +58,7 @@ describe('calculateIntrinsicSize', () => {
       toJSON: () => ({})
     })
 
-    calculateIntrinsicSize(element, 1)
+    calculateIntrinsicSize(element)
 
     // Should restore original styles
     expect(element.style.width).toBe(originalWidth)
@@ -80,7 +78,7 @@ describe('calculateIntrinsicSize', () => {
       toJSON: () => ({})
     })
 
-    const result = calculateIntrinsicSize(element, 1)
+    const result = calculateIntrinsicSize(element)
 
     expect(result).toEqual({
       width: 400,
@@ -101,7 +99,7 @@ describe('calculateIntrinsicSize', () => {
       toJSON: () => ({})
     })
 
-    const result = calculateIntrinsicSize(element, 0.5)
+    const result = calculateIntrinsicSize(element)
 
     expect(result).toEqual({
       width: 600, // 300 / 0.5
@@ -129,7 +127,7 @@ describe('calculateIntrinsicSize', () => {
       }
     }
 
-    calculateIntrinsicSize(element, 1)
+    calculateIntrinsicSize(element)
 
     // During measurement, styles should be set to 'auto'
     expect(widthDuringMeasurement).toBe('auto')

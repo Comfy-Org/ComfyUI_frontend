@@ -76,7 +76,7 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const minSize = calculateIntrinsicSize(nodeElement, scale)
+    const minSize = calculateIntrinsicSize(nodeElement)
 
     // Track shift key state and sync to canvas for snap preview
     const stopShiftSync = trackShiftKey(event)

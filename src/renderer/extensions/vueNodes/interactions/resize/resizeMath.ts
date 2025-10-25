@@ -103,14 +103,14 @@ export function createResizeSession(config: {
 }) {
   const startSize = { ...config.startSize }
   const startPosition = { ...config.startPosition }
-  const minSize = { ...config.minSize }
+  //const minSize = { ...config.minSize }
   const handle = config.handle
 
   return (delta: Point, snapFn?: (size: Size) => Size) =>
     computeResizeOutcome({
       startSize,
       startPosition,
-      minSize,
+      minSize: config.minSize,
       handle,
       delta,
       snapFn

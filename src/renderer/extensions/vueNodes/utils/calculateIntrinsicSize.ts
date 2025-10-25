@@ -8,27 +8,40 @@
  * @param scale - Camera zoom scale for coordinate conversion
  * @returns The intrinsic minimum size in canvas coordinates
  */
-export function calculateIntrinsicSize(
-  element: HTMLElement,
-  scale: number
-): { width: number; height: number } {
+export function calculateIntrinsicSize(element: HTMLElement): {
+  width: number
+  height: number
+} {
   // Store original size to restore later
   const originalWidth = element.style.width
   const originalHeight = element.style.height
 
   // Temporarily set to auto to measure natural content size
-  element.style.width = 'auto'
-  element.style.height = 'auto'
+  element.style.width = 'min-content'
+  element.style.height = 'min-content'
 
-  const intrinsicRect = element.getBoundingClientRect()
+  const intrinsicRect = {
+    width: element.clientWidth,
+    height: element.clientHeight
+  }
 
   // Restore original size
   element.style.width = originalWidth
   element.style.height = originalHeight
+  const widgets = [
+    ...element.querySelectorAll('.lg-node-widgets > div > div:nth-child(2)')
+  ]
+
+  const widgetHeight = () => {
+    return widgets.map((w) => w.clientHeight).reduce((a, b) => a + b, 0)
+  }
+  const withoutWidgets = intrinsicRect.height - widgetHeight()
 
   // Convert from screen coordinates to canvas coordinates
   return {
-    width: intrinsicRect.width / scale,
-    height: intrinsicRect.height / scale
+    width: intrinsicRect.width,
+    get height() {
+      return withoutWidgets + widgetHeight()
+    }
   }
 }
