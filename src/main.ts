@@ -13,7 +13,6 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import { FIREBASE_CONFIG } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
-import '@/platform/auth/serviceWorker'
 import { isCloud } from '@/platform/distribution/types'
 import router from '@/router'
 
@@ -85,4 +84,10 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
-  .mount('#vue-app')
+
+// Register auth service worker after Pinia is initialized (cloud-only)
+if (isCloud) {
+  void import('@/platform/auth/serviceWorker')
+}
+
+app.mount('#vue-app')
