@@ -3,6 +3,9 @@ import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
+// @ts-expect-error Package missing index.d.ts but works at runtime
+// eslint-disable-next-line import-x/no-unresolved
+import oxlint from 'eslint-plugin-oxlint'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import tailwind from 'eslint-plugin-tailwindcss'
@@ -102,14 +105,13 @@ export default defineConfig([
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
-  // @ts-expect-error Bad types in the plugin
   importX.flatConfigs.recommended,
-  // @ts-expect-error Bad types in the plugin
   importX.flatConfigs.typescript,
+  // Turn off ESLint rules that are already handled by oxlint
+  oxlint.configs['flat/recommended'],
   {
     plugins: {
       'unused-imports': unusedImports,
-      // @ts-expect-error Bad types in the plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
@@ -267,5 +269,7 @@ export default defineConfig([
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
     }
-  }
+  },
+  // Turn off ESLint rules that are already handled by oxlint
+  oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
 ])
