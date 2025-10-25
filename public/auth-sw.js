@@ -78,7 +78,6 @@ self.addEventListener('fetch', (event) => {
           if (location) {
             return fetch(location, {
               method: 'GET',
-              cache: 'no-store',
               redirect: 'follow'
             })
           }
