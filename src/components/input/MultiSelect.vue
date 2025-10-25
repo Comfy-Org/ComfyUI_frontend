@@ -267,9 +267,6 @@ const pt = computed(() => ({
   pcOptionCheckbox: {
     root: { class: 'hidden' },
     style: { display: 'none' }
-  },
-  dropdownIcon: {
-    class: 'text-button-icon'
   }
 }))
 </script>

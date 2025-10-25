@@ -38,7 +38,7 @@
 
     <!-- Trigger caret -->
     <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-base text-button-icon" />
+      <i class="icon-[lucide--chevron-down] text-base text-neutral-500" />
     </template>
 
     <!-- Option row -->
