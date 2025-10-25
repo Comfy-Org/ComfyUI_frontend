@@ -44,10 +44,6 @@
     @contextmenu="handleContextMenu"
   >
     <div class="flex items-center">
-      <template v-if="isCollapsed">
-        <SlotConnectionDot multi class="absolute left-0 -translate-x-1/2" />
-        <SlotConnectionDot multi class="absolute right-0 translate-x-1/2" />
-      </template>
       <NodeHeader
         :node-data="nodeData"
         :collapsed="isCollapsed"
@@ -160,7 +156,6 @@ import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
-import SlotConnectionDot from './SlotConnectionDot.vue'
 
 // Extended props for main node component
 interface LGraphNodeProps {
