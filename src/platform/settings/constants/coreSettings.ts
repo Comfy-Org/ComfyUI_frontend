@@ -1069,7 +1069,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true
   }
 ]
