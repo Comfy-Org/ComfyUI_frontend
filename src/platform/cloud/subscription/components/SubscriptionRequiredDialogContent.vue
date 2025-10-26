@@ -25,10 +25,10 @@
             <div class="text-sm text-muted">
               {{ $t('subscription.required.title') }}
             </div>
-            <TopbarBadges
+            <CloudBadge
               reverse-order
               no-padding
-              text-class="!text-sm !font-normal"
+              background-color="var(--p-dialog-background)"
             />
           </div>
 
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'

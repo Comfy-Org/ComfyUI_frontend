@@ -19,28 +19,6 @@ const badges = computed<TopbarBadge[]>(() => {
     })
   }
 
-  // TEMPORARY: Test badges for responsive design
-  result.push({
-    text: 'Server Maintenance',
-    label: 'ALERT',
-    variant: 'error',
-    tooltip: 'Scheduled maintenance in 2 hours'
-  })
-
-  result.push({
-    text: 'New Features Available',
-    label: 'NEW',
-    variant: 'warning',
-    tooltip: 'Check out the latest updates'
-  })
-
-  result.push({
-    text: 'System Status',
-    variant: 'info',
-    icon: 'pi pi-check-circle',
-    tooltip: 'All systems operational'
-  })
-
   // Always add cloud badge last (furthest right)
   result.push({
     label: t('g.beta'),

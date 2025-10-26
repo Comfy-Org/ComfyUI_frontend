@@ -3,8 +3,8 @@
   <div
     v-if="displayMode === 'icon-only'"
     class="relative inline-flex h-full shrink-0 items-center justify-center px-2"
-    :class="iconButtonClasses"
-    :style="{ backgroundColor: 'var(--comfy-menu-bg)' }"
+    :class="clickableClasses"
+    :style="menuBackgroundStyle"
     @click="togglePopover"
   >
     <i
@@ -49,14 +49,14 @@
   <div
     v-else-if="displayMode === 'compact'"
     class="relative inline-flex h-full"
-    :style="{ backgroundColor: 'var(--comfy-menu-bg)' }"
+    :style="menuBackgroundStyle"
   >
     <div
       class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
       :class="[
         { 'flex-row-reverse': reverseOrder },
         noPadding ? '' : 'px-3',
-        iconButtonClasses
+        clickableClasses
       ]"
       @click="togglePopover"
     >
@@ -104,7 +104,7 @@
     v-tooltip="badge.tooltip"
     class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
     :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-3']"
-    :style="{ backgroundColor: 'var(--comfy-menu-bg)' }"
+    :style="menuBackgroundStyle"
   >
     <i
       v-if="iconClass"
@@ -135,11 +135,13 @@ const props = withDefaults(
     displayMode?: 'full' | 'compact' | 'icon-only'
     reverseOrder?: boolean
     noPadding?: boolean
+    backgroundColor?: string
   }>(),
   {
     displayMode: 'full',
     reverseOrder: false,
-    noPadding: false
+    noPadding: false,
+    backgroundColor: 'var(--comfy-menu-bg)'
   }
 )
 
@@ -150,6 +152,10 @@ const togglePopover = (event: Event) => {
 }
 
 const variant = computed(() => props.badge.variant ?? 'info')
+
+const menuBackgroundStyle = computed(() => ({
+  backgroundColor: props.backgroundColor
+}))
 
 const labelClasses = computed(() => {
   switch (variant.value) {
@@ -192,9 +198,7 @@ const iconClass = computed(() => {
   }
 })
 
-const iconButtonClasses = computed(() => {
-  return 'cursor-pointer transition-opacity hover:opacity-80'
-})
+const clickableClasses = 'cursor-pointer transition-opacity hover:opacity-80'
 
 const dotClasses = computed(() => {
   switch (variant.value) {
