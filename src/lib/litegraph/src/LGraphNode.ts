@@ -206,7 +206,6 @@ supported callbacks:
     + getExtraMenuOptions: to add option to context menu
 */
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface LGraphNode {
   constructor: LGraphNodeConstructor
 }
@@ -218,7 +217,7 @@ export interface LGraphNode {
  * @param title a name for the node
  * @param type a type for the node
  */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
+
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
