@@ -62,7 +62,7 @@
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
+      <span class="text-sm text-primary">
         {{ label }}
       </span>
       <span
@@ -208,7 +208,7 @@ const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: cn(
       'h-10 relative inline-flex cursor-pointer select-none',
-      'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
+      'rounded-lg bg-white dark-theme:bg-zinc-800 text-primary',
       'transition-all duration-200 ease-in-out',
       'border-[2.5px] border-solid',
       selectedCount.value > 0

@@ -4,7 +4,7 @@
       v-if="!hidden"
       :class="
         cn(
-          'bg-zinc-500/10 dark-theme:bg-charcoal-600 box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
+          'bg-node-component-widget-input-surface box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
           { hidden: hideWhenEmpty && !hasAudio }
         )
       "
@@ -24,22 +24,22 @@
           role="button"
           :tabindex="0"
           aria-label="Play/Pause"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="togglePlayPause"
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--play] size-4 text-secondary"
           />
           <i
             v-else
-            class="icon-[lucide--pause] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--pause] size-4 text-secondary"
           />
         </div>
 
         <!-- Time Display -->
         <div
-          class="text-sm font-normal text-nowrap text-black dark-theme:text-white"
+          class="text-sm font-normal text-nowrap text-primary"
         >
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
@@ -47,10 +47,10 @@
 
       <!-- Progress Bar -->
       <div
-        class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-stone-200"
+        class="relative h-0.5 flex-1 rounded-full bg-interface-stroke"
       >
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-gray-600 transition-all dark-theme:bg-white/50"
+          class="absolute top-0 left-0 h-full rounded-full bg-button-icon transition-all"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -72,20 +72,20 @@
           role="button"
           :tabindex="0"
           aria-label="Volume"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleMute"
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-2] size-4 text-secondary"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-1] size-4 text-secondary"
           />
           <i
             v-else
-            class="icon-[lucide--volume-x] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-x] size-4 text-secondary"
           />
         </div>
 
@@ -96,11 +96,11 @@
           role="button"
           :tabindex="0"
           aria-label="More Options"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleOptionsMenu"
         >
           <i
-            class="icon-[lucide--more-vertical] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--more-vertical] size-4 text-secondary"
           />
         </div>
       </div>

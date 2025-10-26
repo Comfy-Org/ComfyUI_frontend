@@ -11,7 +11,7 @@ const filterSelected = defineModel<OptionId>('filterSelected')
 </script>
 
 <template>
-  <div class="mb-4 flex gap-1 px-4 text-zinc-400">
+  <div class="mb-4 flex gap-1 px-4 text-secondary">
     <div
       v-for="option in filterOptions"
       :key="option.id"
@@ -19,10 +19,10 @@ const filterSelected = defineModel<OptionId>('filterSelected')
         cn(
           'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer select-none',
           'transition-all duration-150',
-          'hover:text-black hover:dark-theme:text-white hover:bg-zinc-500/10',
+          'hover:text-primary hover:bg-interface-menu-component-surface-hovered',
           'active:scale-95',
           filterSelected === option.id
-            ? '!bg-zinc-500/20 text-black dark-theme:text-white'
+            ? '!bg-interface-menu-component-surface-selected text-primary'
             : 'bg-transparent'
         )
       "
