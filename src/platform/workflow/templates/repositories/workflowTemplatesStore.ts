@@ -436,17 +436,16 @@ export const useWorkflowTemplatesStore = defineStore(
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
+          customTemplates.value = await api.getWorkflowTemplates()
           const locale = i18n.global.locale.value
 
-          const [customResult, coreResult, englishResult] = await Promise.all([
-            api.getWorkflowTemplates(),
+          const [coreResult, englishResult] = await Promise.all([
             api.getCoreWorkflowTemplates(locale),
             isCloud && locale !== 'en'
               ? api.getCoreWorkflowTemplates('en')
               : Promise.resolve([])
           ])
 
-          customTemplates.value = customResult
           coreTemplates.value = coreResult
           englishTemplates.value = englishResult
 
