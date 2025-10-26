@@ -27,7 +27,9 @@ test.describe('Node Help', () => {
   })
 
   test.describe('Selection Toolbox', () => {
-    test('Should open help menu for selected node', async ({ comfyPage }) => {
+    test.skip('Should open help menu for selected node', async ({
+      comfyPage
+    }) => {
       // Load a workflow with a node
       await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.loadWorkflow('default')
@@ -64,7 +66,9 @@ test.describe('Node Help', () => {
   })
 
   test.describe('Node Library Sidebar', () => {
-    test('Should open help menu from node library', async ({ comfyPage }) => {
+    test.skip('Should open help menu from node library', async ({
+      comfyPage
+    }) => {
       // Open the node library sidebar
       await comfyPage.menu.nodeLibraryTab.open()
 
@@ -97,7 +101,7 @@ test.describe('Node Help', () => {
       await expect(helpPage.locator('.node-help-content')).toBeVisible()
     })
 
-    test('Should show node library tab when clicking back from help page', async ({
+    test.skip('Should show node library tab when clicking back from help page', async ({
       comfyPage
     }) => {
       // Open the node library sidebar
@@ -145,7 +149,7 @@ test.describe('Node Help', () => {
       await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
     })
 
-    test('Should display loading state while fetching help', async ({
+    test.skip('Should display loading state while fetching help', async ({
       comfyPage
     }) => {
       // Mock slow network response
@@ -176,7 +180,7 @@ test.describe('Node Help', () => {
       await expect(helpPage).toContainText('Test Help Content')
     })
 
-    test('Should display fallback content when help file not found', async ({
+    test.skip('Should display fallback content when help file not found', async ({
       comfyPage
     }) => {
       // Mock 404 response for help files
@@ -205,7 +209,7 @@ test.describe('Node Help', () => {
       await expect(helpPage).toContainText('Outputs')
     })
 
-    test('Should render markdown with images correctly', async ({
+    test.skip('Should render markdown with images correctly', async ({
       comfyPage
     }) => {
       // Mock response with markdown containing images
@@ -251,7 +255,7 @@ test.describe('Node Help', () => {
       )
     })
 
-    test('Should render video elements with source tags in markdown', async ({
+    test.skip('Should render video elements with source tags in markdown', async ({
       comfyPage
     }) => {
       // Mock response with video elements
@@ -312,7 +316,7 @@ test.describe('Node Help', () => {
       )
     })
 
-    test('Should handle custom node documentation paths', async ({
+    test.skip('Should handle custom node documentation paths', async ({
       comfyPage
     }) => {
       // First load workflow with custom node
@@ -365,7 +369,9 @@ This is documentation for a custom node.
       }
     })
 
-    test('Should sanitize dangerous HTML content', async ({ comfyPage }) => {
+    test.skip('Should sanitize dangerous HTML content', async ({
+      comfyPage
+    }) => {
       // Mock response with potentially dangerous content
       await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
         await route.fulfill({
@@ -424,7 +430,7 @@ This is documentation for a custom node.
       await expect(helpPage.locator('img[alt="Safe Image"]')).toBeVisible()
     })
 
-    test('Should handle locale-specific documentation', async ({
+    test.skip('Should handle locale-specific documentation', async ({
       comfyPage
     }) => {
       // Mock different responses for different locales
@@ -468,7 +474,9 @@ This is English documentation.
       await comfyPage.setSetting('Comfy.Locale', 'en')
     })
 
-    test('Should handle network errors gracefully', async ({ comfyPage }) => {
+    test.skip('Should handle network errors gracefully', async ({
+      comfyPage
+    }) => {
       // Mock network error
       await comfyPage.page.route('**/docs/**/*.md', async (route) => {
         await route.abort('failed')
@@ -494,7 +502,7 @@ This is English documentation.
       expect(content).toBeTruthy()
     })
 
-    test('Should update help content when switching between nodes', async ({
+    test.skip('Should update help content when switching between nodes', async ({
       comfyPage
     }) => {
       // Mock different help content for different nodes

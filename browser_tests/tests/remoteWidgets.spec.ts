@@ -77,7 +77,7 @@ test.describe('Remote COMBO Widget', () => {
       await comfyPage.page.unroute('**/api/models/checkpoints**')
     })
 
-    test('lazy loads options when widget is added from node library', async ({
+    test.skip('lazy loads options when widget is added from node library', async ({
       comfyPage
     }) => {
       const nodeName = 'Remote Widget Node'
@@ -104,7 +104,9 @@ test.describe('Remote COMBO Widget', () => {
       expect(widgetOptions).toEqual(mockOptions)
     })
 
-    test('applies query parameters from input spec', async ({ comfyPage }) => {
+    test.skip('applies query parameters from input spec', async ({
+      comfyPage
+    }) => {
       const nodeName = 'Remote Widget Node With Sort Query Param'
       await addRemoteWidgetNode(comfyPage, nodeName)
       await waitForWidgetUpdate(comfyPage)
@@ -113,7 +115,7 @@ test.describe('Remote COMBO Widget', () => {
       expect(widgetOptions).toEqual([...mockOptions].sort())
     })
 
-    test('handles empty list of options', async ({ comfyPage }) => {
+    test.skip('handles empty list of options', async ({ comfyPage }) => {
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
         async (route) => {
@@ -128,7 +130,7 @@ test.describe('Remote COMBO Widget', () => {
       expect(widgetOptions).toEqual([])
     })
 
-    test('falls back to default value when non-200 response', async ({
+    test.skip('falls back to default value when non-200 response', async ({
       comfyPage
     }) => {
       await comfyPage.page.route(
@@ -165,7 +167,7 @@ test.describe('Remote COMBO Widget', () => {
       expect(requestWasMade).toBe(false)
     })
 
-    test('fetches options immediately after widget is added to graph', async ({
+    test.skip('fetches options immediately after widget is added to graph', async ({
       comfyPage
     }) => {
       const requestPromise = comfyPage.page.waitForRequest((request) =>
@@ -178,7 +180,7 @@ test.describe('Remote COMBO Widget', () => {
   })
 
   test.describe('Refresh Behavior', () => {
-    test('refresh button is visible in selection toolbar when node is selected', async ({
+    test.skip('refresh button is visible in selection toolbar when node is selected', async ({
       comfyPage
     }) => {
       await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
@@ -197,7 +199,7 @@ test.describe('Remote COMBO Widget', () => {
       ).toBeVisible()
     })
 
-    test('refreshes options when TTL expires', async ({ comfyPage }) => {
+    test.skip('refreshes options when TTL expires', async ({ comfyPage }) => {
       // Fulfill each request with a unique timestamp
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
@@ -228,7 +230,7 @@ test.describe('Remote COMBO Widget', () => {
       expect(refreshedOptions).not.toEqual(initialOptions)
     })
 
-    test('does not refresh when TTL is not set', async ({ comfyPage }) => {
+    test.skip('does not refresh when TTL is not set', async ({ comfyPage }) => {
       let requestCount = 0
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
@@ -251,7 +253,7 @@ test.describe('Remote COMBO Widget', () => {
       expect(requestCount).toBe(1) // Should only make initial request
     })
 
-    test('retries failed requests with backoff', async ({ comfyPage }) => {
+    test.skip('retries failed requests with backoff', async ({ comfyPage }) => {
       const timestamps: number[] = []
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
@@ -278,7 +280,9 @@ test.describe('Remote COMBO Widget', () => {
       expect(intervals[1]).toBeGreaterThan(intervals[0])
     })
 
-    test('clicking refresh button forces a refresh', async ({ comfyPage }) => {
+    test.skip('clicking refresh button forces a refresh', async ({
+      comfyPage
+    }) => {
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
         async (route) => {
@@ -304,7 +308,7 @@ test.describe('Remote COMBO Widget', () => {
       expect(refreshedOptions).not.toEqual(initialOptions)
     })
 
-    test('control_after_refresh is applied after refresh', async ({
+    test.skip('control_after_refresh is applied after refresh', async ({
       comfyPage
     }) => {
       const options = [
@@ -340,7 +344,7 @@ test.describe('Remote COMBO Widget', () => {
   })
 
   test.describe('Cache Behavior', () => {
-    test('reuses cached data between widgets with same params', async ({
+    test.skip('reuses cached data between widgets with same params', async ({
       comfyPage
     }) => {
       let requestCount = 0

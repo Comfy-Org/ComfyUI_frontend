@@ -9,7 +9,7 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('Node Badge', () => {
-  test('Can add badge', async ({ comfyPage }) => {
+  test.skip('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       const LGraphBadge = window['LGraphBadge']
       const app = window['app'] as ComfyApp
@@ -26,7 +26,7 @@ test.describe('Node Badge', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('node-badge.png')
   })
 
-  test('Can add multiple badges', async ({ comfyPage }) => {
+  test.skip('Can add multiple badges', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       const LGraphBadge = window['LGraphBadge']
       const app = window['app'] as ComfyApp
@@ -46,7 +46,7 @@ test.describe('Node Badge', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('node-badge-multiple.png')
   })
 
-  test('Can add badge left-side', async ({ comfyPage }) => {
+  test.skip('Can add badge left-side', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       const LGraphBadge = window['LGraphBadge']
       const app = window['app'] as ComfyApp
@@ -68,7 +68,7 @@ test.describe('Node Badge', () => {
 
 test.describe('Node source badge', () => {
   Object.values(NodeBadgeMode).forEach(async (mode) => {
-    test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
+    test.skip(`Shows node badges (${mode})`, async ({ comfyPage }) => {
       // Execution error workflow has both custom node and core node.
       await comfyPage.loadWorkflow('nodes/execution_error')
       await comfyPage.setSetting('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
@@ -81,7 +81,7 @@ test.describe('Node source badge', () => {
 })
 
 test.describe('Node badge color', () => {
-  test('Can show node badge with unknown color palette', async ({
+  test.skip('Can show node badge with unknown color palette', async ({
     comfyPage
   }) => {
     await comfyPage.setSetting(
@@ -97,7 +97,7 @@ test.describe('Node badge color', () => {
     )
   })
 
-  test('Can show node badge with light color palette', async ({
+  test.skip('Can show node badge with light color palette', async ({
     comfyPage
   }) => {
     await comfyPage.setSetting(

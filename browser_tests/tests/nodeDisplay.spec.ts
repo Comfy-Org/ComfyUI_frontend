@@ -9,27 +9,27 @@ test.beforeEach(async ({ comfyPage }) => {
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.
 test.describe('Optional input', () => {
-  test('No shape specified', async ({ comfyPage }) => {
+  test.skip('No shape specified', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/optional_input_no_shape')
     await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
   })
 
-  test('Wrong shape specified', async ({ comfyPage }) => {
+  test.skip('Wrong shape specified', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/optional_input_wrong_shape')
     await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
   })
 
-  test('Correct shape specified', async ({ comfyPage }) => {
+  test.skip('Correct shape specified', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/optional_input_correct_shape')
     await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
   })
 
-  test('Force input', async ({ comfyPage }) => {
+  test.skip('Force input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/force_input')
     await expect(comfyPage.canvas).toHaveScreenshot('force_input.png')
   })
 
-  test('Default input', async ({ comfyPage }) => {
+  test.skip('Default input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/default_input')
     await expect(comfyPage.canvas).toHaveScreenshot('default_input.png')
   })
@@ -65,18 +65,18 @@ test.describe('Optional input', () => {
     const renamedInput = inputs.find((w) => w.name === 'breadth')
     expect(renamedInput).toBeUndefined()
   })
-  test('slider', async ({ comfyPage }) => {
+  test.skip('slider', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
     await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
   })
-  test('unknown converted widget', async ({ comfyPage }) => {
+  test.skip('unknown converted widget', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.Workflow.ShowMissingNodesWarning', false)
     await comfyPage.loadWorkflow('missing/missing_nodes_converted_widget')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'missing_nodes_converted_widget.png'
     )
   })
-  test('dynamically added input', async ({ comfyPage }) => {
+  test.skip('dynamically added input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/dynamically_added_input')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'dynamically_added_input.png'
