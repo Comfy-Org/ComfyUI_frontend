@@ -808,7 +808,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 256,
       step: 2
     },
-    defaultValue: isCloud ? 256 : 64,
+    defaultValue: 64,
     versionAdded: '1.4.12'
   },
   {
