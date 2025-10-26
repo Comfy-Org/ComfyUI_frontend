@@ -36,7 +36,7 @@
         zIndex: zIndex,
         opacity: nodeOpacity,
         '--node-component-surface': nodeBodyBackgroundColor,
-        content: 'layout size style'
+        contain: 'layout size style'
       },
       dragStyle
     ]"
