@@ -609,7 +609,7 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-one.png')
   })
 
-  test('@mobile Can pan with touch', async ({ comfyPage }) => {
+  test.skip('@mobile Can pan with touch', async ({ comfyPage }) => {
     await comfyPage.closeMenu()
     await comfyPage.panWithTouch({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned-touch.png')

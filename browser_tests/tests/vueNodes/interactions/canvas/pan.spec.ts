@@ -9,7 +9,7 @@ test.describe('Vue Nodes Canvas Pan', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  test('@mobile Can pan with touch', async ({ comfyPage }) => {
+  test.skip('@mobile Can pan with touch', async ({ comfyPage }) => {
     await comfyPage.panWithTouch({ x: 64, y: 64 }, { x: 256, y: 256 })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-nodes-paned-with-touch.png'

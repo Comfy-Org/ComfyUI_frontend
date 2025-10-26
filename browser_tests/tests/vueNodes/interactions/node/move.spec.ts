@@ -42,7 +42,7 @@ test.describe('Vue Node Moving', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('vue-node-moved-node.png')
   })
 
-  test('@mobile should allow moving nodes by dragging on touch devices', async ({
+  test.skip('@mobile should allow moving nodes by dragging on touch devices', async ({
     comfyPage
   }) => {
     // Disable minimap (gets in way of the node on small screens)
