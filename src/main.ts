@@ -85,9 +85,4 @@ app
     modules: [VueFireAuth()]
   })
 
-// Register auth service worker after Pinia is initialized (cloud-only)
-if (isCloud) {
-  void import('@/platform/auth/serviceWorker')
-}
-
 app.mount('#vue-app')
