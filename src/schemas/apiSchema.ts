@@ -13,7 +13,6 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 export const zQueueIndex = z.number()
 export const zPromptId = z.string()
-export type PromptId = z.infer<typeof zPromptId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
 
