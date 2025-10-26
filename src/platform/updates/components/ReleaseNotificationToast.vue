@@ -171,10 +171,10 @@ onMounted(async () => {
 .release-notification-toast {
   width: 448px;
   padding: 16px 16px 8px;
-  background: #353535;
+  background: var(--interface-menu-surface);
   box-shadow: 0 4px 4px rgb(0 0 0 / 0.25);
   border-radius: 12px;
-  outline: 1px solid #4e4e4e;
+  outline: 1px solid var(--interface-menu-stroke);
   outline-offset: -1px;
   display: flex;
   flex-direction: column;
@@ -193,7 +193,7 @@ onMounted(async () => {
   width: 42px;
   height: 42px;
   padding: 10px;
-  background: rgb(0 122 255 / 0.2);
+  background: rgb(from var(--color-blue-100) r g b / 0.2);
   border-radius: 8px;
   display: flex;
   justify-content: center;
@@ -201,7 +201,7 @@ onMounted(async () => {
 }
 
 .toast-icon i {
-  color: #007aff;
+  color: var(--color-blue-100);
   font-size: 16px;
 }
 
@@ -215,7 +215,7 @@ onMounted(async () => {
 }
 
 .toast-title {
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
   font-family: 'Satoshi', sans-serif;
   font-weight: 500;
@@ -223,7 +223,7 @@ onMounted(async () => {
 }
 
 .toast-version-badge {
-  color: #a0a1a2;
+  color: var(--text-secondary);
   font-size: 12px;
   font-family: 'Satoshi', sans-serif;
   font-weight: 500;
@@ -252,7 +252,7 @@ onMounted(async () => {
 
 /* Learn more link - simple text link */
 .learn-more-link {
-  color: #60a5fa;
+  color: var(--color-blue-200);
   font-size: 12px;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -273,12 +273,12 @@ onMounted(async () => {
 /* Button styles */
 .skip-button {
   padding: 8px 16px;
-  background: #353535;
+  background: var(--interface-menu-surface);
   border-radius: 6px;
-  outline: 1px solid #4e4e4e;
+  outline: 1px solid var(--interface-menu-stroke);
   outline-offset: -1px;
   border: none;
-  color: #aeaeb2;
+  color: var(--text-secondary);
   font-size: 12px;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -286,17 +286,17 @@ onMounted(async () => {
 }
 
 .skip-button:hover {
-  background: #404040;
+  background: var(--button-hover-surface);
 }
 
 .cta-button {
   padding: 8px 16px;
-  background: white;
+  background: var(--button-surface);
   border-radius: 6px;
-  outline: 1px solid #4e4e4e;
+  outline: 1px solid var(--interface-menu-stroke);
   outline-offset: -1px;
   border: none;
-  color: black;
+  color: var(--button-surface-contrast);
   font-size: 12px;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -304,6 +304,6 @@ onMounted(async () => {
 }
 
 .cta-button:hover {
-  background: #f0f0f0;
+  background: var(--button-hover-surface);
 }
 </style>

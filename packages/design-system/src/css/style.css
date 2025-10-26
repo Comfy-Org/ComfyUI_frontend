@@ -164,6 +164,8 @@
   --interface-menu-component-surface-hovered: var(--color-gray-200);
   --interface-menu-component-surface-selected: var(--color-gray-400);
   --interface-menu-keybind-surface-default: var(--color-gray-500);
+  --interface-menu-surface: var(--color-pure-white);
+  --interface-menu-stroke: var(--color-gray-400);
   --interface-panel-surface: var(--color-pure-white);
   --interface-stroke: var(--color-gray-300);
   --nav-background: var(--color-pure-white);
@@ -215,6 +217,8 @@
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
   --interface-menu-keybind-surface-default: var(--color-charcoal-200);
+  --interface-menu-surface: var(--color-charcoal-800);
+  --interface-menu-stroke: var(--color-stone-200);
   --interface-panel-surface: var(--color-charcoal-100);
   --interface-stroke: var(--color-charcoal-400);
   --nav-background: var(--color-charcoal-100);
@@ -267,6 +271,8 @@
   --color-interface-menu-keybind-surface-default: var(
     --interface-menu-keybind-surface-default
   );
+  --color-interface-menu-surface: var(--interface-menu-surface);
+  --color-interface-menu-stroke: var(--interface-menu-stroke);
   --color-interface-panel-surface: var(--interface-panel-surface);
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);

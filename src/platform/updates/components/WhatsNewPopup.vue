@@ -208,11 +208,11 @@ defineExpose({
 }
 
 .whats-new-popup {
-  background: #353535;
+  background: var(--interface-menu-surface);
   border-radius: 12px;
   max-width: 400px;
   width: 400px;
-  outline: 1px solid #4e4e4e;
+  outline: 1px solid var(--interface-menu-stroke);
   outline-offset: -1px;
   box-shadow: 0 8px 32px rgb(0 0 0 / 0.3);
   position: relative;
@@ -237,7 +237,7 @@ defineExpose({
   width: 32px;
   height: 32px;
   padding: 6px;
-  background: #7c7c7c;
+  background: var(--button-surface);
   border-radius: 16px;
   border: none;
   cursor: pointer;
@@ -252,11 +252,11 @@ defineExpose({
 }
 
 .close-button:hover {
-  background: #8e8e8e;
+  background: var(--button-hover-surface);
 }
 
 .close-button:active {
-  background: #6a6a6a;
+  background: var(--button-active-surface);
   transform: translate(30%, -30%) scale(0.95);
 }
 
@@ -278,7 +278,7 @@ defineExpose({
   position: absolute;
   width: 12px;
   height: 2px;
-  background: white;
+  background: var(--text-primary);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(45deg);
@@ -290,7 +290,7 @@ defineExpose({
 }
 
 .content-text {
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
   word-wrap: break-word;
@@ -312,7 +312,7 @@ defineExpose({
 
 /* Version subtitle - targets the first p tag after h1 */
 .content-text :deep(h1 + p) {
-  color: #c0c0c0;
+  color: var(--text-secondary);
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 16px;
@@ -322,7 +322,7 @@ defineExpose({
 /* Regular paragraphs - short description */
 .content-text :deep(p) {
   margin-bottom: 16px;
-  color: #e0e0e0;
+  color: var(--text-primary);
 }
 
 /* List */
@@ -367,12 +367,12 @@ defineExpose({
   align-items: center;
   aspect-ratio: 1/1;
   border-radius: 100px;
-  background: #60a5fa;
+  background: var(--color-blue-200);
 }
 
 /* List item strong text */
 .content-text :deep(li strong) {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
   display: block;
   margin-bottom: 4px;
@@ -386,11 +386,11 @@ defineExpose({
 
 /* Code styling */
 .content-text :deep(code) {
-  background-color: #2a2a2a;
-  border: 1px solid #4a4a4a;
+  background-color: var(--input-surface);
+  border: 1px solid var(--interface-menu-stroke);
   border-radius: 4px;
   padding: 2px 6px;
-  color: #f8f8f2;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
@@ -421,7 +421,7 @@ defineExpose({
 }
 
 .learn-more-link {
-  color: #60a5fa;
+  color: var(--color-blue-200);
   font-size: 14px;
   font-weight: 500;
   line-height: 18.2px;
@@ -435,18 +435,18 @@ defineExpose({
 .cta-button {
   height: 40px;
   padding: 0 20px;
-  background: white;
+  background: var(--button-surface);
   border-radius: 6px;
-  outline: 1px solid #4e4e4e;
+  outline: 1px solid var(--interface-menu-stroke);
   outline-offset: -1px;
   border: none;
-  color: #121212;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .cta-button:hover {
-  background: #f0f0f0;
+  background: var(--button-hover-surface);
 }
 </style>
