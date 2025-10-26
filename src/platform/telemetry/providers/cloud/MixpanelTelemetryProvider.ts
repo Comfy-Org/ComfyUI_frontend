@@ -434,15 +434,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
           const template = this._templatesStore.getTemplateByName(
             activeWorkflow.filename
           )
+
+          const englishMetadata = this._templatesStore.getEnglishMetadata(
+            activeWorkflow.filename
+          )
+
           return {
             is_template: true,
             workflow_name: activeWorkflow.filename,
             template_source: template?.sourceModule,
-            template_category: template?.category,
-            template_tags: template?.tags,
-            template_models: template?.models,
-            template_use_case: template?.useCase,
-            template_license: template?.license
+            template_category: englishMetadata?.category ?? template?.category,
+            template_tags: englishMetadata?.tags ?? template?.tags,
+            template_models: englishMetadata?.models ?? template?.models,
+            template_use_case: englishMetadata?.useCase ?? template?.useCase,
+            template_license: englishMetadata?.license ?? template?.license
           }
         }
 
