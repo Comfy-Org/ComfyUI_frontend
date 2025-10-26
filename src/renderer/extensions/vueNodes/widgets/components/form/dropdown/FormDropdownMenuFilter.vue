@@ -11,7 +11,7 @@ const filterSelected = defineModel<OptionId>('filterSelected')
 </script>
 
 <template>
-  <div class="mb-4 flex gap-1 px-4 text-secondary">
+  <div class="text-secondary mb-4 flex gap-1 px-4">
     <div
       v-for="option in filterOptions"
       :key="option.id"

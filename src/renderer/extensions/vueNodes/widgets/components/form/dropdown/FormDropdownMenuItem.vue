@@ -142,7 +142,7 @@ function handleVideoLoad(event: Event) {
         {{ name }}
       </span>
       <!-- Meta Data -->
-      <span class="block text-xs text-secondary">{{
+      <span class="text-secondary block text-xs">{{
         metadata || actualDimensions
       }}</span>
     </div>

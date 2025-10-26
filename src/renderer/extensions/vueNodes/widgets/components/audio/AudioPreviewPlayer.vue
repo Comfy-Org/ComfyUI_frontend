@@ -29,26 +29,19 @@
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-secondary"
+            class="text-secondary icon-[lucide--play] size-4"
           />
-          <i
-            v-else
-            class="icon-[lucide--pause] size-4 text-secondary"
-          />
+          <i v-else class="text-secondary icon-[lucide--pause] size-4" />
         </div>
 
         <!-- Time Display -->
-        <div
-          class="text-sm font-normal text-nowrap text-primary"
-        >
+        <div class="text-sm font-normal text-nowrap text-primary">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
 
       <!-- Progress Bar -->
-      <div
-        class="relative h-0.5 flex-1 rounded-full bg-interface-stroke"
-      >
+      <div class="relative h-0.5 flex-1 rounded-full bg-interface-stroke">
         <div
           class="absolute top-0 left-0 h-full rounded-full bg-button-icon transition-all"
           :style="{ width: `${progressPercentage}%` }"
@@ -77,16 +70,13 @@
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-secondary"
+            class="text-secondary icon-[lucide--volume-2] size-4"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-secondary"
+            class="text-secondary icon-[lucide--volume-1] size-4"
           />
-          <i
-            v-else
-            class="icon-[lucide--volume-x] size-4 text-secondary"
-          />
+          <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
         </div>
 
         <!-- Options Button -->
@@ -99,9 +89,7 @@
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleOptionsMenu"
         >
-          <i
-            class="icon-[lucide--more-vertical] size-4 text-secondary"
-          />
+          <i class="text-secondary icon-[lucide--more-vertical] size-4" />
         </div>
       </div>
 
