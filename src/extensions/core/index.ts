@@ -28,6 +28,7 @@ import './widgetInputs'
 if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
+  await import('./cloudSessionCookie')
 
   if (window.__CONFIG__?.subscription_required) {
     await import('./cloudSubscription')
