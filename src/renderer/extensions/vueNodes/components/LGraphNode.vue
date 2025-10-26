@@ -8,7 +8,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-surface',
+        'bg-node-component-surface min-h-min',
         'lg-node absolute rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
@@ -35,7 +35,8 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--node-component-surface': nodeBodyBackgroundColor
+        '--node-component-surface': nodeBodyBackgroundColor,
+        content: 'layout size style'
       },
       dragStyle
     ]"
@@ -83,7 +84,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
+        class="flex min-h-min flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->

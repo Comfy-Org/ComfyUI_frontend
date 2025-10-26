@@ -17,8 +17,8 @@ export function calculateIntrinsicSize(
   const originalHeight = element.style.height
 
   // Temporarily set to auto to measure natural content size
-  element.style.width = 'auto'
-  element.style.height = 'auto'
+  element.style.width = 'min-content'
+  element.style.height = 'min-content'
 
   const intrinsicRect = element.getBoundingClientRect()
 
