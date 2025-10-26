@@ -63,7 +63,6 @@ export default defineConfig([
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
-      'public/auth-sw.js',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',

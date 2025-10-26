@@ -56,6 +56,7 @@ vi.mock('firebase/auth', async (importOriginal) => {
     createUserWithEmailAndPassword: vi.fn(),
     signOut: vi.fn(),
     onAuthStateChanged: vi.fn(),
+    onIdTokenChanged: vi.fn(),
     signInWithPopup: vi.fn(),
     GoogleAuthProvider: class {
       addScope = vi.fn()

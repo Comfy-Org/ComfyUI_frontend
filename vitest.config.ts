@@ -39,6 +39,7 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
+      '@tests-ui': '/tests-ui',
       '@': '/src'
     }
   },

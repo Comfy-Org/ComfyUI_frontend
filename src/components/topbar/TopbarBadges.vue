@@ -1,9 +1,10 @@
 <template>
-  <div v-if="notMobile" class="flex h-full shrink-0 items-center">
+  <div class="flex h-full shrink-0 items-center">
     <TopbarBadge
       v-for="badge in topbarBadgeStore.badges"
       :key="badge.text"
       :badge
+      :display-mode="displayMode"
       :reverse-order="reverseOrder"
       :no-padding="noPadding"
     />
@@ -11,7 +12,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useBreakpoints } from '@vueuse/core'
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
+import { computed } from 'vue'
 
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 
@@ -28,9 +30,15 @@ withDefaults(
   }
 )
 
-const BREAKPOINTS = { md: 880 }
-const breakpoints = useBreakpoints(BREAKPOINTS)
-const notMobile = breakpoints.greater('md')
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isXl = breakpoints.greaterOrEqual('xl')
+const isLg = breakpoints.greaterOrEqual('lg')
+
+const displayMode = computed<'full' | 'compact' | 'icon-only'>(() => {
+  if (isXl.value) return 'full'
+  if (isLg.value) return 'compact'
+  return 'icon-only'
+})
 
 const topbarBadgeStore = useTopbarBadgeStore()
 </script>

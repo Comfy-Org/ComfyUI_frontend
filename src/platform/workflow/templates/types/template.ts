@@ -18,6 +18,10 @@ export interface TemplateInfo {
   date?: string
   useCase?: string
   license?: string
+  /**
+   * Estimated VRAM requirement in bytes.
+   */
+  vram?: number
   size?: number
 }
 

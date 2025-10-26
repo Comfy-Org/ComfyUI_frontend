@@ -219,5 +219,17 @@ export interface ComfyExtension {
    */
   onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
 
+  /**
+   * Fired whenever the auth token is refreshed.
+   * This is an experimental API and may be changed or removed in the future.
+   */
+  onAuthTokenRefreshed?(): Promise<void> | void
+
+  /**
+   * Fired when user logs out.
+   * This is an experimental API and may be changed or removed in the future.
+   */
+  onAuthUserLogout?(): Promise<void> | void
+
   [key: string]: any
 }

@@ -9,7 +9,8 @@
       size="small"
       display="chip"
       :pt="{
-        option: 'text-xs'
+        option: 'text-xs',
+        dropdownIcon: 'text-button-icon'
       }"
       @update:model-value="onChange"
     />

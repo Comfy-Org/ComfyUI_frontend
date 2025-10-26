@@ -11,8 +11,8 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 const zNodeType = z.string()
-const zQueueIndex = z.number()
-const zPromptId = z.string()
+export const zQueueIndex = z.number()
+export const zPromptId = z.string()
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
 
@@ -170,10 +170,10 @@ const zExtraPngInfo = z
   })
   .passthrough()
 
-const zExtraData = z.object({
+export const zExtraData = z.object({
   /** extra_pnginfo can be missing is backend execution gets a validation error. */
   extra_pnginfo: zExtraPngInfo.optional(),
-  client_id: z.string()
+  client_id: z.string().optional()
 })
 const zOutputsToExecute = z.array(zNodeId)
 
@@ -210,7 +210,7 @@ const zStatusMessage = z.union([
   zExecutionErrorMessage
 ])
 
-const zStatus = z.object({
+export const zStatus = z.object({
   status_str: z.enum(['success', 'error']),
   completed: z.boolean(),
   messages: z.array(zStatusMessage)
@@ -239,7 +239,7 @@ const zPendingTaskItem = z.object({
   prompt: zTaskPrompt
 })
 
-const zTaskOutput = z.record(zNodeId, zOutputs)
+export const zTaskOutput = z.record(zNodeId, zOutputs)
 
 const zNodeOutputsMeta = z.object({
   node_id: zNodeId,
@@ -248,7 +248,7 @@ const zNodeOutputsMeta = z.object({
   read_node_id: zNodeId.optional()
 })
 
-const zTaskMeta = z.record(zNodeId, zNodeOutputsMeta)
+export const zTaskMeta = z.record(zNodeId, zNodeOutputsMeta)
 
 const zHistoryTaskItem = z.object({
   taskType: z.literal('History'),

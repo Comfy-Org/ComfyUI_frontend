@@ -41,9 +41,7 @@ const config: KnipConfig = {
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts',
-    // Service worker - registered at runtime via navigator.serviceWorker.register()
-    'public/auth-sw.js'
+    'src/scripts/ui/components/splitButton.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199

@@ -1,5 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
+import { useFuse } from '@vueuse/integrations/useFuse'
+import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 
 import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
@@ -12,19 +14,6 @@ import {
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
     return category === 'all' || asset.tags.includes(category)
-  }
-}
-
-function filterByQuery(query: string) {
-  return (asset: AssetItem) => {
-    if (!query) return true
-    const lowerQuery = query.toLowerCase()
-    const description = getAssetDescription(asset)
-    return (
-      asset.name.toLowerCase().includes(lowerQuery) ||
-      (description && description.toLowerCase().includes(lowerQuery)) ||
-      asset.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
-    )
   }
 }
 
@@ -160,9 +149,31 @@ export function useAssetBrowser(
     return assets.value.filter(filterByCategory(selectedCategory.value))
   })
 
+  const fuseOptions: UseFuseOptions<AssetItem> = {
+    fuseOptions: {
+      keys: [
+        { name: 'name', weight: 0.4 },
+        { name: 'tags', weight: 0.3 }
+      ],
+      threshold: 0.4, // Higher threshold for typo tolerance (0.0 = exact, 1.0 = match all)
+      ignoreLocation: true, // Search anywhere in the string, not just at the beginning
+      includeScore: true
+    },
+    matchAllWhenSearchEmpty: true
+  }
+
+  const { results: fuseResults } = useFuse(
+    searchQuery,
+    categoryFilteredAssets,
+    fuseOptions
+  )
+
+  const searchFiltered = computed(() =>
+    fuseResults.value.map((result) => result.item)
+  )
+
   const filteredAssets = computed(() => {
-    const filtered = categoryFilteredAssets.value
-      .filter(filterByQuery(searchQuery.value))
+    const filtered = searchFiltered.value
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
 

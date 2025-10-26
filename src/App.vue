@@ -42,7 +42,6 @@ const showContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  // @ts-expect-error fixme ts strict error
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
   if (isElectron()) {

@@ -6,6 +6,9 @@
       class="w-full text-xs"
       :aria-label="widget.name"
       size="small"
+      :pt="{
+        dropdownIcon: 'text-button-icon'
+      }"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>
