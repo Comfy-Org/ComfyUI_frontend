@@ -88,6 +88,10 @@ test.describe('Missing models warning', () => {
 
     const downloadButton = missingModelsWarning.getByLabel('Download')
     await expect(downloadButton).toBeVisible()
+
+    // Check that the copy URL button is also visible for Desktop environment
+    const copyUrlButton = missingModelsWarning.getByLabel('Copy URL')
+    await expect(copyUrlButton).toBeVisible()
   })
 
   test('Should display a warning when missing models are found in node properties', async ({
@@ -101,6 +105,10 @@ test.describe('Missing models warning', () => {
 
     const downloadButton = missingModelsWarning.getByLabel('Download')
     await expect(downloadButton).toBeVisible()
+
+    // Check that the copy URL button is also visible for Desktop environment
+    const copyUrlButton = missingModelsWarning.getByLabel('Copy URL')
+    await expect(copyUrlButton).toBeVisible()
   })
 
   test('Should not display a warning when no missing models are found', async ({
