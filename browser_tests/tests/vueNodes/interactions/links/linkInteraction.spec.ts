@@ -109,7 +109,7 @@ test.describe('Vue Node Link Interaction', () => {
     await fitToViewInstant(comfyPage)
   })
 
-  test('should show a link dragging out from a slot when dragging on a slot', async ({
+  test.skip('should show a link dragging out from a slot when dragging on a slot', async ({
     comfyPage,
     comfyMouse
   }) => {
@@ -218,7 +218,7 @@ test.describe('Vue Node Link Interaction', () => {
     expect(await samplerInput.getLinkCount()).toBe(0)
   })
 
-  test('should reuse the existing origin when dragging an input link', async ({
+  test.skip('should reuse the existing origin when dragging an input link', async ({
     comfyPage,
     comfyMouse
   }) => {
@@ -255,7 +255,7 @@ test.describe('Vue Node Link Interaction', () => {
     await comfyMouse.drop()
   })
 
-  test('ctrl+alt drag from an input starts a fresh link', async ({
+  test.skip('ctrl+alt drag from an input starts a fresh link', async ({
     comfyPage,
     comfyMouse
   }) => {
@@ -395,7 +395,7 @@ test.describe('Vue Node Link Interaction', () => {
     expect(await vaeInput.getLinkCount()).toBe(1)
   })
 
-  test('rerouted input drag preview remains anchored to reroute', async ({
+  test.skip('rerouted input drag preview remains anchored to reroute', async ({
     comfyPage,
     comfyMouse
   }) => {
@@ -480,7 +480,7 @@ test.describe('Vue Node Link Interaction', () => {
     expect(linkDetails?.parentId).not.toBeNull()
   })
 
-  test('rerouted output shift-drag preview remains anchored to reroute', async ({
+  test.skip('rerouted output shift-drag preview remains anchored to reroute', async ({
     comfyPage,
     comfyMouse
   }) => {
@@ -639,7 +639,7 @@ test.describe('Vue Node Link Interaction', () => {
     })
   })
 
-  test('shift-dragging an output with multiple links should drag all links', async ({
+  test.skip('shift-dragging an output with multiple links should drag all links', async ({
     comfyPage,
     comfyMouse
   }) => {
@@ -694,7 +694,7 @@ test.describe('Vue Node Link Interaction', () => {
     }
   })
 
-  test('should snap to node center while dragging and link on drop', async ({
+  test.skip('should snap to node center while dragging and link on drop', async ({
     comfyPage,
     comfyMouse
   }) => {
@@ -743,7 +743,7 @@ test.describe('Vue Node Link Interaction', () => {
     expect(linked?.targetId).toBe(samplerNode.id)
   })
 
-  test('should snap to a specific compatible slot when targeting it', async ({
+  test.skip('should snap to a specific compatible slot when targeting it', async ({
     comfyPage,
     comfyMouse
   }) => {

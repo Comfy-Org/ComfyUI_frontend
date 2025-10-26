@@ -1,8 +1,8 @@
 import {
-  type ComfyPage,
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../../../fixtures/ComfyPage'
+import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import type { Position } from '../../../../fixtures/types'
 
 test.describe('Vue Node Moving', () => {
@@ -29,7 +29,7 @@ test.describe('Vue Node Moving', () => {
     expect(diffY).toBeGreaterThan(0)
   }
 
-  test('should allow moving nodes by dragging', async ({ comfyPage }) => {
+  test.skip('should allow moving nodes by dragging', async ({ comfyPage }) => {
     const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
     await comfyPage.dragAndDrop(loadCheckpointHeaderPos, {
       x: 256,

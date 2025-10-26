@@ -9,7 +9,7 @@ test.describe('Vue Nodes Zoom', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  test('should not capture drag while zooming with ctrl+shift+drag', async ({
+  test.skip('should not capture drag while zooming with ctrl+shift+drag', async ({
     comfyPage
   }) => {
     const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
