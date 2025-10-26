@@ -8,7 +8,8 @@
       :aria-label="widget.name"
       size="small"
       :pt="{
-        option: 'text-xs'
+        option: 'text-xs',
+        dropdownIcon: 'text-button-icon'
       }"
       data-capture-wheel="true"
       @update:model-value="onChange"

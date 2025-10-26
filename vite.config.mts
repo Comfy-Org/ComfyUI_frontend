@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -13,7 +13,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
-dotenv.config()
+dotenvConfig()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
@@ -302,7 +302,8 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
+    __DEV_SERVER_COMFYUI_URL__: JSON.stringify(DEV_SERVER_COMFYUI_URL)
   },
 
   resolve: {
