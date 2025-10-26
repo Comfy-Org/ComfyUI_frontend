@@ -1667,7 +1667,7 @@ export const comfyPageFixture = base.extend<{
 
     try {
       await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Top',
+        'Comfy.UseNewMenu': 'Disabled',
         // Hide canvas menu/info/selection toolbox by default.
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.Graph.CanvasMenu': false,
