@@ -1,11 +1,17 @@
+/**
+ * @fileoverview Adapter to convert V2 history format to V1 format
+ * @module platform/remote/comfyui/history/adapters/v2ToV1Adapter
+ *
+ * Converts cloud API V2 response format to the V1 format expected by the app.
+ */
+
+import type { HistoryTaskItem, TaskPrompt } from '../types/historyV1Types'
 import type {
   HistoryResponseV2,
-  HistoryTaskItem,
   RawHistoryItemV2,
   TaskOutput,
-  TaskPrompt,
   TaskPromptV2
-} from '@/schemas/apiSchema'
+} from '../types/historyV2Types'
 
 /**
  * Maps V2 prompt format to V1 prompt tuple format.
@@ -21,7 +27,6 @@ function mapPromptV2toV1(
 
 /**
  * Maps V2 history format to V1 history format.
- * Validates response structure and first item to catch breaking API changes.
  */
 export function mapHistoryV2toHistory(
   historyV2Response: HistoryResponseV2

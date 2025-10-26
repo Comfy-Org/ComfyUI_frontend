@@ -1,7 +1,96 @@
 /**
- * @fileoverview Test fixtures for history adapter tests.
+ * @fileoverview Test fixtures for history tests.
  */
-import type { HistoryResponseV2, HistoryTaskItem } from '@/schemas/apiSchema'
+import type { HistoryResponseV2 } from '@/platform/remote/comfyui/history/types/historyV2Types'
+import type { HistoryTaskItem } from '@/schemas/apiSchema'
+
+/**
+ * V1 API raw response format (object with prompt IDs as keys)
+ */
+export const historyV1RawResponse: Record<
+  string,
+  Omit<HistoryTaskItem, 'taskType'>
+> = {
+  'complete-item-id': {
+    prompt: [
+      24,
+      'complete-item-id',
+      {},
+      {
+        client_id: 'test-client',
+        extra_pnginfo: {
+          workflow: {
+            id: '44f0c9f9-b5a7-48de-99fc-7e80c1570241',
+            revision: 0,
+            last_node_id: 9,
+            last_link_id: 9,
+            nodes: [],
+            links: [],
+            groups: [],
+            config: {},
+            extra: {},
+            version: 0.4
+          }
+        }
+      },
+      ['9']
+    ],
+    outputs: {
+      '9': {
+        images: [
+          {
+            filename: 'test.png',
+            subfolder: '',
+            type: 'output'
+          }
+        ]
+      }
+    },
+    status: {
+      status_str: 'success',
+      completed: true,
+      messages: [
+        [
+          'execution_start',
+          { prompt_id: 'complete-item-id', timestamp: 1234567890 }
+        ],
+        [
+          'execution_success',
+          { prompt_id: 'complete-item-id', timestamp: 1234567900 }
+        ]
+      ]
+    },
+    meta: {
+      '9': {
+        node_id: '9',
+        display_node: '9'
+      }
+    }
+  },
+  'no-status-id': {
+    prompt: [
+      23,
+      'no-status-id',
+      {},
+      {
+        client_id: 'inference'
+      },
+      ['10']
+    ],
+    outputs: {
+      '10': {
+        images: []
+      }
+    },
+    status: undefined,
+    meta: {
+      '10': {
+        node_id: '10',
+        display_node: '10'
+      }
+    }
+  }
+}
 
 /**
  * V2 response with multiple edge cases:

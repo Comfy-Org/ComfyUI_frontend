@@ -1,11 +1,11 @@
 /**
- * @fileoverview Unit tests for history adapter utilities.
+ * @fileoverview Unit tests for V2 to V1 history adapter.
  */
 import { describe, expect, it } from 'vitest'
 
-import { mapHistoryV2toHistory } from '@/platform/cloud/utils/historyAdapter'
-import type { HistoryResponseV2 } from '@/schemas/apiSchema'
-import { zRawHistoryItemV2 } from '@/schemas/apiSchema'
+import { mapHistoryV2toHistory } from '@/platform/remote/comfyui/history/adapters/v2ToV1Adapter'
+import { zRawHistoryItemV2 } from '@/platform/remote/comfyui/history/types/historyV2Types'
+import type { HistoryResponseV2 } from '@/platform/remote/comfyui/history/types/historyV2Types'
 
 import {
   expectedV1Fixture,
