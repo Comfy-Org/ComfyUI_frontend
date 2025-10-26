@@ -8,6 +8,7 @@ import {
   deleteUser,
   getAdditionalUserInfo,
   onAuthStateChanged,
+  onIdTokenChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
@@ -62,6 +63,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const balance = ref<GetCustomerBalanceResponse | null>(null)
   const lastBalanceUpdateTime = ref<Date | null>(null)
 
+  // Token refresh trigger - increments when token is refreshed
+  const tokenRefreshTrigger = ref(0)
+
   // Providers
   const googleProvider = new GoogleAuthProvider()
   googleProvider.addScope('email')
@@ -97,6 +101,13 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     // Reset balance when auth state changes
     balance.value = null
     lastBalanceUpdateTime.value = null
+  })
+
+  // Listen for token refresh events
+  onIdTokenChanged(auth, (user) => {
+    if (user && isCloud) {
+      tokenRefreshTrigger.value++
+    }
   })
 
   const getIdToken = async (): Promise<string | undefined> => {
@@ -434,6 +445,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     balance,
     lastBalanceUpdateTime,
     isFetchingBalance,
+    tokenRefreshTrigger,
 
     // Getters
     isAuthenticated,
