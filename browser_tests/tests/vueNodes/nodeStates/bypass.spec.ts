@@ -10,7 +10,7 @@ test.describe('Vue Node Bypass', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Minimap.Visible', true)
+    await comfyPage.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.vueNodes.waitForNodes()
   })
