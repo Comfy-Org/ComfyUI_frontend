@@ -183,8 +183,17 @@
   --interface-menu-component-surface-hovered: var(--color-smoke-200);
   --interface-menu-component-surface-selected: var(--color-smoke-400);
   --interface-menu-keybind-surface-default: var(--color-smoke-500);
+  --interface-menu-surface: var(--color-white);
+  --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+
+  /* Light theme specific tokens */
+  --color-interface-menu-keybind-surface-blue: #78BAE9;
+  
+  /* Corner radius tokens */
+  --corner-radius-corner-radius-md: 8px;
+  --base-corner-radius-corner-radius-md: 8px;
 
   --nav-background: var(--color-white);
 
@@ -301,6 +310,8 @@
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
   --interface-menu-keybind-surface-default: var(--color-charcoal-200);
+  --interface-menu-surface: var(--color-charcoal-800);
+  --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
 
@@ -416,6 +427,8 @@
   --color-interface-menu-keybind-surface-default: var(
     --interface-menu-keybind-surface-default
   );
+  --color-interface-menu-surface: var(--interface-menu-surface);
+  --color-interface-menu-stroke: var(--interface-menu-stroke);
   --color-interface-panel-surface: var(--interface-panel-surface);
   --color-interface-panel-hover-surface: var(--interface-panel-hover-surface);
   --color-interface-panel-selected-surface: var(
