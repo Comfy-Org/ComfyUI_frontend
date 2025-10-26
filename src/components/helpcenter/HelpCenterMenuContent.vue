@@ -84,7 +84,11 @@
     </Teleport>
 
     <!-- What's New Section -->
-    <section v-if="showVersionUpdates" class="w-full">
+    <section
+      v-if="showVersionUpdates"
+      class="w-full"
+      data-testid="whats-new-section"
+    >
       <h3
         class="section-description flex items-center gap-2.5 self-stretch px-8 pt-2 pb-2"
       >
