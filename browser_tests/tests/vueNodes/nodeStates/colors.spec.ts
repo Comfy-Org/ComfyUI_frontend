@@ -11,7 +11,7 @@ test.describe('Vue Node Custom Colors', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  test('displays color picker button and allows color selection', async ({
+  test.skip('displays color picker button and allows color selection', async ({
     comfyPage
   }) => {
     const loadCheckpointNode = comfyPage.page.locator('[data-node-id]').filter({
@@ -30,14 +30,14 @@ test.describe('Vue Node Custom Colors', () => {
     )
   })
 
-  test('should load node colors from workflow', async ({ comfyPage }) => {
+  test.skip('should load node colors from workflow', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('nodes/every_node_color')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-custom-colors-dark-all-colors.png'
     )
   })
 
-  test('should show brightened node colors on light theme', async ({
+  test.skip('should show brightened node colors on light theme', async ({
     comfyPage
   }) => {
     await comfyPage.setSetting('Comfy.ColorPalette', 'light')

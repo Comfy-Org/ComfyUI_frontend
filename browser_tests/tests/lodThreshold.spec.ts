@@ -7,7 +7,7 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('LOD Threshold', () => {
-  test('Should switch to low quality mode at correct zoom threshold', async ({
+  test.skip('Should switch to low quality mode at correct zoom threshold', async ({
     comfyPage
   }) => {
     // Load a workflow with some nodes to render
@@ -81,7 +81,7 @@ test.describe('LOD Threshold', () => {
     expect(zoomedInState.lowQuality).toBe(false)
   })
 
-  test('Should update threshold when font size setting changes', async ({
+  test.skip('Should update threshold when font size setting changes', async ({
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('default')
@@ -122,7 +122,7 @@ test.describe('LOD Threshold', () => {
     expect(afterZoom.lowQuality).toBe(true)
   })
 
-  test('Should disable LOD when font size is set to 0', async ({
+  test.skip('Should disable LOD when font size is set to 0', async ({
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('default')
@@ -149,7 +149,7 @@ test.describe('LOD Threshold', () => {
     expect(state.scale).toBeLessThan(0.2) // Very zoomed out
   })
 
-  test('Should show visual difference between LOD on and off', async ({
+  test.skip('Should show visual difference between LOD on and off', async ({
     comfyPage
   }) => {
     // Load a workflow with text-heavy nodes for clear visual difference

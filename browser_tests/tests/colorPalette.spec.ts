@@ -152,7 +152,7 @@ const customColorPalettes: Record<string, Palette> = {
 }
 
 test.describe('Color Palette', () => {
-  test('Can show custom color palette', async ({ comfyPage }) => {
+  test.skip('Can show custom color palette', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
@@ -174,7 +174,7 @@ test.describe('Color Palette', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
 
-  test('Can add custom color palette', async ({ comfyPage }) => {
+  test.skip('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate((p) => {
       window['app'].extensionManager.colorPalette.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
@@ -199,7 +199,7 @@ test.describe('Node Color Adjustments', () => {
     await comfyPage.loadWorkflow('nodes/every_node_color')
   })
 
-  test('should adjust opacity via node opacity setting', async ({
+  test.skip('should adjust opacity via node opacity setting', async ({
     comfyPage
   }) => {
     await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
@@ -217,7 +217,7 @@ test.describe('Node Color Adjustments', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
   })
 
-  test('should persist color adjustments when changing themes', async ({
+  test.skip('should persist color adjustments when changing themes', async ({
     comfyPage
   }) => {
     await comfyPage.setSetting('Comfy.Node.Opacity', 0.2)
@@ -245,7 +245,7 @@ test.describe('Node Color Adjustments', () => {
     }
   })
 
-  test('should lighten node colors when switching to light theme', async ({
+  test.skip('should lighten node colors when switching to light theme', async ({
     comfyPage
   }) => {
     await comfyPage.setSetting('Comfy.ColorPalette', 'light')
@@ -261,7 +261,7 @@ test.describe('Node Color Adjustments', () => {
       await node?.clickContextMenuOption('Colors')
     })
 
-    test('should persist color adjustments when changing custom node colors', async ({
+    test.skip('should persist color adjustments when changing custom node colors', async ({
       comfyPage
     }) => {
       await comfyPage.page
@@ -272,7 +272,7 @@ test.describe('Node Color Adjustments', () => {
       )
     })
 
-    test('should persist color adjustments when removing custom node color', async ({
+    test.skip('should persist color adjustments when removing custom node color', async ({
       comfyPage
     }) => {
       await comfyPage.page

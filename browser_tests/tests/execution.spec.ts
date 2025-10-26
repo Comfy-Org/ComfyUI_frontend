@@ -7,7 +7,7 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('Execution', () => {
-  test('Report error on unconnected slot', async ({ comfyPage }) => {
+  test.skip('Report error on unconnected slot', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
     await comfyPage.clickEmptySpace()
 

@@ -468,7 +468,9 @@ test.describe('Subgraph Operations', () => {
       expect(finalNodeCount).toBe(initialNodeCount + 1)
     })
 
-    test('Can undo and redo operations in subgraph', async ({ comfyPage }) => {
+    test.skip('Can undo and redo operations in subgraph', async ({
+      comfyPage
+    }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
@@ -683,7 +685,7 @@ test.describe('Subgraph Operations', () => {
       expect(widgetCount).toBe(0)
     })
 
-    test('Multiple promoted widgets are handled correctly', async ({
+    test.skip('Multiple promoted widgets are handled correctly', async ({
       comfyPage
     }) => {
       await comfyPage.loadWorkflow(

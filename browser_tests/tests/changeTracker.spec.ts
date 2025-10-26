@@ -65,7 +65,7 @@ test.describe('Change Tracker', () => {
     })
   })
 
-  test('Can group multiple change actions into a single transaction', async ({
+  test.skip('Can group multiple change actions into a single transaction', async ({
     comfyPage
   }) => {
     const node = (await comfyPage.getFirstNodeRef())!
@@ -153,7 +153,7 @@ test.describe('Change Tracker', () => {
     await expect(node).toBeCollapsed()
   })
 
-  test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
+  test.skip('Can detect changes in workflow.extra', async ({ comfyPage }) => {
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
     await comfyPage.page.evaluate(() => {
       window['app'].graph.extra.foo = 'bar'

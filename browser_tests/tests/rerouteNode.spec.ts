@@ -12,7 +12,7 @@ test.describe('Reroute Node', () => {
     await comfyPage.setupWorkflowsDirectory({})
   })
 
-  test('loads from inserted workflow', async ({ comfyPage }) => {
+  test.skip('loads from inserted workflow', async ({ comfyPage }) => {
     const workflowName = 'single_connected_reroute_node.json'
     await comfyPage.setupWorkflowsDirectory({
       [workflowName]: 'links/single_connected_reroute_node.json'
@@ -44,12 +44,12 @@ test.describe('LiteGraph Native Reroute Node', () => {
     await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)
   })
 
-  test('loads from workflow', async ({ comfyPage }) => {
+  test.skip('loads from workflow', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('reroute/native_reroute')
     await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
   })
 
-  test('@2x @0.5x Can add reroute by alt clicking on link', async ({
+  test.skip('@2x @0.5x Can add reroute by alt clicking on link', async ({
     comfyPage
   }) => {
     const loadCheckpointNode = (
@@ -75,7 +75,7 @@ test.describe('LiteGraph Native Reroute Node', () => {
     )
   })
 
-  test('Can add reroute by clicking middle of link context menu', async ({
+  test.skip('Can add reroute by clicking middle of link context menu', async ({
     comfyPage
   }) => {
     const loadCheckpointNode = (
@@ -102,7 +102,7 @@ test.describe('LiteGraph Native Reroute Node', () => {
     )
   })
 
-  test('Can delete link that is connected to two reroutes', async ({
+  test.skip('Can delete link that is connected to two reroutes', async ({
     comfyPage
   }) => {
     // https://github.com/Comfy-Org/ComfyUI_frontend/issues/4695

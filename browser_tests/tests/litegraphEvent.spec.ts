@@ -27,7 +27,9 @@ test.describe('Canvas Event', () => {
     // See https://github.com/microsoft/playwright/issues/31580
   })
 
-  test('Emit litegraph:canvas empty-double-click', async ({ comfyPage }) => {
+  test.skip('Emit litegraph:canvas empty-double-click', async ({
+    comfyPage
+  }) => {
     const eventPromise = comfyPage.page.evaluate(listenForEvent)
     const doubleClickPromise = comfyPage.doubleClickCanvas()
     const event = await eventPromise

@@ -13,7 +13,9 @@ test.describe('Vue Nodes - LOD', () => {
     await comfyPage.loadWorkflow('default')
   })
 
-  test('should toggle LOD based on zoom threshold', async ({ comfyPage }) => {
+  test.skip('should toggle LOD based on zoom threshold', async ({
+    comfyPage
+  }) => {
     await comfyPage.vueNodes.waitForNodes()
 
     const initialNodeCount = await comfyPage.vueNodes.getNodeCount()

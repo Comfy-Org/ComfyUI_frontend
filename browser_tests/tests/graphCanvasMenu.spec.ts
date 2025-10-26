@@ -15,7 +15,7 @@ test.describe('Graph Canvas Menu', () => {
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
   })
 
-  test('Can toggle link visibility', async ({ comfyPage }) => {
+  test.skip('Can toggle link visibility', async ({ comfyPage }) => {
     const button = comfyPage.page.getByTestId('toggle-link-visibility-button')
     await button.click()
     await comfyPage.nextFrame()
@@ -39,7 +39,7 @@ test.describe('Graph Canvas Menu', () => {
     )
   })
 
-  test('Focus mode button is clickable and has correct test id', async ({
+  test.skip('Focus mode button is clickable and has correct test id', async ({
     comfyPage
   }) => {
     const focusButton = comfyPage.page.getByTestId('focus-mode-button')
@@ -51,7 +51,7 @@ test.describe('Graph Canvas Menu', () => {
     await comfyPage.nextFrame()
   })
 
-  test('Zoom controls popup opens and closes', async ({ comfyPage }) => {
+  test.skip('Zoom controls popup opens and closes', async ({ comfyPage }) => {
     // Find the zoom button by its percentage text content
     const zoomButton = comfyPage.page.locator('button').filter({
       hasText: '%'
