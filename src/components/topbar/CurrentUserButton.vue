@@ -2,17 +2,19 @@
 <template>
   <div>
     <Button
-      v-if="isLoggedIn"
-      class="user-profile-button p-1"
+      v-if="isLoggedIn || true"
+      class="user-profile-button p-1 hover:bg-transparent"
       severity="secondary"
       text
       aria-label="user profile"
       @click="popover?.toggle($event)"
     >
-      <div class="flex items-center rounded-full bg-(--p-content-background)">
+      <div
+        class="flex items-center gap-1 rounded-full hover:bg-[var(--interface-button-hover-surface)]"
+      >
         <UserAvatar :photo-url="photoURL" />
 
-        <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />
+        <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.6rem' }" />
       </div>
     </Button>
 

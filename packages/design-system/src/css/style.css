@@ -201,7 +201,18 @@
   --text-secondary: var(--color-stone-100);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
-}
+
+  /* Default UI element color palette variables */
+   --palette-contrast-mix-color: #fff;
+   --palette-interface-panel-surface: var(--comfy-menu-bg);
+   --palette-interface-stroke: color-mix(in srgb, var(--interface-panel-surface) 75.5%, var(--contrast-mix-color));
+
+   --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.4);
+   --palette-interface-panel-drop-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4);
+   --palette-interface-panel-hover-surface: color-mix(in srgb, var(--interface-panel-surface) 92.5%, var(--contrast-mix-color));
+   --palette-interface-panel-selected-surface: color-mix(in srgb, var(--interface-panel-surface) 87.5%, var(--contrast-mix-color));
+   --palette-interface-button-hover-surface:  color-mix(in srgb, var(--interface-panel-surface) 82%, var(--contrast-mix-color));
+  }
 
 .dark-theme {
   --accent-primary: var(--color-pure-white);
@@ -215,8 +226,6 @@
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
   --interface-menu-keybind-surface-default: var(--color-charcoal-200);
-  --interface-panel-surface: var(--color-charcoal-100);
-  --interface-stroke: var(--color-charcoal-400);
   --nav-background: var(--color-charcoal-100);
   --node-border: var(--color-charcoal-500);
   --node-component-border: var(--color-stone-200);

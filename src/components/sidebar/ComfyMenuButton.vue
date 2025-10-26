@@ -1,21 +1,24 @@
 <template>
   <div
-    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center rounded-t-md p-2 transition-colors"
+    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center p-2 transition-colors"
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
     @click="menuRef?.toggle($event)"
   >
-    <ComfyLogoTransparent
-      alt="ComfyUI Logo"
-      class="comfyui-logo h-[18px] w-[18px]"
-    />
+    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-black">
+      <ComfyLogo
+        alt="ComfyUI Logo"
+        class="comfyui-logo h-[18px] w-[18px] text-white"
+        mode="fill"
+      />
 
-    <span
-      v-if="!isSmall"
-      class="side-bar-button-label mt-1 text-center text-[10px]"
-      >{{ t('sideToolbar.labels.menu') }}</span
-    >
+      <span
+        v-if="!isSmall"
+        class="side-bar-button-label mt-1 text-center text-[10px]"
+        >{{ t('sideToolbar.labels.menu') }}</span
+      >
+    </div>
   </div>
 
   <TieredMenu
@@ -75,7 +78,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import ComfyLogoTransparent from '@/components/icons/ComfyLogoTransparent.vue'
+import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -276,12 +279,12 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
 }
 
 .comfy-menu-button-wrapper:hover {
-  background: var(--p-button-text-secondary-hover-background);
+  background: var(--interface-panel-hover-surface);
 }
 
 .comfy-menu-button-active,
 .comfy-menu-button-active:hover {
-  background-color: var(--content-hover-bg);
+  background: var(--interface-panel-selected-surface);
 }
 
 .keybinding-tag {
