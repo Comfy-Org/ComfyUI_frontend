@@ -746,9 +746,10 @@
     }
   },
   "helpCenter": {
+    "feedback": "Give Feedback",
     "docs": "Docs",
     "github": "Github",
-    "helpFeedback": "Help & Feedback",
+    "help": "Help & Support",
     "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
