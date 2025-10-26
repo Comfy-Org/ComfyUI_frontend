@@ -9,17 +9,6 @@
 
 @config '../../tailwind.config.ts';
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fg-color: #fff;
-    --bg-color: #202020;
-    --content-bg: #4e4e4e;
-    --content-fg: #fff;
-    --content-hover-bg: #222;
-    --content-hover-fg: #fff;
-  }
-}
-
 @theme {
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
@@ -195,12 +184,20 @@
   --node-stroke-selected: var(--color-accent-primary);
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-blue-100);
+
   --text-secondary: var(--color-stone-100);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
 }
 
 .dark-theme {
+  --fg-color: #fff;
+  --bg-color: #202020;
+  --content-bg: #4e4e4e;
+  --content-fg: #fff;
+  --content-hover-bg: #222;
+  --content-hover-fg: #fff;
+
   --accent-primary: var(--color-white);
   --backdrop: var(--color-neutral-900);
   --button-surface: var(--color-charcoal-600);
@@ -326,7 +323,6 @@
     background-color: transparent;
   }
 }
-
 
 /* ===================== Scrollbar Utilities (Tailwind) =====================
    Usage: Add `scrollbar-custom` class to scrollable containers.
