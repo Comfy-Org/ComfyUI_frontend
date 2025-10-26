@@ -17,7 +17,6 @@ export function clone<T>(obj: T): T {
 }
 
 /**
- * @knipIgnoreUnusedButUsedByCustomNodes
  * @deprecated Use `applyTextReplacements` from `@/utils/searchAndReplace` instead
  * There are external callers to this function, so we need to keep it for now
  */
@@ -25,7 +24,6 @@ export function applyTextReplacements(app: ComfyApp, value: string): string {
   return _applyTextReplacements(app.graph, value)
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export async function addStylesheet(
   urlOrFile: string,
   relativeTo?: string
