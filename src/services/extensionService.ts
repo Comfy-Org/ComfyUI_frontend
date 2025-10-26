@@ -80,6 +80,20 @@ export const useExtensionService = () => {
         void extension.onAuthUserResolved?.(user, app)
       })
     }
+
+    if (extension.onAuthTokenRefreshed) {
+      const { onTokenRefreshed } = useCurrentUser()
+      onTokenRefreshed(() => {
+        void extension.onAuthTokenRefreshed?.()
+      })
+    }
+
+    if (extension.onAuthUserLogout) {
+      const { onUserLogout } = useCurrentUser()
+      onUserLogout(() => {
+        void extension.onAuthUserLogout?.()
+      })
+    }
   }
 
   /**
