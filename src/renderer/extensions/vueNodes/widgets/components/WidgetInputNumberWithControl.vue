@@ -63,7 +63,7 @@ const togglePopover = (event: Event) => {
     <Button
       variant="link"
       size="small"
-      class="absolute right-12 top-1/2 -translate-y-1/2 h-4 w-7 p-0 bg-blue-100/30 rounded-xl"
+      class="absolute top-1/2 right-12 h-4 w-7 -translate-y-1/2 rounded-xl bg-blue-100/30 p-0"
       @click="togglePopover"
     >
       <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />

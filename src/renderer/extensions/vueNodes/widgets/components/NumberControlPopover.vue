@@ -88,7 +88,7 @@ const handleEditSettings = () => {
 
 <template>
   <Popover ref="popover">
-    <div class="w-105 p-4 space-y-4">
+    <div class="w-105 space-y-4 p-4">
       <p class="text-sm text-slate-100">
         {{ $t('widgets.numberControl.controlHeaderBefore') }}
         <span class="text-white">
@@ -105,11 +105,11 @@ const handleEditSettings = () => {
         <div
           v-for="option in controlOptions"
           :key="option.mode"
-          class="flex items-center justify-between p-2 rounded"
+          class="flex items-center justify-between rounded p-2"
         >
-          <div class="flex gap-3 flex-1">
+          <div class="flex flex-1 gap-3">
             <div
-              class="w-8 h-8 bg-charcoal-400 rounded-lg flex items-center justify-center flex-shrink-0"
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-charcoal-400"
             >
               <i v-if="option.icon" :class="`${option.icon} text-sm`" />
               <span v-if="option.text" class="text-xs">
@@ -139,7 +139,7 @@ const handleEditSettings = () => {
         </div>
       </div>
 
-      <hr class="border-charcoal-400 border-1" />
+      <hr class="border-1 border-charcoal-400" />
 
       <Button
         severity="secondary"
