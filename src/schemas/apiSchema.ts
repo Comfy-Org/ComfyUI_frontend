@@ -292,17 +292,12 @@ const zHistoryResponseV2 = z.object({
   history: z.array(zRawHistoryItemV2)
 })
 
-// Shallow schema for runtime validation (only validates structure, not items)
-const zHistoryResponseV2Shallow = z.object({
-  history: z.array(z.unknown())
-})
-
 export type RawHistoryItemV2 = z.infer<typeof zRawHistoryItemV2>
 export type HistoryResponseV2 = z.infer<typeof zHistoryResponseV2>
 export type TaskPromptV2 = z.infer<typeof zTaskPromptV2>
 
 // Export schemas for runtime validation
-export { zHistoryResponseV2Shallow, zRawHistoryItemV2 }
+export { zRawHistoryItemV2 }
 
 export type TaskType = z.infer<typeof zTaskType>
 export type TaskPrompt = z.infer<typeof zTaskPrompt>
