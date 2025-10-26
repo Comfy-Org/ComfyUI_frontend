@@ -656,7 +656,7 @@ onBeforeUnmount(() => {
 
 .section-description {
   color: var(--color-stone-100);
-  font-family: Inter;
+  font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
   font-weight: 700;
@@ -688,7 +688,7 @@ onBeforeUnmount(() => {
 .release-date {
   height: 16px;
   color: var(--text-secondary);
-  font-family: Inter;
+  font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
   font-weight: 400;
