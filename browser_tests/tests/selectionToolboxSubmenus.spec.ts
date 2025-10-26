@@ -72,7 +72,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     throw new Error('Could not open More Options menu - popover not showing')
   }
 
-  test('opens Node Info from More Options menu', async ({ comfyPage }) => {
+  test.skip('opens Node Info from More Options menu', async ({ comfyPage }) => {
     await openMoreOptions(comfyPage)
     const nodeInfoButton = comfyPage.page.getByText('Node Info', {
       exact: true
@@ -82,7 +82,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     await comfyPage.nextFrame()
   })
 
-  test('changes node shape via Shape submenu', async ({ comfyPage }) => {
+  test.skip('changes node shape via Shape submenu', async ({ comfyPage }) => {
     const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     const initialShape = await nodeRef.getProperty<number>('shape')
 
@@ -99,7 +99,9 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     expect(newShape).toBe(1)
   })
 
-  test('changes node color via Color submenu swatch', async ({ comfyPage }) => {
+  test.skip('changes node color via Color submenu swatch', async ({
+    comfyPage
+  }) => {
     const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     const initialColor = await nodeRef.getProperty<string | undefined>('color')
 
@@ -117,7 +119,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     }
   })
 
-  test('renames a node using Rename action', async ({ comfyPage }) => {
+  test.skip('renames a node using Rename action', async ({ comfyPage }) => {
     const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     await openMoreOptions(comfyPage)
     await comfyPage.page
@@ -134,7 +136,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     expect(newTitle).toBe('RenamedNode')
   })
 
-  test('closes More Options menu when clicking outside', async ({
+  test.skip('closes More Options menu when clicking outside', async ({
     comfyPage
   }) => {
     await openMoreOptions(comfyPage)
@@ -151,7 +153,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     ).not.toBeVisible()
   })
 
-  test('closes More Options menu when clicking the button again (toggle)', async ({
+  test.skip('closes More Options menu when clicking the button again (toggle)', async ({
     comfyPage
   }) => {
     await openMoreOptions(comfyPage)

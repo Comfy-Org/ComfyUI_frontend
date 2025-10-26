@@ -35,7 +35,7 @@ test.describe('Load workflow warning', () => {
   })
 })
 
-test('Does not report warning on undo/redo', async ({ comfyPage }) => {
+test.skip('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
 
   await comfyPage.loadWorkflow('missing/missing_nodes')

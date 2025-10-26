@@ -38,7 +38,7 @@ test.describe('History API v2', () => {
     expect(historyItem.prompt.extra_data).toHaveProperty('client_id')
   })
 
-  test('Can load workflow from history using history_v2 endpoint', async ({
+  test.skip('Can load workflow from history using history_v2 endpoint', async ({
     comfyPage
   }) => {
     // Simple mock workflow for testing

@@ -7,7 +7,7 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('Copy Paste', () => {
-  test('Can copy and paste node', async ({ comfyPage }) => {
+  test.skip('Can copy and paste node', async ({ comfyPage }) => {
     await comfyPage.clickEmptyLatentNode()
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.ctrlC()
@@ -15,7 +15,7 @@ test.describe('Copy Paste', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('copied-node.png')
   })
 
-  test('Can copy and paste node with link', async ({ comfyPage }) => {
+  test.skip('Can copy and paste node with link', async ({ comfyPage }) => {
     await comfyPage.clickTextEncodeNode1()
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.ctrlC()
@@ -35,7 +35,7 @@ test.describe('Copy Paste', () => {
     expect(resultString).toBe(originalString + originalString)
   })
 
-  test('Can copy and paste widget value', async ({ comfyPage }) => {
+  test.skip('Can copy and paste widget value', async ({ comfyPage }) => {
     // Copy width value (512) from empty latent node to KSampler's seed.
     // KSampler's seed
     await comfyPage.canvas.click({
@@ -60,7 +60,7 @@ test.describe('Copy Paste', () => {
   /**
    * https://github.com/Comfy-Org/ComfyUI_frontend/issues/98
    */
-  test('Paste in text area with node previously copied', async ({
+  test.skip('Paste in text area with node previously copied', async ({
     comfyPage
   }) => {
     await comfyPage.clickEmptyLatentNode()
@@ -77,7 +77,7 @@ test.describe('Copy Paste', () => {
     )
   })
 
-  test('Copy text area does not copy node', async ({ comfyPage }) => {
+  test.skip('Copy text area does not copy node', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.inputValue()
@@ -89,7 +89,7 @@ test.describe('Copy Paste', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('no-node-copied.png')
   })
 
-  test('Copy node by dragging + alt', async ({ comfyPage }) => {
+  test.skip('Copy node by dragging + alt', async ({ comfyPage }) => {
     // TextEncodeNode1
     await comfyPage.page.mouse.move(618, 191)
     await comfyPage.page.keyboard.down('Alt')

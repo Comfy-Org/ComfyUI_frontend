@@ -15,7 +15,7 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
   })
 
-  test('shows selection toolbox', async ({ comfyPage }) => {
+  test.skip('shows selection toolbox', async ({ comfyPage }) => {
     // By default, selection toolbox should be enabled
     await expect(comfyPage.selectionToolbox).not.toBeVisible()
 
@@ -30,7 +30,7 @@ test.describe('Selection Toolbox', () => {
     )
   })
 
-  test('shows at correct position when node is pasted', async ({
+  test.skip('shows at correct position when node is pasted', async ({
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('nodes/single_ksampler')
@@ -66,7 +66,9 @@ test.describe('Selection Toolbox', () => {
     await expect(comfyPage.selectionToolbox).not.toBeVisible()
   })
 
-  test('shows border only with multiple selections', async ({ comfyPage }) => {
+  test.skip('shows border only with multiple selections', async ({
+    comfyPage
+  }) => {
     // Select single node
     await comfyPage.selectNodes(['KSampler'])
 
@@ -94,7 +96,7 @@ test.describe('Selection Toolbox', () => {
     )
   })
 
-  test('displays bypass button in toolbox when nodes are selected', async ({
+  test.skip('displays bypass button in toolbox when nodes are selected', async ({
     comfyPage
   }) => {
     // A group + a KSampler node

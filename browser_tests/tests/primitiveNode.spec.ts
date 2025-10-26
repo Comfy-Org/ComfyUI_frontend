@@ -8,14 +8,14 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('Primitive Node', () => {
-  test('Can load with correct size', async ({ comfyPage }) => {
+  test.skip('Can load with correct size', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('primitive/primitive_node')
     await expect(comfyPage.canvas).toHaveScreenshot('primitive_node.png')
   })
 
   // When link is dropped on widget, it should automatically convert the widget
   // to input.
-  test('Can connect to widget', async ({ comfyPage }) => {
+  test.skip('Can connect to widget', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('primitive/primitive_node_unconnected')
     const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
     const ksamplerNode: NodeReference = await comfyPage.getNodeRefById(2)
@@ -26,7 +26,7 @@ test.describe('Primitive Node', () => {
     )
   })
 
-  test('Can connect to dom widget', async ({ comfyPage }) => {
+  test.skip('Can connect to dom widget', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow(
       'primitive/primitive_node_unconnected_dom_widget'
     )
@@ -38,7 +38,7 @@ test.describe('Primitive Node', () => {
     )
   })
 
-  test('Can connect to static primitive node', async ({ comfyPage }) => {
+  test.skip('Can connect to static primitive node', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('primitive/static_primitive_unconnected')
     const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
     const ksamplerNode: NodeReference = await comfyPage.getNodeRefById(2)

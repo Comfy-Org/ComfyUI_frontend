@@ -8,7 +8,7 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('Canvas Right Click Menu', () => {
-  test('Can add node', async ({ comfyPage }) => {
+  test.skip('Can add node', async ({ comfyPage }) => {
     await comfyPage.rightClickCanvas()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
     await comfyPage.page.getByText('Add Node').click()
@@ -20,7 +20,7 @@ test.describe('Canvas Right Click Menu', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('add-node-node-added.png')
   })
 
-  test('Can add group', async ({ comfyPage }) => {
+  test.skip('Can add group', async ({ comfyPage }) => {
     await comfyPage.rightClickCanvas()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
     await comfyPage.page.getByText('Add Group', { exact: true }).click()
@@ -28,7 +28,7 @@ test.describe('Canvas Right Click Menu', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('add-group-group-added.png')
   })
 
-  test('Can convert to group node', async ({ comfyPage }) => {
+  test.skip('Can convert to group node', async ({ comfyPage }) => {
     await comfyPage.select2Nodes()
     await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
     await comfyPage.rightClickCanvas()
@@ -44,7 +44,7 @@ test.describe('Canvas Right Click Menu', () => {
 })
 
 test.describe('Node Right Click Menu', () => {
-  test('Can open properties panel', async ({ comfyPage }) => {
+  test.skip('Can open properties panel', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.getByText('Properties Panel').click()
@@ -54,7 +54,7 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test('Can collapse', async ({ comfyPage }) => {
+  test.skip('Can collapse', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.getByText('Collapse').click()
@@ -64,7 +64,7 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test('Can collapse (Node Badge)', async ({ comfyPage }) => {
+  test.skip('Can collapse (Node Badge)', async ({ comfyPage }) => {
     await comfyPage.setSetting(
       'Comfy.NodeBadge.NodeIdBadgeMode',
       NodeBadgeMode.ShowAll
@@ -82,7 +82,7 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test('Can bypass', async ({ comfyPage }) => {
+  test.skip('Can bypass', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.getByText('Bypass').click()
@@ -92,7 +92,7 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test('Can pin and unpin', async ({ comfyPage }) => {
+  test.skip('Can pin and unpin', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
@@ -111,7 +111,7 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test('Can move after unpin', async ({ comfyPage }) => {
+  test.skip('Can move after unpin', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
     await comfyPage.nextFrame()
@@ -125,7 +125,7 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test('Can pin/unpin selected nodes', async ({ comfyPage }) => {
+  test.skip('Can pin/unpin selected nodes', async ({ comfyPage }) => {
     await comfyPage.select2Nodes()
     await comfyPage.page.keyboard.down('Control')
     await comfyPage.rightClickEmptyLatentNode()

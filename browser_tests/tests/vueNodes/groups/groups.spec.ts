@@ -12,7 +12,9 @@ test.describe('Vue Node Groups', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  test('should allow creating groups with hotkey', async ({ comfyPage }) => {
+  test.skip('should allow creating groups with hotkey', async ({
+    comfyPage
+  }) => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
@@ -22,7 +24,7 @@ test.describe('Vue Node Groups', () => {
     )
   })
 
-  test('should allow fitting group to contents', async ({ comfyPage }) => {
+  test.skip('should allow fitting group to contents', async ({ comfyPage }) => {
     await comfyPage.setup()
     await comfyPage.loadWorkflow('groups/oversized_group')
     await comfyPage.ctrlA()

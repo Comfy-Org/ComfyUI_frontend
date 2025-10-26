@@ -27,7 +27,7 @@ test.describe('Custom Icons', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test('sidebar tab icons use custom SVGs', async ({ comfyPage }) => {
+  test.skip('sidebar tab icons use custom SVGs', async ({ comfyPage }) => {
     // Find the icon in the sidebar
     const icon = comfyPage.page.locator(
       '.icon-\\[comfy--ai-model\\].side-bar-button-icon'

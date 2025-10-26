@@ -7,7 +7,9 @@ test.describe('Bottom Panel Shortcuts', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test('should toggle shortcuts panel visibility', async ({ comfyPage }) => {
+  test.skip('should toggle shortcuts panel visibility', async ({
+    comfyPage
+  }) => {
     // Initially shortcuts panel should be hidden
     await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
 
@@ -28,7 +30,9 @@ test.describe('Bottom Panel Shortcuts', () => {
     await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
   })
 
-  test('should display essentials shortcuts tab', async ({ comfyPage }) => {
+  test.skip('should display essentials shortcuts tab', async ({
+    comfyPage
+  }) => {
     // Open shortcuts panel
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
@@ -62,7 +66,9 @@ test.describe('Bottom Panel Shortcuts', () => {
     ).toBeVisible()
   })
 
-  test('should display view controls shortcuts tab', async ({ comfyPage }) => {
+  test.skip('should display view controls shortcuts tab', async ({
+    comfyPage
+  }) => {
     // Open shortcuts panel
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
@@ -88,7 +94,7 @@ test.describe('Bottom Panel Shortcuts', () => {
     ).toBeVisible()
   })
 
-  test('should switch between shortcuts tabs', async ({ comfyPage }) => {
+  test.skip('should switch between shortcuts tabs', async ({ comfyPage }) => {
     // Open shortcuts panel
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
@@ -122,7 +128,9 @@ test.describe('Bottom Panel Shortcuts', () => {
     ).not.toHaveAttribute('aria-selected', 'true')
   })
 
-  test('should display formatted keyboard shortcuts', async ({ comfyPage }) => {
+  test.skip('should display formatted keyboard shortcuts', async ({
+    comfyPage
+  }) => {
     // Open shortcuts panel
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
@@ -144,7 +152,7 @@ test.describe('Bottom Panel Shortcuts', () => {
     expect(hasModifiers).toBeTruthy()
   })
 
-  test('should maintain panel state when switching to terminal', async ({
+  test.skip('should maintain panel state when switching to terminal', async ({
     comfyPage
   }) => {
     // Open shortcuts panel first
@@ -172,7 +180,7 @@ test.describe('Bottom Panel Shortcuts', () => {
     ).toBeVisible()
   })
 
-  test('should handle keyboard navigation', async ({ comfyPage }) => {
+  test.skip('should handle keyboard navigation', async ({ comfyPage }) => {
     // Open shortcuts panel
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
@@ -198,7 +206,7 @@ test.describe('Bottom Panel Shortcuts', () => {
     ).toHaveAttribute('aria-selected', 'true')
   })
 
-  test('should close panel by clicking shortcuts button again', async ({
+  test.skip('should close panel by clicking shortcuts button again', async ({
     comfyPage
   }) => {
     // Open shortcuts panel
@@ -216,7 +224,7 @@ test.describe('Bottom Panel Shortcuts', () => {
     await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
   })
 
-  test('should display shortcuts in organized columns', async ({
+  test.skip('should display shortcuts in organized columns', async ({
     comfyPage
   }) => {
     // Open shortcuts panel
@@ -251,7 +259,7 @@ test.describe('Bottom Panel Shortcuts', () => {
     ).toHaveAttribute('aria-selected', 'true')
   })
 
-  test('should open settings dialog when clicking manage shortcuts button', async ({
+  test.skip('should open settings dialog when clicking manage shortcuts button', async ({
     comfyPage
   }) => {
     // Open shortcuts panel

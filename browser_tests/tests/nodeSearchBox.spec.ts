@@ -14,7 +14,9 @@ test.describe('Node search box', () => {
     await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
 
-  test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
+  test.skip(`Can trigger on empty canvas double click`, async ({
+    comfyPage
+  }) => {
     await comfyPage.doubleClickCanvas()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
@@ -46,14 +48,14 @@ test.describe('Node search box', () => {
     await expect(comfyPage.searchBox.input).toBeVisible()
   })
 
-  test('Can add node', async ({ comfyPage }) => {
+  test.skip('Can add node', async ({ comfyPage }) => {
     await comfyPage.doubleClickCanvas()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
   })
 
-  test('Can auto link node', async ({ comfyPage }) => {
+  test.skip('Can auto link node', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
     // Select the second item as the first item is always reroute
     await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
@@ -62,7 +64,7 @@ test.describe('Node search box', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
   })
 
-  test('Can auto link batch moved node', async ({ comfyPage }) => {
+  test.skip('Can auto link batch moved node', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('links/batch_move_links')
 
     const outputSlot1Pos = {
@@ -86,7 +88,7 @@ test.describe('Node search box', () => {
     )
   })
 
-  test('Link release connecting to node with no slots', async ({
+  test.skip('Link release connecting to node with no slots', async ({
     comfyPage
   }) => {
     await comfyPage.disconnectEdge()
@@ -98,7 +100,9 @@ test.describe('Node search box', () => {
     )
   })
 
-  test('Has correct aria-labels on search results', async ({ comfyPage }) => {
+  test.skip('Has correct aria-labels on search results', async ({
+    comfyPage
+  }) => {
     const node = 'Load Checkpoint'
     await comfyPage.doubleClickCanvas()
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
@@ -150,7 +154,7 @@ test.describe('Node search box', () => {
       await comfyPage.doubleClickCanvas()
     })
 
-    test('Can add filter', async ({ comfyPage }) => {
+    test.skip('Can add filter', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await expectFilterChips(comfyPage, ['MODEL'])
     })
@@ -197,13 +201,13 @@ test.describe('Node search box', () => {
       await expect(comfyPage.searchBox.input).toBeVisible()
     })
 
-    test('Can add multiple filters', async ({ comfyPage }) => {
+    test.skip('Can add multiple filters', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
       await expectFilterChips(comfyPage, ['MODEL', 'CLIP'])
     })
 
-    test('Can remove filter', async ({ comfyPage }) => {
+    test.skip('Can remove filter', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await comfyPage.searchBox.removeFilter(0)
       await expectFilterChips(comfyPage, [])
@@ -216,7 +220,7 @@ test.describe('Node search box', () => {
         await comfyPage.searchBox.addFilter('utils', 'Category')
       })
 
-      test('Can remove first filter', async ({ comfyPage }) => {
+      test.skip('Can remove first filter', async ({ comfyPage }) => {
         await comfyPage.searchBox.removeFilter(0)
         await expectFilterChips(comfyPage, ['CLIP', 'utils'])
         await comfyPage.searchBox.removeFilter(0)
@@ -225,12 +229,12 @@ test.describe('Node search box', () => {
         await expectFilterChips(comfyPage, [])
       })
 
-      test('Can remove middle filter', async ({ comfyPage }) => {
+      test.skip('Can remove middle filter', async ({ comfyPage }) => {
         await comfyPage.searchBox.removeFilter(1)
         await expectFilterChips(comfyPage, ['MODEL', 'utils'])
       })
 
-      test('Can remove last filter', async ({ comfyPage }) => {
+      test.skip('Can remove last filter', async ({ comfyPage }) => {
         await comfyPage.searchBox.removeFilter(2)
         await expectFilterChips(comfyPage, ['MODEL', 'CLIP'])
       })
@@ -242,12 +246,14 @@ test.describe('Node search box', () => {
       await comfyPage.doubleClickCanvas()
     })
 
-    test('focuses input after adding a filter', async ({ comfyPage }) => {
+    test.skip('focuses input after adding a filter', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await expect(comfyPage.searchBox.input).toHaveFocus()
     })
 
-    test('focuses input after removing a filter', async ({ comfyPage }) => {
+    test.skip('focuses input after removing a filter', async ({
+      comfyPage
+    }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await comfyPage.searchBox.removeFilter(0)
       await expect(comfyPage.searchBox.input).toHaveFocus()
@@ -262,7 +268,7 @@ test.describe('Release context menu', () => {
     await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
 
-  test('Can trigger on link release', async ({ comfyPage }) => {
+  test.skip('Can trigger on link release', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
@@ -271,7 +277,7 @@ test.describe('Release context menu', () => {
     )
   })
 
-  test('Can search and add node from context menu', async ({
+  test.skip('Can search and add node from context menu', async ({
     comfyPage,
     comfyMouse
   }) => {

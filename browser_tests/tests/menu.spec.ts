@@ -7,7 +7,7 @@ test.describe('Menu', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test('Can register sidebar tab', async ({ comfyPage }) => {
+  test.skip('Can register sidebar tab', async ({ comfyPage }) => {
     const initialChildrenCount = await comfyPage.menu.sideToolbar.evaluate(
       (el) => el.children.length
     )

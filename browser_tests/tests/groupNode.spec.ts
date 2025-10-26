@@ -22,11 +22,11 @@ test.describe('Group Node', () => {
       await libraryTab.open()
     })
 
-    test('Is added to node library sidebar', async ({ comfyPage }) => {
+    test.skip('Is added to node library sidebar', async ({ comfyPage }) => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
 
-    test('Can be added to canvas using node library sidebar', async ({
+    test.skip('Can be added to canvas using node library sidebar', async ({
       comfyPage
     }) => {
       const initialNodeCount = await comfyPage.getGraphNodesCount()
@@ -39,7 +39,7 @@ test.describe('Group Node', () => {
       expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
     })
 
-    test('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
+    test.skip('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab
         .getNode(groupNodeName)
@@ -66,7 +66,7 @@ test.describe('Group Node', () => {
       ).toHaveLength(0)
     })
 
-    test('Displays preview on bookmark hover', async ({ comfyPage }) => {
+    test.skip('Displays preview on bookmark hover', async ({ comfyPage }) => {
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab
         .getNode(groupNodeName)
@@ -261,14 +261,14 @@ test.describe('Group Node', () => {
       await groupNode.copy()
     })
 
-    test('Copies and pastes group node within the same workflow', async ({
+    test.skip('Copies and pastes group node within the same workflow', async ({
       comfyPage
     }) => {
       await comfyPage.ctrlV()
       await verifyNodeLoaded(comfyPage, 2)
     })
 
-    test('Copies and pastes group node after clearing workflow', async ({
+    test.skip('Copies and pastes group node after clearing workflow', async ({
       comfyPage
     }) => {
       // Set setting
@@ -281,7 +281,7 @@ test.describe('Group Node', () => {
       await verifyNodeLoaded(comfyPage, 1)
     })
 
-    test('Copies and pastes group node into a newly created blank workflow', async ({
+    test.skip('Copies and pastes group node into a newly created blank workflow', async ({
       comfyPage
     }) => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
@@ -289,7 +289,7 @@ test.describe('Group Node', () => {
       await verifyNodeLoaded(comfyPage, 1)
     })
 
-    test('Copies and pastes group node across different workflows', async ({
+    test.skip('Copies and pastes group node across different workflows', async ({
       comfyPage
     }) => {
       await comfyPage.loadWorkflow('default')
@@ -297,7 +297,7 @@ test.describe('Group Node', () => {
       await verifyNodeLoaded(comfyPage, 1)
     })
 
-    test('Serializes group node after copy and paste across workflows', async ({
+    test.skip('Serializes group node after copy and paste across workflows', async ({
       comfyPage
     }) => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])

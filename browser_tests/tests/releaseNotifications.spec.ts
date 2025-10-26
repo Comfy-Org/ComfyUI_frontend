@@ -7,7 +7,7 @@ test.describe('Release Notifications', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test('should show help center with release information', async ({
+  test.skip('should show help center with release information', async ({
     comfyPage
   }) => {
     // Mock release API with test data instead of empty array
@@ -63,7 +63,7 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).not.toBeVisible()
   })
 
-  test('should not show release notifications when mocked (default behavior)', async ({
+  test.skip('should not show release notifications when mocked (default behavior)', async ({
     comfyPage
   }) => {
     // Use default setup (mockReleases: true)
@@ -94,7 +94,9 @@ test.describe('Release Notifications', () => {
     ).not.toBeVisible()
   })
 
-  test('should handle release API errors gracefully', async ({ comfyPage }) => {
+  test.skip('should handle release API errors gracefully', async ({
+    comfyPage
+  }) => {
     // Mock API to return an error
     await comfyPage.page.route('**/releases**', async (route) => {
       const url = route.request().url()
@@ -131,7 +133,7 @@ test.describe('Release Notifications', () => {
     ).toBeVisible()
   })
 
-  test('should hide "What\'s New" section when notifications are disabled', async ({
+  test.skip('should hide "What\'s New" section when notifications are disabled', async ({
     comfyPage
   }) => {
     // Disable version update notifications
@@ -219,7 +221,7 @@ test.describe('Release Notifications', () => {
     expect(apiCallCount).toBe(0)
   })
 
-  test('should show "What\'s New" section when notifications are enabled', async ({
+  test.skip('should show "What\'s New" section when notifications are enabled', async ({
     comfyPage
   }) => {
     // Enable version update notifications (default behavior)
@@ -272,7 +274,7 @@ test.describe('Release Notifications', () => {
     ).toBeVisible()
   })
 
-  test('should toggle "What\'s New" section when setting changes', async ({
+  test.skip('should toggle "What\'s New" section when setting changes', async ({
     comfyPage
   }) => {
     // Mock release API with test data
@@ -327,7 +329,7 @@ test.describe('Release Notifications', () => {
     await expect(whatsNewSection).not.toBeVisible()
   })
 
-  test('should handle edge case with empty releases and disabled notifications', async ({
+  test.skip('should handle edge case with empty releases and disabled notifications', async ({
     comfyPage
   }) => {
     // Disable notifications

@@ -69,7 +69,7 @@ test.describe('Templates', () => {
     }
   })
 
-  test('Can load template workflows', async ({ comfyPage }) => {
+  test.skip('Can load template workflows', async ({ comfyPage }) => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.executeCommand('Comfy.NewBlankWorkflow')

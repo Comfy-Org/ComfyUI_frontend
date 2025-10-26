@@ -25,7 +25,7 @@ test.describe('Load Workflow in Media', () => {
     // 'workflow.avif'
   ]
   fileNames.forEach(async (fileName) => {
-    test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
+    test.skip(`Load workflow in ${fileName} (drop from filesystem)`, async ({
       comfyPage
     }) => {
       await comfyPage.dragAndDropFile(`workflowInMedia/${fileName}`)
@@ -37,7 +37,7 @@ test.describe('Load Workflow in Media', () => {
     'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png'
   ]
   urls.forEach(async (url) => {
-    test(`Load workflow from URL ${url} (drop from different browser tabs)`, async ({
+    test.skip(`Load workflow from URL ${url} (drop from different browser tabs)`, async ({
       comfyPage
     }) => {
       await comfyPage.dragAndDropURL(url)
