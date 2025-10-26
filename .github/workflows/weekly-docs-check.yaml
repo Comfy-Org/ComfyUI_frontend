@@ -11,6 +11,9 @@ on:
     # Run every Monday at 9 AM UTC
     - cron: '0 9 * * 1'
   workflow_dispatch:
+  push:
+    branches:
+      - sno-fix-doc-drifting # for test in this pr
 
 concurrency:
   group: ${{ github.workflow }}
