@@ -18,7 +18,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
-    type: isCloud ? 'hidden' : 'boolean',
+    type: 'hidden',
     defaultValue: isCloud ? false : true,
     versionAdded: '1.18.0'
   },
