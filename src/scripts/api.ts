@@ -892,7 +892,7 @@ export class ComfyApi extends EventTarget {
    */
   async getHistory(
     max_items: number = 200,
-    offset?: number
+    options?: { offset?: number; signal?: AbortSignal }
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
       // Use URLSearchParams for safe query parameter construction
@@ -900,11 +900,20 @@ export class ComfyApi extends EventTarget {
         max_items: max_items.toString()
       })
 
-      if (offset !== undefined) {
-        params.append('offset', offset.toString())
+      // Input validation for offset
+      if (options?.offset !== undefined && Number.isFinite(options.offset)) {
+        params.append('offset', options.offset.toString())
       }
 
-      const res = await this.fetchApi(`/history?${params.toString()}`)
+      const fetchOptions: RequestInit = {}
+      if (options?.signal) {
+        fetchOptions.signal = options.signal
+      }
+
+      const res = await this.fetchApi(
+        `/history?${params.toString()}`,
+        fetchOptions
+      )
       const json: Promise<HistoryTaskItem[]> = await res.json()
       return {
         History: Object.values(json).map((item) => ({

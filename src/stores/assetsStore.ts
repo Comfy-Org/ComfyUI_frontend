@@ -2,6 +2,7 @@ import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { useCachedRequest } from '@/composables/useCachedRequest'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -78,10 +79,9 @@ function mapHistoryToAssets(historyItems: any[]): AssetItem[] {
 }
 
 const PAGE_SIZE = 50
+const HISTORY_CACHE_SIZE = 10 // Cache last 10 pages
 
 export const useAssetsStore = defineStore('assets', () => {
-  let historyAbortController: AbortController | null = null
-
   // Input assets state (using useAsyncState for simplicity)
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
@@ -108,22 +108,28 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const historyAssetIds = ref(new Set<string>())
 
+  // Use cached request wrapper for history fetching
+  const fetchHistoryWithCache = useCachedRequest(
+    async (params: { pageNumber: number }, signal?: AbortSignal) => {
+      const offset = params.pageNumber * PAGE_SIZE
+      const history = await api.getHistory(PAGE_SIZE, { offset, signal })
+      return history
+    },
+    { maxSize: HISTORY_CACHE_SIZE }
+  )
+
   const fetchHistoryPage = async (pageNumber: number, append = false) => {
     if (historyLoading.value || (!hasMoreHistory.value && append)) return
-
-    // Cancel any ongoing request
-    if (historyAbortController) {
-      historyAbortController.abort()
-    }
-
-    historyAbortController = new AbortController()
 
     historyLoading.value = true
     historyError.value = null
 
     try {
-      const offset = pageNumber * PAGE_SIZE
-      const history = await api.getHistory(PAGE_SIZE, offset)
+      const history = await fetchHistoryWithCache.call({ pageNumber })
+      if (!history) {
+        throw new Error('Failed to fetch history')
+      }
+
       const newItems = mapHistoryToAssets(history.History)
 
       if (newItems.length < PAGE_SIZE) {
@@ -144,13 +150,10 @@ export const useAssetsStore = defineStore('assets', () => {
         newItems.forEach((a) => historyAssetIds.value.add(a.id))
       }
     } catch (err: any) {
-      if (err?.name !== 'AbortError') {
-        historyError.value = err as Error
-        console.error('Error fetching history assets:', err)
-      }
+      historyError.value = err as Error
+      console.error('Error fetching history assets:', err)
     } finally {
       historyLoading.value = false
-      historyAbortController = null
     }
   }
 
@@ -167,6 +170,12 @@ export const useAssetsStore = defineStore('assets', () => {
     await fetchHistoryPage(historyPageNumber.value, true)
   }
 
+  // Clear cache and cancel any pending requests
+  const clearHistoryCache = () => {
+    fetchHistoryWithCache.cancel()
+    fetchHistoryWithCache.clear()
+  }
+
   return {
     // States
     inputAssets,
@@ -181,6 +190,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateHistory,
     hasMoreHistory,
     historyPageNumber,
-    loadMoreHistory
+    loadMoreHistory,
+    clearHistoryCache
   }
 })
