@@ -144,9 +144,35 @@ const error = computed(() => currentAssets.value.error.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
 
 const galleryActiveIndex = ref(-1)
+const currentGalleryAssetId = ref<string | null>(null)
+
+const folderAssets = ref<AssetItem[]>([])
+
+const displayAssets = computed(() => {
+  if (isInFolderView.value) {
+    return folderAssets.value
+  }
+  return mediaAssets.value
+})
+
+watch(displayAssets, (newAssets) => {
+  if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
+    const newIndex = newAssets.findIndex(
+      (asset) => asset.id === currentGalleryAssetId.value
+    )
+    if (newIndex !== -1) {
+      galleryActiveIndex.value = newIndex
+    }
+  }
+})
+
+watch(galleryActiveIndex, (index) => {
+  if (index === -1) {
+    currentGalleryAssetId.value = null
+  }
+})
+
 const galleryItems = computed(() => {
-  // Convert AssetItems to ResultItemImpl format for gallery
-  // Use displayAssets instead of mediaAssets to show correct items based on view mode
   return displayAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
@@ -166,20 +192,6 @@ const galleryItems = computed(() => {
 
     return resultItem
   })
-})
-
-// Store folder view assets separately
-const folderAssets = ref<AssetItem[]>([])
-
-// Get display assets based on view mode
-const displayAssets = computed(() => {
-  if (isInFolderView.value) {
-    // Show all assets from the folder view
-    return folderAssets.value
-  }
-
-  // Normal view: show grouped assets (already have outputCount from API)
-  return mediaAssets.value
 })
 
 // Add key property for VirtualGrid
@@ -206,7 +218,6 @@ watch(
 )
 
 const handleAssetSelect = (asset: AssetItem) => {
-  // Toggle selection
   if (selectedAsset.value?.id === asset.id) {
     selectedAsset.value = null
   } else {
@@ -215,7 +226,7 @@ const handleAssetSelect = (asset: AssetItem) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
-  // Find the index of the clicked asset
+  currentGalleryAssetId.value = asset.id
   const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
