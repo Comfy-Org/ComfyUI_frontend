@@ -36,9 +36,9 @@ export function mapTaskOutputToAssetItem(
   }
 
   return {
-    id: `${taskItem.promptId}-${output.nodeId}-${output.filename}`,
+    id: taskItem.promptId,
     name: output.filename,
-    size: 0, // Size not available from history API
+    size: 0,
     created_at: taskItem.executionStartTimestamp
       ? new Date(taskItem.executionStartTimestamp).toISOString()
       : new Date().toISOString(),
