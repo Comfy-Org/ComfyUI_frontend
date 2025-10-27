@@ -2,6 +2,11 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, toRaw } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
+import {
+  reconcileHistory,
+  reconcileHistoryCloud
+} from '@/platform/remote/comfyui/history/reconciliation'
 import type {
   ComfyWorkflowJSON,
   NodeId
@@ -425,12 +430,6 @@ export class TaskItemImpl {
   }
 }
 
-const extractPromptIds = (tasks: TaskItem[]): Set<string> =>
-  new Set(tasks.map((task) => task.prompt[1]))
-
-const isAddedAfter = (queueIndex: number) => (task: TaskItem) =>
-  task.prompt[0] > queueIndex
-
 const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
   b.queueIndex - a.queueIndex
 
@@ -445,25 +444,15 @@ const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
       )
   )
 
-const reconcileHistoryWithServer = (
-  serverHistory: TaskItem[],
-  clientHistory: TaskItemImpl[],
-  lastKnownQueueIndex: number,
-  maxItems: number
-): TaskItemImpl[] => {
-  const serverPromptIds = extractPromptIds(serverHistory)
-
-  const itemsAddedSinceLastSync = toTaskItemImpls(
-    serverHistory.filter(isAddedAfter(lastKnownQueueIndex))
-  )
-
-  const itemsStillOnServer = clientHistory.filter((item) =>
-    serverPromptIds.has(item.promptId)
-  )
-
-  return [...itemsAddedSinceLastSync, ...itemsStillOnServer]
-    .sort(sortNewestFirst)
-    .slice(0, maxItems)
+function toHistoryTaskItems(tasks: readonly TaskItemImpl[]): TaskItem[] {
+  return tasks
+    .filter((item) => item.taskType === 'History')
+    .map((item) => ({
+      taskType: 'History' as const,
+      prompt: item.prompt,
+      status: item.status,
+      outputs: item.outputs
+    }))
 }
 
 export const useQueueStore = defineStore('queue', () => {
@@ -503,12 +492,24 @@ export const useQueueStore = defineStore('queue', () => {
       runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
       pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
-      historyTasks.value = reconcileHistoryWithServer(
-        history.History,
-        historyTasks.value,
-        lastHistoryQueueIndex.value,
-        maxHistoryItems.value
-      )
+      if (isCloud) {
+        const reconciledHistory = reconcileHistoryCloud(
+          history.History,
+          toHistoryTaskItems(historyTasks.value),
+          maxHistoryItems.value
+        )
+        historyTasks.value =
+          toTaskItemImpls(reconciledHistory).sort(sortNewestFirst)
+      } else {
+        const reconciledHistory = reconcileHistory(
+          history.History,
+          toHistoryTaskItems(historyTasks.value),
+          lastHistoryQueueIndex.value,
+          maxHistoryItems.value
+        )
+        historyTasks.value =
+          toTaskItemImpls(reconciledHistory).sort(sortNewestFirst)
+      }
     } finally {
       isLoading.value = false
     }
