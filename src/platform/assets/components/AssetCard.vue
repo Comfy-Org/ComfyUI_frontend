@@ -40,7 +40,7 @@
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-              'text-stone-100',
+              'text-ash-500',
               'dark-theme:text-slate-100'
             )
           "
@@ -51,11 +51,7 @@
       </div>
       <div
         :class="
-          cn(
-            'flex gap-4 text-xs',
-            'text-stone-400',
-            'dark-theme:text-stone-300'
-          )
+          cn('flex gap-4 text-xs', 'text-stone-400', 'dark-theme:text-ash-300')
         "
       >
         <span v-if="asset.stats.stars" class="flex items-center gap-1">

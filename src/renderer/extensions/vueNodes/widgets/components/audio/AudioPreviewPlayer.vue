@@ -47,7 +47,7 @@
 
       <!-- Progress Bar -->
       <div
-        class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-stone-200"
+        class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-ash-800"
       >
         <div
           class="absolute top-0 left-0 h-full rounded-full bg-gray-600 transition-all dark-theme:bg-white/50"

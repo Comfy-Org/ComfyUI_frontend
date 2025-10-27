@@ -34,9 +34,9 @@ function getBadgeColor(type: AssetBadge['type']): string {
     case 'base':
       return 'bg-success-100/90 dark-theme:bg-success-100/80'
     case 'size':
-      return 'bg-stone-100/90 dark-theme:bg-charcoal-700/80'
+      return 'bg-ash-500/90 dark-theme:bg-charcoal-700/80'
     default:
-      return 'bg-stone-100/90 dark-theme:bg-charcoal-700/80'
+      return 'bg-ash-500/90 dark-theme:bg-charcoal-700/80'
   }
 }
 </script>
