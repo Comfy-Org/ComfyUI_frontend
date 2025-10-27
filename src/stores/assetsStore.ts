@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
-} from '@/platform/assets/composables/useMediaAssets/assetMappers'
+} from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   extractPromptIdFromAssetId,
-  extractUuidFromString,
-  isValidUuid
+  extractUuidFromString
 } from '@/utils/uuidUtil'
+import { validate } from 'uuid'
 
 describe('uuidUtil', () => {
   describe('extractUuidFromString', () => {
@@ -56,49 +56,49 @@ describe('uuidUtil', () => {
     })
   })
 
-  describe('isValidUuid', () => {
+  describe('validate', () => {
     it('should return true for valid UUID v4', () => {
       const uuid = '98b0b007-7d78-4e3f-b7a8-0f483b9cf2d3'
-      expect(isValidUuid(uuid)).toBe(true)
+      expect(validate(uuid)).toBe(true)
     })
 
     it('should return true for uppercase UUID', () => {
       const uuid = 'A8B0B007-7D78-4E3F-B7A8-0F483B9CF2D3'
-      expect(isValidUuid(uuid)).toBe(true)
+      expect(validate(uuid)).toBe(true)
     })
 
     it('should return true for mixed case UUID', () => {
       const uuid = 'a8B0b007-7D78-4e3F-B7a8-0F483b9CF2d3'
-      expect(isValidUuid(uuid)).toBe(true)
+      expect(validate(uuid)).toBe(true)
     })
 
     it('should return false for UUID with extra characters', () => {
       const uuid = '98b0b007-7d78-4e3f-b7a8-0f483b9cf2d3-extra'
-      expect(isValidUuid(uuid)).toBe(false)
+      expect(validate(uuid)).toBe(false)
     })
 
     it('should return false for incomplete UUID', () => {
       const uuid = '98b0b007-7d78-4e3f-b7a8'
-      expect(isValidUuid(uuid)).toBe(false)
+      expect(validate(uuid)).toBe(false)
     })
 
     it('should return false for UUID with wrong segment lengths', () => {
       const uuid = '98b0b0007-7d78-4e3f-b7a8-0f483b9cf2d3'
-      expect(isValidUuid(uuid)).toBe(false)
+      expect(validate(uuid)).toBe(false)
     })
 
     it('should return false for UUID with invalid characters', () => {
       const uuid = '98b0b007-7d78-4e3f-b7a8-0f483b9cfzd3'
-      expect(isValidUuid(uuid)).toBe(false)
+      expect(validate(uuid)).toBe(false)
     })
 
     it('should return false for empty string', () => {
-      expect(isValidUuid('')).toBe(false)
+      expect(validate('')).toBe(false)
     })
 
     it('should return false for null-like values', () => {
-      expect(isValidUuid('null')).toBe(false)
-      expect(isValidUuid('undefined')).toBe(false)
+      expect(validate('null')).toBe(false)
+      expect(validate('undefined')).toBe(false)
     })
   })
 
