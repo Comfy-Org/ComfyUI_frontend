@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { CameraManager } from './CameraManager'
@@ -22,6 +22,7 @@ import {
   type MaterialMode,
   type UpDirection
 } from './interfaces'
+import { app } from '@/scripts/app'
 
 class Load3d {
   renderer: THREE.WebGLRenderer
@@ -233,17 +234,11 @@ class Load3d {
     canvas.addEventListener('contextmenu', contextmenuHandler)
   }
 
-  private showNodeContextMenu(e: MouseEvent): void {
-    const app = (window as any).app
-    if (!app || !app.canvas || !this.node) return
-
+  private showNodeContextMenu(event: MouseEvent): void {
     const menuOptions = app.canvas.getNodeMenuOptions(this.node)
 
-    const LiteGraph = (window as any).LiteGraph
-    if (!LiteGraph || !LiteGraph.ContextMenu) return
-
     new LiteGraph.ContextMenu(menuOptions, {
-      event: e,
+      event,
       title: this.node.type,
       extra: this.node
     })
