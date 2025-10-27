@@ -62,6 +62,11 @@ Key Nx features:
 
 ## Project Philosophy
 
+- Follow good software engineering principles
+  - YAGNI
+  - AHA
+  - DRY
+  - SOLID
 - Clean, stable public APIs
 - Domain-driven design
 - Thousands of users and extensions
