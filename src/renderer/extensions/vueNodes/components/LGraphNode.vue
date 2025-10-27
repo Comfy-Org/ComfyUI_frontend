@@ -8,7 +8,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-surface min-h-min',
+        'bg-node-component-surface min-h-min contain-style contain-layout',
         'lg-node absolute rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
@@ -35,8 +35,7 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--node-component-surface': nodeBodyBackgroundColor,
-        contain: 'layout style'
+        '--node-component-surface': nodeBodyBackgroundColor
       },
       dragStyle
     ]"
