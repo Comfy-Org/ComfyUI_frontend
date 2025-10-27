@@ -425,6 +425,47 @@ export class TaskItemImpl {
   }
 }
 
+const extractPromptIds = (tasks: TaskItem[]): Set<string> =>
+  new Set(tasks.map((task) => task.prompt[1]))
+
+const isAddedAfter = (queueIndex: number) => (task: TaskItem) =>
+  task.prompt[0] > queueIndex
+
+const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
+  b.queueIndex - a.queueIndex
+
+const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
+  tasks.map(
+    (task) =>
+      new TaskItemImpl(
+        task.taskType,
+        task.prompt,
+        'status' in task ? task.status : undefined,
+        'outputs' in task ? task.outputs : undefined
+      )
+  )
+
+const reconcileHistoryWithServer = (
+  serverHistory: TaskItem[],
+  clientHistory: TaskItemImpl[],
+  lastKnownQueueIndex: number,
+  maxItems: number
+): TaskItemImpl[] => {
+  const serverPromptIds = extractPromptIds(serverHistory)
+
+  const itemsAddedSinceLastSync = toTaskItemImpls(
+    serverHistory.filter(isAddedAfter(lastKnownQueueIndex))
+  )
+
+  const itemsStillOnServer = clientHistory.filter((item) =>
+    serverPromptIds.has(item.promptId)
+  )
+
+  return [...itemsAddedSinceLastSync, ...itemsStillOnServer]
+    .sort(sortNewestFirst)
+    .slice(0, maxItems)
+}
+
 export const useQueueStore = defineStore('queue', () => {
   const runningTasks = ref<TaskItemImpl[]>([])
   const pendingTasks = ref<TaskItemImpl[]>([])
@@ -459,37 +500,15 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
-      const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
-        tasks
-          .map(
-            (task: TaskItem) =>
-              new TaskItemImpl(
-                task.taskType,
-                task.prompt,
-                // status and outputs only exist on history tasks
-                'status' in task ? task.status : undefined,
-                'outputs' in task ? task.outputs : undefined
-              )
-          )
-          .sort((a, b) => b.queueIndex - a.queueIndex)
+      runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
+      pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
-      runningTasks.value = toClassAll(queue.Running)
-      pendingTasks.value = toClassAll(queue.Pending)
-
-      const allIndex = new Set<number>(
-        history.History.map((item: TaskItem) => item.prompt[0])
+      historyTasks.value = reconcileHistoryWithServer(
+        history.History,
+        historyTasks.value,
+        lastHistoryQueueIndex.value,
+        maxHistoryItems.value
       )
-      const newHistoryItems = toClassAll(
-        history.History.filter(
-          (item) => item.prompt[0] > lastHistoryQueueIndex.value
-        )
-      )
-      const existingHistoryItems = historyTasks.value.filter((item) =>
-        allIndex.has(item.queueIndex)
-      )
-      historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
-        .slice(0, maxHistoryItems.value)
-        .sort((a, b) => b.queueIndex - a.queueIndex)
     } finally {
       isLoading.value = false
     }
