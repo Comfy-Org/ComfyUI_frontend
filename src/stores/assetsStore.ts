@@ -1,6 +1,5 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
 
 import {
   mapInputFileToAssetItem,
@@ -118,12 +117,6 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const isLoading = computed(() => inputLoading.value || historyLoading.value)
-
-  const update = async () => {
-    await Promise.all([updateInputs(), updateHistory()])
-  }
-
   return {
     // States
     inputAssets,
@@ -132,11 +125,9 @@ export const useAssetsStore = defineStore('assets', () => {
     historyLoading,
     inputError,
     historyError,
-    isLoading,
 
     // Actions
     updateInputs,
-    updateHistory,
-    update
+    updateHistory
   }
 })
