@@ -1,18 +1,21 @@
-import { validate as uuidValidate } from 'uuid'
+import { validate } from 'uuid'
 
 /**
  * UUID utility functions
+ * Used for extracting prompt IDs from asset IDs in the media assets feature
  */
 
 /**
  * Regular expression for matching UUID format at the beginning of a string
  * Format: 8-4-4-4-12 (e.g., 98b0b007-7d78-4e3f-b7a8-0f483b9cf2d3)
+ * Example use case: "98b0b007-7d78-4e3f-b7a8-0f483b9cf2d3-nodeId-filename.png"
  */
 const UUID_REGEX =
   /^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i
 
 /**
  * Extract UUID from the beginning of a string
+ * Used when asset IDs contain UUIDs as prefixes (e.g., "uuid-nodeId-filename")
  * @param str - The string to extract UUID from
  * @returns The extracted UUID or null if not found
  */
@@ -21,17 +24,7 @@ export function extractUuidFromString(str: string): string | null {
   if (!match) return null
 
   const uuid = match[1]
-  // Validate the extracted string is a valid UUID
-  return uuidValidate(uuid) ? uuid : null
-}
-
-/**
- * Check if a string is a valid UUID (any version)
- * @param str - The string to check
- * @returns true if the string is a valid UUID
- */
-export function isValidUuid(str: string): boolean {
-  return uuidValidate(str)
+  return validate(uuid) ? uuid : null
 }
 
 /**

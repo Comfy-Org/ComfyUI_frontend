@@ -46,14 +46,21 @@ describe('formatUtil', () => {
 
   describe('getMediaTypeFromFilename', () => {
     describe('image files', () => {
-      it('should identify image extensions correctly', () => {
-        expect(getMediaTypeFromFilename('test.png')).toBe('image')
-        expect(getMediaTypeFromFilename('photo.jpg')).toBe('image')
-        expect(getMediaTypeFromFilename('image.jpeg')).toBe('image')
-        expect(getMediaTypeFromFilename('animation.gif')).toBe('image')
-        expect(getMediaTypeFromFilename('web.webp')).toBe('image')
-        expect(getMediaTypeFromFilename('bitmap.bmp')).toBe('image')
-      })
+      const imageTestCases = [
+        { filename: 'test.png', expected: 'image' },
+        { filename: 'photo.jpg', expected: 'image' },
+        { filename: 'image.jpeg', expected: 'image' },
+        { filename: 'animation.gif', expected: 'image' },
+        { filename: 'web.webp', expected: 'image' },
+        { filename: 'bitmap.bmp', expected: 'image' }
+      ]
+
+      it.for(imageTestCases)(
+        'should identify $filename as $expected',
+        ({ filename, expected }) => {
+          expect(getMediaTypeFromFilename(filename)).toBe(expected)
+        }
+      )
 
       it('should handle uppercase extensions', () => {
         expect(getMediaTypeFromFilename('test.PNG')).toBe('image')
