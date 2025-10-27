@@ -138,10 +138,14 @@ jobs:
               add_target "$label" "${BASH_REMATCH[1]}"
             elif [[ "$label" =~ ^backport:(.+)$ ]]; then
               add_target "$label" "${BASH_REMATCH[1]}"
-            elif [[ "$label" =~ ^core\/[0-9]+\.[0-9]+$ ]]; then
-              add_target "$label" "$label"
-            elif [[ "$label" =~ ^cloud\/[0-9]+\.[0-9]+$ ]]; then
-              add_target "$label" "$label"
+            elif [[ "$label" =~ ^core\/([0-9]+)\.([0-9]+)$ ]]; then
+              SAFE_MAJOR="${BASH_REMATCH[1]}"
+              SAFE_MINOR="${BASH_REMATCH[2]}"
+              add_target "$label" "core/${SAFE_MAJOR}.${SAFE_MINOR}"
+            elif [[ "$label" =~ ^cloud\/([0-9]+)\.([0-9]+)$ ]]; then
+              SAFE_MAJOR="${BASH_REMATCH[1]}"
+              SAFE_MINOR="${BASH_REMATCH[2]}"
+              add_target "$label" "cloud/${SAFE_MAJOR}.${SAFE_MINOR}"
             elif [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
               add_target "$label" "core/${label}"
             fi

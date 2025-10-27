@@ -69,6 +69,9 @@ jobs:
           echo "prev_version=$PREV_VERSION" >> $GITHUB_OUTPUT
           echo "prev_minor=$PREV_MINOR" >> $GITHUB_OUTPUT
 
+          BASE_COMMIT=$(git rev-parse HEAD)
+          echo "base_commit=$BASE_COMMIT" >> $GITHUB_OUTPUT
+
           # Get previous major version for comparison
           PREV_MAJOR=$(echo $PREV_VERSION | cut -d. -f1)
 
@@ -113,28 +116,35 @@ jobs:
             exit 1
           fi
 
+          BASE_COMMIT="${{ steps.check_version.outputs.base_commit }}"
+
+          if [[ -z "$BASE_COMMIT" ]]; then
+            echo "::error::Base commit not provided; cannot create release branches"
+            exit 1
+          fi
+
           RESULTS_FILE=$(mktemp)
+          trap 'rm -f "$RESULTS_FILE"' EXIT
 
           for PREFIX in core cloud; do
             BRANCH_NAME="${PREFIX}/${BRANCH_BASE}"
 
-            if git ls-remote --heads origin "$BRANCH_NAME" | \
-              grep -q "$BRANCH_NAME"; then
+            if git ls-remote --exit-code --heads origin \
+              "$BRANCH_NAME" >/dev/null 2>&1; then
               echo "⚠️  Branch $BRANCH_NAME already exists"
               echo "ℹ️  Skipping creation for $BRANCH_NAME"
               STATUS="exists"
             else
               # Create branch from the commit BEFORE the version bump
-              git checkout -b "$BRANCH_NAME" HEAD^1
-              git push origin "$BRANCH_NAME"
+              if ! git push origin "$BASE_COMMIT:refs/heads/$BRANCH_NAME"; then
+                echo "::error::Failed to push release branch $BRANCH_NAME"
+                exit 1
+              fi
               echo "✅ Created release branch: $BRANCH_NAME"
               STATUS="created"
             fi
 
             echo "$BRANCH_NAME|$STATUS|$PREV_VERSION" >> "$RESULTS_FILE"
-
-            # Return to main before next iteration
-            git checkout main
           done
 
           {
