@@ -5,7 +5,10 @@
         <h2 class="text-2xl">
           {{ $t('subscription.title') }}
         </h2>
-        <CloudBadge reverse-order />
+        <CloudBadge
+          reverse-order
+          background-color="var(--p-dialog-background)"
+        />
       </div>
 
       <div class="grow overflow-auto">
