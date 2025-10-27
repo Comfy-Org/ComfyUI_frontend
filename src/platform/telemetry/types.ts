@@ -26,13 +26,13 @@ export interface AuthMetadata {
 
 /**
  * Survey response data for user profiling
+ * Maps 1-to-1 with actual survey fields
  */
 export interface SurveyResponses {
-  industry?: string
-  team_size?: string
-  use_case?: string
   familiarity?: string
-  intended_use?: 'personal' | 'client' | 'inhouse'
+  industry?: string
+  useCase?: string
+  making?: string[]
 }
 
 /**
