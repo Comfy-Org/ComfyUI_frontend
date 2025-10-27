@@ -233,12 +233,17 @@ export const historyV2Fixture: HistoryResponseV2 = {
 
 /**
  * Expected V1 transformation of historyV2Fixture
+ * Priority is now synthetic based on execution_success timestamp:
+ * - complete-item-id: has timestamp → priority 1 (only one with timestamp)
+ * - no-status-id: no status → priority 0
+ * - no-meta-id: empty messages → priority 0
+ * - multi-output-id: empty messages → priority 0
  */
 export const expectedV1Fixture: HistoryTaskItem[] = [
   {
     taskType: 'History',
     prompt: [
-      24,
+      1,
       'complete-item-id',
       {},
       {
@@ -295,7 +300,7 @@ export const expectedV1Fixture: HistoryTaskItem[] = [
   {
     taskType: 'History',
     prompt: [
-      23,
+      0,
       'no-status-id',
       {},
       {
@@ -319,7 +324,7 @@ export const expectedV1Fixture: HistoryTaskItem[] = [
   {
     taskType: 'History',
     prompt: [
-      22,
+      0,
       'no-meta-id',
       {},
       {
@@ -342,7 +347,7 @@ export const expectedV1Fixture: HistoryTaskItem[] = [
   {
     taskType: 'History',
     prompt: [
-      21,
+      0,
       'multi-output-id',
       {},
       {
