@@ -339,9 +339,11 @@ function renderCategoryBlock(category, hasBaseline) {
 
   summaryParts.push('</summary>')
   lines.push(summaryParts.join(''))
+  lines.push('')
 
   if (category.description) {
     lines.push(`_${category.description}_`)
+    lines.push('')
   }
 
   if (category.bundles.length === 0) {
