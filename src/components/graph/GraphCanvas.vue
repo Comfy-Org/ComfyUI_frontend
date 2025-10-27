@@ -18,7 +18,7 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI" #side-toolbar>
+    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
       <SideToolbar />
     </template>
     <template v-if="!workspaceStore.focusMode" #bottom-panel>
