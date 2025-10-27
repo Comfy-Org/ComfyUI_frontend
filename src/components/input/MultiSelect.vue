@@ -37,10 +37,7 @@
           v-if="showSelectedCount || showClearButton"
           class="mt-2 flex items-center justify-between"
         >
-          <span
-            v-if="showSelectedCount"
-            class="px-1 text-sm text-neutral-400 dark-theme:text-zinc-500"
-          >
+          <span v-if="showSelectedCount" class="text-secondary px-1 text-sm">
             {{
               selectedCount > 0
                 ? $t('g.itemsSelected', { selectedCount })
