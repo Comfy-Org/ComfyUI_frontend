@@ -29,6 +29,6 @@ export function calculateIntrinsicSize(
   // Convert from screen coordinates to canvas coordinates
   return {
     width: intrinsicRect.width / scale,
-    height: intrinsicRect.height / scale
+    height: 0
   }
 }
