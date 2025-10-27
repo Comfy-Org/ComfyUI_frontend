@@ -314,6 +314,11 @@ function renderCategoryDetails(report) {
 
   for (const category of report.categories) {
     lines.push(renderCategoryBlock(category, report.hasBaseline))
+    lines.push('')
+  }
+
+  if (report.categories.length > 0) {
+    lines.pop()
   }
 
   lines.push('</details>')
@@ -384,6 +389,7 @@ function renderCategoryBlock(category, hasBaseline) {
     })
 
   lines.push(markdownTable([headers, ...rows]))
+  lines.push('')
 
   const statusParts = []
   if (category.counts.added) statusParts.push(`${category.counts.added} added`)
@@ -395,10 +401,11 @@ function renderCategoryBlock(category, hasBaseline) {
     statusParts.push(`${category.counts.decreased} shrank`)
 
   if (statusParts.length > 0) {
-    lines.push(`\n_Status:_ ${statusParts.join(' / ')}`)
+    lines.push(`_Status:_ ${statusParts.join(' / ')}`)
+    lines.push('')
   }
 
-  lines.push('</details>\n')
+  lines.push('</details>')
   return lines.join('\n')
 }
 
