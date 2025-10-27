@@ -141,7 +141,7 @@ const props = withDefaults(
     displayMode: 'full',
     reverseOrder: false,
     noPadding: false,
-    backgroundColor: 'var(--comfy-menu-bg)'
+    backgroundColor: 'var(--comfy-menu-secondary-bg)'
   }
 )
 
