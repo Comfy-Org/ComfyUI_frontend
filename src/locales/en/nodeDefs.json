@@ -2600,6 +2600,14 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
     }
   },
   "GeminiInputFiles": {
@@ -2613,6 +2621,11 @@
       "GEMINI_INPUT_FILES": {
         "name": "GEMINI_INPUT_FILES",
         "tooltip": "An optional additional file(s) to batch together with the file loaded from this node. Allows chaining of input files so that a single message can include multiple input files."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2650,6 +2663,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
