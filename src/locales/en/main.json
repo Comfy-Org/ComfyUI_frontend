@@ -1460,6 +1460,7 @@
     "failedToApplyTexture": "Failed to apply texture",
     "no3dSceneToExport": "No 3D scene to export",
     "failedToExportModel": "Failed to export model as {format}",
+    "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
     "interrupted": "Execution has been interrupted",
