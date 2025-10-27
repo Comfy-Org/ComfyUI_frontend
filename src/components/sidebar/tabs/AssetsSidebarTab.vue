@@ -251,7 +251,7 @@ const enterFolderView = (asset: AssetItem) => {
   folderExecutionTime.value = executionTimeInSeconds
 
   folderAssets.value = allOutputs.map((output) => ({
-    id: `${promptId}-${output.nodeId}-${output.filename}`,
+    id: `${output.nodeId}-${output.filename}`,
     name: output.filename,
     size: 0,
     created_at: asset.created_at,

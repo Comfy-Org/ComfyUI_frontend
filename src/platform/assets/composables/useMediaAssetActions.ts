@@ -5,7 +5,7 @@ import { inject } from 'vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
-import { extractPromptIdFromAssetId } from '@/utils/uuidUtil'
+import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
@@ -59,7 +59,9 @@ export function useMediaAssetActions() {
     const asset = mediaContext?.asset.value
     if (!asset) return
 
-    const promptId = extractPromptIdFromAssetId(asset.id)
+    // Get promptId from metadata instead of parsing the ID string
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    const promptId = metadata?.promptId
 
     if (!promptId) {
       toast.add({
