@@ -5,7 +5,9 @@ import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescrip
 import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
-import tailwind from 'eslint-plugin-tailwindcss'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore No types available for this plugin
+import tailwindV4Plugin from 'eslint-plugin-tailwind-v4'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -94,10 +96,6 @@ export default defineConfig([
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
-  // Difference in typecheck on CI vs Local
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Bad types in the plugin
-  tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
@@ -109,7 +107,8 @@ export default defineConfig([
     plugins: {
       'unused-imports': unusedImports,
       // @ts-expect-error Bad types in the plugin
-      '@intlify/vue-i18n': pluginI18n
+      '@intlify/vue-i18n': pluginI18n,
+      'tailwind-v4': tailwindV4Plugin
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
@@ -129,7 +128,7 @@ export default defineConfig([
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
-      'tailwindcss/no-custom-classname': 'off', // TODO: fix
+      'tailwind-v4/no-custom-classname': 'off', // TODO: fix
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
