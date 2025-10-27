@@ -19,26 +19,6 @@ function applyHandleDelta(
   }
 }
 
-function clampToMinSize(size: Size, minSize: Size): Size {
-  return {
-    width: Math.max(size.width, minSize.width),
-    height: Math.max(size.height, minSize.height)
-  }
-}
-
-function snapSize(
-  size: Size,
-  minSize: Size,
-  snapFn?: (size: Size) => Size
-): Size {
-  if (!snapFn) return size
-  const snapped = snapFn(size)
-  return {
-    width: Math.max(minSize.width, snapped.width),
-    height: Math.max(minSize.height, snapped.height)
-  }
-}
-
 function computeAdjustedPosition(
   startPosition: Point,
   startSize: Size,
@@ -68,20 +48,17 @@ export function computeResizeOutcome({
   startSize,
   startPosition,
   delta,
-  minSize,
   handle,
   snapFn
 }: {
   startSize: Size
   startPosition: Point
   delta: Point
-  minSize: Size
   handle: ResizeHandleDirection
   snapFn?: (size: Size) => Size
 }): { size: Size; position: Point } {
   const resized = applyHandleDelta(startSize, delta, handle)
-  const clamped = clampToMinSize(resized, minSize)
-  const snapped = snapSize(clamped, minSize, snapFn)
+  const snapped = snapFn?.(resized) ?? resized
   const position = computeAdjustedPosition(
     startPosition,
     startSize,
@@ -98,19 +75,16 @@ export function computeResizeOutcome({
 export function createResizeSession(config: {
   startSize: Size
   startPosition: Point
-  minSize: Size
   handle: ResizeHandleDirection
 }) {
   const startSize = { ...config.startSize }
   const startPosition = { ...config.startPosition }
-  const minSize = { ...config.minSize }
   const handle = config.handle
 
   return (delta: Point, snapFn?: (size: Size) => Size) =>
     computeResizeOutcome({
       startSize,
       startPosition,
-      minSize,
       handle,
       delta,
       snapFn

@@ -9,7 +9,7 @@
     :class="
       cn(
         'bg-node-component-surface min-h-min contain-style contain-layout',
-        'lg-node absolute rounded-2xl touch-none flex flex-col',
+        'lg-node absolute rounded-2xl touch-none flex flex-col min-w-min',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -83,7 +83,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-min flex-1 flex-col gap-4 pb-4"
+        class="flex min-h-min min-w-min flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -150,7 +150,6 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type { ResizeHandleDirection } from '../interactions/resize/resizeMath'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
-import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -269,18 +268,9 @@ const handleContextMenu = (event: MouseEvent) => {
 
 onMounted(() => {
   // Set initial DOM size from layout store, but respect intrinsic content minimum
-  if (size.value && nodeContainerRef.value && transformState) {
-    const intrinsicMin = calculateIntrinsicSize(
-      nodeContainerRef.value,
-      transformState.camera.z
-    )
-
-    // Use the larger of stored size or intrinsic minimum
-    const finalWidth = Math.max(size.value.width, intrinsicMin.width)
-    const finalHeight = Math.max(size.value.height, intrinsicMin.height)
-
-    nodeContainerRef.value.style.width = `${finalWidth}px`
-    nodeContainerRef.value.style.height = `${finalHeight}px`
+  if (size.value && nodeContainerRef.value) {
+    nodeContainerRef.value.style.width = `${size.value.width}px`
+    nodeContainerRef.value.style.height = `${size.value.height}px`
   }
 })
 
