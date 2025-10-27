@@ -127,8 +127,14 @@ jobs:
       - name: Filter already backported targets
         id: filter-targets
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          FORCE_RERUN_INPUT: >-
+            ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
+            || 'false' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+          PR_NUMBER: >-
+            ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
+            || github.event.pull_request.number }}
         run: |
           set -euo pipefail
 
@@ -139,6 +145,15 @@ jobs:
             exit 0
           fi
 
+          FORCE_RERUN=false
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$FORCE_RERUN_INPUT" = "true" ]; then
+            FORCE_RERUN=true
+          fi
+
+          mapfile -t EXISTING_BRANCHES < <(
+            git ls-remote --heads origin "backport-${PR_NUMBER}-to-*" || true
+          )
+
           PENDING=()
           SKIPPED=()
 
@@ -146,20 +161,21 @@ jobs:
             SAFE_TARGET=$(echo "$target" | tr '/' '-')
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
 
-            if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force_rerun }}" = "true" ]; then
+            if [ "$FORCE_RERUN" = true ]; then
               PENDING+=("$target")
               continue
             fi
 
-            if git ls-remote --exit-code origin "${BACKPORT_BRANCH}" >/dev/null 2>&1; then
+            if printf '%s\n' "${EXISTING_BRANCHES[@]:-}" |
+              grep -Fq "refs/heads/${BACKPORT_BRANCH}"; then
               SKIPPED+=("$target")
             else
               PENDING+=("$target")
             fi
           done
 
-          SKIPPED_JOINED="${SKIPPED[*]}"
-          PENDING_JOINED="${PENDING[*]}"
+          SKIPPED_JOINED="${SKIPPED[*]:-}"
+          PENDING_JOINED="${PENDING[*]:-}"
 
           echo "already-exists=${SKIPPED_JOINED}" >> $GITHUB_OUTPUT
           echo "pending-targets=${PENDING_JOINED}" >> $GITHUB_OUTPUT
@@ -167,12 +183,12 @@ jobs:
           if [ -z "$PENDING_JOINED" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             if [ -n "$SKIPPED_JOINED" ]; then
-              echo "::warning::Backport branches already exist for: ${SKIPPED_JOINED}" >&2
+              echo "::warning::Backport branches already exist for: ${SKIPPED_JOINED}"
             fi
           else
             echo "skip=false" >> $GITHUB_OUTPUT
             if [ -n "$SKIPPED_JOINED" ]; then
-              echo "::notice::Skipping already backported targets: ${SKIPPED_JOINED}" >&2
+              echo "::notice::Skipping already backported targets: ${SKIPPED_JOINED}"
             fi
           fi
 
