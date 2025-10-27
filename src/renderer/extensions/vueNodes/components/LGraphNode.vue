@@ -8,8 +8,9 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-surface min-h-min contain-style contain-layout',
-        'lg-node absolute rounded-2xl touch-none flex flex-col min-w-min',
+        'bg-node-component-surface lg-node absolute',
+        'min-h-min min-w-min contain-style contain-layout',
+        'rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
