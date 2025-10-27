@@ -1,8 +1,8 @@
-name: size report
+name: "PR: Size Report"
 
 on:
   workflow_run:
-    workflows: ['size data']
+    workflows: ['CI: Size Data']
     types:
       - completed
   workflow_dispatch:
@@ -22,7 +22,7 @@ permissions:
   issues: write
 
 jobs:
-  size-report:
+  comment:
     runs-on: ubuntu-latest
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
@@ -78,7 +78,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v11
         with:
           branch: ${{ steps.pr-base.outputs.content }}
-          workflow: size-data.yml
+          workflow: ci-size-data.yaml
           event: push
           name: size-data
           path: temp/size-prev
