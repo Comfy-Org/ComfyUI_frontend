@@ -226,6 +226,14 @@ jobs:
               continue
             fi
 
+            # Check if commit already exists on target branch
+            if git branch -r --contains "${MERGE_COMMIT}" | grep -q "origin/${TARGET_BRANCH}"; then
+              echo "::notice::Commit ${MERGE_COMMIT} already exists on ${TARGET_BRANCH}, skipping backport"
+              FAILED="${FAILED}${TARGET_BRANCH}:already-exists "
+              echo "::endgroup::"
+              continue
+            fi
+
             # Create backport branch
             git checkout -b "${BACKPORT_BRANCH}" "origin/${TARGET_BRANCH}"
 
@@ -319,6 +327,9 @@ jobs:
 
             if [ "${reason}" = "branch-missing" ]; then
               gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist"
+
+            elif [ "${reason}" = "already-exists" ]; then
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
 
             elif [ "${reason}" = "conflicts" ]; then
               # Convert comma-separated conflicts back to newlines for display
