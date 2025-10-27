@@ -356,15 +356,9 @@ const onSubmitSurvey = async () => {
     if (isCloud) {
       useTelemetry()?.trackSurvey('submitted', {
         industry: payload.industry,
-        team_size: undefined, // Not collected in this survey
-        use_case: payload.useCase,
+        useCase: payload.useCase,
         familiarity: payload.familiarity,
-        intended_use:
-          payload.useCase === 'personal'
-            ? 'personal'
-            : payload.useCase === 'client'
-              ? 'client'
-              : 'inhouse'
+        making: payload.making
       })
     }
 

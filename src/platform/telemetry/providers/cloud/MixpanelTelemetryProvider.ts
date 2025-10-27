@@ -195,15 +195,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
           const survey = surveyData as any
           this.mixpanel.people.set({
             survey_industry: survey.industry,
-            survey_team_size: survey.team_size,
             survey_use_case: survey.useCase,
             survey_familiarity: survey.familiarity,
-            survey_intended_use:
-              survey.useCase === 'personal'
-                ? 'personal'
-                : survey.useCase === 'client'
-                  ? 'client'
-                  : 'inhouse'
+            survey_making: survey.making
           })
         }
       }
@@ -219,15 +213,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
                 const survey = surveyData as any
                 this.mixpanel?.people.set({
                   survey_industry: survey.industry,
-                  survey_team_size: survey.team_size,
                   survey_use_case: survey.useCase,
                   survey_familiarity: survey.familiarity,
-                  survey_intended_use:
-                    survey.useCase === 'personal'
-                      ? 'personal'
-                      : survey.useCase === 'client'
-                        ? 'client'
-                        : 'inhouse'
+                  survey_making: survey.making
                 })
               }
             } catch (error) {
@@ -322,10 +310,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       stage === 'submitted' && responses
         ? {
             industry: responses.industry,
-            team_size: responses.team_size,
-            use_case: responses.use_case,
+            useCase: responses.useCase,
             familiarity: responses.familiarity,
-            intended_use: responses.intended_use
+            making: responses.making
           }
         : undefined
 
@@ -351,10 +338,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     try {
       this.mixpanel.people.set({
         survey_industry: responses.industry,
-        survey_team_size: responses.team_size,
-        survey_use_case: responses.use_case,
+        survey_use_case: responses.useCase,
         survey_familiarity: responses.familiarity,
-        survey_intended_use: responses.intended_use
+        survey_making: responses.making
       })
     } catch (error) {
       console.error('Failed to set survey user properties:', error)
