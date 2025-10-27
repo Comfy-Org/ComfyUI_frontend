@@ -9,7 +9,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
-import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
 
@@ -21,7 +20,6 @@ function useVueNodeLifecycleIndividual() {
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
 
   const { startSync } = useLayoutSync()
-  const linkSyncManager = useLinkLayoutSync()
   const slotSyncManager = useSlotLayoutSync()
 
   const initializeNodeManager = () => {
@@ -62,10 +60,6 @@ function useVueNodeLifecycleIndividual() {
 
     // Initialize layout sync (one-way: Layout Store → LiteGraph)
     startSync(canvasStore.canvas)
-
-    if (comfyApp.canvas) {
-      linkSyncManager.start(comfyApp.canvas)
-    }
   }
 
   const disposeNodeManagerAndSyncs = () => {
@@ -77,8 +71,6 @@ function useVueNodeLifecycleIndividual() {
       /* empty */
     }
     nodeManager.value = null
-
-    linkSyncManager.stop()
   }
 
   // Watch for Vue nodes enabled state changes
@@ -153,7 +145,6 @@ function useVueNodeLifecycleIndividual() {
       nodeManager.value = null
     }
     slotSyncManager.stop()
-    linkSyncManager.stop()
   }
 
   return {
