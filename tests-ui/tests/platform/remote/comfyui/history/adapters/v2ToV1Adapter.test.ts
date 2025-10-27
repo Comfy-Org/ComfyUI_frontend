@@ -11,6 +11,10 @@ import {
   expectedV1Fixture,
   historyV2Fixture
 } from '@tests-ui/fixtures/historyFixtures'
+import {
+  historyV2FiveItemsSorting,
+  historyV2WithMissingTimestamp
+} from '@tests-ui/fixtures/historySortingFixtures'
 
 describe('mapHistoryV2toHistory', () => {
   describe('fixture validation', () => {
@@ -38,7 +42,7 @@ describe('mapHistoryV2toHistory', () => {
     it('should transform prompt to V1 tuple [priority, id, {}, extra_data, outputNodeIds]', () => {
       const firstItem = history[0]
 
-      expect(firstItem.prompt[0]).toBe(24)
+      expect(firstItem.prompt[0]).toBe(1) // Synthetic priority based on timestamp
       expect(firstItem.prompt[1]).toBe('complete-item-id')
       expect(firstItem.prompt[2]).toEqual({}) // history v2 does not return this data
       expect(firstItem.prompt[3]).toMatchObject({ client_id: 'test-client' })
@@ -115,6 +119,72 @@ describe('mapHistoryV2toHistory', () => {
       const history = mapHistoryV2toHistory(v2Response)
 
       expect(history[0].prompt[3].client_id).toBeUndefined()
+    })
+  })
+
+  describe('timestamp-based priority assignment', () => {
+    it('assigns priority 0 to items without execution_success timestamp', () => {
+      const result = mapHistoryV2toHistory(historyV2WithMissingTimestamp)
+
+      expect(result).toHaveLength(3)
+
+      const item1000 = result.find(
+        (item) => item.prompt[1] === 'item-timestamp-1000'
+      )
+      const item2000 = result.find(
+        (item) => item.prompt[1] === 'item-timestamp-2000'
+      )
+      const itemNoTimestamp = result.find(
+        (item) => item.prompt[1] === 'item-no-timestamp'
+      )
+
+      expect(item1000).toBeDefined()
+      expect(item2000).toBeDefined()
+      expect(itemNoTimestamp).toBeDefined()
+      if (!item1000 || !item2000 || !itemNoTimestamp) {
+        throw new Error('Expected items not found in result')
+      }
+
+      expect(item2000.prompt[0]).toBe(2)
+      expect(item1000.prompt[0]).toBe(1)
+      expect(itemNoTimestamp.prompt[0]).toBe(0)
+    })
+
+    it('correctly sorts and assigns priorities for multiple items', () => {
+      const result = mapHistoryV2toHistory(historyV2FiveItemsSorting)
+
+      expect(result).toHaveLength(5)
+
+      const item1000 = result.find(
+        (item) => item.prompt[1] === 'item-timestamp-1000'
+      )
+      const item2000 = result.find(
+        (item) => item.prompt[1] === 'item-timestamp-2000'
+      )
+      const item3000 = result.find(
+        (item) => item.prompt[1] === 'item-timestamp-3000'
+      )
+      const item4000 = result.find(
+        (item) => item.prompt[1] === 'item-timestamp-4000'
+      )
+      const item5000 = result.find(
+        (item) => item.prompt[1] === 'item-timestamp-5000'
+      )
+
+      expect(item1000).toBeDefined()
+      expect(item2000).toBeDefined()
+      expect(item3000).toBeDefined()
+      expect(item4000).toBeDefined()
+      expect(item5000).toBeDefined()
+      if (!item1000 || !item2000 || !item3000 || !item4000 || !item5000) {
+        throw new Error('Expected items not found in result')
+      }
+
+      expect(item5000.prompt[0]).toBe(5)
+      expect(item4000.prompt[0]).toBe(4)
+      expect(item3000.prompt[0]).toBe(3)
+      expect(item2000.prompt[0]).toBe(2)
+      expect(item1000.prompt[0]).toBe(1)
     })
   })
 })
