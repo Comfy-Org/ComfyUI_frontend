@@ -15,7 +15,7 @@
 
   --text-xxxs: 0.5625rem;
   --text-xxxs--line-height: calc(1 / 0.5625);
-  
+
   /* Font Families */
   --font-inter: 'Inter', sans-serif;
 
@@ -56,8 +56,10 @@
   --color-slate-200: #9fa2bd;
   --color-slate-300: #5b5e7d;
 
-  --color-brand-yellow: #f0ff41;
-  --color-brand-blue: #172dd7;
+  --color-electric-400: #f0ff41;
+  --color-sapphire-700: #172dd7;
+  --color-brand-yellow: var(--color-electric-400);
+  --color-brand-blue: var(--color-sapphire-700);
 
   --color-azure-400: #31b9f4;
   --color-azure-600: #0b8ce9;
@@ -212,7 +214,7 @@
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-smoke-800);
-  
+
   --dialog-surface: var(--color-neutral-700);
 
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
