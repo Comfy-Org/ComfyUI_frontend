@@ -18,11 +18,11 @@ const createHistoryItem = (promptId: string, queueIndex = 0): TaskItem => ({
 
 const getAllPromptIds = (result: {
   newItems: TaskItem[]
-  reusePromptIds: Set<string>
+  reusePromptIds: string[]
 }): string[] => {
   return [
     ...result.newItems.map((item) => item.prompt[1]),
-    ...Array.from(result.reusePromptIds)
+    ...result.reusePromptIds
   ]
 }
 
@@ -71,7 +71,7 @@ describe('reconcileHistory (V1)', () => {
       const result = reconcileHistory(serverHistory, [], -1, 10)
 
       expect(result.newItems).toHaveLength(2)
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds).toHaveLength(0)
       expect(result.newItems[0].prompt[1]).toBe('item-1')
       expect(result.newItems[1].prompt[1]).toBe('item-2')
     })
@@ -144,7 +144,7 @@ describe('reconcileHistory (V1)', () => {
       expect(result.newItems).toHaveLength(2)
       expect(result.newItems[0].prompt[1]).toBe('new-1')
       expect(result.newItems[1].prompt[1]).toBe('new-2')
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds.length).toBe(0)
     })
   })
 
@@ -167,14 +167,14 @@ describe('reconcileHistory (V1)', () => {
       const result = reconcileHistory([], clientHistory, 5, 10)
 
       expect(result.newItems).toHaveLength(0)
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds.length).toBe(0)
     })
 
     it('should handle both empty', () => {
       const result = reconcileHistory([], [], -1, 10)
 
       expect(result.newItems).toHaveLength(0)
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds.length).toBe(0)
     })
   })
 })
@@ -193,7 +193,7 @@ describe('reconcileHistoryCloud', () => {
       const promptIds = getAllPromptIds(result)
       expect(promptIds).toHaveLength(2)
       expect(result.newItems[0].prompt[1]).toBe('new-item')
-      expect(result.reusePromptIds.has('existing-item')).toBe(true)
+      expect(result.reusePromptIds.includes('existing-item')).toBe(true)
     })
 
     it('should add multiple new items to front in server order', () => {
@@ -209,7 +209,7 @@ describe('reconcileHistoryCloud', () => {
       expect(result.newItems).toHaveLength(2)
       expect(result.newItems[0].prompt[1]).toBe('new-1')
       expect(result.newItems[1].prompt[1]).toBe('new-2')
-      expect(result.reusePromptIds.has('existing')).toBe(true)
+      expect(result.reusePromptIds.includes('existing')).toBe(true)
     })
   })
 
@@ -227,8 +227,8 @@ describe('reconcileHistoryCloud', () => {
       const result = reconcileHistoryCloud(serverHistory, clientHistory, 10)
 
       expect(result.newItems).toHaveLength(0)
-      expect(result.reusePromptIds.has('item-1')).toBe(true)
-      expect(result.reusePromptIds.has('item-2')).toBe(true)
+      expect(result.reusePromptIds.includes('item-1')).toBe(true)
+      expect(result.reusePromptIds.includes('item-2')).toBe(true)
     })
 
     it('should drop client items not on server anymore', () => {
@@ -241,8 +241,8 @@ describe('reconcileHistoryCloud', () => {
       const result = reconcileHistoryCloud(serverHistory, clientHistory, 10)
 
       expect(result.newItems).toHaveLength(0)
-      expect(result.reusePromptIds.has('item-1')).toBe(true)
-      expect(result.reusePromptIds.has('old-item')).toBe(false)
+      expect(result.reusePromptIds.includes('item-1')).toBe(true)
+      expect(result.reusePromptIds.includes('old-item')).toBe(false)
     })
   })
 
@@ -290,7 +290,7 @@ describe('reconcileHistoryCloud', () => {
       expect(result.newItems).toHaveLength(2)
       expect(result.newItems[0].prompt[1]).toBe('new-1')
       expect(result.newItems[1].prompt[1]).toBe('new-2')
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds.length).toBe(0)
     })
   })
 
@@ -306,7 +306,7 @@ describe('reconcileHistoryCloud', () => {
       expect(result.newItems).toHaveLength(2)
       expect(result.newItems[0].prompt[1]).toBe('item-1')
       expect(result.newItems[1].prompt[1]).toBe('item-2')
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds.length).toBe(0)
     })
 
     it('should handle empty server history', () => {
@@ -318,14 +318,14 @@ describe('reconcileHistoryCloud', () => {
       const result = reconcileHistoryCloud([], clientHistory, 10)
 
       expect(result.newItems).toHaveLength(0)
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds.length).toBe(0)
     })
 
     it('should handle both empty', () => {
       const result = reconcileHistoryCloud([], [], 10)
 
       expect(result.newItems).toHaveLength(0)
-      expect(result.reusePromptIds.size).toBe(0)
+      expect(result.reusePromptIds.length).toBe(0)
     })
   })
 })

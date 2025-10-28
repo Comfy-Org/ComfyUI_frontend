@@ -487,11 +487,12 @@ export const useQueueStore = defineStore('queue', () => {
           historyTasks.value,
           maxHistoryItems.value
         )
+        const reusePromptIdSet = new Set(reusePromptIds)
         const reusedImpls = historyTasks.value.filter((item) =>
-          reusePromptIds.has(item.promptId)
+          reusePromptIdSet.has(item.promptId)
         )
         const newImpls = toTaskItemImpls(newItems)
-        historyTasks.value = [...newImpls, ...reusedImpls].sort(sortNewestFirst)
+        historyTasks.value = [...newImpls, ...reusedImpls]
       } else {
         const { newItems, reusePromptIds } = reconcileHistory(
           history.History,
@@ -499,11 +500,12 @@ export const useQueueStore = defineStore('queue', () => {
           lastHistoryQueueIndex.value,
           maxHistoryItems.value
         )
+        const reusePromptIdSet = new Set(reusePromptIds)
         const reusedImpls = historyTasks.value.filter((item) =>
-          reusePromptIds.has(item.promptId)
+          reusePromptIdSet.has(item.promptId)
         )
         const newImpls = toTaskItemImpls(newItems)
-        historyTasks.value = [...newImpls, ...reusedImpls].sort(sortNewestFirst)
+        historyTasks.value = [...newImpls, ...reusedImpls]
       }
     } finally {
       isLoading.value = false
