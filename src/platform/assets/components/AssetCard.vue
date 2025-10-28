@@ -31,6 +31,7 @@
               'dark-theme:text-white'
             )
           "
+          :title="asset.name"
         >
           {{ asset.name }}
         </h3>
