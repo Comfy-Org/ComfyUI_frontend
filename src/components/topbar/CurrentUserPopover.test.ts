@@ -69,6 +69,22 @@ vi.mock('@/services/dialogService', () => ({
   }))
 }))
 
+// Mock the firebaseAuthStore
+vi.mock('@/stores/firebaseAuthStore', () => ({
+  useFirebaseAuthStore: vi.fn(() => ({
+    getAuthHeader: vi
+      .fn()
+      .mockResolvedValue({ Authorization: 'Bearer mock-token' })
+  }))
+}))
+
+// Mock the useSubscription composable
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: vi.fn(() => ({
+    isActiveSubscription: vi.fn().mockReturnValue(true)
+  }))
+}))
+
 // Mock UserAvatar component
 vi.mock('@/components/common/UserAvatar.vue', () => ({
   default: {
