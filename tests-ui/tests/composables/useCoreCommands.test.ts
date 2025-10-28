@@ -85,6 +85,13 @@ vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   useFirebaseAuthActions: vi.fn(() => ({}))
 }))
 
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: vi.fn(() => ({
+    isActiveSubscription: vi.fn().mockReturnValue(true),
+    showSubscriptionDialog: vi.fn()
+  }))
+}))
+
 describe('useCoreCommands', () => {
   const mockSubgraph = {
     nodes: [
