@@ -32,7 +32,7 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-muted text-text-primary">
+            <div class="text-text-primary text-sm text-muted">
               {{ $t('subscription.required.title') }}
             </div>
             <CloudBadge
@@ -54,7 +54,7 @@
 
       <div class="flex flex-col pt-8">
         <SubscribeButton
-          class="py-2 px-4 rounded-lg"
+          class="rounded-lg px-4 py-2"
           :pt="{
             root: {
               style: 'background: var(--color-accent-blue, #0B8CE9);'
