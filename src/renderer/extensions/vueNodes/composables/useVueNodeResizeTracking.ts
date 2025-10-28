@@ -86,16 +86,15 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
 
-    // Use borderBoxSize to match getBoundingClientRect() and element.style.width/height
-    // This ensures consistency with manual resize operations
-    const borderBox = Array.isArray(entry.borderBoxSize)
-      ? entry.borderBoxSize[0]
-      : (entry.contentBoxSize?.[0] ?? {
+    // Use contentBoxSize when available; fall back to contentRect for older engines/tests
+    const contentBox = Array.isArray(entry.contentBoxSize)
+      ? entry.contentBoxSize[0]
+      : {
           inlineSize: entry.contentRect.width,
           blockSize: entry.contentRect.height
-        })
-    const width = borderBox.inlineSize
-    const height = borderBox.blockSize
+        }
+    const width = contentBox.inlineSize
+    const height = contentBox.blockSize
 
     // Screen-space rect
     const rect = element.getBoundingClientRect()
