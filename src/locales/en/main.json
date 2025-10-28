@@ -1640,6 +1640,7 @@
     "beta": "BETA",
     "perMonth": "USD / month",
     "renewsDate": "Renews {date}",
+    "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
     "apiNodesBalance": "\"API Nodes\" Credit Balance",
     "apiNodesDescription": "For running commercial/proprietary models",

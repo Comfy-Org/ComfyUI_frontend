@@ -23,11 +23,20 @@
                   <span>{{ $t('subscription.perMonth') }}</span>
                 </div>
                 <div v-if="isActiveSubscription" class="text-xs text-muted">
-                  {{
-                    $t('subscription.renewsDate', {
-                      date: formattedRenewalDate
-                    })
-                  }}
+                  <template v-if="isCancelled">
+                    {{
+                      $t('subscription.expiresDate', {
+                        date: formattedEndDate
+                      })
+                    }}
+                  </template>
+                  <template v-else>
+                    {{
+                      $t('subscription.renewsDate', {
+                        date: formattedRenewalDate
+                      })
+                    }}
+                  </template>
                 </div>
               </div>
               <Button
@@ -212,7 +221,9 @@ const customerEventService = useCustomerEventsService()
 
 const {
   isActiveSubscription,
+  isCancelled,
   formattedRenewalDate,
+  formattedEndDate,
   formattedMonthlyPrice,
   manageSubscription,
   handleViewUsageHistory,
