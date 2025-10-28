@@ -177,7 +177,7 @@ const textClasses = computed(() => {
       return 'text-warning-100'
     case 'info':
     default:
-      return 'text-slate-100'
+      return 'text-text-primary'
   }
 })
 
