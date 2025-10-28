@@ -1072,7 +1072,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'Automatically scale node positions when switching to Vue rendering to prevent overlap',
     type: 'boolean',
     experimental: true,
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.30.3'
   },
   {

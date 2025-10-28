@@ -30,7 +30,6 @@ import {
   type NodeId,
   isSubgraphDefinition
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useFixVueNodeOverlap } from '@/renderer/extensions/vueNodes/composables/useFixVueNodeOverlap'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
