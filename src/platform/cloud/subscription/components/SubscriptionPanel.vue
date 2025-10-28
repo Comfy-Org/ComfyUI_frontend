@@ -58,14 +58,6 @@
                     <div class="text-xs text-muted">
                       {{ $t('subscription.apiNodesDescription') }}
                     </div>
-                    <Button
-                      icon="pi pi-question-circle"
-                      text
-                      rounded
-                      size="small"
-                      severity="secondary"
-                      class="h-5 w-5"
-                    />
                   </div>
                 </div>
 
@@ -137,6 +129,7 @@
                       @click="handleViewUsageHistory"
                     />
                     <Button
+                      v-if="isActiveSubscription"
                       :label="$t('subscription.addApiCredits')"
                       severity="secondary"
                       class="text-xs"
