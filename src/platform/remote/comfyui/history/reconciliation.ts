@@ -14,7 +14,7 @@
 
 import type { TaskItem, TaskPrompt } from '@/schemas/apiSchema'
 
-export interface ReconciliationResult {
+interface ReconciliationResult {
   /** New items from server, sorted by queueIndex descending (newest first) */
   newItems: TaskItem[]
   /** PromptIds to reuse from client, in sorted order by queueIndex descending */
