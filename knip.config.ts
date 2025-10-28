@@ -34,7 +34,10 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons'
+    '@primevue/icons',
+    // Temporarily disabled due to TailwindCSS v4 compatibility issues
+    '@types/eslint-plugin-tailwindcss',
+    'eslint-plugin-tailwindcss'
   ],
   ignore: [
     // Auto generated manager types

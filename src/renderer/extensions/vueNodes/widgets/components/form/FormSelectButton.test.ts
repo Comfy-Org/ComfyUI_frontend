@@ -124,10 +124,16 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('option2', options)
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[1].classes()).toContain('bg-white')
-      expect(buttons[1].classes()).toContain('text-neutral-900')
-      expect(buttons[0].classes()).not.toContain('bg-white')
-      expect(buttons[2].classes()).not.toContain('bg-white')
+      expect(buttons[1].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[1].classes()).toContain('text-primary')
+      expect(buttons[0].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[2].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
   })
 
@@ -159,8 +165,10 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('200', options)
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[1].classes()).toContain('bg-white')
-      expect(buttons[1].classes()).toContain('text-neutral-900')
+      expect(buttons[1].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[1].classes()).toContain('text-primary')
     })
   })
 
@@ -201,9 +209,15 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('md', options)
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[1].classes()).toContain('bg-white') // Medium
-      expect(buttons[0].classes()).not.toContain('bg-white')
-      expect(buttons[2].classes()).not.toContain('bg-white')
+      expect(buttons[1].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Medium
+      expect(buttons[0].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[2].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles objects without value field', () => {
@@ -216,7 +230,9 @@ describe('FormSelectButton Core Component', () => {
       const buttons = wrapper.findAll('button')
       expect(buttons[0].text()).toBe('First')
       expect(buttons[1].text()).toBe('Second')
-      expect(buttons[0].classes()).toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles objects without label field', () => {
@@ -253,8 +269,12 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('first_id', options, { optionValue: 'id' })
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[0].classes()).toContain('bg-white')
-      expect(buttons[1].classes()).not.toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[1].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('emits custom optionValue when clicked', async () => {
@@ -301,7 +321,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       buttons.forEach((button) => {
-        expect(button.classes()).not.toContain('hover:bg-zinc-200/50')
+        expect(button.classes()).not.toContain(
+          'hover:bg-interface-menu-component-surface-hovered'
+        )
         expect(button.classes()).not.toContain('cursor-pointer')
       })
     })
@@ -311,7 +333,9 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('option1', options, { disabled: true })
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[0].classes()).not.toContain('bg-white') // Selected styling disabled
+      expect(buttons[0].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Selected styling disabled
       expect(buttons[0].classes()).toContain('opacity-50')
       expect(buttons[0].classes()).toContain('text-secondary')
     })
@@ -324,7 +348,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       buttons.forEach((button) => {
-        expect(button.classes()).not.toContain('bg-white')
+        expect(button.classes()).not.toContain(
+          'bg-interface-menu-component-surface-selected'
+        )
       })
     })
 
@@ -334,7 +360,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       buttons.forEach((button) => {
-        expect(button.classes()).not.toContain('bg-white')
+        expect(button.classes()).not.toContain(
+          'bg-interface-menu-component-surface-selected'
+        )
       })
     })
 
@@ -343,8 +371,12 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('', options)
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[0].classes()).toContain('bg-white') // Empty string is selected
-      expect(buttons[1].classes()).not.toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Empty string is selected
+      expect(buttons[1].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('compares values as strings', () => {
@@ -352,7 +384,9 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('1', options)
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[0].classes()).toContain('bg-white') // '1' matches number 1 as string
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // '1' matches number 1 as string
     })
   })
 
@@ -362,8 +396,10 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('option1', options)
 
       const selectedButton = wrapper.findAll('button')[0]
-      expect(selectedButton.classes()).toContain('bg-white')
-      expect(selectedButton.classes()).toContain('text-neutral-900')
+      expect(selectedButton.classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(selectedButton.classes()).toContain('text-primary')
     })
 
     it('applies unselected styling to inactive options', () => {
@@ -380,7 +416,9 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('option1', options, { disabled: false })
 
       const unselectedButton = wrapper.findAll('button')[1]
-      expect(unselectedButton.classes()).toContain('hover:bg-zinc-200/50')
+      expect(unselectedButton.classes()).toContain(
+        'hover:bg-interface-menu-component-surface-hovered'
+      )
       expect(unselectedButton.classes()).toContain('cursor-pointer')
     })
   })
@@ -403,7 +441,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons[0].text()).toBe('@#$%^&*()')
-      expect(buttons[0].classes()).toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles unicode characters in options', () => {
@@ -412,7 +452,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons[0].text()).toBe('🎨 Art')
-      expect(buttons[0].classes()).toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles duplicate option values', () => {
@@ -420,9 +462,15 @@ describe('FormSelectButton Core Component', () => {
       const wrapper = mountComponent('duplicate', duplicateOptions)
 
       const buttons = wrapper.findAll('button')
-      expect(buttons[0].classes()).toContain('bg-white')
-      expect(buttons[2].classes()).toContain('bg-white') // Both duplicates selected
-      expect(buttons[1].classes()).not.toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[2].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Both duplicates selected
+      expect(buttons[1].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles mixed type options safely', () => {
@@ -436,7 +484,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(4)
-      expect(buttons[1].classes()).toContain('bg-white') // Number 123 as string
+      expect(buttons[1].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Number 123 as string
     })
 
     it('handles objects with missing properties gracefully', () => {
@@ -450,7 +500,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(4)
-      expect(buttons[2].classes()).toContain('bg-white')
+      expect(buttons[2].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles large number of options', () => {
@@ -462,7 +514,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(50)
-      expect(buttons[24].classes()).toContain('bg-white') // Option 25 at index 24
+      expect(buttons[24].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Option 25 at index 24
     })
 
     it('fallback to index when all object properties are missing', () => {
@@ -474,7 +528,9 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(2)
-      expect(buttons[0].classes()).toContain('bg-white') // Falls back to index 0
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Falls back to index 0
     })
   })
 

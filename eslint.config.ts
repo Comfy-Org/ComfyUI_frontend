@@ -5,7 +5,6 @@ import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescrip
 import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
-import tailwind from 'eslint-plugin-tailwindcss'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -97,7 +96,7 @@ export default defineConfig([
   // Difference in typecheck on CI vs Local
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore Bad types in the plugin
-  tailwind.configs['flat/recommended'],
+  // tailwind.configs['flat/recommended'], // Temporarily disabled due to TailwindCSS v4 compatibility issues
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],

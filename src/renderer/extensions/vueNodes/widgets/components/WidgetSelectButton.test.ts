@@ -107,10 +107,14 @@ describe('WidgetSelectButton Button Selection', () => {
       const selectedButton = buttons[1] // 'banana'
       const unselectedButton = buttons[0] // 'apple'
 
-      expect(selectedButton.classes()).toContain('bg-white')
-      expect(selectedButton.classes()).toContain('text-neutral-900')
-      expect(unselectedButton.classes()).not.toContain('bg-white')
-      expect(unselectedButton.classes()).not.toContain('text-neutral-900')
+      expect(selectedButton.classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(selectedButton.classes()).toContain('text-primary')
+      expect(unselectedButton.classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(unselectedButton.classes()).toContain('text-secondary')
     })
 
     it('handles no selection gracefully', () => {
@@ -120,8 +124,10 @@ describe('WidgetSelectButton Button Selection', () => {
 
       const buttons = wrapper.findAll('button')
       buttons.forEach((button) => {
-        expect(button.classes()).not.toContain('bg-white')
-        expect(button.classes()).not.toContain('text-neutral-900')
+        expect(button.classes()).not.toContain(
+          'bg-interface-menu-component-surface-selected'
+        )
+        expect(button.classes()).toContain('text-secondary')
       })
     })
 
@@ -134,13 +140,19 @@ describe('WidgetSelectButton Button Selection', () => {
 
       // Initially 'first' is selected
       let buttons = wrapper.findAll('button')
-      expect(buttons[0].classes()).toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
 
       // Update to 'second'
       await wrapper.setProps({ modelValue: 'second' })
       buttons = wrapper.findAll('button')
-      expect(buttons[0].classes()).not.toContain('bg-white')
-      expect(buttons[1].classes()).toContain('bg-white')
+      expect(buttons[0].classes()).not.toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[1].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
   })
 
@@ -222,7 +234,9 @@ describe('WidgetSelectButton Button Selection', () => {
       expect(buttons[2].text()).toBe('3')
 
       // The selected button should be the one with '2'
-      expect(buttons[1].classes()).toContain('bg-white')
+      expect(buttons[1].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles object options with label and value', () => {
@@ -240,7 +254,9 @@ describe('WidgetSelectButton Button Selection', () => {
       expect(buttons[2].text()).toBe('Third Option')
 
       // 'second' should be selected
-      expect(buttons[1].classes()).toContain('bg-white')
+      expect(buttons[1].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('emits correct values for object options', async () => {
@@ -277,7 +293,9 @@ describe('WidgetSelectButton Button Selection', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(4)
-      expect(buttons[0].classes()).toContain('bg-white') // Empty string is selected
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // Empty string is selected
     })
 
     it('handles null/undefined in options', () => {
@@ -292,7 +310,9 @@ describe('WidgetSelectButton Button Selection', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(4)
-      expect(buttons[0].classes()).toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
 
     it('handles very long option text', () => {
@@ -313,7 +333,9 @@ describe('WidgetSelectButton Button Selection', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(20)
-      expect(buttons[4].classes()).toContain('bg-white') // option5 is at index 4
+      expect(buttons[4].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      ) // option5 is at index 4
     })
 
     it('handles duplicate options', () => {
@@ -324,8 +346,12 @@ describe('WidgetSelectButton Button Selection', () => {
       const buttons = wrapper.findAll('button')
       expect(buttons).toHaveLength(4)
       // Both 'duplicate' buttons should be highlighted (due to value matching)
-      expect(buttons[0].classes()).toContain('bg-white')
-      expect(buttons[2].classes()).toContain('bg-white')
+      expect(buttons[0].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
+      expect(buttons[2].classes()).toContain(
+        'bg-interface-menu-component-surface-selected'
+      )
     })
   })
 
@@ -354,7 +380,9 @@ describe('WidgetSelectButton Button Selection', () => {
       const buttons = wrapper.findAll('button')
       const unselectedButton = buttons[1] // 'option2'
 
-      expect(unselectedButton.classes()).toContain('hover:bg-zinc-200/50')
+      expect(unselectedButton.classes()).toContain(
+        'hover:bg-interface-menu-component-surface-hovered'
+      )
       expect(unselectedButton.classes()).toContain('cursor-pointer')
     })
   })

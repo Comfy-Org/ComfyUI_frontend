@@ -16,14 +16,14 @@
           'bg-transparent border-none',
           'text-center text-xs font-normal',
           {
-            'bg-white': isSelected(option) && !disabled,
-            'hover:bg-zinc-200/50': !isSelected(option) && !disabled,
+            'bg-interface-menu-component-surface-selected':
+              isSelected(option) && !disabled,
+            'hover:bg-interface-menu-component-surface-hovered':
+              !isSelected(option) && !disabled,
             'opacity-50 cursor-not-allowed': disabled,
             'cursor-pointer': !disabled
           },
-          isSelected(option) && !disabled
-            ? 'text-neutral-900'
-            : 'text-secondary'
+          isSelected(option) && !disabled ? 'text-primary' : 'text-secondary'
         )
       "
       :disabled="disabled"
