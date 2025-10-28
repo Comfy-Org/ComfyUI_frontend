@@ -4946,6 +4946,70 @@
       }
     }
   },
+  "LtxvApiImageToVideo": {
+    "display_name": "LTXV Image To Video",
+    "description": "Professional-quality videos with customizable duration and resolution based on start image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "First frame to be used for the video."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxvApiTextToVideo": {
+    "display_name": "LTXV Text To Video",
+    "description": "Professional-quality videos with customizable duration and resolution.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXVConditioning",
     "inputs": {

@@ -1237,6 +1237,7 @@
     "operations": "operations",
     "training": "training",
     "lotus": "lotus",
+    "LTXV": "LTXV",
     "Luma": "Luma",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
