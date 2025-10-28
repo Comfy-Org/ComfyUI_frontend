@@ -9,6 +9,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { scaleLayoutForVueNodes } from '@/renderer/extensions/vueNodes/layout/scaleLayoutForVueNodes'
 import { app as comfyApp } from '@/scripts/app'
 
 function useVueNodeLifecycleIndividual() {
@@ -77,6 +78,15 @@ function useVueNodeLifecycleIndividual() {
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
+
+        const graph = comfyApp.canvas.graph
+        if (graph && !graph.extra) {
+          graph.extra = {}
+        }
+        if (graph && !graph.extra.vueNodesScaled) {
+          scaleLayoutForVueNodes()
+          graph.extra.vueNodesScaled = true
+        }
       } else {
         disposeNodeManagerAndSyncs()
       }
