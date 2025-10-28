@@ -62,7 +62,7 @@
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
+      <span class="text-sm text-zinc-700 dark-theme:text-smoke-200">
         {{ label }}
       </span>
       <span

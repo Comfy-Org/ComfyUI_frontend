@@ -7,10 +7,10 @@
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex h-full w-full flex-col items-center justify-center text-center text-pure-white"
+        class="text-pure-white flex h-full w-full flex-col items-center justify-center text-center"
       >
-        <i-lucide:image-off class="mb-1 size-8 text-gray-500" />
-        <p class="text-xs text-gray-400">{{ $t('g.imageFailedToLoad') }}</p>
+        <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
+        <p class="text-xs text-smoke-400">{{ $t('g.imageFailedToLoad') }}</p>
       </div>
 
       <!-- Main Image -->
