@@ -19,6 +19,7 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useExecutionStore } from '@/stores/executionStore'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
@@ -431,6 +432,7 @@ export const useQueueStore = defineStore('queue', () => {
   const historyTasks = ref<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
+  const firstSeenByPromptId = ref<Record<string, number>>({})
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -459,22 +461,35 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
+      const executionStore = useExecutionStore()
       const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
         tasks
-          .map(
-            (task: TaskItem) =>
-              new TaskItemImpl(
-                task.taskType,
-                task.prompt,
-                // status and outputs only exist on history tasks
-                'status' in task ? task.status : undefined,
-                'outputs' in task ? task.outputs : undefined
-              )
-          )
+          .map((task: TaskItem) => {
+            const ti = new TaskItemImpl(
+              task.taskType,
+              task.prompt,
+              'status' in task ? task.status : undefined,
+              'outputs' in task ? task.outputs : undefined
+            )
+            const wid = ti.workflow?.id
+            const pid = String(ti.promptId)
+            if (wid && pid) {
+              executionStore.registerPromptWorkflowIdMapping(pid, String(wid))
+            }
+            return ti
+          })
           .sort((a, b) => b.queueIndex - a.queueIndex)
 
       runningTasks.value = toClassAll(queue.Running)
       pendingTasks.value = toClassAll(queue.Pending)
+
+      const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+      appearedTasks.forEach((task) => {
+        const pid = String(task.promptId)
+        if (!(pid in firstSeenByPromptId.value)) {
+          firstSeenByPromptId.value[pid] = Date.now()
+        }
+      })
 
       const allIndex = new Set<number>(
         history.History.map((item: TaskItem) => item.prompt[0])
@@ -503,11 +518,15 @@ export const useQueueStore = defineStore('queue', () => {
     }
     await Promise.all(targets.map((type) => api.clearItems(type)))
     await update()
+    if (targets.includes('queue')) {
+      firstSeenByPromptId.value = {}
+    }
   }
 
   const deleteTask = async (task: TaskItemImpl) => {
     await api.deleteItem(task.apiTaskType, task.promptId)
     await update()
+    delete firstSeenByPromptId.value[String(task.promptId)]
   }
 
   return {
@@ -524,7 +543,8 @@ export const useQueueStore = defineStore('queue', () => {
 
     update,
     clear,
-    delete: deleteTask
+    delete: deleteTask,
+    firstSeenByPromptId
   }
 })
 

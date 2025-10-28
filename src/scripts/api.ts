@@ -30,6 +30,7 @@ import type {
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
+  NotificationWsMessage,
   PendingTaskItem,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
@@ -119,6 +120,7 @@ interface BackendApiCalls {
   executing: ExecutingWsMessage
   executed: ExecutedWsMessage
   status: StatusWsMessage
+  notification: NotificationWsMessage
   execution_start: ExecutionStartWsMessage
   execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
@@ -643,6 +645,7 @@ export class ComfyApi extends EventTarget {
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
+            case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
