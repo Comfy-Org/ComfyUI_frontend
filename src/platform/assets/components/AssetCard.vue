@@ -16,7 +16,7 @@
       />
       <div
         v-else
-        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-400 via-gray-800 to-charcoal-400"
+        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
@@ -103,7 +103,7 @@ const cardClasses = computed(() => {
   ]
 
   if (!props.interactive) {
-    return cn(...base, 'bg-gray-100 dark-theme:bg-charcoal-800')
+    return cn(...base, 'bg-smoke-100 dark-theme:bg-charcoal-800')
   }
 
   return cn(
@@ -111,8 +111,8 @@ const cardClasses = computed(() => {
     'group',
     'appearance-none bg-transparent p-0 m-0',
     'font-inherit text-inherit outline-none cursor-pointer text-left',
-    'bg-gray-100 dark-theme:bg-charcoal-800',
-    'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
+    'bg-smoke-100 dark-theme:bg-charcoal-800',
+    'hover:bg-smoke-200 dark-theme:hover:bg-charcoal-600',
     'border-none',
     'focus:outline-solid outline-azure-600 outline-4'
   )

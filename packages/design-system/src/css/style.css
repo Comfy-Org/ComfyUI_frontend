@@ -39,14 +39,14 @@
   --color-ivory-200: #faf9f5;
   --color-ivory-300: #f0eee6;
 
-  --color-gray-100: #f3f3f3;
-  --color-gray-200: #e9e9e9;
-  --color-gray-300: #e1e1e1;
-  --color-gray-400: #d9d9d9;
-  --color-gray-500: #c5c5c5;
-  --color-gray-600: #b4b4b4;
-  --color-gray-700: #a0a0a0;
-  --color-gray-800: #8a8a8a;
+  --color-smoke-100: #f3f3f3;
+  --color-smoke-200: #e9e9e9;
+  --color-smoke-300: #e1e1e1;
+  --color-smoke-400: #d9d9d9;
+  --color-smoke-500: #c5c5c5;
+  --color-smoke-600: #b4b4b4;
+  --color-smoke-700: #a0a0a0;
+  --color-smoke-800: #8a8a8a;
 
   --color-sand-100: #e1ded5;
   --color-sand-200: #d6cfc2;
@@ -83,7 +83,7 @@
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
   --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
-  --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
+  --color-modal-tag: rgb(from var(--color-smoke-400) r g b/ 0.4);
   --color-alpha-charcoal-600-30: color-mix(
     in srgb,
     var(--color-charcoal-600) 30%,
@@ -94,9 +94,9 @@
     var(--color-ash-500) 20%,
     transparent
   );
-  --color-alpha-gray-500-50: color-mix(
+  --color-alpha-smoke-500-50: color-mix(
     in srgb,
-    var(--color-gray-500) 50%,
+    var(--color-smoke-500) 50%,
     transparent
   );
 
@@ -144,31 +144,31 @@
 
   --accent-primary: var(--color-charcoal-700);
   --backdrop: var(--color-white);
-  --button-hover-surface: var(--color-gray-200);
-  --button-active-surface: var(--color-gray-400);
-  --button-icon: var(--color-gray-600);
+  --button-hover-surface: var(--color-smoke-200);
+  --button-active-surface: var(--color-smoke-400);
+  --button-icon: var(--color-smoke-600);
   --dialog-surface: var(--color-neutral-200);
-  --interface-menu-component-surface-hovered: var(--color-gray-200);
-  --interface-menu-component-surface-selected: var(--color-gray-400);
-  --interface-menu-keybind-surface-default: var(--color-gray-500);
+  --interface-menu-component-surface-hovered: var(--color-smoke-200);
+  --interface-menu-component-surface-selected: var(--color-smoke-400);
+  --interface-menu-keybind-surface-default: var(--color-smoke-500);
   --interface-panel-surface: var(--color-white);
-  --interface-stroke: var(--color-gray-300);
+  --interface-stroke: var(--color-smoke-300);
   --nav-background: var(--color-white);
-  --node-border: var(--color-gray-300);
-  --node-component-border: var(--color-gray-400);
+  --node-border: var(--color-smoke-300);
+  --node-component-border: var(--color-smoke-400);
   --node-component-disabled: var(--color-alpha-ash-500-20);
   --node-component-executing: var(--color-blue-500);
   --node-component-header: var(--fg-color);
   --node-component-header-icon: var(--color-ash-800);
   --node-component-header-surface: var(--color-white);
   --node-component-outline: var(--color-black);
-  --node-component-ring: rgb(from var(--color-gray-500) r g b / 50%);
+  --node-component-ring: rgb(from var(--color-smoke-500) r g b / 50%);
   --node-component-slot-dot-outline-opacity-mult: 1;
   --node-component-slot-dot-outline-opacity: 5%;
   --node-component-slot-dot-outline: var(--color-black);
   --node-component-slot-text: var(--color-ash-800);
   --node-component-surface-highlight: var(--color-ash-500);
-  --node-component-surface-hovered: var(--color-gray-200);
+  --node-component-surface-hovered: var(--color-smoke-200);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-white);
   --node-component-tooltip: var(--color-charcoal-700);
@@ -180,8 +180,8 @@
   );
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
   --node-divider: var(--color-sand-100);
-  --node-icon-disabled: var(--color-alpha-gray-500-50);
-  --node-stroke: var(--color-gray-400);
+  --node-icon-disabled: var(--color-alpha-smoke-500-50);
+  --node-stroke: var(--color-smoke-400);
   --node-stroke-selected: var(--color-accent-primary);
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-azure-600);
@@ -205,7 +205,7 @@
   --button-surface-contrast: var(--color-white);
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
-  --button-icon: var(--color-gray-800);
+  --button-icon: var(--color-smoke-800);
   --dialog-surface: var(--color-neutral-700);
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
@@ -221,7 +221,7 @@
   --node-component-header-icon: var(--color-slate-300);
   --node-component-header-surface: var(--color-charcoal-800);
   --node-component-outline: var(--color-white);
-  --node-component-ring: rgb(var(--color-gray-500) / 20%);
+  --node-component-ring: rgb(var(--color-smoke-500) / 20%);
   --node-component-slot-dot-outline-opacity: 10%;
   --node-component-slot-dot-outline: var(--color-white);
   --node-component-slot-text: var(--color-slate-200);
