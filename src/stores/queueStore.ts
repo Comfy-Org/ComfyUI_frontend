@@ -1,17 +1,14 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, toRaw } from 'vue'
+import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
-import {
-  reconcileHistory,
-  reconcileHistoryCloud
-} from '@/platform/remote/comfyui/history/reconciliation'
+import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
 import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  HistoryTaskItem,
   ResultItem,
   StatusWsMessageStatus,
   TaskItem,
@@ -428,6 +425,16 @@ export class TaskItemImpl {
         )
     )
   }
+
+  public toTaskItem(): TaskItem {
+    const item: HistoryTaskItem = {
+      taskType: 'History',
+      prompt: this.prompt,
+      status: this.status!,
+      outputs: this.outputs
+    }
+    return item
+  }
 }
 
 const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
@@ -483,32 +490,24 @@ export const useQueueStore = defineStore('queue', () => {
       runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
       pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
-      if (isCloud) {
-        const { newItems, reusePromptIds } = reconcileHistoryCloud(
-          history.History,
-          historyTasks.value,
-          maxHistoryItems.value
-        )
-        const reusePromptIdSet = new Set(reusePromptIds)
-        const reusedImpls = historyTasks.value.filter((item) =>
-          reusePromptIdSet.has(item.promptId)
-        )
-        const newImpls = toTaskItemImpls(newItems)
-        historyTasks.value = [...newImpls, ...reusedImpls]
-      } else {
-        const { newItems, reusePromptIds } = reconcileHistory(
-          history.History,
-          historyTasks.value,
-          lastHistoryQueueIndex.value,
-          maxHistoryItems.value
-        )
-        const reusePromptIdSet = new Set(reusePromptIds)
-        const reusedImpls = historyTasks.value.filter((item) =>
-          reusePromptIdSet.has(item.promptId)
-        )
-        const newImpls = toTaskItemImpls(newItems)
-        historyTasks.value = [...newImpls, ...reusedImpls]
-      }
+      const currentHistory = toValue(historyTasks)
+
+      const { items } = reconcileHistory(
+        history.History,
+        currentHistory.map((impl) => impl.toTaskItem()),
+        toValue(maxHistoryItems),
+        toValue(lastHistoryQueueIndex)
+      )
+
+      // Reuse existing TaskItemImpl instances or create new
+      const existingByPromptId = new Map(
+        currentHistory.map((impl) => [impl.promptId, impl])
+      )
+
+      historyTasks.value = items.map(
+        (item) =>
+          existingByPromptId.get(item.prompt[1]) ?? toTaskItemImpls([item])[0]
+      )
     } finally {
       isLoading.value = false
     }

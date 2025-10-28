@@ -2,22 +2,20 @@
  * @fileoverview History reconciliation for V1 and V2 APIs
  * @module platform/remote/comfyui/history/reconciliation
  *
- * Returns which items to reuse vs create new, allowing callers to preserve
- * existing class instances for better performance. Results are pre-sorted by
- * queueIndex (newest first) to avoid sorting overhead in caller.
+ * Returns list of items that should be displayed, sorted by queueIndex (newest first).
+ * Caller is responsible for mapping to their own class instances.
  *
  * V1: QueueIndex-based filtering for stable monotonic indices
  * V2: PromptId-based merging for synthetic priorities (V2 assigns synthetic
  *     priorities after timestamp sorting, so new items may have lower priority
  *     than existing items)
  */
-import type { PromptId, TaskItem, TaskPrompt } from '@/schemas/apiSchema'
+import { isCloud } from '@/platform/distribution/types'
+import type { TaskItem } from '@/schemas/apiSchema'
 
 interface ReconciliationResult {
-  /** New items from server, sorted by queueIndex descending (newest first) */
-  newItems: TaskItem[]
-  /** PromptIds to reuse from client, in sorted order by queueIndex descending */
-  reusePromptIds: PromptId[]
+  /** All items to display, sorted by queueIndex descending (newest first) */
+  items: TaskItem[]
 }
 
 /**
@@ -28,11 +26,11 @@ interface ReconciliationResult {
  * consistent ordering. JavaScript .filter() maintains iteration order, so filtered
  * results remain sorted. clientHistory is assumed already sorted from previous update.
  */
-export function reconcileHistory(
+function reconcileHistoryV1(
   serverHistory: TaskItem[],
-  clientHistory: { prompt: TaskPrompt }[],
-  lastKnownQueueIndex: number,
-  maxItems: number
+  clientHistory: TaskItem[],
+  maxItems: number,
+  lastKnownQueueIndex: number | undefined
 ): ReconciliationResult {
   const sortedServerHistory = serverHistory.sort(
     (a, b) => b.prompt[0] - a.prompt[0]
@@ -42,36 +40,25 @@ export function reconcileHistory(
     sortedServerHistory.map((item) => item.prompt[1])
   )
 
-  const itemsAddedSinceLastSync = sortedServerHistory.filter(
-    (item) => item.prompt[0] > lastKnownQueueIndex
-  )
+  // If undefined, treat as initial sync (all items are new)
+  const itemsAddedSinceLastSync =
+    lastKnownQueueIndex === undefined
+      ? sortedServerHistory
+      : sortedServerHistory.filter(
+          (item) => item.prompt[0] > lastKnownQueueIndex
+        )
 
   const clientItemsStillOnServer = clientHistory.filter((item) =>
     serverPromptIds.has(item.prompt[1])
   )
 
-  const totalCount =
-    itemsAddedSinceLastSync.length + clientItemsStillOnServer.length
-
-  if (totalCount > maxItems) {
-    const allowedReuseCount = maxItems - itemsAddedSinceLastSync.length
-    if (allowedReuseCount <= 0) {
-      return {
-        newItems: itemsAddedSinceLastSync.slice(0, maxItems),
-        reusePromptIds: []
-      }
-    }
-    return {
-      newItems: itemsAddedSinceLastSync,
-      reusePromptIds: clientItemsStillOnServer
-        .slice(0, allowedReuseCount)
-        .map((item) => item.prompt[1])
-    }
-  }
+  // Merge new and reused items, sort by queueIndex descending, limit to maxItems
+  const allItems = [...itemsAddedSinceLastSync, ...clientItemsStillOnServer]
+    .sort((a, b) => b.prompt[0] - a.prompt[0])
+    .slice(0, maxItems)
 
   return {
-    newItems: itemsAddedSinceLastSync,
-    reusePromptIds: clientItemsStillOnServer.map((item) => item.prompt[1])
+    items: allItems
   }
 }
 
@@ -83,9 +70,9 @@ export function reconcileHistory(
  * consistent ordering. JavaScript .filter() maintains iteration order, so filtered
  * results remain sorted. clientHistory is assumed already sorted from previous update.
  */
-export function reconcileHistoryCloud(
+function reconcileHistoryV2(
   serverHistory: TaskItem[],
-  clientHistory: { prompt: TaskPrompt }[],
+  clientHistory: TaskItem[],
   maxItems: number
 ): ReconciliationResult {
   const sortedServerHistory = serverHistory.sort(
@@ -105,30 +92,47 @@ export function reconcileHistoryCloud(
     newPromptIds.has(item.prompt[1])
   )
 
+  const retainedPromptIds = new Set(
+    [...serverPromptIds].filter((id) => clientPromptIds.has(id))
+  )
   const clientItemsStillOnServer = clientHistory.filter((item) =>
-    serverPromptIds.has(item.prompt[1])
+    retainedPromptIds.has(item.prompt[1])
   )
 
-  const totalCount = newItems.length + clientItemsStillOnServer.length
-
-  if (totalCount > maxItems) {
-    const allowedReuseCount = maxItems - newItems.length
-    if (allowedReuseCount <= 0) {
-      return {
-        newItems: newItems.slice(0, maxItems),
-        reusePromptIds: []
-      }
-    }
-    return {
-      newItems,
-      reusePromptIds: clientItemsStillOnServer
-        .slice(0, allowedReuseCount)
-        .map((item) => item.prompt[1])
-    }
-  }
+  // Merge new and reused items, sort by queueIndex descending, limit to maxItems
+  const allItems = [...newItems, ...clientItemsStillOnServer]
+    .sort((a, b) => b.prompt[0] - a.prompt[0])
+    .slice(0, maxItems)
 
   return {
-    newItems,
-    reusePromptIds: clientItemsStillOnServer.map((item) => item.prompt[1])
+    items: allItems
   }
+}
+
+/**
+ * Reconciles server history with client history.
+ * Automatically uses V1 (queueIndex-based) or V2 (promptId-based) algorithm based on
+ * distribution type.
+ *
+ * @param serverHistory - Server's current history items
+ * @param clientHistory - Client's existing history items
+ * @param maxItems - Maximum number of items to return
+ * @param lastKnownQueueIndex - Last queue index seen (V1 only, optional for V2)
+ * @returns All items that should be displayed, sorted by queueIndex descending
+ */
+export function reconcileHistory(
+  serverHistory: TaskItem[],
+  clientHistory: TaskItem[],
+  maxItems: number,
+  lastKnownQueueIndex?: number
+): ReconciliationResult {
+  if (isCloud) {
+    return reconcileHistoryV2(serverHistory, clientHistory, maxItems)
+  }
+  return reconcileHistoryV1(
+    serverHistory,
+    clientHistory,
+    maxItems,
+    lastKnownQueueIndex
+  )
 }
