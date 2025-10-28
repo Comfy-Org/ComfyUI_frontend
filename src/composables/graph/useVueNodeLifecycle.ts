@@ -9,8 +9,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
-import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
-import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { scaleLayoutForVueNodes } from '@/renderer/extensions/vueNodes/layout/scaleLayoutForVueNodes'
 import { app as comfyApp } from '@/scripts/app'
 
