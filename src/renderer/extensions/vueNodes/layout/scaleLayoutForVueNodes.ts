@@ -1,12 +1,23 @@
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { createBounds } from '@/lib/litegraph/src/measure'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
 
 const SCALE_FACTOR = 1.75
 
-export function useFixVueNodeOverlap() {
+export function scaleLayoutForVueNodes() {
+  const settingStore = useSettingStore()
+
+  const autoScaleLayoutSetting = settingStore.get(
+    'Comfy.VueNodes.AutoScaleLayout'
+  )
+
+  if (autoScaleLayoutSetting === false) {
+    return
+  }
+
   const canvas = comfyApp.canvas
   const graph = canvas.graph
 

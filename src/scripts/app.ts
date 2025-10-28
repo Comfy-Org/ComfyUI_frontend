@@ -30,7 +30,6 @@ import {
   type NodeId,
   isSubgraphDefinition
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useFixVueNodeOverlap } from '@/renderer/extensions/vueNodes/composables/useFixVueNodeOverlap'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -100,6 +99,7 @@ import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
+import { scaleLayoutForVueNodes } from '@/renderer/extensions/vueNodes/layout/scaleLayoutForVueNodes'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1191,7 +1191,7 @@ export class ComfyApp {
       }
 
       if (vueMode && !this.graph.extra.vueNodesScaled) {
-        useFixVueNodeOverlap()
+        scaleLayoutForVueNodes()
         this.graph.extra.vueNodesScaled = true
       }
 

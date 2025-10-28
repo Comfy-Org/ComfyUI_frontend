@@ -11,7 +11,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
-import { useFixVueNodeOverlap } from '@/renderer/extensions/vueNodes/composables/useFixVueNodeOverlap'
+import { scaleLayoutForVueNodes } from '@/renderer/extensions/vueNodes/layout/scaleLayoutForVueNodes'
 import { app as comfyApp } from '@/scripts/app'
 
 function useVueNodeLifecycleIndividual() {
@@ -86,7 +86,7 @@ function useVueNodeLifecycleIndividual() {
           graph.extra = {}
         }
         if (graph && !graph.extra.vueNodesScaled) {
-          useFixVueNodeOverlap()
+          scaleLayoutForVueNodes()
           graph.extra.vueNodesScaled = true
         }
       } else {

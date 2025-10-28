@@ -1066,6 +1066,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.AutoScaleLayout',
+    name: 'Auto-scale layout for Vue nodes',
+    tooltip:
+      'Automatically scale node positions when switching to Vue rendering to prevent overlap',
+    type: 'boolean',
+    experimental: true,
+    defaultValue: true,
+    versionAdded: '1.30.3'
+  },
+  {
     id: 'Comfy.Assets.UseAssetAPI',
     name: 'Use Asset API for model library',
     type: 'hidden',
