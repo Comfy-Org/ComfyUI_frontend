@@ -119,7 +119,7 @@ export const KeyboardNavigationDemo: Story = {
     },
     template: `
       <div class="space-y-4 p-4">
-        <div class="bg-blue-50 dark-theme:bg-blue-900/20 border border-blue-200 dark-theme:border-blue-700 rounded-lg p-4">
+        <div class="bg-blue-50 dark-theme:bg-blue-900/20 border border-azure-400 dark-theme:border-blue-700 rounded-lg p-4">
           <h3 class="text-lg font-semibold mb-2">🎯 Keyboard Navigation Test</h3>
           <p class="text-sm text-gray-600 dark-theme:text-gray-300 mb-4">
             Use your keyboard to navigate this MultiSelect:
@@ -366,7 +366,7 @@ export const AccessibilityChecklist: Story = {
             </div>
           </div>
 
-          <div class="mt-6 p-4 bg-blue-50 dark-theme:bg-blue-900/20 border border-blue-200 dark-theme:border-blue-700 rounded-lg">
+          <div class="mt-6 p-4 bg-blue-50 dark-theme:bg-blue-900/20 border border-azure-400 dark-theme:border-blue-700 rounded-lg">
             <h4 class="font-semibold mb-2">🎯 Quick Test</h4>
             <p class="text-sm text-gray-700 dark-theme:text-gray-300">
               Close your eyes, use only the keyboard, and try to select multiple options from any dropdown above.

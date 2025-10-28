@@ -59,8 +59,9 @@
   --color-brand-yellow: #f0ff41;
   --color-brand-blue: #172dd7;
 
-  --color-blue-100: #0b8ce9;
-  --color-blue-200: #31b9f4;
+  --color-azure-400: #31b9f4;
+  --color-azure-600: #0b8ce9;
+
   --color-success-100: #00cd72;
   --color-success-200: #47e469;
   --color-warning-100: #fd9903;
@@ -77,7 +78,7 @@
 
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
-  --color-blue-selection: rgb(from var(--color-blue-100) r g b / 0.3);
+  --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
   --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
   --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
@@ -181,7 +182,7 @@
   --node-stroke: var(--color-gray-400);
   --node-stroke-selected: var(--color-accent-primary);
   --node-stroke-error: var(--color-error);
-  --node-stroke-executing: var(--color-blue-100);
+  --node-stroke-executing: var(--color-azure-600);
 
   --text-secondary: var(--color-ash-500);
   --text-primary: var(--color-charcoal-700);
@@ -236,7 +237,7 @@
   --node-stroke: var(--color-ash-800);
   --node-stroke-selected: var(--color-white);
   --node-stroke-error: var(--color-error);
-  --node-stroke-executing: var(--color-blue-100);
+  --node-stroke-executing: var(--color-azure-600);
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-white);
   --input-surface: rgb(130 130 130 / 0.1);

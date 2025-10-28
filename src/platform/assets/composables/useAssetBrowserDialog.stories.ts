@@ -182,7 +182,7 @@ export default {
   }
 }</code></pre>
           </div>
-          <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+          <div class="mt-4 p-3 bg-blue-50 border border-azure-400 rounded">
             <p class="text-sm text-blue-800">
               <strong>💡 Try it:</strong> Use the interactive buttons above to see this code in action!
             </p>

@@ -114,7 +114,7 @@ const cardClasses = computed(() => {
     'bg-gray-100 dark-theme:bg-charcoal-800',
     'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
     'border-none',
-    'focus:outline-solid outline-blue-100 outline-4'
+    'focus:outline-solid outline-azure-600 outline-4'
   )
 })
 
