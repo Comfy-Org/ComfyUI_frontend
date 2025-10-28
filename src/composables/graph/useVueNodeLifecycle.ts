@@ -4,13 +4,11 @@ import { shallowRef, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
-import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
-import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
 
 function useVueNodeLifecycleIndividual() {
@@ -21,8 +19,6 @@ function useVueNodeLifecycleIndividual() {
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
 
   const { startSync } = useLayoutSync()
-  const linkSyncManager = useLinkLayoutSync()
-  const slotSyncManager = useSlotLayoutSync()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -62,10 +58,6 @@ function useVueNodeLifecycleIndividual() {
 
     // Initialize layout sync (one-way: Layout Store → LiteGraph)
     startSync(canvasStore.canvas)
-
-    if (comfyApp.canvas) {
-      linkSyncManager.start(comfyApp.canvas)
-    }
   }
 
   const disposeNodeManagerAndSyncs = () => {
@@ -77,8 +69,6 @@ function useVueNodeLifecycleIndividual() {
       /* empty */
     }
     nodeManager.value = null
-
-    linkSyncManager.stop()
   }
 
   // Watch for Vue nodes enabled state changes
@@ -96,24 +86,13 @@ function useVueNodeLifecycleIndividual() {
 
   // Consolidated watch for slot layout sync management
   watch(
-    [() => canvasStore.canvas, () => shouldRenderVueNodes.value],
-    ([canvas, vueMode], [, oldVueMode]) => {
+    () => shouldRenderVueNodes.value,
+    (vueMode, oldVueMode) => {
       const modeChanged = vueMode !== oldVueMode
 
       // Clear stale slot layouts when switching modes
       if (modeChanged) {
         layoutStore.clearAllSlotLayouts()
-      }
-
-      // Switching to Vue
-      if (vueMode) {
-        slotSyncManager.stop()
-      }
-
-      // Switching to LG
-      const shouldRun = Boolean(canvas?.graph) && !vueMode
-      if (shouldRun && canvas) {
-        slotSyncManager.attemptStart(canvas as LGraphCanvas)
       }
     },
     { immediate: true, flush: 'sync' }
@@ -152,8 +131,6 @@ function useVueNodeLifecycleIndividual() {
       nodeManager.value.cleanup()
       nodeManager.value = null
     }
-    slotSyncManager.stop()
-    linkSyncManager.stop()
   }
 
   return {
