@@ -20,7 +20,7 @@
   --font-inter: 'Inter', sans-serif;
 
   /* Palette Colors */
-  --color-charcoal-100: #171718;
+  --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;
   --color-charcoal-300: #3c3d42;
   --color-charcoal-400: #313235;
@@ -83,8 +83,8 @@
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
-  --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
-  --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
+  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
+  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
   --color-modal-tag: rgb(from var(--color-smoke-400) r g b/ 0.4);
   --color-alpha-charcoal-600-30: color-mix(
     in srgb,
@@ -220,10 +220,10 @@
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
   --interface-menu-keybind-surface-default: var(--color-charcoal-200);
-  --interface-panel-surface: var(--color-charcoal-100);
+  --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
 
-  --nav-background: var(--color-charcoal-100);
+  --nav-background: var(--color-charcoal-800);
 
   --node-border: var(--color-charcoal-500);
   --node-component-border: var(--color-ash-800);
