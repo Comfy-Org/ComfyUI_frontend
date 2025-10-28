@@ -9,7 +9,7 @@
     :class="
       cn(
         'bg-node-component-surface lg-node absolute',
-        'min-h-min min-w-min contain-style contain-layout',
+        'h-min w-min contain-style contain-layout min-h-(--node-height) min-w-(--node-width)',
         'rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
@@ -270,8 +270,14 @@ const handleContextMenu = (event: MouseEvent) => {
 onMounted(() => {
   // Set initial DOM size from layout store, but respect intrinsic content minimum
   if (size.value && nodeContainerRef.value) {
-    nodeContainerRef.value.style.width = `${size.value.width}px`
-    nodeContainerRef.value.style.height = `${size.value.height}px`
+    nodeContainerRef.value.style.setProperty(
+      '--node-width',
+      `${size.value.width}px`
+    )
+    nodeContainerRef.value.style.setProperty(
+      '--node-height',
+      `${size.value.height}px`
+    )
   }
 })
 
@@ -318,8 +324,8 @@ const { startResize } = useNodeResize(
     if (isCollapsed.value) return
 
     // Apply size directly to DOM element - ResizeObserver will pick this up
-    element.style.width = `${result.size.width}px`
-    element.style.height = `${result.size.height}px`
+    element.style.setProperty('--node-width', `${result.size.width}px`)
+    element.style.setProperty('--node-height', `${result.size.height}px`)
 
     const currentPosition = position.value
     const deltaX = Math.abs(result.position.x - currentPosition.x)
