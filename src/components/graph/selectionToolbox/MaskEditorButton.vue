@@ -7,10 +7,10 @@
     }"
     severity="secondary"
     text
+    icon="pi pi-pencil"
+    icon-class="w-4 h-4"
     @click="openMaskEditor"
-  >
-    <i-comfy:mask class="!h-4 !w-4" />
-  </Button>
+  />
 </template>
 
 <script setup lang="ts">
