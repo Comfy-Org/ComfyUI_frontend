@@ -91,12 +91,12 @@ const DialogDemoComponent = {
             >
               Change Current Model
             </button>
-            <p class="text-sm text-gray-600 mt-1">
+            <p class="text-sm text-smoke-600 mt-1">
               Opens with "realistic_vision_v5.safetensors" as current value
             </p>
           </div>
 
-          <div class="mt-8 p-4 bg-gray-100 rounded">
+          <div class="mt-8 p-4 bg-smoke-100 rounded">
             <h4 class="font-semibold mb-2">Instructions:</h4>
             <ul class="text-sm space-y-1">
               <li>• Click any button to open the Asset Browser dialog</li>
@@ -154,9 +154,9 @@ export const Demo: Story = {
         <DialogDemoComponent />
 
         <!-- Code Example Section -->
-        <div class="p-8 border-t border-gray-200 bg-gray-50">
+        <div class="p-8 border-t border-smoke-200 bg-gray-50">
           <h2 class="text-2xl font-bold mb-4">Code Example</h2>
-          <p class="text-gray-600 mb-4">
+          <p class="text-smoke-600 mb-4">
             This is how you would use the composable in your component:
           </p>
           <div class="bg-white p-4 rounded-lg border shadow-sm">
@@ -182,7 +182,7 @@ export default {
   }
 }</code></pre>
           </div>
-          <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+          <div class="mt-4 p-3 bg-blue-50 border border-azure-400 rounded">
             <p class="text-sm text-blue-800">
               <strong>💡 Try it:</strong> Use the interactive buttons above to see this code in action!
             </p>
