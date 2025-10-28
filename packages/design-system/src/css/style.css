@@ -62,10 +62,12 @@
   --color-azure-400: #31b9f4;
   --color-azure-600: #0b8ce9;
 
-  --color-success-100: #00cd72;
-  --color-success-200: #47e469;
-  --color-warning-100: #fd9903;
-  --color-warning-200: #fcbf64;
+  --color-jade-400: #47e469;
+  --color-jade-600: #00cd72;
+
+  --color-gold-400: #fcbf64;
+  --color-gold-600: #fd9903;
+
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
