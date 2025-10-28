@@ -944,7 +944,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Toast.DisableReconnectingToast',
     name: 'Disable toasts when reconnecting or reconnected',
     type: 'hidden',
-    defaultValue: isCloud ? true : false,
+    defaultValue: false,
     versionAdded: '1.15.12'
   },
   {
