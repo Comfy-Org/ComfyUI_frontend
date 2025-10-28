@@ -105,10 +105,6 @@
   /* PrimeVue pulled colors */
   --color-muted: var(--p-text-muted-color);
   --color-highlight: var(--p-primary-color);
-
-  /* Special Colors (temporary) */
-  --color-dark-elevation-1.5: rgba(from white r g b/ 0.015);
-  --color-dark-elevation-2: rgba(from white r g b / 0.03);
 }
 
 :root {
