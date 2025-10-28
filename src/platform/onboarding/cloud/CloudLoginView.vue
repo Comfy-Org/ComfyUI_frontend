@@ -67,6 +67,25 @@
       </div>
 
       <!-- Terms & Contact -->
+      <p class="mt-5 text-sm text-gray-600">
+        {{ t('auth.login.termsText') }}
+        <a
+          href="https://www.comfy.org/terms-of-service"
+          target="_blank"
+          class="cursor-pointer text-blue-400 no-underline"
+        >
+          {{ t('auth.login.termsLink') }}
+        </a>
+        {{ t('auth.login.andText') }}
+        <a
+          href="https://www.comfy.org/privacy-policy"
+          target="_blank"
+          class="cursor-pointer text-blue-400 no-underline"
+        >
+          {{ t('auth.login.privacyLink') }} </a
+        >.
+      </p>
+
       <template v-if="!hasInviteCode">
         <p class="mt-5 text-sm text-gray-600">
           {{ t('cloudWaitlist_questionsText') }}
