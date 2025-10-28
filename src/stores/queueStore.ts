@@ -444,17 +444,6 @@ const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
       )
   )
 
-function toHistoryTaskItems(tasks: readonly TaskItemImpl[]): TaskItem[] {
-  return tasks
-    .filter((item) => item.taskType === 'History')
-    .map((item) => ({
-      taskType: 'History' as const,
-      prompt: item.prompt,
-      status: item.status,
-      outputs: item.outputs
-    }))
-}
-
 export const useQueueStore = defineStore('queue', () => {
   const runningTasks = ref<TaskItemImpl[]>([])
   const pendingTasks = ref<TaskItemImpl[]>([])
@@ -493,22 +482,28 @@ export const useQueueStore = defineStore('queue', () => {
       pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
       if (isCloud) {
-        const reconciledHistory = reconcileHistoryCloud(
+        const { newItems, reusePromptIds } = reconcileHistoryCloud(
           history.History,
-          toHistoryTaskItems(historyTasks.value),
+          historyTasks.value,
           maxHistoryItems.value
         )
-        historyTasks.value =
-          toTaskItemImpls(reconciledHistory).sort(sortNewestFirst)
+        const reusedImpls = historyTasks.value.filter((item) =>
+          reusePromptIds.has(item.promptId)
+        )
+        const newImpls = toTaskItemImpls(newItems)
+        historyTasks.value = [...newImpls, ...reusedImpls].sort(sortNewestFirst)
       } else {
-        const reconciledHistory = reconcileHistory(
+        const { newItems, reusePromptIds } = reconcileHistory(
           history.History,
-          toHistoryTaskItems(historyTasks.value),
+          historyTasks.value,
           lastHistoryQueueIndex.value,
           maxHistoryItems.value
         )
-        historyTasks.value =
-          toTaskItemImpls(reconciledHistory).sort(sortNewestFirst)
+        const reusedImpls = historyTasks.value.filter((item) =>
+          reusePromptIds.has(item.promptId)
+        )
+        const newImpls = toTaskItemImpls(newItems)
+        historyTasks.value = [...newImpls, ...reusedImpls].sort(sortNewestFirst)
       }
     } finally {
       isLoading.value = false

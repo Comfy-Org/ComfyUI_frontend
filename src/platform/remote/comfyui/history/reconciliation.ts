@@ -2,52 +2,81 @@
  * @fileoverview History reconciliation for V1 and V2 APIs
  * @module platform/remote/comfyui/history/reconciliation
  *
+ * Returns which items to reuse vs create new, allowing callers to preserve
+ * existing class instances for better performance.
+ *
  * V1: QueueIndex-based filtering for stable monotonic indices
- * V2: PromptId-based merging for synthetic priorities
+ * V2: PromptId-based merging for synthetic priorities (V2 assigns synthetic
+ *     priorities after timestamp sorting, so new items may have lower priority
+ *     than existing items)
  */
 
 import type { TaskItem } from '@/schemas/apiSchema'
 
+export interface ReconciliationResult {
+  newItems: TaskItem[]
+  reusePromptIds: Set<string>
+}
+
 /**
- * V1 reconciliation: QueueIndex-based filtering.
- *
- * Why queueIndex filtering works for V1:
- * - V1 has stable, monotonically increasing queue indices
- * - queueIndex > lastKnownQueueIndex reliably detects new items
- * - Efficient incremental updates without full replacement
+ * V1 reconciliation: QueueIndex-based filtering works because V1 has stable,
+ * monotonically increasing queue indices.
  */
 export function reconcileHistory(
   serverHistory: TaskItem[],
-  clientHistory: TaskItem[],
+  clientHistory: { prompt: readonly [number, string, ...unknown[]] }[],
   lastKnownQueueIndex: number,
   maxItems: number
-): TaskItem[] {
+): ReconciliationResult {
   const serverPromptIds = new Set(serverHistory.map((item) => item.prompt[1]))
 
   const itemsAddedSinceLastSync = serverHistory.filter(
     (item) => item.prompt[0] > lastKnownQueueIndex
   )
 
-  const itemsStillOnServer = clientHistory.filter((item) =>
-    serverPromptIds.has(item.prompt[1])
-  )
+  const clientPromptIdsStillOnServer = new Set<string>()
+  for (const item of clientHistory) {
+    const promptId = item.prompt[1]
+    if (serverPromptIds.has(promptId)) {
+      clientPromptIdsStillOnServer.add(promptId)
+    }
+  }
 
-  return [...itemsAddedSinceLastSync, ...itemsStillOnServer].slice(0, maxItems)
+  const totalCount =
+    itemsAddedSinceLastSync.length + clientPromptIdsStillOnServer.size
+
+  if (totalCount > maxItems) {
+    const allowedReuseCount = maxItems - itemsAddedSinceLastSync.length
+    if (allowedReuseCount <= 0) {
+      return {
+        newItems: itemsAddedSinceLastSync.slice(0, maxItems),
+        reusePromptIds: new Set()
+      }
+    }
+    const trimmedReuseIds = new Set(
+      Array.from(clientPromptIdsStillOnServer).slice(0, allowedReuseCount)
+    )
+    return {
+      newItems: itemsAddedSinceLastSync,
+      reusePromptIds: trimmedReuseIds
+    }
+  }
+
+  return {
+    newItems: itemsAddedSinceLastSync,
+    reusePromptIds: clientPromptIdsStillOnServer
+  }
 }
 
 /**
- * V2 reconciliation: PromptId-based merging to handle synthetic priorities.
- *
- * Why not use queueIndex filtering:
- * - V2 creates synthetic priorities after sorting by timestamp
- * - New items may have lower synthetic priority than existing items
- * - Must use promptId to identify truly new items
+ * V2 reconciliation: PromptId-based merging because V2 assigns synthetic
+ * priorities after sorting by timestamp.
  */
 export function reconcileHistoryCloud(
   serverHistory: TaskItem[],
-  clientHistory: TaskItem[],
+  clientHistory: { prompt: readonly [number, string, ...unknown[]] }[],
   maxItems: number
-): TaskItem[] {
+): ReconciliationResult {
   const serverPromptIds = new Set(serverHistory.map((item) => item.prompt[1]))
   const clientPromptIds = new Set(clientHistory.map((item) => item.prompt[1]))
 
@@ -59,9 +88,35 @@ export function reconcileHistoryCloud(
     newPromptIds.has(item.prompt[1])
   )
 
-  const existingItems = clientHistory.filter((item) =>
-    serverPromptIds.has(item.prompt[1])
-  )
+  const clientPromptIdsStillOnServer = new Set<string>()
+  for (const item of clientHistory) {
+    const promptId = item.prompt[1]
+    if (serverPromptIds.has(promptId)) {
+      clientPromptIdsStillOnServer.add(promptId)
+    }
+  }
 
-  return [...newItems, ...existingItems].slice(0, maxItems)
+  const totalCount = newItems.length + clientPromptIdsStillOnServer.size
+
+  if (totalCount > maxItems) {
+    const allowedReuseCount = maxItems - newItems.length
+    if (allowedReuseCount <= 0) {
+      return {
+        newItems: newItems.slice(0, maxItems),
+        reusePromptIds: new Set()
+      }
+    }
+    const trimmedReuseIds = new Set(
+      Array.from(clientPromptIdsStillOnServer).slice(0, allowedReuseCount)
+    )
+    return {
+      newItems,
+      reusePromptIds: trimmedReuseIds
+    }
+  }
+
+  return {
+    newItems,
+    reusePromptIds: clientPromptIdsStillOnServer
+  }
 }
