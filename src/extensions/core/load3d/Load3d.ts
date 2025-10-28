@@ -57,11 +57,7 @@ class Load3d {
   private rightMouseDownY: number = 0
   private rightMouseMoved: boolean = false
   private readonly dragThreshold: number = 5
-  private contextMenuHandlers: {
-    mousedown: (e: MouseEvent) => void
-    mousemove: (e: MouseEvent) => void
-    contextmenu: (e: MouseEvent) => void
-  } | null = null
+  private contextMenuAbortController: AbortController | null = null
 
   constructor(
     container: Element | HTMLElement,
@@ -193,6 +189,9 @@ class Load3d {
   private initContextMenu(): void {
     const canvas = this.renderer.domElement
 
+    this.contextMenuAbortController = new AbortController()
+    const { signal } = this.contextMenuAbortController
+
     const mousedownHandler = (e: MouseEvent) => {
       if (e.button === 2) {
         this.rightMouseDownX = e.clientX
@@ -213,7 +212,11 @@ class Load3d {
     }
 
     const contextmenuHandler = (e: MouseEvent) => {
-      if (this.rightMouseMoved) {
+      const wasDragging = this.rightMouseMoved
+
+      this.rightMouseMoved = false
+
+      if (wasDragging) {
         return
       }
 
@@ -223,15 +226,9 @@ class Load3d {
       this.showNodeContextMenu(e)
     }
 
-    this.contextMenuHandlers = {
-      mousedown: mousedownHandler,
-      mousemove: mousemoveHandler,
-      contextmenu: contextmenuHandler
-    }
-
-    canvas.addEventListener('mousedown', mousedownHandler)
-    canvas.addEventListener('mousemove', mousemoveHandler)
-    canvas.addEventListener('contextmenu', contextmenuHandler)
+    canvas.addEventListener('mousedown', mousedownHandler, { signal })
+    canvas.addEventListener('mousemove', mousemoveHandler, { signal })
+    canvas.addEventListener('contextmenu', contextmenuHandler, { signal })
   }
 
   private showNodeContextMenu(event: MouseEvent): void {
@@ -693,21 +690,9 @@ class Load3d {
   }
 
   public remove(): void {
-    if (this.contextMenuHandlers) {
-      const canvas = this.renderer.domElement
-      canvas.removeEventListener(
-        'mousedown',
-        this.contextMenuHandlers.mousedown
-      )
-      canvas.removeEventListener(
-        'mousemove',
-        this.contextMenuHandlers.mousemove
-      )
-      canvas.removeEventListener(
-        'contextmenu',
-        this.contextMenuHandlers.contextmenu
-      )
-      this.contextMenuHandlers = null
+    if (this.contextMenuAbortController) {
+      this.contextMenuAbortController.abort()
+      this.contextMenuAbortController = null
     }
 
     this.renderer.forceContextLoss()
