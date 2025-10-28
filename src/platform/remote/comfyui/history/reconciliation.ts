@@ -11,14 +11,13 @@
  *     priorities after timestamp sorting, so new items may have lower priority
  *     than existing items)
  */
-
-import type { TaskItem, TaskPrompt } from '@/schemas/apiSchema'
+import type { PromptId, TaskItem, TaskPrompt } from '@/schemas/apiSchema'
 
 interface ReconciliationResult {
   /** New items from server, sorted by queueIndex descending (newest first) */
   newItems: TaskItem[]
   /** PromptIds to reuse from client, in sorted order by queueIndex descending */
-  reusePromptIds: string[]
+  reusePromptIds: PromptId[]
 }
 
 /**
@@ -35,7 +34,6 @@ export function reconcileHistory(
   lastKnownQueueIndex: number,
   maxItems: number
 ): ReconciliationResult {
-  // Sort server history newest first to ensure consistent ordering
   const sortedServerHistory = serverHistory.sort(
     (a, b) => b.prompt[0] - a.prompt[0]
   )
@@ -90,7 +88,6 @@ export function reconcileHistoryCloud(
   clientHistory: { prompt: TaskPrompt }[],
   maxItems: number
 ): ReconciliationResult {
-  // Sort server history newest first to ensure consistent ordering
   const sortedServerHistory = serverHistory.sort(
     (a, b) => b.prompt[0] - a.prompt[0]
   )
