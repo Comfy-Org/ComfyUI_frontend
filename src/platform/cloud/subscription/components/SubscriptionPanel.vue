@@ -41,7 +41,7 @@
                 v-else
                 :label="$t('subscription.subscribeNow')"
                 size="small"
-                button-class="text-xs"
+                class="text-xs"
                 @subscribed="handleRefresh"
               />
             </div>
