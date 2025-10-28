@@ -1262,7 +1262,7 @@ export class LGraphCanvas
       if (!node) return
 
       // TODO: This is a static method, so the below "that" appears broken.
-      if (v.callback) v.callback.call(this, node, v, e, prev)
+      if (v.callback) void v.callback.call(this, node, v, e, prev)
 
       if (!v.value) return
 
