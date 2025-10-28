@@ -144,16 +144,21 @@
 
   --accent-primary: var(--color-charcoal-700);
   --backdrop: var(--color-white);
+
   --button-hover-surface: var(--color-smoke-200);
   --button-active-surface: var(--color-smoke-400);
   --button-icon: var(--color-smoke-600);
+
   --dialog-surface: var(--color-neutral-200);
+
   --interface-menu-component-surface-hovered: var(--color-smoke-200);
   --interface-menu-component-surface-selected: var(--color-smoke-400);
   --interface-menu-keybind-surface-default: var(--color-smoke-500);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+
   --nav-background: var(--color-white);
+
   --node-border: var(--color-smoke-300);
   --node-component-border: var(--color-smoke-400);
   --node-component-disabled: var(--color-alpha-ash-500-20);
@@ -201,18 +206,23 @@
 
   --accent-primary: var(--color-white);
   --backdrop: var(--color-neutral-900);
+
   --button-surface: var(--color-charcoal-600);
   --button-surface-contrast: var(--color-white);
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-smoke-800);
+  
   --dialog-surface: var(--color-neutral-700);
+
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
   --interface-menu-keybind-surface-default: var(--color-charcoal-200);
   --interface-panel-surface: var(--color-charcoal-100);
   --interface-stroke: var(--color-charcoal-400);
+
   --nav-background: var(--color-charcoal-100);
+
   --node-border: var(--color-charcoal-500);
   --node-component-border: var(--color-ash-800);
   --node-component-border-error: var(--color-danger-100);
@@ -240,8 +250,10 @@
   --node-stroke-selected: var(--color-white);
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-azure-600);
+
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-white);
+
   --input-surface: rgb(130 130 130 / 0.1);
 }
 
