@@ -2384,42 +2384,20 @@ export class LGraphCanvas
       node &&
       this.allow_interaction
     ) {
-      let newType = node.type
+      const items = this._deserializeItems(this._serializeItems([node]), {})
+      const cloned = items?.created[0] as LGraphNode | undefined
+      if (!cloned) return
 
-      if (node instanceof SubgraphNode) {
-        const cloned = node.subgraph.clone().asSerialisable()
+      cloned.pos[0] += 5
+      cloned.pos[1] += 5
 
-        const subgraph = graph.createSubgraph(cloned)
-        subgraph.configure(cloned)
-        newType = subgraph.id
-      }
-
-      const node_data = node.clone()?.serialize()
-      if (node_data?.type != null) {
-        // Ensure the cloned node is configured against the correct type (especially for SubgraphNodes)
-        node_data.type = newType
-        const cloned = LiteGraph.createNode(newType)
-        if (cloned) {
-          cloned.configure(node_data)
-          cloned.pos[0] += 5
-          cloned.pos[1] += 5
-
-          if (this.allow_dragnodes) {
-            pointer.onDragStart = (pointer) => {
-              graph.add(cloned, false)
-              this.#startDraggingItems(cloned, pointer)
-            }
-            pointer.onDragEnd = (e) => this.#processDraggedItems(e)
-          } else {
-            // TODO: Check if before/after change are necessary here.
-            graph.beforeChange()
-            graph.add(cloned, false)
-            graph.afterChange()
-          }
-
-          return
+      if (this.allow_dragnodes) {
+        pointer.onDragStart = (pointer) => {
+          this.#startDraggingItems(cloned, pointer)
         }
+        pointer.onDragEnd = (e) => this.#processDraggedItems(e)
       }
+      return
     }
 
     // Node clicked
