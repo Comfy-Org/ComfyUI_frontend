@@ -492,7 +492,7 @@ export const useQueueStore = defineStore('queue', () => {
 
       const currentHistory = toValue(historyTasks)
 
-      const { items } = reconcileHistory(
+      const items = reconcileHistory(
         history.History,
         currentHistory.map((impl) => impl.toTaskItem()),
         toValue(maxHistoryItems),
