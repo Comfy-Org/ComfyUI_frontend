@@ -15,7 +15,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent -outline-offset-2 outline-2',
+        'outline-transparent outline-2',
         borderClass,
         outlineClass,
         {
