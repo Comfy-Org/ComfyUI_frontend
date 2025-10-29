@@ -2388,7 +2388,9 @@ export class LGraphCanvas
       node &&
       this.allow_interaction
     ) {
-      const items = this._deserializeItems(this._serializeItems([node]), {})
+      const items = this._deserializeItems(this._serializeItems([node]), {
+        position: node.pos
+      })
       const cloned = items?.created[0] as LGraphNode | undefined
       if (!cloned) return
 
