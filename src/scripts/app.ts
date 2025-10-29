@@ -5,7 +5,6 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -99,7 +98,7 @@ import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
-import { scaleLayoutForVueNodes } from '@/renderer/extensions/vueNodes/layout/scaleLayoutForVueNodes'
+import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1184,16 +1183,7 @@ export class ComfyApp {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
 
-      const vueMode = useVueFeatureFlags().shouldRenderVueNodes.value
-
-      if (!this.graph.extra) {
-        this.graph.extra = {}
-      }
-
-      if (vueMode && !this.graph.extra.vueNodesScaled) {
-        scaleLayoutForVueNodes()
-        this.graph.extra.vueNodesScaled = true
-      }
+      ensureCorrectLayoutScale()
 
       if (
         restore_view &&
