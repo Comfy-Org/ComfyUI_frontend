@@ -1,4 +1,5 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -18,14 +19,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
     type: 'hidden',
-    defaultValue: true,
+    defaultValue: isCloud ? false : true,
     versionAdded: '1.18.0'
   },
   {
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',
-    defaultValue: true
+    defaultValue: isCloud ? false : true
   },
   {
     id: 'Comfy.NodeSearchBoxImpl',
@@ -281,8 +282,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
-    type: 'boolean',
-    defaultValue: true,
+    type: isCloud ? 'hidden' : 'boolean',
+    defaultValue: isCloud ? false : true,
     experimental: true
   },
   {
@@ -388,7 +389,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Automatically load all model folders',
     tooltip:
       'If true, all folders will load as soon as you open the model library (this may cause delays while it loads). If false, root level model folders will only load once you click on them.',
-    type: 'boolean',
+    type: isCloud ? 'hidden' : 'boolean',
     defaultValue: false
   },
   {
@@ -597,7 +598,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: 100,
+    defaultValue: isCloud ? 4 : 100,
     versionAdded: '1.3.5'
   },
   {
@@ -1065,11 +1066,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.AutoScaleLayout',
+    name: 'Auto-scale layout for Vue nodes',
+    tooltip:
+      'Automatically scale node positions when switching to Vue rendering to prevent overlap',
+    type: 'boolean',
+    experimental: true,
+    defaultValue: false,
+    versionAdded: '1.30.3'
+  },
+  {
     id: 'Comfy.Assets.UseAssetAPI',
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
-    defaultValue: false,
+    defaultValue: isCloud ? true : false,
     experimental: true
   }
 ]

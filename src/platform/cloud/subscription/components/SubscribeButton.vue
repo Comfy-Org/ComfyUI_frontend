@@ -2,10 +2,14 @@
   <Button
     :label="label || $t('subscription.required.subscribe')"
     :size="size"
-    :class="buttonClass"
     :loading="isLoading"
     :disabled="isPolling"
     severity="primary"
+    :pt="{
+      root: {
+        class: 'w-full font-bold'
+      }
+    }"
     @click="handleSubscribe"
   />
 </template>
@@ -22,11 +26,9 @@ withDefaults(
   defineProps<{
     label?: string
     size?: 'small' | 'large'
-    buttonClass?: string
   }>(),
   {
-    size: 'large',
-    buttonClass: 'w-full font-bold'
+    size: 'large'
   }
 )
 

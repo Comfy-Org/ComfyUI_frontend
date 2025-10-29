@@ -6,7 +6,7 @@
       class="user-profile-button p-1 hover:bg-transparent"
       severity="secondary"
       text
-      aria-label="user profile"
+      :aria-label="$t('g.currentUser')"
       @click="popover?.toggle($event)"
     >
       <div

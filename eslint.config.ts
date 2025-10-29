@@ -5,7 +5,6 @@ import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescrip
 import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
-import tailwind from 'eslint-plugin-tailwindcss'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -34,11 +33,7 @@ const settings = {
       ],
       noWarnOnMultipleProjects: true
     })
-  ],
-  tailwindcss: {
-    config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
-    functions: ['cn', 'clsx', 'tw']
-  }
+  ]
 } as const
 
 const commonParserOptions = {
@@ -97,7 +92,6 @@ export default defineConfig([
   // Difference in typecheck on CI vs Local
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore Bad types in the plugin
-  tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
@@ -129,7 +123,6 @@ export default defineConfig([
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
-      'tailwindcss/no-custom-classname': 'off', // TODO: fix
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],

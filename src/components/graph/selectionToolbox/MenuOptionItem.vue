@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="option.type === 'divider'"
-    class="my-1 h-px bg-gray-200 dark-theme:bg-zinc-700"
+    class="my-1 h-px bg-smoke-200 dark-theme:bg-zinc-700"
   />
   <div
     v-else
@@ -27,9 +27,9 @@
       :severity="option.badge === 'new' ? 'info' : 'secondary'"
       :value="t(option.badge)"
       :class="{
-        'rounded-4xl bg-[#31B9F4] dark-theme:bg-[#0B8CE9]':
+        'rounded-4xl bg-azure-400 dark-theme:bg-azure-600':
           option.badge === 'new',
-        'rounded-4xl bg-[#9C9EAB] dark-theme:bg-[#000]':
+        'rounded-4xl bg-slate-100 dark-theme:bg-black':
           option.badge === 'deprecated',
         'h-4 gap-2.5 px-1 text-[9px] text-white uppercase': true
       }"

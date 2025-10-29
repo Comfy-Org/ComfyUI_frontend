@@ -1,5 +1,9 @@
 <template>
-  <div class="help-center-menu" role="menu" aria-label="Help Center Menu">
+  <div
+    class="help-center-menu"
+    role="menu"
+    :aria-label="$t('helpCenter.helpFeedback')"
+  >
     <!-- Main Menu Items -->
     <nav class="help-menu-section" role="menubar">
       <button
@@ -68,7 +72,11 @@
       <h3 class="section-description">{{ $t('helpCenter.whatsNew') }}</h3>
 
       <!-- Release Items -->
-      <div v-if="hasReleases" role="group" aria-label="Recent releases">
+      <div
+        v-if="hasReleases"
+        role="group"
+        :aria-label="$t('helpCenter.recentReleases')"
+      >
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"

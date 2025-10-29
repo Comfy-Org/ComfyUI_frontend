@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { imageLayerFilenamesIfApplicable } from '@/extensions/core/maskEditorLayerFilenames'
+import { imageLayerFilenamesIfApplicable } from '@/extensions/core/maskeditor/utils/maskEditorLayerFilenames'
 
 describe('imageLayerFilenamesIfApplicable', () => {
   // In case the naming scheme changes, this test will ensure CI fails if developers forget to support the old naming scheme. (Causing MaskEditor to lose layer data for previously-saved images.)

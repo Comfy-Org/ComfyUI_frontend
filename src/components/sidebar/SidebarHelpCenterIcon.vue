@@ -3,7 +3,7 @@
     <SidebarIcon
       icon="pi pi-question-circle"
       class="comfy-help-center-btn"
-      label="menu.help"
+      :label="$t('menu.help')"
       :tooltip="$t('sideToolbar.helpCenter')"
       :icon-badge="shouldShowRedDot ? '•' : ''"
       :is-small="isSmall"

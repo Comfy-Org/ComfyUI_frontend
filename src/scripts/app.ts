@@ -98,6 +98,7 @@ import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
+import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1181,6 +1182,9 @@ export class ComfyApp {
     try {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
+
+      ensureCorrectLayoutScale()
+
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
