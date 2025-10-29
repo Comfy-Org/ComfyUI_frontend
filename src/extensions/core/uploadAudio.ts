@@ -18,7 +18,8 @@ import {
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
-import { type NodeLocatorId } from '@/types'
+import { fileNameMappingService } from '@/services/fileNameMappingService'
+import { NodeLocatorId } from '@/types'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
@@ -43,10 +44,19 @@ async function uploadFile(
 
     if (resp.status === 200) {
       const data = await resp.json()
-      // Add the file to the dropdown list and update the widget value
+      // Build the file path
       let path = data.name
       if (data.subfolder) path = data.subfolder + '/' + path
 
+      // CRITICAL: Refresh mappings FIRST before updating dropdown
+      // This ensures new hash→human mappings are available when dropdown renders
+      try {
+        await fileNameMappingService.refreshMapping('input')
+      } catch (error) {
+        // Continue anyway - will show hash values as fallback
+      }
+
+      // Now add the file to the dropdown list - any filename proxy will use fresh mappings
       // @ts-expect-error fixme ts strict error
       if (!audioWidget.options.values.includes(path)) {
         // @ts-expect-error fixme ts strict error
