@@ -129,6 +129,9 @@ jobs:
       - name: Return to current version
         if: steps.previous_version.outputs.tag != ''
         run: |
+          # Remove copied scripts to avoid conflicts
+          rm -f scripts/snapshot-api.js scripts/compare-api-snapshots.js
+
           git checkout -
           git stash pop || true
 
