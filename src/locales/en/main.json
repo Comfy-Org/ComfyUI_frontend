@@ -1800,5 +1800,9 @@
         "Close": "Close"
       }
     }
+  },
+  "vueNodesBanner": {
+    "message": "Nodes just got a new look and feel",
+    "tryItOut": "Try it out"
   }
 }

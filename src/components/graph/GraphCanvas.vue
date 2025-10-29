@@ -4,6 +4,7 @@
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI && workflowTabsPosition === 'Topbar'" #workflow-tabs>
+      <TryVueNodeBanner />
       <div
         class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
       >
@@ -151,6 +152,8 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
+
+import TryVueNodeBanner from '../topbar/TryVueNodeBanner.vue'
 
 const emit = defineEmits<{
   ready: []
