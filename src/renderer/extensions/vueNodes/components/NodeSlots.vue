@@ -33,40 +33,19 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { isSlotObject } from '@/utils/typeGuardUtil'
+import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
-  nodeData?: VueNodeData
+  nodeData: VueNodeData
 }
 
-const { nodeData = null } = defineProps<NodeSlotsProps>()
+const { nodeData } = defineProps<NodeSlotsProps>()
 
 // Filter out input slots that have corresponding widgets
-const filteredInputs = computed(() => {
-  if (!nodeData?.inputs) return []
-
-  return nodeData.inputs
-    .filter((input) => {
-      // Check if this slot has a widget property (indicating it has a corresponding widget)
-      if (isSlotObject(input) && 'widget' in input && input.widget) {
-        // This slot has a widget, so we should not display it separately
-        return false
-      }
-      return true
-    })
-    .map((input) =>
-      isSlotObject(input)
-        ? input
-        : ({
-            name: typeof input === 'string' ? input : '',
-            type: 'any',
-            boundingRect: [0, 0, 0, 0] as [number, number, number, number]
-          } as INodeSlot)
-    )
-})
+const filteredInputs = computed(() => nonWidgetedInputs(nodeData))
 
 // Get the actual index of an input slot in the node's inputs array
 // (accounting for filtered widget slots)
