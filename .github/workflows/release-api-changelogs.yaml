@@ -92,6 +92,13 @@ jobs:
 
           echo "Current API snapshot created"
 
+      - name: Preserve scripts for previous version
+        if: steps.previous_version.outputs.tag != ''
+        run: |
+          # Copy scripts to temporary location to use with previous version
+          mkdir -p /tmp/api-changelog-scripts
+          cp scripts/snapshot-api.js scripts/compare-api-snapshots.js /tmp/api-changelog-scripts/
+
       - name: Checkout previous version
         if: steps.previous_version.outputs.tag != ''
         run: |
@@ -100,6 +107,10 @@ jobs:
 
           # Checkout previous version
           git checkout ${{ steps.previous_version.outputs.tag }}
+
+          # Restore scripts
+          mkdir -p scripts
+          cp /tmp/api-changelog-scripts/*.js scripts/
 
       - name: Build previous types
         if: steps.previous_version.outputs.tag != ''
