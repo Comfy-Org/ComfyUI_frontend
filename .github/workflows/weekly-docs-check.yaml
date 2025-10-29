@@ -128,18 +128,30 @@ jobs:
           EOF
           fi
 
-      - name: Create or Update Pull Request
+      - name: Configure Git
         if: steps.check_changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'docs: weekly documentation accuracy update'
-          branch: docs/weekly-update
-          delete-branch: true
-          title: 'docs: Weekly Documentation Update'
-          body-path: /tmp/pr-body-${{ github.run_id }}.md
-          labels: |
-            documentation
-            automated
-          draft: true
-          assignees: ${{ github.repository_owner }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git checkout -b docs/weekly-update-${{ github.run_id }}
+          git add .
+          git commit -m "docs: weekly documentation accuracy update"
+          git push origin docs/weekly-update-${{ github.run_id }}
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          PR_BODY=$(cat /tmp/pr-body-${{ github.run_id }}.md)
+          gh pr create \
+            --title "docs: Weekly Documentation Update" \
+            --body "$PR_BODY" \
+            --label "documentation,automated" \
+            --draft \
+            --base main \
+            --head docs/weekly-update-${{ github.run_id }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
