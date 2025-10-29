@@ -24,7 +24,12 @@
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        :class="
+          cn(
+            'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+            widget.slotMetadata?.linked && 'opacity-100'
+          )
+        "
       >
         <InputSlot
           v-if="widget.slotMetadata"
