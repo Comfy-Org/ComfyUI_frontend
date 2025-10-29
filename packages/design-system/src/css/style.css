@@ -383,6 +383,27 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-primary: var(--text-primary);
   --color-input-surface: var(--input-surface);
+
+  /* Semantic tokens */
+  --color-base-foreground: var(--base-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-base-background: var(--base-background);
+  --color-secondary-background: var(--secondary-background);
+  --color-secondary-background-hover: var(--secondary-background-hover);
+  --color-secondary-background-selected: var(--secondary-background-selected);
+  --color-primary-background: var(--primary-background);
+  --color-primary-background-hover: var(--primary-background-hover);
+  --color-destructive-background: var(--destructive-background);
+  --color-destructive-background-hover: var(--destructive-background-hover);
+  --color-inverted-background-hover: var(--inverted-background-hover);
+  --color-warning-background: var(--warning-background);
+  --color-warning-background-hover: var(--warning-background-hover);
+  --color-border-default: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-muted-background: var(--muted-background);
+  --color-accent-background: var(--accent-background);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-blue: var(--brand-blue);
 }
 
 @custom-variant dark-theme {
