@@ -1,5 +1,4 @@
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -109,14 +108,6 @@ export function useSubscription() {
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
-    // DEFENSIVE: Never show subscription dialogs during onboarding flows
-    // All cloud onboarding routes start with '/cloud/' (login, signup, survey, waitlist, etc.)
-    // This prevents subscription enforcement from interfering with user onboarding
-    const route = useRoute()
-    if (route.path.startsWith('/cloud/')) {
-      return
-    }
-
     await fetchSubscriptionStatus()
 
     if (!isActiveSubscription.value) {
