@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -48,10 +48,9 @@ describe('useAssetBrowser', () => {
         tags: ['models', 'loras']
       })
 
-      const { selectedCategory, categoryFilteredAssets } = useAssetBrowser([
-        checkpointAsset,
-        loraAsset
-      ])
+      const { selectedCategory, categoryFilteredAssets } = useAssetBrowser(
+        ref([checkpointAsset, loraAsset])
+      )
 
       // Initially should show all assets
       expect(categoryFilteredAssets.value).toHaveLength(2)
@@ -70,11 +69,10 @@ describe('useAssetBrowser', () => {
   describe('Asset Transformation', () => {
     it('transforms API asset to include display properties', () => {
       const apiAsset = createApiAsset({
-        size: 2147483648, // 2GB
         user_metadata: { description: 'Test model' }
       })
 
-      const { filteredAssets } = useAssetBrowser([apiAsset])
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
       const result = filteredAssets.value[0] // Get the transformed asset from filteredAssets
 
       // Preserves API properties
@@ -83,12 +81,10 @@ describe('useAssetBrowser', () => {
 
       // Adds display properties
       expect(result.description).toBe('Test model')
-      expect(result.formattedSize).toBe('2 GB')
       expect(result.badges).toContainEqual({
         label: 'checkpoints',
         type: 'type'
       })
-      expect(result.badges).toContainEqual({ label: '2 GB', type: 'size' })
     })
 
     it('creates fallback description from tags when metadata missing', () => {
@@ -97,26 +93,10 @@ describe('useAssetBrowser', () => {
         user_metadata: undefined
       })
 
-      const { filteredAssets } = useAssetBrowser([apiAsset])
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
       const result = filteredAssets.value[0]
 
       expect(result.description).toBe('loras model')
-    })
-
-    it('formats various file sizes correctly', () => {
-      const testCases = [
-        { size: 512, expected: '512 B' },
-        { size: 1536, expected: '1.5 KB' },
-        { size: 2097152, expected: '2 MB' },
-        { size: 3221225472, expected: '3 GB' }
-      ]
-
-      testCases.forEach(({ size, expected }) => {
-        const asset = createApiAsset({ size })
-        const { filteredAssets } = useAssetBrowser([asset])
-        const result = filteredAssets.value[0]
-        expect(result.formattedSize).toBe(expected)
-      })
     })
   })
 
@@ -128,7 +108,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '3', tags: ['models', 'checkpoints'] })
       ]
 
-      const { selectedCategory, filteredAssets } = useAssetBrowser(assets)
+      const { selectedCategory, filteredAssets } = useAssetBrowser(ref(assets))
 
       selectedCategory.value = 'checkpoints'
       await nextTick()
@@ -147,7 +127,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '2', tags: ['models', 'loras'] })
       ]
 
-      const { selectedCategory, filteredAssets } = useAssetBrowser(assets)
+      const { selectedCategory, filteredAssets } = useAssetBrowser(ref(assets))
 
       selectedCategory.value = 'all'
       await nextTick()
@@ -156,57 +136,160 @@ describe('useAssetBrowser', () => {
     })
   })
 
-  describe('Search Functionality', () => {
-    it('searches across asset name', async () => {
+  describe('Fuzzy Search Functionality', () => {
+    it('searches across asset name with exact match', async () => {
       const assets = [
         createApiAsset({ name: 'realistic_vision.safetensors' }),
         createApiAsset({ name: 'anime_style.ckpt' }),
         createApiAsset({ name: 'photorealistic_v2.safetensors' })
       ]
 
-      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
       searchQuery.value = 'realistic'
       await nextTick()
 
-      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
       expect(
-        filteredAssets.value.every((asset) =>
+        filteredAssets.value.some((asset) =>
           asset.name.toLowerCase().includes('realistic')
         )
       ).toBe(true)
     })
 
-    it('searches in user metadata description', async () => {
+    it('searches across asset tags', async () => {
       const assets = [
         createApiAsset({
           name: 'model1.safetensors',
-          user_metadata: { description: 'fantasy artwork model' }
+          tags: ['models', 'checkpoints']
         }),
         createApiAsset({
           name: 'model2.safetensors',
-          user_metadata: { description: 'portrait photography' }
+          tags: ['models', 'loras']
         })
       ]
 
-      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
-      searchQuery.value = 'fantasy'
+      searchQuery.value = 'checkpoints'
       await nextTick()
 
-      expect(filteredAssets.value).toHaveLength(1)
-      expect(filteredAssets.value[0].name).toBe('model1.safetensors')
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(filteredAssets.value[0].tags).toContain('checkpoints')
     })
 
-    it('handles empty search results', async () => {
+    it('supports fuzzy matching with typos', async () => {
+      const assets = [
+        createApiAsset({ name: 'checkpoint_model.safetensors' }),
+        createApiAsset({ name: 'lora_model.safetensors' })
+      ]
+
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
+
+      // Intentional typo - fuzzy search should still find it
+      searchQuery.value = 'chckpoint'
+      await nextTick()
+
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(filteredAssets.value[0].name).toContain('checkpoint')
+    })
+
+    it('handles empty search by returning all assets', async () => {
+      const assets = [
+        createApiAsset({ name: 'test1.safetensors' }),
+        createApiAsset({ name: 'test2.safetensors' })
+      ]
+
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
+
+      searchQuery.value = ''
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+    })
+
+    it('handles no search results', async () => {
       const assets = [createApiAsset({ name: 'test.safetensors' })]
 
-      const { searchQuery, filteredAssets } = useAssetBrowser(assets)
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
 
-      searchQuery.value = 'nonexistent'
+      searchQuery.value = 'completelydifferentstring123'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(0)
+    })
+
+    it('performs case-insensitive search', async () => {
+      const assets = [
+        createApiAsset({ name: 'RealisticVision.safetensors' }),
+        createApiAsset({ name: 'anime_style.ckpt' })
+      ]
+
+      const { searchQuery, filteredAssets } = useAssetBrowser(ref(assets))
+
+      searchQuery.value = 'REALISTIC'
+      await nextTick()
+
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(filteredAssets.value[0].name).toContain('Realistic')
+    })
+
+    it('combines fuzzy search with format filter', async () => {
+      const assets = [
+        createApiAsset({ name: 'my_checkpoint_model.safetensors' }),
+        createApiAsset({ name: 'my_checkpoint_model.ckpt' }),
+        createApiAsset({ name: 'different_lora.safetensors' })
+      ]
+
+      const { searchQuery, updateFilters, filteredAssets } = useAssetBrowser(
+        ref(assets)
+      )
+
+      searchQuery.value = 'checkpoint'
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: ['safetensors'],
+        baseModels: []
+      })
+      await nextTick()
+
+      expect(filteredAssets.value.length).toBeGreaterThanOrEqual(1)
+      expect(
+        filteredAssets.value.every((asset) =>
+          asset.name.endsWith('.safetensors')
+        )
+      ).toBe(true)
+      expect(
+        filteredAssets.value.some((asset) => asset.name.includes('checkpoint'))
+      ).toBe(true)
+    })
+
+    it('combines fuzzy search with base model filter', async () => {
+      const assets = [
+        createApiAsset({
+          name: 'realistic_sd15.safetensors',
+          user_metadata: { base_model: 'SD1.5' }
+        }),
+        createApiAsset({
+          name: 'realistic_sdxl.safetensors',
+          user_metadata: { base_model: 'SDXL' }
+        })
+      ]
+
+      const { searchQuery, updateFilters, filteredAssets } = useAssetBrowser(
+        ref(assets)
+      )
+
+      searchQuery.value = 'realistic'
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: ['SDXL']
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(1)
+      expect(filteredAssets.value[0].name).toBe('realistic_sdxl.safetensors')
     })
   })
 
@@ -227,8 +310,9 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { searchQuery, selectedCategory, filteredAssets } =
-        useAssetBrowser(assets)
+      const { searchQuery, selectedCategory, filteredAssets } = useAssetBrowser(
+        ref(assets)
+      )
 
       searchQuery.value = 'realistic'
       selectedCategory.value = 'checkpoints'
@@ -249,7 +333,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ name: 'beta.safetensors' })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(assets)
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
       updateFilters({ sortBy: 'name', fileFormats: [], baseModels: [] })
       await nextTick()
@@ -269,7 +353,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ created_at: '2024-02-01T00:00:00Z' })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(assets)
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
       updateFilters({ sortBy: 'recent', fileFormats: [], baseModels: [] })
       await nextTick()
@@ -291,7 +375,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'checkpoints'] }) // duplicate
       ]
 
-      const { availableCategories } = useAssetBrowser(assets)
+      const { availableCategories } = useAssetBrowser(ref(assets))
 
       expect(availableCategories.value).toEqual([
         { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
@@ -310,7 +394,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'vae'] })
       ]
 
-      const { availableCategories } = useAssetBrowser(assets)
+      const { availableCategories } = useAssetBrowser(ref(assets))
 
       expect(availableCategories.value).toEqual([
         { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
@@ -324,7 +408,7 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'checkpoints'] })
       ]
 
-      const { availableCategories } = useAssetBrowser(assets)
+      const { availableCategories } = useAssetBrowser(ref(assets))
 
       expect(availableCategories.value).toEqual([
         { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
@@ -338,7 +422,7 @@ describe('useAssetBrowser', () => {
 
     it('computes content title from selected category', () => {
       const assets = [createApiAsset({ tags: ['models', 'checkpoints'] })]
-      const { selectedCategory, contentTitle } = useAssetBrowser(assets)
+      const { selectedCategory, contentTitle } = useAssetBrowser(ref(assets))
 
       // Default
       expect(contentTitle.value).toBe('All Models')

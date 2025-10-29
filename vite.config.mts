@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -13,7 +13,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
-dotenv.config()
+dotenvConfig()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
@@ -52,10 +52,6 @@ const DEV_SERVER_COMFYUI_URL =
 // Cloud proxy configuration
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
-
-const BUILD_FLAGS = {
-  REQUIRE_SUBSCRIPTION: process.env.REQUIRE_SUBSCRIPTION === 'true'
-}
 
 export default defineConfig({
   base: '',
@@ -213,7 +209,7 @@ export default defineConfig({
       ? [
           visualizer({
             filename: 'dist/stats.html',
-            open: false,
+            open: true,
             gzipSize: true,
             brotliSize: true,
             template: 'treemap' // or 'sunburst', 'network'
@@ -246,8 +242,12 @@ export default defineConfig({
             return 'vendor-chart'
           }
 
-          if (id.includes('three') || id.includes('@xterm')) {
-            return 'vendor-visualization'
+          if (id.includes('three')) {
+            return 'vendor-three'
+          }
+
+          if (id.includes('@xterm')) {
+            return 'vendor-xterm'
           }
 
           if (id.includes('/vue') || id.includes('pinia')) {
@@ -306,9 +306,7 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __BUILD_FLAGS__: JSON.stringify(BUILD_FLAGS),
-    __MIXPANEL_TOKEN__: JSON.stringify(process.env.MIXPANEL_TOKEN || '')
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
   },
 
   resolve: {

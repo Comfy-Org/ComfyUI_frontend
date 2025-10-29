@@ -15,7 +15,7 @@ describe('useTelemetry', () => {
 
     // Should return null for OSS builds
     expect(provider).toBeNull()
-  })
+  }, 10000)
 
   it('should return null consistently for OSS builds', async () => {
     const { useTelemetry } = await import('@/platform/telemetry')

@@ -47,6 +47,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { fetchHistory } from '@/platform/remote/comfyui/history'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -203,6 +204,12 @@ type PickNevers<T> = {
 type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
 type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
+
+export type GlobalSubgraphData = {
+  name: string
+  info: { node_pack: string }
+  data: string | Promise<string>
+}
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   if (Array.isArray(headers)) {
@@ -894,14 +901,7 @@ export class ComfyApi extends EventTarget {
     max_items: number = 200
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      const res = await this.fetchApi(`/history?max_items=${max_items}`)
-      const json: Promise<HistoryTaskItem[]> = await res.json()
-      return {
-        History: Object.values(json).map((item) => ({
-          ...item,
-          taskType: 'History'
-        }))
-      }
+      return await fetchHistory(this.fetchApi.bind(this), max_items)
     } catch (error) {
       console.error(error)
       return { History: [] }
@@ -1116,6 +1116,22 @@ export class ComfyApi extends EventTarget {
       )
     }
     return resp.json()
+  }
+
+  async getGlobalSubgraphData(id: string): Promise<string> {
+    const resp = await api.fetchApi('/global_subgraphs/' + id)
+    if (resp.status !== 200) return ''
+    const subgraph: GlobalSubgraphData = await resp.json()
+    return subgraph?.data ?? ''
+  }
+  async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
+    const resp = await api.fetchApi('/global_subgraphs')
+    if (resp.status !== 200) return {}
+    const subgraphs: Record<string, GlobalSubgraphData> = await resp.json()
+    for (const [k, v] of Object.entries(subgraphs)) {
+      if (!v.data) v.data = this.getGlobalSubgraphData(k)
+    }
+    return subgraphs
   }
 
   async getLogs(): Promise<string> {

@@ -5,7 +5,10 @@
         <h2 class="text-2xl">
           {{ $t('subscription.title') }}
         </h2>
-        <TopbarBadges reverse-order />
+        <CloudBadge
+          reverse-order
+          background-color="var(--p-dialog-background)"
+        />
       </div>
 
       <div class="grow overflow-auto">
@@ -20,11 +23,20 @@
                   <span>{{ $t('subscription.perMonth') }}</span>
                 </div>
                 <div v-if="isActiveSubscription" class="text-xs text-muted">
-                  {{
-                    $t('subscription.renewsDate', {
-                      date: formattedRenewalDate
-                    })
-                  }}
+                  <template v-if="isCancelled">
+                    {{
+                      $t('subscription.expiresDate', {
+                        date: formattedEndDate
+                      })
+                    }}
+                  </template>
+                  <template v-else>
+                    {{
+                      $t('subscription.renewsDate', {
+                        date: formattedRenewalDate
+                      })
+                    }}
+                  </template>
                 </div>
               </div>
               <Button
@@ -38,7 +50,7 @@
                 v-else
                 :label="$t('subscription.subscribeNow')"
                 size="small"
-                button-class="text-xs"
+                class="text-xs"
                 @subscribed="handleRefresh"
               />
             </div>
@@ -55,14 +67,6 @@
                     <div class="text-xs text-muted">
                       {{ $t('subscription.apiNodesDescription') }}
                     </div>
-                    <Button
-                      icon="pi pi-question-circle"
-                      text
-                      rounded
-                      size="small"
-                      severity="secondary"
-                      class="h-5 w-5"
-                    />
                   </div>
                 </div>
 
@@ -134,6 +138,7 @@
                       @click="handleViewUsageHistory"
                     />
                     <Button
+                      v-if="isActiveSubscription"
                       :label="$t('subscription.addApiCredits')"
                       severity="secondary"
                       class="text-xs"
@@ -196,7 +201,7 @@ import Button from 'primevue/button'
 import TabPanel from 'primevue/tabpanel'
 import { computed, onMounted, ref } from 'vue'
 
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
@@ -216,7 +221,9 @@ const customerEventService = useCustomerEventsService()
 
 const {
   isActiveSubscription,
+  isCancelled,
   formattedRenewalDate,
+  formattedEndDate,
   formattedMonthlyPrice,
   manageSubscription,
   handleViewUsageHistory,

@@ -87,9 +87,6 @@ catalogs:
     '@trivago/prettier-plugin-sort-imports':
       specifier: ^5.2.0
       version: 5.2.2
-    '@types/eslint-plugin-tailwindcss':
-      specifier: ^3.17.0
-      version: 3.17.0
     '@types/fs-extra':
       specifier: ^11.0.4
       version: 11.0.4
@@ -153,9 +150,6 @@ catalogs:
     eslint-plugin-storybook:
       specifier: ^9.1.6
       version: 9.1.6
-    eslint-plugin-tailwindcss:
-      specifier: 4.0.0-beta.0
-      version: 4.0.0-beta.0
     eslint-plugin-unused-imports:
       specifier: ^4.2.0
       version: 4.2.0
@@ -519,9 +513,6 @@ importers:
       '@trivago/prettier-plugin-sort-imports':
         specifier: 'catalog:'
         version: 5.2.2(@vue/compiler-sfc@3.5.13)(prettier@3.6.2)
-      '@types/eslint-plugin-tailwindcss':
-        specifier: 'catalog:'
-        version: 3.17.0
       '@types/fs-extra':
         specifier: 'catalog:'
         version: 11.0.4
@@ -570,9 +561,6 @@ importers:
       eslint-plugin-storybook:
         specifier: 'catalog:'
         version: 9.1.6(eslint@9.35.0(jiti@2.4.2))(storybook@9.1.6(@testing-library/dom@10.4.1)(prettier@3.6.2)(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2)))(typescript@5.9.2)
-      eslint-plugin-tailwindcss:
-        specifier: 'catalog:'
-        version: 4.0.0-beta.0(tailwindcss@4.1.12)
       eslint-plugin-unused-imports:
         specifier: 'catalog:'
         version: 4.2.0(@typescript-eslint/eslint-plugin@8.44.0(@typescript-eslint/parser@8.44.0(eslint@9.35.0(jiti@2.4.2))(typescript@5.9.2))(eslint@9.35.0(jiti@2.4.2))(typescript@5.9.2))(eslint@9.35.0(jiti@2.4.2))
@@ -3155,9 +3143,6 @@ packages:
   '@types/diff-match-patch@1.0.36':
     resolution: {integrity: sha512-xFdR6tkm0MWvBfO8xXCSsinYxHcqkQUlcHeSpMC2ukzOb6lwQAfDmW+Qt0AvlGd8HpsS28qKsB+oPeJn9I39jg==}
 
-  '@types/eslint-plugin-tailwindcss@3.17.0':
-    resolution: {integrity: sha512-ucQGf2YIdTcndYcxRU3UdZgmhUHsOlbIF4BaRtl0op+7k2JmqM2i3aXZ6XIcfZgVq1ZKov7VM5c/BR81ukmkyg==}
-
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
 
@@ -4699,12 +4684,6 @@ packages:
     peerDependencies:
       eslint: '>=8'
       storybook: ^9.1.6
-
-  eslint-plugin-tailwindcss@4.0.0-beta.0:
-    resolution: {integrity: sha512-WWCajZgQu38Sd67ZCl2W6i3MRzqB0d+H8s4qV9iB6lBJbsDOIpIlj6R1Fj2FXkoWErbo05pZnZYbCGIU9o/DsA==}
-    engines: {node: '>=18.12.0'}
-    peerDependencies:
-      tailwindcss: ^3.4.0 || ^4.0.0
 
   eslint-plugin-unused-imports@4.2.0:
     resolution: {integrity: sha512-hLbJ2/wnjKq4kGA9AUaExVFIbNzyxYdVo49QZmKCnhk5pc9wcYRbfgLHvWJ8tnsdcseGhoUAddm9gn/lt+d74w==}
@@ -7163,11 +7142,6 @@ packages:
     resolution: {integrity: sha512-9kY+CygyYM6j02t5YFHbNz2FN5QmYGv9zAjVp4lCDjlCw7amdckXlEt/bjMhUIfj4ThGRE4gCUH5+yGnNuPo5A==}
     engines: {node: '>=10.0.0'}
 
-  tailwind-api-utils@1.0.3:
-    resolution: {integrity: sha512-KpzUHkH1ug1sq4394SLJX38ZtpeTiqQ1RVyFTTSY2XuHsNSTWUkRo108KmyyrMWdDbQrLYkSHaNKj/a3bmA4sQ==}
-    peerDependencies:
-      tailwindcss: ^3.3.0 || ^4.0.0 || ^4.0.0-beta
-
   tailwind-merge@2.6.0:
     resolution: {integrity: sha512-P+Vu1qXfzediirmHOC3xKGAYeZtPcV9g76X+xg2FD4tYgR71ewMA35Y3sCz3zhiN/dwefRpJX0yBcgwi1fXNQA==}
 
@@ -7625,6 +7599,9 @@ packages:
 
   vue-component-type-helpers@3.1.1:
     resolution: {integrity: sha512-B0kHv7qX6E7+kdc5nsaqjdGZ1KwNKSUQDWGy7XkTYT7wFsOpkEyaJ1Vq79TjwrrtuLRgizrTV7PPuC4rRQo+vw==}
+
+  vue-component-type-helpers@3.1.2:
+    resolution: {integrity: sha512-ch3/SKBtxdZq18vsEntiGCdSszCRNfhX5QaTxjSacCAXLlNQRXfXo+ANjoQEYJMsJOJy1/vHF6Tkc4s85MS+zw==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -10308,7 +10285,7 @@ snapshots:
       storybook: 9.1.6(@testing-library/dom@10.4.1)(prettier@3.6.2)(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2))
       type-fest: 2.19.0
       vue: 3.5.13(typescript@5.9.2)
-      vue-component-type-helpers: 3.1.1
+      vue-component-type-helpers: 3.1.2
 
   '@swc/helpers@0.5.17':
     dependencies:
@@ -10612,8 +10589,6 @@ snapshots:
   '@types/deep-eql@4.0.2': {}
 
   '@types/diff-match-patch@1.0.36': {}
-
-  '@types/eslint-plugin-tailwindcss@3.17.0': {}
 
   '@types/estree@1.0.5': {}
 
@@ -12379,14 +12354,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
-
-  eslint-plugin-tailwindcss@4.0.0-beta.0(tailwindcss@4.1.12):
-    dependencies:
-      fast-glob: 3.3.3
-      postcss: 8.5.6
-      synckit: 0.11.11
-      tailwind-api-utils: 1.0.3(tailwindcss@4.1.12)
-      tailwindcss: 4.1.12
 
   eslint-plugin-unused-imports@4.2.0(@typescript-eslint/eslint-plugin@8.44.0(@typescript-eslint/parser@8.44.0(eslint@9.35.0(jiti@2.4.2))(typescript@5.9.2))(eslint@9.35.0(jiti@2.4.2))(typescript@5.9.2))(eslint@9.35.0(jiti@2.4.2)):
     dependencies:
@@ -15431,13 +15398,6 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
 
-  tailwind-api-utils@1.0.3(tailwindcss@4.1.12):
-    dependencies:
-      enhanced-resolve: 5.18.3
-      jiti: 2.5.1
-      local-pkg: 1.1.2
-      tailwindcss: 4.1.12
-
   tailwind-merge@2.6.0: {}
 
   tailwindcss-primeui@0.6.1(tailwindcss@4.1.12):
@@ -15982,6 +15942,8 @@ snapshots:
   vue-component-type-helpers@2.2.12: {}
 
   vue-component-type-helpers@3.1.1: {}
+
+  vue-component-type-helpers@3.1.2: {}
 
   vue-demi@0.14.10(vue@3.5.13(typescript@5.9.2)):
     dependencies:

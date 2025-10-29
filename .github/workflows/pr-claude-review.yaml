@@ -28,6 +28,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-regexp: '^(lint-and-format|test|playwright-tests)'
+          allowed-conclusions: success,skipped,failure,cancelled,neutral,action_required,timed_out,stale
           wait-interval: 30
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       

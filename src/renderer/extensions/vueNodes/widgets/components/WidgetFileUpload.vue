@@ -25,7 +25,8 @@
           class="max-w-[20em] min-w-[8em] text-xs"
           size="small"
           :pt="{
-            option: 'text-xs'
+            option: 'text-xs',
+            dropdownIcon: 'text-button-icon'
           }"
         />
         <Button
@@ -95,7 +96,8 @@
           class="max-w-[20em] min-w-[8em] text-xs"
           size="small"
           :pt="{
-            option: 'text-xs'
+            option: 'text-xs',
+            dropdownIcon: 'text-button-icon'
           }"
         />
         <Button

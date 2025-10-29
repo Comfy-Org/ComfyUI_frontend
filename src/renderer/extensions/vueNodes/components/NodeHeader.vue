@@ -6,7 +6,8 @@
     v-else
     :class="
       cn(
-        'lg-node-header p-4 rounded-t-2xl w-full bg-node-component-header-surface text-node-component-header',
+        'lg-node-header p-4 rounded-t-2xl w-full min-w-50',
+        'bg-node-component-header-surface text-node-component-header',
         collapsed && 'rounded-2xl'
       )
     "
@@ -38,6 +39,8 @@
         </div>
 
         <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
+        <div v-if="isApiNode" class="icon-[lucide--dollar-sign] size-4" />
+
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
@@ -60,7 +63,8 @@
         <LODFallback />
       </div>
 
-      <div class="lod-toggle flex shrink-0 items-center">
+      <div class="lod-toggle flex shrink-0 items-center justify-between gap-2">
+        <NodeBadge v-for="badge of nodeBadges" :key="badge.text" :badge />
         <IconButton
           v-if="isSubgraphNode"
           v-tooltip.top="enterSubgraphTooltipConfig"
@@ -80,14 +84,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref, toValue, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
@@ -183,8 +189,11 @@ watch(
   }
 )
 
+const nodeBadges = computed<LGraphBadge[]>(() =>
+  (nodeData?.badges ?? []).map(toValue)
+)
 const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
-
+const isApiNode = computed(() => Boolean(nodeData?.apiNode))
 // Subgraph detection
 const isSubgraphNode = computed(() => {
   if (!nodeData?.id) return false

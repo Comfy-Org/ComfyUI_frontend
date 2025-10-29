@@ -26,13 +26,13 @@ export interface AuthMetadata {
 
 /**
  * Survey response data for user profiling
+ * Maps 1-to-1 with actual survey fields
  */
 export interface SurveyResponses {
-  industry?: string
-  team_size?: string
-  use_case?: string
   familiarity?: string
-  intended_use?: 'personal' | 'client' | 'inhouse'
+  industry?: string
+  useCase?: string
+  making?: string[]
 }
 
 /**
@@ -57,6 +57,23 @@ export interface ExecutionContext {
   template_models?: string[]
   template_use_case?: string
   template_license?: string
+}
+
+/**
+ * Execution error metadata
+ */
+export interface ExecutionErrorMetadata {
+  jobId: string
+  nodeId?: string
+  nodeType?: string
+  error?: string
+}
+
+/**
+ * Execution success metadata
+ */
+export interface ExecutionSuccessMetadata {
+  jobId: string
 }
 
 /**
@@ -94,34 +111,42 @@ export interface TelemetryProvider {
 
   // Workflow execution events
   trackWorkflowExecution(): void
+  trackExecutionError(metadata: ExecutionErrorMetadata): void
+  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
 }
 
 /**
  * Telemetry event constants
+ *
+ * Event naming conventions:
+ * - 'app:' prefix: UI/user interaction events
+ * - No prefix: Backend/system events (execution lifecycle)
  */
 export const TelemetryEvents = {
   // Authentication Flow
-  USER_AUTH_COMPLETED: 'user_auth_completed',
+  USER_AUTH_COMPLETED: 'app:user_auth_completed',
 
   // Subscription Flow
-  RUN_BUTTON_CLICKED: 'run_button_clicked',
-  SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'subscription_required_modal_opened',
-  SUBSCRIBE_NOW_BUTTON_CLICKED: 'subscribe_now_button_clicked',
+  RUN_BUTTON_CLICKED: 'app:run_button_click',
+  SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
+  SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
 
   // Onboarding Survey
-  USER_SURVEY_OPENED: 'user_survey_opened',
-  USER_SURVEY_SUBMITTED: 'user_survey_submitted',
+  USER_SURVEY_OPENED: 'app:user_survey_opened',
+  USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
   // Email Verification
-  USER_EMAIL_VERIFY_OPENED: 'user_email_verify_opened',
-  USER_EMAIL_VERIFY_REQUESTED: 'user_email_verify_requested',
-  USER_EMAIL_VERIFY_COMPLETED: 'user_email_verify_completed',
+  USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
+  USER_EMAIL_VERIFY_REQUESTED: 'app:user_email_verify_requested',
+  USER_EMAIL_VERIFY_COMPLETED: 'app:user_email_verify_completed',
 
   // Template Tracking
-  TEMPLATE_WORKFLOW_OPENED: 'template_workflow_opened',
+  TEMPLATE_WORKFLOW_OPENED: 'app:template_workflow_opened',
 
-  // Workflow Execution Tracking
-  WORKFLOW_EXECUTION_STARTED: 'workflow_execution_started'
+  // Execution Lifecycle
+  EXECUTION_START: 'execution_start',
+  EXECUTION_ERROR: 'execution_error',
+  EXECUTION_SUCCESS: 'execution_success'
 } as const
 
 export type TelemetryEventName =
@@ -136,3 +161,5 @@ export type TelemetryEventProperties =
   | TemplateMetadata
   | ExecutionContext
   | RunButtonProperties
+  | ExecutionErrorMetadata
+  | ExecutionSuccessMetadata

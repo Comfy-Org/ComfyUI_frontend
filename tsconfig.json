@@ -21,7 +21,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "downlevelIteration": true,
     "noImplicitOverride": true,
     "allowJs": true,
     "verbatimModuleSyntax": true,
@@ -35,6 +34,9 @@
       ],
       "@/utils/networkUtil": [
         "packages/shared-frontend-utils/src/networkUtil.ts"
+      ],
+      "@tests-ui/*": [
+        "tests-ui/*"
       ]
     },
     "typeRoots": [

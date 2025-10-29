@@ -69,34 +69,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Check if backports already exist
-        id: check-existing
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-        run: |
-          # Check for existing backport PRs for this PR number
-          EXISTING_BACKPORTS=$(gh pr list --state all --search "backport-${PR_NUMBER}-to" --json title,headRefName,baseRefName | jq -r '.[].headRefName')
-          
-          if [ -z "$EXISTING_BACKPORTS" ]; then
-            echo "skip=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          # For manual triggers with force_rerun, proceed anyway
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force_rerun }}" = "true" ]; then
-            echo "skip=false" >> $GITHUB_OUTPUT
-            echo "::warning::Force rerun requested - existing backports will be updated"
-            exit 0
-          fi
-          
-          echo "Found existing backport PRs:"
-          echo "$EXISTING_BACKPORTS"
-          echo "skip=true" >> $GITHUB_OUTPUT
-          echo "::warning::Backport PRs already exist for PR #${PR_NUMBER}, skipping to avoid duplicates"
-
       - name: Collect backport targets
-        if: steps.check-existing.outputs.skip != 'true'
         id: targets
         run: |
           TARGETS=()
@@ -138,6 +111,14 @@ jobs:
               add_target "$label" "${BASH_REMATCH[1]}"
             elif [[ "$label" =~ ^backport:(.+)$ ]]; then
               add_target "$label" "${BASH_REMATCH[1]}"
+            elif [[ "$label" =~ ^core\/([0-9]+)\.([0-9]+)$ ]]; then
+              SAFE_MAJOR="${BASH_REMATCH[1]}"
+              SAFE_MINOR="${BASH_REMATCH[2]}"
+              add_target "$label" "core/${SAFE_MAJOR}.${SAFE_MINOR}"
+            elif [[ "$label" =~ ^cloud\/([0-9]+)\.([0-9]+)$ ]]; then
+              SAFE_MAJOR="${BASH_REMATCH[1]}"
+              SAFE_MINOR="${BASH_REMATCH[2]}"
+              add_target "$label" "cloud/${SAFE_MAJOR}.${SAFE_MINOR}"
             elif [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
               add_target "$label" "core/${label}"
             fi
@@ -151,8 +132,76 @@ jobs:
           echo "targets=${TARGETS[*]}" >> $GITHUB_OUTPUT
           echo "Found backport targets: ${TARGETS[*]}"
 
+      - name: Filter already backported targets
+        id: filter-targets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FORCE_RERUN_INPUT: >-
+            ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
+            || 'false' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: >-
+            ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
+            || github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          REQUESTED_TARGETS="${{ steps.targets.outputs.targets }}"
+          if [ -z "$REQUESTED_TARGETS" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "pending-targets=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          FORCE_RERUN=false
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$FORCE_RERUN_INPUT" = "true" ]; then
+            FORCE_RERUN=true
+          fi
+
+          mapfile -t EXISTING_BRANCHES < <(
+            git ls-remote --heads origin "backport-${PR_NUMBER}-to-*" || true
+          )
+
+          PENDING=()
+          SKIPPED=()
+
+          for target in $REQUESTED_TARGETS; do
+            SAFE_TARGET=$(echo "$target" | tr '/' '-')
+            BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
+
+            if [ "$FORCE_RERUN" = true ]; then
+              PENDING+=("$target")
+              continue
+            fi
+
+            if printf '%s\n' "${EXISTING_BRANCHES[@]:-}" |
+              grep -Fq "refs/heads/${BACKPORT_BRANCH}"; then
+              SKIPPED+=("$target")
+            else
+              PENDING+=("$target")
+            fi
+          done
+
+          SKIPPED_JOINED="${SKIPPED[*]:-}"
+          PENDING_JOINED="${PENDING[*]:-}"
+
+          echo "already-exists=${SKIPPED_JOINED}" >> $GITHUB_OUTPUT
+          echo "pending-targets=${PENDING_JOINED}" >> $GITHUB_OUTPUT
+
+          if [ -z "$PENDING_JOINED" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            if [ -n "$SKIPPED_JOINED" ]; then
+              echo "::warning::Backport branches already exist for: ${SKIPPED_JOINED}"
+            fi
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            if [ -n "$SKIPPED_JOINED" ]; then
+              echo "::notice::Skipping already backported targets: ${SKIPPED_JOINED}"
+            fi
+          fi
+
       - name: Backport commits
-        if: steps.check-existing.outputs.skip != 'true'
+        if: steps.filter-targets.outputs.skip != 'true'
         id: backport
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
@@ -170,7 +219,7 @@ jobs:
             MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
           fi
 
-          for target in ${{ steps.targets.outputs.targets }}; do
+          for target in ${{ steps.filter-targets.outputs.pending-targets }}; do
             TARGET_BRANCH="${target}"
             SAFE_TARGET=$(echo "$TARGET_BRANCH" | tr '/' '-')
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
@@ -181,6 +230,14 @@ jobs:
             if ! git fetch origin "${TARGET_BRANCH}"; then
               echo "::error::Target branch ${TARGET_BRANCH} does not exist"
               FAILED="${FAILED}${TARGET_BRANCH}:branch-missing "
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Check if commit already exists on target branch
+            if git branch -r --contains "${MERGE_COMMIT}" | grep -q "origin/${TARGET_BRANCH}"; then
+              echo "::notice::Commit ${MERGE_COMMIT} already exists on ${TARGET_BRANCH}, skipping backport"
+              FAILED="${FAILED}${TARGET_BRANCH}:already-exists "
               echo "::endgroup::"
               continue
             fi
@@ -219,7 +276,7 @@ jobs:
           fi
 
       - name: Create PR for each successful backport
-        if: steps.check-existing.outputs.skip != 'true' && steps.backport.outputs.success
+        if: steps.filter-targets.outputs.skip != 'true' && steps.backport.outputs.success
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
@@ -258,7 +315,7 @@ jobs:
           done
 
       - name: Comment on failures
-        if: steps.check-existing.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
+        if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -279,6 +336,9 @@ jobs:
             if [ "${reason}" = "branch-missing" ]; then
               gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist"
 
+            elif [ "${reason}" = "already-exists" ]; then
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
+
             elif [ "${reason}" = "conflicts" ]; then
               # Convert comma-separated conflicts back to newlines for display
               CONFLICTS_LIST=$(echo "${conflicts}" | tr ',' '\n' | sed 's/^/- /')
@@ -287,3 +347,9 @@ jobs:
               gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
             fi
           done
+
+      - name: Remove needs-backport label
+        if: steps.filter-targets.outputs.skip != 'true' && success()
+        run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

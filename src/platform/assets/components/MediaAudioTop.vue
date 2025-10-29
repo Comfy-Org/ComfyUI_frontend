@@ -1,7 +1,7 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden rounded">
+  <div class="relative size-full overflow-hidden rounded">
     <div
-      class="flex h-full w-full flex-col items-center justify-center gap-2 bg-zinc-200 dark-theme:bg-zinc-700/50"
+      class="flex size-full flex-col items-center justify-center gap-2 bg-zinc-200 dark-theme:bg-zinc-700/50"
     >
       <i
         class="icon-[lucide--music] text-3xl text-zinc-600 dark-theme:text-zinc-200"
