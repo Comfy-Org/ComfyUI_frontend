@@ -131,6 +131,38 @@
     "errorNotSupported": "API الحافظة غير مدعوم في متصفحك",
     "successMessage": "تم النسخ إلى الحافظة"
   },
+  "cloudClaimInvite_claimButton": "استلام الدعوة",
+  "cloudClaimInvite_processingTitle": "معالجة رمز الدعوة...",
+  "cloudFooter_needHelp": "تحتاج مساعدة؟",
+  "cloudForgotPassword_backToLogin": "العودة لتسجيل الدخول",
+  "cloudForgotPassword_didntReceiveEmail": "لم تستلم بريداً إلكترونياً؟",
+  "cloudForgotPassword_emailLabel": "البريد الإلكتروني",
+  "cloudForgotPassword_emailPlaceholder": "أدخل بريدك الإلكتروني",
+  "cloudForgotPassword_emailRequired": "البريد الإلكتروني حقل إجباري",
+  "cloudForgotPassword_instructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.",
+  "cloudForgotPassword_passwordResetError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
+  "cloudForgotPassword_passwordResetSent": "تم إرسال إعادة تعيين كلمة المرور",
+  "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
+  "cloudForgotPassword_title": "نسيت كلمة المرور",
+  "cloudPrivateBeta_desc": "سجل الدخول للانضمام إلى قائمة الانتظار. سنخطرك عندما يصبح الوصول للبيتا متاحاً. تم إخطارك بالفعل؟ سجل الدخول لبدء استخدام Comfy Cloud.",
+  "cloudPrivateBeta_title": "Cloud حالياً في مرحلة البيتا الخاصة",
+  "cloudSorryContactSupport_title": "عذراً، اتصل بالدعم",
+  "cloudStart_desc": "لا حاجة للإعداد. يعمل على أي جهاز.",
+  "cloudStart_download": "تحميل ComfyUI",
+  "cloudStart_explain": "أنتج عدة نتائج في آنٍ واحد. شارك مشاريعك بسهولة.",
+  "cloudStart_learnAboutButton": "تعلم عن Cloud",
+  "cloudStart_title": "ابدأ الإبداع فوراً، في ثوانٍ قليلة",
+  "cloudStart_wantToRun": "تريد تشغيل ComfyUI محلياً بدلاً من ذلك؟",
+  "cloudSurvey_steps_familiarity": "ما هو مستوى خبرتك مع ComfyUI؟",
+  "cloudSurvey_steps_industry": "ما هي صناعتك الأساسية؟",
+  "cloudSurvey_steps_making": "ما نوع المحتوى الذي تخطط لإبداعه؟",
+  "cloudSurvey_steps_purpose": "ما هو الاستخدام الرئيسي لـ ComfyUI بالنسبة لك؟",
+  "cloudVerifyEmail_title": "التحقق من البريد الإلكتروني",
+  "cloudWaitlist_contactLink": "هنا",
+  "cloudWaitlist_message": "تم تسجيلك في قائمة الانتظار. سنخطرك عندما يصبح الوصول للبيتا متاحاً.",
+  "cloudWaitlist_questionsText": "لديك استفسارات؟ تواصل معنا",
+  "cloudWaitlist_titleLine1": "أنت في",
+  "cloudWaitlist_titleLine2": "قائمة الانتظار 🎉",
   "color": {
     "black": "أسود",
     "blue": "أزرق",
@@ -1942,99 +1974,5 @@
     "label": "عناصر التحكم في التكبير",
     "showMinimap": "إظهار الخريطة المصغرة",
     "zoomToFit": "تكبير لتناسب الشاشة"
-  },
-  "cloudFooter_needHelp": "تحتاج مساعدة؟",
-  "cloudStart_title": "ابدأ الإبداع فوراً، في ثوانٍ قليلة",
-  "cloudStart_desc": "لا حاجة للإعداد. يعمل على أي جهاز.",
-  "cloudStart_explain": "أنتج عدة نتائج في آنٍ واحد. شارك مشاريعك بسهولة.",
-  "cloudStart_learnAboutButton": "تعلم عن Cloud",
-  "cloudStart_wantToRun": "تريد تشغيل ComfyUI محلياً بدلاً من ذلك؟",
-  "cloudStart_download": "تحميل ComfyUI",
-  "cloudWaitlist_titleLine1": "أنت في",
-  "cloudWaitlist_titleLine2": "قائمة الانتظار 🎉",
-  "cloudWaitlist_message": "تم تسجيلك في قائمة الانتظار. سنخطرك عندما يصبح الوصول للبيتا متاحاً.",
-  "cloudWaitlist_questionsText": "لديك استفسارات؟ تواصل معنا",
-  "cloudWaitlist_contactLink": "هنا",
-  "cloudClaimInvite_processingTitle": "معالجة رمز الدعوة...",
-  "cloudClaimInvite_claimButton": "استلام الدعوة",
-  "cloudSorryContactSupport_title": "عذراً، اتصل بالدعم",
-  "cloudVerifyEmail_title": "التحقق من البريد الإلكتروني",
-  "cloudPrivateBeta_title": "Cloud حالياً في مرحلة البيتا الخاصة",
-  "cloudPrivateBeta_desc": "سجل الدخول للانضمام إلى قائمة الانتظار. سنخطرك عندما يصبح الوصول للبيتا متاحاً. تم إخطارك بالفعل؟ سجل الدخول لبدء استخدام Comfy Cloud.",
-  "cloudForgotPassword_title": "نسيت كلمة المرور",
-  "cloudForgotPassword_instructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.",
-  "cloudForgotPassword_emailLabel": "البريد الإلكتروني",
-  "cloudForgotPassword_emailPlaceholder": "أدخل بريدك الإلكتروني",
-  "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
-  "cloudForgotPassword_backToLogin": "العودة لتسجيل الدخول",
-  "cloudForgotPassword_didntReceiveEmail": "لم تستلم بريداً إلكترونياً؟",
-  "cloudForgotPassword_emailRequired": "البريد الإلكتروني حقل إجباري",
-  "cloudForgotPassword_passwordResetSent": "تم إرسال إعادة تعيين كلمة المرور",
-  "cloudForgotPassword_passwordResetError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
-  "cloudSurvey_steps_familiarity": "ما هو مستوى خبرتك مع ComfyUI؟",
-  "cloudSurvey_steps_purpose": "ما هو الاستخدام الرئيسي لـ ComfyUI بالنسبة لك؟",
-  "cloudSurvey_steps_industry": "ما هي صناعتك الأساسية؟",
-  "cloudSurvey_steps_making": "ما نوع المحتوى الذي تخطط لإبداعه؟",
-  "desktopStart": {
-    "initialising": "جارٍ التهيئة..."
-  },
-  "shape": {
-    "default": "افتراضي",
-    "round": "دائري",
-    "CARD": "بطاقة",
-    "circle": "دائرة",
-    "arrow": "سهم",
-    "box": "صندوق"
-  },
-  "commands": {
-    "runWorkflow": "تشغيل سير العمل",
-    "runWorkflowFront": "تشغيل سير العمل (إضافة في المقدمة)",
-    "run": "تشغيل",
-    "execute": "تنفيذ",
-    "interrupt": "إلغاء التشغيل الحالي",
-    "refresh": "تحديث تعريفات العقد",
-    "clipspace": "فتح مساحة القص",
-    "resetView": "إعادة تعيين عرض اللوحة",
-    "clear": "مسح سير العمل",
-    "toggleBottomPanel": "تبديل اللوحة السفلية",
-    "theme": "المظهر",
-    "dark": "داكن",
-    "light": "فاتح",
-    "manageExtensions": "إدارة الإضافات",
-    "settings": "الإعدادات",
-    "help": "مساعدة",
-    "queue": "لوحة قائمة الانتظار"
-  },
-  "widgets": {
-    "selectModel": "اختر نموذج",
-    "uploadSelect": {
-      "placeholder": "اختر...",
-      "placeholderImage": "اختر صورة...",
-      "placeholderAudio": "اختر صوت...",
-      "placeholderVideo": "اختر فيديو...",
-      "placeholderModel": "اختر نموذج...",
-      "placeholderUnknown": "اختر وسائط..."
-    }
-  },
-  "assetBrowser": {
-    "assets": "الأصول",
-    "browseAssets": "تصفح الأصول",
-    "noAssetsFound": "لم يتم العثور على أصول",
-    "tryAdjustingFilters": "حاول تعديل البحث أو المرشحات",
-    "loadingModels": "جارٍ تحميل {type}...",
-    "connectionError": "يرجى التحقق من اتصالك والمحاولة مرة أخرى",
-    "failedToCreateNode": "فشل إنشاء العقدة. يرجى المحاولة مرة أخرى أو التحقق من وحدة التحكم للحصول على التفاصيل.",
-    "noModelsInFolder": "لا توجد {type} متاحة في هذا المجلد",
-    "searchAssetsPlaceholder": "البحث في الأصول...",
-    "allModels": "جميع النماذج",
-    "allCategory": "جميع {category}",
-    "unknown": "غير معروف",
-    "fileFormats": "تنسيقات الملفات",
-    "baseModels": "النماذج الأساسية",
-    "sortBy": "ترتيب حسب",
-    "sortAZ": "أ-ي",
-    "sortZA": "ي-أ",
-    "sortRecent": "الأحدث",
-    "sortPopular": "الأكثر شعبية"
   }
 }
