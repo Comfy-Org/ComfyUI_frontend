@@ -9,29 +9,18 @@
 
 @config '../../tailwind.config.ts';
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fg-color: #fff;
-    --bg-color: #202020;
-    --content-bg: #4e4e4e;
-    --content-fg: #fff;
-    --content-hover-bg: #222;
-    --content-hover-fg: #fff;
-  }
-}
-
 @theme {
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
 
-  /* Spacing */
-  --spacing-xs: 8px;
+  --text-xxxs: 0.5625rem;
+  --text-xxxs--line-height: calc(1 / 0.5625);
 
   /* Font Families */
   --font-inter: 'Inter', sans-serif;
 
   /* Palette Colors */
-  --color-charcoal-100: #171718;
+  --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;
   --color-charcoal-300: #3c3d42;
   --color-charcoal-400: #313235;
@@ -42,43 +31,45 @@
 
   --color-neutral-550: #636363;
 
-  --color-stone-100: #828282;
-  --color-stone-200: #444444;
-  --color-stone-300: #bbbbbb;
+  --color-ash-300: #bbbbbb;
+  --color-ash-500: #828282;
+  --color-ash-800: #444444;
 
   --color-ivory-100: #fdfbfa;
   --color-ivory-200: #faf9f5;
   --color-ivory-300: #f0eee6;
 
-  --color-gray-100: #f3f3f3;
-  --color-gray-200: #e9e9e9;
-  --color-gray-300: #e1e1e1;
-  --color-gray-400: #d9d9d9;
-  --color-gray-500: #c5c5c5;
-  --color-gray-600: #b4b4b4;
-  --color-gray-700: #a0a0a0;
-  --color-gray-800: #8a8a8a;
+  --color-smoke-100: #f3f3f3;
+  --color-smoke-200: #e9e9e9;
+  --color-smoke-300: #e1e1e1;
+  --color-smoke-400: #d9d9d9;
+  --color-smoke-500: #c5c5c5;
+  --color-smoke-600: #b4b4b4;
+  --color-smoke-700: #a0a0a0;
+  --color-smoke-800: #8a8a8a;
 
   --color-sand-100: #e1ded5;
   --color-sand-200: #d6cfc2;
   --color-sand-300: #888682;
 
-  --color-pure-black: #000000;
-  --color-pure-white: #ffffff;
-
   --color-slate-100: #9c9eab;
   --color-slate-200: #9fa2bd;
   --color-slate-300: #5b5e7d;
 
-  --color-brand-yellow: #f0ff41;
-  --color-brand-blue: #172dd7;
+  --color-electric-400: #f0ff41;
+  --color-sapphire-700: #172dd7;
+  --color-brand-yellow: var(--color-electric-400);
+  --color-brand-blue: var(--color-sapphire-700);
 
-  --color-blue-100: #0b8ce9;
-  --color-blue-200: #31b9f4;
-  --color-success-100: #00cd72;
-  --color-success-200: #47e469;
-  --color-warning-100: #fd9903;
-  --color-warning-200: #fcbf64;
+  --color-azure-400: #31b9f4;
+  --color-azure-600: #0b8ce9;
+
+  --color-jade-400: #47e469;
+  --color-jade-600: #00cd72;
+
+  --color-gold-400: #fcbf64;
+  --color-gold-600: #fd9903;
+
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
@@ -90,26 +81,24 @@
   --color-error: #962a2a;
 
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
-  --text-xxxs: 0.5625rem;
-  --text-xxxs--line-height: calc(1 / 0.5625);
 
-  --color-blue-selection: rgb(from var(--color-blue-100) r g b / 0.3);
-  --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
-  --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
-  --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
+  --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
+  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
+  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
+  --color-modal-tag: rgb(from var(--color-smoke-400) r g b/ 0.4);
   --color-alpha-charcoal-600-30: color-mix(
     in srgb,
     var(--color-charcoal-600) 30%,
     transparent
   );
-  --color-alpha-stone-100-20: color-mix(
+  --color-alpha-ash-500-20: color-mix(
     in srgb,
-    var(--color-stone-100) 20%,
+    var(--color-ash-500) 20%,
     transparent
   );
-  --color-alpha-gray-500-50: color-mix(
+  --color-alpha-smoke-500-50: color-mix(
     in srgb,
-    var(--color-gray-500) 50%,
+    var(--color-smoke-500) 50%,
     transparent
   );
 
@@ -145,8 +134,8 @@
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
 
-  --button-surface: var(--color-pure-white);
-  --button-surface-contrast: var(--color-pure-black);
+  --button-surface: var(--color-white);
+  --button-surface-contrast: var(--color-black);
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -157,31 +146,36 @@
 
   --accent-primary: var(--color-charcoal-700);
   --backdrop: var(--color-white);
-  --button-hover-surface: var(--color-gray-200);
-  --button-active-surface: var(--color-gray-400);
-  --button-icon: var(--color-gray-600);
+
+  --button-hover-surface: var(--color-smoke-200);
+  --button-active-surface: var(--color-smoke-400);
+  --button-icon: var(--color-smoke-600);
+
   --dialog-surface: var(--color-neutral-200);
-  --interface-menu-component-surface-hovered: var(--color-gray-200);
-  --interface-menu-component-surface-selected: var(--color-gray-400);
-  --interface-menu-keybind-surface-default: var(--color-gray-500);
-  --interface-panel-surface: var(--color-pure-white);
-  --interface-stroke: var(--color-gray-300);
-  --nav-background: var(--color-pure-white);
-  --node-border: var(--color-gray-300);
-  --node-component-border: var(--color-gray-400);
-  --node-component-disabled: var(--color-alpha-stone-100-20);
+
+  --interface-menu-component-surface-hovered: var(--color-smoke-200);
+  --interface-menu-component-surface-selected: var(--color-smoke-400);
+  --interface-menu-keybind-surface-default: var(--color-smoke-500);
+  --interface-panel-surface: var(--color-white);
+  --interface-stroke: var(--color-smoke-300);
+
+  --nav-background: var(--color-white);
+
+  --node-border: var(--color-smoke-300);
+  --node-component-border: var(--color-smoke-400);
+  --node-component-disabled: var(--color-alpha-ash-500-20);
   --node-component-executing: var(--color-blue-500);
   --node-component-header: var(--fg-color);
-  --node-component-header-icon: var(--color-stone-200);
+  --node-component-header-icon: var(--color-ash-800);
   --node-component-header-surface: var(--color-white);
   --node-component-outline: var(--color-black);
-  --node-component-ring: rgb(from var(--color-gray-500) r g b / 50%);
+  --node-component-ring: rgb(from var(--color-smoke-500) r g b / 50%);
   --node-component-slot-dot-outline-opacity-mult: 1;
   --node-component-slot-dot-outline-opacity: 5%;
   --node-component-slot-dot-outline: var(--color-black);
-  --node-component-slot-text: var(--color-stone-200);
-  --node-component-surface-highlight: var(--color-stone-100);
-  --node-component-surface-hovered: var(--color-gray-200);
+  --node-component-slot-text: var(--color-ash-800);
+  --node-component-surface-highlight: var(--color-ash-500);
+  --node-component-surface-hovered: var(--color-smoke-200);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-white);
   --node-component-tooltip: var(--color-charcoal-700);
@@ -193,40 +187,53 @@
   );
   --node-component-widget-skeleton-surface: var(--color-zinc-300);
   --node-divider: var(--color-sand-100);
-  --node-icon-disabled: var(--color-alpha-gray-500-50);
-  --node-stroke: var(--color-gray-400);
+  --node-icon-disabled: var(--color-alpha-smoke-500-50);
+  --node-stroke: var(--color-smoke-400);
   --node-stroke-selected: var(--color-accent-primary);
   --node-stroke-error: var(--color-error);
-  --node-stroke-executing: var(--color-blue-100);
-  --text-secondary: var(--color-stone-100);
+  --node-stroke-executing: var(--color-azure-600);
+
+  --text-secondary: var(--color-ash-500);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
 }
 
 .dark-theme {
-  --accent-primary: var(--color-pure-white);
+  --fg-color: #fff;
+  --bg-color: #202020;
+  --content-bg: #4e4e4e;
+  --content-fg: #fff;
+  --content-hover-bg: #222;
+  --content-hover-fg: #fff;
+
+  --accent-primary: var(--color-white);
   --backdrop: var(--color-neutral-900);
+
   --button-surface: var(--color-charcoal-600);
-  --button-surface-contrast: var(--color-pure-white);
+  --button-surface-contrast: var(--color-white);
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
-  --button-icon: var(--color-gray-800);
+  --button-icon: var(--color-smoke-800);
+
   --dialog-surface: var(--color-neutral-700);
+
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
   --interface-menu-keybind-surface-default: var(--color-charcoal-200);
-  --interface-panel-surface: var(--color-charcoal-100);
+  --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
-  --nav-background: var(--color-charcoal-100);
+
+  --nav-background: var(--color-charcoal-800);
+
   --node-border: var(--color-charcoal-500);
-  --node-component-border: var(--color-stone-200);
+  --node-component-border: var(--color-ash-800);
   --node-component-border-error: var(--color-danger-100);
   --node-component-border-executing: var(--color-blue-500);
   --node-component-border-selected: var(--color-charcoal-200);
   --node-component-header-icon: var(--color-slate-300);
   --node-component-header-surface: var(--color-charcoal-800);
   --node-component-outline: var(--color-white);
-  --node-component-ring: rgb(var(--color-gray-500) / 20%);
+  --node-component-ring: rgb(var(--color-smoke-500) / 20%);
   --node-component-slot-dot-outline-opacity: 10%;
   --node-component-slot-dot-outline: var(--color-white);
   --node-component-slot-text: var(--color-slate-200);
@@ -240,13 +247,15 @@
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
   --node-component-disabled: var(--color-alpha-charcoal-600-30);
   --node-divider: var(--color-charcoal-500);
-  --node-icon-disabled: var(--color-alpha-stone-100-20);
-  --node-stroke: var(--color-stone-200);
-  --node-stroke-selected: var(--color-pure-white);
+  --node-icon-disabled: var(--color-alpha-ash-500-20);
+  --node-stroke: var(--color-ash-800);
+  --node-stroke-selected: var(--color-white);
   --node-stroke-error: var(--color-error);
-  --node-stroke-executing: var(--color-blue-100);
+  --node-stroke-executing: var(--color-azure-600);
+
   --text-secondary: var(--color-slate-100);
-  --text-primary: var(--color-pure-white);
+  --text-primary: var(--color-white);
+
   --input-surface: rgb(130 130 130 / 0.1);
 }
 
@@ -329,7 +338,6 @@
     background-color: transparent;
   }
 }
-
 
 /* ===================== Scrollbar Utilities (Tailwind) =====================
    Usage: Add `scrollbar-custom` class to scrollable containers.

@@ -1,12 +1,14 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
 import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  HistoryTaskItem,
   ResultItem,
   StatusWsMessageStatus,
   TaskItem,
@@ -423,12 +425,38 @@ export class TaskItemImpl {
         )
     )
   }
+
+  public toTaskItem(): TaskItem {
+    const item: HistoryTaskItem = {
+      taskType: 'History',
+      prompt: this.prompt,
+      status: this.status!,
+      outputs: this.outputs
+    }
+    return item
+  }
 }
 
+const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
+  b.queueIndex - a.queueIndex
+
+const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
+  tasks.map(
+    (task) =>
+      new TaskItemImpl(
+        task.taskType,
+        task.prompt,
+        'status' in task ? task.status : undefined,
+        'outputs' in task ? task.outputs : undefined
+      )
+  )
+
 export const useQueueStore = defineStore('queue', () => {
-  const runningTasks = ref<TaskItemImpl[]>([])
-  const pendingTasks = ref<TaskItemImpl[]>([])
-  const historyTasks = ref<TaskItemImpl[]>([])
+  // Use shallowRef because TaskItemImpl instances are immutable and arrays are
+  // replaced entirely (not mutated), so deep reactivity would waste performance
+  const runningTasks = shallowRef<TaskItemImpl[]>([])
+  const pendingTasks = shallowRef<TaskItemImpl[]>([])
+  const historyTasks = shallowRef<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
@@ -459,37 +487,27 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
-      const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
-        tasks
-          .map(
-            (task: TaskItem) =>
-              new TaskItemImpl(
-                task.taskType,
-                task.prompt,
-                // status and outputs only exist on history tasks
-                'status' in task ? task.status : undefined,
-                'outputs' in task ? task.outputs : undefined
-              )
-          )
-          .sort((a, b) => b.queueIndex - a.queueIndex)
+      runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
+      pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
-      runningTasks.value = toClassAll(queue.Running)
-      pendingTasks.value = toClassAll(queue.Pending)
+      const currentHistory = toValue(historyTasks)
 
-      const allIndex = new Set<number>(
-        history.History.map((item: TaskItem) => item.prompt[0])
+      const { items } = reconcileHistory(
+        history.History,
+        currentHistory.map((impl) => impl.toTaskItem()),
+        toValue(maxHistoryItems),
+        toValue(lastHistoryQueueIndex)
       )
-      const newHistoryItems = toClassAll(
-        history.History.filter(
-          (item) => item.prompt[0] > lastHistoryQueueIndex.value
-        )
+
+      // Reuse existing TaskItemImpl instances or create new
+      const existingByPromptId = new Map(
+        currentHistory.map((impl) => [impl.promptId, impl])
       )
-      const existingHistoryItems = historyTasks.value.filter((item) =>
-        allIndex.has(item.queueIndex)
+
+      historyTasks.value = items.map(
+        (item) =>
+          existingByPromptId.get(item.prompt[1]) ?? toTaskItemImpls([item])[0]
       )
-      historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
-        .slice(0, maxHistoryItems.value)
-        .sort((a, b) => b.queueIndex - a.queueIndex)
     } finally {
       isLoading.value = false
     }

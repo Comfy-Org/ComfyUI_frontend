@@ -13,6 +13,7 @@
     </IconTextButton>
 
     <IconTextButton
+      v-if="showWorkflowOptions"
       type="transparent"
       class="dark-theme:text-white"
       label="Add to current workflow"
@@ -34,7 +35,7 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider />
+    <MediaAssetButtonDivider v-if="showWorkflowOptions" />
 
     <IconTextButton
       v-if="showWorkflowOptions"
@@ -60,9 +61,10 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider v-if="showWorkflowOptions" />
+    <MediaAssetButtonDivider v-if="showWorkflowOptions && showCopyJobId" />
 
     <IconTextButton
+      v-if="showCopyJobId"
       type="transparent"
       class="dark-theme:text-white"
       label="Copy job ID"
@@ -73,9 +75,10 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider />
+    <MediaAssetButtonDivider v-if="showCopyJobId && showDeleteButton" />
 
     <IconTextButton
+      v-if="showDeleteButton"
       type="transparent"
       class="dark-theme:text-white"
       label="Delete"
@@ -92,9 +95,9 @@
 import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import { isCloud } from '@/platform/distribution/types'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetButtonDivider from './MediaAssetButtonDivider.vue'
 
@@ -102,16 +105,36 @@ const { close } = defineProps<{
   close: () => void
 }>()
 
+const emit = defineEmits<{
+  inspect: []
+  'asset-deleted': []
+}>()
+
 const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
-const galleryStore = useMediaAssetGalleryStore()
 
-const showWorkflowOptions = computed(() => context.value.type)
+const assetType = computed(() => {
+  return asset.value?.tags?.[0] || context.value?.type || 'output'
+})
+
+const showWorkflowOptions = computed(() => assetType.value === 'output')
+
+// Only show Copy Job ID for output assets (not for imported/input assets)
+const showCopyJobId = computed(() => {
+  return assetType.value !== 'input'
+})
+
+// Delete button should be shown for:
+// - All output files (can be deleted via history)
+// - Input files only in cloud environment
+const showDeleteButton = computed(() => {
+  return (
+    assetType.value === 'output' || (assetType.value === 'input' && isCloud)
+  )
+})
 
 const handleInspect = () => {
-  if (asset.value) {
-    galleryStore.openSingle(asset.value)
-  }
+  emit('inspect')
   close()
 }
 
@@ -124,7 +147,7 @@ const handleAddToWorkflow = () => {
 
 const handleDownload = () => {
   if (asset.value) {
-    actions.downloadAsset(asset.value.id)
+    actions.downloadAsset()
   }
   close()
 }
@@ -143,17 +166,21 @@ const handleExportWorkflow = () => {
   close()
 }
 
-const handleCopyJobId = () => {
+const handleCopyJobId = async () => {
   if (asset.value) {
-    actions.copyAssetUrl(asset.value.id)
+    await actions.copyJobId()
   }
   close()
 }
 
-const handleDelete = () => {
-  if (asset.value) {
-    actions.deleteAsset(asset.value.id)
+const handleDelete = async () => {
+  if (!asset.value) return
+
+  close() // Close the menu first
+
+  const success = await actions.confirmDelete(asset.value)
+  if (success) {
+    emit('asset-deleted')
   }
-  close()
 }
 </script>

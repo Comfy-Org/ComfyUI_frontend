@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col gap-4">
     <div class="flex items-start gap-2">
       <i class="pi pi-check mt-1 text-sm" />
       <span class="text-sm">
@@ -7,7 +7,7 @@
       </span>
     </div>
 
-    <div class="flex items-start gap-2">
+    <div class="flex items-start gap-2 pb-2">
       <i class="pi pi-check mt-1 text-sm" />
       <span class="text-sm">
         {{ $t('subscription.benefits.benefit2') }}
@@ -30,6 +30,6 @@
 import Button from 'primevue/button'
 
 const handleViewMoreDetails = () => {
-  window.open('https://www.comfy.org/cloud', '_blank')
+  window.open('https://www.comfy.org/cloud/pricing', '_blank')
 }
 </script>

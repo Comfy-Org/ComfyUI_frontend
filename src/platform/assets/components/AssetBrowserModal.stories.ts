@@ -70,7 +70,7 @@ export const Default: Story = {
       }
     },
     template: `
-      <div class="flex items-center justify-center min-h-screen bg-stone-200 dark-theme:bg-stone-200 p-4">
+      <div class="flex items-center justify-center min-h-screen bg-ash-800 dark-theme:bg-ash-800 p-4">
         <AssetBrowserModal
           :node-type="nodeType"
           :input-name="inputName"
@@ -111,7 +111,7 @@ export const SingleAssetType: Story = {
       return { ...args, onAssetSelect, onClose, assets: singleTypeAssets }
     },
     template: `
-      <div class="flex items-center justify-center min-h-screen bg-stone-200 dark-theme:bg-stone-200 p-4">
+      <div class="flex items-center justify-center min-h-screen bg-ash-800 dark-theme:bg-ash-800 p-4">
         <AssetBrowserModal
           :node-type="nodeType"
           :input-name="inputName"
@@ -154,7 +154,7 @@ export const NoLeftPanel: Story = {
       return { ...args, onAssetSelect, onClose, assets: mockAssets }
     },
     template: `
-      <div class="flex items-center justify-center min-h-screen bg-stone-200 dark-theme:bg-stone-200 p-4">
+      <div class="flex items-center justify-center min-h-screen bg-ash-800 dark-theme:bg-ash-800 p-4">
         <AssetBrowserModal
           :node-type="nodeType"
           :input-name="inputName"

@@ -169,6 +169,46 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
 }
 
+const ltxvPricingCalculator = (node: LGraphNode): string => {
+  const modelWidget = node.widgets?.find(
+    (w) => w.name === 'model'
+  ) as IComboWidget
+  const durationWidget = node.widgets?.find(
+    (w) => w.name === 'duration'
+  ) as IComboWidget
+  const resolutionWidget = node.widgets?.find(
+    (w) => w.name === 'resolution'
+  ) as IComboWidget
+
+  const fallback = '$0.04-0.24/second'
+  if (!modelWidget || !durationWidget || !resolutionWidget) return fallback
+
+  const model = String(modelWidget.value).toLowerCase()
+  const resolution = String(resolutionWidget.value).toLowerCase()
+  const seconds = parseFloat(String(durationWidget.value))
+  const priceByModel: Record<string, Record<string, number>> = {
+    'ltx-2 (pro)': {
+      '1920x1080': 0.06,
+      '2560x1440': 0.12,
+      '3840x2160': 0.24
+    },
+    'ltx-2 (fast)': {
+      '1920x1080': 0.04,
+      '2560x1440': 0.08,
+      '3840x2160': 0.16
+    }
+  }
+
+  const modelTable = priceByModel[model]
+  if (!modelTable) return fallback
+
+  const pps = modelTable[resolution]
+  if (!pps) return fallback
+
+  const cost = (pps * seconds).toFixed(2)
+  return `$${cost}/Run`
+}
+
 // ---- constants ----
 const SORA_SIZES = {
   BASIC: new Set(['720x1280', '1280x720']),
@@ -1694,6 +1734,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     WanImageToImageApi: {
       displayPrice: '$0.03/Run'
+    },
+    LtxvApiTextToVideo: {
+      displayPrice: ltxvPricingCalculator
+    },
+    LtxvApiImageToVideo: {
+      displayPrice: ltxvPricingCalculator
     }
   }
 
@@ -1796,7 +1842,9 @@ export const useNodePricing = () => {
       ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
       ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
       WanTextToVideoApi: ['duration', 'size'],
-      WanImageToVideoApi: ['duration', 'resolution']
+      WanImageToVideoApi: ['duration', 'resolution'],
+      LtxvApiTextToVideo: ['model', 'duration', 'resolution'],
+      LtxvApiImageToVideo: ['model', 'duration', 'resolution']
     }
     return widgetMap[nodeType] || []
   }

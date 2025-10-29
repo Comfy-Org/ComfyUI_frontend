@@ -1,5 +1,4 @@
 import { merge } from 'es-toolkit/compat'
-import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
@@ -487,35 +486,16 @@ export const useDialogService = () => {
     })
   }
 
-  function showSubscriptionRequiredDialog() {
+  async function showSubscriptionRequiredDialog() {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
 
-    dialogStore.showDialog({
-      key: 'subscription-required',
-      component: defineAsyncComponent(
-        () =>
-          import(
-            '@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue'
-          )
-      ),
-      props: {
-        onClose: () => {
-          dialogStore.closeDialog({ key: 'subscription-required' })
-        }
-      },
-      dialogComponentProps: {
-        closable: true,
-        style: 'width: 700px;',
-        pt: {
-          header: { class: '!p-0 !m-0' },
-          content: {
-            class: 'overflow-hidden !p-0 !m-0'
-          }
-        }
-      }
-    })
+    const { useSubscriptionDialog } = await import(
+      '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+    )
+    const { show } = useSubscriptionDialog()
+    show()
   }
 
   return {

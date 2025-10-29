@@ -8,8 +8,9 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-surface',
-        'lg-node absolute rounded-2xl touch-none flex flex-col',
+        'bg-node-component-surface lg-node absolute',
+        'h-min w-min contain-style contain-layout min-h-(--node-height) min-w-(--node-width)',
+        'rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-node-component-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -83,7 +84,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
+        class="flex min-h-min min-w-min flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -150,7 +151,6 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type { ResizeHandleDirection } from '../interactions/resize/resizeMath'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
-import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -269,18 +269,15 @@ const handleContextMenu = (event: MouseEvent) => {
 
 onMounted(() => {
   // Set initial DOM size from layout store, but respect intrinsic content minimum
-  if (size.value && nodeContainerRef.value && transformState) {
-    const intrinsicMin = calculateIntrinsicSize(
-      nodeContainerRef.value,
-      transformState.camera.z
+  if (size.value && nodeContainerRef.value) {
+    nodeContainerRef.value.style.setProperty(
+      '--node-width',
+      `${size.value.width}px`
     )
-
-    // Use the larger of stored size or intrinsic minimum
-    const finalWidth = Math.max(size.value.width, intrinsicMin.width)
-    const finalHeight = Math.max(size.value.height, intrinsicMin.height)
-
-    nodeContainerRef.value.style.width = `${finalWidth}px`
-    nodeContainerRef.value.style.height = `${finalHeight}px`
+    nodeContainerRef.value.style.setProperty(
+      '--node-height',
+      `${size.value.height}px`
+    )
   }
 })
 
@@ -327,8 +324,8 @@ const { startResize } = useNodeResize(
     if (isCollapsed.value) return
 
     // Apply size directly to DOM element - ResizeObserver will pick this up
-    element.style.width = `${result.size.width}px`
-    element.style.height = `${result.size.height}px`
+    element.style.setProperty('--node-width', `${result.size.width}px`)
+    element.style.setProperty('--node-height', `${result.size.height}px`)
 
     const currentPosition = position.value
     const deltaX = Math.abs(result.position.x - currentPosition.x)
@@ -354,8 +351,8 @@ const handleResizePointerDown = (direction: ResizeHandleDirection) => {
 whenever(isCollapsed, () => {
   const element = nodeContainerRef.value
   if (!element) return
-  element.style.width = ''
-  element.style.height = ''
+  element.style.setProperty('--node-width', '')
+  element.style.setProperty('--node-height', '')
 })
 
 // Check if node has custom content (like image/video outputs)

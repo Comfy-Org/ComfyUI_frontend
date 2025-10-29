@@ -101,12 +101,12 @@ export const KeyboardNavigationDemo: Story = {
     },
     template: `
       <div class="space-y-6 p-4">
-        <div class="bg-blue-50 dark-theme:bg-blue-900/20 border border-blue-200 dark-theme:border-blue-700 rounded-lg p-4">
+        <div class="bg-blue-50 dark-theme:bg-blue-900/20 border border-azure-400 dark-theme:border-blue-700 rounded-lg p-4">
           <h3 class="text-lg font-semibold mb-2">🎯 Keyboard Navigation Test</h3>
-          <p class="text-sm text-gray-600 dark-theme:text-gray-300 mb-4">
+          <p class="text-sm text-smoke-600 dark-theme:text-smoke-300 mb-4">
             Use your keyboard to navigate these SingleSelect dropdowns:
           </p>
-          <ol class="text-sm text-gray-600 dark-theme:text-gray-300 list-decimal list-inside space-y-1">
+          <ol class="text-sm text-smoke-600 dark-theme:text-smoke-300 list-decimal list-inside space-y-1">
             <li><strong>Tab</strong> to focus the dropdown</li>
             <li><strong>Enter/Space</strong> to open dropdown</li>
             <li><strong>Arrow Up/Down</strong> to navigate options</li>
@@ -117,7 +117,7 @@ export const KeyboardNavigationDemo: Story = {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200">
               Sort Order
             </label>
             <SingleSelect
@@ -126,13 +126,13 @@ export const KeyboardNavigationDemo: Story = {
               label="Choose sort order"
               class="w-full"
             />
-            <p class="text-xs text-gray-500">
+            <p class="text-xs text-smoke-500">
               Selected: {{ selectedSort ? sortOptions.find(o => o.value === selectedSort)?.name : 'None' }}
             </p>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200">
               Task Priority (With Icon)
             </label>
             <SingleSelect
@@ -147,7 +147,7 @@ export const KeyboardNavigationDemo: Story = {
                 </svg>
               </template>
             </SingleSelect>
-            <p class="text-xs text-gray-500">
+            <p class="text-xs text-smoke-500">
               Selected: {{ selectedPriority ? priorityOptions.find(o => o.value === selectedPriority)?.name : 'None' }}
             </p>
           </div>
@@ -191,10 +191,10 @@ export const ScreenReaderFriendly: Story = {
       <div class="space-y-6 p-4">
         <div class="bg-green-50 dark-theme:bg-green-900/20 border border-green-200 dark-theme:border-green-700 rounded-lg p-4">
           <h3 class="text-lg font-semibold mb-2">♿ Screen Reader Test</h3>
-          <p class="text-sm text-gray-600 dark-theme:text-gray-300 mb-2">
+          <p class="text-sm text-smoke-600 dark-theme:text-smoke-300 mb-2">
             These dropdowns have proper ARIA attributes and labels for screen readers:
           </p>
-          <ul class="text-sm text-gray-600 dark-theme:text-gray-300 list-disc list-inside space-y-1">
+          <ul class="text-sm text-smoke-600 dark-theme:text-smoke-300 list-disc list-inside space-y-1">
             <li><code>role="combobox"</code> identifies as dropdown</li>
             <li><code>aria-haspopup="listbox"</code> indicates popup type</li>
             <li><code>aria-expanded</code> shows open/closed state</li>
@@ -205,7 +205,7 @@ export const ScreenReaderFriendly: Story = {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200" id="language-label">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200" id="language-label">
               Preferred Language
             </label>
             <SingleSelect
@@ -215,13 +215,13 @@ export const ScreenReaderFriendly: Story = {
               class="w-full"
               aria-labelledby="language-label"
             />
-            <p class="text-xs text-gray-500" aria-live="polite">
+            <p class="text-xs text-smoke-500" aria-live="polite">
               Current: {{ selectedLanguage ? languageOptions.find(o => o.value === selectedLanguage)?.name : 'None selected' }}
             </p>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200" id="theme-label">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200" id="theme-label">
               Interface Theme
             </label>
             <SingleSelect
@@ -231,7 +231,7 @@ export const ScreenReaderFriendly: Story = {
               class="w-full"
               aria-labelledby="theme-label"
             />
-            <p class="text-xs text-gray-500" aria-live="polite">
+            <p class="text-xs text-smoke-500" aria-live="polite">
               Current: {{ selectedTheme ? themeOptions.find(o => o.value === selectedTheme)?.name : 'No theme selected' }}
             </p>
           </div>
@@ -239,7 +239,7 @@ export const ScreenReaderFriendly: Story = {
 
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h4 class="font-semibold mb-2">🎧 Screen Reader Testing Tips</h4>
-          <ul class="text-sm text-gray-600 dark-theme:text-gray-300 space-y-1">
+          <ul class="text-sm text-smoke-600 dark-theme:text-smoke-300 space-y-1">
             <li>• Listen for role announcements when focusing</li>
             <li>• Verify dropdown state changes are announced</li>
             <li>• Check that selected values are spoken clearly</li>
@@ -299,7 +299,7 @@ export const FormIntegration: Story = {
       <div class="max-w-2xl mx-auto p-6">
         <div class="bg-purple-50 dark-theme:bg-purple-900/20 border border-purple-200 dark-theme:border-purple-700 rounded-lg p-4 mb-6">
           <h3 class="text-lg font-semibold mb-2">📝 Form Integration Test</h3>
-          <p class="text-sm text-gray-600 dark-theme:text-gray-300">
+          <p class="text-sm text-smoke-600 dark-theme:text-smoke-300">
             Test keyboard navigation through a complete form with SingleSelect components.
             Tab order should be logical and all elements should be accessible.
           </p>
@@ -307,19 +307,19 @@ export const FormIntegration: Story = {
 
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200 mb-1">
               Title *
             </label>
             <input
               type="text"
               required
               placeholder="Enter a title"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="block w-full px-3 py-2 border border-smoke-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200 mb-1">
               Category *
             </label>
             <SingleSelect
@@ -332,7 +332,7 @@ export const FormIntegration: Story = {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200 mb-1">
               Status
             </label>
             <SingleSelect
@@ -344,7 +344,7 @@ export const FormIntegration: Story = {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200 mb-1">
               Assignee
             </label>
             <SingleSelect
@@ -356,13 +356,13 @@ export const FormIntegration: Story = {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark-theme:text-gray-200 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 dark-theme:text-smoke-200 mb-1">
               Description
             </label>
             <textarea
               rows="4"
               placeholder="Enter description"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="block w-full px-3 py-2 border border-smoke-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -375,16 +375,16 @@ export const FormIntegration: Story = {
             </button>
             <button
               type="button"
-              class="px-4 py-2 bg-gray-300 dark-theme:bg-gray-600 text-gray-700 dark-theme:text-gray-200 rounded-md hover:bg-gray-400 dark-theme:hover:bg-gray-500 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              class="px-4 py-2 bg-smoke-300 dark-theme:bg-smoke-600 text-smoke-700 dark-theme:text-smoke-200 rounded-md hover:bg-smoke-400 dark-theme:hover:bg-smoke-500 focus:ring-2 focus:ring-smoke-500 focus:ring-offset-2"
             >
               Cancel
             </button>
           </div>
         </form>
 
-        <div class="mt-6 p-4 bg-gray-50 dark-theme:bg-zinc-800 border border-gray-200 dark-theme:border-zinc-700 rounded-lg">
+        <div class="mt-6 p-4 bg-gray-50 dark-theme:bg-zinc-800 border border-smoke-200 dark-theme:border-zinc-700 rounded-lg">
           <h4 class="font-semibold mb-2">Current Form Data:</h4>
-          <pre class="text-xs text-gray-600 dark-theme:text-gray-300">{{ JSON.stringify(formData, null, 2) }}</pre>
+          <pre class="text-xs text-smoke-600 dark-theme:text-smoke-300">{{ JSON.stringify(formData, null, 2) }}</pre>
         </div>
       </div>
     `
@@ -395,7 +395,7 @@ export const AccessibilityChecklist: Story = {
   render: () => ({
     template: `
       <div class="max-w-4xl mx-auto p-6 space-y-6">
-        <div class="bg-gray-50 dark-theme:bg-zinc-800 border border-gray-200 dark-theme:border-zinc-700 rounded-lg p-6">
+        <div class="bg-gray-50 dark-theme:bg-zinc-800 border border-smoke-200 dark-theme:border-zinc-700 rounded-lg p-6">
           <h2 class="text-2xl font-bold mb-4">♿ SingleSelect Accessibility Checklist</h2>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -442,9 +442,9 @@ export const AccessibilityChecklist: Story = {
             </div>
           </div>
 
-          <div class="mt-6 p-4 bg-blue-50 dark-theme:bg-blue-900/20 border border-blue-200 dark-theme:border-blue-700 rounded-lg">
+          <div class="mt-6 p-4 bg-blue-50 dark-theme:bg-blue-900/20 border border-azure-400 dark-theme:border-blue-700 rounded-lg">
             <h4 class="font-semibold mb-2">🎯 Quick Test</h4>
-            <p class="text-sm text-gray-700 dark-theme:text-gray-200">
+            <p class="text-sm text-smoke-700 dark-theme:text-smoke-200">
               Close your eyes, use only the keyboard, and try to select different options from any dropdown above.
               If you can successfully navigate and make selections, the accessibility implementation is working!
             </p>
@@ -452,7 +452,7 @@ export const AccessibilityChecklist: Story = {
 
           <div class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
             <h4 class="font-semibold mb-2">⚡ Performance Note</h4>
-            <p class="text-sm text-gray-700 dark-theme:text-gray-200">
+            <p class="text-sm text-smoke-700 dark-theme:text-smoke-200">
               These accessibility features are built into the component with minimal performance impact.
               The ARIA attributes and keyboard handlers add less than 1KB to the bundle size.
             </p>

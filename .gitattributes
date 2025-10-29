@@ -7,6 +7,7 @@
 *.json text eol=lf
 *.mjs text eol=lf
 *.mts text eol=lf
+*.snap text eol=lf
 *.ts text eol=lf
 *.vue text eol=lf
 *.yaml text eol=lf

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { i18n, st } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { getCategoryIcon } from '@/utils/categoryIcons'
@@ -29,6 +30,7 @@ export const useWorkflowTemplatesStore = defineStore(
   () => {
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
+    const englishTemplates = shallowRef<WorkflowTemplates[]>([])
     const isLoaded = ref(false)
     const knownTemplateNames = ref(new Set<string>())
 
@@ -436,7 +438,16 @@ export const useWorkflowTemplatesStore = defineStore(
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
           const locale = i18n.global.locale.value
-          coreTemplates.value = await api.getCoreWorkflowTemplates(locale)
+
+          const [coreResult, englishResult] = await Promise.all([
+            api.getCoreWorkflowTemplates(locale),
+            isCloud && locale !== 'en'
+              ? api.getCoreWorkflowTemplates('en')
+              : Promise.resolve([])
+          ])
+
+          coreTemplates.value = coreResult
+          englishTemplates.value = englishResult
 
           const coreNames = coreTemplates.value.flatMap((category) =>
             category.templates.map((template) => template.name)
@@ -451,6 +462,33 @@ export const useWorkflowTemplatesStore = defineStore(
       }
     }
 
+    function getEnglishMetadata(templateName: string): {
+      tags?: string[]
+      category?: string
+      useCase?: string
+      models?: string[]
+      license?: string
+    } | null {
+      if (englishTemplates.value.length === 0) {
+        return null
+      }
+
+      for (const category of englishTemplates.value) {
+        const template = category.templates.find((t) => t.name === templateName)
+        if (template) {
+          return {
+            tags: template.tags,
+            category: category.title,
+            useCase: template.useCase,
+            models: template.models,
+            license: template.license
+          }
+        }
+      }
+
+      return null
+    }
+
     return {
       groupedTemplates,
       navGroupedTemplates,
@@ -460,7 +498,8 @@ export const useWorkflowTemplatesStore = defineStore(
       isLoaded,
       loadWorkflowTemplates,
       knownTemplateNames,
-      getTemplateByName
+      getTemplateByName,
+      getEnglishMetadata
     }
   }
 )

@@ -14,7 +14,13 @@
 
   <div v-if="showFOVButton" class="space-y-4">
     <label>{{ t('load3d.fov') }}</label>
-    <Slider v-model="fov" :min="10" :max="150" :step="1" aria-label="fov" />
+    <Slider
+      v-model="fov"
+      :min="10"
+      :max="150"
+      :step="1"
+      :aria-label="t('load3d.fov')"
+    />
   </div>
 </template>
 

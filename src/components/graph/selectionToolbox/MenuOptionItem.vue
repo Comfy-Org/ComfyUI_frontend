@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="option.type === 'divider'"
-    class="my-1 h-px bg-gray-200 dark-theme:bg-zinc-700"
+    class="my-1 h-px bg-smoke-200 dark-theme:bg-zinc-700"
   />
   <div
     v-else

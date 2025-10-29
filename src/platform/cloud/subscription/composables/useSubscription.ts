@@ -21,7 +21,8 @@ interface CloudSubscriptionCheckoutResponse {
 interface CloudSubscriptionStatusResponse {
   is_active: boolean
   subscription_id: string
-  renewal_date: string
+  renewal_date: string | null
+  end_date?: string | null
 }
 
 const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
@@ -44,12 +45,28 @@ export function useSubscription() {
 
   const { isLoggedIn } = useCurrentUser()
 
+  const isCancelled = computed(() => {
+    return !!subscriptionStatus.value?.end_date
+  })
+
   const formattedRenewalDate = computed(() => {
     if (!subscriptionStatus.value?.renewal_date) return ''
 
     const renewalDate = new Date(subscriptionStatus.value.renewal_date)
 
     return renewalDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  })
+
+  const formattedEndDate = computed(() => {
+    if (!subscriptionStatus.value?.end_date) return ''
+
+    const endDate = new Date(subscriptionStatus.value.end_date)
+
+    return endDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -83,7 +100,7 @@ export function useSubscription() {
       useTelemetry()?.trackSubscription('modal_opened')
     }
 
-    dialogService.showSubscriptionRequiredDialog()
+    void dialogService.showSubscriptionRequiredDialog()
   }
 
   const manageSubscription = async () => {
@@ -197,7 +214,9 @@ export function useSubscription() {
   return {
     // State
     isActiveSubscription,
+    isCancelled,
     formattedRenewalDate,
+    formattedEndDate,
     formattedMonthlyPrice,
 
     // Actions

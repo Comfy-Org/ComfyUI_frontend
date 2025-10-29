@@ -14,7 +14,7 @@ const config: KnipConfig = {
     },
     'apps/desktop-ui': {
       entry: ['src/main.ts', 'src/i18n.ts'],
-      project: ['src/**/*.{js,ts,vue}', '*.{js,ts,mts}']
+      project: ['src/**/*.{js,ts,vue}']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']

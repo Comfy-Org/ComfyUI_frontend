@@ -2600,6 +2600,14 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
     }
   },
   "GeminiInputFiles": {
@@ -2613,6 +2621,11 @@
       "GEMINI_INPUT_FILES": {
         "name": "GEMINI_INPUT_FILES",
         "tooltip": "An optional additional file(s) to batch together with the file loaded from this node. Allows chaining of input files so that a single message can include multiple input files."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2650,6 +2663,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4924,6 +4942,70 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxvApiImageToVideo": {
+    "display_name": "LTXV Image To Video",
+    "description": "Professional-quality videos with customizable duration and resolution based on start image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "First frame to be used for the video."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxvApiTextToVideo": {
+    "display_name": "LTXV Text To Video",
+    "description": "Professional-quality videos with customizable duration and resolution.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

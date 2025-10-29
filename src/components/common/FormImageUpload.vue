@@ -3,14 +3,14 @@
     <div class="flex items-center gap-2">
       <div
         class="preview-box flex h-16 w-16 items-center justify-center rounded border p-2"
-        :class="{ 'bg-gray-100 dark-theme:bg-gray-800': !modelValue }"
+        :class="{ 'bg-smoke-100 dark-theme:bg-smoke-800': !modelValue }"
       >
         <img
           v-if="modelValue"
           :src="modelValue"
           class="max-h-full max-w-full object-contain"
         />
-        <i v-else class="pi pi-image text-xl text-gray-400" />
+        <i v-else class="pi pi-image text-xl text-smoke-400" />
       </div>
 
       <div class="flex flex-col gap-2">

@@ -1,8 +1,10 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
+import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
@@ -328,110 +330,107 @@ class ManageTemplates extends ComfyDialog {
   }
 }
 
-app.registerExtension({
+const manage = new ManageTemplates()
+
+// @ts-expect-error fixme ts strict error
+const clipboardAction = async (cb) => {
+  // We use the clipboard functions but dont want to overwrite the current user clipboard
+  // Restore it after we've run our callback
+  const old = localStorage.getItem('litegrapheditor_clipboard')
+  await cb()
+  // @ts-expect-error fixme ts strict error
+  localStorage.setItem('litegrapheditor_clipboard', old)
+}
+
+const ext: ComfyExtension = {
   name: id,
-  setup() {
-    const manage = new ManageTemplates()
+
+  getCanvasMenuItems(_canvas: LGraphCanvas): IContextMenuValue[] {
+    const items: IContextMenuValue[] = []
 
     // @ts-expect-error fixme ts strict error
-    const clipboardAction = async (cb) => {
-      // We use the clipboard functions but dont want to overwrite the current user clipboard
-      // Restore it after we've run our callback
-      const old = localStorage.getItem('litegrapheditor_clipboard')
-      await cb()
-      // @ts-expect-error fixme ts strict error
-      localStorage.setItem('litegrapheditor_clipboard', old)
-    }
+    items.push(null)
+    items.push({
+      content: `Save Selected as Template`,
+      disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
+      callback: async () => {
+        const name = await useDialogService().prompt({
+          title: t('nodeTemplates.saveAsTemplate'),
+          message: t('nodeTemplates.enterName'),
+          defaultValue: ''
+        })
+        if (!name?.trim()) return
 
-    const orig = LGraphCanvas.prototype.getCanvasMenuOptions
-    LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-      // @ts-expect-error fixme ts strict error
-      const options = orig.apply(this, arguments)
+        clipboardAction(() => {
+          app.canvas.copyToClipboard()
+          let data = localStorage.getItem('litegrapheditor_clipboard')
+          data = JSON.parse(data || '{}')
+          const nodeIds = Object.keys(app.canvas.selected_nodes)
+          for (let i = 0; i < nodeIds.length; i++) {
+            const node = app.graph.getNodeById(nodeIds[i])
+            const nodeData = node?.constructor.nodeData
 
-      // @ts-expect-error fixme ts strict error
-      options.push(null)
-      options.push({
-        content: `Save Selected as Template`,
-        disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
-        // @ts-expect-error fixme ts strict error
-        callback: async () => {
-          const name = await useDialogService().prompt({
-            title: t('nodeTemplates.saveAsTemplate'),
-            message: t('nodeTemplates.enterName'),
-            defaultValue: ''
-          })
-          if (!name?.trim()) return
-
-          clipboardAction(() => {
-            app.canvas.copyToClipboard()
-            let data = localStorage.getItem('litegrapheditor_clipboard')
-            // @ts-expect-error fixme ts strict error
-            data = JSON.parse(data)
-            const nodeIds = Object.keys(app.canvas.selected_nodes)
-            for (let i = 0; i < nodeIds.length; i++) {
-              const node = app.graph.getNodeById(nodeIds[i])
-              const nodeData = node?.constructor.nodeData
-
-              let groupData = GroupNodeHandler.getGroupData(node)
-              if (groupData) {
-                groupData = groupData.nodeData
+            let groupData = GroupNodeHandler.getGroupData(node)
+            if (groupData) {
+              groupData = groupData.nodeData
+              // @ts-expect-error
+              if (!data.groupNodes) {
                 // @ts-expect-error
-                if (!data.groupNodes) {
-                  // @ts-expect-error
-                  data.groupNodes = {}
-                }
-                if (nodeData == null) throw new TypeError('nodeData is not set')
-                // @ts-expect-error
-                data.groupNodes[nodeData.name] = groupData
-                // @ts-expect-error
-                data.nodes[i].type = nodeData.name
+                data.groupNodes = {}
               }
+              if (nodeData == null) throw new TypeError('nodeData is not set')
+              // @ts-expect-error
+              data.groupNodes[nodeData.name] = groupData
+              // @ts-expect-error
+              data.nodes[i].type = nodeData.name
             }
+          }
 
-            manage.templates.push({
-              name,
-              data: JSON.stringify(data)
-            })
-            manage.store()
+          manage.templates.push({
+            name,
+            data: JSON.stringify(data)
+          })
+          manage.store()
+        })
+      }
+    })
+
+    // Map each template to a menu item
+    const subItems = manage.templates.map((t) => {
+      return {
+        content: t.name,
+        callback: () => {
+          clipboardAction(async () => {
+            const data = JSON.parse(t.data)
+            await GroupNodeConfig.registerFromWorkflow(data.groupNodes, {})
+
+            // Check for old clipboard format
+            if (!data.reroutes) {
+              deserialiseAndCreate(t.data, app.canvas)
+            } else {
+              localStorage.setItem('litegrapheditor_clipboard', t.data)
+              app.canvas.pasteFromClipboard()
+            }
           })
         }
-      })
+      }
+    })
 
-      // Map each template to a menu item
-      const subItems = manage.templates.map((t) => {
-        return {
-          content: t.name,
-          callback: () => {
-            clipboardAction(async () => {
-              const data = JSON.parse(t.data)
-              await GroupNodeConfig.registerFromWorkflow(data.groupNodes, {})
+    // @ts-expect-error fixme ts strict error
+    subItems.push(null, {
+      content: 'Manage',
+      callback: () => manage.show()
+    })
 
-              // Check for old clipboard format
-              if (!data.reroutes) {
-                deserialiseAndCreate(t.data, app.canvas)
-              } else {
-                localStorage.setItem('litegrapheditor_clipboard', t.data)
-                app.canvas.pasteFromClipboard()
-              }
-            })
-          }
-        }
-      })
+    items.push({
+      content: 'Node Templates',
+      submenu: {
+        options: subItems
+      }
+    })
 
-      // @ts-expect-error fixme ts strict error
-      subItems.push(null, {
-        content: 'Manage',
-        callback: () => manage.show()
-      })
-
-      options.push({
-        content: 'Node Templates',
-        submenu: {
-          options: subItems
-        }
-      })
-
-      return options
-    }
+    return items
   }
-})
+}
+
+app.registerExtension(ext)

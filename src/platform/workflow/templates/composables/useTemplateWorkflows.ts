@@ -132,7 +132,7 @@ export function useTemplateWorkflows() {
 
         if (isCloud) {
           useTelemetry()?.trackTemplate({
-            workflow_name: workflowName,
+            workflow_name: id,
             template_source: actualSourceModule
           })
         }
@@ -153,7 +153,7 @@ export function useTemplateWorkflows() {
 
       if (isCloud) {
         useTelemetry()?.trackTemplate({
-          workflow_name: workflowName,
+          workflow_name: id,
           template_source: sourceModule
         })
       }

@@ -2189,4 +2189,54 @@ describe('useNodePricing', () => {
       expect(price).toBe('$0.05-0.15/second')
     })
   })
+
+  describe('dynamic pricing - LtxvApiTextToVideo', () => {
+    it('should return $0.30 for Pro 1080p 5s', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('LtxvApiTextToVideo', [
+        { name: 'model', value: 'LTX-2 (Pro)' },
+        { name: 'duration', value: '5' },
+        { name: 'resolution', value: '1920x1080' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.30/Run') // 0.06 * 5
+    })
+
+    it('should parse "10s" duration strings', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('LtxvApiTextToVideo', [
+        { name: 'model', value: 'LTX-2 (Fast)' },
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '3840x2160' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.60/Run') // 0.16 * 10
+    })
+
+    it('should fall back when a required widget is missing (no resolution)', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('LtxvApiTextToVideo', [
+        { name: 'model', value: 'LTX-2 (Pro)' },
+        { name: 'duration', value: '5' }
+        // missing resolution
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.04-0.24/second')
+    })
+
+    it('should fall back for unknown model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('LtxvApiTextToVideo', [
+        { name: 'model', value: 'LTX-3 (Pro)' },
+        { name: 'duration', value: 5 },
+        { name: 'resolution', value: '1920x1080' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.04-0.24/second')
+    })
+  })
 })
