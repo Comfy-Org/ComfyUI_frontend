@@ -38,10 +38,9 @@ const showVueNodesBannerRef = ref(false)
 const checkLocalStorage = (): boolean => {
   try {
     const value = localStorage.getItem(STORAGE_KEY)
-    // Return true if the banner was NOT dismissed (value is null or 'false')
+
     return value !== 'true'
   } catch (error) {
-    // If localStorage is not available (e.g., private browsing), show the banner
     console.warn('localStorage not available:', error)
     return true
   }
@@ -52,7 +51,6 @@ const handleDismiss = (): void => {
   try {
     localStorage.setItem(STORAGE_KEY, 'true')
   } catch (error) {
-    // Silently fail if localStorage is not available
     console.warn('Failed to save banner dismissal:', error)
   }
 }
