@@ -2114,7 +2114,16 @@
     "authTimeout": {
       "title": "Connection Taking Too Long",
       "message": "We're having trouble connecting to ComfyUI Cloud. This could be due to a slow connection or temporary service issue.",
-      "restart": "Sign Out & Try Again"
+      "restart": "Sign Out & Try Again",
+      "troubleshooting": "Common causes:",
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "technicalDetails": "Technical Details"
     }
   },
   "cloudFooter_needHelp": "Need Help?",

@@ -129,8 +129,13 @@ router.beforeEach(async (to, _from, next) => {
       })
     } catch (error) {
       console.error('Auth initialization failed:', error)
-      // Navigate to auth timeout recovery page
-      return next({ name: 'cloud-auth-timeout' })
+      // Navigate to auth timeout recovery page with error details
+      return next({
+        name: 'cloud-auth-timeout',
+        params: {
+          errorMessage: error instanceof Error ? error.message : String(error)
+        }
+      })
     }
   }
 
