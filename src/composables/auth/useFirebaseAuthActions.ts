@@ -55,14 +55,17 @@ export const useFirebaseAuthActions = () => {
       life: 5000
     })
 
-    // Redirect to login page if we're on cloud domain
+    // CRITICAL: Use full page navigation for logout to prevent stale app state
+    // Issue: SPA routing during logout can leave extensions loaded with stale auth state
+    // This causes subscription dialogs to appear incorrectly during re-login onboarding
+    // Full page reload ensures complete app state reset and proper onboarding flow
     const hostname = window.location.hostname
     if (hostname.includes('cloud.comfy.org')) {
       if (route.query.inviteCode) {
         const inviteCode = route.query.inviteCode
-        await router.push({ name: 'cloud-login', query: { inviteCode } })
+        window.location.href = `/cloud/login?inviteCode=${encodeURIComponent(inviteCode)}`
       } else {
-        await router.push({ name: 'cloud-login' })
+        window.location.href = '/cloud/login'
       }
     }
   }, reportError)
