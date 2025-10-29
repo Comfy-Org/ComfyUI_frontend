@@ -5,6 +5,9 @@ on:
     workflows: ['Release NPM Types']
     types:
       - completed
+  push:
+    branches:
+      - sno-api-changelog
 
 concurrency:
   group: release-api-changelogs-${{ github.workflow }}
@@ -14,8 +17,8 @@ jobs:
   generate_changelog:
     name: Generate API Changelog
     runs-on: ubuntu-latest
-    # Only run on successful completion of the Release NPM Types workflow
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Only run on successful completion of the Release NPM Types workflow or on push to sno-api-changelog
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
       pull-requests: write
@@ -51,9 +54,9 @@ jobs:
       - name: Get previous version
         id: previous_version
         run: |
-          # Get all version tags sorted
+          # Get the two most recent version tags sorted
           CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
-          TAGS=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$')
+          TAGS=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -2)
 
           # Find the previous version tag (skip current if it exists)
           PREVIOUS_TAG=""
