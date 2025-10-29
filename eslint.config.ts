@@ -111,8 +111,6 @@ export default defineConfig([
   storybook.configs['flat/recommended'],
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
-  // Turn off ESLint rules that are already handled by oxlint
-  oxlint.configs['flat/recommended'],
   {
     plugins: {
       'unused-imports': unusedImports,
