@@ -14,8 +14,8 @@
         <slot name="header" />
       </div>
     </div>
-    <!-- h-0 to force scrollpanel to grow -->
-    <ScrollPanel class="h-0 grow">
+    <!-- min-h-0 to force scrollpanel to grow -->
+    <ScrollPanel class="min-h-0 grow">
       <slot name="body" />
     </ScrollPanel>
     <div v-if="slots.footer">

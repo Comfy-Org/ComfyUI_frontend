@@ -19,9 +19,14 @@ import type {
  */
 export async function fetchHistoryV1(
   fetchApi: (url: string) => Promise<Response>,
-  maxItems: number = 200
+  maxItems: number = 200,
+  offset?: number
 ): Promise<HistoryV1Response> {
-  const res = await fetchApi(`/history?max_items=${maxItems}`)
+  let url = `/history?max_items=${maxItems}`
+  if (offset !== undefined) {
+    url += `&offset=${offset}`
+  }
+  const res = await fetchApi(url)
   const json: Record<
     string,
     Omit<HistoryTaskItem, 'taskType'>

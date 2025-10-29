@@ -36,11 +36,28 @@ export function useAssetsApi(directory: 'input' | 'output') {
 
   const refresh = () => fetchMediaList()
 
+  const loadMore = async (): Promise<void> => {
+    if (directory === 'output') {
+      await assetsStore.loadMoreHistory()
+    }
+  }
+
+  const hasMore = computed(() => {
+    return directory === 'output' ? assetsStore.hasMoreHistory : false
+  })
+
+  const isLoadingMore = computed(() => {
+    return directory === 'output' ? assetsStore.isLoadingMore : false
+  })
+
   return {
     media,
     loading,
     error,
     fetchMediaList,
-    refresh
+    refresh,
+    loadMore,
+    hasMore,
+    isLoadingMore
   }
 }
