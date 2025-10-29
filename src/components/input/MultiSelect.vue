@@ -242,7 +242,7 @@ const pt = computed(() => ({
     )
   },
   listContainer: () => ({
-    style: { maxHeight: listMaxHeight },
+    style: { maxHeight: `min(${listMaxHeight}, 50vh)` },
     class: 'scrollbar-custom'
   }),
   list: {

@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.31.0",
+  "version": "1.31.1",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -43,7 +43,8 @@
     "test:browser": "pnpm exec nx e2e",
     "test:unit": "nx run test",
     "typecheck": "vue-tsc --noEmit",
-    "zipdist": "node scripts/zipdist.js"
+    "zipdist": "node scripts/zipdist.js",
+    "clean": "nx reset"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

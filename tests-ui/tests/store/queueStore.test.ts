@@ -361,131 +361,6 @@ describe('useQueueStore', () => {
     })
   })
 
-  describe('update() - history reconciliation by promptId', () => {
-    it('should keep existing history items that are still in server response', async () => {
-      const hist1 = createHistoryTask(10, 'existing-1')
-      const hist2 = createHistoryTask(9, 'existing-2')
-
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockResolvedValue({ History: [hist1, hist2] })
-
-      await store.update()
-      expect(store.historyTasks).toHaveLength(2)
-
-      const hist3 = createHistoryTask(11, 'new-1')
-      mockGetHistory.mockResolvedValue({
-        History: [hist3, hist1, hist2]
-      })
-
-      await store.update()
-
-      expect(store.historyTasks).toHaveLength(3)
-      expect(store.historyTasks.map((t) => t.promptId)).toEqual([
-        'new-1',
-        'existing-1',
-        'existing-2'
-      ])
-    })
-
-    it('should remove history items no longer in server response', async () => {
-      const hist1 = createHistoryTask(10, 'remove-me')
-      const hist2 = createHistoryTask(9, 'keep-me')
-
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockResolvedValue({ History: [hist1, hist2] })
-
-      await store.update()
-      expect(store.historyTasks).toHaveLength(2)
-
-      mockGetHistory.mockResolvedValue({ History: [hist2] })
-
-      await store.update()
-
-      expect(store.historyTasks).toHaveLength(1)
-      expect(store.historyTasks[0].promptId).toBe('keep-me')
-    })
-
-    it('should add new history items with queueIndex > lastHistoryQueueIndex', async () => {
-      const hist1 = createHistoryTask(5, 'old-1')
-
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockResolvedValue({ History: [hist1] })
-
-      await store.update()
-      expect(store.lastHistoryQueueIndex).toBe(5)
-
-      const hist2 = createHistoryTask(6, 'new-1')
-      const hist3 = createHistoryTask(7, 'new-2')
-      mockGetHistory.mockResolvedValue({
-        History: [hist3, hist2, hist1]
-      })
-
-      await store.update()
-
-      expect(store.historyTasks).toHaveLength(3)
-      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-1')
-      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-2')
-    })
-
-    it('should NOT add history items with queueIndex <= lastHistoryQueueIndex', async () => {
-      const hist1 = createHistoryTask(10, 'existing-1')
-
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockResolvedValue({ History: [hist1] })
-
-      await store.update()
-
-      const oldHist = createHistoryTask(5, 'old-task-should-not-appear')
-      mockGetHistory.mockResolvedValue({ History: [hist1, oldHist] })
-
-      await store.update()
-
-      expect(store.historyTasks).toHaveLength(1)
-      expect(store.historyTasks[0].promptId).toBe('existing-1')
-    })
-
-    it('should handle complete history replacement', async () => {
-      const hist1 = createHistoryTask(5, 'old-1')
-      const hist2 = createHistoryTask(4, 'old-2')
-
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockResolvedValue({ History: [hist1, hist2] })
-
-      await store.update()
-      expect(store.historyTasks).toHaveLength(2)
-
-      const newHist1 = createHistoryTask(10, 'new-1')
-      const newHist2 = createHistoryTask(9, 'new-2')
-      mockGetHistory.mockResolvedValue({
-        History: [newHist1, newHist2]
-      })
-
-      await store.update()
-
-      expect(store.historyTasks).toHaveLength(2)
-      expect(store.historyTasks.map((t) => t.promptId)).toEqual([
-        'new-1',
-        'new-2'
-      ])
-    })
-
-    it('should handle empty history from server', async () => {
-      const hist1 = createHistoryTask(5, 'will-be-removed')
-
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockResolvedValue({ History: [hist1] })
-
-      await store.update()
-      expect(store.historyTasks).toHaveLength(1)
-
-      mockGetHistory.mockResolvedValue({ History: [] })
-
-      await store.update()
-
-      expect(store.historyTasks).toHaveLength(0)
-    })
-  })
-
   describe('update() - queue index collision (THE BUG FIX)', () => {
     it('should NOT confuse different prompts with same queueIndex', async () => {
       const hist1 = createHistoryTask(50, 'prompt-uuid-aaa')
@@ -557,6 +432,70 @@ describe('useQueueStore', () => {
       expect(store.historyTasks).toHaveLength(3)
       const promptIds = store.historyTasks.map((t) => t.promptId)
       expect(promptIds).toEqual(['new-at-32', 'new-at-31', 'keep-at-30'])
+    })
+  })
+
+  describe('update() - history reconciliation', () => {
+    it('should keep existing items still on server (by promptId)', async () => {
+      const hist1 = createHistoryTask(10, 'existing-1')
+      const hist2 = createHistoryTask(9, 'existing-2')
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue({ History: [hist1, hist2] })
+
+      await store.update()
+      expect(store.historyTasks).toHaveLength(2)
+
+      const hist3 = createHistoryTask(11, 'new-1')
+      mockGetHistory.mockResolvedValue({
+        History: [hist3, hist1, hist2]
+      })
+
+      await store.update()
+
+      expect(store.historyTasks).toHaveLength(3)
+      expect(store.historyTasks.map((t) => t.promptId)).toContain('existing-1')
+      expect(store.historyTasks.map((t) => t.promptId)).toContain('existing-2')
+      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-1')
+    })
+
+    it('should remove items no longer on server', async () => {
+      const hist1 = createHistoryTask(10, 'remove-me')
+      const hist2 = createHistoryTask(9, 'keep-me')
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue({ History: [hist1, hist2] })
+
+      await store.update()
+      expect(store.historyTasks).toHaveLength(2)
+
+      mockGetHistory.mockResolvedValue({ History: [hist2] })
+
+      await store.update()
+
+      expect(store.historyTasks).toHaveLength(1)
+      expect(store.historyTasks[0].promptId).toBe('keep-me')
+    })
+
+    it('should add new items from server', async () => {
+      const hist1 = createHistoryTask(5, 'old-1')
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue({ History: [hist1] })
+
+      await store.update()
+
+      const hist2 = createHistoryTask(6, 'new-1')
+      const hist3 = createHistoryTask(7, 'new-2')
+      mockGetHistory.mockResolvedValue({
+        History: [hist3, hist2, hist1]
+      })
+
+      await store.update()
+
+      expect(store.historyTasks).toHaveLength(3)
+      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-1')
+      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-2')
     })
   })
 

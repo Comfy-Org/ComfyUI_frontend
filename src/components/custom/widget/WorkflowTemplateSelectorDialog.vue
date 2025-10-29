@@ -36,53 +36,55 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative flex flex-wrap gap-2 px-6 pt-2 pb-4">
-        <!-- Model Filter -->
-        <MultiSelect
-          v-model="selectedModelObjects"
-          v-model:search-query="modelSearchText"
-          class="w-[250px]"
-          :label="modelFilterLabel"
-          :options="modelOptions"
-          :show-search-box="true"
-          :show-selected-count="true"
-          :show-clear-button="true"
-        >
-          <template #icon>
-            <i class="icon-[lucide--cpu]" />
-          </template>
-        </MultiSelect>
+      <div class="relative flex flex-wrap justify-between gap-2 px-6 pb-4">
+        <div class="flex flex-wrap gap-2">
+          <!-- Model Filter -->
+          <MultiSelect
+            v-model="selectedModelObjects"
+            v-model:search-query="modelSearchText"
+            class="w-[250px]"
+            :label="modelFilterLabel"
+            :options="modelOptions"
+            :show-search-box="true"
+            :show-selected-count="true"
+            :show-clear-button="true"
+          >
+            <template #icon>
+              <i class="icon-[lucide--cpu]" />
+            </template>
+          </MultiSelect>
 
-        <!-- Use Case Filter -->
-        <MultiSelect
-          v-model="selectedUseCaseObjects"
-          :label="useCaseFilterLabel"
-          :options="useCaseOptions"
-          :show-search-box="true"
-          :show-selected-count="true"
-          :show-clear-button="true"
-        >
-          <template #icon>
-            <i class="icon-[lucide--target]" />
-          </template>
-        </MultiSelect>
+          <!-- Use Case Filter -->
+          <MultiSelect
+            v-model="selectedUseCaseObjects"
+            :label="useCaseFilterLabel"
+            :options="useCaseOptions"
+            :show-search-box="true"
+            :show-selected-count="true"
+            :show-clear-button="true"
+          >
+            <template #icon>
+              <i class="icon-[lucide--target]" />
+            </template>
+          </MultiSelect>
 
-        <!-- License Filter -->
-        <MultiSelect
-          v-model="selectedLicenseObjects"
-          :label="licenseFilterLabel"
-          :options="licenseOptions"
-          :show-search-box="true"
-          :show-selected-count="true"
-          :show-clear-button="true"
-        >
-          <template #icon>
-            <i class="icon-[lucide--file-text]" />
-          </template>
-        </MultiSelect>
+          <!-- License Filter -->
+          <MultiSelect
+            v-model="selectedLicenseObjects"
+            :label="licenseFilterLabel"
+            :options="licenseOptions"
+            :show-search-box="true"
+            :show-selected-count="true"
+            :show-clear-button="true"
+          >
+            <template #icon>
+              <i class="icon-[lucide--file-text]" />
+            </template>
+          </MultiSelect>
+        </div>
 
         <!-- Sort Options -->
-        <div class="absolute right-5">
+        <div>
           <SingleSelect
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
@@ -144,7 +146,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
           >
             <template #top>
               <CardTop ratio="landscape">
@@ -178,7 +180,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -323,7 +325,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
           >
             <template #top>
               <CardTop ratio="square">
