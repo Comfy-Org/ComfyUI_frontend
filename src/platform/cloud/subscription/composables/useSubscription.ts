@@ -100,7 +100,7 @@ export function useSubscription() {
       useTelemetry()?.trackSubscription('modal_opened')
     }
 
-    dialogService.showSubscriptionRequiredDialog()
+    void dialogService.showSubscriptionRequiredDialog()
   }
 
   const manageSubscription = async () => {
