@@ -1955,7 +1955,6 @@
   "cloudClaimInvite_processingTitle": "處理邀請碼中...",
   "cloudClaimInvite_claimButton": "領取邀請",
   "cloudSorryContactSupport_title": "抱歉，請聯繫用戶支援",
-  "cloudVerifyEmail_title": "郵箱驗證",
   "cloudPrivateBeta_title": "Cloud 目前處於內測階段",
   "cloudPrivateBeta_desc": "登入即可加入等候名單，當您有內測資格時我們將及時通知。已收到通知？登入即可開始使用 Comfy Cloud。",
   "cloudForgotPassword_title": "忘記密碼",

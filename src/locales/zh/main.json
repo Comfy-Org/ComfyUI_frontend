@@ -1958,7 +1958,6 @@
   "cloudClaimInvite_processingTitle": "处理邀请码中...",
   "cloudClaimInvite_claimButton": "领取邀请",
   "cloudSorryContactSupport_title": "抱歉，请联系用户支持",
-  "cloudVerifyEmail_title": "邮箱验证",
   "cloudPrivateBeta_title": "Cloud 目前处于内测阶段",
   "cloudPrivateBeta_desc": "登录即可加入等候名单，当您有内测资格时我们将及时通知。已收到通知？登录即可开始使用 Comfy Cloud。",
   "cloudForgotPassword_title": "忘记密码",

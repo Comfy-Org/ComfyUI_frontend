@@ -68,8 +68,10 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
       {
         path: 'verify-email',
         name: 'cloud-verify-email',
-        component: () =>
-          import('@/platform/onboarding/cloud/CloudVerifyEmailView.vue')
+        redirect: (to) => ({
+          name: 'cloud-user-check',
+          query: to.query
+        })
       },
       {
         path: 'sorry-contact-support',

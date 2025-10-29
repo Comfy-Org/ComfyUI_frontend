@@ -1955,7 +1955,6 @@
   "cloudClaimInvite_processingTitle": "Procesando código de invitación...",
   "cloudClaimInvite_claimButton": "Reclamar Invitación",
   "cloudSorryContactSupport_title": "Lo sentimos, contacta al soporte",
-  "cloudVerifyEmail_title": "Verificación de Correo",
   "cloudPrivateBeta_title": "Cloud está actualmente en beta privada",
   "cloudPrivateBeta_desc": "Inicia sesión para unirte a la lista de espera. Te notificaremos cuando tengas acceso al beta. ¿Ya recibiste la notificación? Inicia sesión para empezar a usar Comfy Cloud.",
   "cloudForgotPassword_title": "Olvidé mi Contraseña",

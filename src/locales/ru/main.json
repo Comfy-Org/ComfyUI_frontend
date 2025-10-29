@@ -1955,7 +1955,6 @@
   "cloudClaimInvite_processingTitle": "Обработка кода приглашения...",
   "cloudClaimInvite_claimButton": "Получить приглашение",
   "cloudSorryContactSupport_title": "Извините, свяжитесь с поддержкой",
-  "cloudVerifyEmail_title": "Подтверждение email",
   "cloudPrivateBeta_title": "Cloud сейчас в приватной бете",
   "cloudPrivateBeta_desc": "Войдите, чтобы присоединиться к списку ожидания. Мы уведомим вас, когда будет доступен бета-доступ. Уже получили уведомление? Войдите и начните работать с Comfy Cloud.",
   "cloudForgotPassword_title": "Забыли пароль",

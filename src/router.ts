@@ -179,13 +179,6 @@ router.beforeEach(async (to, _from, next) => {
   // For root path, check actual user status to handle waitlisted users
   if (!isElectron() && isLoggedIn && to.path === '/') {
     try {
-      // Check email verification first
-      const authStore = useFirebaseAuthStore()
-      if (!authStore.isEmailVerified) {
-        // Don't pass fromAuth here since this is from root navigation, not auth flow
-        return next({ name: 'cloud-verify-email' })
-      }
-
       // Import auth functions dynamically to avoid circular dependency
       const { getUserCloudStatus, getSurveyCompletedStatus } = await import(
         '@/api/auth'
