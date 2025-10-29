@@ -189,7 +189,7 @@ jobs:
             ---
             🤖 Generated with [Claude Code](https://claude.com/claude-code)
           branch: api-changelog-v${{ steps.current_version.outputs.version }}
-          base: main
+          base: ${{ github.event_name == 'push' && github.ref_name || 'main' }}
           labels: documentation
           delete-branch: true
           draft: true
