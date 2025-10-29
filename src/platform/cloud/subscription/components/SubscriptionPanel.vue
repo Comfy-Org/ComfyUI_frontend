@@ -82,7 +82,12 @@
                 </div>
 
                 <div
-                  class="relative flex flex-col gap-6 rounded-2xl p-5 subscription-card"
+                  :class="
+                    cn(
+                      'relative flex flex-col gap-6 rounded-2xl p-5',
+                      'bg-smoke-100 dark-theme:bg-charcoal-600'
+                    )
+                  "
                 >
                   <Button
                     v-tooltip="refreshTooltip"
@@ -289,6 +294,7 @@ import SubscriptionBenefits from '@/platform/cloud/subscription/components/Subsc
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
+import { cn } from '@/utils/tailwindUtil'
 
 const {
   isActiveSubscription,
@@ -316,9 +322,5 @@ const {
 <style scoped>
 :deep(.bg-comfy-menu-secondary) {
   background-color: transparent;
-}
-
-.subscription-card {
-  background-color: var(--color-modal-card-surface);
 }
 </style>
