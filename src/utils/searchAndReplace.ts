@@ -49,6 +49,7 @@ export function applyTextReplacements(
     }
 
     return ((widget.value ?? '') + '').replaceAll(
+      // eslint-disable-next-line no-control-regex
       /[/?<>\\:*|"\x00-\x1F\x7F]/g,
       '_'
     )
