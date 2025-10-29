@@ -351,8 +351,8 @@ const handleResizePointerDown = (direction: ResizeHandleDirection) => {
 whenever(isCollapsed, () => {
   const element = nodeContainerRef.value
   if (!element) return
-  element.style.width = ''
-  element.style.height = ''
+  element.style.setProperty('--node-width', '')
+  element.style.setProperty('--node-height', '')
 })
 
 // Check if node has custom content (like image/video outputs)
