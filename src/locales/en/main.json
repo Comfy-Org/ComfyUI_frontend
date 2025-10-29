@@ -763,10 +763,11 @@
     "reinstall": "Re-Install"
   },
   "releaseToast": {
-    "newVersionAvailable": "New Version Available!",
-    "whatsNew": "What's New?",
+    "newVersionAvailable": "New update is out!",
+    "whatsNew": "See what's new",
     "skip": "Skip",
-    "update": "Update"
+    "update": "Update",
+    "description": "Check out the latest improvements and features in this update."
   },
   "menu": {
     "hideMenu": "Hide Menu",
@@ -1928,6 +1929,8 @@
   },
   "whatsNewPopup": {
     "learnMore": "Learn more",
+    "later": "Later",
+    "update": "Update",
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
