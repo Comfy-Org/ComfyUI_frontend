@@ -2672,7 +2672,7 @@ export class LGraphCanvas
       ): boolean {
         const outputLinks = [
           ...(output.links ?? []),
-          ...(output._floatingLinks ?? new Set())
+          ...[...(output._floatingLinks ?? new Set())]
         ]
         return outputLinks.some(
           (linkId) =>

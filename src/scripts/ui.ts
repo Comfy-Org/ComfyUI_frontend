@@ -256,9 +256,9 @@ class ComfyList {
         $el('h4', {
           textContent: section
         }),
-        $el('div.comfy-list-items',
+        $el('div.comfy-list-items', [
           // @ts-expect-error fixme ts strict error
-          (this.#reverse ? items[section].reverse() : items[section]).map(
+          ...(this.#reverse ? items[section].reverse() : items[section]).map(
             (item: TaskItem) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
               const removeAction =
@@ -297,7 +297,7 @@ class ComfyList {
               ])
             }
           )
-        )
+        ])
       ]),
       $el('div.comfy-list-actions', [
         $el('button', {
