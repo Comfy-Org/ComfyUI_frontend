@@ -53,6 +53,7 @@ import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { useDialogService } from '@/services/dialogService'
 import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -81,6 +82,7 @@ const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
+const dialogService = useDialogService()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 
 watch(
@@ -232,6 +234,16 @@ onMounted(() => {
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
+
+  // DEBUG: Auto-open settings dialog and navigate to subscription panel for testing
+  // Remove this code when testing is complete
+  setTimeout(() => {
+    // Debug: Setting subscription_required config and opening settings
+    if (window.__CONFIG__) {
+      window.__CONFIG__.subscription_required = true
+    }
+    dialogService.showSettingsDialog('subscription')
+  }, 2000) // Wait 2 seconds for app to fully initialize
 })
 
 onBeforeUnmount(() => {

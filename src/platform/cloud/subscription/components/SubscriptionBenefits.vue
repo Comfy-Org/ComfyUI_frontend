@@ -1,15 +1,15 @@
 <template>
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col items-start gap-1 self-stretch">
     <div class="flex items-start gap-2">
-      <i class="pi pi-check mt-1 text-sm" />
-      <span class="text-sm">
+      <i class="pi pi-check mt-1 text-xs text-text-primary" />
+      <span class="text-sm text-text-primary">
         {{ $t('subscription.benefits.benefit1') }}
       </span>
     </div>
 
     <div class="flex items-start gap-2">
-      <i class="pi pi-check mt-1 text-sm" />
-      <span class="text-sm">
+      <i class="pi pi-check mt-1 text-xs text-text-primary" />
+      <span class="text-sm text-text-primary">
         {{ $t('subscription.benefits.benefit2') }}
       </span>
     </div>
@@ -19,8 +19,15 @@
       text
       icon="pi pi-external-link"
       icon-pos="left"
-      size="small"
-      class="self-start !p-0 text-sm hover:!bg-transparent [&]:!text-[inherit]"
+      class="flex h-8 min-h-6 py-2 px-0 items-center gap-2 rounded text-text-secondary"
+      :pt="{
+        icon: {
+          class: 'text-xs text-text-secondary'
+        },
+        label: {
+          class: 'text-sm text-text-secondary'
+        }
+      }"
       @click="handleViewMoreDetails"
     />
   </div>
@@ -30,6 +37,6 @@
 import Button from 'primevue/button'
 
 const handleViewMoreDetails = () => {
-  window.open('https://www.comfy.org/cloud', '_blank')
+  window.open('https://www.comfy.org/cloud/pricing', '_blank')
 }
 </script>
