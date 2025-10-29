@@ -67,22 +67,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
       },
       {
         path: 'verify-email',
-        name: 'cloud-verify-email-deprecated',
+        name: 'cloud-verify-email',
         redirect: (to) => ({
           name: 'cloud-user-check',
-          query: to.query // Preserve invite codes and all other params
-        }),
-        // Optional: Track deprecated route usage for removal decision
-        beforeEnter: (to, _from, next) => {
-          // Log for monitoring - can be removed in future versions
-          console.warn(
-            'Deprecated email verification route accessed:',
-            to.fullPath
-          )
-          // Optional: Track with telemetry for usage analytics
-          // trackEvent('deprecated_route_accessed', { route: 'verify-email' })
-          next()
-        }
+          query: to.query
+        })
       },
       {
         path: 'sorry-contact-support',
