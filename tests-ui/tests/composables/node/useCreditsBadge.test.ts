@@ -58,7 +58,7 @@ describe('subgraph pricing', () => {
       for (let i = 0; i < 5; i++) subgraph.add(mockNode)
       updateSubgraphCredits(subgraphNode)
       expect(subgraphNode.badges.length).toBe(1)
-      expect(getBadgeText(subgraphNode)).toBe('5 x Partner Nodes')
+      expect(getBadgeText(subgraphNode)).toBe('Partner Nodes x 5')
     }
   )
 })

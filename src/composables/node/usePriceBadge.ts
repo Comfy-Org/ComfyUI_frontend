@@ -10,7 +10,7 @@ export const usePriceBadge = () => {
     node.badges = node.badges.filter((b) => !isCreditsBadge(b))
     const newBadges = collectCreditsBadges(node.subgraph)
     if (newBadges.length > 1) {
-      node.badges.push(getCreditsBadge(newBadges.length + ' x Partner Nodes'))
+      node.badges.push(getCreditsBadge('Partner Nodes x ' + newBadges.length))
     } else {
       node.badges.push(...newBadges)
     }
