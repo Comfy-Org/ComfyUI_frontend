@@ -12,7 +12,7 @@ This bootstraps the monorepo with dependencies, builds, tests, and dev server ve
 
 ## Quick Commands
 
-- `pnpm`: See all available commands
+- `pnpm run`: See all available commands
 - `pnpm dev`: Start development server (port 5173, via nx)
 - `pnpm typecheck`: Type checking
 - `pnpm build`: Build for production (via nx)

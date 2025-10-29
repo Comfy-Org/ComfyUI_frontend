@@ -4,7 +4,7 @@ Date: 2025-08-25
 
 ## Status
 
-Proposed
+Accepted
 
 <!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)] -->
 
