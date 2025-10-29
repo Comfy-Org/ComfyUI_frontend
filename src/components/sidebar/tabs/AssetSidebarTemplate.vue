@@ -18,6 +18,9 @@
     <ScrollPanel class="h-0 grow">
       <slot name="body" />
     </ScrollPanel>
+    <div v-if="slots.footer">
+      <slot name="footer" />
+    </div>
   </div>
 </template>
 

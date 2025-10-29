@@ -75,10 +75,10 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider v-if="showCopyJobId && showDeleteButton" />
+    <MediaAssetButtonDivider v-if="showCopyJobId && shouldShowDeleteButton" />
 
     <IconTextButton
-      v-if="showDeleteButton"
+      v-if="shouldShowDeleteButton"
       type="transparent"
       class="dark-theme:text-white"
       label="Delete"
@@ -101,8 +101,9 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetButtonDivider from './MediaAssetButtonDivider.vue'
 
-const { close } = defineProps<{
+const { close, showDeleteButton } = defineProps<{
   close: () => void
+  showDeleteButton?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -124,13 +125,12 @@ const showCopyJobId = computed(() => {
   return assetType.value !== 'input'
 })
 
-// Delete button should be shown for:
-// - All output files (can be deleted via history)
-// - Input files only in cloud environment
-const showDeleteButton = computed(() => {
-  return (
+const shouldShowDeleteButton = computed(() => {
+  const propAllows = showDeleteButton ?? true
+  const typeAllows =
     assetType.value === 'output' || (assetType.value === 'input' && isCloud)
-  )
+
+  return propAllows && typeAllows
 })
 
 const handleInspect = () => {

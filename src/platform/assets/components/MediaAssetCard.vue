@@ -15,9 +15,6 @@
     variant="ghost"
     rounded="lg"
     :class="containerClasses"
-    @click="handleCardClick"
-    @keydown.enter="handleCardClick"
-    @keydown.space.prevent="handleCardClick"
   >
     <template #top>
       <CardTop
@@ -50,6 +47,7 @@
         <!-- Actions overlay (top-left) - show on hover or when menu is open -->
         <template v-if="showActionsOverlay" #top-left>
           <MediaAssetActions
+            :show-delete-button="showDeleteButton ?? true"
             @menu-state-changed="isMenuOpen = $event"
             @inspect="handleZoomClick"
             @asset-deleted="handleAssetDelete"
@@ -174,12 +172,20 @@ function getBottomComponent(kind: MediaKind) {
   return mediaComponents.bottom[kind] || mediaComponents.bottom.image
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  showDeleteButton
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  showDeleteButton?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -311,12 +317,6 @@ const showFileFormatChip = computed(
     !!fileFormat.value &&
     (!isVideoPlaying.value || isCardOrOverlayHovered.value)
 )
-
-const handleCardClick = () => {
-  if (adaptedAsset.value) {
-    actions.selectAsset(adaptedAsset.value)
-  }
-}
 
 const handleOverlayMouseEnter = () => {
   isOverlayHovered.value = true

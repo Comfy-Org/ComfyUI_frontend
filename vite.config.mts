@@ -210,7 +210,7 @@ export default defineConfig({
       ? [
           visualizer({
             filename: 'dist/stats.html',
-            open: false,
+            open: true,
             gzipSize: true,
             brotliSize: true,
             template: 'treemap' // or 'sunburst', 'network'
@@ -243,8 +243,12 @@ export default defineConfig({
             return 'vendor-chart'
           }
 
-          if (id.includes('three') || id.includes('@xterm')) {
-            return 'vendor-visualization'
+          if (id.includes('three')) {
+            return 'vendor-three'
+          }
+
+          if (id.includes('@xterm')) {
+            return 'vendor-xterm'
           }
 
           if (id.includes('/vue') || id.includes('pinia')) {

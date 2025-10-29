@@ -12,7 +12,6 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type { AssetItem } from '../schemas/assetSchema'
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
@@ -20,10 +19,6 @@ export function useMediaAssetActions() {
   const toast = useToast()
   const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
-
-  const selectAsset = (asset: AssetMeta) => {
-    console.log('Asset selected:', asset)
-  }
 
   const downloadAsset = () => {
     const asset = mediaContext?.asset.value
@@ -45,6 +40,42 @@ export function useMediaAssetActions() {
         life: 2000
       })
     } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.failedToDownloadImage'),
+        life: 3000
+      })
+    }
+  }
+
+  /**
+   * Download multiple assets at once
+   * @param assets Array of assets to download
+   */
+  const downloadMultipleAssets = (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    try {
+      assets.forEach((asset) => {
+        const assetType = asset.tags?.[0] || 'output'
+        const filename = asset.name
+        const downloadUrl = api.apiURL(
+          `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
+        )
+        downloadFile(downloadUrl, filename)
+      })
+
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.selection.downloadsStarted', {
+          count: assets.length
+        }),
+        life: 2000
+      })
+    } catch (error) {
+      console.error('Failed to download assets:', error)
       toast.add({
         severity: 'error',
         summary: t('g.error'),
@@ -204,11 +235,85 @@ export function useMediaAssetActions() {
     console.log('Opening more outputs for asset:', assetId)
   }
 
+  /**
+   * Delete multiple assets with confirmation dialog
+   * @param assets Array of assets to delete
+   */
+  const deleteMultipleAssets = async (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    const assetsStore = useAssetsStore()
+
+    return new Promise<void>((resolve) => {
+      dialogStore.showDialog({
+        key: 'delete-multiple-assets-confirmation',
+        title: t('mediaAsset.deleteSelectedTitle'),
+        component: ConfirmationDialogContent,
+        props: {
+          message: t('mediaAsset.deleteSelectedDescription', {
+            count: assets.length
+          }),
+          type: 'delete',
+          itemList: assets.map((asset) => asset.name),
+          onConfirm: async () => {
+            try {
+              // Delete all assets
+              await Promise.all(
+                assets.map(async (asset) => {
+                  const assetType = asset.tags?.[0] || 'output'
+                  if (assetType === 'output') {
+                    const promptId =
+                      asset.id ||
+                      getOutputAssetMetadata(asset.user_metadata)?.promptId
+                    if (promptId) {
+                      await api.deleteItem('history', promptId)
+                    }
+                  } else if (isCloud) {
+                    await assetService.deleteAsset(asset.id)
+                  }
+                })
+              )
+
+              // Update stores after deletions
+              await assetsStore.updateHistory()
+              if (assets.some((a) => a.tags?.[0] === 'input')) {
+                await assetsStore.updateInputs()
+              }
+
+              toast.add({
+                severity: 'success',
+                summary: t('g.success'),
+                detail: t('mediaAsset.selection.assetsDeletedSuccessfully', {
+                  count: assets.length
+                }),
+                life: 2000
+              })
+            } catch (error) {
+              console.error('Failed to delete assets:', error)
+              toast.add({
+                severity: 'error',
+                summary: t('g.error'),
+                detail: t('mediaAsset.selection.failedToDeleteAssets'),
+                life: 3000
+              })
+            }
+
+            resolve()
+          },
+          onCancel: () => {
+            resolve()
+          }
+        }
+      })
+    })
+  }
+
   return {
-    selectAsset,
     downloadAsset,
+    downloadMultipleAssets,
     confirmDelete,
     deleteAsset,
+    deleteMultipleAssets,
     playAsset,
     copyJobId,
     addWorkflow,
