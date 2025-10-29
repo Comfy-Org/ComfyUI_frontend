@@ -1,4 +1,4 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, useLocalStorage } from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
@@ -11,6 +11,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -20,6 +21,11 @@ function useVueNodeLifecycleIndividual() {
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
 
   const { startSync } = useLayoutSync()
+
+  const isVueNodeToastDismissed = useLocalStorage(
+    'comfy.vueNodesMigration.dismissed',
+    false
+  )
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -75,11 +81,21 @@ function useVueNodeLifecycleIndividual() {
   // Watch for Vue nodes enabled state changes
   watch(
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
-    (enabled) => {
+    (enabled, wasEnabled) => {
       if (enabled) {
         initializeNodeManager()
         ensureCorrectLayoutScale()
+
+        // Only show toast when transitioning from disabled to enabled
+        if (!wasEnabled && !isVueNodeToastDismissed.value) {
+          useToastStore().add({
+            group: 'vue-nodes-migration',
+            severity: 'info',
+            life: 0 // Don't auto-hide
+          })
+        }
       } else {
+        comfyApp.canvas?.setDirty(true, true)
         disposeNodeManagerAndSyncs()
       }
     },

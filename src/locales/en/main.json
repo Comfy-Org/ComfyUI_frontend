@@ -1819,5 +1819,9 @@
         "Close": "Close"
       }
     }
+  },
+  "vueNodesMigration": {
+    "message": "Prefer the classic node design?",
+    "button": "Open Settings"
   }
 }
