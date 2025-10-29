@@ -1057,7 +1057,6 @@ export const CORE_SETTINGS: SettingParams[] = [
    */
   {
     id: 'Comfy.VueNodes.Enabled',
-    category: ['Comfy', 'Appearance', 'Nodes'],
     name: 'Modern Node Design (Vue Nodes)',
     type: 'boolean',
     tooltip:
@@ -1068,7 +1067,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.VueNodes.AutoScaleLayout',
-    name: 'Auto-scale layout for Vue nodes',
+    name: 'Auto-scale layout (Vue nodes)',
     tooltip:
       'Automatically scale node positions when switching to Vue rendering to prevent overlap',
     type: 'boolean',
