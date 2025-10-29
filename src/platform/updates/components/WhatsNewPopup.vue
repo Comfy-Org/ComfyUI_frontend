@@ -1,62 +1,62 @@
 <template>
-  <div v-if="shouldShow" class="whats-new-popup-container">
-    <!-- Arrow pointing to help center -->
-    <div class="help-center-arrow">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="19"
-        viewBox="0 0 16 19"
-        fill="none"
-      >
-        <!-- Arrow fill -->
-        <path
-          d="M15.25 1.27246L15.25 17.7275L0.999023 9.5L15.25 1.27246Z"
-          fill="#353535"
-        />
-        <!-- Top and bottom outlines only -->
-        <path
-          d="M15.25 1.27246L0.999023 9.5"
-          stroke="#4e4e4e"
-          stroke-width="1"
-          fill="none"
-        />
-        <path
-          d="M0.999023 9.5L15.25 17.7275"
-          stroke="#4e4e4e"
-          stroke-width="1"
-          fill="none"
-        />
-      </svg>
-    </div>
+  <div v-if="shouldShow" class="whats-new-popup-container left-4">
 
     <div class="whats-new-popup" @click.stop>
       <!-- Close Button -->
-      <button
-        class="close-button"
+      <Button
+        class="close-button absolute top-2 right-2 z-10 w-8 h-8 p-2 rounded-lg opacity-50"
         :aria-label="$t('g.close')"
+        icon="icon-[lucide--x]"
+        size="small"
+        :pt="{
+          root: {
+            style: {
+              'border': '1px solid var(--interface-menu-stroke)',
+              'background': 'var(--button-surface)'
+            }
+          },
+          icon: {
+            style: {
+              'color': 'white'
+            }
+          }
+        }"
         @click="closePopup"
-      >
-        <div class="close-icon"></div>
-      </button>
+      />
 
-      <!-- Release Content -->
-      <div class="popup-content">
+      <!-- Modal Body -->
+      <div class="modal-body flex flex-col gap-4 px-4 pt-6 pb-2 flex-1">
+        <!-- Release Content -->
         <div class="content-text" v-html="formattedContent"></div>
+      </div>
 
-        <!-- Actions Section -->
-        <div class="popup-actions">
-          <a
-            class="learn-more-link"
-            :href="changelogUrl"
-            target="_blank"
-            rel="noopener,noreferrer"
+      <!-- Modal Footer -->
+      <div
+        class="modal-footer flex justify-between items-center gap-4 px-4 pb-4"
+      >
+        <a
+          class="learn-more-link flex items-center gap-2 text-sm font-normal py-1"
+          :href="changelogUrl"
+          target="_blank"
+          rel="noopener,noreferrer"
+          @click="closePopup"
+        >
+          <i class="icon-[lucide--external-link]"></i>
+          {{ $t('whatsNewPopup.learnMore') }}
+        </a>
+        <div class="footer-actions flex items-center gap-4">
+          <button
+            class="action-secondary h-8 px-0 bg-transparent border-none text-sm font-normal rounded cursor-pointer"
             @click="closePopup"
           >
-            {{ $t('whatsNewPopup.learnMore') }}
-          </a>
-          <!-- TODO: CTA button -->
-          <!-- <button class="cta-button" @click="handleCTA">CTA</button> -->
+            {{ $t('whatsNewPopup.later') }}
+          </button>
+          <button
+            class="action-primary h-10 px-4 border-none text-sm font-normal rounded-lg cursor-pointer"
+            @click="handleCTA"
+          >
+            {{ $t('whatsNewPopup.update') }}
+          </button>
         </div>
       </div>
     </div>
@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -86,14 +87,31 @@ const emit = defineEmits<{
 // Local state for dismissed status
 const isDismissed = ref(false)
 
-// Get latest release from store
-const latestRelease = computed<ReleaseNote | null>(
-  () => releaseStore.recentRelease
-)
+// Get latest release from store (with mock data for testing)
+const latestRelease = computed<ReleaseNote | null>(() => {
+  // TODO: Remove this mock data - temporary test code
+  return {
+    version: '1.2.3',
+    content: `# ComfyUI 1.2.3 Release
+
+![Feature Preview](https://picsum.photos/400/200)
+
+## What's New
+
+- **Enhanced Node Performance**: Improved rendering speed by 40% for complex workflows
+- **New UI Components**: Added drag-and-drop functionality for better user experience  
+- **Bug Fixes**: Resolved memory leaks in long-running workflows
+
+Check out the new features and improvements in this release!`
+  } as ReleaseNote
+  
+  // return releaseStore.recentRelease
+})
 
 // Show popup when on latest version and not dismissed
 const shouldShow = computed(
-  () => releaseStore.shouldShowPopup && !isDismissed.value
+  () => true // TODO: Remove this line - temporary test code
+  // () => releaseStore.shouldShowPopup && !isDismissed.value
 )
 
 // Generate changelog URL with version anchor (language-aware)
@@ -112,7 +130,16 @@ const formattedContent = computed(() => {
   }
 
   try {
-    return renderMarkdownToHtml(latestRelease.value.content)
+    const markdown = latestRelease.value.content
+    // Replace the h1 with our custom title
+    const versionText = latestRelease.value.version
+      ? ` (${latestRelease.value.version})`
+      : ''
+    const customContent = markdown.replace(
+      /^# .+$/m,
+      `# What's new in our latest update${versionText}`
+    )
+    return renderMarkdownToHtml(customContent)
   } catch (error) {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks
@@ -137,6 +164,13 @@ const closePopup = async () => {
   hide()
 }
 
+const handleCTA = async () => {
+  window.open(
+    buildDocsUrl('/installation/update_comfyui', { includeLocale: true }),
+    '_blank'
+  )
+  await closePopup()
+}
 // Initialize on mount
 onMounted(async () => {
   // Fetch releases if not already loaded
@@ -163,124 +197,37 @@ defineExpose({
   pointer-events: auto;
 }
 
-/* Arrow pointing to help center */
-.help-center-arrow {
-  position: absolute;
-  bottom: calc(
-    var(--sidebar-width) * 2 + var(--sidebar-width) / 2
-  ); /* Position to center of help center icon (2 icons below + half icon height for center) */
-  transform: none;
-  z-index: 999;
-  pointer-events: none;
-}
-
-/* Position arrow based on sidebar location */
-.whats-new-popup-container.sidebar-left .help-center-arrow {
-  left: -14px; /* Overlap with popup outline */
-}
-
-.whats-new-popup-container.sidebar-left.small-sidebar .help-center-arrow {
-  left: -14px; /* Overlap with popup outline */
-  bottom: calc(
-    var(--sidebar-width) * 2 + var(--sidebar-icon-size) / 2 -
-      var(--whats-new-popup-bottom)
-  ); /* Position to center of help center icon (2 icons below + half icon height for center - what's new popup bottom position ) */
-}
-
-/* Sidebar positioning classes applied by parent */
-.whats-new-popup-container.sidebar-left {
-  left: 1rem;
-}
-
-.whats-new-popup-container.sidebar-left.small-sidebar {
-  left: 1rem;
-}
-
-.whats-new-popup-container.sidebar-right {
-  right: 1rem;
-}
 
 .whats-new-popup {
   background: var(--interface-menu-surface);
-  border-radius: 12px;
+  border-radius: var(--corner-radius-corner-radius-md, 8px);
   max-width: 400px;
   width: 400px;
-  outline: 1px solid var(--interface-menu-stroke);
-  outline-offset: -1px;
-  box-shadow: 0 8px 32px rgb(0 0 0 / 0.3);
+  border: 1px solid var(--interface-menu-stroke);
+  box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.20);
   position: relative;
-}
-
-/* Content Section */
-.popup-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 32px 32px 24px;
-  border-radius: 12px;
 }
 
-/* Close button */
-.close-button {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  background: var(--button-surface);
-  border-radius: 16px;
-  border: none;
-  cursor: pointer;
+/* Modal Body */
+.modal-body {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  transform: translate(30%, -30%);
-  transition:
-    background-color 0.2s ease,
-    transform 0.1s ease;
-  z-index: 1;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem 1rem 0.5rem;
+  flex: 1;
 }
 
-.close-button:hover {
-  background: var(--button-hover-surface);
+.modal-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.close-button:active {
-  background: var(--button-active-surface);
-  transform: translate(30%, -30%) scale(0.95);
-}
 
-.close-icon {
-  width: 16px;
-  height: 16px;
-  position: relative;
-  opacity: 0.9;
-  transition: opacity 0.2s ease;
-}
 
-.close-button:hover .close-icon {
-  opacity: 1;
-}
 
-.close-icon::before,
-.close-icon::after {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 2px;
-  background: var(--text-primary);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(45deg);
-  transition: background-color 0.2s ease;
-}
-
-.close-icon::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
 
 .content-text {
   color: var(--text-primary);
@@ -293,35 +240,31 @@ defineExpose({
 /* Title */
 .content-text :deep(*) {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 .content-text :deep(h1) {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-family: Inter, sans-serif;
+  font-size: 14px;
 }
 
 /* Version subtitle - targets the first p tag after h1 */
 .content-text :deep(h1 + p) {
   color: var(--text-secondary);
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
-  opacity: 0.8;
+  font-family: Inter, sans-serif;
 }
 
 /* Regular paragraphs - short description */
 .content-text :deep(p) {
-  margin-bottom: 16px;
-  color: var(--text-primary);
+  color: var(--text-secondary);
+  font-family: Inter, sans-serif;
+  margin: 1rem 0;
 }
 
 /* List */
 .content-text :deep(ul),
 .content-text :deep(ol) {
-  margin-bottom: 16px;
+  margin-bottom: 0;
   padding-left: 0;
   list-style: none;
 }
@@ -336,45 +279,45 @@ defineExpose({
   margin-bottom: 0;
 }
 
-/* List items */
 .content-text :deep(li) {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   position: relative;
-  padding-left: 20px;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2102;
 }
 
 .content-text :deep(li:last-child) {
   margin-bottom: 0;
 }
 
-/* Custom bullet points */
 .content-text :deep(li::before) {
   content: '';
   position: absolute;
-  left: 0;
-  top: 10px;
-  display: flex;
-  width: 8px;
-  height: 8px;
-  justify-content: center;
-  align-items: center;
-  aspect-ratio: 1/1;
-  border-radius: 100px;
-  background: var(--color-blue-200);
+  left: 4px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 50%;
+  background: transparent;
 }
 
-/* List item strong text */
 .content-text :deep(li strong) {
-  color: var(--text-primary);
+  color: var(--text-secondary);
+  font-family: Inter, sans-serif;
   font-size: 14px;
-  display: block;
-  margin-bottom: 4px;
+  font-weight: 400;
+  line-height: 1.2102;
+  margin-right: 4px;
 }
 
 .content-text :deep(li p) {
-  font-size: 12px;
-  margin-bottom: 0;
-  line-height: 2;
+  margin: 2px 0 0 0;
+  display: inline;
 }
 
 /* Code styling */
@@ -385,6 +328,24 @@ defineExpose({
   padding: 2px 6px;
   color: var(--text-primary);
   white-space: nowrap;
+}
+
+.content-text :deep(img) {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  margin: 0 0 16px 0;
+  object-fit: cover;
+  display: block;
+}
+
+.content-text :deep(h2) {
+  color: var(--text-primary);
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+  line-height: 1.4;
 }
 
 /* Remove top margin for first media element */
@@ -405,41 +366,74 @@ defineExpose({
   display: block;
 }
 
-/* Actions Section */
-.popup-actions {
+/* Modal Footer */
+.modal-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+  padding: 16px;
+  border-top: none;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .learn-more-link {
-  color: var(--color-blue-200);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
   font-size: 14px;
-  font-weight: 500;
-  line-height: 18.2px;
+  font-weight: 400;
+  line-height: 1.2102;
   text-decoration: none;
+  padding: 4px 0;
 }
 
 .learn-more-link:hover {
-  text-decoration: underline;
+  color: var(--text-primary);
 }
 
-.cta-button {
+.learn-more-link i {
+  width: 16px;
+  height: 16px;
+}
+
+.action-secondary {
+  height: 32px;
+  padding: 4px 0;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2102;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.action-secondary:hover {
+  color: var(--text-primary);
+}
+
+.action-primary {
   height: 40px;
-  padding: 0 20px;
-  background: var(--button-surface);
-  border-radius: 6px;
-  outline: 1px solid var(--interface-menu-stroke);
-  outline-offset: -1px;
+  padding: 8px 16px;
+  background: var(--interface-menu-component-surface-hovered);
+  border-radius: var(--base-corner-radius-corner-radius-md, 8px);
   border: none;
   color: var(--text-primary);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
+  line-height: 1.2102;
   cursor: pointer;
 }
 
-.cta-button:hover {
+.action-primary:hover {
   background: var(--button-hover-surface);
 }
 </style>
