@@ -58,6 +58,9 @@ export const useContextMenuTranslation = () => {
     LGraphCanvas.prototype
   )
 
+  // Install compatibility layer for getNodeMenuOptions
+  legacyMenuCompat.install(LGraphCanvas.prototype, 'getNodeMenuOptions')
+
   // Wrap getNodeMenuOptions to add new API items
   const nodeMenuFn = LGraphCanvas.prototype.getNodeMenuOptions
   const getNodeMenuOptionsWithExtensions = function (
@@ -73,10 +76,27 @@ export const useContextMenuTranslation = () => {
       res.push(item)
     }
 
+    // Add legacy monkey-patched items
+    const legacyItems = legacyMenuCompat.extractLegacyItems(
+      'getNodeMenuOptions',
+      this,
+      ...args
+    )
+    for (const item of legacyItems) {
+      res.push(item)
+    }
+
     return res
   }
 
   LGraphCanvas.prototype.getNodeMenuOptions = getNodeMenuOptionsWithExtensions
+
+  legacyMenuCompat.registerWrapper(
+    'getNodeMenuOptions',
+    getNodeMenuOptionsWithExtensions as (...args: unknown[]) => IContextMenuValue[],
+    nodeMenuFn as (...args: unknown[]) => IContextMenuValue[],
+    LGraphCanvas.prototype
+  )
 
   function translateMenus(
     values: readonly (IContextMenuValue | string | null)[] | undefined,

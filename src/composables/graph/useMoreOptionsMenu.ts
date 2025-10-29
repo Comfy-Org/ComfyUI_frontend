@@ -2,8 +2,10 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
+import { convertContextMenuToOptions } from './contextMenuConverter'
 import { useGroupMenuOptions } from './useGroupMenuOptions'
 import { useImageMenuOptions } from './useImageMenuOptions'
 import { useNodeMenuOptions } from './useNodeMenuOptions'
@@ -91,6 +93,8 @@ export function useMoreOptionsMenu() {
     computeSelectionFlags
   } = useSelectionState()
 
+  const canvasStore = useCanvasStore()
+
   const { getImageMenuOptions } = useImageMenuOptions()
   const {
     getNodeInfoOption,
@@ -138,6 +142,25 @@ export function useMoreOptionsMenu() {
         ? selectedGroups[0]
         : null
     const hasSubgraphsSelected = hasSubgraphs.value
+
+    // For single node selection, use LiteGraph menu as the primary source
+    if (
+      selectedNodes.value.length === 1 &&
+      !groupContext &&
+      canvasStore.canvas
+    ) {
+      try {
+        const node = selectedNodes.value[0]
+        const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
+        const options = convertContextMenuToOptions(rawItems)
+        return options
+      } catch (error) {
+        console.error('Error getting LiteGraph menu items:', error)
+        // Fall through to Vue menu as fallback
+      }
+    }
+
+    // For other cases (groups, multiple selections), build Vue menu
     const options: MenuOption[] = []
 
     // Section 1: Basic selection operations (Rename, Copy, Duplicate)
