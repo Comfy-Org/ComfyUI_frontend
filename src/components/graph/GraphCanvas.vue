@@ -3,9 +3,10 @@
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
-    <template v-if="showUI && workflowTabsPosition === 'Topbar'" #workflow-tabs>
+    <template v-if="showUI" #workflow-tabs>
       <TryVueNodeBanner />
       <div
+        v-if="workflowTabsPosition === 'Topbar'"
         class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
       >
         <!-- Native drag area for Electron -->
