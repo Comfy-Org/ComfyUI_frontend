@@ -61,8 +61,8 @@ export const useFirebaseAuthActions = () => {
     const hostname = window.location.hostname
     if (hostname.includes('cloud.comfy.org')) {
       if (route.query.inviteCode) {
-        const inviteCode = Array.isArray(route.query.inviteCode) 
-          ? route.query.inviteCode[0] 
+        const inviteCode = Array.isArray(route.query.inviteCode)
+          ? route.query.inviteCode[0]
           : route.query.inviteCode
         window.location.href = `/cloud/login?inviteCode=${encodeURIComponent(inviteCode || '')}`
       } else {
