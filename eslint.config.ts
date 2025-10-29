@@ -268,5 +268,5 @@ export default defineConfig([
     }
   },
   // Turn off ESLint rules that are already handled by oxlint
-  oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
+  ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
 ])
