@@ -11,7 +11,7 @@
           t('vueNodesMigration.message')
         }}</span>
         <Button
-          class="w-[120px]"
+          class="whitespace-nowrap"
           size="small"
           :label="t('vueNodesMigration.button')"
           text
@@ -23,18 +23,18 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core'
 import { useToast } from 'primevue'
 import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import { useI18n } from 'vue-i18n'
 
+import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()
 const toast = useToast()
 const dialogService = useDialogService()
-const isDismissed = useLocalStorage('comfy.vueNodesMigration.dismissed', false)
+const isDismissed = useVueNodesMigrationDismissed()
 
 const handleOpenSettings = () => {
   dialogService.showSettingsDialog()

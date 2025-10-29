@@ -1,9 +1,10 @@
-import { createSharedComposable, useLocalStorage } from '@vueuse/core'
+import { createSharedComposable } from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -22,10 +23,7 @@ function useVueNodeLifecycleIndividual() {
 
   const { startSync } = useLayoutSync()
 
-  const isVueNodeToastDismissed = useLocalStorage(
-    'comfy.vueNodesMigration.dismissed',
-    false
-  )
+  const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -86,12 +84,11 @@ function useVueNodeLifecycleIndividual() {
         initializeNodeManager()
         ensureCorrectLayoutScale()
 
-        // Only show toast when transitioning from disabled to enabled
         if (!wasEnabled && !isVueNodeToastDismissed.value) {
           useToastStore().add({
             group: 'vue-nodes-migration',
             severity: 'info',
-            life: 0 // Don't auto-hide
+            life: 0
           })
         }
       } else {
