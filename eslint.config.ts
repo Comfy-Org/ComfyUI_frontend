@@ -98,7 +98,7 @@ export default defineConfig([
   {
     plugins: {
       'unused-imports': unusedImports,
-      '@intlify/vue-i18n': pluginI18n as unknown as typeof unusedImports
+      '@intlify/vue-i18n': pluginI18n as any
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
