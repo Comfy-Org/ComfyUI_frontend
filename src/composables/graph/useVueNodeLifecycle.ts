@@ -81,6 +81,7 @@ function useVueNodeLifecycleIndividual() {
         ensureCorrectLayoutScale()
       } else {
         disposeNodeManagerAndSyncs()
+        ensureCorrectLayoutScale()
       }
     },
     { immediate: true }
