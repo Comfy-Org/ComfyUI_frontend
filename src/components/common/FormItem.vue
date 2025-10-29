@@ -55,7 +55,7 @@ const props = defineProps<{
 }>()
 
 function getFormAttrs(item: FormItem) {
-  const attrs = { ...(item.attrs || {}) }
+  const attrs = { ...item.attrs }
   const inputType = item.type
   if (typeof inputType === 'function') {
     attrs['renderFunction'] = () =>
