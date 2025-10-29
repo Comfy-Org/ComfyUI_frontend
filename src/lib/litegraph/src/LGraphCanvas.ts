@@ -86,7 +86,11 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
-import type { ClipboardItems, SubgraphIO } from './types/serialisation'
+import type {
+  ClipboardItems,
+  ISerialisedNode,
+  SubgraphIO
+} from './types/serialisation'
 import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
@@ -3941,17 +3945,26 @@ export class LGraphCanvas
     const { created, nodes, links, reroutes } = results
 
     // const failedNodes: ISerialisedNode[] = []
+    const subgraphIdMap: Record<string, string> = {}
+    // SubgraphV2: Remove always-clone behaviour
+    //Update subgraph ids
+    for (const subgraphInfo of parsed.subgraphs)
+      subgraphInfo.id = subgraphIdMap[subgraphInfo.id] = createUuidv4()
+    const allNodeInfo: ISerialisedNode[] = [
+      parsed.nodes ? [parsed.nodes] : [],
+      parsed.subgraphs ? parsed.subgraphs.map((s) => s.nodes ?? []) : []
+    ].flat(2)
+    for (const nodeInfo of allNodeInfo)
+      if (nodeInfo.type in subgraphIdMap)
+        nodeInfo.type = subgraphIdMap[nodeInfo.type]
 
     // Subgraphs
     for (const info of parsed.subgraphs) {
-      // SubgraphV2: Remove always-clone behaviour
-      const originalId = info.id
-      info.id = createUuidv4()
-
       const subgraph = graph.createSubgraph(info)
-      subgraph.configure(info)
-      results.subgraphs.set(originalId, subgraph)
+      results.subgraphs.set(info.id, subgraph)
     }
+    for (const info of parsed.subgraphs)
+      results.subgraphs.get(info.id)?.configure(info)
 
     // Groups
     for (const info of parsed.groups) {
@@ -3962,17 +3975,6 @@ export class LGraphCanvas
       graph.add(group)
       created.push(group)
     }
-
-    // Update subgraph ids with nesting
-    function updateSubgraphIds(nodes: { type: string }[]) {
-      for (const info of nodes) {
-        const subgraph = results.subgraphs.get(info.type)
-        if (!subgraph) continue
-        info.type = subgraph.id
-        updateSubgraphIds(subgraph.nodes)
-      }
-    }
-    updateSubgraphIds(parsed.nodes)
 
     // Nodes
     for (const info of parsed.nodes) {
