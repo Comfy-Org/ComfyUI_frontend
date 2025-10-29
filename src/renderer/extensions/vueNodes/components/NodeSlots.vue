@@ -39,7 +39,10 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import {
+  linkedWidgetedInputs,
+  nonWidgetedInputs
+} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
@@ -52,8 +55,14 @@ interface NodeSlotsProps {
 
 const { nodeData, unified = false } = defineProps<NodeSlotsProps>()
 
-// Filter out input slots that have corresponding widgets
-const filteredInputs = computed(() => nonWidgetedInputs(nodeData))
+const linkedWidgetInputs = computed(() =>
+  unified ? linkedWidgetedInputs(nodeData) : []
+)
+
+const filteredInputs = computed(() => [
+  ...nonWidgetedInputs(nodeData),
+  ...linkedWidgetInputs.value
+])
 
 const unifiedWrapperClass = computed((): string =>
   cn(
