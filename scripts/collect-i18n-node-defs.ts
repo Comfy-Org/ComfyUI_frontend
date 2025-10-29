@@ -173,7 +173,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
       .map((nodeDef) => {
         const inputs = {
           ...extractInputs(nodeDef),
-          ...(nodeDefLabels[nodeDef.name] ?? {})
+          ...nodeDefLabels[nodeDef.name]
         }
 
         return [
