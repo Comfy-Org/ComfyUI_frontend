@@ -172,6 +172,10 @@ export const useNodeBadge = () => {
               updateSubgraphCredits(node)
           }
         )
+        app.canvas.canvas.addEventListener<'subgraph-converted'>(
+          'subgraph-converted',
+          (e) => updateSubgraphCredits(e.detail.subgraphNode)
+        )
       },
       afterConfigureGraph() {
         for (const node of app.canvas.graph?.nodes ?? [])
