@@ -1,5 +1,10 @@
 <template>
-  <Toast group="vue-nodes-migration" position="bottom-center" class="w-auto">
+  <Toast
+    group="vue-nodes-migration"
+    position="bottom-center"
+    class="w-auto"
+    @close="handleClose"
+  >
     <template #message>
       <div class="flex flex-auto items-center justify-between gap-4">
         <span class="whitespace-nowrap">{{
@@ -34,6 +39,10 @@ const isDismissed = useLocalStorage('comfy.vueNodesMigration.dismissed', false)
 const handleOpenSettings = () => {
   dialogService.showSettingsDialog()
   toast.removeGroup('vue-nodes-migration')
+  isDismissed.value = true
+}
+
+const handleClose = () => {
   isDismissed.value = true
 }
 </script>
