@@ -104,7 +104,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
 
@@ -127,20 +126,8 @@ const onSuccess = async () => {
     summary: 'Sign up Completed',
     life: 2000
   })
-  // Check if email verification is needed
-  const { isEmailVerified } = useFirebaseAuthStore()
-  const inviteCode = route.query.inviteCode as string | undefined
-
-  if (!isEmailVerified) {
-    // Redirect to email verification with fromAuth flag
-    await router.push({
-      name: 'cloud-verify-email',
-      query: { inviteCode, fromAuth: 'true' }
-    })
-  } else {
-    // The invite code will be handled after the user is logged in
-    await router.push({ path: '/', query: route.query })
-  }
+  // Direct redirect to main app - email verification removed
+  await router.push({ path: '/', query: route.query })
 }
 
 // Custom error handler for inline display

@@ -1955,7 +1955,6 @@
   "cloudClaimInvite_processingTitle": "招待コードを処理中...",
   "cloudClaimInvite_claimButton": "招待を申請",
   "cloudSorryContactSupport_title": "申し訳ございません、サポートにお問い合わせください",
-  "cloudVerifyEmail_title": "メール確認",
   "cloudPrivateBeta_title": "Cloudは現在プライベートベータ版です",
   "cloudPrivateBeta_desc": "サインインしてウェイトリストに登録してください。ベータアクセスが可能になりましたらお知らせします。すでに通知を受け取りましたか？サインインしてComfy Cloudを始めてください。",
   "cloudForgotPassword_title": "パスワードを忘れた",

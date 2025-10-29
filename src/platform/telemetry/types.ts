@@ -104,9 +104,6 @@ export interface TelemetryProvider {
   // Survey flow events
   trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
-  // Email verification events
-  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void
-
   // Template workflow events
   trackTemplate(metadata: TemplateMetadata): void
 
@@ -140,11 +137,6 @@ export const TelemetryEvents = {
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
-
-  // Email Verification
-  USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
-  USER_EMAIL_VERIFY_REQUESTED: 'app:user_email_verify_requested',
-  USER_EMAIL_VERIFY_COMPLETED: 'app:user_email_verify_completed',
 
   // Template Tracking
   TEMPLATE_WORKFLOW_OPENED: 'app:template_workflow_opened',

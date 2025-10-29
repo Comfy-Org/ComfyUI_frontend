@@ -347,24 +347,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
-    let eventName: TelemetryEventName
-
-    switch (stage) {
-      case 'opened':
-        eventName = TelemetryEvents.USER_EMAIL_VERIFY_OPENED
-        break
-      case 'requested':
-        eventName = TelemetryEvents.USER_EMAIL_VERIFY_REQUESTED
-        break
-      case 'completed':
-        eventName = TelemetryEvents.USER_EMAIL_VERIFY_COMPLETED
-        break
-    }
-
-    this.trackEvent(eventName)
-  }
-
   trackTemplate(metadata: TemplateMetadata): void {
     this.trackEvent(TelemetryEvents.TEMPLATE_WORKFLOW_OPENED, metadata)
   }
