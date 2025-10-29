@@ -44,7 +44,7 @@
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
   >
-    <div class="flex items-center">
+    <div class="flex flex-col justify-center items-center relative">
       <template v-if="isCollapsed">
         <SlotConnectionDot
           v-if="hasInputs"
@@ -56,6 +56,7 @@
           multi
           class="absolute right-0 translate-x-1/2"
         />
+        <NodeSlots :node-data="nodeData" unified />
       </template>
       <NodeHeader
         :node-data="nodeData"

@@ -2,8 +2,11 @@
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ $t('Node Slots Error') }}
   </div>
-  <div v-else class="lg-node-slots flex justify-between">
-    <div v-if="filteredInputs.length" class="flex flex-col gap-1">
+  <div v-else :class="cn('flex justify-between', unifiedWrapperClass)">
+    <div
+      v-if="filteredInputs.length"
+      :class="cn('flex flex-col gap-1', unifiedDotsClass)"
+    >
       <InputSlot
         v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
@@ -14,7 +17,10 @@
       />
     </div>
 
-    <div v-if="nodeData?.outputs?.length" class="ml-auto flex flex-col gap-1">
+    <div
+      v-if="nodeData?.outputs?.length"
+      :class="cn('ml-auto flex flex-col gap-1', unifiedDotsClass)"
+    >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"
         :key="`output-${index}`"
@@ -34,18 +40,33 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
   nodeData: VueNodeData
+  unified?: boolean
 }
 
-const { nodeData } = defineProps<NodeSlotsProps>()
+const { nodeData, unified = false } = defineProps<NodeSlotsProps>()
 
 // Filter out input slots that have corresponding widgets
 const filteredInputs = computed(() => nonWidgetedInputs(nodeData))
+
+const unifiedWrapperClass = computed((): string =>
+  cn(
+    unified &&
+      'absolute inset-0 items-center pointer-events-none opacity-0 z-30'
+  )
+)
+const unifiedDotsClass = computed((): string =>
+  cn(
+    unified &&
+      'grid grid-cols-1 grid-rows-1 gap-0 [&>*]:row-span-full [&>*]:col-span-full place-items-center'
+  )
+)
 
 // Get the actual index of an input slot in the node's inputs array
 // (accounting for filtered widget slots)
