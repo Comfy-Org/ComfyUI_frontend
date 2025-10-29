@@ -7,6 +7,7 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
+import type { Linter } from 'eslint'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import {
@@ -89,21 +90,15 @@ export default defineConfig([
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
-  // Difference in typecheck on CI vs Local
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Bad types in the plugin
-  pluginVue.configs['flat/recommended'],
+  ...(pluginVue.configs['flat/recommended'] as Linter.Config[]),
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
-  // @ts-expect-error Bad types in the plugin
-  importX.flatConfigs.recommended,
-  // @ts-expect-error Bad types in the plugin
-  importX.flatConfigs.typescript,
+  importX.flatConfigs.recommended as Linter.Config,
+  importX.flatConfigs.typescript as Linter.Config,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // @ts-expect-error Bad types in the plugin
-      '@intlify/vue-i18n': pluginI18n
+      '@intlify/vue-i18n': pluginI18n as unknown as typeof unusedImports
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
