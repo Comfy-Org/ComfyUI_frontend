@@ -599,6 +599,9 @@
     "nodeLibrary": "Node Library",
     "workflows": "Workflows",
     "templates": "Templates",
+    "assets": "Assets",
+    "mediaAssets": "Media Assets",
+    "backToAssets": "Back to all assets",
     "labels": {
       "queue": "Queue",
       "nodes": "Nodes",
@@ -606,8 +609,15 @@
       "workflows": "Workflows",
       "templates": "Templates",
       "console": "Console",
-      "menu": "Menu"
+      "menu": "Menu",
+      "assets": "Assets",
+      "imported": "Imported",
+      "generated": "Generated"
     },
+    "noFilesFound": "No files found",
+    "noImportedFiles": "No imported files found",
+    "noGeneratedFiles": "No generated files found",
+    "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
@@ -1760,7 +1770,24 @@
     "sortAZ": "A-Z",
     "sortZA": "Z-A",
     "sortRecent": "Recent",
-    "sortPopular": "Popular"
+    "sortPopular": "Popular",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} asset",
+      "loadingAsset": "Loading asset"
+    }
+  },
+  "mediaAsset": {
+    "deleteAssetTitle": "Delete this asset?",
+    "deleteAssetDescription": "This asset will be permanently removed.",
+    "assetDeletedSuccessfully": "Asset deleted successfully",
+    "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
+    "failedToDeleteAsset": "Failed to delete asset",
+    "jobIdToast": {
+      "jobIdCopied": "Job ID copied to clipboard",
+      "jobIdCopyFailed": "Failed to copy Job ID",
+      "copied": "Copied",
+      "error": "Error"
+    }
   },
   "actionbar": {
     "dockToTop": "Dock to top"

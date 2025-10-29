@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative h-full w-full overflow-hidden rounded bg-black"
+    class="relative size-full overflow-hidden rounded bg-black"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
@@ -9,7 +9,7 @@
       :controls="shouldShowControls"
       preload="none"
       :poster="asset.preview_url"
-      class="relative h-full w-full object-contain"
+      class="relative size-full object-contain"
       @click.stop
       @play="onVideoPlay"
       @pause="onVideoPause"
