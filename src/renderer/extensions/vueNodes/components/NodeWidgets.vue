@@ -35,7 +35,7 @@
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="widget.slotMetadata.index"
-          :dot-only="true"
+          dot-only
         />
       </div>
       <!-- Widget Component -->
@@ -140,9 +140,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // This prevents conflicting input sources - when a slot is linked to another
     // node's output, the widget should be read-only to avoid data conflicts
     if (slotMetadata?.linked) {
-      widgetOptions = widget.options
-        ? { ...widget.options, disabled: true }
-        : { disabled: true }
+      widgetOptions = { ...widget.options, disabled: true }
     }
 
     const simplified: SimplifiedWidget = {
