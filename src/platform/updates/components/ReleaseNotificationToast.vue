@@ -4,7 +4,7 @@
       <!-- Header section with icon and text -->
       <div class="toast-header">
         <div class="toast-icon">
-          <i class="pi pi-download" />
+          <i class="icon-[lucide--rocket]" />
         </div>
         <div class="toast-text">
           <div class="toast-title">
@@ -16,28 +16,34 @@
         </div>
       </div>
 
-      <!-- Actions section -->
-      <div class="toast-actions-section">
-        <div class="actions-row">
-          <div class="left-actions">
-            <a
-              class="learn-more-link"
-              :href="changelogUrl"
-              target="_blank"
-              rel="noopener,noreferrer"
-              @click="handleLearnMore"
-            >
-              {{ $t('releaseToast.whatsNew') }}
-            </a>
-          </div>
-          <div class="right-actions">
-            <button class="skip-button" @click="handleSkip">
-              {{ $t('releaseToast.skip') }}
-            </button>
-            <button class="cta-button" @click="handleUpdate">
-              {{ $t('releaseToast.update') }}
-            </button>
-          </div>
+      <!-- Description section -->
+      <div class="toast-description" v-html="formattedContent"></div>
+
+      <!-- Footer section -->
+      <div class="toast-footer">
+        <a
+          class="learn-more-link flex items-center gap-2 text-sm font-normal py-1"
+          :href="changelogUrl"
+          target="_blank"
+          rel="noopener,noreferrer"
+          @click="handleLearnMore"
+        >
+          <i class="icon-[lucide--external-link]"></i>
+          {{ $t('releaseToast.whatsNew') }}
+        </a>
+        <div class="footer-actions flex items-center gap-4">
+          <button
+            class="action-secondary h-6 px-0 bg-transparent border-none text-sm font-normal cursor-pointer"
+            @click="handleSkip"
+          >
+            {{ $t('releaseToast.skip') }}
+          </button>
+          <button
+            class="action-primary h-10 px-4 border-none text-sm font-normal rounded-lg cursor-pointer"
+            @click="handleUpdate"
+          >
+            {{ $t('releaseToast.update') }}
+          </button>
         </div>
       </div>
     </div>
@@ -49,6 +55,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
@@ -77,6 +84,23 @@ const changelogUrl = computed(() => {
     return `${changelogBaseUrl}#${versionAnchor}`
   }
   return changelogBaseUrl
+})
+
+const formattedContent = computed(() => {
+  if (!latestRelease.value?.content) {
+    return `<p>Check out the latest improvements and features in this update.</p>`
+  }
+
+  try {
+    const markdown = latestRelease.value.content
+    // Remove the h1 title line for toast mode
+    const contentWithoutTitle = markdown.replace(/^# .+$/m, '')
+    return renderMarkdownToHtml(contentWithoutTitle)
+  } catch (error) {
+    console.error('Error parsing markdown:', error)
+    // Fallback to plain text with line breaks
+    return latestRelease.value.content.replace(/\n/g, '<br>')
+  }
 })
 
 // Auto-hide timer
@@ -168,39 +192,37 @@ onMounted(async () => {
 
 /* Main toast container */
 .release-notification-toast {
-  width: 448px;
-  padding: 16px 16px 8px;
+  width: 384px;
   background: var(--interface-menu-surface);
-  box-shadow: 0 4px 4px rgb(0 0 0 / 0.25);
-  border-radius: 12px;
-  outline: 1px solid var(--interface-menu-stroke);
-  outline-offset: -1px;
+  box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.20);
+  border-radius: var(--corner-radius-corner-radius-md, 8px);
+  border: 1px solid var(--interface-menu-stroke);
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 /* Header section */
 .toast-header {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
+  align-items: center;
+  padding: 16px 16px 0;
 }
 
 /* Icon container */
 .toast-icon {
-  width: 42px;
-  height: 42px;
-  padding: 10px;
-  background: rgb(from var(--color-blue-100) r g b / 0.2);
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  padding: 12px;
+  background: var(--color-interface-menu-keybind-surface-blue);
+  border-radius: var(--corner-radius-corner-radius-md, 8px);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .toast-icon i {
-  color: var(--color-blue-100);
+  color: white;
   font-size: 16px;
 }
 
@@ -209,100 +231,173 @@ onMounted(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 4px;
 }
 
 .toast-title {
   color: var(--text-primary);
   font-size: 14px;
-  font-family: 'Satoshi', sans-serif;
-  font-weight: 500;
-  line-height: 18.2px;
+  font-family: Inter, sans-serif;
+  font-weight: 400;
+  line-height: 1.429;
 }
 
 .toast-version-badge {
   color: var(--text-secondary);
-  font-size: 12px;
-  font-family: 'Satoshi', sans-serif;
-  font-weight: 500;
-  line-height: 15.6px;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+  font-weight: 400;
+  line-height: 1.21;
 }
 
-/* Actions section */
-.toast-actions-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* Description section */
+.toast-description {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 16px;
+  padding-left: 72px;
+  word-wrap: break-word;
 }
 
-.actions-row {
-  padding-left: 58px; /* Align with text content */
-  padding-right: 0;
+/* Style the markdown content */
+.toast-description :deep(*) {
+  box-sizing: border-box;
+}
+
+.toast-description :deep(h1) {
+  color: var(--text-primary);
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  margin: 0 0 8px 0;
+}
+
+.toast-description :deep(p) {
+  color: var(--text-secondary);
+  font-family: Inter, sans-serif;
+  margin: 8px 0;
+}
+
+.toast-description :deep(ul),
+.toast-description :deep(ol) {
+  margin-bottom: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.toast-description :deep(li) {
+  margin-bottom: 6px;
+  position: relative;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.21;
+}
+
+.toast-description :deep(li::before) {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.toast-description :deep(li strong) {
+  color: var(--text-secondary);
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.21;
+  margin-right: 4px;
+}
+
+.toast-description :deep(code) {
+  background-color: var(--input-surface);
+  border: 1px solid var(--interface-menu-stroke);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* Footer section */
+.toast-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  padding: 0 16px 16px;
 }
 
-.left-actions {
+.footer-actions {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
-/* Learn more link - simple text link */
 .learn-more-link {
-  color: var(--color-blue-200);
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  line-height: 15.6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.21;
   text-decoration: none;
+  padding: 4px 0;
+  font-family: Inter, sans-serif;
 }
 
 .learn-more-link:hover {
-  text-decoration: underline;
+  color: var(--text-primary);
 }
 
-.right-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.learn-more-link i {
+  width: 16px;
+  height: 16px;
 }
 
-/* Button styles */
-.skip-button {
-  padding: 8px 16px;
-  background: var(--interface-menu-surface);
-  border-radius: 6px;
-  outline: 1px solid var(--interface-menu-stroke);
-  outline-offset: -1px;
+.action-secondary {
+  height: 24px;
+  padding: 4px 0;
+  background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.21;
   cursor: pointer;
+  border-radius: 4px;
+  font-family: Inter, sans-serif;
 }
 
-.skip-button:hover {
-  background: var(--button-hover-surface);
+.action-secondary:hover {
+  color: var(--text-primary);
 }
 
-.cta-button {
+.action-primary {
+  height: 40px;
   padding: 8px 16px;
-  background: var(--button-surface);
-  border-radius: 6px;
-  outline: 1px solid var(--interface-menu-stroke);
-  outline-offset: -1px;
+  background: var(--interface-menu-component-surface-hovered);
+  border-radius: var(--base-corner-radius-corner-radius-md, 8px);
   border: none;
-  color: var(--button-surface-contrast);
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.21;
   cursor: pointer;
+  font-family: Inter, sans-serif;
 }
 
-.cta-button:hover {
+.action-primary:hover {
   background: var(--button-hover-surface);
 }
 </style>
