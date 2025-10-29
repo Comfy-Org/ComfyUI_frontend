@@ -1,6 +1,6 @@
 <template>
   <IconGroup>
-    <IconButton v-if="showDeleteButton" size="sm" @click="handleDelete">
+    <IconButton v-if="shouldShowDeleteButton" size="sm" @click="handleDelete">
       <i class="icon-[lucide--trash-2] size-4" />
     </IconButton>
     <IconButton size="sm" @click="handleDownload">
@@ -14,6 +14,7 @@
       <template #default="{ close }">
         <MediaAssetMoreMenu
           :close="close"
+          :show-delete-button="showDeleteButton"
           @inspect="emit('inspect')"
           @asset-deleted="emit('asset-deleted')"
         />
@@ -34,6 +35,10 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
 
+const { showDeleteButton } = defineProps<{
+  showDeleteButton?: boolean
+}>()
+
 const emit = defineEmits<{
   menuStateChanged: [isOpen: boolean]
   inspect: []
@@ -47,10 +52,12 @@ const assetType = computed(() => {
   return context?.value?.type || asset.value?.tags?.[0] || 'output'
 })
 
-const showDeleteButton = computed(() => {
-  return (
+const shouldShowDeleteButton = computed(() => {
+  const propAllows = showDeleteButton ?? true
+  const typeAllows =
     assetType.value === 'output' || (assetType.value === 'input' && isCloud)
-  )
+
+  return propAllows && typeAllows
 })
 
 const handleDelete = async () => {

@@ -1,5 +1,5 @@
 import { useKeyModifier } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
@@ -7,10 +7,18 @@ import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSe
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
 
-  // Key modifiers
-  const shiftKey = useKeyModifier('Shift')
-  const ctrlKey = useKeyModifier('Control')
-  const metaKey = useKeyModifier('Meta')
+  // Track whether the asset selection is active (e.g., when sidebar is open)
+  const isActive = ref<boolean>(true)
+
+  // Key modifiers - raw values
+  const shiftKeyRaw = useKeyModifier('Shift')
+  const ctrlKeyRaw = useKeyModifier('Control')
+  const metaKeyRaw = useKeyModifier('Meta')
+
+  // Only respond to key modifiers when active
+  const shiftKey = computed(() => isActive.value && shiftKeyRaw.value)
+  const ctrlKey = computed(() => isActive.value && ctrlKeyRaw.value)
+  const metaKey = computed(() => isActive.value && metaKeyRaw.value)
   const cmdOrCtrlKey = computed(() => ctrlKey.value || metaKey.value)
 
   /**
@@ -80,6 +88,22 @@ export function useAssetSelection() {
     return allAssets.filter((asset) => selectionStore.isSelected(asset.id))
   }
 
+  /**
+   * Activate key event listeners (when sidebar opens)
+   */
+  function activate() {
+    isActive.value = true
+  }
+
+  /**
+   * Deactivate key event listeners (when sidebar closes)
+   */
+  function deactivate() {
+    isActive.value = false
+    // Reset selection state to ensure clean state when deactivated
+    selectionStore.reset()
+  }
+
   return {
     // Selection state
     selectedIds: computed(() => selectionStore.selectedAssetIds),
@@ -93,6 +117,10 @@ export function useAssetSelection() {
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
     reset: () => selectionStore.reset(),
+
+    // Lifecycle management
+    activate,
+    deactivate,
 
     // Key states (for UI feedback)
     shiftKey,

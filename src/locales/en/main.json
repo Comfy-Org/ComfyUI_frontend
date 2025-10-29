@@ -1779,6 +1779,8 @@
   "mediaAsset": {
     "deleteAssetTitle": "Delete this asset?",
     "deleteAssetDescription": "This asset will be permanently removed.",
+    "deleteSelectedTitle": "Delete selected assets?",
+    "deleteSelectedDescription": "{count} asset(s) will be permanently removed.",
     "assetDeletedSuccessfully": "Asset deleted successfully",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
@@ -1793,7 +1795,10 @@
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
       "deleteSelected": "Delete",
-      "downloadStarted": "Downloading {count} files..."
+      "downloadStarted": "Downloading {count} files...",
+      "downloadsStarted": "Started downloading {count} file(s)",
+      "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
+      "failedToDeleteAssets": "Failed to delete selected assets"
     }
   },
   "actionbar": {

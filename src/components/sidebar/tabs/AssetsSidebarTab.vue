@@ -58,6 +58,7 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
+              :show-delete-button="!isInFolderView"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
@@ -115,6 +116,7 @@
         </div>
         <div class="flex gap-2">
           <IconTextButton
+            v-if="!isInFolderView"
             :label="$t('mediaAsset.selection.deleteSelected')"
             type="secondary"
             icon-position="right"
@@ -147,7 +149,7 @@
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
@@ -160,6 +162,7 @@ import { t } from '@/i18n'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -202,11 +205,11 @@ const {
   selectedCount,
   clearSelection,
   getSelectedAssets,
-  reset: resetSelection
+  activate: activateSelection,
+  deactivate: deactivateSelection
 } = useAssetSelection()
 
-// Asset actions - will be used for individual assets later
-// const { downloadAsset, deleteAsset } = useMediaAssetActions()
+const { downloadMultipleAssets, deleteMultipleAssets } = useMediaAssetActions()
 
 // Hover state for selection count
 const isHoveringSelectionCount = ref(false)
@@ -347,9 +350,12 @@ const exitFolderView = () => {
   clearSelection()
 }
 
-// Clean up selection when component unmounts
+onMounted(() => {
+  activateSelection()
+})
+
 onUnmounted(() => {
-  resetSelection()
+  deactivateSelection()
 })
 
 const handleDeselectAll = () => {
@@ -380,15 +386,13 @@ const copyJobId = async () => {
 
 const handleDownloadSelected = () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
-  // TODO: Implement actual download logic
-  // eslint-disable-next-line no-console
-  console.log('Download selected assets:', selectedAssets)
+  downloadMultipleAssets(selectedAssets)
+  clearSelection()
 }
 
 const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
-  // TODO: Implement actual delete logic
-  // eslint-disable-next-line no-console
-  console.log('Delete selected assets:', selectedAssets)
+  await deleteMultipleAssets(selectedAssets)
+  clearSelection()
 }
 </script>
