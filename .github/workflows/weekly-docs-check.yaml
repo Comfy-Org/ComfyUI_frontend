@@ -132,7 +132,7 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PR_GH_TOKEN }}
           commit-message: 'docs: weekly documentation accuracy update'
           branch: docs/weekly-update
           delete-branch: true
