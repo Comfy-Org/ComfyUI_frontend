@@ -1,5 +1,10 @@
 <template>
   <div
+    v-tooltip="{
+      value: t('sideToolbar.labels.menu'),
+      showDelay: 300,
+      hideDelay: 300
+    }"
     class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center p-2 transition-colors"
     :class="{
       'comfy-menu-button-active': menuRef?.visible
@@ -12,12 +17,6 @@
         class="comfyui-logo h-[18px] w-[18px] text-white"
         mode="fill"
       />
-
-      <span
-        v-if="!isSmall"
-        class="side-bar-button-label mt-1 text-center text-[10px]"
-        >{{ t('sideToolbar.labels.menu') }}</span
-      >
     </div>
   </div>
 
@@ -97,10 +96,6 @@ const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const dialogStore = useDialogStore()
 const managerState = useManagerState()
-
-const { isSmall = false } = defineProps<{
-  isSmall?: boolean
-}>()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null

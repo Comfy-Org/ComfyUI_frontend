@@ -19,7 +19,7 @@
       "
     >
       <div ref="topToolbarRef" :class="groupClasses">
-        <ComfyMenuButton :is-small="isSmall" />
+        <ComfyMenuButton />
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
