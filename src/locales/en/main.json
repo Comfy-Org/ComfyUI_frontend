@@ -1648,7 +1648,6 @@
     "viewUsageHistory": "View usage history",
     "addApiCredits": "Add API credits",
     "addCredits": "Add credits",
-    "refreshesOn": "Refreshes on {date}",
     "monthlyCreditsRollover": "These credits will rollover to the next month",
     "monthlyBonusDescription": "Monthly credit bonus",
     "prepaidDescription": "Pre-paid credits",
