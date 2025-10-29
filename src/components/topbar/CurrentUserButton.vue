@@ -2,7 +2,7 @@
 <template>
   <div>
     <Button
-      v-if="isLoggedIn || true"
+      v-if="isLoggedIn"
       class="user-profile-button p-1 hover:bg-transparent"
       severity="secondary"
       text
