@@ -990,6 +990,7 @@
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Focus Mode": "Focus Mode",
+    "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
     "Queue Panel": "Queue Panel",
@@ -1056,7 +1057,8 @@
     "3DViewer": "3DViewer",
     "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
-    "PlanCredits": "Plan & Credits"
+    "PlanCredits": "Plan & Credits",
+    "VueNodes": "Vue Nodes"
   },
   "serverConfigItems": {
     "listen": {
