@@ -1,7 +1,6 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive } from 'vue'
-
+import { computed, shallowReactive, ref } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -85,8 +84,13 @@ function mapHistoryToAssets(historyItems: HistoryTaskItem[]): AssetItem[] {
   )
 }
 
+const BATCH_SIZE = 200
+
 export const useAssetsStore = defineStore('assets', () => {
-  const maxHistoryItems = 200
+  const historyOffset = ref(0)
+  const hasMoreHistory = ref(true)
+  const isLoadingMore = ref(false)
+  const allHistoryItems = ref<AssetItem[]>([])
 
   const getFetchInputFiles = () => {
     if (isCloud) {
@@ -109,23 +113,66 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const fetchHistoryAssets = async (): Promise<AssetItem[]> => {
-    const history = await api.getHistory(maxHistoryItems)
-    return mapHistoryToAssets(history.History)
+  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+    if (!loadMore) {
+      historyOffset.value = 0
+      hasMoreHistory.value = true
+      allHistoryItems.value = []
+    }
+
+    const history = await api.getHistory(BATCH_SIZE, {
+      offset: historyOffset.value
+    })
+    const newAssets = mapHistoryToAssets(history.History)
+
+    if (loadMore) {
+      const existingIds = new Set(allHistoryItems.value.map((item) => item.id))
+      const uniqueNewAssets = newAssets.filter(
+        (item) => !existingIds.has(item.id)
+      )
+      allHistoryItems.value = [...allHistoryItems.value, ...uniqueNewAssets]
+    } else {
+      allHistoryItems.value = newAssets
+    }
+
+    hasMoreHistory.value = newAssets.length === BATCH_SIZE
+    historyOffset.value += newAssets.length
+
+    return allHistoryItems.value
   }
 
-  const {
-    state: historyAssets,
-    isLoading: historyLoading,
-    error: historyError,
-    execute: updateHistory
-  } = useAsyncState(fetchHistoryAssets, [], {
-    immediate: false,
-    resetOnExecute: false,
-    onError: (err) => {
+  const historyAssets = ref<AssetItem[]>([])
+  const historyLoading = ref(false)
+  const historyError = ref<unknown>(null)
+
+  const updateHistory = async () => {
+    historyLoading.value = true
+    historyError.value = null
+    try {
+      const assets = await fetchHistoryAssets(false)
+      historyAssets.value = assets
+    } catch (err) {
       console.error('Error fetching history assets:', err)
+      historyError.value = err
+    } finally {
+      historyLoading.value = false
     }
-  })
+  }
+
+  const loadMoreHistory = async () => {
+    if (!hasMoreHistory.value || isLoadingMore.value) return
+
+    isLoadingMore.value = true
+    try {
+      const updatedAssets = await fetchHistoryAssets(true)
+      historyAssets.value = updatedAssets
+    } catch (err) {
+      console.error('Error loading more history:', err)
+      historyError.value = err
+    } finally {
+      isLoadingMore.value = false
+    }
+  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -248,6 +295,8 @@ export const useAssetsStore = defineStore('assets', () => {
     historyLoading,
     inputError,
     historyError,
+    hasMoreHistory,
+    isLoadingMore,
 
     // Actions
     updateInputs,
@@ -261,6 +310,7 @@ export const useAssetsStore = defineStore('assets', () => {
     modelAssetsByNodeType,
     modelLoadingByNodeType,
     modelErrorByNodeType,
-    updateModelsForNodeType
+    updateModelsForNodeType,
+    loadMoreHistory
   }
 })

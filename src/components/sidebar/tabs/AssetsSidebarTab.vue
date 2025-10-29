@@ -43,7 +43,7 @@
     <template #body>
       <div v-if="displayAssets.length" class="relative size-full">
         <VirtualGrid
-          v-if="displayAssets.length"
+          v-if="!loading"
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
@@ -51,6 +51,7 @@
             padding: '0.5rem',
             gap: '0.5rem'
           }"
+          @approach-end="handleApproachEnd"
         >
           <template #item="{ item }">
             <MediaAssetCard
@@ -66,24 +67,24 @@
             />
           </template>
         </VirtualGrid>
-        <div v-else-if="loading">
+        <div v-else>
           <ProgressSpinner
             class="absolute left-1/2 w-[50px] -translate-x-1/2"
           />
         </div>
-        <div v-else>
-          <NoResultsPlaceholder
-            icon="pi pi-info-circle"
-            :title="
-              $t(
-                activeTab === 'input'
-                  ? 'sideToolbar.noImportedFiles'
-                  : 'sideToolbar.noGeneratedFiles'
-              )
-            "
-            :message="$t('sideToolbar.noFilesFoundMessage')"
-          />
-        </div>
+      </div>
+      <div v-else>
+        <NoResultsPlaceholder
+          icon="pi pi-info-circle"
+          :title="
+            $t(
+              activeTab === 'input'
+                ? 'sideToolbar.noImportedFiles'
+                : 'sideToolbar.noGeneratedFiles'
+            )
+          "
+          :message="$t('sideToolbar.noFilesFoundMessage')"
+        />
       </div>
     </template>
     <template #footer>
@@ -291,6 +292,7 @@ watch(
   activeTab,
   () => {
     clearSelection()
+    // Reset pagination state when tab changes
     void refreshAssets()
   },
   { immediate: true }
@@ -394,5 +396,17 @@ const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
   await deleteMultipleAssets(selectedAssets)
   clearSelection()
+}
+
+const handleApproachEnd = async () => {
+  if (
+    activeTab.value === 'output' &&
+    !isInFolderView.value &&
+    outputAssets.loadMore &&
+    outputAssets.hasMore?.value &&
+    !outputAssets.isLoadingMore?.value
+  ) {
+    await outputAssets.loadMore()
+  }
 }
 </script>
