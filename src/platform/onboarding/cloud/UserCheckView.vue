@@ -74,7 +74,7 @@ const {
     }
 
     // User is fully onboarded
-    window.location.href = '/'
+    await router.replace('/')
   }),
   null,
   { resetOnExecute: false }
