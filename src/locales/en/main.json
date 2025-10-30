@@ -1820,6 +1820,10 @@
       }
     }
   },
+  "vueNodesMigration": {
+    "message": "Prefer the classic node design?",
+    "button": "Open Settings"
+  },
   "vueNodesBanner": {
     "message": "Nodes just got a new look and feel",
     "tryItOut": "Try it out"
