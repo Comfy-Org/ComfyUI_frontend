@@ -11,6 +11,7 @@ import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 import type {
   AuthMetadata,
+  CreditTopupMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -153,9 +154,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
-    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED, {
+    const metadata: CreditTopupMetadata = {
       credit_amount: amount
-    })
+    }
+    this.trackEvent(
+      TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
+      metadata
+    )
   }
 
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
