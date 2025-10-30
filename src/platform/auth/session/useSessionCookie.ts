@@ -1,3 +1,5 @@
+import { createSingletonPromise } from '@vueuse/core'
+
 import { api } from '@/scripts/api'
 import { isCloud } from '@/platform/distribution/types'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -14,55 +16,16 @@ export const useSessionCookie = () => {
   const createSession = async (): Promise<void> => {
     if (!isCloud || logoutInProgress) return
 
-    if (inFlightCreateSession) {
-      await inFlightCreateSession
-      return
-    }
+    const promise = createSessionSingleton()
+    inFlightCreateSession = promise
 
-    const authStore = useFirebaseAuthStore()
-
-    let controller: AbortController | null = null
-
-    const run = (async () => {
-      const authHeader = await authStore.getAuthHeader()
-
-      if (!authHeader) {
-        throw new Error('No auth header available for session creation')
-      }
-
-      controller = new AbortController()
-      currentCreateController = controller
-
-      const response = await fetch(api.apiURL('/auth/session'), {
-        method: 'POST',
-        credentials: 'include',
-        signal: controller.signal,
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(
-          `Failed to create session: ${errorData.message || response.statusText}`
-        )
-      }
-    })()
-      .catch((error: unknown) => {
-        if (isAbortError(error)) return
-        throw error
-      })
-      .finally(() => {
-        if (currentCreateController === controller) {
-          currentCreateController = null
-        }
+    try {
+      await promise
+    } finally {
+      if (inFlightCreateSession === promise) {
         inFlightCreateSession = null
-      })
-
-    inFlightCreateSession = run
-    await run
+      }
+    }
   }
 
   /**
@@ -101,6 +64,7 @@ export const useSessionCookie = () => {
       }
     } finally {
       logoutInProgress = false
+      await createSessionSingleton.reset()
     }
   }
 
@@ -113,6 +77,45 @@ export const useSessionCookie = () => {
 let inFlightCreateSession: Promise<void> | null = null
 let currentCreateController: AbortController | null = null
 let logoutInProgress = false
+
+const createSessionSingleton = createSingletonPromise(async () => {
+  const authStore = useFirebaseAuthStore()
+  const authHeader = await authStore.getAuthHeader()
+
+  if (!authHeader) {
+    throw new Error('No auth header available for session creation')
+  }
+
+  const controller = new AbortController()
+  currentCreateController = controller
+
+  try {
+    const response = await fetch(api.apiURL('/auth/session'), {
+      method: 'POST',
+      credentials: 'include',
+      signal: controller.signal,
+      headers: {
+        ...authHeader,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(
+        `Failed to create session: ${errorData.message || response.statusText}`
+      )
+    }
+  } catch (error: unknown) {
+    if (!isAbortError(error)) {
+      throw error
+    }
+  } finally {
+    if (currentCreateController === controller) {
+      currentCreateController = null
+    }
+  }
+})
 
 const isAbortError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false
