@@ -432,11 +432,11 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
 ]
 
 /**
- * Fuzzy search configuration for category matching
+ * Fuse.js configuration for category matching
  */
 const FUSE_OPTIONS = {
   keys: ['keywords'],
-  threshold: 0.4, // Lower = more strict matching
+  threshold: 0.7, // Higher = more lenient matching
   includeScore: true,
   includeMatches: true,
   ignoreLocation: true,
@@ -450,7 +450,7 @@ const industryFuse = new Fuse(INDUSTRY_CATEGORIES, FUSE_OPTIONS)
 const useCaseFuse = new Fuse(USE_CASE_CATEGORIES, FUSE_OPTIONS)
 
 /**
- * Normalize industry responses using fuzzy search
+ * Normalize industry responses using Fuse.js fuzzy search
  */
 export function normalizeIndustry(rawIndustry: string): string {
   if (!rawIndustry || typeof rawIndustry !== 'string') {
@@ -466,11 +466,10 @@ export function normalizeIndustry(rawIndustry: string): string {
     return 'Other / Undefined'
   }
 
-  // Fuzzy search for best category match
-  const results = industryFuse.search(industry)
+  // Fuse.js fuzzy search for best category match
+  const results = industryFuse.search(rawIndustry)
 
-  if (results.length > 0 && results[0].score! < 0.6) {
-    // Good match found
+  if (results.length > 0) {
     return results[0].item.name
   }
 
@@ -479,7 +478,7 @@ export function normalizeIndustry(rawIndustry: string): string {
 }
 
 /**
- * Normalize use case responses using fuzzy search
+ * Normalize use case responses using Fuse.js fuzzy search
  */
 export function normalizeUseCase(rawUseCase: string): string {
   if (!rawUseCase || typeof rawUseCase !== 'string') {
@@ -495,11 +494,10 @@ export function normalizeUseCase(rawUseCase: string): string {
     return 'Other / Undefined'
   }
 
-  // Fuzzy search for best category match
-  const results = useCaseFuse.search(useCase)
+  // Fuse.js fuzzy search for best category match
+  const results = useCaseFuse.search(rawUseCase)
 
-  if (results.length > 0 && results[0].score! < 0.6) {
-    // Good match found
+  if (results.length > 0) {
     return results[0].item.name
   }
 
