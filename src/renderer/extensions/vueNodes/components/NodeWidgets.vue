@@ -12,9 +12,9 @@
           : 'pointer-events-none'
       )
     "
-    @pointerdown.stop="handleWidgetPointerEvent"
-    @pointermove.stop="handleWidgetPointerEvent"
-    @pointerup.stop="handleWidgetPointerEvent"
+    @pointerdown="handleWidgetPointerEvent"
+    @pointermove="handleWidgetPointerEvent"
+    @pointerup="handleWidgetPointerEvent"
   >
     <div
       v-for="(widget, index) in processedWidgets"
@@ -83,10 +83,10 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
-const handleWidgetPointerEvent = (event: PointerEvent) => {
-  if (!shouldHandleNodePointerEvents.value) {
-    forwardEventToCanvas(event)
-  }
+function handleWidgetPointerEvent(event: PointerEvent) {
+  if (shouldHandleNodePointerEvents.value) return
+  event.stopPropagation()
+  forwardEventToCanvas(event)
 }
 
 // Error boundary implementation
