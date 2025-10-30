@@ -12,30 +12,57 @@ export const useSessionCookie = () => {
    * Called after login and on token refresh.
    */
   const createSession = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || logoutInProgress) return
+
+    if (inFlightCreateSession) {
+      await inFlightCreateSession
+      return
+    }
 
     const authStore = useFirebaseAuthStore()
-    const authHeader = await authStore.getAuthHeader()
 
-    if (!authHeader) {
-      throw new Error('No auth header available for session creation')
-    }
+    let controller: AbortController | null = null
 
-    const response = await fetch(api.apiURL('/auth/session'), {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
+    const run = (async () => {
+      const authHeader = await authStore.getAuthHeader()
+
+      if (!authHeader) {
+        throw new Error('No auth header available for session creation')
       }
-    })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        `Failed to create session: ${errorData.message || response.statusText}`
-      )
-    }
+      controller = new AbortController()
+      currentCreateController = controller
+
+      const response = await fetch(api.apiURL('/auth/session'), {
+        method: 'POST',
+        credentials: 'include',
+        signal: controller.signal,
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          `Failed to create session: ${errorData.message || response.statusText}`
+        )
+      }
+    })()
+      .catch((error: unknown) => {
+        if (isAbortError(error)) return
+        throw error
+      })
+      .finally(() => {
+        if (currentCreateController === controller) {
+          currentCreateController = null
+        }
+        inFlightCreateSession = null
+      })
+
+    inFlightCreateSession = run
+    await run
   }
 
   /**
@@ -45,16 +72,35 @@ export const useSessionCookie = () => {
   const deleteSession = async (): Promise<void> => {
     if (!isCloud) return
 
-    const response = await fetch(api.apiURL('/auth/session'), {
-      method: 'DELETE',
-      credentials: 'include'
-    })
+    logoutInProgress = true
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        `Failed to delete session: ${errorData.message || response.statusText}`
-      )
+    try {
+      if (inFlightCreateSession) {
+        currentCreateController?.abort()
+        try {
+          await inFlightCreateSession
+        } catch (error: unknown) {
+          if (!isAbortError(error)) {
+            throw error
+          }
+        }
+      }
+
+      const response = await fetch(api.apiURL('/auth/session'), {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          `Failed to delete session: ${
+            errorData.message || response.statusText
+          }`
+        )
+      }
+    } finally {
+      logoutInProgress = false
     }
   }
 
@@ -62,4 +108,14 @@ export const useSessionCookie = () => {
     createSession,
     deleteSession
   }
+}
+
+let inFlightCreateSession: Promise<void> | null = null
+let currentCreateController: AbortController | null = null
+let logoutInProgress = false
+
+const isAbortError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false
+  const name = 'name' in error ? (error as { name?: string }).name : undefined
+  return name === 'AbortError'
 }
