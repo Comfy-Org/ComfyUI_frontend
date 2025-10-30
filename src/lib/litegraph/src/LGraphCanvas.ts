@@ -1776,47 +1776,24 @@ export class LGraphCanvas
     menu: ContextMenu,
     node: LGraphNode
   ): void {
-    const { graph } = node
-    if (!graph) throw new NullGraphError()
-    graph.beforeChange()
-
-    const newSelected = new Set<LGraphNode>()
-
-    const fApplyMultiNode = function (
-      node: LGraphNode,
-      newNodes: Set<LGraphNode>
-    ): void {
-      if (node.clonable === false) return
-
-      const newnode = node.clone()
-      if (!newnode) return
-
-      newnode.pos = [node.pos[0] + 5, node.pos[1] + 5]
-      if (!node.graph) throw new NullGraphError()
-
-      node.graph.add(newnode)
-      newNodes.add(newnode)
-    }
-
     const canvas = LGraphCanvas.active_canvas
-    if (
-      !canvas.selected_nodes ||
-      Object.keys(canvas.selected_nodes).length <= 1
-    ) {
-      fApplyMultiNode(node, newSelected)
-    } else {
-      for (const i in canvas.selected_nodes) {
-        fApplyMultiNode(canvas.selected_nodes[i], newSelected)
-      }
+    const nodes = canvas.selectedItems.size ? canvas.selectedItems : [node]
+
+    // Find top-left-most boundary
+    let offsetX = Infinity
+    let offsetY = Infinity
+    for (const item of nodes) {
+      if (item.pos == null)
+        throw new TypeError(
+          'Invalid node encountered on clone.  `pos` was null.'
+        )
+      if (item.pos[0] < offsetX) offsetX = item.pos[0]
+      if (item.pos[1] < offsetY) offsetY = item.pos[1]
     }
 
-    if (newSelected.size) {
-      canvas.selectNodes([...newSelected])
-    }
-
-    graph.afterChange()
-
-    canvas.setDirty(true, true)
+    canvas._deserializeItems(canvas._serializeItems(nodes), {
+      position: [offsetX + 5, offsetY + 5]
+    })
   }
 
   /**
