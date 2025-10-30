@@ -1,4 +1,4 @@
-import { useResizeObserver } from '@vueuse/core'
+import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
@@ -535,7 +535,7 @@ export class ComfyApp {
    */
   private addDropHandler() {
     // Get prompt from dropped PNG or json
-    document.addEventListener('drop', async (event: DragEvent) => {
+    useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
         event.preventDefault()
         event.stopPropagation()
@@ -556,31 +556,31 @@ export class ComfyApp {
     })
 
     // Always clear over node on drag leave
-    this.canvasEl.addEventListener('dragleave', async () => {
-      if (this.dragOverNode) {
-        this.dragOverNode = null
-        this.graph.setDirtyCanvas(false, true)
-      }
+    useEventListener(this.canvasElRef, 'dragleave', async () => {
+      if (!this.dragOverNode) return
+      this.dragOverNode = null
+      this.graph.setDirtyCanvas(false, true)
     })
 
     // Add handler for dropping onto a specific node
-    this.canvasEl.addEventListener(
+    useEventListener(
+      this.canvasElRef,
       'dragover',
-      (e) => {
-        this.canvas.adjustMouseEvent(e)
-        const node = this.graph.getNodeOnPos(e.canvasX, e.canvasY)
-        if (node) {
-          if (node.onDragOver && node.onDragOver(e)) {
-            this.dragOverNode = node
+      (event: DragEvent) => {
+        this.canvas.adjustMouseEvent(event)
+        const node = this.graph.getNodeOnPos(event.canvasX, event.canvasY)
 
-            // dragover event is fired very frequently, run this on an animation frame
-            requestAnimationFrame(() => {
-              this.graph.setDirtyCanvas(false, true)
-            })
-            return
-          }
+        if (!node?.onDragOver?.(event)) {
+          this.dragOverNode = null
+          return
         }
-        this.dragOverNode = null
+
+        this.dragOverNode = node
+
+        // dragover event is fired very frequently, run this on an animation frame
+        requestAnimationFrame(() => {
+          this.graph.setDirtyCanvas(false, true)
+        })
       },
       false
     )
