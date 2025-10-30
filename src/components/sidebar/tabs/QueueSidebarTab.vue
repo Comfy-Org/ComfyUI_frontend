@@ -104,6 +104,7 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
@@ -206,7 +207,9 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('g.loadWorkflow'),
       icon: 'pi pi-file-export',
       command: () => menuTargetTask.value?.loadWorkflow(app),
-      disabled: !menuTargetTask.value?.workflow
+      disabled: isCloud
+        ? !menuTargetTask.value?.isHistory
+        : !menuTargetTask.value?.workflow
     },
     {
       label: t('g.goToNode'),
