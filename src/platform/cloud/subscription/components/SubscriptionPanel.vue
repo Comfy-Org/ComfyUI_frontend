@@ -3,7 +3,11 @@
     <div class="flex h-full flex-col gap-6">
       <div class="flex items-baseline gap-2">
         <span class="text-2xl font-inter font-semibold leading-tight">
-          {{ $t('subscription.title') }}
+          {{
+            isActiveSubscription
+              ? $t('subscription.title')
+              : $t('subscription.titleUnsubscribed')
+          }}
         </span>
         <CloudBadge
           reverse-order
