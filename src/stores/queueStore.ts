@@ -2,7 +2,9 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
+import { getWorkflowFromHistory } from '@/platform/workflow/cloud'
 import type {
   ComfyWorkflowJSON,
   NodeId
@@ -379,24 +381,37 @@ export class TaskItemImpl {
   }
 
   public async loadWorkflow(app: ComfyApp) {
-    if (!this.workflow) {
-      return
-    }
-    await app.loadGraphData(toRaw(this.workflow))
-    if (this.outputs) {
-      const nodeOutputsStore = useNodeOutputStore()
-      const rawOutputs = toRaw(this.outputs)
-      for (const nodeExecutionId in rawOutputs) {
-        nodeOutputsStore.setNodeOutputsByExecutionId(
-          nodeExecutionId,
-          rawOutputs[nodeExecutionId]
-        )
-      }
-      useExtensionService().invokeExtensions(
-        'onNodeOutputsUpdated',
-        app.nodeOutputs
+    let workflowData = this.workflow
+
+    if (isCloud && !workflowData && this.isHistory) {
+      workflowData = await getWorkflowFromHistory(
+        (url) => app.api.fetchApi(url),
+        this.promptId
       )
     }
+
+    if (!workflowData) {
+      return
+    }
+
+    await app.loadGraphData(toRaw(workflowData))
+
+    if (!this.outputs) {
+      return
+    }
+
+    const nodeOutputsStore = useNodeOutputStore()
+    const rawOutputs = toRaw(this.outputs)
+    for (const nodeExecutionId in rawOutputs) {
+      nodeOutputsStore.setNodeOutputsByExecutionId(
+        nodeExecutionId,
+        rawOutputs[nodeExecutionId]
+      )
+    }
+    useExtensionService().invokeExtensions(
+      'onNodeOutputsUpdated',
+      app.nodeOutputs
+    )
   }
 
   public flatten(): TaskItemImpl[] {
@@ -492,7 +507,7 @@ export const useQueueStore = defineStore('queue', () => {
 
       const currentHistory = toValue(historyTasks)
 
-      const { items } = reconcileHistory(
+      const items = reconcileHistory(
         history.History,
         currentHistory.map((impl) => impl.toTaskItem()),
         toValue(maxHistoryItems),

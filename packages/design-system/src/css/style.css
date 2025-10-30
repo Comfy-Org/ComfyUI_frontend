@@ -49,26 +49,41 @@
   --color-smoke-800: #8a8a8a;
 
   --color-sand-100: #e1ded5;
-  --color-sand-200: #d6cfc2;
+  --color-sand-200: #fff7d5;
   --color-sand-300: #888682;
+  --color-sand-400: #eed7ac;
 
   --color-slate-100: #9c9eab;
   --color-slate-200: #9fa2bd;
   --color-slate-300: #5b5e7d;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
 
   --color-electric-400: #f0ff41;
   --color-sapphire-700: #172dd7;
   --color-brand-yellow: var(--color-electric-400);
   --color-brand-blue: var(--color-sapphire-700);
 
+  --color-azure-300: #78bae9;
   --color-azure-400: #31b9f4;
   --color-azure-600: #0b8ce9;
+
+  --color-cobalt-800: #185a8b;
 
   --color-jade-400: #47e469;
   --color-jade-600: #00cd72;
 
   --color-gold-400: #fcbf64;
+  --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
+
+  --color-coral-500: #f75951;
+  --color-coral-600: #e04e48;
+  --color-coral-700: #b33a3a;
+
+  --color-magenta-300: #ceaac9;
+  --color-magenta-700: #6a246a;
 
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
@@ -101,6 +116,11 @@
     var(--color-smoke-500) 50%,
     transparent
   );
+  --color-alpha-smoke-500-20: #c5c5c533;
+  --color-alpha-smoke-400-40: #d9d9d966;
+  --color-alpha-azure-600-30: #0b8ce94d;
+  --color-alpha-magenta-700-60: #6a246a99;
+  --color-alpha-magenta-300-60: #ceaac999;
 
   /* PrimeVue pulled colors */
   --color-muted: var(--p-text-muted-color);
@@ -136,6 +156,8 @@
 
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
+
+  --modal-card-button-surface: var(--color-smoke-300);
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -196,6 +218,27 @@
   --text-secondary: var(--color-ash-500);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
+
+  /* Semantic tokens - light mode */
+  --muted-foreground: var(--color-charcoal-200);
+  --base-foreground: var(--color-charcoal-800);
+  --brand-yellow: var(--color-electric-400);
+  --brand-blue: var(--color-sapphire-700);
+  --secondary-background: var(--color-smoke-200);
+  --secondary-background-hover: var(--color-smoke-400);
+  --secondary-background-selected: var(--color-smoke-600);
+  --base-background: var(--color-white);
+  --primary-background: var(--color-azure-400);
+  --primary-background-hover: var(--color-cobalt-800);
+  --destructive-background: var(--color-coral-500);
+  --destructive-background-hover: var(--color-coral-600);
+  --inverted-background-hover: var(--color-charcoal-600);
+  --warning-background: var(--color-gold-400);
+  --warning-background-hover: var(--color-gold-500);
+  --border-default: var(--color-smoke-600);
+  --border-subtle: var(--color-smoke-400);
+  --muted-background: var(--color-smoke-700);
+  --accent-background: var(--color-smoke-800);
 }
 
 .dark-theme {
@@ -214,6 +257,8 @@
   --button-hover-surface: var(--color-charcoal-600);
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-smoke-800);
+
+  --modal-card-button-surface: var(--color-charcoal-300);
 
   --dialog-surface: var(--color-neutral-700);
 
@@ -257,6 +302,27 @@
   --text-primary: var(--color-white);
 
   --input-surface: rgb(130 130 130 / 0.1);
+
+  /* Semantic tokens - dark mode */
+  --muted-foreground: var(--color-smoke-800);
+  --base-foreground: var(--color-white);
+  --brand-yellow: var(--color-electric-400);
+  --brand-blue: var(--color-sapphire-700);
+  --secondary-background: var(--color-charcoal-600);
+  --secondary-background-hover: var(--color-charcoal-400);
+  --secondary-background-selected: var(--color-charcoal-200);
+  --base-background: var(--color-charcoal-800);
+  --primary-background: var(--color-azure-600);
+  --primary-background-hover: var(--color-azure-400);
+  --destructive-background: var(--color-coral-700);
+  --destructive-background-hover: var(--color-coral-600);
+  --inverted-background-hover: var(--color-smoke-200);
+  --warning-background: var(--color-gold-600);
+  --warning-background-hover: var(--color-gold-500);
+  --border-default: var(--color-charcoal-200);
+  --border-subtle: var(--color-charcoal-300);
+  --muted-background: var(--color-charcoal-100);
+  --accent-background: var(--color-charcoal-100);
 }
 
 @theme inline {
@@ -266,6 +332,7 @@
   --color-button-icon: var(--button-icon);
   --color-button-surface: var(--button-surface);
   --color-button-surface-contrast: var(--button-surface-contrast);
+  --color-modal-card-button-surface: var(--modal-card-button-surface);
   --color-dialog-surface: var(--dialog-surface);
   --color-interface-menu-component-surface-hovered: var(
     --interface-menu-component-surface-hovered
@@ -321,6 +388,27 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-primary: var(--text-primary);
   --color-input-surface: var(--input-surface);
+
+  /* Semantic tokens */
+  --color-base-foreground: var(--base-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-base-background: var(--base-background);
+  --color-secondary-background: var(--secondary-background);
+  --color-secondary-background-hover: var(--secondary-background-hover);
+  --color-secondary-background-selected: var(--secondary-background-selected);
+  --color-primary-background: var(--primary-background);
+  --color-primary-background-hover: var(--primary-background-hover);
+  --color-destructive-background: var(--destructive-background);
+  --color-destructive-background-hover: var(--destructive-background-hover);
+  --color-inverted-background-hover: var(--inverted-background-hover);
+  --color-warning-background: var(--warning-background);
+  --color-warning-background-hover: var(--warning-background-hover);
+  --color-border-default: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-muted-background: var(--muted-background);
+  --color-accent-background: var(--accent-background);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-blue: var(--brand-blue);
 }
 
 @custom-variant dark-theme {

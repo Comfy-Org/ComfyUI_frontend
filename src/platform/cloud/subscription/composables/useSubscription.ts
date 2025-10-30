@@ -1,4 +1,5 @@
 import { computed, ref, watch } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -14,34 +15,30 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 
-interface CloudSubscriptionCheckoutResponse {
+type CloudSubscriptionCheckoutResponse = {
   checkout_url: string
 }
 
-interface CloudSubscriptionStatusResponse {
+type CloudSubscriptionStatusResponse = {
   is_active: boolean
   subscription_id: string
   renewal_date: string | null
   end_date?: string | null
 }
 
-const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+function useSubscriptionInternal() {
+  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
 
-const isActiveSubscription = computed(() => {
-  if (!isCloud || !window.__CONFIG__?.subscription_required) return true
+  const isSubscribedOrIsNotCloud = computed(() => {
+    if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
-  return subscriptionStatus.value?.is_active ?? false
-})
-
-let isWatchSetup = false
-
-export function useSubscription() {
-  const authActions = useFirebaseAuthActions()
+    return subscriptionStatus.value?.is_active ?? false
+  })
+  const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const dialogService = useDialogService()
 
   const { getAuthHeader } = useFirebaseAuthStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const { reportError } = useFirebaseAuthActions()
 
   const { isLoggedIn } = useCurrentUser()
 
@@ -54,7 +51,7 @@ export function useSubscription() {
 
     const renewalDate = new Date(subscriptionStatus.value.renewal_date)
 
-    return renewalDate.toLocaleDateString('en-US', {
+    return renewalDate.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -66,7 +63,7 @@ export function useSubscription() {
 
     const endDate = new Date(subscriptionStatus.value.end_date)
 
-    return endDate.toLocaleDateString('en-US', {
+    return endDate.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -77,9 +74,10 @@ export function useSubscription() {
     () => `$${MONTHLY_SUBSCRIPTION_PRICE.toFixed(0)}`
   )
 
-  const fetchStatus = wrapWithErrorHandlingAsync(async () => {
-    return await fetchSubscriptionStatus()
-  }, reportError)
+  const fetchStatus = wrapWithErrorHandlingAsync(
+    fetchSubscriptionStatus,
+    reportError
+  )
 
   const subscribe = wrapWithErrorHandlingAsync(async () => {
     const response = await initiateSubscriptionCheckout()
@@ -104,13 +102,13 @@ export function useSubscription() {
   }
 
   const manageSubscription = async () => {
-    await authActions.accessBillingPortal()
+    await accessBillingPortal()
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isActiveSubscription.value) {
+    if (!isSubscribedOrIsNotCloud.value) {
       showSubscriptionDialog()
     }
   }
@@ -124,60 +122,54 @@ export function useSubscription() {
   }
 
   const handleInvoiceHistory = async () => {
-    await authActions.accessBillingPortal()
+    await accessBillingPortal()
   }
 
   /**
    * Fetch the current cloud subscription status for the authenticated user
    * @returns Subscription status or null if no subscription exists
    */
-  const fetchSubscriptionStatus =
-    async (): Promise<CloudSubscriptionStatusResponse | null> => {
-      const authHeader = await getAuthHeader()
-      if (!authHeader) {
-        throw new FirebaseAuthStoreError(
-          t('toastMessages.userNotAuthenticated')
-        )
-      }
-
-      const response = await fetch(
-        `${COMFY_API_BASE_URL}/customers/cloud-subscription-status`,
-        {
-          headers: {
-            ...authHeader,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new FirebaseAuthStoreError(
-          t('toastMessages.failedToFetchSubscription', {
-            error: errorData.message
-          })
-        )
-      }
-
-      const statusData = await response.json()
-      subscriptionStatus.value = statusData
-      return statusData
+  async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-  if (!isWatchSetup) {
-    isWatchSetup = true
-    watch(
-      () => isLoggedIn.value,
-      async (loggedIn) => {
-        if (loggedIn) {
-          await fetchSubscriptionStatus()
-        } else {
-          subscriptionStatus.value = null
+    const response = await fetch(
+      `${COMFY_API_BASE_URL}/customers/cloud-subscription-status`,
+      {
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
         }
-      },
-      { immediate: true }
+      }
     )
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new FirebaseAuthStoreError(
+        t('toastMessages.failedToFetchSubscription', {
+          error: errorData.message
+        })
+      )
+    }
+
+    const statusData = await response.json()
+    subscriptionStatus.value = statusData
+    return statusData
   }
+
+  watch(
+    () => isLoggedIn.value,
+    async (loggedIn) => {
+      if (loggedIn) {
+        await fetchSubscriptionStatus()
+      } else {
+        subscriptionStatus.value = null
+      }
+    },
+    { immediate: true }
+  )
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
@@ -213,7 +205,7 @@ export function useSubscription() {
 
   return {
     // State
-    isActiveSubscription,
+    isActiveSubscription: isSubscribedOrIsNotCloud,
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,
@@ -230,3 +222,5 @@ export function useSubscription() {
     handleInvoiceHistory
   }
 }
+
+export const useSubscription = createSharedComposable(useSubscriptionInternal)

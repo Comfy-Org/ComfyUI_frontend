@@ -21,6 +21,11 @@ export interface LGraphCanvasEventMap {
     fromNode: SubgraphNode
   }
 
+  /** Dispatched after a group of items has been converted to a subgraph*/
+  'subgraph-converted': {
+    subgraphNode: SubgraphNode
+  }
+
   'litegraph:canvas':
     | { subType: 'before-change' | 'after-change' }
     | {

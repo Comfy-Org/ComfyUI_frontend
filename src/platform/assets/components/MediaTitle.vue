@@ -1,6 +1,6 @@
 <template>
   <h3
-    class="m-0 line-clamp-1 text-sm font-bold text-zinc-900 dark-theme:text-white"
+    class="m-0 line-clamp-1 text-sm font-bold text-base-foreground"
     :title="fullName"
   >
     {{ displayName }}

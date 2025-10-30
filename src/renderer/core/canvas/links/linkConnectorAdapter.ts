@@ -154,10 +154,13 @@ export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
   const graph = app.canvas?.graph
   const connector = app.canvas?.linkConnector
   if (!graph || !connector) return null
-  let adapter = adapterByGraph.get(graph)
-  if (!adapter || adapter.linkConnector !== connector) {
-    adapter = new LinkConnectorAdapter(graph, connector)
-    adapterByGraph.set(graph, adapter)
+
+  const adapter = adapterByGraph.get(graph)
+  if (adapter && adapter.linkConnector === connector) {
+    return adapter
   }
-  return adapter
+
+  const newAdapter = new LinkConnectorAdapter(graph, connector)
+  adapterByGraph.set(graph, newAdapter)
+  return newAdapter
 }

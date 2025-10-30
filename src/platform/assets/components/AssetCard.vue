@@ -27,8 +27,7 @@
           :class="
             cn(
               'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
-              'text-slate-800',
-              'dark-theme:text-white'
+              'text-base-foreground'
             )
           "
           :title="asset.name"
@@ -112,7 +111,7 @@ const cardClasses = computed(() => {
     'appearance-none bg-transparent p-0 m-0',
     'font-inherit text-inherit outline-none cursor-pointer text-left',
     'bg-smoke-100 dark-theme:bg-charcoal-800',
-    'hover:bg-smoke-200 dark-theme:hover:bg-charcoal-600',
+    'hover:bg-secondary-background',
     'border-none',
     'focus:outline-solid outline-azure-600 outline-4'
   )

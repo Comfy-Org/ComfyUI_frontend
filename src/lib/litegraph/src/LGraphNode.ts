@@ -2569,7 +2569,12 @@ export class LGraphNode
   findInputByType(
     type: ISlotType
   ): { index: number; slot: INodeInputSlot } | undefined {
-    return findFreeSlotOfType(this.inputs, type, (input) => input.link == null)
+    return findFreeSlotOfType(
+      this.inputs,
+      type,
+      (input) =>
+        input.link == null || !!this.graph?.getLink(input.link)?._dragging
+    )
   }
 
   /**

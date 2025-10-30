@@ -34,7 +34,7 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain"
+        class="block size-full object-contain pointer-events-none"
         @load="handleImageLoad"
         @error="handleImageError"
       />

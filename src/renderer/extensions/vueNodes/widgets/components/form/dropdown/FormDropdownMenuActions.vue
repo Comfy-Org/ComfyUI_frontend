@@ -21,7 +21,7 @@ const actionButtonStyle =
 const resetInputStyle = 'bg-transparent border-0 outline-0 ring-0 text-left'
 
 const layoutSwitchItemStyle =
-  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-black hover:dark-theme:text-white active:scale-95'
+  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-base-foreground active:scale-95'
 
 const sortPopoverRef = useTemplateRef('sortPopoverRef')
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
@@ -50,7 +50,7 @@ function handleSortSelected(item: SortOption) {
         cn(
           actionButtonStyle,
           'flex-1 flex px-2 items-center text-base leading-none cursor-text',
-          searchQuery?.trim() !== '' ? 'text-black dark-theme:text-white' : '',
+          searchQuery?.trim() !== '' ? 'text-base-foreground' : '',
           'hover:!outline-blue-500/80',
           'focus-within:!outline-blue-500/80'
         )
@@ -150,7 +150,7 @@ function handleSortSelected(item: SortOption) {
             resetInputStyle,
             layoutSwitchItemStyle,
             layoutMode === 'list'
-              ? 'bg-neutral-500/50 text-black dark-theme:text-white'
+              ? 'bg-neutral-500/50 text-base-foreground'
               : ''
           )
         "
@@ -164,7 +164,7 @@ function handleSortSelected(item: SortOption) {
             resetInputStyle,
             layoutSwitchItemStyle,
             layoutMode === 'grid'
-              ? 'bg-neutral-500/50 text-black dark-theme:text-white'
+              ? 'bg-neutral-500/50 text-base-foreground'
               : ''
           )
         "

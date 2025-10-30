@@ -21,8 +21,8 @@ function createHistoryItem(promptId: string, queueIndex = 0): TaskItem {
   }
 }
 
-function getAllPromptIds(result: { items: TaskItem[] }): string[] {
-  return result.items.map((item) => item.prompt[1])
+function getAllPromptIds(result: TaskItem[]): string[] {
+  return result.map((item) => item.prompt[1])
 }
 
 describe('reconcileHistory (V1)', () => {
@@ -74,9 +74,9 @@ describe('reconcileHistory (V1)', () => {
 
       const result = reconcileHistory(serverHistory, [], 10, undefined)
 
-      expect(result.items).toHaveLength(2)
-      expect(result.items[0].prompt[1]).toBe('item-1')
-      expect(result.items[1].prompt[1]).toBe('item-2')
+      expect(result).toHaveLength(2)
+      expect(result[0].prompt[1]).toBe('item-1')
+      expect(result[1].prompt[1]).toBe('item-2')
     })
   })
 
@@ -144,9 +144,9 @@ describe('reconcileHistory (V1)', () => {
 
       const result = reconcileHistory(serverHistory, clientHistory, 2, 10)
 
-      expect(result.items).toHaveLength(2)
-      expect(result.items[0].prompt[1]).toBe('new-1')
-      expect(result.items[1].prompt[1]).toBe('new-2')
+      expect(result).toHaveLength(2)
+      expect(result[0].prompt[1]).toBe('new-1')
+      expect(result[1].prompt[1]).toBe('new-2')
     })
   })
 
@@ -168,13 +168,13 @@ describe('reconcileHistory (V1)', () => {
 
       const result = reconcileHistory([], clientHistory, 10, 5)
 
-      expect(result.items).toHaveLength(0)
+      expect(result).toHaveLength(0)
     })
 
     it('should return empty result when both collections are empty', () => {
       const result = reconcileHistory([], [], 10, undefined)
 
-      expect(result.items).toHaveLength(0)
+      expect(result).toHaveLength(0)
     })
   })
 })
@@ -295,9 +295,9 @@ describe('reconcileHistory (V2/Cloud)', () => {
 
       const result = reconcileHistory(serverHistory, clientHistory, 2)
 
-      expect(result.items).toHaveLength(2)
-      expect(result.items[0].prompt[1]).toBe('new-1')
-      expect(result.items[1].prompt[1]).toBe('new-2')
+      expect(result).toHaveLength(2)
+      expect(result[0].prompt[1]).toBe('new-1')
+      expect(result[1].prompt[1]).toBe('new-2')
     })
   })
 
@@ -310,9 +310,9 @@ describe('reconcileHistory (V2/Cloud)', () => {
 
       const result = reconcileHistory(serverHistory, [], 10)
 
-      expect(result.items).toHaveLength(2)
-      expect(result.items[0].prompt[1]).toBe('item-1')
-      expect(result.items[1].prompt[1]).toBe('item-2')
+      expect(result).toHaveLength(2)
+      expect(result[0].prompt[1]).toBe('item-1')
+      expect(result[1].prompt[1]).toBe('item-2')
     })
 
     it('should return empty result when server history is empty', () => {
@@ -323,13 +323,13 @@ describe('reconcileHistory (V2/Cloud)', () => {
 
       const result = reconcileHistory([], clientHistory, 10)
 
-      expect(result.items).toHaveLength(0)
+      expect(result).toHaveLength(0)
     })
 
     it('should return empty result when both collections are empty', () => {
       const result = reconcileHistory([], [], 10)
 
-      expect(result.items).toHaveLength(0)
+      expect(result).toHaveLength(0)
     })
   })
 })
