@@ -27,7 +27,11 @@
     "sortRecent": "最新",
     "sortZA": "Z-A",
     "tryAdjustingFilters": "検索やフィルターを調整してみてください",
-    "unknown": "不明"
+    "unknown": "不明",
+    "ariaLabel": {
+      "assetCard": "{name} - {type}アセット",
+      "loadingAsset": "アセット読み込み中"
+    }
   },
   "auth": {
     "apiKey": {
@@ -1393,13 +1397,25 @@
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
     "helpCenter": "ヘルプセンター",
+    "assets": "アセット",
+    "mediaAssets": "メディアアセット",
+    "backToAssets": "すべてのアセットに戻る",
     "labels": {
       "models": "モデル",
       "nodes": "ノード",
       "queue": "キュー",
       "templates": "テンプレート",
-      "workflows": "ワークフロー"
+      "workflows": "ワークフロー",
+      "console": "コンソール",
+      "menu": "メニュー",
+      "assets": "アセット",
+      "imported": "インポート済み",
+      "generated": "生成済み"
     },
+    "noFilesFound": "ファイルが見つかりません",
+    "noImportedFiles": "インポートされたファイルが見つかりません",
+    "noGeneratedFiles": "生成されたファイルが見つかりません",
+    "noFilesFoundMessage": "ここで表示するには、ファイルをアップロードするか、コンテンツを生成してください",
     "logout": "ログアウト",
     "modelLibrary": "モデルライブラリ",
     "newBlankWorkflow": "新しい空のワークフローを作成",
@@ -1972,6 +1988,31 @@
   "cloudSurvey_steps_purpose": "ComfyUIの主な用途は何ですか？",
   "cloudSurvey_steps_industry": "あなたの主要な業界は何ですか？",
   "cloudSurvey_steps_making": "どのようなコンテンツを創作する予定ですか？",
+  "mediaAsset": {
+    "deleteAssetTitle": "このアセットを削除しますか？",
+    "deleteAssetDescription": "このアセットは完全に削除されます。",
+    "deleteSelectedTitle": "選択したアセットを削除しますか？",
+    "deleteSelectedDescription": "{count}個のアセットが完全に削除されます。",
+    "assetDeletedSuccessfully": "アセットの削除が完了しました",
+    "deletingImportedFilesCloudOnly": "インポートファイルの削除はクラウド版でのみサポートされています",
+    "failedToDeleteAsset": "アセットの削除に失敗しました",
+    "jobIdToast": {
+      "jobIdCopied": "ジョブIDをクリップボードにコピーしました",
+      "jobIdCopyFailed": "ジョブIDのコピーに失敗しました",
+      "copied": "コピー済み",
+      "error": "エラー"
+    },
+    "selection": {
+      "selectedCount": "選択されたアセット：{count}",
+      "deselectAll": "すべて選択解除",
+      "downloadSelected": "ダウンロード",
+      "deleteSelected": "削除",
+      "downloadStarted": "{count}個のファイルをダウンロード中...",
+      "downloadsStarted": "{count}個のファイルのダウンロードを開始しました",
+      "assetsDeletedSuccessfully": "{count}個のアセットを正常に削除しました",
+      "failedToDeleteAssets": "選択したアセットの削除に失敗しました"
+    }
+  },
   "desktopStart": {
     "initialising": "初期化中..."
   }

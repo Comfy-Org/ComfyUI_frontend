@@ -27,7 +27,11 @@
     "sortRecent": "Récent",
     "sortZA": "Z-A",
     "tryAdjustingFilters": "Essayez d'ajuster votre recherche ou vos filtres",
-    "unknown": "Inconnu"
+    "unknown": "Inconnu",
+    "ariaLabel": {
+      "assetCard": "{name} - ressource {type}",
+      "loadingAsset": "Chargement de la ressource"
+    }
   },
   "auth": {
     "apiKey": {
@@ -1393,13 +1397,25 @@
     "browseTemplates": "Parcourir les modèles d'exemple",
     "downloads": "Téléchargements",
     "helpCenter": "Centre d'aide",
+    "assets": "Ressources",
+    "mediaAssets": "Ressources multimédia",
+    "backToAssets": "Retour à toutes les ressources",
     "labels": {
       "models": "Modèles",
       "nodes": "Nœuds",
       "queue": "File d'attente",
       "templates": "Modèles",
-      "workflows": "Flux de travail"
+      "workflows": "Flux de travail",
+      "console": "Console",
+      "menu": "Menu",
+      "assets": "Ressources",
+      "imported": "Importées",
+      "generated": "Générées"
     },
+    "noFilesFound": "Aucun fichier trouvé",
+    "noImportedFiles": "Aucun fichier importé trouvé",
+    "noGeneratedFiles": "Aucun fichier généré trouvé",
+    "noFilesFoundMessage": "Téléchargez des fichiers ou générez du contenu pour les voir ici",
     "logout": "Déconnexion",
     "modelLibrary": "Bibliothèque de modèles",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
@@ -1966,6 +1982,31 @@
   "cloudSurvey_steps_purpose": "Quelle sera votre utilisation principale de ComfyUI ?",
   "cloudSurvey_steps_industry": "Quelle est votre industrie principale ?",
   "cloudSurvey_steps_making": "Quel type de contenu prévoyez-vous créer ?",
+  "mediaAsset": {
+    "deleteAssetTitle": "Supprimer cette ressource ?",
+    "deleteAssetDescription": "Cette ressource sera définitivement supprimée.",
+    "deleteSelectedTitle": "Supprimer les ressources sélectionnées ?",
+    "deleteSelectedDescription": "{count} ressource(s) sera/seront définitivement supprimée(s).",
+    "assetDeletedSuccessfully": "Ressource supprimée avec succès",
+    "deletingImportedFilesCloudOnly": "La suppression des fichiers importés n'est prise en charge que dans la version cloud",
+    "failedToDeleteAsset": "Échec de la suppression de la ressource",
+    "jobIdToast": {
+      "jobIdCopied": "ID de tâche copié dans le presse-papiers",
+      "jobIdCopyFailed": "Échec de la copie de l'ID de tâche",
+      "copied": "Copié",
+      "error": "Erreur"
+    },
+    "selection": {
+      "selectedCount": "Ressources sélectionnées : {count}",
+      "deselectAll": "Tout désélectionner",
+      "downloadSelected": "Télécharger",
+      "deleteSelected": "Supprimer",
+      "downloadStarted": "Téléchargement de {count} fichier(s)...",
+      "downloadsStarted": "Téléchargement de {count} fichier(s) commencé",
+      "assetsDeletedSuccessfully": "{count} ressource(s) supprimée(s) avec succès",
+      "failedToDeleteAssets": "Échec de la suppression des ressources sélectionnées"
+    }
+  },
   "desktopStart": {
     "initialising": "Initialisation..."
   }
