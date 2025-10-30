@@ -7,6 +7,7 @@ import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
+import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 import type {
   AuthMetadata,
@@ -178,7 +179,21 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         ? TelemetryEvents.USER_SURVEY_OPENED
         : TelemetryEvents.USER_SURVEY_SUBMITTED
 
-    this.trackEvent(eventName, responses)
+    // Apply normalization to survey responses
+    const normalizedResponses = responses
+      ? normalizeSurveyResponses(responses)
+      : undefined
+
+    this.trackEvent(eventName, normalizedResponses)
+
+    // If this is a survey submission, also set user properties with normalized data
+    if (stage === 'submitted' && normalizedResponses && this.mixpanel) {
+      try {
+        this.mixpanel.people.set(normalizedResponses)
+      } catch (error) {
+        console.error('Failed to set survey user properties:', error)
+      }
+    }
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
