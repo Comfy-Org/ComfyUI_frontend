@@ -46,7 +46,9 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
@@ -57,6 +59,7 @@ import { useKeybindingService } from '@/services/keybindingService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -84,6 +87,13 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+
+const telemetry = useTelemetry()
+const firebaseAuthStore = useFirebaseAuthStore()
+let hasTrackedLogin = false
+let visibilityListener: (() => void) | null = null
+let tabCountInterval: number | null = null
+let tabCountChannel: BroadcastChannel | null = null
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -248,6 +258,22 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
+
+  // Clean up page visibility listener
+  if (visibilityListener) {
+    document.removeEventListener('visibilitychange', visibilityListener)
+    visibilityListener = null
+  }
+
+  // Clean up tab count tracking
+  if (tabCountInterval) {
+    window.clearInterval(tabCountInterval)
+    tabCountInterval = null
+  }
+  if (tabCountChannel) {
+    tabCountChannel.close()
+    tabCountChannel = null
+  }
 })
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
@@ -266,6 +292,61 @@ void nextTick(() => {
 
 const onGraphReady = () => {
   runWhenGlobalIdle(() => {
+    // Track user login when app is ready in graph view (cloud only)
+    if (isCloud && firebaseAuthStore.isAuthenticated && !hasTrackedLogin) {
+      telemetry?.trackUserLoggedIn()
+      hasTrackedLogin = true
+    }
+
+    // Set up page visibility tracking (cloud only)
+    if (isCloud && telemetry && !visibilityListener) {
+      visibilityListener = () => {
+        telemetry.trackPageVisibilityChanged({
+          visibility_state: document.visibilityState as 'visible' | 'hidden'
+        })
+      }
+      document.addEventListener('visibilitychange', visibilityListener)
+    }
+
+    // Set up tab count tracking (cloud only)
+    if (isCloud && telemetry && !tabCountInterval) {
+      tabCountChannel = new BroadcastChannel('comfyui-tab-count')
+      const activeTabs = new Map<string, number>()
+      const currentTabId = crypto.randomUUID()
+
+      // Listen for heartbeats from other tabs
+      tabCountChannel.onmessage = (event) => {
+        if (
+          event.data.type === 'heartbeat' &&
+          event.data.tabId !== currentTabId
+        ) {
+          activeTabs.set(event.data.tabId, Date.now())
+        }
+      }
+
+      // 30-second heartbeat interval
+      tabCountInterval = window.setInterval(() => {
+        const now = Date.now()
+
+        // Clean up stale tabs (no heartbeat for 45 seconds)
+        activeTabs.forEach((lastHeartbeat, tabId) => {
+          if (now - lastHeartbeat > 45000) {
+            activeTabs.delete(tabId)
+          }
+        })
+
+        // Broadcast our heartbeat
+        tabCountChannel?.postMessage({ type: 'heartbeat', tabId: currentTabId })
+
+        // Track tab count (include current tab)
+        const tabCount = activeTabs.size + 1
+        telemetry.trackTabCount({ tab_count: tabCount })
+      }, 30000)
+
+      // Send initial heartbeat
+      tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
+    }
+
     // Setting values now available after comfyApp.setup.
     // Load keybindings.
     wrapWithErrorHandling(useKeybindingService().registerUserKeybindings)()
