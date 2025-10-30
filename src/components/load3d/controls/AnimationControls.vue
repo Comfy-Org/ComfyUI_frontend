@@ -15,7 +15,6 @@
       option-label="name"
       option-value="value"
       class="w-24"
-      @change="speedChange"
     />
 
     <Select
@@ -24,7 +23,6 @@
       option-label="name"
       option-value="index"
       class="w-32"
-      @change="animationChange"
     />
   </div>
 </template>
@@ -32,23 +30,13 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Select from 'primevue/select'
-import { ref, watch } from 'vue'
 
-const props = defineProps<{
-  animations: Array<{ name: string; index: number }>
-  playing: boolean
-}>()
+type Animation = { name: string; index: number }
 
-const emit = defineEmits<{
-  (e: 'togglePlay', value: boolean): void
-  (e: 'speedChange', value: number): void
-  (e: 'animationChange', value: number): void
-}>()
-
-const animations = ref(props.animations)
-const playing = ref(props.playing)
-const selectedSpeed = ref(1)
-const selectedAnimation = ref(0)
+const animations = defineModel<Animation[]>('animations')
+const playing = defineModel<boolean>('playing')
+const selectedSpeed = defineModel<number>('selectedSpeed')
+const selectedAnimation = defineModel<number>('selectedAnimation')
 
 const speedOptions = [
   { name: '0.1x', value: 0.1 },
@@ -58,24 +46,7 @@ const speedOptions = [
   { name: '2x', value: 2 }
 ]
 
-watch(
-  () => props.animations,
-  (newVal) => {
-    animations.value = newVal
-  }
-)
-
 const togglePlay = () => {
   playing.value = !playing.value
-
-  emit('togglePlay', playing.value)
-}
-
-const speedChange = () => {
-  emit('speedChange', selectedSpeed.value)
-}
-
-const animationChange = () => {
-  emit('animationChange', selectedAnimation.value)
 }
 </script>

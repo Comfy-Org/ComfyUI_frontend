@@ -1112,6 +1112,8 @@ export class ComfyApp {
         if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
         if (n.type == 'SDV_img2vid_Conditioning')
           n.type = 'SVD_img2vid_Conditioning' //typo fix
+        if (n.type == 'Load3DAnimation') n.type = 'Load3D' // Animation node merged into Load3D
+        if (n.type == 'Preview3DAnimation') n.type = 'Preview3D' // Animation node merged into Load3D
 
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {

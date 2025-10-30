@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div v-if="!hasBackgroundImage">
       <label>
-        {{ t('load3d.backgroundColor') }}
+        {{ $t('load3d.backgroundColor') }}
       </label>
       <input v-model="backgroundColor" type="color" class="w-full" />
     </div>
@@ -10,14 +10,14 @@
     <div>
       <Checkbox v-model="showGrid" input-id="showGrid" binary name="showGrid" />
       <label for="showGrid" class="pl-2">
-        {{ t('load3d.showGrid') }}
+        {{ $t('load3d.showGrid') }}
       </label>
     </div>
 
     <div v-if="!hasBackgroundImage">
       <Button
         severity="secondary"
-        :label="t('load3d.uploadBackgroundImage')"
+        :label="$t('load3d.uploadBackgroundImage')"
         icon="pi pi-image"
         class="w-full"
         @click="openImagePicker"
@@ -34,7 +34,7 @@
     <div v-if="hasBackgroundImage" class="space-y-2">
       <Button
         severity="secondary"
-        :label="t('load3d.removeBackgroundImage')"
+        :label="$t('load3d.removeBackgroundImage')"
         icon="pi pi-times"
         class="w-full"
         @click="removeBackgroundImage"
@@ -47,8 +47,6 @@
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import { ref } from 'vue'
-
-import { t } from '@/i18n'
 
 const backgroundColor = defineModel<string>('backgroundColor')
 const showGrid = defineModel<boolean>('showGrid')
