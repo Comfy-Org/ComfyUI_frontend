@@ -7,7 +7,7 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
-import type { Linter } from 'eslint'
+import type { ESLint, Linter } from 'eslint'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import {
@@ -98,7 +98,7 @@ export default defineConfig([
   {
     plugins: {
       'unused-imports': unusedImports,
-      '@intlify/vue-i18n': pluginI18n as any
+      '@intlify/vue-i18n': pluginI18n as ESLint.Plugin
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
