@@ -186,7 +186,7 @@
                       href="https://platform.comfy.org/profile/usage"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-sm text-text-secondary underline hover:text-text-secondary no-underline"
+                      class="text-sm text-text-secondary underline hover:text-text-secondary"
                       style="text-decoration: underline"
                     >
                       {{ $t('subscription.viewUsageHistory') }}
