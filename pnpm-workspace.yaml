@@ -112,7 +112,6 @@ onlyBuiltDependencies:
   - '@playwright/browser-chromium'
   - '@playwright/browser-firefox'
   - '@playwright/browser-webkit'
-  - '@sentry/cli'
   - '@tailwindcss/oxide'
   - esbuild
   - nx
