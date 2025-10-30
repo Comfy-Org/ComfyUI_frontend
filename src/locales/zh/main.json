@@ -9,25 +9,29 @@
     "title": "使用API节点需要登录"
   },
   "assetBrowser": {
-    "allCategory": "全部{category}",
-    "allModels": "全部模型",
     "assets": "资源",
-    "baseModels": "基础模型",
     "browseAssets": "浏览资源",
+    "noAssetsFound": "未找到资源",
+    "tryAdjustingFilters": "请尝试调整搜索或筛选条件",
+    "loadingModels": "正在加载{type}...",
     "connectionError": "请检查您的网络连接后重试",
     "failedToCreateNode": "创建节点失败。请重试或查看控制台获取详细信息。",
-    "fileFormats": "文件格式",
-    "loadingModels": "正在加载{type}...",
-    "noAssetsFound": "未找到资源",
     "noModelsInFolder": "此文件夹中没有可用的{type}",
     "searchAssetsPlaceholder": "搜索资源...",
-    "sortAZ": "A-Z",
+    "allModels": "全部模型",
+    "allCategory": "全部{category}",
+    "unknown": "未知",
+    "fileFormats": "文件格式",
+    "baseModels": "基础模型",
     "sortBy": "排序方式",
-    "sortPopular": "最受欢迎",
-    "sortRecent": "最近",
+    "sortAZ": "A-Z",
     "sortZA": "Z-A",
-    "tryAdjustingFilters": "请尝试调整搜索或筛选条件",
-    "unknown": "未知"
+    "sortRecent": "最近",
+    "sortPopular": "最受欢迎",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} 资源",
+      "loadingAsset": "正在加载资源"
+    }
   },
   "auth": {
     "apiKey": {
@@ -147,23 +151,23 @@
     "yellow": "黄色"
   },
   "commands": {
-    "clear": "清空工作流",
-    "clipspace": "打开 Clipspace",
-    "dark": "深色",
-    "execute": "执行",
-    "help": "帮助",
-    "interrupt": "取消当前运行",
-    "light": "浅色",
-    "manageExtensions": "管理扩展",
-    "queue": "队列面板",
-    "refresh": "刷新节点定义",
-    "resetView": "重置画布视图",
-    "run": "运行",
     "runWorkflow": "运行工作流",
     "runWorkflowFront": "运行工作流（队列前端）",
-    "settings": "设置",
+    "run": "运行",
+    "execute": "执行",
+    "interrupt": "取消当前运行",
+    "refresh": "刷新节点定义",
+    "clipspace": "打开 Clipspace",
+    "resetView": "重置画布视图",
+    "clear": "清空工作流",
+    "toggleBottomPanel": "切换底部面板",
     "theme": "主题",
-    "toggleBottomPanel": "切换底部面板"
+    "dark": "深色",
+    "light": "浅色",
+    "manageExtensions": "管理扩展",
+    "settings": "设置",
+    "help": "帮助",
+    "queue": "队列面板"
   },
   "contextMenu": {
     "Add Group": "添加组",
@@ -393,11 +397,25 @@
     "duplicate": "复制",
     "edit": "编辑",
     "editOrMaskImage": "编辑或遮罩图片",
+    "editImage": "编辑图像",
+    "deleteImage": "删除图像", 
+    "deleteAudioFile": "删除音频文件",
     "empty": "空",
+    "chart": "图表",
+    "chartLowercase": "图表",
+    "selectedFile": "选中的文件",
+    "none": "无",
+    "markdown": "Markdown",
+    "content": "内容",
+    "audioProgress": "音频进度",
     "enableAll": "启用全部",
     "enabled": "已启用",
     "enabling": "启用中",
     "error": "错误",
+    "resizeFromBottomRight": "从右下角调整大小",
+    "resizeFromTopRight": "从右上角调整大小", 
+    "resizeFromBottomLeft": "从左下角调整大小",
+    "resizeFromTopLeft": "从左上角调整大小",
     "errorLoadingImage": "图片加载出错",
     "errorLoadingVideo": "视频加载出错",
     "experimental": "测试版",
@@ -437,6 +455,8 @@
     "loadingPanel": "正在加载{panel}面板...",
     "login": "登录",
     "logoAlt": "ComfyUI 标志",
+    "comfyOrgLogoAlt": "ComfyOrg 标志",
+    "comfy": "Comfy",
     "logs": "日志",
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
@@ -1371,12 +1391,12 @@
     "Workflow": "工作流"
   },
   "shape": {
-    "CARD": "卡片",
-    "arrow": "箭头",
-    "box": "方框",
-    "circle": "圆形",
     "default": "默认",
-    "round": "圆角"
+    "round": "圆角",
+    "CARD": "卡片",
+    "circle": "圆形",
+    "arrow": "箭头",
+    "box": "方框"
   },
   "shortcuts": {
     "essentials": "常用",
@@ -1396,13 +1416,25 @@
     "browseTemplates": "浏览示例模板",
     "downloads": "下载",
     "helpCenter": "帮助中心",
+    "assets": "资源",
+    "mediaAssets": "媒体资源",
+    "backToAssets": "返回所有资源",
     "labels": {
       "models": "模型",
       "nodes": "节点",
       "queue": "队列",
       "templates": "模板",
-      "workflows": "工作流"
+      "workflows": "工作流",
+      "console": "控制台",
+      "menu": "菜单",
+      "assets": "资源",
+      "imported": "已导入",
+      "generated": "已生成"
     },
+    "noFilesFound": "未找到文件",
+    "noImportedFiles": "未找到导入的文件",
+    "noGeneratedFiles": "未找到生成的文件", 
+    "noFilesFoundMessage": "上传文件或生成内容以在此查看",
     "logout": "登出",
     "modelLibrary": "模型库",
     "newBlankWorkflow": "创建空白工作流",
@@ -1925,11 +1957,11 @@
     "selectModel": "选择模型",
     "uploadSelect": {
       "placeholder": "请选择...",
-      "placeholderAudio": "请选择音频...",
       "placeholderImage": "请选择图片...",
+      "placeholderAudio": "请选择音频...",
+      "placeholderVideo": "请选择视频...",
       "placeholderModel": "请选择模型...",
-      "placeholderUnknown": "请选择媒体...",
-      "placeholderVideo": "请选择视频..."
+      "placeholderUnknown": "请选择媒体..."
     }
   },
   "workflowService": {
@@ -1975,66 +2007,29 @@
   "cloudSurvey_steps_purpose": "您使用 ComfyUI 的主要用途是？",
   "cloudSurvey_steps_industry": "您的主要行业是？",
   "cloudSurvey_steps_making": "您计划创作哪些内容？",
-  "desktopStart": {
-    "initialising": "正在初始化..."
-  },
-  "shape": {
-    "default": "默认",
-    "round": "圆角",
-    "CARD": "卡片",
-    "circle": "圆形",
-    "arrow": "箭头",
-    "box": "方框"
-  },
-  "commands": {
-    "runWorkflow": "运行工作流",
-    "runWorkflowFront": "运行工作流（队列前端）",
-    "run": "运行",
-    "execute": "执行",
-    "interrupt": "取消当前运行",
-    "refresh": "刷新节点定义",
-    "clipspace": "打开 Clipspace",
-    "resetView": "重置画布视图",
-    "clear": "清空工作流",
-    "toggleBottomPanel": "切换底部面板",
-    "theme": "主题",
-    "dark": "深色",
-    "light": "浅色",
-    "manageExtensions": "管理扩展",
-    "settings": "设置",
-    "help": "帮助",
-    "queue": "队列面板"
-  },
-  "widgets": {
-    "selectModel": "选择模型",
-    "uploadSelect": {
-      "placeholder": "请选择...",
-      "placeholderImage": "请选择图片...",
-      "placeholderAudio": "请选择音频...",
-      "placeholderVideo": "请选择视频...",
-      "placeholderModel": "请选择模型...",
-      "placeholderUnknown": "请选择媒体..."
+  "mediaAsset": {
+    "deleteAssetTitle": "删除此资源？",
+    "deleteAssetDescription": "此资源将被永久删除。",
+    "deleteSelectedTitle": "删除选中的资源？",
+    "deleteSelectedDescription": "将永久删除 {count} 个资源。",
+    "assetDeletedSuccessfully": "资源删除成功",
+    "deletingImportedFilesCloudOnly": "删除导入文件仅在云版本中支持",
+    "failedToDeleteAsset": "删除资源失败",
+    "jobIdToast": {
+      "jobIdCopied": "作业ID已复制到剪贴板",
+      "jobIdCopyFailed": "复制作业ID失败",
+      "copied": "已复制",
+      "error": "错误"
+    },
+    "selection": {
+      "selectedCount": "已选择资源：{count}",
+      "deselectAll": "取消全选",
+      "downloadSelected": "下载",
+      "deleteSelected": "删除",
+      "downloadStarted": "正在下载 {count} 个文件...",
+      "downloadsStarted": "已开始下载 {count} 个文件",
+      "assetsDeletedSuccessfully": "成功删除 {count} 个资源",
+      "failedToDeleteAssets": "删除选中资源失败"
     }
-  },
-  "assetBrowser": {
-    "assets": "资源",
-    "browseAssets": "浏览资源",
-    "noAssetsFound": "未找到资源",
-    "tryAdjustingFilters": "请尝试调整搜索或筛选条件",
-    "loadingModels": "正在加载{type}...",
-    "connectionError": "请检查您的网络连接后重试",
-    "failedToCreateNode": "创建节点失败。请重试或查看控制台获取详细信息。",
-    "noModelsInFolder": "此文件夹中没有可用的{type}",
-    "searchAssetsPlaceholder": "搜索资源...",
-    "allModels": "全部模型",
-    "allCategory": "全部{category}",
-    "unknown": "未知",
-    "fileFormats": "文件格式",
-    "baseModels": "基础模型",
-    "sortBy": "排序方式",
-    "sortAZ": "A-Z",
-    "sortZA": "Z-A",
-    "sortRecent": "最近",
-    "sortPopular": "最受欢迎"
   }
 }
