@@ -102,6 +102,7 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
+import { extractFileFromDragEvent } from '@/utils/eventUtils'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -534,7 +535,7 @@ export class ComfyApp {
    */
   private addDropHandler() {
     // Get prompt from dropped PNG or json
-    document.addEventListener('drop', async (event) => {
+    document.addEventListener('drop', async (event: DragEvent) => {
       try {
         event.preventDefault()
         event.stopPropagation()
@@ -543,37 +544,14 @@ export class ComfyApp {
         this.dragOverNode = null
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
-        if (n && n.onDragDrop && (await n.onDragDrop(event))) {
-          return
-        }
-        // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
-        if (!event.dataTransfer) return
-        if (
-          event.dataTransfer.files.length &&
-          event.dataTransfer.files[0].type !== 'image/bmp'
-        ) {
-          await this.handleFile(event.dataTransfer.files[0], 'file_drop')
-        } else {
-          // Try loading the first URI in the transfer list
-          const validTypes = ['text/uri-list', 'text/x-moz-url']
-          const match = [...event.dataTransfer.types].find((t) =>
-            validTypes.find((v) => t === v)
-          )
-          if (match) {
-            const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
-            if (uri) {
-              const blob = await (await fetch(uri)).blob()
-              await this.handleFile(
-                new File([blob], uri, { type: blob.type }),
-                'file_drop'
-              )
-            }
-          }
-        }
-      } catch (err: any) {
-        useToastStore().addAlert(
-          t('toastMessages.dropFileError', { error: err })
-        )
+        if (await n?.onDragDrop?.(event)) return
+
+        const fileMaybe = await extractFileFromDragEvent(event)
+        if (!fileMaybe) return
+
+        await this.handleFile(fileMaybe, 'file_drop')
+      } catch (error: unknown) {
+        useToastStore().addAlert(t('toastMessages.dropFileError', { error }))
       }
     })
 
