@@ -1,6 +1,7 @@
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
+import { createExportMenuOptions } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -59,6 +60,10 @@ useExtensionService().registerExtension({
       const fileInfo = message['3d'][0]
 
       const load3d = useLoad3dService().getLoad3d(node)
+
+      if (load3d) {
+        node.getExtraMenuOptions = createExportMenuOptions(load3d)
+      }
 
       const modelWidget = node.widgets?.find((w) => w.name === 'image')
 
