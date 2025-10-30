@@ -7,6 +7,16 @@ const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
+const mockT = vi.fn((key: string) => {
+  if (key === 'subscription.nextBillingCycle') return 'next billing cycle'
+  return key
+})
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: mockT
+  })
+}))
 
 vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   useFirebaseAuthActions: () => ({
@@ -14,10 +24,12 @@ vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   })
 }))
 
+const mockFormattedRenewalDate = { value: '2024-12-31' }
+
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
     fetchStatus: mockFetchStatus,
-    formattedRenewalDate: { value: '2024-12-31' }
+    formattedRenewalDate: mockFormattedRenewalDate
   })
 }))
 
@@ -43,12 +55,20 @@ Object.defineProperty(window, 'open', {
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFormattedRenewalDate.value = '2024-12-31'
   })
 
   describe('refreshTooltip', () => {
     it('should format tooltip with renewal date', () => {
       const { refreshTooltip } = useSubscriptionActions()
       expect(refreshTooltip.value).toBe('Refreshes on 2024-12-31')
+    })
+
+    it('should use fallback text when no renewal date', () => {
+      mockFormattedRenewalDate.value = ''
+      const { refreshTooltip } = useSubscriptionActions()
+      expect(refreshTooltip.value).toBe('Refreshes on next billing cycle')
+      expect(mockT).toHaveBeenCalledWith('subscription.nextBillingCycle')
     })
   })
 
