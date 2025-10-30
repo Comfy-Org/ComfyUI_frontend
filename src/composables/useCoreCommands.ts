@@ -5,10 +5,7 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
-import {
-  promoteRecommendedWidgets,
-  tryToggleWidgetPromotion
-} from '@/core/graph/subgraph/proxyWidgetUtils'
+import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { t } from '@/i18n'
 import {
@@ -945,7 +942,6 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const { node } = res
         canvas.select(node)
-        promoteRecommendedWidgets(node)
         canvasStore.updateSelectedItems()
       }
     },

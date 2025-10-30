@@ -1,4 +1,7 @@
-import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  demoteWidget,
+  promoteRecommendedWidgets
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -62,6 +65,10 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
       }
     }
   })
+  canvas.canvas.addEventListener<'subgraph-converted'>(
+    'subgraph-converted',
+    (e) => promoteRecommendedWidgets(e.detail.subgraphNode)
+  )
   SubgraphNode.prototype.onConfigure = onConfigure
 }
 
