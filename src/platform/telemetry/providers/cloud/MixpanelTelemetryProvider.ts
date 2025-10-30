@@ -169,7 +169,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     const runButtonProperties: RunButtonProperties = {
       subscribe_to_run: options?.subscribe_to_run || false,
       workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled'
+      workflow_name: executionContext.workflow_name ?? 'untitled',
+      total_node_count: executionContext.total_node_count
     }
 
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
@@ -283,10 +284,16 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         return {
           custom_node_count: acc.custom_node_count + (isCustomNode ? 1 : 0),
           api_node_count: acc.api_node_count + (isApiNode ? 1 : 0),
-          subgraph_count: acc.subgraph_count + (isSubgraph ? 1 : 0)
+          subgraph_count: acc.subgraph_count + (isSubgraph ? 1 : 0),
+          total_node_count: acc.total_node_count + 1
         }
       },
-      { custom_node_count: 0, api_node_count: 0, subgraph_count: 0 }
+      {
+        custom_node_count: 0,
+        api_node_count: 0,
+        subgraph_count: 0,
+        total_node_count: 0
+      }
     )
 
     if (activeWorkflow?.filename) {
