@@ -138,13 +138,13 @@ export function getWebpMetadata(file) {
   })
 }
 
-// @ts-expect-error fixme ts strict error
-export function getLatentMetadata(file) {
+export function getLatentMetadata(file: File): Promise<Record<string, string>> {
   return new Promise((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
-      // @ts-expect-error fixme ts strict error
-      const safetensorsData = new Uint8Array(event.target.result as ArrayBuffer)
+      const safetensorsData = new Uint8Array(
+        event.target?.result as ArrayBuffer
+      )
       const dataView = new DataView(safetensorsData.buffer)
       let header_size = dataView.getUint32(0, true)
       let offset = 8

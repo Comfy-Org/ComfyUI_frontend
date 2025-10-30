@@ -1395,13 +1395,7 @@ export class ComfyApp {
    * @param {File} file
    */
   async handleFile(file: File, openSource?: WorkflowOpenSource) {
-    const removeExt = (f: string) => {
-      if (!f) return f
-      const p = f.lastIndexOf('.')
-      if (p === -1) return f
-      return f.substring(0, p)
-    }
-    const fileName = removeExt(file.name)
+    const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     if (file.type === 'image/png') {
       const pngInfo = await getPngMetadata(file)
       if (pngInfo?.workflow) {
@@ -1412,9 +1406,13 @@ export class ComfyApp {
           fileName,
           { openSource }
         )
-      } else if (pngInfo?.prompt) {
+        return
+      }
+      if (pngInfo?.prompt) {
         this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
-      } else if (pngInfo?.parameters) {
+        return
+      }
+      if (pngInfo?.parameters) {
         // Note: Not putting this in `importA1111` as it is mostly not used
         // by external callers, and `importA1111` has no access to `app`.
         useWorkflowService().beforeLoadNewGraph()
@@ -1423,80 +1421,88 @@ export class ComfyApp {
           fileName,
           this.graph.serialize() as unknown as ComfyWorkflowJSON
         )
-      } else {
-        this.showErrorOnFileLoad(file)
+        return
       }
-    } else if (file.type === 'image/avif') {
+    }
+    if (file.type === 'image/avif') {
       const { workflow, prompt } = await getAvifMetadata(file)
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName,  {
           openSource
         })
-      } else if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        return
       }
-    } else if (file.type === 'image/webp') {
+      if (prompt) {
+        this.loadApiJson(JSON.parse(prompt), fileName)
+        return
+      }
+    }
+    if (file.type === 'image/webp') {
       const pngInfo = await getWebpMetadata(file)
       // Support loading workflows from that webp custom node.
       const workflow = pngInfo?.workflow || pngInfo?.Workflow
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName,  {
           openSource
         })
-      } else if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        return
       }
-    } else if (file.type === 'audio/mpeg') {
+      if (prompt) {
+        this.loadApiJson(JSON.parse(prompt), fileName)
+        return
+      }
+    }
+    if (file.type === 'audio/mpeg') {
       const { workflow, prompt } = await getMp3Metadata(file)
       if (workflow) {
-        this.loadGraphData(workflow, true, true, fileName, { openSource })
-      } else if (prompt) {
-        this.loadApiJson(prompt, fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        this.loadGraphData(workflow, true, true, fileName)
+        return
       }
-    } else if (file.type === 'audio/ogg') {
+      if (prompt) {
+        this.loadApiJson(prompt, fileName)
+        return
+      }
+    }
+    if (file.type === 'audio/ogg') {
       const { workflow, prompt } = await getOggMetadata(file)
       if (workflow) {
         this.loadGraphData(workflow, true, true, fileName, { openSource })
-      } else if (prompt) {
-        this.loadApiJson(prompt, fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        return
       }
-    } else if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
+      if (prompt) {
+        this.loadApiJson(prompt, fileName)
+        return
+      }
+    }
+    if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
       const pngInfo = await getFlacMetadata(file)
       const workflow = pngInfo?.workflow || pngInfo?.Workflow
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
-          openSource
-        })
-      } else if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName, { openSource })
+        return
       }
-    } else if (file.type === 'video/webm') {
+      if (prompt) {
+        this.loadApiJson(JSON.parse(prompt), fileName)
+        return
+      }
+    }
+    if (file.type === 'video/webm') {
       const webmInfo = await getFromWebmFile(file)
       if (webmInfo.workflow) {
-        this.loadGraphData(webmInfo.workflow, true, true, fileName, {
-          openSource
-        })
-      } else if (webmInfo.prompt) {
-        this.loadApiJson(webmInfo.prompt, fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        this.loadGraphData(webmInfo.workflow, true, true, fileName, { openSource })
+        return
       }
-    } else if (
+      if (webmInfo.prompt) {
+        this.loadApiJson(webmInfo.prompt, fileName)
+        return
+      }
+    }
+    if (
       file.type === 'video/mp4' ||
       file.name?.endsWith('.mp4') ||
       file.name?.endsWith('.mov') ||
@@ -1506,86 +1512,74 @@ export class ComfyApp {
     ) {
       const mp4Info = await getFromIsobmffFile(file)
       if (mp4Info.workflow) {
-        this.loadGraphData(mp4Info.workflow, true, true, fileName, {
-          openSource
-        })
-      } else if (mp4Info.prompt) {
-        this.loadApiJson(mp4Info.prompt, fileName)
+        this.loadGraphData(mp4Info.workflow, true, true, fileName, { openSource })
+        return
       }
-    } else if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
+      if (mp4Info.prompt) {
+        this.loadApiJson(mp4Info.prompt, fileName)
+        return
+      }
+    }
+    if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
       const svgInfo = await getSvgMetadata(file)
       if (svgInfo.workflow) {
-        this.loadGraphData(svgInfo.workflow, true, true, fileName, {
-          openSource
-        })
-      } else if (svgInfo.prompt) {
-        this.loadApiJson(svgInfo.prompt, fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        this.loadGraphData(svgInfo.workflow, true, true, fileName, { openSource })
+        return
       }
-    } else if (
-      file.type === 'model/gltf-binary' ||
-      file.name?.endsWith('.glb')
-    ) {
+      if (svgInfo.prompt) {
+        this.loadApiJson(svgInfo.prompt, fileName)
+        return
+      }
+    }
+    if (file.type === 'model/gltf-binary' || file.name?.endsWith('.glb')) {
       const gltfInfo = await getGltfBinaryMetadata(file)
       if (gltfInfo.workflow) {
-        this.loadGraphData(gltfInfo.workflow, true, true, fileName, {
-          openSource
-        })
-      } else if (gltfInfo.prompt) {
-        this.loadApiJson(gltfInfo.prompt, fileName)
-      } else {
-        this.showErrorOnFileLoad(file)
+        this.loadGraphData(gltfInfo.workflow, true, true, fileName, { openSource })
+        return
       }
-    } else if (
-      file.type === 'application/json' ||
-      file.name?.endsWith('.json')
-    ) {
+      if (gltfInfo.prompt) {
+        this.loadApiJson(gltfInfo.prompt, fileName)
+        return
+      }
+    }
+    if (file.type === 'application/json' || file.name?.endsWith('.json')) {
       const reader = new FileReader()
       reader.onload = async () => {
         const readerResult = reader.result as string
         const jsonContent = JSON.parse(readerResult)
         if (jsonContent?.templates) {
           this.loadTemplateData(jsonContent)
-        } else if (this.isApiJson(jsonContent)) {
-          this.loadApiJson(jsonContent, fileName)
-        } else {
-          await this.loadGraphData(
-            JSON.parse(readerResult),
-            true,
-            true,
-            fileName,
-            { openSource }
-          )
+          return
         }
+        if (this.isApiJson(jsonContent)) {
+          this.loadApiJson(jsonContent, fileName)
+          return
+        }
+        await this.loadGraphData(JSON.parse(readerResult), true, true, fileName, { openSource })
       }
       reader.readAsText(file)
-    } else if (
-      file.name?.endsWith('.latent') ||
-      file.name?.endsWith('.safetensors')
-    ) {
+      return
+    }
+    if (file.name?.endsWith('.latent') || file.name?.endsWith('.safetensors')) {
       const info = await getLatentMetadata(file)
       // TODO define schema to LatentMetadata
-      // @ts-expect-error
       if (info.workflow) {
         await this.loadGraphData(
-          // @ts-expect-error
           JSON.parse(info.workflow),
           true,
           true,
           fileName,
           { openSource }
         )
-        // @ts-expect-error
-      } else if (info.prompt) {
-        // @ts-expect-error
-        this.loadApiJson(JSON.parse(info.prompt))
-      } else {
-        this.showErrorOnFileLoad(file)
+        return
       }
-    } else {
-      this.showErrorOnFileLoad(file)
+      if (info.prompt) {
+        this.loadApiJson(JSON.parse(info.prompt), fileName)
+        return
+      }
     }
+
+    this.showErrorOnFileLoad(file)
   }
 
   isApiJson(data: unknown) {
