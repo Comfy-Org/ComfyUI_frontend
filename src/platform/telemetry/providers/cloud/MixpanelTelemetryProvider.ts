@@ -149,6 +149,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName)
   }
 
+  trackAddApiCreditButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  }
+
   trackMonthlySubscriptionSucceeded(): void {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
   }
