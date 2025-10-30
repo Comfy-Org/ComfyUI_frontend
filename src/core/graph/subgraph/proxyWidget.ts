@@ -158,7 +158,11 @@ function resolveLinkedWidget(
   const { graph, nodeId, widgetName } = overlay
   const n = getNodeByExecutionId(graph, nodeId)
   if (!n) return [undefined, undefined]
-  return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
+  const widget = n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
+  //Slightly hacky. Force recursive resolution of nested widgets
+  if (widget instanceof disconnectedWidget.constructor && isProxyWidget(widget))
+    widget.computedHeight = 20
+  return [n, widget]
 }
 
 function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
