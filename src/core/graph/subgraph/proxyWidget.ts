@@ -160,7 +160,8 @@ function resolveLinkedWidget(
   if (!n) return [undefined, undefined]
   const widget = n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
   //Slightly hacky. Force recursive resolution of nested widgets
-  if (widget?.type === 'button' && widget.disabled) widget.computedHeight = 20
+  if (widget instanceof disconnectedWidget.constructor && isProxyWidget(widget))
+    widget.computedHeight = 20
   return [n, widget]
 }
 
