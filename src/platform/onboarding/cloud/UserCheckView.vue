@@ -61,19 +61,25 @@ const {
       return
     }
 
+    // Survey is required for all users
     if (!surveyStatus) {
       skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })
       return
     }
 
-    if (cloudUserStats.status !== 'active') {
+    // Check if we should enforce whitelist requirement
+    const requireWhitelist = window.__CONFIG__?.require_whitelist ?? true
+
+    // Check feature flag and redirect non-active users if whitelist is required
+    if (requireWhitelist && cloudUserStats.status !== 'active') {
+      // Feature flag ON: Show waitlist page for non-active users
       skeletonType.value = 'waitlist'
       await router.replace({ name: 'cloud-waitlist' })
       return
     }
 
-    // User is fully onboarded
+    // User is fully onboarded (active or whitelist check disabled)
     await router.replace('/')
   }),
   null,
