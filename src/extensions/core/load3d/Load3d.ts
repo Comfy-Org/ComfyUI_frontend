@@ -84,6 +84,7 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
     container.appendChild(this.renderer.domElement)
 
     this.eventManager = new EventManager()
@@ -212,7 +213,14 @@ class Load3d {
     }
 
     const contextmenuHandler = (e: MouseEvent) => {
-      const wasDragging = this.rightMouseMoved
+      if (this.isViewerMode) return
+
+      const dx = Math.abs(e.clientX - this.rightMouseDownX)
+      const dy = Math.abs(e.clientY - this.rightMouseDownY)
+      const wasDragging =
+        this.rightMouseMoved ||
+        dx > this.dragThreshold ||
+        dy > this.dragThreshold
 
       this.rightMouseMoved = false
 

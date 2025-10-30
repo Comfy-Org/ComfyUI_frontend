@@ -1198,31 +1198,6 @@ audio.comfy-audio.empty-audio-widget {
   padding: var(--comfy-tree-explorer-item-padding) !important;
 }
 
-/* Load3d styles */
-.comfy-load-3d,
-.comfy-load-3d-animation,
-.comfy-preview-3d,
-.comfy-preview-3d-animation {
-  display: flex;
-  flex-direction: column;
-  background: transparent;
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-
-.comfy-load-3d canvas,
-.comfy-load-3d-animation canvas,
-.comfy-preview-3d canvas,
-.comfy-preview-3d-animation canvas,
-.comfy-load-3d-viewer canvas {
-  display: flex;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* End of Load3d styles */
-
 /* [Desktop] Electron window specific styles */
 .app-drag {
   app-region: drag;
