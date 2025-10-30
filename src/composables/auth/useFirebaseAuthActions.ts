@@ -22,7 +22,6 @@ export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
-  const { isActiveSubscription } = useSubscription()
 
   const accessError = ref(false)
 
@@ -84,6 +83,7 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
+    const { isActiveSubscription } = useSubscription()
     if (!isActiveSubscription.value) return
 
     const response = await authStore.initiateCreditPurchase({
