@@ -48,8 +48,11 @@ type Overlay = Partial<IBaseWidget> & {
  * on the linked widget
  */
 type ProxyWidget = IBaseWidget & { _overlay: Overlay }
-function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
+export function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
   return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
+}
+export function isDisconnectedWidget(w: ProxyWidget) {
+  return w instanceof disconnectedWidget.constructor
 }
 
 export function registerProxyWidgets(canvas: LGraphCanvas) {
@@ -167,7 +170,7 @@ function resolveLinkedWidget(
   if (!n) return [undefined, undefined]
   const widget = n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
   //Slightly hacky. Force recursive resolution of nested widgets
-  if (widget instanceof disconnectedWidget.constructor && isProxyWidget(widget))
+  if (widget && isProxyWidget(widget) && isDisconnectedWidget(widget))
     widget.computedHeight = 20
   return [n, widget]
 }
