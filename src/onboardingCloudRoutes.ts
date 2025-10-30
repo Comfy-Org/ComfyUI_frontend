@@ -83,7 +83,8 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         path: 'auth-timeout',
         name: 'cloud-auth-timeout',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudAuthTimeoutView.vue')
+          import('@/platform/onboarding/cloud/CloudAuthTimeoutView.vue'),
+        props: true
       }
     ]
   }
