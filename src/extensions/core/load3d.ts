@@ -3,11 +3,13 @@ import { nextTick } from 'vue'
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
-import { createExportMenuOptions } from '@/extensions/core/load3d/exportMenuHelper'
+import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -288,6 +290,16 @@ useExtensionService().registerExtension({
     }
   },
 
+  getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
+    // Only show menu items for Load3D nodes
+    if (node.constructor.comfyClass !== 'Load3D') return []
+
+    const load3d = useLoad3dService().getLoad3d(node)
+    if (!load3d) return []
+
+    return createExportMenuItems(load3d)
+  },
+
   async nodeCreated(node) {
     if (node.constructor.comfyClass !== 'Load3D') return
 
@@ -298,8 +310,6 @@ useExtensionService().registerExtension({
     await nextTick()
 
     useLoad3dService().waitForLoad3d(node, (load3d) => {
-      node.getExtraMenuOptions = createExportMenuOptions(load3d)
-
       let cameraState = node.properties['Camera Info']
 
       const config = new Load3DConfiguration(load3d)
@@ -508,6 +518,16 @@ useExtensionService().registerExtension({
     }
   },
 
+  getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
+    // Only show menu items for Preview3D nodes
+    if (node.constructor.comfyClass !== 'Preview3D') return []
+
+    const load3d = useLoad3dService().getLoad3d(node)
+    if (!load3d) return []
+
+    return createExportMenuItems(load3d)
+  },
+
   getCustomWidgets() {
     return {
       PREVIEW_3D(node) {
@@ -545,8 +565,6 @@ useExtensionService().registerExtension({
     const onExecuted = node.onExecuted
 
     useLoad3dService().waitForLoad3d(node, (load3d) => {
-      node.getExtraMenuOptions = createExportMenuOptions(load3d)
-
       const config = new Load3DConfiguration(load3d)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')

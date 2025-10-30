@@ -1,8 +1,10 @@
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
-import { createExportMenuOptions } from '@/extensions/core/load3d/exportMenuHelper'
+import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
@@ -43,6 +45,16 @@ useExtensionService().registerExtension({
     }
   },
 
+  getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
+    // Only show menu items for SaveGLB nodes
+    if (node.constructor.comfyClass !== 'SaveGLB') return []
+
+    const load3d = useLoad3dService().getLoad3d(node)
+    if (!load3d) return []
+
+    return createExportMenuItems(load3d)
+  },
+
   async nodeCreated(node) {
     if (node.constructor.comfyClass !== 'SaveGLB') return
 
@@ -60,10 +72,6 @@ useExtensionService().registerExtension({
       const fileInfo = message['3d'][0]
 
       const load3d = useLoad3dService().getLoad3d(node)
-
-      if (load3d) {
-        node.getExtraMenuOptions = createExportMenuOptions(load3d)
-      }
 
       const modelWidget = node.widgets?.find((w) => w.name === 'image')
 
