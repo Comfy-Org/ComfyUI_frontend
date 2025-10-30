@@ -30,7 +30,6 @@ catalog:
   '@storybook/vue3-vite': ^9.1.1
   '@tailwindcss/vite': ^4.1.12
   '@trivago/prettier-plugin-sort-imports': ^5.2.0
-  '@types/eslint-plugin-tailwindcss': ^3.17.0
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^20.14.8
@@ -52,7 +51,6 @@ catalog:
   eslint-plugin-import-x: ^4.16.1
   eslint-plugin-prettier: ^5.5.4
   eslint-plugin-storybook: ^9.1.6
-  eslint-plugin-tailwindcss: 4.0.0-beta.0
   eslint-plugin-unused-imports: ^4.2.0
   eslint-plugin-vue: ^10.4.0
   firebase: ^11.6.0
@@ -63,6 +61,7 @@ catalog:
   jsdom: ^26.1.0
   knip: ^5.62.0
   lint-staged: ^15.2.7
+  mixpanel-browser: ^2.71.0
   nx: 21.4.1
   pinia: ^2.1.7
   postcss-html: ^1.8.0
@@ -95,13 +94,8 @@ catalog:
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
-  mixpanel-browser: ^2.71.0
 
 cleanupUnusedCatalogs: true
-
-overrides:
-  '@types/eslint': '-'
-  '@eslint/core': 0.17.0
 
 ignoredBuiltDependencies:
   - '@firebase/util'
@@ -117,3 +111,7 @@ onlyBuiltDependencies:
   - esbuild
   - nx
   - oxc-resolver
+
+overrides:
+  '@eslint/core': 0.17.0
+  '@types/eslint': '-'
