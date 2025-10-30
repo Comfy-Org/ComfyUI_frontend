@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
@@ -226,7 +227,28 @@ export default defineConfig({
       deep: true,
       extensions: ['vue'],
       directoryAsNamespace: true
-    })
+    }),
+
+    // Sentry sourcemap upload plugin
+    // Only runs during cloud production builds when all Sentry env vars are present
+    // Requires: SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT env vars
+    ...(DISTRIBUTION === 'cloud' &&
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT &&
+    !IS_DEV
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            sourcemaps: {
+              // Delete source maps after upload to prevent public access
+              filesToDeleteAfterUpload: ['**/*.map']
+            }
+          })
+        ]
+      : [])
   ],
 
   build: {
