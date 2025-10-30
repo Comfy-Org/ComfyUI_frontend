@@ -202,6 +202,7 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
     userCount: 25,
     keywords: [
       'fashion',
+      'fashion design',
       'beauty',
       'jewelry',
       'retail',
@@ -436,7 +437,7 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
  */
 const FUSE_OPTIONS = {
   keys: ['keywords'],
-  threshold: 0.7, // Higher = more lenient matching
+  threshold: 0.65, // Higher = more lenient matching
   includeScore: true,
   includeMatches: true,
   ignoreLocation: true,
