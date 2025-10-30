@@ -1,34 +1,36 @@
 <template>
-  <div class="flex h-full items-center justify-center p-8">
+  <div class="flex h-full items-center justify-center p-6">
     <div class="max-w-[100vw] text-center lg:w-[500px]">
-      <h2 class="mb-4 text-xl">
+      <h2 class="mb-3 text-xl text-text-primary">
         {{ $t('cloudOnboarding.authTimeout.title') }}
       </h2>
-      <p class="mb-6 text-gray-600">
+      <p class="mb-5 text-muted">
         {{ $t('cloudOnboarding.authTimeout.message') }}
       </p>
 
       <!-- Troubleshooting Section -->
-      <div class="mb-6 rounded-md bg-gray-800/50 p-4 text-left">
-        <h3 class="mb-3 text-sm font-semibold text-gray-300">
+      <div
+        class="mb-4 rounded bg-surface-700 px-3 py-2 text-left dark-theme:bg-surface-800"
+      >
+        <h3 class="mb-2 text-sm font-semibold text-text-primary">
           {{ $t('cloudOnboarding.authTimeout.troubleshooting') }}
         </h3>
-        <ul class="space-y-2 text-sm text-gray-400">
+        <ul class="space-y-1.5 text-sm text-muted">
           <li
             v-for="(cause, index) in $tm('cloudOnboarding.authTimeout.causes')"
             :key="index"
             class="flex gap-2"
           >
-            <span class="text-gray-500">•</span>
+            <span>•</span>
             <span>{{ cause }}</span>
           </li>
         </ul>
       </div>
 
       <!-- Technical Details (Collapsible) -->
-      <div v-if="errorMessage" class="mb-6 text-left">
+      <div v-if="errorMessage" class="mb-4 text-left">
         <button
-          class="flex w-full items-center justify-between rounded-md bg-gray-800/30 px-4 py-2 text-sm text-gray-400 transition-colors hover:bg-gray-800/50"
+          class="flex w-full items-center justify-between rounded bg-surface-600 px-4 py-2 text-sm text-muted transition-colors hover:bg-surface-500 dark-theme:bg-surface-700 dark-theme:hover:bg-surface-600"
           @click="showTechnicalDetails = !showTechnicalDetails"
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
@@ -41,11 +43,24 @@
         </button>
         <div
           v-if="showTechnicalDetails"
-          class="mt-2 rounded-md bg-gray-900/50 p-4 font-mono text-xs text-gray-400 break-all"
+          class="mt-2 rounded bg-surface-800 p-4 font-mono text-xs text-muted break-all dark-theme:bg-surface-900"
         >
           {{ errorMessage }}
         </div>
       </div>
+
+      <!-- Helpful Links -->
+      <p class="mb-5 text-center text-sm text-gray-600">
+        {{ $t('cloudOnboarding.authTimeout.helpText') }}
+        <a
+          href="https://support.comfy.org"
+          class="cursor-pointer text-blue-400 no-underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ $t('cloudOnboarding.authTimeout.supportLink') }}</a
+        >.
+      </p>
 
       <div class="flex flex-col gap-3">
         <Button

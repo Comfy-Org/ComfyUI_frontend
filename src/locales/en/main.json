@@ -2123,7 +2123,9 @@
         "Regional network limitations",
         "Try a different browser or network"
       ],
-      "technicalDetails": "Technical Details"
+      "technicalDetails": "Technical Details",
+      "helpText": "Need help? Contact",
+      "supportLink": "support"
     }
   },
   "cloudFooter_needHelp": "Need Help?",
