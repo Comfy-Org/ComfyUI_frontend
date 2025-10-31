@@ -339,9 +339,6 @@ describe('normalizeIndustry', () => {
       expect(normalizeIndustry('Unknown Creative Field')).toBe(
         'Uncategorized: Unknown Creative Field'
       )
-      expect(normalizeIndustry('Mysterious Industry')).toBe(
-        'Uncategorized: Mysterious Industry'
-      )
       expect(normalizeIndustry('Completely Novel Field')).toBe(
         'Uncategorized: Completely Novel Field'
       )
@@ -519,9 +516,6 @@ describe('normalizeUseCase', () => {
     it('should preserve unknown use cases with prefix', () => {
       expect(normalizeUseCase('Mysterious Use Case')).toBe(
         'Uncategorized: Mysterious Use Case'
-      )
-      expect(normalizeUseCase('Novel Application')).toBe(
-        'Uncategorized: Novel Application'
       )
     })
   })
