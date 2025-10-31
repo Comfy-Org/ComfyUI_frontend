@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
+// Unmock firebaseAuthStore so we get the real Pinia store
+vi.unmock('@/stores/firebaseAuthStore')
+
 // Mock Firebase Auth and related modules
 vi.mock('vuefire', () => ({
   useFirebaseAuth: vi.fn(() => ({
