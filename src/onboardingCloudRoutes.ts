@@ -16,7 +16,23 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         path: 'login',
         name: 'cloud-login',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudLoginView.vue')
+          import('@/platform/onboarding/cloud/CloudLoginView.vue'),
+        beforeEnter: async (to, _from, next) => {
+          // Only redirect if not explicitly switching accounts
+          if (!to.query.switchAccount) {
+            const { useCurrentUser } = await import(
+              '@/composables/auth/useCurrentUser'
+            )
+            const { isLoggedIn } = useCurrentUser()
+
+            if (isLoggedIn.value) {
+              // User is already logged in, redirect to user-check
+              // user-check will handle survey, waitlist, or main page routing
+              return next({ name: 'cloud-user-check' })
+            }
+          }
+          next()
+        }
       },
       {
         path: 'signup',

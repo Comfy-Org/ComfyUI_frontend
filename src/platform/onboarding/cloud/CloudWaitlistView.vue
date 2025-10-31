@@ -52,7 +52,8 @@ const router = useRouter()
 
 const onSwitchAccounts = () => {
   void router.push({
-    name: 'cloud-login'
+    name: 'cloud-login',
+    query: { switchAccount: 'true' }
   })
 }
 
