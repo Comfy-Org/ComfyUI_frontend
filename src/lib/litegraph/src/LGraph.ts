@@ -1710,6 +1710,14 @@ export class LGraph
 
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
+    this.canvasAction((c) =>
+      c.canvas.dispatchEvent(
+        new CustomEvent('subgraph-converted', {
+          bubbles: true,
+          detail: { subgraphNode: subgraphNode as SubgraphNode }
+        })
+      )
+    )
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 

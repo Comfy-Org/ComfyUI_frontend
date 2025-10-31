@@ -69,6 +69,7 @@ export const useDialogService = () => {
       | 'server-config'
       | 'user'
       | 'credits'
+      | 'subscription'
   ) {
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 

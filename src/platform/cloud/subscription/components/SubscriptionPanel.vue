@@ -1,10 +1,10 @@
 <template>
   <TabPanel value="PlanCredits" class="subscription-container h-full">
-    <div class="flex h-full flex-col">
-      <div class="flex items-center gap-2">
-        <h2 class="text-2xl">
+    <div class="flex h-full flex-col gap-6">
+      <div class="flex items-baseline gap-2">
+        <span class="text-2xl font-inter font-semibold leading-tight">
           {{ $t('subscription.title') }}
-        </h2>
+        </span>
         <CloudBadge
           reverse-order
           background-color="var(--p-dialog-background)"
@@ -12,17 +12,20 @@
       </div>
 
       <div class="grow overflow-auto">
-        <div class="rounded-lg border border-charcoal-400 p-4">
+        <div class="rounded-2xl border border-interface-stroke p-6">
           <div>
             <div class="flex items-center justify-between">
               <div>
-                <div class="flex items-baseline gap-1">
-                  <span class="text-2xl font-bold">{{
-                    formattedMonthlyPrice
+                <div class="flex items-baseline gap-1 font-inter font-semibold">
+                  <span class="text-2xl">{{ formattedMonthlyPrice }}</span>
+                  <span class="text-base">{{
+                    $t('subscription.perMonth')
                   }}</span>
-                  <span>{{ $t('subscription.perMonth') }}</span>
                 </div>
-                <div v-if="isActiveSubscription" class="text-xs text-muted">
+                <div
+                  v-if="isActiveSubscription"
+                  class="text-sm text-text-secondary"
+                >
                   <template v-if="isCancelled">
                     {{
                       $t('subscription.expiresDate', {
@@ -43,7 +46,15 @@
                 v-if="isActiveSubscription"
                 :label="$t('subscription.manageSubscription')"
                 severity="secondary"
-                class="text-xs"
+                class="text-xs bg-interface-menu-component-surface-selected"
+                :pt="{
+                  root: {
+                    style: 'border-radius: 8px; padding: 8px 16px;'
+                  },
+                  label: {
+                    class: 'text-text-primary'
+                  }
+                }"
                 @click="manageSubscription"
               />
               <SubscribeButton
@@ -56,92 +67,143 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-6 rounded-lg pt-10 lg:grid-cols-2">
-            <div class="flex flex-col">
+          <div class="grid grid-cols-1 gap-6 pt-9 lg:grid-cols-2">
+            <div class="flex flex-col flex-1">
               <div class="flex flex-col gap-3">
                 <div class="flex flex-col">
                   <div class="text-sm">
-                    {{ $t('subscription.apiNodesBalance') }}
+                    {{ $t('subscription.partnerNodesBalance') }}
                   </div>
                   <div class="flex items-center">
-                    <div class="text-xs text-muted">
-                      {{ $t('subscription.apiNodesDescription') }}
+                    <div class="text-sm text-muted">
+                      {{ $t('subscription.partnerNodesDescription') }}
                     </div>
                   </div>
                 </div>
 
                 <div
-                  class="flex flex-col gap-3 rounded-lg border p-4 dark-theme:border-0 dark-theme:bg-charcoal-600"
+                  :class="
+                    cn(
+                      'relative flex flex-col gap-6 rounded-2xl p-5',
+                      'bg-smoke-100 dark-theme:bg-charcoal-600'
+                    )
+                  "
                 >
+                  <Button
+                    v-tooltip="refreshTooltip"
+                    icon="pi pi-sync"
+                    text
+                    size="small"
+                    class="absolute top-0.5 right-0"
+                    :loading="isLoadingBalance"
+                    :pt="{
+                      icon: {
+                        class: 'text-text-secondary text-xs'
+                      },
+                      loadingIcon: {
+                        class: 'text-text-secondary text-xs'
+                      }
+                    }"
+                    @click="handleRefresh"
+                  />
+
+                  <div class="flex flex-col gap-2">
+                    <div class="text-sm text-text-secondary">
+                      {{ $t('subscription.totalCredits') }}
+                    </div>
+                    <Skeleton
+                      v-if="isLoadingBalance"
+                      width="8rem"
+                      height="2rem"
+                    />
+                    <div v-else class="text-2xl font-bold">
+                      ${{ totalCredits }}
+                    </div>
+                  </div>
+
+                  <!-- Credit Breakdown -->
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-4">
+                      <Skeleton
+                        v-if="isLoadingBalance"
+                        width="3rem"
+                        height="1rem"
+                      />
+                      <div v-else class="text-sm text-text-secondary font-bold">
+                        ${{ monthlyBonusCredits }}
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <div class="text-sm text-text-secondary">
+                          {{ $t('subscription.monthlyBonusDescription') }}
+                        </div>
+                        <Button
+                          v-tooltip="$t('subscription.monthlyCreditsRollover')"
+                          icon="pi pi-question-circle"
+                          text
+                          rounded
+                          size="small"
+                          class="h-4 w-4"
+                          :pt="{
+                            icon: {
+                              class: 'text-text-secondary text-xs'
+                            }
+                          }"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                      <Skeleton
+                        v-if="isLoadingBalance"
+                        width="3rem"
+                        height="1rem"
+                      />
+                      <div v-else class="text-sm text-text-secondary font-bold">
+                        ${{ prepaidCredits }}
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <div class="text-sm text-text-secondary">
+                          {{ $t('subscription.prepaidDescription') }}
+                        </div>
+                        <Button
+                          v-tooltip="$t('subscription.prepaidCreditsInfo')"
+                          icon="pi pi-question-circle"
+                          text
+                          rounded
+                          size="small"
+                          class="h-4 w-4"
+                          :pt="{
+                            icon: {
+                              class: 'text-text-secondary text-xs'
+                            }
+                          }"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="flex items-center justify-between">
-                    <div>
-                      <div class="text-xs text-muted">
-                        {{ $t('subscription.totalCredits') }}
-                      </div>
-                      <div class="text-2xl font-bold">${{ totalCredits }}</div>
-                    </div>
-                    <Button
-                      icon="pi pi-sync"
-                      severity="secondary"
-                      size="small"
-                      :loading="isLoadingBalance"
-                      @click="handleRefresh"
-                    />
-                  </div>
-
-                  <div
-                    v-if="latestEvents.length > 0"
-                    class="flex flex-col gap-2 pt-3 text-xs"
-                  >
-                    <div
-                      v-for="event in latestEvents"
-                      :key="event.event_id"
-                      class="flex items-center justify-between py-1"
+                    <a
+                      href="https://platform.comfy.org/profile/usage"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-sm text-text-secondary underline hover:text-text-secondary"
+                      style="text-decoration: underline"
                     >
-                      <div class="flex flex-col gap-0.5">
-                        <span class="font-medium">
-                          {{
-                            event.event_type
-                              ? customerEventService.formatEventType(
-                                  event.event_type
-                                )
-                              : ''
-                          }}
-                        </span>
-                        <span class="text-muted">
-                          {{
-                            event.createdAt
-                              ? customerEventService.formatDate(event.createdAt)
-                              : ''
-                          }}
-                        </span>
-                      </div>
-                      <div
-                        v-if="event.params?.amount !== undefined"
-                        class="font-bold"
-                      >
-                        ${{
-                          customerEventService.formatAmount(
-                            event.params.amount as number
-                          )
-                        }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center justify-between pt-2">
-                    <Button
-                      :label="$t('subscription.viewUsageHistory')"
-                      text
-                      severity="secondary"
-                      class="p-0 text-xs text-muted"
-                      @click="handleViewUsageHistory"
-                    />
+                      {{ $t('subscription.viewUsageHistory') }}
+                    </a>
                     <Button
                       v-if="isActiveSubscription"
-                      :label="$t('subscription.addApiCredits')"
+                      :label="$t('subscription.addCredits')"
                       severity="secondary"
-                      class="text-xs"
+                      class="p-2 min-h-8 bg-interface-menu-component-surface-selected"
+                      :pt="{
+                        root: {
+                          style: 'border-radius: 8px;'
+                        },
+                        label: {
+                          class: 'text-sm'
+                        }
+                      }"
                       @click="handleAddApiCredits"
                     />
                   </div>
@@ -149,7 +211,7 @@
               </div>
             </div>
 
-            <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-2 flex-1">
               <div class="text-sm">
                 {{ $t('subscription.yourPlanIncludes') }}
               </div>
@@ -161,7 +223,7 @@
       </div>
 
       <div
-        class="flex items-center justify-between border-t border-charcoal-400 pt-3"
+        class="flex items-center justify-between border-t border-interface-stroke pt-3"
       >
         <div class="flex gap-2">
           <Button
@@ -170,7 +232,15 @@
             severity="secondary"
             icon="pi pi-question-circle"
             class="text-xs"
-            @click="handleLearnMore"
+            :pt="{
+              label: {
+                class: 'text-text-secondary'
+              },
+              icon: {
+                class: 'text-text-secondary text-xs'
+              }
+            }"
+            @click="handleLearnMoreClick"
           />
           <Button
             :label="$t('subscription.messageSupport')"
@@ -178,6 +248,15 @@
             severity="secondary"
             icon="pi pi-comment"
             class="text-xs"
+            :loading="isLoadingSupport"
+            :pt="{
+              label: {
+                class: 'text-text-secondary'
+              },
+              icon: {
+                class: 'text-text-secondary text-xs'
+              }
+            }"
             @click="handleMessageSupport"
           />
         </div>
@@ -189,6 +268,14 @@
           icon="pi pi-external-link"
           icon-pos="right"
           class="text-xs"
+          :pt="{
+            label: {
+              class: 'text-text-secondary'
+            },
+            icon: {
+              class: 'text-text-secondary text-xs'
+            }
+          }"
           @click="handleInvoiceHistory"
         />
       </div>
@@ -198,26 +285,16 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
-import { computed, onMounted, ref } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import type { AuditLog } from '@/services/customerEventsService'
-import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
-
-const dialogService = useDialogService()
-const authActions = useFirebaseAuthActions()
-const commandStore = useCommandStore()
-const authStore = useFirebaseAuthStore()
-const customerEventService = useCustomerEventsService()
+import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
+import { cn } from '@/utils/tailwindUtil'
 
 const {
   isActiveSubscription,
@@ -226,54 +303,20 @@ const {
   formattedEndDate,
   formattedMonthlyPrice,
   manageSubscription,
-  handleViewUsageHistory,
-  handleLearnMore,
-  handleInvoiceHistory,
-  fetchStatus
+  handleInvoiceHistory
 } = useSubscription()
 
-const latestEvents = ref<AuditLog[]>([])
+const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
+  useSubscriptionCredits()
 
-const totalCredits = computed(() => {
-  if (!authStore.balance) return '0.00'
-  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
-})
-
-const isLoadingBalance = computed(() => authStore.isFetchingBalance)
-
-const fetchLatestEvents = async () => {
-  try {
-    const response = await customerEventService.getMyEvents({
-      page: 1,
-      limit: 2
-    })
-    if (response?.events) {
-      latestEvents.value = response.events
-    }
-  } catch (error) {
-    console.error('[SubscriptionPanel] Error fetching latest events:', error)
-  }
-}
-
-onMounted(() => {
-  void handleRefresh()
-})
-
-const handleAddApiCredits = () => {
-  dialogService.showTopUpCreditsDialog()
-}
-
-const handleMessageSupport = async () => {
-  await commandStore.execute('Comfy.ContactSupport')
-}
-
-const handleRefresh = async () => {
-  await Promise.all([
-    authActions.fetchBalance(),
-    fetchStatus(),
-    fetchLatestEvents()
-  ])
-}
+const {
+  isLoadingSupport,
+  refreshTooltip,
+  handleAddApiCredits,
+  handleMessageSupport,
+  handleRefresh,
+  handleLearnMoreClick
+} = useSubscriptionActions()
 </script>
 
 <style scoped>

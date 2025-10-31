@@ -61,7 +61,7 @@ function getSubgraphsFromInstanceIds(
   currentGraph: LGraph | Subgraph,
   subgraphNodeIds: string[],
   subgraphs: Subgraph[] = []
-): Subgraph[] {
+): Subgraph[] | undefined {
   // Last segment is the node portion; nothing to do.
   if (subgraphNodeIds.length === 1) return subgraphs
 
@@ -69,7 +69,10 @@ function getSubgraphsFromInstanceIds(
   if (currentPart === undefined) return subgraphs
 
   const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
-  if (!subgraph) throw new Error(`Subgraph not found: ${currentPart}`)
+  if (!subgraph) {
+    console.warn(`Subgraph not found: ${currentPart}`)
+    return undefined
+  }
 
   subgraphs.push(subgraph)
   return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
@@ -80,7 +83,9 @@ function getSubgraphsFromInstanceIds(
  * @param nodeId The node ID from execution context (could be execution ID)
  * @returns The NodeLocatorId
  */
-function executionIdToNodeLocatorId(nodeId: string | number): NodeLocatorId {
+function executionIdToNodeLocatorId(
+  nodeId: string | number
+): NodeLocatorId | undefined {
   const nodeIdStr = String(nodeId)
 
   if (!nodeIdStr.includes(':')) {
@@ -92,6 +97,7 @@ function executionIdToNodeLocatorId(nodeId: string | number): NodeLocatorId {
   const parts = nodeIdStr.split(':')
   const localNodeId = parts[parts.length - 1]
   const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
+  if (!subgraphs) return undefined
   const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
   return nodeLocatorId
 }

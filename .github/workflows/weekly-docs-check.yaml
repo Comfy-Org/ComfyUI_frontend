@@ -142,4 +142,3 @@ jobs:
             documentation
             automated
           draft: true
-          assignees: ${{ github.repository_owner }}

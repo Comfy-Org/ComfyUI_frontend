@@ -3,18 +3,31 @@ import type { OverridedMixpanel } from 'mixpanel-browser'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { app } from '@/scripts/app'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { NodeSourceType } from '@/types/nodeSource'
+import { reduceAllNodes } from '@/utils/graphTraversalUtil'
+import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 import type {
   AuthMetadata,
+  CreditTopupMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  NodeSearchMetadata,
+  NodeSearchResultMetadata,
+  PageVisibilityMetadata,
   RunButtonProperties,
   SurveyResponses,
+  TabCountMetadata,
   TelemetryEventName,
   TelemetryEventProperties,
   TelemetryProvider,
-  TemplateMetadata
+  TemplateFilterMetadata,
+  TemplateLibraryMetadata,
+  TemplateMetadata,
+  WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -123,6 +136,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 
+  trackUserLoggedIn(): void {
+    this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
+  }
+
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
     const eventName =
       event === 'modal_opened'
@@ -130,6 +147,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED
 
     this.trackEvent(eventName)
+  }
+
+  trackMonthlySubscriptionSucceeded(): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
+  }
+
+  trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
+    const metadata: CreditTopupMetadata = {
+      credit_amount: amount
+    }
+    this.trackEvent(
+      TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
+      metadata
+    )
   }
 
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
@@ -153,7 +184,21 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         ? TelemetryEvents.USER_SURVEY_OPENED
         : TelemetryEvents.USER_SURVEY_SUBMITTED
 
-    this.trackEvent(eventName, responses)
+    // Apply normalization to survey responses
+    const normalizedResponses = responses
+      ? normalizeSurveyResponses(responses)
+      : undefined
+
+    this.trackEvent(eventName, normalizedResponses)
+
+    // If this is a survey submission, also set user properties with normalized data
+    if (stage === 'submitted' && normalizedResponses && this.mixpanel) {
+      try {
+        this.mixpanel.people.set(normalizedResponses)
+      } catch (error) {
+        console.error('Failed to set survey user properties:', error)
+      }
+    }
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
@@ -178,6 +223,34 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TEMPLATE_WORKFLOW_OPENED, metadata)
   }
 
+  trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_LIBRARY_OPENED, metadata)
+  }
+
+  trackWorkflowImported(metadata: WorkflowImportMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
+  }
+
+  trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
+    this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
+  }
+
+  trackTabCount(metadata: TabCountMetadata): void {
+    this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
+  }
+
+  trackNodeSearch(metadata: NodeSearchMetadata): void {
+    this.trackEvent(TelemetryEvents.NODE_SEARCH, metadata)
+  }
+
+  trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
+    this.trackEvent(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
+  }
+
+  trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_FILTER_CHANGED, metadata)
+  }
+
   trackWorkflowExecution(): void {
     const context = this.getExecutionContext()
     this.trackEvent(TelemetryEvents.EXECUTION_START, context)
@@ -194,7 +267,27 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   getExecutionContext(): ExecutionContext {
     const workflowStore = useWorkflowStore()
     const templatesStore = useWorkflowTemplatesStore()
+    const nodeDefStore = useNodeDefStore()
     const activeWorkflow = workflowStore.activeWorkflow
+
+    // Calculate node metrics in a single traversal
+    const nodeMetrics = reduceAllNodes(
+      app.graph,
+      (acc, node) => {
+        const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+        const isCustomNode =
+          nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
+        const isApiNode = nodeDef?.api_node === true
+        const isSubgraph = node.isSubgraphNode?.() === true
+
+        return {
+          custom_node_count: acc.custom_node_count + (isCustomNode ? 1 : 0),
+          api_node_count: acc.api_node_count + (isApiNode ? 1 : 0),
+          subgraph_count: acc.subgraph_count + (isSubgraph ? 1 : 0)
+        }
+      },
+      { custom_node_count: 0, api_node_count: 0, subgraph_count: 0 }
+    )
 
     if (activeWorkflow?.filename) {
       const isTemplate = templatesStore.knownTemplateNames.has(
@@ -218,19 +311,22 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
           template_tags: englishMetadata?.tags ?? template?.tags,
           template_models: englishMetadata?.models ?? template?.models,
           template_use_case: englishMetadata?.useCase ?? template?.useCase,
-          template_license: englishMetadata?.license ?? template?.license
+          template_license: englishMetadata?.license ?? template?.license,
+          ...nodeMetrics
         }
       }
 
       return {
         is_template: false,
-        workflow_name: activeWorkflow.filename
+        workflow_name: activeWorkflow.filename,
+        ...nodeMetrics
       }
     }
 
     return {
       is_template: false,
-      workflow_name: undefined
+      workflow_name: undefined,
+      ...nodeMetrics
     }
   }
 }

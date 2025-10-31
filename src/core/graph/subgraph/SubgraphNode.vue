@@ -17,6 +17,7 @@ import {
   matchesPropertyItem,
   matchesWidgetItem,
   promoteWidget,
+  pruneDisconnected,
   widgetItemToProperty
 } from '@/core/graph/subgraph/proxyWidgetUtils'
 import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
@@ -235,6 +236,7 @@ watchDebounced(
 )
 onMounted(() => {
   setDraggableState()
+  if (activeNode.value) pruneDisconnected(activeNode.value)
 })
 onBeforeUnmount(() => {
   draggableList.value?.dispose()
