@@ -179,8 +179,7 @@ export const useWorkflowService = () => {
       {
         showMissingModelsDialog: loadFromRemote,
         showMissingNodesDialog: loadFromRemote,
-        checkForRerouteMigration: false,
-        openSource: 'workspace'
+        checkForRerouteMigration: false
       }
     )
   }

@@ -109,12 +109,7 @@ export interface WorkflowImportMetadata {
   /**
    * The source of the workflow open/import action
    */
-  open_source?:
-    | 'file_button'
-    | 'file_drop'
-    | 'workspace'
-    | 'template'
-    | 'unknown'
+  open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
 }
 
 /**
