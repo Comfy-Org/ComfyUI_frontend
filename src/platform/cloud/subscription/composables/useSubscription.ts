@@ -1,4 +1,5 @@
 import { computed, ref, watch } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -25,17 +26,14 @@ type CloudSubscriptionStatusResponse = {
   end_date?: string | null
 }
 
-const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+function useSubscriptionInternal() {
+  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
 
-const isSubscribedOrIsNotCloud = computed(() => {
-  if (!isCloud || !window.__CONFIG__?.subscription_required) return true
+  const isSubscribedOrIsNotCloud = computed(() => {
+    if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
-  return subscriptionStatus.value?.is_active ?? false
-})
-
-let isWatchSetup = false
-
-export function useSubscription() {
+    return subscriptionStatus.value?.is_active ?? false
+  })
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const dialogService = useDialogService()
 
@@ -161,20 +159,17 @@ export function useSubscription() {
     return statusData
   }
 
-  if (!isWatchSetup) {
-    isWatchSetup = true
-    watch(
-      () => isLoggedIn.value,
-      async (loggedIn) => {
-        if (loggedIn) {
-          await fetchSubscriptionStatus()
-        } else {
-          subscriptionStatus.value = null
-        }
-      },
-      { immediate: true }
-    )
-  }
+  watch(
+    () => isLoggedIn.value,
+    async (loggedIn) => {
+      if (loggedIn) {
+        await fetchSubscriptionStatus()
+      } else {
+        subscriptionStatus.value = null
+      }
+    },
+    { immediate: true }
+  )
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
@@ -227,3 +222,5 @@ export function useSubscription() {
     handleInvoiceHistory
   }
 }
+
+export const useSubscription = createSharedComposable(useSubscriptionInternal)

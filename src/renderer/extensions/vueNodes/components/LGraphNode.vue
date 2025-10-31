@@ -15,7 +15,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent -outline-offset-2 outline-2',
+        'outline-transparent outline-2',
         borderClass,
         outlineClass,
         {
@@ -44,7 +44,20 @@
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
   >
-    <div class="flex items-center">
+    <div class="flex flex-col justify-center items-center relative">
+      <template v-if="isCollapsed">
+        <SlotConnectionDot
+          v-if="hasInputs"
+          multi
+          class="absolute left-0 -translate-x-1/2"
+        />
+        <SlotConnectionDot
+          v-if="hasOutputs"
+          multi
+          class="absolute right-0 translate-x-1/2"
+        />
+        <NodeSlots :node-data="nodeData" unified />
+      </template>
       <NodeHeader
         :node-data="nodeData"
         :collapsed="isCollapsed"
@@ -132,12 +145,14 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -232,6 +247,9 @@ const nodeOpacity = computed(() => {
 
   return globalOpacity
 })
+
+const hasInputs = computed(() => nonWidgetedInputs(nodeData).length > 0)
+const hasOutputs = computed((): boolean => !!nodeData.outputs?.length)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()

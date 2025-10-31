@@ -24,13 +24,14 @@ export class ControlsManager implements ControlsManagerInterface {
     this.nodeStorage = nodeStorage
     this.camera = camera
 
-    this.controls = new OrbitControls(camera, renderer.domElement)
+    const container = renderer.domElement.parentElement || renderer.domElement
+    this.controls = new OrbitControls(camera, container)
     this.controls.enableDamping = true
   }
 
   init(): void {
     this.controls.addEventListener('end', () => {
-      this.nodeStorage.storeNodeProperty('Camera Info', {
+      const cameraState = {
         position: this.camera.position.clone(),
         target: this.controls.target.clone(),
         zoom:
@@ -41,7 +42,17 @@ export class ControlsManager implements ControlsManagerInterface {
           this.camera instanceof THREE.PerspectiveCamera
             ? 'perspective'
             : 'orthographic'
+      }
+
+      const cameraConfig = this.nodeStorage.loadNodeProperty('Camera Config', {
+        cameraType: cameraState.cameraType,
+        fov:
+          this.camera instanceof THREE.PerspectiveCamera
+            ? (this.camera as THREE.PerspectiveCamera).fov
+            : 75
       })
+      cameraConfig.state = cameraState
+      this.nodeStorage.storeNodeProperty('Camera Config', cameraConfig)
     })
   }
 

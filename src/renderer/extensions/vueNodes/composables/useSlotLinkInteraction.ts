@@ -1,6 +1,5 @@
-import { useEventListener } from '@vueuse/core'
+import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
-import { onBeforeUnmount } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -555,6 +554,8 @@ export function useSlotLinkInteraction({
     if (event.button !== 0) return
     if (!nodeId) return
     if (pointerSession.isActive()) return
+    event.preventDefault()
+    event.stopPropagation()
 
     const canvas = app.canvas
     const graph = canvas?.graph
@@ -613,7 +614,7 @@ export function useSlotLinkInteraction({
 
     if (shouldBatchDisconnectOutputLinks && resolvedNode) {
       resolvedNode.disconnectOutput(index)
-      app.canvas?.setDirty(true, true)
+      canvas.setDirty(true, true)
       event.preventDefault()
       event.stopPropagation()
       return
@@ -634,20 +635,18 @@ export function useSlotLinkInteraction({
     const shouldMoveExistingInput =
       isInputSlot && !shouldBreakExistingInputLink && hasExistingInputLink
 
-    if (activeAdapter) {
-      if (isOutputSlot) {
-        activeAdapter.beginFromOutput(localNodeId, index, {
-          moveExisting: shouldMoveExistingOutput
-        })
-      } else {
-        activeAdapter.beginFromInput(localNodeId, index, {
-          moveExisting: shouldMoveExistingInput
-        })
-      }
+    if (isOutputSlot) {
+      activeAdapter.beginFromOutput(localNodeId, index, {
+        moveExisting: shouldMoveExistingOutput
+      })
+    } else {
+      activeAdapter.beginFromInput(localNodeId, index, {
+        moveExisting: shouldMoveExistingInput
+      })
+    }
 
-      if (shouldMoveExistingInput && existingInputLink) {
-        existingInputLink._dragging = true
-      }
+    if (shouldMoveExistingInput && existingInputLink) {
+      existingInputLink._dragging = true
     }
 
     syncRenderLinkOrigins()
@@ -678,21 +677,19 @@ export function useSlotLinkInteraction({
     toCanvasPointerEvent(event)
     updatePointerState(event)
 
-    if (activeAdapter) {
-      activeAdapter.linkConnector.state.snapLinksPos = [
-        state.pointer.canvas.x,
-        state.pointer.canvas.y
-      ]
-    }
+    activeAdapter.linkConnector.state.snapLinksPos = [
+      state.pointer.canvas.x,
+      state.pointer.canvas.y
+    ]
 
     pointerSession.register(
-      useEventListener(window, 'pointermove', handlePointerMove, {
+      useEventListener('pointermove', handlePointerMove, {
         capture: true
       }),
-      useEventListener(window, 'pointerup', handlePointerUp, {
+      useEventListener('pointerup', handlePointerUp, {
         capture: true
       }),
-      useEventListener(window, 'pointercancel', handlePointerCancel, {
+      useEventListener('pointercancel', handlePointerCancel, {
         capture: true
       })
     )
@@ -710,12 +707,10 @@ export function useSlotLinkInteraction({
           : activeAdapter.isOutputValidDrop(slotLayout.nodeId, idx)
       setCompatibleForKey(key, ok)
     }
-    app.canvas?.setDirty(true, true)
-    event.preventDefault()
-    event.stopPropagation()
+    canvas.setDirty(true, true)
   }
 
-  onBeforeUnmount(() => {
+  tryOnScopeDispose(() => {
     if (pointerSession.isActive()) {
       cleanupInteraction()
     }

@@ -9,6 +9,10 @@
     icon="pi pi-lock"
     severity="primary"
     size="small"
+    :style="{
+      background: 'var(--color-subscription-button-gradient)',
+      color: 'var(--color-white)'
+    }"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
   />

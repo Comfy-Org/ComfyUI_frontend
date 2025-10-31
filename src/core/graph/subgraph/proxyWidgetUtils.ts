@@ -1,5 +1,9 @@
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
+import {
+  isProxyWidget,
+  isDisconnectedWidget
+} from '@/core/graph/subgraph/proxyWidget'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -162,4 +166,11 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     filteredWidgets.map(widgetItemToProperty)
   subgraphNode.properties.proxyWidgets = proxyWidgets
   subgraphNode.computeSize(subgraphNode.size)
+}
+
+export function pruneDisconnected(subgraphNode: SubgraphNode) {
+  subgraphNode.properties.proxyWidgets = subgraphNode.widgets
+    .filter(isProxyWidget)
+    .filter((w) => !isDisconnectedWidget(w))
+    .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
 }

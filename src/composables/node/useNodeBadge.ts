@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
 import { BadgePosition, LGraphBadge } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -12,7 +13,6 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { adjustColor } from '@/utils/colorUtil'
 
 /**
  * Add LGraphBadge to LGraphNode based on settings.
@@ -27,6 +27,7 @@ export const useNodeBadge = () => {
   const settingStore = useSettingStore()
   const extensionStore = useExtensionStore()
   const colorPaletteStore = useColorPaletteStore()
+  const priceBadge = usePriceBadge()
 
   const nodeSourceBadgeMode = computed(
     () =>
@@ -118,29 +119,7 @@ export const useNodeBadge = () => {
           let creditsBadge
           const createBadge = () => {
             const price = nodePricing.getNodeDisplayPrice(node)
-
-            const isLightTheme =
-              colorPaletteStore.completedActivePalette.light_theme
-            return new LGraphBadge({
-              text: price,
-              iconOptions: {
-                unicode: '\ue96b',
-                fontFamily: 'PrimeIcons',
-                color: isLightTheme
-                  ? adjustColor('#FABC25', { lightness: 0.5 })
-                  : '#FABC25',
-                bgColor: isLightTheme
-                  ? adjustColor('#654020', { lightness: 0.5 })
-                  : '#654020',
-                fontSize: 8
-              },
-              fgColor:
-                colorPaletteStore.completedActivePalette.colors.litegraph_base
-                  .BADGE_FG_COLOR,
-              bgColor: isLightTheme
-                ? adjustColor('#8D6932', { lightness: 0.5 })
-                : '#8D6932'
-            })
+            return priceBadge.getCreditsBadge(price)
           }
 
           if (hasDynamicPricing) {
@@ -162,6 +141,23 @@ export const useNodeBadge = () => {
 
           node.badges.push(() => creditsBadge.value)
         }
+      },
+      init() {
+        app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+          'litegraph:set-graph',
+          () => {
+            for (const node of app.canvas.graph?.nodes ?? [])
+              priceBadge.updateSubgraphCredits(node)
+          }
+        )
+        app.canvas.canvas.addEventListener<'subgraph-converted'>(
+          'subgraph-converted',
+          (e) => priceBadge.updateSubgraphCredits(e.detail.subgraphNode)
+        )
+      },
+      afterConfigureGraph() {
+        for (const node of app.canvas.graph?.nodes ?? [])
+          priceBadge.updateSubgraphCredits(node)
       }
     })
   })

@@ -143,8 +143,8 @@ onMounted(() => {
     widget.options.selectOn ?? ['focus', 'click'],
     () => {
       const lgCanvas = canvasStore.canvas
-      lgCanvas?.selectNode(widget.node)
-      lgCanvas?.bringToFront(widget.node)
+      lgCanvas?.selectNode(widgetState.widget.node)
+      lgCanvas?.bringToFront(widgetState.widget.node)
     }
   )
 })

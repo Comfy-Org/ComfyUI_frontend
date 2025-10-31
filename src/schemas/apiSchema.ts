@@ -13,6 +13,7 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 export const zQueueIndex = z.number()
 export const zPromptId = z.string()
+export type PromptId = z.infer<typeof zPromptId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
 
@@ -481,7 +482,6 @@ const zSettings = z.object({
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
-  'Comfy.Load3D.ShowPreview': z.boolean(),
   'Comfy.Load3D.BackgroundColor': z.string(),
   'Comfy.Load3D.LightIntensity': z.number(),
   'Comfy.Load3D.LightIntensityMaximum': z.number(),

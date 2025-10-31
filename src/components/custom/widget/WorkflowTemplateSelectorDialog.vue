@@ -382,7 +382,7 @@
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -403,6 +403,8 @@ import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -412,9 +414,33 @@ import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose } = defineProps<{
+const { onClose: originalOnClose } = defineProps<{
   onClose: () => void
 }>()
+
+// Track session time for telemetry
+const sessionStartTime = ref<number>(0)
+const templateWasSelected = ref(false)
+
+onMounted(() => {
+  sessionStartTime.value = Date.now()
+})
+
+// Wrap onClose to track session end
+const onClose = () => {
+  if (isCloud) {
+    const timeSpentSeconds = Math.floor(
+      (Date.now() - sessionStartTime.value) / 1000
+    )
+
+    useTelemetry()?.trackTemplateLibraryClosed({
+      template_selected: templateWasSelected.value,
+      time_spent_seconds: timeSpentSeconds
+    })
+  }
+
+  originalOnClose()
+}
 
 provide(OnCloseKey, onClose)
 
@@ -700,6 +726,7 @@ const onLoadWorkflow = async (template: any) => {
       template.name,
       getEffectiveSourceModule(template)
     )
+    templateWasSelected.value = true
     onClose()
   } finally {
     loadingTemplate.value = null

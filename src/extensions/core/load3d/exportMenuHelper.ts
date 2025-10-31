@@ -1,5 +1,4 @@
 import { t } from '@/i18n'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -11,17 +10,16 @@ const EXPORT_FORMATS = [
   { label: 'STL', value: 'stl' }
 ] as const
 
-export function createExportMenuOptions(
+/**
+ * Creates export menu items for a 3D node using the new extension API.
+ * Returns an array of context menu items including a separator and export submenu.
+ */
+export function createExportMenuItems(
   load3d: Load3d
-): (
-  canvas: LGraphCanvas,
-  options: (IContextMenuValue | null)[]
-) => (IContextMenuValue | null)[] {
-  return function (
-    _canvas: LGraphCanvas,
-    options: (IContextMenuValue | null)[]
-  ): (IContextMenuValue | null)[] {
-    options.push(null, {
+): (IContextMenuValue | null)[] {
+  return [
+    null, // Separator
+    {
       content: 'Save',
       has_submenu: true,
       callback: (_value, _options, event, prev_menu) => {
@@ -56,7 +54,6 @@ export function createExportMenuOptions(
           parentMenu: prev_menu
         })
       }
-    })
-    return options
-  }
+    }
+  ]
 }

@@ -23,6 +23,38 @@
       </div>
     </div>
 
+    <div v-if="isActiveSubscription" class="flex items-center justify-between">
+      <div class="flex flex-col gap-1">
+        <UserCredit text-class="text-2xl" />
+        <Button
+          :label="$t('subscription.partnerNodesCredits')"
+          severity="secondary"
+          text
+          size="small"
+          class="pl-6 p-0 h-auto justify-start"
+          :pt="{
+            root: {
+              class: 'hover:bg-transparent active:bg-transparent'
+            }
+          }"
+          @click="handleOpenPartnerNodesInfo"
+        />
+      </div>
+      <Button
+        :label="$t('credits.topUp.topUp')"
+        severity="secondary"
+        size="small"
+        @click="handleTopUp"
+      />
+    </div>
+    <SubscribeButton
+      v-else
+      :label="$t('subscription.subscribeToComfyCloud')"
+      size="small"
+      variant="gradient"
+      @subscribed="handleSubscribed"
+    />
+
     <Divider class="my-2" />
 
     <Button
@@ -33,6 +65,17 @@
       fluid
       severity="secondary"
       @click="handleOpenUserSettings"
+    />
+
+    <Button
+      v-if="isActiveSubscription"
+      class="justify-start"
+      :label="$t(planSettingsLabel)"
+      icon="pi pi-receipt"
+      text
+      fluid
+      severity="secondary"
+      @click="handleOpenPlanAndCreditsSettings"
     />
 
     <Divider class="my-2" />
@@ -46,34 +89,6 @@
       severity="secondary"
       @click="handleLogout"
     />
-
-    <Divider class="my-2" />
-
-    <Button
-      class="justify-start"
-      :label="$t('credits.apiPricing')"
-      icon="pi pi-external-link"
-      text
-      fluid
-      severity="secondary"
-      @click="handleOpenApiPricing"
-    />
-
-    <Divider class="my-2" />
-
-    <div class="flex w-full flex-col gap-2 p-2">
-      <div class="text-sm text-muted">
-        {{ $t('credits.yourCreditBalance') }}
-      </div>
-      <div class="flex items-center justify-between">
-        <UserCredit text-class="text-2xl" />
-        <Button
-          v-if="isActiveSubscription"
-          :label="$t('credits.topUp.topUp')"
-          @click="handleTopUp"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
@@ -86,21 +101,37 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 
 const emit = defineEmits<{
   close: []
 }>()
 
+const planSettingsLabel = isCloud
+  ? 'settingsCategories.PlanCredits'
+  : 'settingsCategories.Credits'
+
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription, fetchStatus } = useSubscription()
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
+  emit('close')
+}
+
+const handleOpenPlanAndCreditsSettings = () => {
+  if (isCloud) {
+    dialogService.showSettingsDialog('subscription')
+  } else {
+    dialogService.showSettingsDialog('credits')
+  }
+
   emit('close')
 }
 
@@ -109,14 +140,21 @@ const handleTopUp = () => {
   emit('close')
 }
 
+const handleOpenPartnerNodesInfo = () => {
+  window.open(
+    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    '_blank'
+  )
+  emit('close')
+}
+
 const handleLogout = async () => {
   await handleSignOut()
   emit('close')
 }
 
-const handleOpenApiPricing = () => {
-  window.open('https://docs.comfy.org/tutorials/api-nodes/pricing', '_blank')
-  emit('close')
+const handleSubscribed = async () => {
+  await fetchStatus()
 }
 
 onMounted(() => {
