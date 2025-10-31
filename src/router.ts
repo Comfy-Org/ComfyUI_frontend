@@ -192,15 +192,19 @@ router.beforeEach(async (to, _from, next) => {
       const userStatus = await getUserCloudStatus()
       const surveyCompleted = await getSurveyCompletedStatus()
 
-      // If user is not active (waitlisted), redirect based on survey status
-      if (userStatus.status !== 'active') {
-        if (!surveyCompleted) {
-          return next({ name: 'cloud-survey' })
-        } else {
-          return next({ name: 'cloud-waitlist' })
-        }
+      // Survey is required for all users regardless of whitelist status
+      if (!surveyCompleted) {
+        return next({ name: 'cloud-survey' })
       }
-      // User is active, allow access to root
+
+      // Check if we should enforce whitelist requirement
+      const requireWhitelist = window.__CONFIG__?.require_whitelist ?? true
+
+      // Check feature flag and redirect non-active users if whitelist is required
+      if (requireWhitelist && userStatus.status !== 'active') {
+        return next({ name: 'cloud-waitlist' })
+      }
+      // User is active or whitelist check disabled: Allow access to root
     } catch (error) {
       console.error('Failed to check user status:', error)
       // On error, redirect to user-check as fallback
