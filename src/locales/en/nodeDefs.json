@@ -10295,6 +10295,38 @@
       }
     }
   },
+  "ScaleROPE": {
+    "display_name": "ScaleROPE",
+    "description": "Scale and shift the ROPE of the model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scale_x": {
+        "name": "scale_x"
+      },
+      "shift_x": {
+        "name": "shift_x"
+      },
+      "scale_y": {
+        "name": "scale_y"
+      },
+      "shift_y": {
+        "name": "shift_y"
+      },
+      "scale_t": {
+        "name": "scale_t"
+      },
+      "shift_t": {
+        "name": "shift_t"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SD_4XUpscale_Conditioning": {
     "display_name": "SD_4XUpscale_Conditioning",
     "inputs": {
