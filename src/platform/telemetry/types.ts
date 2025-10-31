@@ -26,7 +26,6 @@ export interface AuthMetadata {
 
 /**
  * Survey response data for user profiling
- * Maps 1-to-1 with actual survey fields
  */
 export interface SurveyResponses {
   familiarity?: string
@@ -199,6 +198,7 @@ export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened(): void
   trackAuth(metadata: AuthMetadata): void
+  trackUserLoggedIn(): void
 
   // Subscription flow events
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void
@@ -255,6 +255,7 @@ export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
+  USER_LOGGED_IN: 'app:user_logged_in',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',

@@ -464,6 +464,27 @@ export function traverseNodesDepthFirst<T = void>(
 }
 
 /**
+ * Reduces all nodes in a graph hierarchy to a single value using a reducer function.
+ * Single-pass traversal for efficient aggregation.
+ *
+ * @param graph - The root graph to traverse
+ * @param reducer - Function that reduces each node into the accumulator
+ * @param initialValue - The initial accumulator value
+ * @returns The final reduced value
+ */
+export function reduceAllNodes<T>(
+  graph: LGraph | Subgraph,
+  reducer: (accumulator: T, node: LGraphNode) => T,
+  initialValue: T
+): T {
+  let result = initialValue
+  forEachNode(graph, (node) => {
+    result = reducer(result, node)
+  })
+  return result
+}
+
+/**
  * Options for collectFromNodes function
  */
 interface CollectFromNodesOptions<T, C> {

@@ -43,8 +43,10 @@ import Tag from 'primevue/tag'
 import { onBeforeUnmount, ref } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useTelemetry } from '@/platform/telemetry'
 
 const authActions = useFirebaseAuthActions()
+const telemetry = useTelemetry()
 
 const {
   amount,
@@ -61,8 +63,11 @@ const didClickBuyNow = ref(false)
 const loading = ref(false)
 
 const handleBuyNow = async () => {
+  const creditAmount = editable ? customAmount.value : amount
+  telemetry?.trackApiCreditTopupButtonPurchaseClicked(creditAmount)
+
   loading.value = true
-  await authActions.purchaseCredits(editable ? customAmount.value : amount)
+  await authActions.purchaseCredits(creditAmount)
   loading.value = false
   didClickBuyNow.value = true
 }

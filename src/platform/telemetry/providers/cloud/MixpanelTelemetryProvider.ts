@@ -3,7 +3,7 @@ import type { OverridedMixpanel } from 'mixpanel-browser'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
 import type {
   AuthMetadata,
@@ -27,6 +27,7 @@ import type {
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
+import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -121,12 +122,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
     try {
       this.mixpanel.identify(userId)
-
-      // If we have pending survey responses, set them now that user is identified
-      if (this.pendingSurveyResponses) {
-        this.setSurveyUserProperties(this.pendingSurveyResponses)
-        this.pendingSurveyResponses = null
-      }
 
       // Load existing survey data if available (only when app is ready)
       if (!this.isOnboardingMode) {
@@ -279,6 +274,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 
+  trackUserLoggedIn(): void {
+    this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
+  }
+
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
     const eventName =
       event === 'modal_opened'
@@ -287,7 +286,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
     this.trackEvent(eventName)
   }
-
   trackAddApiCreditButtonClicked(): void {
     this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
   }
@@ -355,45 +353,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         ? TelemetryEvents.USER_SURVEY_OPENED
         : TelemetryEvents.USER_SURVEY_SUBMITTED
 
-    // Include survey responses as event properties for submitted events
-    const eventProperties =
-      stage === 'submitted' && responses
-        ? {
-            industry: responses.industry,
-            useCase: responses.useCase,
-            familiarity: responses.familiarity,
-            making: responses.making
-          }
-        : undefined
+    // Apply normalization to survey responses
+    const normalizedResponses = responses
+      ? normalizeSurveyResponses(responses)
+      : undefined
 
-    this.trackEvent(eventName, eventProperties)
+    this.trackEvent(eventName, normalizedResponses)
 
-    // Also set survey responses as persistent user properties
-    if (stage === 'submitted' && responses && this.mixpanel) {
-      // During onboarding, we need to defer user property setting until user is identified
-      if (this.isOnboardingMode) {
-        // Store responses to be set once user is identified
-        this.pendingSurveyResponses = responses
-      } else {
-        this.setSurveyUserProperties(responses)
+    // If this is a survey submission, also set user properties with normalized data
+    if (stage === 'submitted' && normalizedResponses && this.mixpanel) {
+      try {
+        this.mixpanel.people.set(normalizedResponses)
+      } catch (error) {
+        console.error('Failed to set survey user properties:', error)
       }
-    }
-  }
-
-  private pendingSurveyResponses: SurveyResponses | null = null
-
-  private setSurveyUserProperties(responses: SurveyResponses): void {
-    if (!this.mixpanel) return
-
-    try {
-      this.mixpanel.people.set({
-        survey_industry: responses.industry,
-        survey_use_case: responses.useCase,
-        survey_familiarity: responses.familiarity,
-        survey_making: responses.making
-      })
-    } catch (error) {
-      console.error('Failed to set survey user properties:', error)
     }
   }
 
@@ -466,12 +439,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   getExecutionContext(): ExecutionContext {
-    // Try to initialize composables if not ready and not in onboarding mode
     if (!this._composablesReady && !this.isOnboardingMode) {
       void this.initializeComposables()
     }
 
-    let nodeCounts: {
+    const nodeDefStore = useNodeDefStore()
+
+    type NodeMetrics = {
       custom_node_count: number
       api_node_count: number
       subgraph_count: number
@@ -479,44 +453,35 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       has_api_nodes: boolean
       api_node_names: string[]
     }
-    try {
-      const nodeDefStore = useNodeDefStore()
-      const nodes = collectAllNodes(app.graph)
 
-      let customNodeCount = 0
-      let apiNodeCount = 0
-      let subgraphCount = 0
-      let totalNodeCount = 0
-      let hasApiNodes = false
-      const apiNodeNames = new Set<string>()
-
-      for (const node of nodes) {
-        totalNodeCount += 1
-        const nodeDef = nodeDefStore.nodeDefsByName[node.type ?? '']
+    const nodeCounts = reduceAllNodes<NodeMetrics>(
+      app.graph,
+      (metrics, node) => {
+        const nodeDef = nodeDefStore.nodeDefsByName[node.type]
         const isCustomNode =
           nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
         const isApiNode = nodeDef?.api_node === true
         const isSubgraph = node.isSubgraphNode?.() === true
-        if (isCustomNode) customNodeCount += 1
-        if (isApiNode) {
-          apiNodeCount += 1
-          hasApiNodes = true
-          if (nodeDef?.name) apiNodeNames.add(nodeDef.name)
-        }
-        if (isSubgraph) subgraphCount += 1
-      }
 
-      nodeCounts = {
-        custom_node_count: customNodeCount,
-        api_node_count: apiNodeCount,
-        subgraph_count: subgraphCount,
-        total_node_count: totalNodeCount,
-        has_api_nodes: hasApiNodes,
-        api_node_names: Array.from(apiNodeNames)
-      }
-    } catch (error) {
-      console.error('Failed to compute node metrics:', error)
-      nodeCounts = {
+        if (isApiNode) {
+          metrics.has_api_nodes = true
+          const canonicalName = nodeDef?.name
+          if (
+            canonicalName &&
+            !metrics.api_node_names.includes(canonicalName)
+          ) {
+            metrics.api_node_names.push(canonicalName)
+          }
+        }
+
+        metrics.custom_node_count += isCustomNode ? 1 : 0
+        metrics.api_node_count += isApiNode ? 1 : 0
+        metrics.subgraph_count += isSubgraph ? 1 : 0
+        metrics.total_node_count += 1
+
+        return metrics
+      },
+      {
         custom_node_count: 0,
         api_node_count: 0,
         subgraph_count: 0,
@@ -524,7 +489,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         has_api_nodes: false,
         api_node_names: []
       }
-    }
+    )
 
     if (
       !this._composablesReady ||
