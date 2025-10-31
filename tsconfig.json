@@ -22,7 +22,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "allowJs": true,
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
