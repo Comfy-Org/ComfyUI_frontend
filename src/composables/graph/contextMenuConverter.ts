@@ -27,18 +27,24 @@ export function convertContextMenuToOptions(
       label: item.content
     }
 
-    // Handle disabled state by wrapping callback or not providing action
+    // Pass through disabled state
     if (item.disabled) {
-      // For disabled items, we still provide an action that does nothing
-      // so the UI can show it as disabled
-      option.action = () => {
-        // Do nothing - item is disabled
-      }
-    } else if (item.callback) {
+      option.disabled = true
+    }
+
+    // Handle callback (only if not disabled)
+    if (item.callback && !item.disabled) {
       // Wrap the callback to match the () => void signature
       option.action = () => {
         try {
-          item.callback?.call(item as any, item.value, {}, null as any, null as any, item as any)
+          void item.callback?.call(
+            item as any,
+            item.value,
+            {},
+            null as any,
+            null as any,
+            item as any
+          )
         } catch (error) {
           console.error('Error executing context menu callback:', error)
         }
@@ -75,11 +81,23 @@ function convertSubmenuToOptions(
       label: item.content,
       action: () => {
         try {
-          item.callback?.call(item as any, item.value, {}, null as any, null as any, item as any)
+          void item.callback?.call(
+            item as any,
+            item.value,
+            {},
+            null as any,
+            null as any,
+            item as any
+          )
         } catch (error) {
           console.error('Error executing submenu callback:', error)
         }
       }
+    }
+
+    // Pass through disabled state
+    if (item.disabled) {
+      subOption.disabled = true
     }
 
     result.push(subOption)

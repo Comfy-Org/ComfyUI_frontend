@@ -19,9 +19,15 @@
         v-for="subOption in option.submenu"
         :key="subOption.label"
         :class="
-          isColorSubmenu
-            ? 'w-7 h-7 flex items-center justify-center hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
-            : 'flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
+          cn(
+            'flex items-center rounded',
+            isColorSubmenu
+              ? 'w-7 h-7 justify-center'
+              : 'gap-2 px-3 py-1.5 text-sm',
+            subOption.disabled
+              ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
+              : 'hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 cursor-pointer'
+          )
         "
         :title="subOption.label"
         @click="handleSubmenuClick(subOption)"
@@ -53,6 +59,7 @@ import type {
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
+import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
   option: MenuOption
@@ -83,6 +90,9 @@ defineExpose({
 })
 
 const handleSubmenuClick = (subOption: SubMenuOption) => {
+  if (subOption.disabled) {
+    return
+  }
   emit('submenu-click', subOption)
 }
 
