@@ -120,8 +120,6 @@ export interface WorkflowImportMetadata {
 /**
  * Workflow open metadata
  */
-export type WorkflowOpenMetadata = WorkflowImportMetadata
-
 /**
  * Enumerated sources for workflow open/import actions.
  */
@@ -209,7 +207,7 @@ export interface TelemetryProvider {
 
   // Workflow management events
   trackWorkflowImported(metadata: WorkflowImportMetadata): void
-  trackWorkflowOpened(metadata: WorkflowOpenMetadata): void
+  trackWorkflowOpened(metadata: WorkflowImportMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void
