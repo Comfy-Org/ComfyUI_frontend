@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { CameraManager } from './CameraManager'
@@ -22,6 +22,7 @@ import {
   type MaterialMode,
   type UpDirection
 } from './interfaces'
+import { app } from '@/scripts/app'
 
 class Load3d {
   renderer: THREE.WebGLRenderer
@@ -51,6 +52,13 @@ class Load3d {
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
+  // Context menu tracking
+  private rightMouseDownX: number = 0
+  private rightMouseDownY: number = 0
+  private rightMouseMoved: boolean = false
+  private readonly dragThreshold: number = 5
+  private contextMenuAbortController: AbortController | null = null
+
   constructor(
     container: Element | HTMLElement,
     options: Load3DOptions = {
@@ -76,6 +84,7 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
     container.appendChild(this.renderer.domElement)
 
     this.eventManager = new EventManager()
@@ -164,12 +173,80 @@ class Load3d {
     this.STATUS_MOUSE_ON_SCENE = false
     this.STATUS_MOUSE_ON_VIEWER = false
 
+    this.initContextMenu()
+
     this.handleResize()
     this.startAnimation()
 
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  /**
+   * Initialize context menu on the Three.js canvas
+   * Detects right-click vs right-drag to show menu only on click
+   */
+  private initContextMenu(): void {
+    const canvas = this.renderer.domElement
+
+    this.contextMenuAbortController = new AbortController()
+    const { signal } = this.contextMenuAbortController
+
+    const mousedownHandler = (e: MouseEvent) => {
+      if (e.button === 2) {
+        this.rightMouseDownX = e.clientX
+        this.rightMouseDownY = e.clientY
+        this.rightMouseMoved = false
+      }
+    }
+
+    const mousemoveHandler = (e: MouseEvent) => {
+      if (e.buttons === 2) {
+        const dx = Math.abs(e.clientX - this.rightMouseDownX)
+        const dy = Math.abs(e.clientY - this.rightMouseDownY)
+
+        if (dx > this.dragThreshold || dy > this.dragThreshold) {
+          this.rightMouseMoved = true
+        }
+      }
+    }
+
+    const contextmenuHandler = (e: MouseEvent) => {
+      if (this.isViewerMode) return
+
+      const dx = Math.abs(e.clientX - this.rightMouseDownX)
+      const dy = Math.abs(e.clientY - this.rightMouseDownY)
+      const wasDragging =
+        this.rightMouseMoved ||
+        dx > this.dragThreshold ||
+        dy > this.dragThreshold
+
+      this.rightMouseMoved = false
+
+      if (wasDragging) {
+        return
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      this.showNodeContextMenu(e)
+    }
+
+    canvas.addEventListener('mousedown', mousedownHandler, { signal })
+    canvas.addEventListener('mousemove', mousemoveHandler, { signal })
+    canvas.addEventListener('contextmenu', contextmenuHandler, { signal })
+  }
+
+  private showNodeContextMenu(event: MouseEvent): void {
+    const menuOptions = app.canvas.getNodeMenuOptions(this.node)
+
+    new LiteGraph.ContextMenu(menuOptions, {
+      event,
+      title: this.node.type,
+      extra: this.node
+    })
   }
 
   getEventManager(): EventManager {
@@ -621,6 +698,11 @@ class Load3d {
   }
 
   public remove(): void {
+    if (this.contextMenuAbortController) {
+      this.contextMenuAbortController.abort()
+      this.contextMenuAbortController = null
+    }
+
     this.renderer.forceContextLoss()
     const canvas = this.renderer.domElement
     const event = new Event('webglcontextlost', {

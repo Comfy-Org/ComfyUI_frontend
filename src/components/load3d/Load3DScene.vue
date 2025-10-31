@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="comfy-load-3d relative h-full w-full">
+  <div ref="container" class="relative h-full w-full">
     <LoadingOverlay ref="loadingOverlayRef" />
   </div>
 </template>

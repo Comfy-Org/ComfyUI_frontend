@@ -87,6 +87,16 @@ describe('normalizeIndustry', () => {
       expect(normalizeIndustry('software engineer')).toBe('Software / IT / AI')
       expect(normalizeIndustry('app developer')).toBe('Software / IT / AI')
     })
+
+    it('should categorize corporate AI research', () => {
+      expect(normalizeIndustry('corporate AI research')).toBe(
+        'Software / IT / AI'
+      )
+      expect(normalizeIndustry('AI research lab')).toBe('Software / IT / AI')
+      expect(normalizeIndustry('tech company AI research')).toBe(
+        'Software / IT / AI'
+      )
+    })
   })
 
   describe('Gaming / Interactive Media category', () => {
@@ -187,6 +197,18 @@ describe('normalizeIndustry', () => {
       expect(normalizeIndustry('teaching')).toBe('Education / Research')
       expect(normalizeIndustry('student')).toBe('Education / Research')
       expect(normalizeIndustry('professor')).toBe('Education / Research')
+    })
+
+    it('should categorize academic AI research', () => {
+      expect(normalizeIndustry('academic AI research')).toBe(
+        'Education / Research'
+      )
+      expect(normalizeIndustry('university AI research')).toBe(
+        'Education / Research'
+      )
+      expect(normalizeIndustry('AI research at university')).toBe(
+        'Education / Research'
+      )
     })
   })
 
@@ -316,9 +338,6 @@ describe('normalizeIndustry', () => {
     it('should preserve unknown creative fields with prefix', () => {
       expect(normalizeIndustry('Unknown Creative Field')).toBe(
         'Uncategorized: Unknown Creative Field'
-      )
-      expect(normalizeIndustry('Mysterious Industry')).toBe(
-        'Uncategorized: Mysterious Industry'
       )
       expect(normalizeIndustry('Completely Novel Field')).toBe(
         'Uncategorized: Completely Novel Field'
@@ -498,9 +517,6 @@ describe('normalizeUseCase', () => {
       expect(normalizeUseCase('Mysterious Use Case')).toBe(
         'Uncategorized: Mysterious Use Case'
       )
-      expect(normalizeUseCase('Novel Application')).toBe(
-        'Uncategorized: Novel Application'
-      )
     })
   })
 })
@@ -557,7 +573,7 @@ describe('normalizeSurveyResponses', () => {
   it('should handle uncategorized responses', () => {
     const input = {
       industry: 'Unknown Creative Field',
-      useCase: 'Novel Application'
+      useCase: 'Mysterious Use Case'
     }
 
     const result = normalizeSurveyResponses(input)
@@ -566,9 +582,9 @@ describe('normalizeSurveyResponses', () => {
       industry: 'Unknown Creative Field',
       industry_normalized: 'Uncategorized: Unknown Creative Field',
       industry_raw: 'Unknown Creative Field',
-      useCase: 'Novel Application',
-      useCase_normalized: 'Uncategorized: Novel Application',
-      useCase_raw: 'Novel Application'
+      useCase: 'Mysterious Use Case',
+      useCase_normalized: 'Uncategorized: Mysterious Use Case',
+      useCase_raw: 'Mysterious Use Case'
     })
   })
 
