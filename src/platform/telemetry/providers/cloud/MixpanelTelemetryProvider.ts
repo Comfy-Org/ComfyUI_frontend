@@ -5,12 +5,20 @@ import type {
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  NodeSearchMetadata,
+  NodeSearchResultMetadata,
+  PageVisibilityMetadata,
   RunButtonProperties,
   SurveyResponses,
+  TabCountMetadata,
   TelemetryEventName,
   TelemetryEventProperties,
   TelemetryProvider,
-  TemplateMetadata
+  TemplateFilterMetadata,
+  TemplateLibraryClosedMetadata,
+  TemplateLibraryMetadata,
+  TemplateMetadata,
+  WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -351,6 +359,41 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TEMPLATE_WORKFLOW_OPENED, metadata)
   }
 
+  trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_LIBRARY_OPENED, metadata)
+  }
+
+  trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_LIBRARY_CLOSED, metadata)
+  }
+
+  trackWorkflowImported(metadata: WorkflowImportMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
+  }
+
+  trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
+    this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
+  }
+
+  trackTabCount(metadata: TabCountMetadata): void {
+    this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
+  }
+
+  trackNodeSearch(metadata: NodeSearchMetadata): void {
+    this.trackEvent(TelemetryEvents.NODE_SEARCH, metadata)
+  }
+
+  trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
+    this.trackEvent(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
+  }
+
+  trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_FILTER_CHANGED, metadata)
+  }
   trackWorkflowExecution(): void {
     if (this.isOnboardingMode) {
       // During onboarding, track basic execution without workflow context

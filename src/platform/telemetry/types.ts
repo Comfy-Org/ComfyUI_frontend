@@ -90,6 +90,97 @@ export interface TemplateMetadata {
 }
 
 /**
+ * Credit topup metadata
+ */
+export interface CreditTopupMetadata {
+  credit_amount: number
+}
+
+/**
+ * Workflow import metadata
+ */
+export interface WorkflowImportMetadata {
+  missing_node_count: number
+  missing_node_types: string[]
+  /**
+   * The source of the workflow open/import action
+   */
+  open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
+}
+
+/**
+ * Workflow open metadata
+ */
+/**
+ * Enumerated sources for workflow open/import actions.
+ */
+export type WorkflowOpenSource = NonNullable<
+  WorkflowImportMetadata['open_source']
+>
+
+/**
+ * Template library metadata
+ */
+export interface TemplateLibraryMetadata {
+  source: 'sidebar' | 'menu' | 'command'
+}
+
+/**
+ * Template library closed metadata
+ */
+export interface TemplateLibraryClosedMetadata {
+  template_selected: boolean
+  time_spent_seconds: number
+}
+
+/**
+ * Page visibility metadata
+ */
+export interface PageVisibilityMetadata {
+  visibility_state: 'visible' | 'hidden'
+}
+
+/**
+ * Tab count metadata
+ */
+export interface TabCountMetadata {
+  tab_count: number
+}
+
+/**
+ * Node search metadata
+ */
+export interface NodeSearchMetadata {
+  query: string
+}
+
+/**
+ * Node search result selection metadata
+ */
+export interface NodeSearchResultMetadata {
+  node_type: string
+  last_query: string
+}
+
+/**
+ * Template filter tracking metadata
+ */
+export interface TemplateFilterMetadata {
+  search_query?: string
+  selected_models: string[]
+  selected_use_cases: string[]
+  selected_licenses: string[]
+  sort_by:
+    | 'default'
+    | 'alphabetical'
+    | 'newest'
+    | 'vram-low-to-high'
+    | 'model-size-low-to-high'
+  filtered_count: number
+  total_count: number
+}
+
+/**
  * Core telemetry provider interface
  */
 export interface TelemetryProvider {
@@ -106,6 +197,25 @@ export interface TelemetryProvider {
 
   // Template workflow events
   trackTemplate(metadata: TemplateMetadata): void
+  trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void
+  trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void
+
+  // Workflow management events
+  trackWorkflowImported(metadata: WorkflowImportMetadata): void
+  trackWorkflowOpened(metadata: WorkflowImportMetadata): void
+
+  // Page visibility events
+  trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void
+
+  // Tab tracking events
+  trackTabCount(metadata: TabCountMetadata): void
+
+  // Node search analytics events
+  trackNodeSearch(metadata: NodeSearchMetadata): void
+  trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void
+
+  // Template filter tracking events
+  trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void
 
   // Workflow execution events
   trackWorkflowExecution(): void
@@ -140,6 +250,25 @@ export const TelemetryEvents = {
 
   // Template Tracking
   TEMPLATE_WORKFLOW_OPENED: 'app:template_workflow_opened',
+  TEMPLATE_LIBRARY_OPENED: 'app:template_library_opened',
+  TEMPLATE_LIBRARY_CLOSED: 'app:template_library_closed',
+
+  // Workflow Management
+  WORKFLOW_IMPORTED: 'app:workflow_imported',
+  WORKFLOW_OPENED: 'app:workflow_opened',
+
+  // Page Visibility
+  PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
+
+  // Tab Tracking
+  TAB_COUNT_TRACKING: 'app:tab_count_tracking',
+
+  // Node Search Analytics
+  NODE_SEARCH: 'app:node_search',
+  NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
+
+  // Template Filter Analytics
+  TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
 
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
@@ -157,6 +286,15 @@ export type TelemetryEventProperties =
   | AuthMetadata
   | SurveyResponses
   | TemplateMetadata
+  | TemplateLibraryMetadata
+  | TemplateLibraryClosedMetadata
+  | WorkflowImportMetadata
+  | PageVisibilityMetadata
+  | TabCountMetadata
+  | NodeSearchMetadata
+  | NodeSearchResultMetadata
+  | TemplateFilterMetadata
+  | CreditTopupMetadata
   | ExecutionContext
   | RunButtonProperties
   | ExecutionErrorMetadata
