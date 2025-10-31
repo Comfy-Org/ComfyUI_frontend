@@ -95,7 +95,21 @@ export interface TemplateMetadata {
 export interface WorkflowImportMetadata {
   missing_node_count: number
   missing_node_types: string[]
+  /**
+   * The source of the workflow open/import action
+   */
+  open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
 }
+
+/**
+ * Workflow open metadata
+ */
+/**
+ * Enumerated sources for workflow open/import actions.
+ */
+export type WorkflowOpenSource = NonNullable<
+  WorkflowImportMetadata['open_source']
+>
 
 /**
  * Template library metadata
@@ -181,6 +195,7 @@ export interface TelemetryProvider {
 
   // Workflow management events
   trackWorkflowImported(metadata: WorkflowImportMetadata): void
+  trackWorkflowOpened(metadata: WorkflowImportMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void
@@ -233,6 +248,7 @@ export const TelemetryEvents = {
 
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
+  WORKFLOW_OPENED: 'app:workflow_opened',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
