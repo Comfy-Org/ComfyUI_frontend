@@ -134,9 +134,20 @@ export class SceneManager implements SceneManagerInterface {
 
     this.eventManager.emitEvent('backgroundImageLoadingStart', null)
 
-    let imageUrl = Load3dUtils.getResourceURL(
-      ...Load3dUtils.splitFilePath(uploadPath)
-    )
+    let type = 'input'
+    let pathParts = Load3dUtils.splitFilePath(uploadPath)
+    let subfolder = pathParts[0]
+    let filename = pathParts[1]
+
+    if (subfolder === 'temp') {
+      type = 'temp'
+      pathParts = ['', filename]
+    } else if (subfolder === 'output') {
+      type = 'output'
+      pathParts = ['', filename]
+    }
+
+    let imageUrl = Load3dUtils.getResourceURL(...pathParts, type)
 
     if (!imageUrl.startsWith('/api')) {
       imageUrl = '/api' + imageUrl
@@ -184,8 +195,8 @@ export class SceneManager implements SceneManagerInterface {
       this.updateBackgroundSize(
         this.backgroundTexture,
         this.backgroundMesh,
-        this.renderer.domElement.width,
-        this.renderer.domElement.height
+        this.renderer.domElement.clientWidth,
+        this.renderer.domElement.clientHeight
       )
 
       this.eventManager.emitEvent('backgroundImageChange', uploadPath)
@@ -268,7 +279,7 @@ export class SceneManager implements SceneManagerInterface {
   captureScene(
     width: number,
     height: number
-  ): Promise<{ scene: string; mask: string; normal: string; lineart: string }> {
+  ): Promise<{ scene: string; mask: string; normal: string }> {
     return new Promise(async (resolve, reject) => {
       try {
         const originalWidth = this.renderer.domElement.width
@@ -359,59 +370,8 @@ export class SceneManager implements SceneManagerInterface {
           }
         })
 
-        let lineartModel: THREE.Group | null = null
-
-        const originalSceneVisible: Map<THREE.Object3D, boolean> = new Map()
-
-        this.scene.traverse((child) => {
-          if (child instanceof THREE.Group && child.name === 'lineartModel') {
-            lineartModel = child as THREE.Group
-          }
-
-          if (
-            child instanceof THREE.Mesh &&
-            !(child.parent?.name === 'lineartModel')
-          ) {
-            originalSceneVisible.set(child, child.visible)
-
-            child.visible = false
-          }
-        })
-
         this.renderer.setClearColor(0xffffff, 1)
         this.renderer.clear()
-
-        if (lineartModel !== null) {
-          lineartModel = lineartModel as THREE.Group
-
-          const originalLineartVisibleMap: Map<THREE.Object3D, boolean> =
-            new Map()
-
-          lineartModel.traverse((child: THREE.Object3D) => {
-            if (child instanceof THREE.Mesh) {
-              originalLineartVisibleMap.set(child, child.visible)
-
-              child.visible = true
-            }
-          })
-
-          const originalLineartVisible = lineartModel.visible
-          lineartModel.visible = true
-
-          this.renderer.render(this.scene, this.getActiveCamera())
-
-          lineartModel.visible = originalLineartVisible
-
-          originalLineartVisibleMap.forEach((visible, object) => {
-            object.visible = visible
-          })
-        }
-
-        const lineartData = this.renderer.domElement.toDataURL('image/png')
-
-        originalSceneVisible.forEach((visible, object) => {
-          object.visible = visible
-        })
 
         this.gridHelper.visible = gridVisible
 
@@ -424,8 +384,7 @@ export class SceneManager implements SceneManagerInterface {
         resolve({
           scene: sceneData,
           mask: maskData,
-          normal: normalData,
-          lineart: lineartData
+          normal: normalData
         })
       } catch (error) {
         reject(error)
