@@ -15,7 +15,7 @@ export const useSessionCookie = () => {
     if (!isCloud) return
 
     const authStore = useFirebaseAuthStore()
-    const authHeader = await authStore.getAuthHeader()
+    const authHeader = await authStore.getAuthHeader(true)
 
     if (!authHeader) {
       throw new Error('No auth header available for session creation')
