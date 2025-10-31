@@ -392,7 +392,7 @@ export class ComfyUI {
       parent: document.body,
       onchange: async () => {
         // @ts-expect-error fixme ts strict error
-        await app.handleFile(fileInput.files[0])
+        await app.handleFile(fileInput.files[0], 'file_button')
         fileInput.value = ''
       }
     })
