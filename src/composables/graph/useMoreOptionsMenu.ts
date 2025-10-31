@@ -21,6 +21,7 @@ export interface MenuOption {
   action?: () => void
   submenu?: SubMenuOption[]
   badge?: BadgeVariant
+  disabled?: boolean
 }
 
 export interface SubMenuOption {
@@ -28,6 +29,7 @@ export interface SubMenuOption {
   icon?: string
   action: () => void
   color?: string
+  disabled?: boolean
 }
 
 export enum BadgeVariant {

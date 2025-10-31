@@ -93,7 +93,9 @@ export const useContextMenuTranslation = () => {
 
   legacyMenuCompat.registerWrapper(
     'getNodeMenuOptions',
-    getNodeMenuOptionsWithExtensions as (...args: unknown[]) => IContextMenuValue[],
+    getNodeMenuOptionsWithExtensions as (
+      ...args: unknown[]
+    ) => IContextMenuValue[],
     nodeMenuFn as (...args: unknown[]) => IContextMenuValue[],
     LGraphCanvas.prototype
   )
