@@ -98,7 +98,10 @@ const inviteCode = computed(() => route.query.inviteCode as string)
 const onSwitchAccounts = () => {
   void router.push({
     name: 'cloud-login',
-    query: { inviteCode: inviteCode.value }
+    query: {
+      switchAccount: 'true',
+      inviteCode: inviteCode.value
+    }
   })
 }
 const onClickSupport = () => {
