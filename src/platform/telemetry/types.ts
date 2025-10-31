@@ -57,6 +57,13 @@ export interface ExecutionContext {
   template_models?: string[]
   template_use_case?: string
   template_license?: string
+  // Node composition metrics
+  custom_node_count: number
+  api_node_count: number
+  subgraph_count: number
+  total_node_count: number
+  has_api_nodes: boolean
+  api_node_names: string[]
 }
 
 /**
@@ -87,6 +94,13 @@ export interface TemplateMetadata {
   template_models?: string[]
   template_use_case?: string
   template_license?: string
+}
+
+/**
+ * Credit topup metadata
+ */
+export interface CreditTopupMetadata {
+  credit_amount: number
 }
 
 /**
@@ -166,13 +180,19 @@ export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened(): void
   trackAuth(metadata: AuthMetadata): void
+  trackUserLoggedIn(): void
 
   // Subscription flow events
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void
+  trackMonthlySubscriptionSucceeded(): void
+  trackApiCreditTopupButtonPurchaseClicked(amount: number): void
   trackRunButton(options?: { subscribe_to_run?: boolean }): void
 
   // Survey flow events
   trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
+
+  // Email verification events
+  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void
 
   // Template workflow events
   trackTemplate(metadata: TemplateMetadata): void
@@ -216,15 +236,24 @@ export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
+  USER_LOGGED_IN: 'app:user_logged_in',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
+  MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
+  API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
+    'app:api_credit_topup_button_purchase_clicked',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
+
+  // Email Verification
+  USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
+  USER_EMAIL_VERIFY_REQUESTED: 'app:user_email_verify_requested',
+  USER_EMAIL_VERIFY_COMPLETED: 'app:user_email_verify_completed',
 
   // Template Tracking
   TEMPLATE_WORKFLOW_OPENED: 'app:template_workflow_opened',
@@ -267,6 +296,7 @@ export type TelemetryEventProperties =
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
+  | CreditTopupMetadata
   | WorkflowImportMetadata
   | TemplateLibraryMetadata
   | TemplateLibraryClosedMetadata
