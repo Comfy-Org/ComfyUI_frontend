@@ -183,12 +183,11 @@ router.beforeEach(async (to, _from, next) => {
   // User is logged in - check if they need onboarding
   // For root path, check actual user status to handle waitlisted users
   if (!isElectron() && isLoggedIn && to.path === '/') {
+    // Import auth functions dynamically to avoid circular dependency
+    const { getUserCloudStatus, getSurveyCompletedStatus } = await import(
+      '@/api/auth'
+    )
     try {
-      // Import auth functions dynamically to avoid circular dependency
-      const { getUserCloudStatus, getSurveyCompletedStatus } = await import(
-        '@/api/auth'
-      )
-
       // Check user's actual status
       const userStatus = await getUserCloudStatus()
       const surveyCompleted = await getSurveyCompletedStatus()

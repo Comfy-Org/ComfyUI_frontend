@@ -1,5 +1,5 @@
-import { computed, ref, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
