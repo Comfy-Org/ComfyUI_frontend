@@ -57,6 +57,7 @@
     "@pinia/testing": "catalog:",
     "@playwright/test": "catalog:",
     "@prettier/plugin-oxc": "catalog:",
+    "@sentry/vite-plugin": "catalog:",
     "@storybook/addon-docs": "catalog:",
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",

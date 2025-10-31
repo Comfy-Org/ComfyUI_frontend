@@ -12,9 +12,9 @@
           : 'pointer-events-none'
       )
     "
-    @pointerdown.stop="handleWidgetPointerEvent"
-    @pointermove.stop="handleWidgetPointerEvent"
-    @pointerup.stop="handleWidgetPointerEvent"
+    @pointerdown="handleWidgetPointerEvent"
+    @pointermove="handleWidgetPointerEvent"
+    @pointerup="handleWidgetPointerEvent"
   >
     <div
       v-for="(widget, index) in processedWidgets"
@@ -24,7 +24,12 @@
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        :class="
+          cn(
+            'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
+            widget.slotMetadata?.linked && 'opacity-100'
+          )
+        "
       >
         <InputSlot
           v-if="widget.slotMetadata"
@@ -35,7 +40,7 @@
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="widget.slotMetadata.index"
-          :dot-only="true"
+          dot-only
         />
       </div>
       <!-- Widget Component -->
@@ -83,10 +88,10 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
-const handleWidgetPointerEvent = (event: PointerEvent) => {
-  if (!shouldHandleNodePointerEvents.value) {
-    forwardEventToCanvas(event)
-  }
+function handleWidgetPointerEvent(event: PointerEvent) {
+  if (shouldHandleNodePointerEvents.value) return
+  event.stopPropagation()
+  forwardEventToCanvas(event)
 }
 
 // Error boundary implementation
@@ -140,9 +145,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // This prevents conflicting input sources - when a slot is linked to another
     // node's output, the widget should be read-only to avoid data conflicts
     if (slotMetadata?.linked) {
-      widgetOptions = widget.options
-        ? { ...widget.options, disabled: true }
-        : { disabled: true }
+      widgetOptions = { ...widget.options, disabled: true }
     }
 
     const simplified: SimplifiedWidget = {

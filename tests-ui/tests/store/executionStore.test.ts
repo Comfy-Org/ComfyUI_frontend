@@ -156,14 +156,11 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       expect(result).toBe('123')
     })
 
-    it('should return null when conversion fails', () => {
+    it('should return undefined when conversion fails', () => {
       // Mock app.graph.getNodeById to return null (node not found)
       vi.mocked(app.graph.getNodeById).mockReturnValue(null)
 
-      // This should throw an error as the node is not found
-      expect(() => store.executionIdToNodeLocatorId('999:456')).toThrow(
-        'Subgraph not found: 999'
-      )
+      expect(store.executionIdToNodeLocatorId('999:456')).toBe(undefined)
     })
   })
 

@@ -5,7 +5,6 @@
  * into standardized categories for better analytics breakdowns.
  * Uses Fuse.js for fuzzy matching against category keywords.
  */
-
 import Fuse from 'fuse.js'
 
 interface CategoryMapping {
@@ -26,15 +25,20 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
       'tv',
       'television',
       'animation',
+      'animation studio',
+      'tv production',
+      'film production',
       'story',
       'anime',
       'video',
       'cinematography',
       'visual effects',
       'vfx',
+      'vfx artist',
       'movie',
       'cinema',
       'documentary',
+      'documentary filmmaker',
       'broadcast',
       'streaming',
       'production',
@@ -70,12 +74,19 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
     userCount: 1100,
     keywords: [
       'software',
+      'software development',
+      'software engineer',
       'it',
       'ai',
+      'ai research',
+      'corporate ai research',
+      'ai research lab',
+      'tech company ai research',
       'developer',
+      'app developer',
       'consulting',
-      'engineering',
       'tech',
+      'tech startup',
       'programmer',
       'data science',
       'machine learning',
@@ -83,8 +94,7 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
       'programming',
       'web development',
       'app development',
-      'saas',
-      'startup'
+      'saas'
     ]
   },
   {
@@ -132,6 +142,10 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
       'student',
       'teacher',
       'research',
+      'university research',
+      'academic ai research',
+      'university ai research',
+      'ai research at university',
       'learning',
       'university',
       'school',
@@ -148,13 +162,16 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
     userCount: 420,
     keywords: [
       'architecture',
+      'architecture firm',
       'construction',
       'engineering',
       'civil',
+      'civil engineering',
       'cad',
       'building',
       'structural',
       'landscape',
+      'landscape architecture',
       'interior design',
       'real estate',
       'planning',
@@ -168,14 +185,18 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
       'gaming',
       'game dev',
       'game development',
+      'indie game studio',
+      'vr development',
       'roblox',
       'interactive',
+      'interactive media',
       'virtual world',
       'vr',
       'ar',
       'metaverse',
       'simulation',
       'unity',
+      'unity developer',
       'unreal',
       'indie games'
     ]
@@ -202,16 +223,20 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
     userCount: 25,
     keywords: [
       'fashion',
+      'fashion design',
       'beauty',
+      'beauty industry',
       'jewelry',
+      'jewelry design',
+      'custom jewelry design',
       'retail',
+      'retail store',
       'style',
       'clothing',
       'cosmetics',
       'makeup',
       'accessories',
-      'boutique',
-      'ecommerce'
+      'boutique'
     ]
   },
   {
@@ -219,11 +244,13 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
     userCount: 25,
     keywords: [
       'music',
+      'music production',
       'vj',
       'dance',
       'projection mapping',
       'audio visual',
       'concert',
+      'concert production',
       'performance',
       'theater',
       'stage',
@@ -236,11 +263,13 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
     keywords: [
       'healthcare',
       'medical',
+      'medical research',
       'doctor',
       'biotech',
       'life science',
       'pharmaceutical',
       'clinical',
+      'clinical research',
       'hospital',
       'medicine',
       'health'
@@ -251,6 +280,7 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
     userCount: 15,
     keywords: [
       'ecommerce',
+      'e-commerce',
       'print on demand',
       'shop',
       'business',
@@ -258,7 +288,6 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
       'startup',
       'entrepreneur',
       'sales',
-      'retail',
       'online store'
     ]
   },
@@ -281,7 +310,16 @@ const INDUSTRY_CATEGORIES: CategoryMapping[] = [
   {
     name: 'Adult / NSFW',
     userCount: 10,
-    keywords: ['nsfw', 'adult', 'erotic', 'explicit', 'xxx', 'porn']
+    keywords: [
+      'nsfw',
+      'nsfw content',
+      'adult',
+      'adult entertainment',
+      'erotic',
+      'explicit',
+      'xxx',
+      'porn'
+    ]
   }
 ]
 
@@ -295,8 +333,11 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
       'content creation',
       'social media',
       'marketing',
+      'marketing campaigns',
       'advertising',
       'youtube',
+      'youtube thumbnail',
+      'youtube thumbnail generation',
       'tiktok',
       'instagram',
       'thumbnails',
@@ -313,6 +354,7 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
       'drawing',
       'painting',
       'concept art',
+      'creating concept art',
       'character design',
       'digital art',
       'fantasy art',
@@ -323,7 +365,10 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
     name: 'Product Visualization & Design',
     keywords: [
       'product',
+      'product mockup',
+      'product mockup creation',
       'visualization',
+      'prototype visualization',
       'design',
       'prototype',
       'mockup',
@@ -337,11 +382,14 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
     keywords: [
       'film',
       'video',
+      'video editing',
       'movie',
+      'movie production',
       'animation',
       'vfx',
       'visual effects',
       'storyboard',
+      'storyboard creation',
       'cinematography',
       'post production'
     ]
@@ -351,13 +399,17 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
     keywords: [
       'game',
       'gaming',
+      'game asset generation',
+      'game assets',
+      'game development',
+      'game textures',
       'interactive',
       'vr',
+      'vr content creation',
       'ar',
       'virtual',
       'simulation',
       'metaverse',
-      'game assets',
       'textures'
     ]
   },
@@ -365,11 +417,15 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
     name: 'Architecture & Construction',
     keywords: [
       'architecture',
+      'architectural rendering',
       'building',
+      'building visualization',
       'construction',
       'interior design',
+      'interior design mockups',
       'landscape',
       'real estate',
+      'real estate visualization',
       'floor plans',
       'renderings'
     ]
@@ -378,12 +434,17 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
     name: 'Education & Training',
     keywords: [
       'education',
+      'educational',
+      'educational content',
       'training',
+      'training materials',
       'learning',
       'teaching',
       'tutorial',
+      'tutorial creation',
       'course',
       'academic',
+      'academic projects',
       'instructional',
       'workshops'
     ]
@@ -392,27 +453,35 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
     name: 'Research & Development',
     keywords: [
       'research',
+      'research experiments',
       'development',
       'experiment',
       'prototype',
+      'prototype testing',
       'testing',
       'analysis',
       'study',
       'innovation',
-      'r&d'
+      'innovation projects',
+      'r&d',
+      'scientific visualization'
     ]
   },
   {
     name: 'Personal & Hobby',
     keywords: [
       'personal',
+      'personal art projects',
       'hobby',
+      'hobby work',
       'fun',
+      'fun experiments',
       'experiment',
       'learning',
       'curiosity',
       'explore',
       'creative',
+      'creative exploration',
       'side project'
     ]
   },
@@ -420,8 +489,12 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
     name: 'Photography & Image Processing',
     keywords: [
       'photography',
+      'product photography',
+      'portrait photography',
       'photo',
+      'photo editing',
       'image',
+      'image enhancement',
       'portrait',
       'editing',
       'enhancement',
@@ -436,7 +509,8 @@ const USE_CASE_CATEGORIES: CategoryMapping[] = [
  */
 const FUSE_OPTIONS = {
   keys: ['keywords'],
-  threshold: 0.7, // Higher = more lenient matching
+  threshold: 0.53, // Higher = more lenient matching
+  minMatchCharLength: 5,
   includeScore: true,
   includeMatches: true,
   ignoreLocation: true,
