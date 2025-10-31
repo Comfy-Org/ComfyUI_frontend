@@ -433,8 +433,12 @@ export class ComfyApi extends EventTarget {
     await this.#waitForAuthInitialization()
 
     // Add Firebase JWT token if user is logged in
+    // Force refresh token on reconnection to avoid 401 errors
+    const isReconnecting =
+      options.headers && 'X-Reconnecting' in options.headers
     try {
-      const authHeader = await useFirebaseAuthStore().getAuthHeader()
+      const authHeader =
+        await useFirebaseAuthStore().getAuthHeader(isReconnecting)
       if (authHeader) {
         if (Array.isArray(options.headers)) {
           for (const [key, value] of Object.entries(authHeader)) {
@@ -542,9 +546,10 @@ export class ComfyApi extends EventTarget {
     let existingSession = window.name
 
     // Get auth token if available
+    // Force refresh on reconnect to avoid stale tokens
     let authToken: string | undefined
     try {
-      authToken = await useFirebaseAuthStore().getIdToken()
+      authToken = await useFirebaseAuthStore().getIdToken(isReconnect)
     } catch (error) {
       // Continue without auth token if there's an error
       console.warn('Could not get auth token for WebSocket connection:', error)
