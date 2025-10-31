@@ -5,6 +5,14 @@
     :loading="isLoading"
     :disabled="isPolling"
     severity="primary"
+    :style="
+      variant === 'gradient'
+        ? {
+            background: 'var(--color-subscription-button-gradient)',
+            color: 'var(--color-white)'
+          }
+        : undefined
+    "
     :pt="{
       root: {
         class: 'w-full font-bold'
@@ -26,9 +34,11 @@ withDefaults(
   defineProps<{
     label?: string
     size?: 'small' | 'large'
+    variant?: 'default' | 'gradient'
   }>(),
   {
-    size: 'large'
+    size: 'large',
+    variant: 'default'
   }
 )
 
