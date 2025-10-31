@@ -106,10 +106,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     }
   })
 
-  const getIdToken = async (): Promise<string | undefined> => {
+  const getIdToken = async (
+    forceRefresh = false
+  ): Promise<string | undefined> => {
     if (!currentUser.value) return
     try {
-      return await currentUser.value.getIdToken()
+      return await currentUser.value.getIdToken(forceRefresh)
     } catch (error: unknown) {
       if (
         error instanceof FirebaseError &&
@@ -140,9 +142,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
    *   - null if neither authentication method is available
    */
-  const getAuthHeader = async (): Promise<AuthHeader | null> => {
+  const getAuthHeader = async (
+    forceRefresh = false
+  ): Promise<AuthHeader | null> => {
     // If available, set header with JWT used to identify the user to Firebase service
-    const token = await getIdToken()
+    const token = await getIdToken(forceRefresh)
     if (token) {
       return {
         Authorization: `Bearer ${token}`
