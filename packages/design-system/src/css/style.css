@@ -157,6 +157,8 @@
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
 
+  --subscription-button-gradient: linear-gradient(315deg, rgb(105 230 255 / 0.15) 0%, rgb(99 73 233 / 0.50) 100%), radial-gradient(70.71% 70.71% at 50% 50%, rgb(62 99 222 / 0.15) 0.01%, rgb(66 0 123 / 0.50) 100%), linear-gradient(92deg, #D000FF 0.38%, #B009FE 37.07%, #3E1FFC 65.17%, #009DFF 103.86%), var(--color-button-surface, #2D2E32);
+
   --modal-card-button-surface: var(--color-smoke-300);
 
   /* Code styling colors for help menu*/
@@ -258,6 +260,8 @@
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-smoke-800);
 
+  --subscription-button-gradient: linear-gradient(315deg, rgb(105 230 255 / 0.15) 0%, rgb(99 73 233 / 0.50) 100%), radial-gradient(70.71% 70.71% at 50% 50%, rgb(62 99 222 / 0.15) 0.01%, rgb(66 0 123 / 0.50) 100%), linear-gradient(92deg, #D000FF 0.38%, #B009FE 37.07%, #3E1FFC 65.17%, #009DFF 103.86%), var(--color-button-surface, #2D2E32);
+
   --modal-card-button-surface: var(--color-charcoal-300);
 
   --dialog-surface: var(--color-neutral-700);
@@ -332,6 +336,7 @@
   --color-button-icon: var(--button-icon);
   --color-button-surface: var(--button-surface);
   --color-button-surface-contrast: var(--button-surface-contrast);
+  --color-subscription-button-gradient: var(--subscription-button-gradient);
   --color-modal-card-button-surface: var(--modal-card-button-surface);
   --color-dialog-surface: var(--dialog-surface);
   --color-interface-menu-component-surface-hovered: var(

@@ -1687,7 +1687,9 @@
       "subscribe": "Subscribe"
     },
     "subscribeToRun": "Subscribe to Run",
-    "subscribeNow": "Subscribe Now"
+    "subscribeNow": "Subscribe Now",
+    "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
+    "partnerNodesCredits": "Partner Nodes credits"
   },
   "userSettings": {
     "title": "User Settings",
