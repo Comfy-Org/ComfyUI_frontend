@@ -26,11 +26,11 @@
         <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-zinc-700 dark-theme:text-gray-200"
+          class="text-zinc-700 dark-theme:text-smoke-200"
         >
           {{ getLabel(slotProps.value) }}
         </span>
-        <span v-else class="text-zinc-700 dark-theme:text-gray-200">
+        <span v-else class="text-zinc-700 dark-theme:text-smoke-200">
           {{ label }}
         </span>
       </div>
@@ -158,7 +158,7 @@ const pt = computed(() => ({
     )
   },
   listContainer: () => ({
-    style: `max-height: ${listMaxHeight}`,
+    style: `max-height: min(${listMaxHeight}, 50vh)`,
     class: 'scrollbar-custom'
   }),
   list: {

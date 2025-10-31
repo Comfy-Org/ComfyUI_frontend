@@ -21,6 +21,7 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { SUPPORT_URL } from '@/platform/support/config'
@@ -62,6 +63,8 @@ import {
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
+
+const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -453,6 +456,11 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.7',
       category: 'essentials' as const,
       function: async () => {
+        if (!isActiveSubscription.value) {
+          showSubscriptionDialog()
+          return
+        }
+
         const batchCount = useQueueSettingsStore().batchCount
 
         if (isCloud) {
@@ -469,6 +477,11 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.7',
       category: 'essentials' as const,
       function: async () => {
+        if (!isActiveSubscription.value) {
+          showSubscriptionDialog()
+          return
+        }
+
         const batchCount = useQueueSettingsStore().batchCount
 
         if (isCloud) {
@@ -484,6 +497,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Selected Output Nodes',
       versionAdded: '1.19.6',
       function: async () => {
+        if (!isActiveSubscription.value) {
+          showSubscriptionDialog()
+          return
+        }
+
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()
         const selectedOutputNodes = filterOutputNodes(selectedNodes)

@@ -197,3 +197,62 @@ export const historyV2FiveItemsSorting: HistoryResponseV2 = {
     }
   ]
 }
+
+export const historyV2MultipleNoTimestamp: HistoryResponseV2 = {
+  history: [
+    {
+      prompt_id: 'item-no-timestamp-1',
+      prompt: {
+        priority: 0,
+        prompt_id: 'item-no-timestamp-1',
+        extra_data: { client_id: 'test-client' }
+      },
+      outputs: {
+        '1': {
+          images: [{ filename: 'test1.png', type: 'output', subfolder: '' }]
+        }
+      },
+      status: {
+        status_str: 'success',
+        completed: true,
+        messages: []
+      }
+    },
+    {
+      prompt_id: 'item-no-timestamp-2',
+      prompt: {
+        priority: 0,
+        prompt_id: 'item-no-timestamp-2',
+        extra_data: { client_id: 'test-client' }
+      },
+      outputs: {
+        '2': {
+          images: [{ filename: 'test2.png', type: 'output', subfolder: '' }]
+        }
+      },
+      status: {
+        status_str: 'success',
+        completed: true,
+        messages: []
+      }
+    },
+    {
+      prompt_id: 'item-no-timestamp-3',
+      prompt: {
+        priority: 0,
+        prompt_id: 'item-no-timestamp-3',
+        extra_data: { client_id: 'test-client' }
+      },
+      outputs: {
+        '3': {
+          images: [{ filename: 'test3.png', type: 'output', subfolder: '' }]
+        }
+      },
+      status: {
+        status_str: 'success',
+        completed: true,
+        messages: []
+      }
+    }
+  ]
+}

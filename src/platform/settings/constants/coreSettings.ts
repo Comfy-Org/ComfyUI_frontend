@@ -944,7 +944,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Toast.DisableReconnectingToast',
     name: 'Disable toasts when reconnecting or reconnected',
     type: 'hidden',
-    defaultValue: isCloud ? true : false,
+    defaultValue: false,
     versionAdded: '1.15.12'
   },
   {
@@ -1064,6 +1064,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false,
     experimental: true,
     versionAdded: '1.27.1'
+  },
+  {
+    id: 'Comfy.VueNodes.AutoScaleLayout',
+    name: 'Auto-scale layout for Vue nodes',
+    tooltip:
+      'Automatically scale node positions when switching to Vue rendering to prevent overlap',
+    type: 'boolean',
+    experimental: true,
+    defaultValue: false,
+    versionAdded: '1.30.3'
   },
   {
     id: 'Comfy.Assets.UseAssetAPI',

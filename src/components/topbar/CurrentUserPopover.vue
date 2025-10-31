@@ -67,7 +67,11 @@
       </div>
       <div class="flex items-center justify-between">
         <UserCredit text-class="text-2xl" />
-        <Button :label="$t('credits.topUp.topUp')" @click="handleTopUp" />
+        <Button
+          v-if="isActiveSubscription"
+          :label="$t('credits.topUp.topUp')"
+          @click="handleTopUp"
+        />
       </div>
     </div>
   </div>
@@ -82,6 +86,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useDialogService } from '@/services/dialogService'
 
 const emit = defineEmits<{
@@ -92,6 +97,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
+const { isActiveSubscription } = useSubscription()
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')

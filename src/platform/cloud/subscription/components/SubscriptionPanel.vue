@@ -23,11 +23,20 @@
                   <span>{{ $t('subscription.perMonth') }}</span>
                 </div>
                 <div v-if="isActiveSubscription" class="text-xs text-muted">
-                  {{
-                    $t('subscription.renewsDate', {
-                      date: formattedRenewalDate
-                    })
-                  }}
+                  <template v-if="isCancelled">
+                    {{
+                      $t('subscription.expiresDate', {
+                        date: formattedEndDate
+                      })
+                    }}
+                  </template>
+                  <template v-else>
+                    {{
+                      $t('subscription.renewsDate', {
+                        date: formattedRenewalDate
+                      })
+                    }}
+                  </template>
                 </div>
               </div>
               <Button
@@ -41,7 +50,7 @@
                 v-else
                 :label="$t('subscription.subscribeNow')"
                 size="small"
-                button-class="text-xs"
+                class="text-xs"
                 @subscribed="handleRefresh"
               />
             </div>
@@ -58,14 +67,6 @@
                     <div class="text-xs text-muted">
                       {{ $t('subscription.apiNodesDescription') }}
                     </div>
-                    <Button
-                      icon="pi pi-question-circle"
-                      text
-                      rounded
-                      size="small"
-                      severity="secondary"
-                      class="h-5 w-5"
-                    />
                   </div>
                 </div>
 
@@ -137,6 +138,7 @@
                       @click="handleViewUsageHistory"
                     />
                     <Button
+                      v-if="isActiveSubscription"
                       :label="$t('subscription.addApiCredits')"
                       severity="secondary"
                       class="text-xs"
@@ -219,7 +221,9 @@ const customerEventService = useCustomerEventsService()
 
 const {
   isActiveSubscription,
+  isCancelled,
   formattedRenewalDate,
+  formattedEndDate,
   formattedMonthlyPrice,
   manageSubscription,
   handleViewUsageHistory,

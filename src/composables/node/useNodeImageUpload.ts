@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const PASTED_IMAGE_EXPIRY_MS = 2000
 
@@ -37,6 +38,13 @@ const uploadFile = async (
   }
 
   const data = await resp.json()
+
+  // Update AssetsStore input assets when files are uploaded to input folder
+  if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
+    const assetsStore = useAssetsStore()
+    await assetsStore.updateInputs()
+  }
+
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 

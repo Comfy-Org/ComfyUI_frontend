@@ -34,7 +34,7 @@ function getExecutionSuccessTimestamp(item: RawHistoryItemV2): number {
 export function mapHistoryV2toHistory(
   historyV2Response: HistoryResponseV2
 ): HistoryTaskItem[] {
-  const history = historyV2Response.history
+  const { history } = historyV2Response
 
   // Sort by execution_success timestamp, descending (newest first)
   history.sort((a, b) => {

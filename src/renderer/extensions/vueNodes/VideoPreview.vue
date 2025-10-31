@@ -16,11 +16,11 @@
       <!-- Error State -->
       <div
         v-if="videoError"
-        class="flex size-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
       >
-        <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-gray-400" />
-        <p class="text-sm text-gray-300">{{ $t('g.videoFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-gray-400">
+        <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-smoke-400" />
+        <p class="text-sm text-smoke-300">{{ $t('g.videoFailedToLoad') }}</p>
+        <p class="mt-1 text-xs text-smoke-400">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>
@@ -44,7 +44,7 @@
       <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
         <!-- Download Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-smoke-100"
           :title="$t('g.downloadVideo')"
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
@@ -54,7 +54,7 @@
 
         <!-- Close Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-smoke-100"
           :title="$t('g.removeVideo')"
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
@@ -89,7 +89,7 @@
         <span v-if="videoError" class="text-red-400">
           {{ $t('g.errorLoadingVideo') }}
         </span>
-        <span v-else-if="isLoading" class="text-gray-400">
+        <span v-else-if="isLoading" class="text-smoke-400">
           {{ $t('g.loading') }}...
         </span>
         <span v-else>

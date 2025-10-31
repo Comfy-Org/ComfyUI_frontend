@@ -14,6 +14,7 @@ type ServerHealthAlert = {
  */
 export type RemoteConfig = {
   mixpanel_token?: string
+  require_whitelist?: boolean
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
 }

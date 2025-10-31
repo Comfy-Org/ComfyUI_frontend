@@ -112,7 +112,7 @@
     <!-- Audio player -->
     <div class="group relative px-2">
       <div
-        class="flex items-center gap-4 rounded-lg bg-[#1a1b1e] p-4"
+        class="flex items-center gap-4 rounded-lg bg-charcoal-800 p-4"
         style="border: 1px solid #262729"
       >
         <!-- Audio icon -->
@@ -135,7 +135,7 @@
           <!-- Delete button -->
           <button
             :aria-label="$t('g.deleteAudioFile')"
-            class="flex h-8 w-8 items-center justify-center rounded border-none transition-all duration-150 hover:bg-[#262729] focus:outline-none"
+            class="flex h-8 w-8 items-center justify-center rounded border-none transition-all duration-150 hover:bg-charcoal-600 focus:outline-none"
             @click="clearFile"
           >
             <i class="pi pi-times text-sm text-white"></i>

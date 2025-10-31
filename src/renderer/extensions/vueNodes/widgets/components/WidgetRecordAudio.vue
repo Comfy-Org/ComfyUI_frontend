@@ -45,16 +45,16 @@
       <button
         v-if="isRecording"
         :title="t('g.stopRecording', 'Stop Recording')"
-        class="flex size-8 animate-pulse items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
+        class="flex size-8 animate-pulse items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopRecording"
       >
-        <div class="size-2.5 rounded-sm bg-[#C02323]" />
+        <div class="size-2.5 rounded-sm bg-danger-100" />
       </button>
 
       <button
         v-else-if="!isRecording && recordedURL && !isPlaying"
         :title="t('g.playRecording') || 'Play Recording'"
-        class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
+        class="flex size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
         <i
@@ -65,7 +65,7 @@
       <button
         v-else-if="isPlaying"
         :title="t('g.stopPlayback') || 'Stop Playback'"
-        class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
+        class="flex size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
         <i

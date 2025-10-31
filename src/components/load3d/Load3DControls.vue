@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-gray-700/30"
+    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-smoke-700/30"
   >
     <div class="show-menu relative">
       <Button class="p-button-rounded p-button-text" @click="toggleMenu">
@@ -16,7 +16,7 @@
             v-for="category in availableCategories"
             :key="category"
             class="p-button-text flex w-full items-center justify-start"
-            :class="{ 'bg-gray-600': activeCategory === category }"
+            :class="{ 'bg-smoke-600': activeCategory === category }"
             @click="selectCategory(category)"
           >
             <i :class="getCategoryIcon(category)" />
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div v-show="activeCategory" class="rounded-lg bg-gray-700/30">
+    <div v-show="activeCategory" class="rounded-lg bg-smoke-700/30">
       <SceneControls
         v-if="activeCategory === 'scene'"
         ref="sceneControlsRef"

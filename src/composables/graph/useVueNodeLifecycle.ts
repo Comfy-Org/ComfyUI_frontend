@@ -9,6 +9,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
 
 function useVueNodeLifecycleIndividual() {
@@ -77,6 +78,7 @@ function useVueNodeLifecycleIndividual() {
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
+        ensureCorrectLayoutScale()
       } else {
         disposeNodeManagerAndSyncs()
       }

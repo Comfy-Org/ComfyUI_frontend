@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import { createExportMenuOptions } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -297,6 +298,8 @@ useExtensionService().registerExtension({
     await nextTick()
 
     useLoad3dService().waitForLoad3d(node, (load3d) => {
+      node.getExtraMenuOptions = createExportMenuOptions(load3d)
+
       let cameraState = node.properties['Camera Info']
 
       const config = new Load3DConfiguration(load3d)
@@ -542,6 +545,8 @@ useExtensionService().registerExtension({
     const onExecuted = node.onExecuted
 
     useLoad3dService().waitForLoad3d(node, (load3d) => {
+      node.getExtraMenuOptions = createExportMenuOptions(load3d)
+
       const config = new Load3DConfiguration(load3d)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')

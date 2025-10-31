@@ -29,28 +29,26 @@
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--play] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
           <i
             v-else
-            class="icon-[lucide--pause] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--pause] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
         </div>
 
         <!-- Time Display -->
-        <div
-          class="text-sm font-normal text-nowrap text-black dark-theme:text-white"
-        >
+        <div class="text-sm font-normal text-nowrap text-base-foreground">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
 
       <!-- Progress Bar -->
       <div
-        class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-stone-200"
+        class="relative h-0.5 flex-1 rounded-full bg-smoke-300 dark-theme:bg-ash-800"
       >
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-gray-600 transition-all dark-theme:bg-white/50"
+          class="absolute top-0 left-0 h-full rounded-full bg-smoke-600 transition-all dark-theme:bg-white/50"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -77,15 +75,15 @@
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-2] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-1] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
           <i
             v-else
-            class="icon-[lucide--volume-x] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-x] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
         </div>
 
@@ -100,7 +98,7 @@
           @click="toggleOptionsMenu"
         >
           <i
-            class="icon-[lucide--more-vertical] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--more-vertical] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
         </div>
       </div>
@@ -116,10 +114,9 @@
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label
-              class="mb-2 block text-xs text-black dark-theme:text-white"
-              >{{ item.label }}</label
-            >
+            <label class="mb-2 block text-xs text-base-foreground">{{
+              item.label
+            }}</label>
             <Slider
               :model-value="volume * 10"
               :min="0"
@@ -134,12 +131,10 @@
             class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
             @click="item.onClick?.()"
           >
-            <span class="text-black dark-theme:text-white">{{
-              item.label
-            }}</span>
+            <span class="text-base-foreground">{{ item.label }}</span>
             <i
               v-if="item.selected"
-              class="ml-auto icon-[lucide--check] size-4 text-black dark-theme:text-white"
+              class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
             />
           </div>
         </template>

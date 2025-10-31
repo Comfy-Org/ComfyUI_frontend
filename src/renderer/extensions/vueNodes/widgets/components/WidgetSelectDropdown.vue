@@ -7,6 +7,7 @@ import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
@@ -223,6 +224,13 @@ const uploadFile = async (
   }
 
   const data = await resp.json()
+
+  // Update AssetsStore when uploading to input folder
+  if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
+    const assetsStore = useAssetsStore()
+    await assetsStore.updateInputs()
+  }
+
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 

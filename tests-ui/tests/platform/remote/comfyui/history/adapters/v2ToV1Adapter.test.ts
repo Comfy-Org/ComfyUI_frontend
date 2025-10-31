@@ -13,8 +13,21 @@ import {
 } from '@tests-ui/fixtures/historyFixtures'
 import {
   historyV2FiveItemsSorting,
+  historyV2MultipleNoTimestamp,
   historyV2WithMissingTimestamp
 } from '@tests-ui/fixtures/historySortingFixtures'
+import type { HistoryTaskItem } from '@/platform/remote/comfyui/history/types/historyV1Types'
+
+function findResultByPromptId(
+  result: HistoryTaskItem[],
+  promptId: string
+): HistoryTaskItem {
+  const item = result.find((item) => item.prompt[1] === promptId)
+  if (!item) {
+    throw new Error(`Expected item with promptId ${promptId} not found`)
+  }
+  return item
+}
 
 describe('mapHistoryV2toHistory', () => {
   describe('fixture validation', () => {
@@ -128,22 +141,9 @@ describe('mapHistoryV2toHistory', () => {
 
       expect(result).toHaveLength(3)
 
-      const item1000 = result.find(
-        (item) => item.prompt[1] === 'item-timestamp-1000'
-      )
-      const item2000 = result.find(
-        (item) => item.prompt[1] === 'item-timestamp-2000'
-      )
-      const itemNoTimestamp = result.find(
-        (item) => item.prompt[1] === 'item-no-timestamp'
-      )
-
-      expect(item1000).toBeDefined()
-      expect(item2000).toBeDefined()
-      expect(itemNoTimestamp).toBeDefined()
-      if (!item1000 || !item2000 || !itemNoTimestamp) {
-        throw new Error('Expected items not found in result')
-      }
+      const item1000 = findResultByPromptId(result, 'item-timestamp-1000')
+      const item2000 = findResultByPromptId(result, 'item-timestamp-2000')
+      const itemNoTimestamp = findResultByPromptId(result, 'item-no-timestamp')
 
       expect(item2000.prompt[0]).toBe(2)
       expect(item1000.prompt[0]).toBe(1)
@@ -155,36 +155,31 @@ describe('mapHistoryV2toHistory', () => {
 
       expect(result).toHaveLength(5)
 
-      const item1000 = result.find(
-        (item) => item.prompt[1] === 'item-timestamp-1000'
-      )
-      const item2000 = result.find(
-        (item) => item.prompt[1] === 'item-timestamp-2000'
-      )
-      const item3000 = result.find(
-        (item) => item.prompt[1] === 'item-timestamp-3000'
-      )
-      const item4000 = result.find(
-        (item) => item.prompt[1] === 'item-timestamp-4000'
-      )
-      const item5000 = result.find(
-        (item) => item.prompt[1] === 'item-timestamp-5000'
-      )
-
-      expect(item1000).toBeDefined()
-      expect(item2000).toBeDefined()
-      expect(item3000).toBeDefined()
-      expect(item4000).toBeDefined()
-      expect(item5000).toBeDefined()
-      if (!item1000 || !item2000 || !item3000 || !item4000 || !item5000) {
-        throw new Error('Expected items not found in result')
-      }
+      const item1000 = findResultByPromptId(result, 'item-timestamp-1000')
+      const item2000 = findResultByPromptId(result, 'item-timestamp-2000')
+      const item3000 = findResultByPromptId(result, 'item-timestamp-3000')
+      const item4000 = findResultByPromptId(result, 'item-timestamp-4000')
+      const item5000 = findResultByPromptId(result, 'item-timestamp-5000')
 
       expect(item5000.prompt[0]).toBe(5)
       expect(item4000.prompt[0]).toBe(4)
       expect(item3000.prompt[0]).toBe(3)
       expect(item2000.prompt[0]).toBe(2)
       expect(item1000.prompt[0]).toBe(1)
+    })
+
+    it('assigns priority 0 to all items when multiple items lack timestamps', () => {
+      const result = mapHistoryV2toHistory(historyV2MultipleNoTimestamp)
+
+      expect(result).toHaveLength(3)
+
+      const item1 = findResultByPromptId(result, 'item-no-timestamp-1')
+      const item2 = findResultByPromptId(result, 'item-no-timestamp-2')
+      const item3 = findResultByPromptId(result, 'item-no-timestamp-3')
+
+      expect(item1.prompt[0]).toBe(0)
+      expect(item2.prompt[0]).toBe(0)
+      expect(item3.prompt[0]).toBe(0)
     })
   })
 })

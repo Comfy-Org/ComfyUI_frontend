@@ -1,12 +1,16 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
+import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
+import { getWorkflowFromHistory } from '@/platform/workflow/cloud'
 import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  HistoryTaskItem,
   ResultItem,
   StatusWsMessageStatus,
   TaskItem,
@@ -377,24 +381,37 @@ export class TaskItemImpl {
   }
 
   public async loadWorkflow(app: ComfyApp) {
-    if (!this.workflow) {
-      return
-    }
-    await app.loadGraphData(toRaw(this.workflow))
-    if (this.outputs) {
-      const nodeOutputsStore = useNodeOutputStore()
-      const rawOutputs = toRaw(this.outputs)
-      for (const nodeExecutionId in rawOutputs) {
-        nodeOutputsStore.setNodeOutputsByExecutionId(
-          nodeExecutionId,
-          rawOutputs[nodeExecutionId]
-        )
-      }
-      useExtensionService().invokeExtensions(
-        'onNodeOutputsUpdated',
-        app.nodeOutputs
+    let workflowData = this.workflow
+
+    if (isCloud && !workflowData && this.isHistory) {
+      workflowData = await getWorkflowFromHistory(
+        (url) => app.api.fetchApi(url),
+        this.promptId
       )
     }
+
+    if (!workflowData) {
+      return
+    }
+
+    await app.loadGraphData(toRaw(workflowData))
+
+    if (!this.outputs) {
+      return
+    }
+
+    const nodeOutputsStore = useNodeOutputStore()
+    const rawOutputs = toRaw(this.outputs)
+    for (const nodeExecutionId in rawOutputs) {
+      nodeOutputsStore.setNodeOutputsByExecutionId(
+        nodeExecutionId,
+        rawOutputs[nodeExecutionId]
+      )
+    }
+    useExtensionService().invokeExtensions(
+      'onNodeOutputsUpdated',
+      app.nodeOutputs
+    )
   }
 
   public flatten(): TaskItemImpl[] {
@@ -423,13 +440,17 @@ export class TaskItemImpl {
         )
     )
   }
+
+  public toTaskItem(): TaskItem {
+    const item: HistoryTaskItem = {
+      taskType: 'History',
+      prompt: this.prompt,
+      status: this.status!,
+      outputs: this.outputs
+    }
+    return item
+  }
 }
-
-const extractPromptIds = (tasks: TaskItem[]): Set<string> =>
-  new Set(tasks.map((task) => task.prompt[1]))
-
-const isAddedAfter = (queueIndex: number) => (task: TaskItem) =>
-  task.prompt[0] > queueIndex
 
 const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
   b.queueIndex - a.queueIndex
@@ -445,31 +466,12 @@ const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
       )
   )
 
-const reconcileHistoryWithServer = (
-  serverHistory: TaskItem[],
-  clientHistory: TaskItemImpl[],
-  lastKnownQueueIndex: number,
-  maxItems: number
-): TaskItemImpl[] => {
-  const serverPromptIds = extractPromptIds(serverHistory)
-
-  const itemsAddedSinceLastSync = toTaskItemImpls(
-    serverHistory.filter(isAddedAfter(lastKnownQueueIndex))
-  )
-
-  const itemsStillOnServer = clientHistory.filter((item) =>
-    serverPromptIds.has(item.promptId)
-  )
-
-  return [...itemsAddedSinceLastSync, ...itemsStillOnServer]
-    .sort(sortNewestFirst)
-    .slice(0, maxItems)
-}
-
 export const useQueueStore = defineStore('queue', () => {
-  const runningTasks = ref<TaskItemImpl[]>([])
-  const pendingTasks = ref<TaskItemImpl[]>([])
-  const historyTasks = ref<TaskItemImpl[]>([])
+  // Use shallowRef because TaskItemImpl instances are immutable and arrays are
+  // replaced entirely (not mutated), so deep reactivity would waste performance
+  const runningTasks = shallowRef<TaskItemImpl[]>([])
+  const pendingTasks = shallowRef<TaskItemImpl[]>([])
+  const historyTasks = shallowRef<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
@@ -503,11 +505,23 @@ export const useQueueStore = defineStore('queue', () => {
       runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
       pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
-      historyTasks.value = reconcileHistoryWithServer(
+      const currentHistory = toValue(historyTasks)
+
+      const items = reconcileHistory(
         history.History,
-        historyTasks.value,
-        lastHistoryQueueIndex.value,
-        maxHistoryItems.value
+        currentHistory.map((impl) => impl.toTaskItem()),
+        toValue(maxHistoryItems),
+        toValue(lastHistoryQueueIndex)
+      )
+
+      // Reuse existing TaskItemImpl instances or create new
+      const existingByPromptId = new Map(
+        currentHistory.map((impl) => [impl.promptId, impl])
+      )
+
+      historyTasks.value = items.map(
+        (item) =>
+          existingByPromptId.get(item.prompt[1]) ?? toTaskItemImpls([item])[0]
       )
     } finally {
       isLoading.value = false

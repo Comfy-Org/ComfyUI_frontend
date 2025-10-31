@@ -119,12 +119,12 @@ export const KeyboardNavigationDemo: Story = {
     },
     template: `
       <div class="space-y-4 p-4">
-        <div class="bg-blue-50 dark-theme:bg-blue-900/20 border border-blue-200 dark-theme:border-blue-700 rounded-lg p-4">
+        <div class="bg-blue-50 dark-theme:bg-blue-900/20 border border-azure-400 dark-theme:border-blue-700 rounded-lg p-4">
           <h3 class="text-lg font-semibold mb-2">🎯 Keyboard Navigation Test</h3>
-          <p class="text-sm text-gray-600 dark-theme:text-gray-300 mb-4">
+          <p class="text-sm text-smoke-600 dark-theme:text-smoke-300 mb-4">
             Use your keyboard to navigate this MultiSelect:
           </p>
-          <ol class="text-sm text-gray-600 list-decimal list-inside space-y-1">
+          <ol class="text-sm text-smoke-600 list-decimal list-inside space-y-1">
             <li><strong>Tab</strong> to focus the dropdown</li>
             <li><strong>Enter/Space</strong> to open dropdown</li>
             <li><strong>Arrow Up/Down</strong> to navigate options</li>
@@ -134,11 +134,11 @@ export const KeyboardNavigationDemo: Story = {
         </div>
 
         <div class="space-y-2">
-          <label class="block text-sm font-medium text-gray-700">
+          <label class="block text-sm font-medium text-smoke-700">
             Select Frameworks (Keyboard Navigation Test)
           </label>
           <MultiSelect v-bind="args" class="w-80" />
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-smoke-500">
             Selected: {{ selectedFrameworks.map(f => f.name).join(', ') || 'None' }}
           </p>
         </div>
@@ -186,10 +186,10 @@ export const ScreenReaderFriendly: Story = {
       <div class="space-y-6 p-4">
         <div class="bg-green-50 dark-theme:bg-green-900/20 border border-green-200 dark-theme:border-green-700 rounded-lg p-4">
           <h3 class="text-lg font-semibold mb-2">♿ Screen Reader Test</h3>
-          <p class="text-sm text-gray-600 mb-2">
+          <p class="text-sm text-smoke-600 mb-2">
             These dropdowns have proper ARIA attributes and labels for screen readers:
           </p>
-          <ul class="text-sm text-gray-600 list-disc list-inside space-y-1">
+          <ul class="text-sm text-smoke-600 list-disc list-inside space-y-1">
             <li><code>role="combobox"</code> identifies as dropdown</li>
             <li><code>aria-haspopup="listbox"</code> indicates popup type</li>
             <li><code>aria-expanded</code> shows open/closed state</li>
@@ -200,7 +200,7 @@ export const ScreenReaderFriendly: Story = {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">
+            <label class="block text-sm font-medium text-smoke-700">
               Color Preferences
             </label>
             <MultiSelect
@@ -211,13 +211,13 @@ export const ScreenReaderFriendly: Story = {
               :show-clear-button="true"
               class="w-full"
             />
-            <p class="text-xs text-gray-500" aria-live="polite">
+            <p class="text-xs text-smoke-500" aria-live="polite">
               {{ selectedColors.length }} color(s) selected
             </p>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">
+            <label class="block text-sm font-medium text-smoke-700">
               Size Preferences
             </label>
             <MultiSelect
@@ -228,7 +228,7 @@ export const ScreenReaderFriendly: Story = {
               :show-search-box="true"
               class="w-full"
             />
-            <p class="text-xs text-gray-500" aria-live="polite">
+            <p class="text-xs text-smoke-500" aria-live="polite">
               {{ selectedSizes.length }} size(s) selected
             </p>
           </div>
@@ -259,25 +259,25 @@ export const FocusManagement: Story = {
       <div class="space-y-4 p-4">
         <div class="bg-purple-50 dark-theme:bg-purple-900/20 border border-purple-200 dark-theme:border-purple-700 rounded-lg p-4">
           <h3 class="text-lg font-semibold mb-2">🎯 Focus Management Test</h3>
-          <p class="text-sm text-gray-600 dark-theme:text-gray-300 mb-4">
+          <p class="text-sm text-smoke-600 dark-theme:text-smoke-300 mb-4">
             Test focus behavior with multiple form elements:
           </p>
         </div>
 
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 mb-1">
               Before MultiSelect
             </label>
             <input
               type="text"
               placeholder="Previous field"
-              class="block w-64 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="block w-64 px-3 py-2 border border-smoke-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 mb-1">
               MultiSelect (Test Focus Ring)
             </label>
             <MultiSelect
@@ -290,13 +290,13 @@ export const FocusManagement: Story = {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-medium text-smoke-700 mb-1">
               After MultiSelect
             </label>
             <input
               type="text"
               placeholder="Next field"
-              class="block w-64 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="block w-64 px-3 py-2 border border-smoke-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -307,7 +307,7 @@ export const FocusManagement: Story = {
           </button>
         </div>
 
-        <div class="text-sm text-gray-600 mt-4">
+        <div class="text-sm text-smoke-600 mt-4">
           <strong>Test:</strong> Tab through all elements and verify focus rings are visible and logical.
         </div>
       </div>
@@ -319,7 +319,7 @@ export const AccessibilityChecklist: Story = {
   render: () => ({
     template: `
       <div class="max-w-4xl mx-auto p-6 space-y-6">
-        <div class="bg-gray-50 dark-theme:bg-zinc-800 border border-gray-200 dark-theme:border-zinc-700 rounded-lg p-6">
+        <div class="bg-gray-50 dark-theme:bg-zinc-800 border border-smoke-200 dark-theme:border-zinc-700 rounded-lg p-6">
           <h2 class="text-2xl font-bold mb-4">♿ MultiSelect Accessibility Checklist</h2>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -366,9 +366,9 @@ export const AccessibilityChecklist: Story = {
             </div>
           </div>
 
-          <div class="mt-6 p-4 bg-blue-50 dark-theme:bg-blue-900/20 border border-blue-200 dark-theme:border-blue-700 rounded-lg">
+          <div class="mt-6 p-4 bg-blue-50 dark-theme:bg-blue-900/20 border border-azure-400 dark-theme:border-blue-700 rounded-lg">
             <h4 class="font-semibold mb-2">🎯 Quick Test</h4>
-            <p class="text-sm text-gray-700 dark-theme:text-gray-300">
+            <p class="text-sm text-smoke-700 dark-theme:text-smoke-300">
               Close your eyes, use only the keyboard, and try to select multiple options from any dropdown above.
               If you can successfully navigate and make selections, the accessibility implementation is working!
             </p>

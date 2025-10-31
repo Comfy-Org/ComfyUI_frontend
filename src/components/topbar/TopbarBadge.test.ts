@@ -160,8 +160,8 @@ describe('TopbarBadge', () => {
         'full'
       )
 
-      expect(wrapper.find('.bg-warning-100').exists()).toBe(true)
-      expect(wrapper.find('.text-warning-100').exists()).toBe(true)
+      expect(wrapper.find('.bg-gold-600').exists()).toBe(true)
+      expect(wrapper.find('.text-gold-600').exists()).toBe(true)
     })
 
     it('uses default error icon for error variant', () => {

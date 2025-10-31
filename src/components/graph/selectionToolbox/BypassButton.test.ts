@@ -92,7 +92,7 @@ describe('BypassButton', () => {
     const button = wrapper.find('button')
 
     expect(button.classes()).not.toContain(
-      'dark-theme:[&:not(:active)]:!bg-[#262729]'
+      'dark-theme:[&:not(:active)]:!bg-charcoal-600'
     )
   })
 

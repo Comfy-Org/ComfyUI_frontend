@@ -162,7 +162,7 @@ const labelClasses = computed(() => {
     case 'error':
       return 'bg-danger-100 text-white'
     case 'warning':
-      return 'bg-warning-100 text-black'
+      return 'bg-gold-600 text-black'
     case 'info':
     default:
       return 'bg-white text-black'
@@ -174,10 +174,10 @@ const textClasses = computed(() => {
     case 'error':
       return 'text-danger-100'
     case 'warning':
-      return 'text-warning-100'
+      return 'text-gold-600'
     case 'info':
     default:
-      return 'text-slate-100'
+      return 'text-text-primary'
   }
 })
 
@@ -205,7 +205,7 @@ const dotClasses = computed(() => {
     case 'error':
       return 'bg-danger-100'
     case 'warning':
-      return 'bg-warning-100'
+      return 'bg-gold-600'
     case 'info':
     default:
       return 'bg-slate-100'

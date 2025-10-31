@@ -9,14 +9,12 @@ import {
 describe('nodeResizeMath', () => {
   const startSize = { width: 200, height: 120 }
   const startPosition = { x: 80, y: 160 }
-  const minSize = { width: 120, height: 80 }
 
   it('computes resize from bottom-right corner without moving position', () => {
     const outcome = computeResizeOutcome({
       startSize,
       startPosition,
       delta: { x: 40, y: 20 },
-      minSize,
       handle: { horizontal: 'right', vertical: 'bottom' }
     })
 
@@ -29,7 +27,6 @@ describe('nodeResizeMath', () => {
       startSize,
       startPosition,
       delta: { x: -30, y: -20 },
-      minSize,
       handle: { horizontal: 'left', vertical: 'top' }
     })
 
@@ -37,27 +34,10 @@ describe('nodeResizeMath', () => {
     expect(outcome.position).toEqual({ x: 50, y: 140 })
   })
 
-  it('clamps to minimum size when shrinking below intrinsic size', () => {
-    const outcome = computeResizeOutcome({
-      startSize,
-      startPosition,
-      delta: { x: 500, y: 500 },
-      minSize,
-      handle: { horizontal: 'left', vertical: 'top' }
-    })
-
-    expect(outcome.size).toEqual(minSize)
-    expect(outcome.position).toEqual({
-      x: startPosition.x + (startSize.width - minSize.width),
-      y: startPosition.y + (startSize.height - minSize.height)
-    })
-  })
-
   it('supports reusable resize sessions with snapping', () => {
     const session = createResizeSession({
       startSize,
       startPosition,
-      minSize,
       handle: { horizontal: 'right', vertical: 'bottom' }
     })
 
@@ -91,7 +71,6 @@ describe('nodeResizeMath', () => {
         startSize,
         startPosition,
         delta: { x: -50, y: -30 },
-        minSize,
         handle: { horizontal: 'right', vertical: 'bottom' }
       })
 
@@ -104,57 +83,12 @@ describe('nodeResizeMath', () => {
         startSize,
         startPosition,
         delta: { x: 10000, y: 10000 },
-        minSize,
         handle: { horizontal: 'right', vertical: 'bottom' }
       })
 
       expect(outcome.size.width).toBe(10200)
       expect(outcome.size.height).toBe(10120)
       expect(outcome.position).toEqual(startPosition)
-    })
-
-    it('respects minimum size even with extreme negative deltas', () => {
-      const outcome = computeResizeOutcome({
-        startSize,
-        startPosition,
-        delta: { x: -1000, y: -1000 },
-        minSize,
-        handle: { horizontal: 'right', vertical: 'bottom' }
-      })
-
-      expect(outcome.size).toEqual(minSize)
-      expect(outcome.position).toEqual(startPosition)
-    })
-
-    it('handles minSize larger than startSize', () => {
-      const largeMinSize = { width: 300, height: 200 }
-      const outcome = computeResizeOutcome({
-        startSize,
-        startPosition,
-        delta: { x: 10, y: 10 },
-        minSize: largeMinSize,
-        handle: { horizontal: 'right', vertical: 'bottom' }
-      })
-
-      expect(outcome.size).toEqual(largeMinSize)
-      expect(outcome.position).toEqual(startPosition)
-    })
-
-    it('adjusts position correctly when minSize prevents shrinking from top-left', () => {
-      const largeMinSize = { width: 250, height: 150 }
-      const outcome = computeResizeOutcome({
-        startSize,
-        startPosition,
-        delta: { x: 100, y: 100 },
-        minSize: largeMinSize,
-        handle: { horizontal: 'left', vertical: 'top' }
-      })
-
-      expect(outcome.size).toEqual(largeMinSize)
-      expect(outcome.position).toEqual({
-        x: startPosition.x + (startSize.width - largeMinSize.width),
-        y: startPosition.y + (startSize.height - largeMinSize.height)
-      })
     })
   })
 })

@@ -6,7 +6,7 @@
       @click="showImportFailedDialog"
     >
       <i class="pi pi-code text-base"></i>
-      <span class="text-sm dark-theme:text-white">{{
+      <span class="text-sm text-base-foreground">{{
         t('serverStart.openLogs')
       }}</span>
     </button>
