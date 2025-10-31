@@ -206,6 +206,7 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useTelemetry } from '@/platform/telemetry'
 import type { AuditLog } from '@/services/customerEventsService'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'
@@ -218,6 +219,7 @@ const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
 const authStore = useFirebaseAuthStore()
 const customerEventService = useCustomerEventsService()
+const telemetry = useTelemetry()
 
 const {
   isActiveSubscription,
@@ -260,6 +262,7 @@ onMounted(() => {
 })
 
 const handleAddApiCredits = () => {
+  telemetry?.trackAddApiCreditButtonClicked()
   dialogService.showTopUpCreditsDialog()
 }
 
