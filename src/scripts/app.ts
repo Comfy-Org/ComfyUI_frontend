@@ -30,6 +30,7 @@ import {
   type NodeId,
   isSubgraphDefinition
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { executeNumberControls } from '@/renderer/extensions/vueNodes/widgets/services/NumberControlRegistry'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -1325,6 +1326,7 @@ export class ComfyApp {
           for (const subgraph of this.graph.subgraphs.values()) {
             executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
           }
+          executeNumberControls('before')
 
           const p = await this.graphToPrompt(this.graph)
           try {
@@ -1375,6 +1377,7 @@ export class ComfyApp {
           for (const subgraph of this.graph.subgraphs.values()) {
             executeWidgetsCallback(subgraph.nodes, 'afterQueued')
           }
+          executeNumberControls('after')
 
           this.canvas.draw(true, true)
           await this.ui.queue.update()
