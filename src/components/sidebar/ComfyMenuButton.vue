@@ -76,6 +76,7 @@ import { useI18n } from 'vue-i18n'
 
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import ComfyLogoTransparent from '@/components/icons/ComfyLogoTransparent.vue'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -160,7 +161,7 @@ const extraMenuItems = computed(() => [
     key: 'browse-templates',
     label: t('menuLabels.Browse Templates'),
     icon: 'icon-[comfy--template]',
-    command: () => commandStore.execute('Comfy.BrowseTemplates')
+    command: () => useWorkflowTemplateSelectorDialog().show('menu')
   },
   {
     key: 'settings',

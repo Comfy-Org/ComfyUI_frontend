@@ -26,6 +26,7 @@ import type {
   TelemetryProvider,
   TemplateFilterMetadata,
   TemplateLibraryMetadata,
+  TemplateLibraryClosedMetadata,
   TemplateMetadata,
   WorkflowImportMetadata
 } from '../../types'
@@ -233,6 +234,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void {
     this.trackEvent(TelemetryEvents.TEMPLATE_LIBRARY_OPENED, metadata)
+  }
+
+  trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_LIBRARY_CLOSED, metadata)
   }
 
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {

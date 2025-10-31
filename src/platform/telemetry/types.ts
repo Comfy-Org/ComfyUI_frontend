@@ -123,6 +123,14 @@ export interface TemplateLibraryMetadata {
 }
 
 /**
+ * Template library closed metadata
+ */
+export interface TemplateLibraryClosedMetadata {
+  template_selected: boolean
+  time_spent_seconds: number
+}
+
+/**
  * Page visibility metadata
  */
 export interface PageVisibilityMetadata {
@@ -193,6 +201,7 @@ export interface TelemetryProvider {
   // Template workflow events
   trackTemplate(metadata: TemplateMetadata): void
   trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void
+  trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void
 
   // Workflow management events
   trackWorkflowImported(metadata: WorkflowImportMetadata): void
@@ -249,6 +258,7 @@ export const TelemetryEvents = {
   // Template Tracking
   TEMPLATE_WORKFLOW_OPENED: 'app:template_workflow_opened',
   TEMPLATE_LIBRARY_OPENED: 'app:template_library_opened',
+  TEMPLATE_LIBRARY_CLOSED: 'app:template_library_closed',
 
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
@@ -289,6 +299,7 @@ export type TelemetryEventProperties =
   | CreditTopupMetadata
   | WorkflowImportMetadata
   | TemplateLibraryMetadata
+  | TemplateLibraryClosedMetadata
   | PageVisibilityMetadata
   | TabCountMetadata
   | NodeSearchMetadata
