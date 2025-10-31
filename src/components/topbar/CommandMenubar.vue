@@ -80,6 +80,7 @@ import { useI18n } from 'vue-i18n'
 
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
@@ -168,7 +169,7 @@ const extraMenuItems = computed(() => [
     key: 'browse-templates',
     label: t('menuLabels.Browse Templates'),
     icon: 'icon-[comfy--template]',
-    command: () => commandStore.execute('Comfy.BrowseTemplates')
+    command: () => useWorkflowTemplateSelectorDialog().show('menu')
   },
   {
     key: 'settings',
