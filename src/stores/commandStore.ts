@@ -7,9 +7,9 @@ import type { ComfyExtension } from '@/types/comfy'
 import { useKeybindingStore } from './keybindingStore'
 import type { KeybindingImpl } from './keybindingStore'
 
-export interface ComfyCommand {
+export interface ComfyCommand<TArgs extends unknown[] = unknown[]> {
   id: string
-  function: (...args: unknown[]) => void | Promise<void>
+  function: (...args: TArgs) => void | Promise<void>
 
   label?: string | (() => string)
   icon?: string | (() => string)
@@ -22,9 +22,11 @@ export interface ComfyCommand {
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
 }
 
-export class ComfyCommandImpl implements ComfyCommand {
+export class ComfyCommandImpl<TArgs extends unknown[] = unknown[]>
+  implements ComfyCommand<TArgs>
+{
   id: string
-  function: (...args: unknown[]) => void | Promise<void>
+  function: (...args: TArgs) => void | Promise<void>
   _label?: string | (() => string)
   _icon?: string | (() => string)
   _tooltip?: string | (() => string)
@@ -35,7 +37,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   active?: () => boolean
   category?: 'essentials' | 'view-controls'
 
-  constructor(command: ComfyCommand) {
+  constructor(command: ComfyCommand<TArgs>) {
     this.id = command.id
     this.function = command.function
     this._label = command.label
@@ -101,7 +103,10 @@ export const useCommandStore = defineStore('command', () => {
   ) => {
     const command = getCommand(commandId)
     if (command) {
-      await wrapWithErrorHandlingAsync(() => command.function(...args), errorHandler)()
+      await wrapWithErrorHandlingAsync(
+        () => command.function(...args),
+        errorHandler
+      )()
     } else {
       throw new Error(`Command ${commandId} not found`)
     }

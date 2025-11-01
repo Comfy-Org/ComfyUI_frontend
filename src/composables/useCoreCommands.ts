@@ -1209,7 +1209,7 @@ export function useCoreCommands(): ComfyCommand[] {
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
     }
-  ]
+  ] as ComfyCommand[]
 
   return commands.map((command) => ({ ...command, source: 'System' }))
 }
