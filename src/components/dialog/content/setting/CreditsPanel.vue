@@ -15,7 +15,7 @@
           <UserCredit text-class="text-3xl font-bold" />
           <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
-            v-else
+            v-else-if="isActiveSubscription"
             :label="$t('credits.purchaseCredits')"
             :loading="loading"
             @click="handlePurchaseCreditsClick"
@@ -93,6 +93,13 @@
           @click="handleFaqClick"
         />
         <Button
+          :label="$t('subscription.partnerNodesCredits')"
+          text
+          severity="secondary"
+          icon="pi pi-question-circle"
+          @click="handleOpenPartnerNodesInfo"
+        />
+        <Button
           :label="$t('credits.messageSupport')"
           text
           severity="secondary"
@@ -116,6 +123,8 @@ import { computed, ref, watch } from 'vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -132,6 +141,8 @@ const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
+const telemetry = useTelemetry()
+const { isActiveSubscription } = useSubscription()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
@@ -161,11 +172,23 @@ const handleCreditsHistoryClick = async () => {
 }
 
 const handleMessageSupport = async () => {
+  telemetry?.trackHelpResourceClicked({
+    resource_type: 'help_feedback',
+    is_external: true,
+    source: 'credits_panel'
+  })
   await commandStore.execute('Comfy.ContactSupport')
 }
 
 const handleFaqClick = () => {
   window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
+}
+
+const handleOpenPartnerNodesInfo = () => {
+  window.open(
+    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    '_blank'
+  )
 }
 
 const creditHistory = ref<CreditHistoryItemData[]>([])
