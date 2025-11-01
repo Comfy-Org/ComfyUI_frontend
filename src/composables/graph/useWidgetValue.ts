@@ -10,8 +10,8 @@ import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 interface UseWidgetValueOptions<T extends WidgetValue = WidgetValue, U = T> {
   /** The widget configuration from LiteGraph */
   widget: SimplifiedWidget<T>
-  /** The current value from parent component */
-  modelValue: T
+  /** The current value from parent component (can be a value or a getter function) */
+  modelValue: T | (() => T)
   /** Default value if modelValue is null/undefined */
   defaultValue: T
   /** Emit function from component setup */
@@ -46,8 +46,15 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
   emit,
   transform
 }: UseWidgetValueOptions<T, U>): UseWidgetValueReturn<T, U> {
+  // Normalize modelValue to always be a getter function for reactivity
+  const getModelValue =
+    typeof modelValue === 'function'
+      ? (modelValue as () => T)
+      : () => modelValue as T
+
   // Local value for immediate UI updates
-  const localValue = ref<T>(modelValue ?? defaultValue)
+  const initialValue = getModelValue()
+  const localValue = ref<T>(initialValue ?? defaultValue)
 
   // Handle user changes
   const onChange = (newValue: U) => {
@@ -79,12 +86,9 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
   }
 
   // Watch for external updates from LiteGraph
-  watch(
-    () => modelValue,
-    (newValue) => {
-      localValue.value = newValue ?? defaultValue
-    }
-  )
+  watch(getModelValue, (newValue) => {
+    localValue.value = newValue ?? defaultValue
+  })
 
   return {
     localValue: localValue as Ref<T>,
@@ -97,7 +101,7 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
  */
 export function useStringWidgetValue(
   widget: SimplifiedWidget<string>,
-  modelValue: string,
+  modelValue: string | (() => string),
   emit: (event: 'update:modelValue', value: string) => void
 ) {
   return useWidgetValue({
@@ -114,7 +118,7 @@ export function useStringWidgetValue(
  */
 export function useNumberWidgetValue(
   widget: SimplifiedWidget<number>,
-  modelValue: number,
+  modelValue: number | (() => number),
   emit: (event: 'update:modelValue', value: number) => void
 ) {
   return useWidgetValue({
@@ -137,7 +141,7 @@ export function useNumberWidgetValue(
  */
 export function useBooleanWidgetValue(
   widget: SimplifiedWidget<boolean>,
-  modelValue: boolean,
+  modelValue: boolean | (() => boolean),
   emit: (event: 'update:modelValue', value: boolean) => void
 ) {
   return useWidgetValue({

@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive } from 'vue'
+import { nextTick, reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type {
@@ -269,10 +269,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       const updatedWidgets = currentData.widgets.map((w) =>
         w.name === widgetName ? { ...w, value: validateWidgetValue(value) } : w
       )
-      vueNodeData.set(nodeId, {
+      // Create a completely new object to ensure Vue reactivity triggers
+      const updatedData = {
         ...currentData,
-        widgets: updatedWidgets
-      })
+        widgets: updatedWidgets,
+        // Add a timestamp to force reactivity detection
+        _updateTs: Date.now()
+      }
+
+      vueNodeData.set(nodeId, updatedData)
     } catch (error) {
       // Ignore widget update errors to prevent cascade failures
     }
@@ -318,6 +323,16 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
         // 3. Update Vue state to maintain synchronization
         updateVueWidgetState(nodeId, widget.name, value)
+
+        // 4. Force Vue reactivity by re-setting the node data in the next tick
+        // This ensures all Vue components that depend on this data re-render
+        void nextTick(() => {
+          const currentData = vueNodeData.get(nodeId)
+          if (currentData) {
+            // Completely replace the node data to trigger reactivity
+            vueNodeData.set(nodeId, { ...currentData })
+          }
+        })
       } finally {
         updateInProgress = false
       }
