@@ -3,14 +3,20 @@ import { ref } from 'vue'
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import {
+  isAssetWidget,
+  isComboWidget,
+  isMappedComboWidget
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { hasHashFilenames } from '@/lib/litegraph/src/utils/hashFilenameUtils'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -22,6 +28,7 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
@@ -126,53 +133,74 @@ const addComboWidget = (
     return widget
   }
 
-  // Create normal combo widget
   const defaultValue = getDefaultValue(inputSpec)
   const comboOptions = inputSpec.options ?? []
+  const useHashMapping = isCloud && hasHashFilenames(comboOptions)
+  const widgetType = useHashMapping ? 'mapped_combo' : 'combo'
+
   const widget = node.addWidget(
-    'combo',
+    widgetType,
     inputSpec.name,
     defaultValue,
     () => {},
     {
-      values: comboOptions
+      values: comboOptions,
+      ...(useHashMapping && {
+        mapValue: (value: string) => {
+          const assetsStore = useAssetsStore()
+          return assetsStore.getInputName(value)
+        }
+      })
     }
   )
 
-  if (inputSpec.remote) {
-    if (!isComboWidget(widget)) {
-      throw new Error(`Expected combo widget but received ${widget.type}`)
+  if (useHashMapping) {
+    const assetsStore = useAssetsStore()
+    if (assetsStore.inputAssets.length === 0 && !assetsStore.inputLoading) {
+      void assetsStore.updateInputs()
     }
-    const remoteWidget = useRemoteWidget({
-      remoteConfig: inputSpec.remote,
-      defaultValue,
-      node,
-      widget
-    })
-    if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
+  }
 
-    const origOptions = widget.options
-    widget.options = new Proxy(origOptions, {
-      get(target, prop) {
-        // Assertion: Proxy handler passthrough
-        return prop !== 'values'
-          ? target[prop as keyof typeof target]
-          : remoteWidget.getValue()
-      }
-    })
+  if (inputSpec.remote) {
+    if (isComboWidget(widget) || isMappedComboWidget(widget)) {
+      const remoteWidget = useRemoteWidget({
+        remoteConfig: inputSpec.remote,
+        defaultValue,
+        node,
+        widget
+      })
+      if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
+
+      const origOptions = widget.options
+      widget.options = new Proxy(origOptions, {
+        get(target, prop) {
+          // Assertion: Proxy handler passthrough
+          return prop !== 'values'
+            ? target[prop as keyof typeof target]
+            : remoteWidget.getValue()
+        }
+      })
+    } else {
+      throw new Error(
+        `Expected combo or mapped_combo widget but received ${widget.type}`
+      )
+    }
   }
 
   if (inputSpec.control_after_generate) {
-    if (!isComboWidget(widget)) {
-      throw new Error(`Expected combo widget but received ${widget.type}`)
+    if (isComboWidget(widget) || isMappedComboWidget(widget)) {
+      widget.linkedWidgets = addValueControlWidgets(
+        node,
+        widget,
+        undefined,
+        undefined,
+        transformInputSpecV2ToV1(inputSpec)
+      )
+    } else {
+      throw new Error(
+        `Expected combo or mapped_combo widget but received ${widget.type}`
+      )
     }
-    widget.linkedWidgets = addValueControlWidgets(
-      node,
-      widget,
-      undefined,
-      undefined,
-      transformInputSpecV2ToV1(inputSpec)
-    )
   }
 
   return widget

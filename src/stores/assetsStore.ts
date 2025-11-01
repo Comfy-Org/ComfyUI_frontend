@@ -1,4 +1,5 @@
 import { useAsyncState } from '@vueuse/core'
+import { computed } from 'vue'
 import { defineStore } from 'pinia'
 
 import {
@@ -117,6 +118,30 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
+  /**
+   * Map of asset hash filename to asset item for O(1) lookup
+   * Cloud assets use asset_hash for the hash-based filename
+   */
+  const inputAssetsByFilename = computed(() => {
+    const map = new Map<string, AssetItem>()
+    for (const asset of inputAssets.value) {
+      // Use asset_hash as the key (hash-based filename)
+      if (asset.asset_hash) {
+        map.set(asset.asset_hash, asset)
+      }
+    }
+    return map
+  })
+
+  /**
+   * Get human-readable name for input asset filename
+   * @param filename Hash-based filename (e.g., "72e786ff...efb7.png")
+   * @returns Human-readable asset name or original filename if not found
+   */
+  function getInputName(filename: string): string {
+    return inputAssetsByFilename.value.get(filename)?.name ?? filename
+  }
+
   return {
     // States
     inputAssets,
@@ -128,6 +153,10 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Actions
     updateInputs,
-    updateHistory
+    updateHistory,
+
+    // Input mapping helpers
+    inputAssetsByFilename,
+    getInputName
   }
 })

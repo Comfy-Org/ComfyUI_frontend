@@ -7,8 +7,36 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
+// Use vi.hoisted() to ensure mock state is initialized before mocks
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockUpdateInputs = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const mockGetInputName = vi.hoisted(() => vi.fn((hash: string) => hash))
+const mockAssetsStoreState = vi.hoisted(() => ({
+  inputAssets: [] as any[],
+  inputLoading: false
+}))
+
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: vi.fn(() => ({
+    get inputAssets() {
+      return mockAssetsStoreState.inputAssets
+    },
+    get inputLoading() {
+      return mockAssetsStoreState.inputLoading
+    },
+    updateInputs: mockUpdateInputs,
+    getInputName: mockGetInputName
+  }))
 }))
 
 const mockSettingStoreGet = vi.fn(() => false)
@@ -86,6 +114,10 @@ describe('useComboWidget', () => {
     mockSettingStoreGet.mockReturnValue(false)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
     vi.mocked(useAssetBrowserDialog).mockClear()
+    mockDistributionState.isCloud = false
+    mockAssetsStoreState.inputAssets = []
+    mockAssetsStoreState.inputLoading = false
+    mockUpdateInputs.mockClear()
   })
 
   it('should handle undefined spec', () => {
@@ -255,5 +287,182 @@ describe('useComboWidget', () => {
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(widget).toBe(mockWidget)
+  })
+
+  describe('mapped_combo widget creation', () => {
+    const HASH_FILENAME =
+      '72e786ff2a44d682c4294db0b7098e569832bc394efc6dad644e6ec85a78efb7.png'
+    const HASH_FILENAME_2 =
+      'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456.jpg'
+
+    it('should create mapped_combo widget in cloud when options contain SHA256 hash filenames', () => {
+      mockDistributionState.isCloud = true
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget({
+        type: 'mapped_combo',
+        name: 'image',
+        value: HASH_FILENAME
+      })
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: [HASH_FILENAME, HASH_FILENAME_2]
+      })
+
+      const widget = constructor(mockNode, inputSpec)
+
+      expect(mockNode.addWidget).toHaveBeenCalledWith(
+        'mapped_combo',
+        'image',
+        HASH_FILENAME,
+        expect.any(Function),
+        expect.objectContaining({
+          values: [HASH_FILENAME, HASH_FILENAME_2],
+          mapValue: expect.any(Function)
+        })
+      )
+      expect(widget).toBe(mockWidget)
+    })
+
+    it('should inject mapValue function that calls getInputName', () => {
+      mockDistributionState.isCloud = true
+      mockGetInputName.mockReturnValue('Beautiful Sunset.png')
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget({
+        type: 'mapped_combo',
+        name: 'image',
+        value: HASH_FILENAME
+      })
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: [HASH_FILENAME]
+      })
+
+      constructor(mockNode, inputSpec)
+
+      // Extract the injected mapValue function
+      const addWidgetCall = vi.mocked(mockNode.addWidget).mock.calls[0]
+      const options = addWidgetCall[4] as any
+      const mapValueFn = options.mapValue
+
+      // Test that the injected function calls getInputName
+      const result = mapValueFn(HASH_FILENAME)
+      expect(mockGetInputName).toHaveBeenCalledWith(HASH_FILENAME)
+      expect(result).toBe('Beautiful Sunset.png')
+    })
+
+    it('should create normal combo widget in cloud when options do not contain hash filenames', () => {
+      mockDistributionState.isCloud = true
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget()
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: ['image1.png', 'image2.jpg']
+      })
+
+      const widget = constructor(mockNode, inputSpec)
+
+      expect(mockNode.addWidget).toHaveBeenCalledWith(
+        'combo',
+        'image',
+        'image1.png',
+        expect.any(Function),
+        { values: ['image1.png', 'image2.jpg'] }
+      )
+      expect(widget).toBe(mockWidget)
+    })
+
+    it('should create normal combo widget in OSS even with hash filename patterns', () => {
+      mockDistributionState.isCloud = false
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget()
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: [HASH_FILENAME, HASH_FILENAME_2]
+      })
+
+      const widget = constructor(mockNode, inputSpec)
+
+      expect(mockNode.addWidget).toHaveBeenCalledWith(
+        'combo',
+        'image',
+        HASH_FILENAME,
+        expect.any(Function),
+        {
+          values: [HASH_FILENAME, HASH_FILENAME_2]
+        }
+      )
+      expect(widget).toBe(mockWidget)
+    })
+
+    it('should trigger lazy load when first hash filename widget created', () => {
+      mockDistributionState.isCloud = true
+      mockAssetsStoreState.inputAssets = []
+      mockAssetsStoreState.inputLoading = false
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget({ type: 'mapped_combo' })
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: [HASH_FILENAME]
+      })
+
+      constructor(mockNode, inputSpec)
+
+      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not trigger lazy load if assets already loading', () => {
+      mockDistributionState.isCloud = true
+      mockAssetsStoreState.inputAssets = []
+      mockAssetsStoreState.inputLoading = true
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget({ type: 'mapped_combo' })
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: [HASH_FILENAME]
+      })
+
+      constructor(mockNode, inputSpec)
+
+      expect(mockUpdateInputs).not.toHaveBeenCalled()
+    })
+
+    it('should not trigger lazy load if assets already loaded', () => {
+      mockDistributionState.isCloud = true
+      mockAssetsStoreState.inputAssets = [
+        { id: 'asset-123', name: 'image1.png', asset_hash: HASH_FILENAME }
+      ] as any
+      mockAssetsStoreState.inputLoading = false
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget({ type: 'mapped_combo' })
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: [HASH_FILENAME]
+      })
+
+      constructor(mockNode, inputSpec)
+
+      expect(mockUpdateInputs).not.toHaveBeenCalled()
+    })
   })
 })

@@ -30,7 +30,8 @@ export class ComboWidget
   extends BaseSteppedWidget<IStringComboWidget | IComboWidget>
   implements IComboWidget
 {
-  override type = 'combo' as const
+  // Accepts 'mapped_combo' to allow MappedComboWidget subclass to override
+  override type: 'combo' | 'mapped_combo' = 'combo'
 
   override get _displayValue() {
     if (this.computedDisabled) return ''
@@ -39,7 +40,7 @@ export class ComboWidget
       const values = typeof rawValues === 'function' ? rawValues() : rawValues
 
       if (values && !Array.isArray(values)) {
-        return values[this.value]
+        return values[String(this.value)]
       }
     }
     return typeof this.value === 'number' ? String(this.value) : this.value
