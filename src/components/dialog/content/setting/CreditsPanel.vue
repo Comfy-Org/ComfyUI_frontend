@@ -124,7 +124,6 @@ import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -173,13 +172,11 @@ const handleCreditsHistoryClick = async () => {
 }
 
 const handleMessageSupport = async () => {
-  if (isCloud) {
-    telemetry?.trackHelpResourceClicked({
-      resource_type: 'help_feedback',
-      is_external: true,
-      source: 'credits_panel'
-    })
-  }
+  telemetry?.trackHelpResourceClicked({
+    resource_type: 'help_feedback',
+    is_external: true,
+    source: 'credits_panel'
+  })
   await commandStore.execute('Comfy.ContactSupport')
 }
 

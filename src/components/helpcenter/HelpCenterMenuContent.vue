@@ -368,13 +368,11 @@ const trackResourceClick = (
     | 'release_notes',
   isExternal: boolean
 ): void => {
-  if (isCloud) {
-    telemetry?.trackHelpResourceClicked({
-      resource_type: resourceType,
-      is_external: isExternal,
-      source: 'help_center'
-    })
-  }
+  telemetry?.trackHelpResourceClicked({
+    resource_type: resourceType,
+    is_external: isExternal,
+    source: 'help_center'
+  })
 }
 
 const openExternalLink = (url: string): void => {
@@ -556,19 +554,15 @@ const getChangelogUrl = (): string => {
 
 // Lifecycle
 onMounted(async () => {
-  if (isCloud) {
-    telemetry?.trackHelpCenterOpened({ source: 'sidebar' })
-  }
+  telemetry?.trackHelpCenterOpened({ source: 'sidebar' })
   if (!hasReleases.value) {
     await releaseStore.fetchReleases()
   }
 })
 
 onBeforeUnmount(() => {
-  if (isCloud) {
-    const timeSpentSeconds = Math.round((Date.now() - openedAt.value) / 1000)
-    telemetry?.trackHelpCenterClosed({ time_spent_seconds: timeSpentSeconds })
-  }
+  const timeSpentSeconds = Math.round((Date.now() - openedAt.value) / 1000)
+  telemetry?.trackHelpCenterClosed({ time_spent_seconds: timeSpentSeconds })
 })
 </script>
 

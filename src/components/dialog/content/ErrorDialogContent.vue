@@ -61,7 +61,6 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -101,13 +100,11 @@ const title = computed<string>(
 )
 
 const showContactSupport = async () => {
-  if (isCloud) {
-    telemetry?.trackHelpResourceClicked({
-      resource_type: 'help_feedback',
-      is_external: true,
-      source: 'error_dialog'
-    })
-  }
+  telemetry?.trackHelpResourceClicked({
+    resource_type: 'help_feedback',
+    is_external: true,
+    source: 'error_dialog'
+  })
   await useCommandStore().execute('Comfy.ContactSupport')
 }
 
