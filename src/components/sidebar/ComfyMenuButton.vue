@@ -4,7 +4,7 @@
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
-    @click="menuRef?.toggle($event)"
+    @click="onLogoMenuClick($event)"
   >
     <ComfyLogoTransparent
       alt="ComfyUI Logo"
@@ -78,6 +78,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import ComfyLogoTransparent from '@/components/icons/ComfyLogoTransparent.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -103,6 +104,13 @@ const { isSmall = false } = defineProps<{
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
+
+const telemetry = useTelemetry()
+
+function onLogoMenuClick(event: MouseEvent) {
+  telemetry?.trackUiButtonClicked({ button_id: 'comfy_logo' })
+  menuRef.value?.toggle(event)
+}
 
 const translateMenuItem = (item: MenuItem): MenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label

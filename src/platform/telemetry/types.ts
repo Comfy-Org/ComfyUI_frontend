@@ -193,6 +193,14 @@ export interface TemplateFilterMetadata {
 }
 
 /**
+ * UI button click tracking metadata
+ */
+export interface UiButtonClickMetadata {
+  /** Canonical identifier for the button (e.g., "comfy_logo") */
+  button_id: string
+}
+
+/**
  * Core telemetry provider interface
  */
 export interface TelemetryProvider {
@@ -239,6 +247,9 @@ export interface TelemetryProvider {
   trackWorkflowExecution(): void
   trackExecutionError(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
+
+  // Generic UI button click events
+  trackUiButtonClicked(metadata: UiButtonClickMetadata): void
 }
 
 /**
@@ -296,7 +307,9 @@ export const TelemetryEvents = {
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
-  EXECUTION_SUCCESS: 'execution_success'
+  EXECUTION_SUCCESS: 'execution_success',
+  // Generic UI Button Click
+  UI_BUTTON_CLICKED: 'app:ui_button_clicked'
 } as const
 
 export type TelemetryEventName =
@@ -322,3 +335,4 @@ export type TelemetryEventProperties =
   | NodeSearchMetadata
   | NodeSearchResultMetadata
   | TemplateFilterMetadata
+  | UiButtonClickMetadata
