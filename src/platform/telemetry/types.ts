@@ -164,9 +164,6 @@ export interface TabCountMetadata {
  */
 export interface SettingChangedMetadata {
   setting_id: string
-  input_type?: string
-  category?: string
-  sub_category?: string
   previous_value?: unknown
   new_value?: unknown
 }

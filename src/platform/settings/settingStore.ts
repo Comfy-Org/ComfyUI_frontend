@@ -80,27 +80,10 @@ export const useSettingStore = defineStore('setting', () => {
       const dialogStore = useDialogStore()
       if (dialogStore.isDialogOpen('global-settings')) {
         const telemetry = useTelemetry()
-        const settingParameter = settingsById.value[key]
-        const { category, subCategory } = getSettingInfo(
-          settingParameter ??
-            ({
-              id: String(key)
-            } as unknown as SettingParams)
-        )
-
-        const inputType = (() => {
-          const settingType = settingParameter?.type
-          if (!settingType) return undefined
-          return typeof settingType === 'function'
-            ? 'custom'
-            : String(settingType)
-        })()
+        const settingId = String(key)
 
         telemetry?.trackSettingChanged({
-          setting_id: String(key),
-          input_type: inputType,
-          category,
-          sub_category: subCategory,
+          setting_id: settingId,
           previous_value: oldValue,
           new_value: newValue
         })

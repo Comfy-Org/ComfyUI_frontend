@@ -431,9 +431,6 @@ describe('useSettingStore', () => {
       expect(trackSettingChanged).toHaveBeenCalledWith(
         expect.objectContaining({
           setting_id: 'main.sub.setting.name',
-          input_type: 'text',
-          category: 'main',
-          sub_category: 'sub',
           previous_value: 'default',
           new_value: 'newvalue'
         })
