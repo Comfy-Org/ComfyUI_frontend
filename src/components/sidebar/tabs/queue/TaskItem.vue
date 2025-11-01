@@ -177,10 +177,12 @@ const formatTime = (time?: number) => {
 
 const onProgressPreviewReceived = async ({ detail }: CustomEvent) => {
   if (props.task.displayStatus === TaskItemDisplayStatus.Running) {
-    if (progressPreviewBlobUrl.value) {
-      URL.revokeObjectURL(progressPreviewBlobUrl.value)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result !== 'string') return
+      progressPreviewBlobUrl.value = reader.result
     }
-    progressPreviewBlobUrl.value = URL.createObjectURL(detail)
+    reader.readAsDataURL(detail)
   }
 }
 

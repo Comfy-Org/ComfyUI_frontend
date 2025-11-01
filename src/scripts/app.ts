@@ -719,18 +719,18 @@ export class ComfyApp {
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
       const { blob, displayNodeId } = detail
-      const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
-        useNodeOutputStore()
-      // Ensure clean up if `executing` event is missed.
-      revokePreviewsByExecutionId(displayNodeId)
-      const blobUrl = URL.createObjectURL(blob)
-      // Preview cleanup is handled in progress_state event to support multiple concurrent previews
+      const { setNodePreviewsByExecutionId } = useNodeOutputStore()
+      const reader = new FileReader()
       const nodeParents = displayNodeId.split(':')
-      for (let i = 1; i <= nodeParents.length; i++) {
-        setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
-          blobUrl
-        ])
+      reader.onloadend = () => {
+        if (typeof reader.result !== 'string') return
+        for (let i = 1; i <= nodeParents.length; i++) {
+          setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
+            reader.result
+          ])
+        }
       }
+      reader.readAsDataURL(blob)
     })
 
     api.init()
