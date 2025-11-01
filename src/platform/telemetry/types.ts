@@ -90,6 +90,22 @@ export interface TemplateMetadata {
 }
 
 /**
+ * Credit topup metadata
+ */
+export interface CreditTopupMetadata {
+  credit_amount: number
+}
+
+/**
+ * Credit top-up succeeded metadata
+ */
+export interface CreditTopupSucceededMetadata {
+  credit_amount: number
+  payment_method?: string
+  transaction_id?: string
+}
+
+/**
  * Workflow import metadata
  */
 export interface WorkflowImportMetadata {
@@ -169,6 +185,10 @@ export interface TelemetryProvider {
 
   // Subscription flow events
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void
+  trackMonthlySubscriptionSucceeded(): void
+  trackAddApiCreditButtonClicked(): void
+  trackApiCreditTopupButtonPurchaseClicked(amount: number): void
+  trackApiCreditTopupSucceeded(metadata: CreditTopupSucceededMetadata): void
   trackRunButton(options?: { subscribe_to_run?: boolean }): void
 
   // Survey flow events
@@ -221,6 +241,11 @@ export const TelemetryEvents = {
   RUN_BUTTON_CLICKED: 'app:run_button_click',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
+  MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
+  ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
+  API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
+    'app:api_credit_topup_button_purchase_clicked',
+  API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -267,6 +292,8 @@ export type TelemetryEventProperties =
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
+  | CreditTopupMetadata
+  | CreditTopupSucceededMetadata
   | WorkflowImportMetadata
   | TemplateLibraryMetadata
   | TemplateLibraryClosedMetadata

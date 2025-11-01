@@ -2,6 +2,8 @@ import type { OverridedMixpanel } from 'mixpanel-browser'
 
 import type {
   AuthMetadata,
+  CreditTopupMetadata,
+  CreditTopupSucceededMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -282,6 +284,27 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName)
   }
 
+  trackAddApiCreditButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  }
+
+  trackMonthlySubscriptionSucceeded(): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
+  }
+
+  trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
+    const metadata: CreditTopupMetadata = {
+      credit_amount: amount
+    }
+    this.trackEvent(
+      TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
+      metadata
+    )
+  }
+
+  trackApiCreditTopupSucceeded(metadata: CreditTopupSucceededMetadata): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED, metadata)
+  }
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
     if (this.isOnboardingMode) {
       // During onboarding, track basic run button click without workflow context
