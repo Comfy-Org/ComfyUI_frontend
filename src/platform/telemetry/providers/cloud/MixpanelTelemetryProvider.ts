@@ -10,6 +10,9 @@ import type {
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  HelpCenterClosedMetadata,
+  HelpCenterOpenedMetadata,
+  HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   PageVisibilityMetadata,
@@ -23,6 +26,7 @@ import type {
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
+  WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
@@ -452,6 +456,22 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
     this.trackEvent(TelemetryEvents.TEMPLATE_FILTER_CHANGED, metadata)
+  }
+
+  trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_OPENED, metadata)
+  }
+
+  trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_RESOURCE_CLICKED, metadata)
+  }
+
+  trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_CLOSED, metadata)
+  }
+
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
   trackWorkflowExecution(): void {
