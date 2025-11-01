@@ -52,7 +52,7 @@ export interface RunButtonProperties {
 /**
  * Run trigger metadata for unified run initiation tracking
  */
-export interface RunTriggeredMetadata {
+interface RunTriggeredMetadata {
   trigger_source: 'button' | 'keybinding' | 'menu'
 }
 
