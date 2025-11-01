@@ -72,7 +72,7 @@ export const useKeybindingService = () => {
           keybinding.commandId === 'Comfy.QueuePromptFront' ||
           keybinding.commandId === 'Comfy.QueueSelectedOutputNodes')
       ) {
-        useTelemetry()?.trackRunTriggered({ trigger_source: 'keybinding' })
+        useTelemetry()?.trackRunTriggeredViaKeybinding()
       }
       await commandStore.execute(keybinding.commandId)
       return

@@ -71,7 +71,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
                   command.id === 'Comfy.QueuePromptFront' ||
                   command.id === 'Comfy.QueueSelectedOutputNodes')
               ) {
-                useTelemetry()?.trackRunTriggered({ trigger_source: 'menu' })
+                useTelemetry()?.trackRunTriggeredViaMenu()
               }
               return commandStore.execute(command.id)
             },

@@ -185,10 +185,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
-  trackRunTriggered(metadata: {
-    trigger_source: 'button' | 'keybinding' | 'menu'
-  }): void {
-    this.trackEvent(TelemetryEvents.RUN_TRIGGERED, metadata)
+  trackRunTriggeredViaKeybinding(): void {
+    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_KEYBINDING)
+  }
+
+  trackRunTriggeredViaMenu(): void {
+    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_MENU)
   }
 
   trackSurvey(
