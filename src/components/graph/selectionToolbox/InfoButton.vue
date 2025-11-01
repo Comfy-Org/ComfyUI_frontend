@@ -7,7 +7,7 @@
     data-testid="info-button"
     text
     severity="secondary"
-    @click="toggleHelp"
+    @click="onInfoClick"
   >
     <i class="icon-[lucide--info] h-4 w-4" />
   </Button>
@@ -17,6 +17,15 @@
 import Button from 'primevue/button'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
+import { useTelemetry } from '@/platform/telemetry'
 
 const { showNodeHelp: toggleHelp } = useSelectionState()
+
+/**
+ * Track node info button click and toggle node help.
+ */
+const onInfoClick = () => {
+  useTelemetry()?.trackUiButtonClicked({ button_id: 'node_info' })
+  toggleHelp()
+}
 </script>

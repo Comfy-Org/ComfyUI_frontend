@@ -40,6 +40,7 @@ import { computed, onUpdated, ref, watch } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -73,6 +74,9 @@ const items = computed(() => {
   const items = navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
     label: subgraph.name,
     command: () => {
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: 'subgraph_breadcrumb_item'
+      })
       const canvas = useCanvasStore().getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
@@ -97,6 +101,9 @@ const home = computed(() => ({
   key: 'root',
   isBlueprint: isBlueprint.value,
   command: () => {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'subgraph_breadcrumb_root'
+    })
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
 

@@ -15,6 +15,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
@@ -34,7 +35,11 @@ const tooltipText = computed(
   () => `${t('shortcuts.keyboardShortcuts')} (${formatKeySequence(command)})`
 )
 
+/**
+ * Toggle keyboard shortcuts panel and track UI button click.
+ */
 const toggleShortcutsPanel = () => {
+  useTelemetry()?.trackUiButtonClicked({ button_id: 'keyboard_shortcuts' })
   bottomPanelStore.togglePanel('shortcuts')
 }
 </script>

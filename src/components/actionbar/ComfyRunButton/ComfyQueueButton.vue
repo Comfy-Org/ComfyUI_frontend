@@ -100,7 +100,7 @@ import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
-const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
+const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => {
@@ -118,6 +118,7 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.onChange')})`,
       tooltip: t('menu.onChangeTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({ button_id: 'run_on_change' })
         queueMode.value = 'change'
       }
     }
@@ -128,6 +129,7 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.instant')})`,
       tooltip: t('menu.instantTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({ button_id: 'run_instant' })
         queueMode.value = 'instant'
       }
     }
@@ -160,6 +162,10 @@ const queuePrompt = async (e: Event) => {
 
   if (isCloud) {
     useTelemetry()?.trackRunButton({ subscribe_to_run: false })
+  }
+
+  if (batchCount.value > 1) {
+    useTelemetry()?.trackUiButtonClicked({ button_id: 'queue_multiple' })
   }
 
   await commandStore.execute(commandId)
