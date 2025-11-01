@@ -338,6 +338,14 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
+  trackRunTriggeredViaKeybinding(): void {
+    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_KEYBINDING)
+  }
+
+  trackRunTriggeredViaMenu(): void {
+    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_MENU)
+  }
+
   trackSurvey(
     stage: 'opened' | 'submitted',
     responses?: SurveyResponses
