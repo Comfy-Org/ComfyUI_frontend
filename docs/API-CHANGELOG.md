@@ -25,3 +25,11 @@ When breaking changes occur, refer to the specific version section below for:
 ---
 
 <!-- Automated changelog entries will be added below -->
+## v1.31.1 (2025-11-01)
+
+Comparing v1.32.0 → v1.31.1. This changelog documents changes to the public API surface that third-party extensions and custom nodes depend on.
+
+_No API changes detected._
+
+---
+
