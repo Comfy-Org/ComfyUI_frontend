@@ -42,12 +42,6 @@ import {
   isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
 import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
-import { getFromWebmFile } from '@/scripts/metadata/ebml'
-import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
-import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
-import { getMp3Metadata } from '@/scripts/metadata/mp3'
-import { getOggMetadata } from '@/scripts/metadata/ogg'
-import { getSvgMetadata } from '@/scripts/metadata/svg'
 import { useDialogService } from '@/services/dialogService'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useExtensionService } from '@/services/extensionService'
@@ -89,20 +83,14 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
-import {
-  getAvifMetadata,
-  getFlacMetadata,
-  getLatentMetadata,
-  getPngMetadata,
-  getWebpMetadata,
-  importA1111
-} from './pnginfo'
+import { importA1111 } from './pnginfo'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { extractFileFromDragEvent } from '@/utils/eventUtils'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1396,208 +1384,49 @@ export class ComfyApp {
    */
   async handleFile(file: File, openSource?: WorkflowOpenSource) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
-    if (file.type === 'image/png') {
-      const pngInfo = await getPngMetadata(file)
-      if (pngInfo?.workflow) {
-        await this.loadGraphData(
-          JSON.parse(pngInfo.workflow),
-          true,
-          true,
-          fileName,
-          { openSource }
-        )
-        return
-      }
-      if (pngInfo?.prompt) {
-        this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
-        return
-      }
-      if (pngInfo?.parameters) {
-        // Note: Not putting this in `importA1111` as it is mostly not used
-        // by external callers, and `importA1111` has no access to `app`.
-        useWorkflowService().beforeLoadNewGraph()
-        importA1111(this.graph, pngInfo.parameters)
-        useWorkflowService().afterLoadNewGraph(
-          fileName,
-          this.graph.serialize() as unknown as ComfyWorkflowJSON
-        )
-        return
-      }
-    }
-    if (file.type === 'image/avif') {
-      const { workflow, prompt } = await getAvifMetadata(file)
-
-      if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
-          openSource
-        })
-        return
-      }
-      if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName)
-        return
-      }
-    }
-    if (file.type === 'image/webp') {
-      const pngInfo = await getWebpMetadata(file)
-      // Support loading workflows from that webp custom node.
-      const workflow = pngInfo?.workflow || pngInfo?.Workflow
-      const prompt = pngInfo?.prompt || pngInfo?.Prompt
-
-      if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
-          openSource
-        })
-        return
-      }
-      if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName)
-        return
-      }
-    }
-    if (file.type === 'audio/mpeg') {
-      const { workflow, prompt } = await getMp3Metadata(file)
-      if (workflow) {
-        this.loadGraphData(workflow, true, true, fileName)
-        return
-      }
-      if (prompt) {
-        this.loadApiJson(prompt, fileName)
-        return
-      }
-    }
-    if (file.type === 'audio/ogg') {
-      const { workflow, prompt } = await getOggMetadata(file)
-      if (workflow) {
-        this.loadGraphData(workflow, true, true, fileName, { openSource })
-        return
-      }
-      if (prompt) {
-        this.loadApiJson(prompt, fileName)
-        return
-      }
-    }
-    if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
-      const pngInfo = await getFlacMetadata(file)
-      const workflow = pngInfo?.workflow || pngInfo?.Workflow
-      const prompt = pngInfo?.prompt || pngInfo?.Prompt
-
-      if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
-          openSource
-        })
-        return
-      }
-      if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName)
-        return
-      }
-    }
-    if (file.type === 'video/webm') {
-      const webmInfo = await getFromWebmFile(file)
-      if (webmInfo.workflow) {
-        this.loadGraphData(webmInfo.workflow, true, true, fileName, {
-          openSource
-        })
-        return
-      }
-      if (webmInfo.prompt) {
-        this.loadApiJson(webmInfo.prompt, fileName)
-        return
-      }
-    }
-    if (
-      file.type === 'video/mp4' ||
-      file.name?.endsWith('.mp4') ||
-      file.name?.endsWith('.mov') ||
-      file.name?.endsWith('.m4v') ||
-      file.type === 'video/quicktime' ||
-      file.type === 'video/x-m4v'
-    ) {
-      const mp4Info = await getFromIsobmffFile(file)
-      if (mp4Info.workflow) {
-        this.loadGraphData(mp4Info.workflow, true, true, fileName, {
-          openSource
-        })
-        return
-      }
-      if (mp4Info.prompt) {
-        this.loadApiJson(mp4Info.prompt, fileName)
-        return
-      }
-    }
-    if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
-      const svgInfo = await getSvgMetadata(file)
-      if (svgInfo.workflow) {
-        this.loadGraphData(svgInfo.workflow, true, true, fileName, {
-          openSource
-        })
-        return
-      }
-      if (svgInfo.prompt) {
-        this.loadApiJson(svgInfo.prompt, fileName)
-        return
-      }
-    }
-    if (file.type === 'model/gltf-binary' || file.name?.endsWith('.glb')) {
-      const gltfInfo = await getGltfBinaryMetadata(file)
-      if (gltfInfo.workflow) {
-        this.loadGraphData(gltfInfo.workflow, true, true, fileName, {
-          openSource
-        })
-        return
-      }
-      if (gltfInfo.prompt) {
-        this.loadApiJson(gltfInfo.prompt, fileName)
-        return
-      }
-    }
-    if (file.type === 'application/json' || file.name?.endsWith('.json')) {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const readerResult = reader.result as string
-        const jsonContent = JSON.parse(readerResult)
-        if (jsonContent?.templates) {
-          this.loadTemplateData(jsonContent)
-          return
-        }
-        if (this.isApiJson(jsonContent)) {
-          this.loadApiJson(jsonContent, fileName)
-          return
-        }
-        await this.loadGraphData(
-          JSON.parse(readerResult),
-          true,
-          true,
-          fileName,
-          { openSource }
-        )
-      }
-      reader.readAsText(file)
+    const workflowData = await getWorkflowDataFromFile(file)
+    if (!workflowData) {
+      this.showErrorOnFileLoad(file)
       return
     }
-    if (file.name?.endsWith('.latent') || file.name?.endsWith('.safetensors')) {
-      const info = await getLatentMetadata(file)
-      // TODO define schema to LatentMetadata
-      if (info.workflow) {
-        await this.loadGraphData(
-          JSON.parse(info.workflow),
-          true,
-          true,
-          fileName,
-          { openSource }
-        )
-        return
-      }
-      if (info.prompt) {
-        this.loadApiJson(JSON.parse(info.prompt), fileName)
-        return
-      }
+
+    const { workflow, prompt, parameters, templates } = workflowData
+
+    if (templates) {
+      this.loadTemplateData({ templates })
+    }
+
+    if (parameters) {
+      // Note: Not putting this in `importA1111` as it is mostly not used
+      // by external callers, and `importA1111` has no access to `app`.
+      useWorkflowService().beforeLoadNewGraph()
+      importA1111(this.graph, parameters)
+      useWorkflowService().afterLoadNewGraph(
+        fileName,
+        this.graph.serialize() as unknown as ComfyWorkflowJSON
+      )
+      return
+    }
+
+    if (workflow) {
+      const workflowObj =
+        typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+      await this.loadGraphData(workflowObj, true, true, fileName, {
+        openSource
+      })
+      return
+    }
+
+    if (prompt) {
+      const promptObj = typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+      this.loadApiJson(promptObj, fileName)
+      return
     }
 
     this.showErrorOnFileLoad(file)
   }
 
+  // @deprecated
   isApiJson(data: unknown) {
     return _.isObject(data) && Object.values(data).every((v) => v.class_type)
   }
