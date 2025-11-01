@@ -97,6 +97,7 @@ const showReport = () => {
 const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
+const telemetry = useTelemetry()
 
 const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
@@ -106,7 +107,11 @@ const title = computed<string>(
  * Open contact support flow from error dialog and track telemetry.
  */
 const showContactSupport = async () => {
-  useTelemetry()?.trackUiButtonClicked({ button_id: 'error_help_fix_this' })
+  telemetry?.trackHelpResourceClicked({
+    resource_type: 'help_feedback',
+    is_external: true,
+    source: 'error_dialog'
+  })
   await useCommandStore().execute('Comfy.ContactSupport')
 }
 

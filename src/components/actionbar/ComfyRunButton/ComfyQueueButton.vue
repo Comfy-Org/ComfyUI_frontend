@@ -160,9 +160,7 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  if (isCloud) {
-    useTelemetry()?.trackRunButton({ subscribe_to_run: false })
-  }
+  useTelemetry()?.trackRunButton({ subscribe_to_run: false })
 
   if (batchCount.value > 1) {
     useTelemetry()?.trackUiButtonClicked({ button_id: 'queue_multiple' })
