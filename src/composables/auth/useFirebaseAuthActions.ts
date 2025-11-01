@@ -7,10 +7,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { startTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useTopupTrackerStore } from '@/stores/topupTrackerStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**
@@ -96,7 +96,7 @@ export const useFirebaseAuthActions = () => {
       )
     }
 
-    useTopupTrackerStore().startTopup(amount)
+    startTopupTracking()
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
@@ -114,7 +114,7 @@ export const useFirebaseAuthActions = () => {
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
     const result = await authStore.fetchBalance()
-    void useTopupTrackerStore().reconcileByFetchingEvents()
+    // Top-up completion tracking happens in UsageLogsTable when events are fetched
     return result
   }, reportError)
 

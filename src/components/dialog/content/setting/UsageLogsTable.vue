@@ -96,19 +96,18 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
+import { checkForCompletedTopup } from '@/platform/telemetry/topupTracker'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
-import { useTopupTrackerStore } from '@/stores/topupTrackerStore'
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
 const customerEventService = useCustomerEventsService()
-const topupTracker = useTopupTrackerStore()
 
 const pagination = ref({
   page: 1,
@@ -162,7 +161,8 @@ const loadEvents = async () => {
         pagination.value.totalPages = response.totalPages
       }
 
-      void topupTracker.reconcileWithEvents(response.events)
+      // Check if a pending top-up has completed
+      checkForCompletedTopup(response.events)
     } else {
       error.value = customerEventService.error.value || 'Failed to load events'
     }
