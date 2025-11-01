@@ -1,7 +1,13 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
+import { app } from '@/scripts/app'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { NodeSourceType } from '@/types/nodeSource'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
+
 import type {
   AuthMetadata,
+  CreditTopupMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -282,13 +288,36 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName)
   }
 
+  trackAddApiCreditButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  }
+
+  trackMonthlySubscriptionSucceeded(): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
+  }
+
+  trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
+    const metadata: CreditTopupMetadata = {
+      credit_amount: amount
+    }
+    this.trackEvent(
+      TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
+      metadata
+    )
+  }
+
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
     if (this.isOnboardingMode) {
       // During onboarding, track basic run button click without workflow context
       this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, {
         subscribe_to_run: options?.subscribe_to_run || false,
         workflow_type: 'custom',
-        workflow_name: 'untitled'
+        workflow_name: 'untitled',
+        custom_node_count: 0,
+        total_node_count: 0,
+        subgraph_count: 0,
+        has_api_nodes: false,
+        api_node_names: []
       })
       return
     }
@@ -298,7 +327,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     const runButtonProperties: RunButtonProperties = {
       subscribe_to_run: options?.subscribe_to_run || false,
       workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled'
+      workflow_name: executionContext.workflow_name ?? 'untitled',
+      custom_node_count: executionContext.custom_node_count,
+      total_node_count: executionContext.total_node_count,
+      subgraph_count: executionContext.subgraph_count,
+      has_api_nodes: executionContext.has_api_nodes,
+      api_node_names: executionContext.api_node_names
     }
 
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
@@ -400,7 +434,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       // During onboarding, track basic execution without workflow context
       this.trackEvent(TelemetryEvents.EXECUTION_START, {
         is_template: false,
-        workflow_name: undefined
+        workflow_name: undefined,
+        custom_node_count: 0,
+        api_node_count: 0,
+        subgraph_count: 0,
+        total_node_count: 0,
+        has_api_nodes: false,
+        api_node_names: []
       })
       return
     }
@@ -423,6 +463,61 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       void this.initializeComposables()
     }
 
+    let nodeCounts: {
+      custom_node_count: number
+      api_node_count: number
+      subgraph_count: number
+      total_node_count: number
+      has_api_nodes: boolean
+      api_node_names: string[]
+    }
+    try {
+      const nodeDefStore = useNodeDefStore()
+      const nodes = collectAllNodes(app.graph)
+
+      let customNodeCount = 0
+      let apiNodeCount = 0
+      let subgraphCount = 0
+      let totalNodeCount = 0
+      let hasApiNodes = false
+      const apiNodeNames = new Set<string>()
+
+      for (const node of nodes) {
+        totalNodeCount += 1
+        const nodeDef = nodeDefStore.nodeDefsByName[node.type ?? '']
+        const isCustomNode =
+          nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
+        const isApiNode = nodeDef?.api_node === true
+        const isSubgraph = node.isSubgraphNode?.() === true
+        if (isCustomNode) customNodeCount += 1
+        if (isApiNode) {
+          apiNodeCount += 1
+          hasApiNodes = true
+          if (nodeDef?.name) apiNodeNames.add(nodeDef.name)
+        }
+        if (isSubgraph) subgraphCount += 1
+      }
+
+      nodeCounts = {
+        custom_node_count: customNodeCount,
+        api_node_count: apiNodeCount,
+        subgraph_count: subgraphCount,
+        total_node_count: totalNodeCount,
+        has_api_nodes: hasApiNodes,
+        api_node_names: Array.from(apiNodeNames)
+      }
+    } catch (error) {
+      console.error('Failed to compute node metrics:', error)
+      nodeCounts = {
+        custom_node_count: 0,
+        api_node_count: 0,
+        subgraph_count: 0,
+        total_node_count: 0,
+        has_api_nodes: false,
+        api_node_names: []
+      }
+    }
+
     if (
       !this._composablesReady ||
       !this._workflowStore ||
@@ -430,7 +525,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     ) {
       return {
         is_template: false,
-        workflow_name: undefined
+        workflow_name: undefined,
+        ...nodeCounts
       }
     }
 
@@ -459,25 +555,29 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
             template_tags: englishMetadata?.tags ?? template?.tags,
             template_models: englishMetadata?.models ?? template?.models,
             template_use_case: englishMetadata?.useCase ?? template?.useCase,
-            template_license: englishMetadata?.license ?? template?.license
+            template_license: englishMetadata?.license ?? template?.license,
+            ...nodeCounts
           }
         }
 
         return {
           is_template: false,
-          workflow_name: activeWorkflow.filename
+          workflow_name: activeWorkflow.filename,
+          ...nodeCounts
         }
       }
 
       return {
         is_template: false,
-        workflow_name: undefined
+        workflow_name: undefined,
+        ...nodeCounts
       }
     } catch (error) {
       console.error('Failed to get execution context:', error)
       return {
         is_template: false,
-        workflow_name: undefined
+        workflow_name: undefined,
+        ...nodeCounts
       }
     }
   }
