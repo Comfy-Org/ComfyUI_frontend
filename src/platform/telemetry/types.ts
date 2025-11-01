@@ -91,7 +91,7 @@ export interface ExecutionSuccessMetadata {
 /**
  * API credit top-up purchase metadata
  */
-export interface {
+export interface CreditTopupMetadata {
   credit_amount: number
 }
 
