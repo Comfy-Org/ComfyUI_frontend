@@ -13,6 +13,13 @@
       background: 'var(--color-subscription-button-gradient)',
       color: 'var(--color-white)'
     }"
+    :pt="{
+      root: {
+        style: {
+          borderColor: 'transparent'
+        }
+      }
+    }"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
   />
