@@ -97,15 +97,6 @@ export interface CreditTopupMetadata {
 }
 
 /**
- * Credit top-up succeeded metadata
- */
-export interface CreditTopupSucceededMetadata {
-  credit_amount: number
-  payment_method?: string
-  transaction_id?: string
-}
-
-/**
  * Workflow import metadata
  */
 export interface WorkflowImportMetadata {
@@ -188,7 +179,7 @@ export interface TelemetryProvider {
   trackMonthlySubscriptionSucceeded(): void
   trackAddApiCreditButtonClicked(): void
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
-  trackApiCreditTopupSucceeded(metadata: CreditTopupSucceededMetadata): void
+  trackApiCreditTopupSucceeded(): void
   trackRunButton(options?: { subscribe_to_run?: boolean }): void
 
   // Survey flow events
@@ -293,7 +284,6 @@ export type TelemetryEventProperties =
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
   | CreditTopupMetadata
-  | CreditTopupSucceededMetadata
   | WorkflowImportMetadata
   | TemplateLibraryMetadata
   | TemplateLibraryClosedMetadata

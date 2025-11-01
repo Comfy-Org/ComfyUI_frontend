@@ -3,7 +3,6 @@ import type { OverridedMixpanel } from 'mixpanel-browser'
 import type {
   AuthMetadata,
   CreditTopupMetadata,
-  CreditTopupSucceededMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -302,8 +301,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackApiCreditTopupSucceeded(metadata: CreditTopupSucceededMetadata): void {
-    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED, metadata)
+  trackApiCreditTopupSucceeded(): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
     if (this.isOnboardingMode) {
