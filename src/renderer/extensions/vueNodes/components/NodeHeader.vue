@@ -17,7 +17,7 @@
   >
     <div class="flex items-center justify-between gap-2.5">
       <!-- Collapse/Expand Button -->
-      <div class="relative flex items-center gap-2.5">
+      <div class="relative grow-1 flex items-center gap-2.5">
         <div class="lod-toggle flex shrink-0 items-center px-0.5">
           <IconButton
             size="fit-content"
@@ -44,7 +44,7 @@
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="lod-toggle flex flex-1 items-center gap-2 truncate text-sm font-bold"
+          class="lod-toggle grow-1 items-center gap-2 truncate text-sm font-bold w-15"
           data-testid="node-title"
         >
           <EditableText
