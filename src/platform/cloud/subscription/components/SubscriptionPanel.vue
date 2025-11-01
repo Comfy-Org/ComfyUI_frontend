@@ -61,6 +61,7 @@
                 v-else
                 :label="$t('subscription.subscribeNow')"
                 size="small"
+                :fluid="false"
                 class="text-xs"
                 @subscribed="handleRefresh"
               />

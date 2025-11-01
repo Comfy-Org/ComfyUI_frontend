@@ -433,12 +433,8 @@ export class ComfyApi extends EventTarget {
     await this.#waitForAuthInitialization()
 
     // Add Firebase JWT token if user is logged in
-    // Force refresh token on reconnection to avoid 401 errors
-    const isReconnecting =
-      options.headers && 'X-Reconnecting' in options.headers
     try {
-      const authHeader =
-        await useFirebaseAuthStore().getAuthHeader(isReconnecting)
+      const authHeader = await useFirebaseAuthStore().getAuthHeader()
       if (authHeader) {
         if (Array.isArray(options.headers)) {
           for (const [key, value] of Object.entries(authHeader)) {
