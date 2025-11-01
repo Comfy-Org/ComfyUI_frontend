@@ -13,6 +13,7 @@ import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordCon
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
@@ -107,7 +108,14 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ErrorDialogContent,
-      props
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_close'
+          })
+        }
+      }
     })
   }
 
@@ -189,7 +197,14 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-error',
       component: ErrorDialogContent,
-      props
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_close'
+          })
+        }
+      }
     })
   }
 
