@@ -537,7 +537,13 @@ export class ComfyApp {
         const fileMaybe = await extractFileFromDragEvent(event)
         if (!fileMaybe) return
 
-        await this.handleFile(fileMaybe, 'file_drop')
+        const workspace = useWorkspaceStore()
+        workspace.spinner = true
+        try {
+          await this.handleFile(fileMaybe, 'file_drop')
+        } finally {
+          workspace.spinner = false
+        }
       } catch (error: unknown) {
         useToastStore().addAlert(t('toastMessages.dropFileError', { error }))
       }
