@@ -22,6 +22,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { SUPPORT_URL } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
+import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -466,7 +467,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async () => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -474,7 +478,10 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const batchCount = useQueueSettingsStore().batchCount
 
-        useTelemetry()?.trackWorkflowExecution()
+        if (isCloud) {
+          useTelemetry()?.trackRunButton(metadata)
+          useTelemetry()?.trackWorkflowExecution()
+        }
 
         await app.queuePrompt(0, batchCount)
       }
@@ -485,7 +492,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt (Front)',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async () => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -493,7 +503,10 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const batchCount = useQueueSettingsStore().batchCount
 
-        useTelemetry()?.trackWorkflowExecution()
+        if (isCloud) {
+          useTelemetry()?.trackRunButton(metadata)
+          useTelemetry()?.trackWorkflowExecution()
+        }
 
         await app.queuePrompt(-1, batchCount)
       }
@@ -503,7 +516,10 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Selected Output Nodes',
       versionAdded: '1.19.6',
-      function: async () => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -526,6 +542,7 @@ export function useCoreCommands(): ComfyCommand[] {
         // Get execution IDs for all selected output nodes and their descendants
         const executionIds =
           getExecutionIdsForSelectedNodes(selectedOutputNodes)
+
         if (executionIds.length === 0) {
           toastStore.add({
             severity: 'error',
@@ -534,6 +551,10 @@ export function useCoreCommands(): ComfyCommand[] {
             life: 3000
           })
           return
+        }
+        if (isCloud) {
+          useTelemetry()?.trackRunButton(metadata)
+          useTelemetry()?.trackWorkflowExecution()
         }
         await app.queuePrompt(0, batchCount, executionIds)
       }
