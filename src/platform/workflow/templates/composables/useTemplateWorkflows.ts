@@ -138,7 +138,9 @@ export function useTemplateWorkflows() {
         }
 
         dialogStore.closeDialog()
-        await app.loadGraphData(json, true, true, workflowName)
+        await app.loadGraphData(json, true, true, workflowName, {
+          openSource: 'template'
+        })
 
         return true
       }
@@ -159,7 +161,9 @@ export function useTemplateWorkflows() {
       }
 
       dialogStore.closeDialog()
-      await app.loadGraphData(json, true, true, workflowName)
+      await app.loadGraphData(json, true, true, workflowName, {
+        openSource: 'template'
+      })
 
       return true
     } catch (error) {

@@ -371,6 +371,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
   }
 
+  trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
