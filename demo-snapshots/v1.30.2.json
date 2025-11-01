@@ -1,0 +1,311 @@
+{
+  "types": {
+    "NodeId": {
+      "kind": "type",
+      "name": "NodeId",
+      "text": "export type NodeId = string;",
+      "exported": true
+    },
+    "WorkflowId": {
+      "kind": "type",
+      "name": "WorkflowId",
+      "text": "export type WorkflowId = string;",
+      "exported": true
+    }
+  },
+  "interfaces": {
+    "ComfyApi": {
+      "kind": "interface",
+      "name": "ComfyApi",
+      "members": [
+        {
+          "name": "apiURL",
+          "kind": "method",
+          "parameters": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false
+            }
+          ],
+          "returnType": "string"
+        },
+        {
+          "name": "fileURL",
+          "kind": "method",
+          "parameters": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false
+            }
+          ],
+          "returnType": "string"
+        },
+        {
+          "name": "queuePromptAsync",
+          "kind": "method",
+          "parameters": [
+            {
+              "name": "prompt",
+              "type": "object",
+              "optional": false
+            },
+            {
+              "name": "options",
+              "type": "{ priority?: number }",
+              "optional": true
+            }
+          ],
+          "returnType": "Promise<{ prompt_id: string; number: number }>"
+        },
+        {
+          "name": "cancelPrompt",
+          "kind": "method",
+          "parameters": [
+            {
+              "name": "prompt_id",
+              "type": "string",
+              "optional": false
+            }
+          ],
+          "returnType": "Promise<void>"
+        },
+        {
+          "name": "interrupt",
+          "kind": "method",
+          "parameters": [],
+          "returnType": "Promise<void>"
+        },
+        {
+          "name": "getQueueStatus",
+          "kind": "method",
+          "parameters": [],
+          "returnType": "Promise<{ queue_running: any[]; queue_pending: any[] }>"
+        }
+      ],
+      "exported": true,
+      "heritage": []
+    },
+    "NodeDef": {
+      "kind": "interface",
+      "name": "NodeDef",
+      "members": [
+        {
+          "name": "name",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "display_name",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "python_module",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "input",
+          "type": "{\n    required?: Record<string, any>;\n    optional?: Record<string, any>;\n  }",
+          "optional": false
+        },
+        {
+          "name": "output",
+          "type": "string[]",
+          "optional": false
+        },
+        {
+          "name": "output_name",
+          "type": "string[]",
+          "optional": false
+        }
+      ],
+      "exported": true,
+      "heritage": []
+    },
+    "WorkflowMetadata": {
+      "kind": "interface",
+      "name": "WorkflowMetadata",
+      "members": [
+        {
+          "name": "title",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "author",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "version",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "tags",
+          "type": "string[]",
+          "optional": true
+        },
+        {
+          "name": "thumbnail",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "exported": true,
+      "heritage": []
+    },
+    "ExtensionMetadata": {
+      "kind": "interface",
+      "name": "ExtensionMetadata",
+      "members": [
+        {
+          "name": "id",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "version",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "exported": true,
+      "heritage": []
+    }
+  },
+  "enums": {
+    "NodeStatus": {
+      "kind": "enum",
+      "name": "NodeStatus",
+      "members": [
+        {
+          "name": "IDLE",
+          "value": "\"idle\""
+        },
+        {
+          "name": "QUEUED",
+          "value": "\"queued\""
+        },
+        {
+          "name": "RUNNING",
+          "value": "\"running\""
+        },
+        {
+          "name": "ERROR",
+          "value": "\"error\""
+        },
+        {
+          "name": "COMPLETED",
+          "value": "\"completed\""
+        }
+      ],
+      "exported": true
+    }
+  },
+  "functions": {},
+  "classes": {
+    "WorkflowManager": {
+      "kind": "class",
+      "name": "WorkflowManager",
+      "members": [
+        {
+          "name": "workflows",
+          "type": "Map<string, object>",
+          "visibility": "public"
+        },
+        {
+          "name": "cache",
+          "type": "Map<string, object>",
+          "visibility": "public"
+        }
+      ],
+      "methods": [
+        {
+          "name": "loadWorkflow",
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false
+            }
+          ],
+          "returnType": "Promise<object>",
+          "visibility": "public"
+        },
+        {
+          "name": "saveWorkflow",
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false
+            },
+            {
+              "name": "data",
+              "type": "object",
+              "optional": false
+            }
+          ],
+          "returnType": "Promise<void>",
+          "visibility": "public"
+        },
+        {
+          "name": "deleteWorkflow",
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false
+            }
+          ],
+          "returnType": "Promise<void>",
+          "visibility": "public"
+        },
+        {
+          "name": "searchWorkflows",
+          "parameters": [
+            {
+              "name": "query",
+              "type": "string",
+              "optional": false
+            }
+          ],
+          "returnType": "Promise<object[]>",
+          "visibility": "public"
+        }
+      ],
+      "exported": true,
+      "heritage": []
+    }
+  },
+  "constants": {}
+}
