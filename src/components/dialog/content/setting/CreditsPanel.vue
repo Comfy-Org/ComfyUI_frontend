@@ -93,6 +93,13 @@
           @click="handleFaqClick"
         />
         <Button
+          :label="$t('subscription.partnerNodesCredits')"
+          text
+          severity="secondary"
+          icon="pi pi-question-circle"
+          @click="handleOpenPartnerNodesInfo"
+        />
+        <Button
           :label="$t('credits.messageSupport')"
           text
           severity="secondary"
@@ -166,6 +173,13 @@ const handleMessageSupport = async () => {
 
 const handleFaqClick = () => {
   window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
+}
+
+const handleOpenPartnerNodesInfo = () => {
+  window.open(
+    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    '_blank'
+  )
 }
 
 const creditHistory = ref<CreditHistoryItemData[]>([])
