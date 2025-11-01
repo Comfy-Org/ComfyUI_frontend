@@ -7,6 +7,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
@@ -83,6 +84,9 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
+    const { isActiveSubscription } = useSubscription()
+    if (!isActiveSubscription.value) return
+
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
       currency: 'usd'

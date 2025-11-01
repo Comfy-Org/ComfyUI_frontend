@@ -138,13 +138,14 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -196,6 +197,7 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
+const telemetry = useTelemetry()
 
 // Emits
 const emit = defineEmits<{
@@ -207,6 +209,7 @@ const isSubmenuVisible = ref(false)
 const submenuRef = ref<HTMLElement | null>(null)
 const submenuStyle = ref<CSSProperties>({})
 let hoverTimeout: number | null = null
+const openedAt = ref<number>(Date.now())
 
 // Computed
 const hasReleases = computed(() => releaseStore.releases.length > 0)
@@ -226,6 +229,7 @@ const moreItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.desktopUserGuide'),
       visible: isElectron(),
       action: () => {
+        trackResourceClick('docs', true)
         const docsUrl =
           electronAPI().getPlatform() === 'darwin'
             ? EXTERNAL_LINKS.DESKTOP_GUIDE_MACOS
@@ -281,6 +285,7 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-book',
       label: t('helpCenter.docs'),
       action: () => {
+        trackResourceClick('docs', true)
         openExternalLink(EXTERNAL_LINKS.DOCS)
         emit('close')
       }
@@ -291,6 +296,7 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-discord',
       label: 'Discord',
       action: () => {
+        trackResourceClick('discord', true)
         openExternalLink(EXTERNAL_LINKS.DISCORD)
         emit('close')
       }
@@ -301,6 +307,7 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-github',
       label: t('helpCenter.github'),
       action: () => {
+        trackResourceClick('github', true)
         openExternalLink(EXTERNAL_LINKS.GITHUB)
         emit('close')
       }
@@ -311,6 +318,7 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-question-circle',
       label: t('helpCenter.helpFeedback'),
       action: () => {
+        trackResourceClick('help_feedback', false)
         void commandStore.execute('Comfy.ContactSupport')
         emit('close')
       }
@@ -326,6 +334,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
+        trackResourceClick('manager', false)
         await useManagerState().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
@@ -349,6 +358,23 @@ const menuItems = computed<MenuItem[]>(() => {
 })
 
 // Utility Functions
+const trackResourceClick = (
+  resourceType:
+    | 'docs'
+    | 'discord'
+    | 'github'
+    | 'help_feedback'
+    | 'manager'
+    | 'release_notes',
+  isExternal: boolean
+): void => {
+  telemetry?.trackHelpResourceClicked({
+    resource_type: resourceType,
+    is_external: isExternal,
+    source: 'help_center'
+  })
+}
+
 const openExternalLink = (url: string): void => {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
@@ -504,6 +530,7 @@ const onReinstall = (): void => {
 }
 
 const onReleaseClick = (release: ReleaseNote): void => {
+  trackResourceClick('release_notes', true)
   void releaseStore.handleShowChangelog(release.version)
   const versionAnchor = formatVersionAnchor(release.version)
   const changelogUrl = `${getChangelogUrl()}#${versionAnchor}`
@@ -512,6 +539,7 @@ const onReleaseClick = (release: ReleaseNote): void => {
 }
 
 const onUpdate = (_: ReleaseNote): void => {
+  trackResourceClick('docs', true)
   openExternalLink(EXTERNAL_LINKS.UPDATE_GUIDE)
   emit('close')
 }
@@ -526,9 +554,15 @@ const getChangelogUrl = (): string => {
 
 // Lifecycle
 onMounted(async () => {
+  telemetry?.trackHelpCenterOpened({ source: 'sidebar' })
   if (!hasReleases.value) {
     await releaseStore.fetchReleases()
   }
+})
+
+onBeforeUnmount(() => {
+  const timeSpentSeconds = Math.round((Date.now() - openedAt.value) / 1000)
+  telemetry?.trackHelpCenterClosed({ time_spent_seconds: timeSpentSeconds })
 })
 </script>
 
