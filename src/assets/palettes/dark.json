@@ -52,7 +52,7 @@
     "comfy_base": {
       "fg-color": "#fff",
       "bg-color": "#202020",
-      "comfy-menu-bg": "#353535",
+      "comfy-menu-bg": "#11141a",
       "comfy-menu-secondary-bg": "#303030",
       "comfy-input-bg": "#222",
       "input-text": "#ddd",

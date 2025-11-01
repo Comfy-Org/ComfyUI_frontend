@@ -1,15 +1,18 @@
 <template>
   <Button
     v-if="!isLoggedIn"
-    :label="t('auth.login.loginButton')"
     outlined
+    rounded
     severity="secondary"
-    class="text-neutral border-black/50 px-4 capitalize dark-theme:border-white/50 dark-theme:text-white"
+    class="size-8 border-black/50 bg-transparent text-black hover:bg-[var(--interface-panel-hover-surface)] dark-theme:border-white/50 dark-theme:text-white"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
-  />
-
+  >
+    <template #icon>
+      <i class="icon-[lucide--user] size-4" />
+    </template>
+  </Button>
   <Popover
     ref="popoverRef"
     class="p-2"
