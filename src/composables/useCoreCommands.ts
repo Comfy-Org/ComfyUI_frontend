@@ -74,6 +74,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const telemetry = useTelemetry()
 
   const bottomPanelStore = useBottomPanelStore()
 
@@ -721,6 +722,13 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Issues',
       versionAdded: '1.5.5',
       function: () => {
+        if (isCloud) {
+          telemetry?.trackHelpResourceClicked({
+            resource_type: 'github',
+            is_external: true,
+            source: 'menu'
+          })
+        }
         window.open(
           'https://github.com/comfyanonymous/ComfyUI/issues',
           '_blank'
@@ -734,6 +742,13 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Docs',
       versionAdded: '1.5.5',
       function: () => {
+        if (isCloud) {
+          telemetry?.trackHelpResourceClicked({
+            resource_type: 'docs',
+            is_external: true,
+            source: 'menu'
+          })
+        }
         window.open('https://docs.comfy.org/', '_blank')
       }
     },
@@ -744,6 +759,13 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Comfy-Org Discord',
       versionAdded: '1.5.5',
       function: () => {
+        if (isCloud) {
+          telemetry?.trackHelpResourceClicked({
+            resource_type: 'discord',
+            is_external: true,
+            source: 'menu'
+          })
+        }
         window.open('https://www.comfy.org/discord', '_blank')
       }
     },
@@ -801,6 +823,13 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Forum',
       versionAdded: '1.8.2',
       function: () => {
+        if (isCloud) {
+          telemetry?.trackHelpResourceClicked({
+            resource_type: 'help_feedback',
+            is_external: true,
+            source: 'menu'
+          })
+        }
         window.open('https://forum.comfy.org/', '_blank')
       }
     },
