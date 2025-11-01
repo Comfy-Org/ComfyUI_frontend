@@ -7,7 +7,6 @@ import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 import type {
   AuthMetadata,
@@ -19,18 +18,20 @@ import type {
   NodeSearchResultMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  SettingChangedMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
   TelemetryEventProperties,
   TelemetryProvider,
   TemplateFilterMetadata,
-  TemplateLibraryMetadata,
   TemplateLibraryClosedMetadata,
+  TemplateLibraryMetadata,
   TemplateMetadata,
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
+import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -280,6 +281,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+  }
+
+  trackSettingChanged(metadata: SettingChangedMetadata): void {
+    this.trackEvent(TelemetryEvents.SETTING_CHANGED, metadata)
   }
 
   getExecutionContext(): ExecutionContext {

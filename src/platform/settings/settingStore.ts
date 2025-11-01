@@ -4,9 +4,11 @@ import { compare, valid } from 'semver'
 import { ref } from 'vue'
 
 import type { SettingParams } from '@/platform/settings/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export const getSettingInfo = (setting: SettingParams) => {
@@ -73,6 +75,37 @@ export const useSettingStore = defineStore('setting', () => {
     onChange(settingsById.value[key], newValue, oldValue)
     settingValues.value[key] = newValue
     await api.storeSetting(key, newValue)
+
+    try {
+      const dialogStore = useDialogStore()
+      if (dialogStore.isDialogOpen('global-settings')) {
+        const telemetry = useTelemetry()
+        const param = settingsById.value[key]
+        const { category, subCategory } = getSettingInfo(
+          param ??
+            ({
+              id: String(key)
+            } as unknown as SettingParams)
+        )
+
+        const inputType = (() => {
+          const type = param?.type
+          if (!type) return undefined
+          return typeof type === 'function' ? 'custom' : String(type)
+        })()
+
+        telemetry?.trackSettingChanged({
+          setting_id: String(key),
+          input_type: inputType,
+          category,
+          sub_category: subCategory,
+          previous_value: oldValue,
+          new_value: newValue
+        })
+      }
+    } catch (err) {
+      console.error('Failed to track setting change', err)
+    }
   }
 
   /**
