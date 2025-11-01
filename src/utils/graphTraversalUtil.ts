@@ -542,7 +542,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
  */
 export function getExecutionIdsForSelectedNodes(
   selectedNodes: LGraphNode[],
-  startGraph = selectedNodes[0].graph
+  startGraph = selectedNodes[0]?.graph
 ): NodeExecutionId[] {
   if (!startGraph) return []
   const rootGraph = startGraph.rootGraph
