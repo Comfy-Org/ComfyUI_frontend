@@ -1057,17 +1057,17 @@ export const CORE_SETTINGS: SettingParams[] = [
    */
   {
     id: 'Comfy.VueNodes.Enabled',
-    name: 'Enable Vue node rendering (hidden)',
-    type: 'hidden',
+    name: 'Modern Node Design (Vue Nodes)',
+    type: 'boolean',
     tooltip:
-      'Render nodes as Vue components instead of canvas. Hidden; toggle via Experimental keybinding.',
+      'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
     experimental: true,
     versionAdded: '1.27.1'
   },
   {
     id: 'Comfy.VueNodes.AutoScaleLayout',
-    name: 'Auto-scale layout for Vue nodes',
+    name: 'Auto-scale layout (Vue nodes)',
     tooltip:
       'Automatically scale node positions when switching to Vue rendering to prevent overlap',
     type: 'boolean',

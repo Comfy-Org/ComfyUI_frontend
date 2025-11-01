@@ -5158,7 +5158,7 @@
   },
   "LumaConceptsNode": {
     "display_name": "Luma Concepts",
-    "description": "Holds one or more Camera Concepts for use with Luma Text to Video and Luma Image to Video nodes.",
+    "description": "Camera Concepts for use with Luma Text to Video and Luma Image to Video nodes.",
     "inputs": {
       "concept1": {
         "name": "concept1"
@@ -5462,7 +5462,7 @@
   },
   "MinimaxImageToVideoNode": {
     "display_name": "MiniMax Image to Video",
-    "description": "Generates videos synchronously based on an image and prompt, and optional parameters using MiniMax's API.",
+    "description": "Generates videos synchronously based on an image and prompt, and optional parameters.",
     "inputs": {
       "image": {
         "name": "image",
@@ -5492,7 +5492,7 @@
   },
   "MinimaxTextToVideoNode": {
     "display_name": "MiniMax Text to Video",
-    "description": "Generates videos synchronously based on a prompt, and optional parameters using MiniMax's API.",
+    "description": "Generates videos synchronously based on a prompt, and optional parameters.",
     "inputs": {
       "prompt_text": {
         "name": "prompt_text",
@@ -9027,7 +9027,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_color"
+        "name": "recraft_color",
+        "tooltip": null
       }
     }
   },
@@ -9044,7 +9045,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_controls"
+        "name": "recraft_controls",
+        "tooltip": null
       }
     }
   },
@@ -9055,6 +9057,11 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftCrispUpscaleNode": {
@@ -9063,6 +9070,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9097,6 +9109,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9137,6 +9154,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftRemoveBackgroundNode": {
@@ -9145,6 +9167,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -9177,6 +9207,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftStyleV3DigitalIllustration": {
@@ -9189,7 +9224,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9204,7 +9240,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9218,7 +9255,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9232,7 +9270,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9270,6 +9309,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftTextToVectorNode": {
@@ -9306,6 +9350,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftVectorizeImageNode": {
@@ -9314,6 +9363,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10238,6 +10292,38 @@
       "crf": {
         "name": "crf",
         "tooltip": "Higher crf means lower quality with a smaller file size, lower crf means higher quality higher filesize."
+      }
+    }
+  },
+  "ScaleROPE": {
+    "display_name": "ScaleROPE",
+    "description": "Scale and shift the ROPE of the model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scale_x": {
+        "name": "scale_x"
+      },
+      "shift_x": {
+        "name": "shift_x"
+      },
+      "scale_y": {
+        "name": "scale_y"
+      },
+      "shift_y": {
+        "name": "shift_y"
+      },
+      "scale_t": {
+        "name": "scale_t"
+      },
+      "shift_t": {
+        "name": "shift_t"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

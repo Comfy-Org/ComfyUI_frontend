@@ -990,6 +990,7 @@
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Focus Mode": "Focus Mode",
+    "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
     "Queue Panel": "Queue Panel",
@@ -1044,7 +1045,7 @@
     "UV": "UV",
     "ContextMenu": "Context Menu",
     "Reroute": "Reroute",
-    "Load 3D": "Load 3D",
+    "Load 3D": "Load 3D & Animation",
     "Camera": "Camera",
     "Scene": "Scene",
     "3D": "3D",
@@ -1056,7 +1057,8 @@
     "3DViewer": "3DViewer",
     "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
-    "PlanCredits": "Plan & Credits"
+    "PlanCredits": "Plan & Credits",
+    "VueNodes": "Vue Nodes"
   },
   "serverConfigItems": {
     "listen": {
@@ -1426,18 +1428,17 @@
     "camera": "Camera",
     "light": "Light",
     "switchingMaterialMode": "Switching Material Mode...",
-    "edgeThreshold": "Edge Threshold",
     "export": "Export",
     "exportModel": "Export Model",
     "exportingModel": "Exporting model...",
+    "reloadingModel": "Reloading model...",
     "uploadTexture": "Upload Texture",
     "applyingTexture": "Applying Texture...",
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
-      "depth": "Depth",
-      "lineart": "Lineart"
+      "depth": "Depth"
     },
     "upDirections": {
       "original": "Original"
@@ -1463,7 +1464,10 @@
       "exportSettings": "Export Settings",
       "modelSettings": "Model Settings"
     },
-    "openIn3DViewer": "Open in 3D Viewer"
+    "openIn3DViewer": "Open in 3D Viewer",
+    "dropToLoad": "Drop 3D model to load",
+    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
+    "uploadingModel": "Uploading 3D model..."
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -1472,6 +1476,7 @@
     "failedToApplyTexture": "Failed to apply texture",
     "no3dSceneToExport": "No 3D scene to export",
     "failedToExportModel": "Failed to export model as {format}",
+    "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
     "interrupted": "Execution has been interrupted",
@@ -1504,7 +1509,10 @@
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
-    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer"
+    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
+    "failedToLoadBackgroundImage": "Failed to load background image",
+    "failedToLoadModel": "Failed to load 3D model",
+    "modelLoadedSuccessfully": "3D model loaded successfully"
   },
   "auth": {
     "apiKey": {
@@ -1647,24 +1655,31 @@
   },
   "subscription": {
     "title": "Subscription",
+    "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
     "beta": "BETA",
     "perMonth": "USD / month",
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
-    "apiNodesBalance": "\"API Nodes\" Credit Balance",
-    "apiNodesDescription": "For running commercial/proprietary models",
+    "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
+    "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
     "viewUsageHistory": "View usage history",
     "addApiCredits": "Add API credits",
+    "addCredits": "Add credits",
+    "monthlyCreditsRollover": "These credits will rollover to the next month",
+    "monthlyBonusDescription": "Monthly credit bonus",
+    "prepaidDescription": "Pre-paid credits",
+    "prepaidCreditsInfo": "Credits purchased separately that don't expire",
+    "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
-      "benefit1": "$10 in monthly credits for API models — top up when needed",
+      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
     },
     "required": {
@@ -1673,7 +1688,9 @@
       "subscribe": "Subscribe"
     },
     "subscribeToRun": "Subscribe to Run",
-    "subscribeNow": "Subscribe Now"
+    "subscribeNow": "Subscribe Now",
+    "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
+    "partnerNodesCredits": "Partner Nodes credits"
   },
   "userSettings": {
     "title": "User Settings",
@@ -1812,5 +1829,13 @@
         "Close": "Close"
       }
     }
+  },
+  "vueNodesMigration": {
+    "message": "Prefer the classic node design?",
+    "button": "Open Settings"
+  },
+  "vueNodesBanner": {
+    "message": "Nodes just got a new look and feel",
+    "tryItOut": "Try it out"
   }
 }

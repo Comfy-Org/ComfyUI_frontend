@@ -21,6 +21,8 @@
       @keyup.enter="blurInputElement"
       @keyup.escape="cancelEditing"
       @click.stop
+      @pointerdown.stop.capture
+      @pointermove.stop.capture
     />
   </div>
 </template>

@@ -47,8 +47,8 @@ export function useLayoutSync() {
           liteNode.size[0] !== layout.size.width ||
           liteNode.size[1] !== layout.size.height
         ) {
-          liteNode.size[0] = layout.size.width
-          liteNode.size[1] = layout.size.height
+          // Use setSize() to trigger onResize callback
+          liteNode.setSize([layout.size.width, layout.size.height])
         }
       }
 
