@@ -141,6 +141,18 @@ export interface TabCountMetadata {
 }
 
 /**
+ * Settings change metadata
+ */
+export interface SettingChangedMetadata {
+  setting_id: string
+  input_type?: string
+  category?: string
+  sub_category?: string
+  previous_value?: unknown
+  new_value?: unknown
+}
+
+/**
  * Node search metadata
  */
 export interface NodeSearchMetadata {
@@ -215,6 +227,9 @@ export interface TelemetryProvider {
   trackExecutionError(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
 
+  // Settings events
+  trackSettingChanged(metadata: SettingChangedMetadata): void
+
   // App lifecycle management
   markAppReady?(): void
   identifyUser?(userId: string): void
@@ -263,6 +278,9 @@ export const TelemetryEvents = {
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
 
+  // Settings
+  SETTING_CHANGED: 'app:setting_changed',
+
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
@@ -291,3 +309,4 @@ export type TelemetryEventProperties =
   | NodeSearchMetadata
   | NodeSearchResultMetadata
   | TemplateFilterMetadata
+  | SettingChangedMetadata
