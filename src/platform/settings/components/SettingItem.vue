@@ -31,6 +31,7 @@ import FormItem from '@/components/common/FormItem.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingOption, SettingParams } from '@/platform/settings/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{
@@ -75,7 +76,19 @@ const formItem = computed(() => {
 
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
-const updateSettingValue = async (value: any) => {
-  await settingStore.set(props.setting.id, value)
+const updateSettingValue = async (newValue: any) => {
+  const telemetry = useTelemetry()
+  const settingId = props.setting.id
+  const previousValue = settingStore.get(settingId)
+
+  await settingStore.set(settingId, newValue)
+
+  if (previousValue !== newValue) {
+    telemetry?.trackSettingChanged({
+      setting_id: settingId,
+      previous_value: previousValue,
+      new_value: newValue
+    })
+  }
 }
 </script>

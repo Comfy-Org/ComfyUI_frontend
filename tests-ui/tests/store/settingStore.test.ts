@@ -8,7 +8,6 @@ import {
 import type { SettingParams } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useDialogStore } from '@/stores/dialogStore'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({
@@ -16,14 +15,6 @@ vi.mock('@/scripts/api', () => ({
     getSettings: vi.fn(),
     storeSetting: vi.fn()
   }
-}))
-
-// Mock telemetry provider
-const trackSettingChanged = vi.fn()
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackSettingChanged
-  }))
 }))
 
 // Mock the app
@@ -406,50 +397,6 @@ describe('useSettingStore', () => {
         'test.setting',
         'differentvalue'
       )
-    })
-
-    it('should send telemetry when global settings dialog is visible', async () => {
-      const setting: SettingParams = {
-        id: 'main.sub.setting.name',
-        name: 'Telemetry Visible',
-        type: 'text',
-        defaultValue: 'default'
-      }
-
-      store.addSetting(setting)
-
-      const dialogStore = useDialogStore()
-      dialogStore.showDialog({
-        key: 'global-settings',
-        title: 'Settings',
-        component: {}
-      })
-
-      await store.set('main.sub.setting.name', 'newvalue')
-
-      expect(trackSettingChanged).toHaveBeenCalledTimes(1)
-      expect(trackSettingChanged).toHaveBeenCalledWith(
-        expect.objectContaining({
-          setting_id: 'main.sub.setting.name',
-          previous_value: 'default',
-          new_value: 'newvalue'
-        })
-      )
-    })
-
-    it('should not send telemetry when global settings dialog is not visible', async () => {
-      const setting: SettingParams = {
-        id: 'main.sub.setting.name',
-        name: 'Telemetry Invisible',
-        type: 'text',
-        defaultValue: 'default'
-      }
-
-      store.addSetting(setting)
-
-      await store.set('main.sub.setting.name', 'newvalue')
-
-      expect(trackSettingChanged).not.toHaveBeenCalled()
     })
 
     describe('object mutation prevention', () => {
