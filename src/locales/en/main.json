@@ -1472,6 +1472,8 @@
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
+    "failedToQueue": "Failed to queue",
+    "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
     "no3dSceneToExport": "No 3D scene to export",
