@@ -158,10 +158,10 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-    if (isCloud) {
-      useTelemetry()?.trackRunTriggered({ trigger_source: 'button' })
-      useTelemetry()?.trackRunButton({ subscribe_to_run: false })
-    }
+  if (isCloud) {
+    useTelemetry()?.trackRunTriggered({ trigger_source: 'button' })
+    useTelemetry()?.trackRunButton({ subscribe_to_run: false })
+  }
 
   await commandStore.execute(commandId)
 }
