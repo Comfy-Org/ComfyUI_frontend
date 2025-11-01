@@ -467,10 +467,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
+      function: async (metadata?: { subscribe_to_run?: boolean }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -480,7 +477,6 @@ export function useCoreCommands(): ComfyCommand[] {
 
         if (isCloud) {
           useTelemetry()?.trackRunButton(metadata)
-          useTelemetry()?.trackWorkflowExecution()
         }
 
         await app.queuePrompt(0, batchCount)
@@ -492,10 +488,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt (Front)',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
+      function: async (metadata?: { subscribe_to_run?: boolean }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -505,7 +498,6 @@ export function useCoreCommands(): ComfyCommand[] {
 
         if (isCloud) {
           useTelemetry()?.trackRunButton(metadata)
-          useTelemetry()?.trackWorkflowExecution()
         }
 
         await app.queuePrompt(-1, batchCount)
@@ -516,10 +508,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Selected Output Nodes',
       versionAdded: '1.19.6',
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
+      function: async (metadata?: { subscribe_to_run?: boolean }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -554,7 +543,6 @@ export function useCoreCommands(): ComfyCommand[] {
         }
         if (isCloud) {
           useTelemetry()?.trackRunButton(metadata)
-          useTelemetry()?.trackWorkflowExecution()
         }
         await app.queuePrompt(0, batchCount, executionIds)
       }
