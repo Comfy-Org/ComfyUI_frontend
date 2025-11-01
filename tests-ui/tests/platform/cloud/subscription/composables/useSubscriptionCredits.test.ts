@@ -60,9 +60,9 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
 
 // Mock formatMetronomeCurrency
 vi.mock('@/utils/formatUtil', () => ({
-  formatMetronomeCurrency: vi.fn((micros: number) => {
-    // Simple mock that converts micros to dollars
-    return (micros / 1000000).toFixed(2)
+  formatMetronomeCurrency: vi.fn((amount: number) => {
+    // Converts cents to dollars (despite the field name containing "micros")
+    return (amount / 100).toFixed(2)
   })
 }))
 
@@ -89,7 +89,7 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format amount_micros correctly', () => {
-      authStore.balance = { amount_micros: 5000000 } as any
+      authStore.balance = { amount_micros: 500 } as any
       const { totalCredits } = useSubscriptionCredits()
       expect(totalCredits.value).toBe('5.00')
     })
@@ -102,7 +102,7 @@ describe('useSubscriptionCredits', () => {
         throw new Error('Formatting error')
       })
 
-      authStore.balance = { amount_micros: 5000000 } as any
+      authStore.balance = { amount_micros: 500 } as any
       const { totalCredits } = useSubscriptionCredits()
       expect(totalCredits.value).toBe('0.00')
     })
@@ -116,7 +116,7 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format cloud_credit_balance_micros correctly', () => {
-      authStore.balance = { cloud_credit_balance_micros: 2500000 } as any
+      authStore.balance = { cloud_credit_balance_micros: 250 } as any
       const { monthlyBonusCredits } = useSubscriptionCredits()
       expect(monthlyBonusCredits.value).toBe('2.50')
     })
@@ -130,7 +130,7 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format prepaid_balance_micros correctly', () => {
-      authStore.balance = { prepaid_balance_micros: 7500000 } as any
+      authStore.balance = { prepaid_balance_micros: 750 } as any
       const { prepaidCredits } = useSubscriptionCredits()
       expect(prepaidCredits.value).toBe('7.50')
     })

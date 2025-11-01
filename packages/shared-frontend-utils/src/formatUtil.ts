@@ -370,6 +370,10 @@ export function formatMetronomeCurrency(
  * This conversion is commonly used in financial systems to avoid floating-point precision issues
  * by representing monetary values as integers.
  *
+ * Note: Despite the function name and the field names in the API (e.g., `amount_micros`),
+ * some API responses actually return cents (1/100) instead of true micros (1/1,000,000).
+ * Use `formatMetronomeCurrency` for displaying balance amounts from the API.
+ *
  * @param usd - The amount in US dollars to convert
  * @returns The amount in microdollars (multiplied by 1,000,000)
  * @example
