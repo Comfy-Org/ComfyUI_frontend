@@ -36,7 +36,10 @@
 
     <div class="task-item-details">
       <div class="tag-wrapper status-tag-group">
-        <Tag v-if="isFlatTask && task.isHistory" class="node-name-tag">
+        <Tag
+          v-if="!isCloud && isFlatTask && task.isHistory"
+          class="node-name-tag"
+        >
           <Button
             class="task-node-link"
             :label="`${node?.type} (#${node?.id})`"
@@ -78,6 +81,7 @@ import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
