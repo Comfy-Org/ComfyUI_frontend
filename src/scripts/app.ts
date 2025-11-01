@@ -1361,6 +1361,14 @@ export class ComfyApp {
       'afterConfigureGraph',
       missingNodeTypes
     )
+
+    // Track workflow import with missing node information
+    useTelemetry()?.trackWorkflowImported({
+      missing_node_count: missingNodeTypes.length,
+      missing_node_types: missingNodeTypes.map((node) =>
+        typeof node === 'string' ? node : node.type
+      )
+    })
     await useWorkflowService().afterLoadNewGraph(
       workflow,
       this.graph.serialize() as unknown as ComfyWorkflowJSON
