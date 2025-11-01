@@ -1428,7 +1428,7 @@ export class ComfyApp {
       const { workflow, prompt } = await getAvifMetadata(file)
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName,  {
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
           openSource
         })
         return
@@ -1445,7 +1445,7 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName,  {
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
           openSource
         })
         return
@@ -1483,7 +1483,9 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, { openSource })
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
+          openSource
+        })
         return
       }
       if (prompt) {
@@ -1494,7 +1496,9 @@ export class ComfyApp {
     if (file.type === 'video/webm') {
       const webmInfo = await getFromWebmFile(file)
       if (webmInfo.workflow) {
-        this.loadGraphData(webmInfo.workflow, true, true, fileName, { openSource })
+        this.loadGraphData(webmInfo.workflow, true, true, fileName, {
+          openSource
+        })
         return
       }
       if (webmInfo.prompt) {
@@ -1512,7 +1516,9 @@ export class ComfyApp {
     ) {
       const mp4Info = await getFromIsobmffFile(file)
       if (mp4Info.workflow) {
-        this.loadGraphData(mp4Info.workflow, true, true, fileName, { openSource })
+        this.loadGraphData(mp4Info.workflow, true, true, fileName, {
+          openSource
+        })
         return
       }
       if (mp4Info.prompt) {
@@ -1523,7 +1529,9 @@ export class ComfyApp {
     if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
       const svgInfo = await getSvgMetadata(file)
       if (svgInfo.workflow) {
-        this.loadGraphData(svgInfo.workflow, true, true, fileName, { openSource })
+        this.loadGraphData(svgInfo.workflow, true, true, fileName, {
+          openSource
+        })
         return
       }
       if (svgInfo.prompt) {
@@ -1534,7 +1542,9 @@ export class ComfyApp {
     if (file.type === 'model/gltf-binary' || file.name?.endsWith('.glb')) {
       const gltfInfo = await getGltfBinaryMetadata(file)
       if (gltfInfo.workflow) {
-        this.loadGraphData(gltfInfo.workflow, true, true, fileName, { openSource })
+        this.loadGraphData(gltfInfo.workflow, true, true, fileName, {
+          openSource
+        })
         return
       }
       if (gltfInfo.prompt) {
@@ -1555,7 +1565,13 @@ export class ComfyApp {
           this.loadApiJson(jsonContent, fileName)
           return
         }
-        await this.loadGraphData(JSON.parse(readerResult), true, true, fileName, { openSource })
+        await this.loadGraphData(
+          JSON.parse(readerResult),
+          true,
+          true,
+          fileName,
+          { openSource }
+        )
       }
       reader.readAsText(file)
       return
