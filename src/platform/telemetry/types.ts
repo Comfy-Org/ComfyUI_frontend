@@ -208,6 +208,11 @@ export interface TelemetryProvider {
   trackApiCreditTopupSucceeded(): void
   trackRunButton(options?: { subscribe_to_run?: boolean }): void
 
+  // Credit top-up tracking (composition with internal utilities)
+  startTopupTracking(): void
+  checkForCompletedTopup(events: any[] | undefined | null): boolean
+  clearTopupTracking(): void
+
   // Survey flow events
   trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 

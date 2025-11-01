@@ -28,6 +28,7 @@ describe('topupTracker', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    // Dynamically import to ensure fresh module state
     topupTracker = await import('@/platform/telemetry/topupTracker')
   })
 

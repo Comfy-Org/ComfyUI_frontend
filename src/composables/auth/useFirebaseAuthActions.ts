@@ -7,7 +7,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import { startTopupTracking } from '@/platform/telemetry/topupTracker'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -96,7 +96,7 @@ export const useFirebaseAuthActions = () => {
       )
     }
 
-    startTopupTracking()
+    useTelemetry()?.startTopupTracking()
     window.open(response.checkout_url, '_blank')
   }, reportError)
 

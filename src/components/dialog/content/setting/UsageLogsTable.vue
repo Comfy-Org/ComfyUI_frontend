@@ -96,7 +96,7 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
-import { checkForCompletedTopup } from '@/platform/telemetry/topupTracker'
+import { useTelemetry } from '@/platform/telemetry'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
@@ -162,7 +162,7 @@ const loadEvents = async () => {
       }
 
       // Check if a pending top-up has completed
-      checkForCompletedTopup(response.events)
+      useTelemetry()?.checkForCompletedTopup(response.events)
     } else {
       error.value = customerEventService.error.value || 'Failed to load events'
     }
