@@ -1,5 +1,10 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
+import {
+  checkForCompletedTopup as checkTopupUtil,
+  clearTopupTracking as clearTopupUtil,
+  startTopupTracking as startTopupUtil
+} from '@/platform/telemetry/topupTracker'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
@@ -304,6 +309,23 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
       metadata
     )
+  }
+
+  trackApiCreditTopupSucceeded(): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  // Credit top-up tracking methods (composition with utility functions)
+  startTopupTracking(): void {
+    startTopupUtil()
+  }
+
+  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+    return checkTopupUtil(events)
+  }
+
+  clearTopupTracking(): void {
+    clearTopupUtil()
   }
 
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
