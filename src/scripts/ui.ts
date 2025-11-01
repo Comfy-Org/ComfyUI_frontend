@@ -1,9 +1,9 @@
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus, type TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -582,16 +582,16 @@ export class ComfyUI {
           ]
         ),
         $el('div.comfy-menu-btns', [
-            $el('button', {
-              id: 'queue-front-button',
-              textContent: 'Queue Front',
-              onclick: () => {
-                if (isCloud) {
-                  useTelemetry()?.trackRunTriggered({ trigger_source: 'menu' })
-                }
-                app.queuePrompt(-1, this.batchCount)
+          $el('button', {
+            id: 'queue-front-button',
+            textContent: 'Queue Front',
+            onclick: () => {
+              if (isCloud) {
+                useTelemetry()?.trackRunTriggered({ trigger_source: 'menu' })
               }
-            }),
+              app.queuePrompt(-1, this.batchCount)
+            }
+          }),
           $el('button', {
             $: (b) => (this.queue.button = b as HTMLButtonElement),
             id: 'comfy-view-queue-button',
