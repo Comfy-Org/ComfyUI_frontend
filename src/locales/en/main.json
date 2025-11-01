@@ -1925,6 +1925,7 @@
   },
   "subscription": {
     "title": "Subscription",
+    "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
     "beta": "BETA",
     "perMonth": "USD / month",
