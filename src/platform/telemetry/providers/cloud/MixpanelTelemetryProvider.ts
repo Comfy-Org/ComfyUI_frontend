@@ -9,6 +9,7 @@ import type {
   NodeSearchResultMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  SettingChangedMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -411,6 +412,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+  }
+
+  trackSettingChanged(metadata: SettingChangedMetadata): void {
+    this.trackEvent(TelemetryEvents.SETTING_CHANGED, metadata)
   }
 
   getExecutionContext(): ExecutionContext {
