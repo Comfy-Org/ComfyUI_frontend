@@ -36,7 +36,10 @@
 
     <div class="task-item-details">
       <div class="tag-wrapper status-tag-group">
-        <Tag v-if="!isCloud && isFlatTask && task.isHistory" class="node-name-tag">
+        <Tag
+          v-if="!isCloud && isFlatTask && task.isHistory"
+          class="node-name-tag"
+        >
           <Button
             class="task-node-link"
             :label="`${node?.type} (#${node?.id})`"
