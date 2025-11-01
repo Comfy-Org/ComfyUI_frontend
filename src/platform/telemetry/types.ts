@@ -205,6 +205,7 @@ export interface TelemetryProvider {
   trackMonthlySubscriptionSucceeded(): void
   trackAddApiCreditButtonClicked(): void
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
+  trackApiCreditTopupSucceeded(): void
   trackRunButton(options?: { subscribe_to_run?: boolean }): void
   trackRunTriggeredViaKeybinding(): void
   trackRunTriggeredViaMenu(): void
@@ -265,6 +266,7 @@ export const TelemetryEvents = {
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
+  API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',

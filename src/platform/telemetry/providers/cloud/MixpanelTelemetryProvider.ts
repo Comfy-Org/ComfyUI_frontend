@@ -168,6 +168,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackApiCreditTopupSucceeded(): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {
     const executionContext = this.getExecutionContext()
 

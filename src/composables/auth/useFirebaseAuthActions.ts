@@ -11,6 +11,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useTopupTrackerStore } from '@/stores/topupTrackerStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**
@@ -99,7 +100,7 @@ export const useFirebaseAuthActions = () => {
       )
     }
 
-    // Go to Stripe checkout page
+    useTopupTrackerStore().startTopup(amount)
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
@@ -116,7 +117,9 @@ export const useFirebaseAuthActions = () => {
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.fetchBalance()
+    const result = await authStore.fetchBalance()
+    void useTopupTrackerStore().reconcileByFetchingEvents()
+    return result
   }, reportError)
 
   const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {
