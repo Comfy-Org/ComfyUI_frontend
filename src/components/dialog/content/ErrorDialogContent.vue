@@ -91,7 +91,9 @@ const reportOpen = ref(false)
  * Open the error report content and track telemetry.
  */
 const showReport = () => {
-  useTelemetry()?.trackUiButtonClicked({ button_id: 'error_show_report' })
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_dialog_show_report_clicked'
+  })
   reportOpen.value = true
 }
 const toast = useToast()

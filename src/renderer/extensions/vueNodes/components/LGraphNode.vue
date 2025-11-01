@@ -416,7 +416,9 @@ const handleHeaderTitleUpdate = (newTitle: string) => {
 }
 
 const handleEnterSubgraph = () => {
-  useTelemetry()?.trackUiButtonClicked({ button_id: 'open_subgraph' })
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'graph_node_open_subgraph_clicked'
+  })
   const graph = app.graph?.rootGraph || app.graph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')

@@ -25,7 +25,9 @@ const { showNodeHelp: toggleHelp } = useSelectionState()
  * Track node info button click and toggle node help.
  */
 const onInfoClick = () => {
-  useTelemetry()?.trackUiButtonClicked({ button_id: 'node_info' })
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'selection_toolbox_node_info_opened'
+  })
   toggleHelp()
 }
 </script>

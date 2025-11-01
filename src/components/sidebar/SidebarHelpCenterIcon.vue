@@ -109,7 +109,9 @@ const sidebarLocation = computed(() =>
  * Toggle Help Center and track UI button click.
  */
 const toggleHelpCenter = () => {
-  useTelemetry()?.trackUiButtonClicked({ button_id: 'help_center' })
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_help_center_toggled'
+  })
   helpCenterStore.toggle()
 }
 

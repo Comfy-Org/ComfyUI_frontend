@@ -75,7 +75,7 @@ const items = computed(() => {
     label: subgraph.name,
     command: () => {
       useTelemetry()?.trackUiButtonClicked({
-        button_id: 'subgraph_breadcrumb_item'
+        button_id: 'breadcrumb_subgraph_item_selected'
       })
       const canvas = useCanvasStore().getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
@@ -102,7 +102,7 @@ const home = computed(() => ({
   isBlueprint: isBlueprint.value,
   command: () => {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'subgraph_breadcrumb_root'
+      button_id: 'breadcrumb_subgraph_root_selected'
     })
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')

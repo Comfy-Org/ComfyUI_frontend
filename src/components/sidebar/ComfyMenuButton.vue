@@ -108,7 +108,9 @@ const menuRef = ref<
 const telemetry = useTelemetry()
 
 function onLogoMenuClick(event: MouseEvent) {
-  telemetry?.trackUiButtonClicked({ button_id: 'comfy_logo' })
+  telemetry?.trackUiButtonClicked({
+    button_id: 'sidebar_comfy_menu_opened'
+  })
   menuRef.value?.toggle(event)
 }
 
@@ -176,7 +178,9 @@ const extraMenuItems = computed(() => [
     label: t('g.settings'),
     icon: 'mdi mdi-cog-outline',
     command: () => {
-      telemetry?.trackUiButtonClicked({ button_id: 'settings_menu' })
+      telemetry?.trackUiButtonClicked({
+        button_id: 'sidebar_settings_menu_opened'
+      })
       showSettings()
     }
   },

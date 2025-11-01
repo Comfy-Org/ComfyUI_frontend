@@ -137,7 +137,9 @@ watch(visible, async (newVisible) => {
  * Track run button handle drag start using mousedown on the drag handle.
  */
 useEventListener(dragHandleRef, 'mousedown', () => {
-  useTelemetry()?.trackUiButtonClicked({ button_id: 'run_button_handle' })
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'actionbar_run_handle_drag_start'
+  })
 })
 
 const lastDragState = ref({
