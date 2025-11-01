@@ -938,6 +938,10 @@ export class ComfyApp {
 
     await useExtensionService().invokeExtensionsAsync('setup')
     useTelemetry()?.markAppReady?.()
+    useTelemetry()?.setGraphContext?.(
+      this.graph,
+      useNodeDefStore().nodeDefsByName
+    )
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,

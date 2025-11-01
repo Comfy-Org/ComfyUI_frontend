@@ -11,6 +11,8 @@
  * 2. `grep -RinE --include='*.js' 'trackWorkflow|trackEvent|mixpanel' dist/` (should find nothing)
  * 3. Check dist/assets/*.js files contain no tracking code
  */
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -241,6 +243,10 @@ export interface TelemetryProvider {
 
   // App lifecycle management
   markAppReady?(): void
+  setGraphContext?(
+    graph: LGraph,
+    nodeDefsByName: Record<string, ComfyNodeDefImpl>
+  ): void
   identifyUser?(userId: string): void
 }
 

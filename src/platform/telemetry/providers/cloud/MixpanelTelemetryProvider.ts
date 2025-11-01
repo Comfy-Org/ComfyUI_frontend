@@ -1,9 +1,8 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
-import { app } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
-import { reduceAllNodes } from '@/utils/graphTraversalUtil'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { NodeMetrics } from '@/platform/telemetry/utils/computeNodeMetrics'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import type {
   AuthMetadata,
@@ -27,7 +26,6 @@ import type {
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -61,6 +59,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private _currentUser: any = null
   private _settingStore: any = null
   private _composablesReady = false
+
+  // Injected dependencies to avoid circular dependency with app.ts
+  private _graph: LGraph | null = null
+  private _nodeDefsByName: Record<string, ComfyNodeDefImpl> = {}
 
   constructor() {
     const token = window.__CONFIG__?.mixpanel_token
@@ -123,6 +125,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     try {
       this.mixpanel.identify(userId)
 
+      // If we have pending survey responses, set them now that user is identified
+      if (this.pendingSurveyResponses) {
+        this.setSurveyUserProperties(this.pendingSurveyResponses)
+        this.pendingSurveyResponses = null
+      }
+
       // Load existing survey data if available (only when app is ready)
       if (!this.isOnboardingMode) {
         this.initializeExistingSurveyData()
@@ -140,6 +148,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.isOnboardingMode = false
     // Trigger composable initialization now that it's safe
     void this.initializeComposables()
+  }
+
+  /**
+   * Set the graph context for node metrics computation.
+   * Must be called after app.graph is initialized to enable full telemetry context.
+   * @param graph - The LiteGraph instance
+   * @param nodeDefsByName - Map of node type names to their definitions
+   */
+  setGraphContext(
+    graph: LGraph,
+    nodeDefsByName: Record<string, ComfyNodeDefImpl>
+  ): void {
+    this._graph = graph
+    this._nodeDefsByName = nodeDefsByName
   }
 
   /**
@@ -274,10 +296,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 
-  trackUserLoggedIn(): void {
-    this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
-  }
-
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
     const eventName =
       event === 'modal_opened'
@@ -286,6 +304,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
     this.trackEvent(eventName)
   }
+
   trackAddApiCreditButtonClicked(): void {
     this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
   }
@@ -353,20 +372,45 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         ? TelemetryEvents.USER_SURVEY_OPENED
         : TelemetryEvents.USER_SURVEY_SUBMITTED
 
-    // Apply normalization to survey responses
-    const normalizedResponses = responses
-      ? normalizeSurveyResponses(responses)
-      : undefined
+    // Include survey responses as event properties for submitted events
+    const eventProperties =
+      stage === 'submitted' && responses
+        ? {
+            industry: responses.industry,
+            useCase: responses.useCase,
+            familiarity: responses.familiarity,
+            making: responses.making
+          }
+        : undefined
 
-    this.trackEvent(eventName, normalizedResponses)
+    this.trackEvent(eventName, eventProperties)
 
-    // If this is a survey submission, also set user properties with normalized data
-    if (stage === 'submitted' && normalizedResponses && this.mixpanel) {
-      try {
-        this.mixpanel.people.set(normalizedResponses)
-      } catch (error) {
-        console.error('Failed to set survey user properties:', error)
+    // Also set survey responses as persistent user properties
+    if (stage === 'submitted' && responses && this.mixpanel) {
+      // During onboarding, we need to defer user property setting until user is identified
+      if (this.isOnboardingMode) {
+        // Store responses to be set once user is identified
+        this.pendingSurveyResponses = responses
+      } else {
+        this.setSurveyUserProperties(responses)
       }
+    }
+  }
+
+  private pendingSurveyResponses: SurveyResponses | null = null
+
+  private setSurveyUserProperties(responses: SurveyResponses): void {
+    if (!this.mixpanel) return
+
+    try {
+      this.mixpanel.people.set({
+        survey_industry: responses.industry,
+        survey_use_case: responses.useCase,
+        survey_familiarity: responses.familiarity,
+        survey_making: responses.making
+      })
+    } catch (error) {
+      console.error('Failed to set survey user properties:', error)
     }
   }
 
@@ -439,57 +483,22 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   getExecutionContext(): ExecutionContext {
+    // Try to initialize composables if not ready and not in onboarding mode
     if (!this._composablesReady && !this.isOnboardingMode) {
       void this.initializeComposables()
     }
 
-    const nodeDefStore = useNodeDefStore()
-
-    type NodeMetrics = {
-      custom_node_count: number
-      api_node_count: number
-      subgraph_count: number
-      total_node_count: number
-      has_api_nodes: boolean
-      api_node_names: string[]
-    }
-
-    const nodeCounts = reduceAllNodes<NodeMetrics>(
-      app.graph,
-      (metrics, node) => {
-        const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-        const isCustomNode =
-          nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-        const isApiNode = nodeDef?.api_node === true
-        const isSubgraph = node.isSubgraphNode?.() === true
-
-        if (isApiNode) {
-          metrics.has_api_nodes = true
-          const canonicalName = nodeDef?.name
-          if (
-            canonicalName &&
-            !metrics.api_node_names.includes(canonicalName)
-          ) {
-            metrics.api_node_names.push(canonicalName)
-          }
+    // Return zero node counts if graph context not injected yet
+    const nodeCounts: NodeMetrics = this._graph
+      ? computeNodeMetrics(this._graph, this._nodeDefsByName)
+      : {
+          custom_node_count: 0,
+          api_node_count: 0,
+          subgraph_count: 0,
+          total_node_count: 0,
+          has_api_nodes: false,
+          api_node_names: []
         }
-
-        metrics.custom_node_count += isCustomNode ? 1 : 0
-        metrics.api_node_count += isApiNode ? 1 : 0
-        metrics.subgraph_count += isSubgraph ? 1 : 0
-        metrics.total_node_count += 1
-
-        return metrics
-      },
-      {
-        custom_node_count: 0,
-        api_node_count: 0,
-        subgraph_count: 0,
-        total_node_count: 0,
-        has_api_nodes: false,
-        api_node_names: []
-      }
-    )
 
     if (
       !this._composablesReady ||
