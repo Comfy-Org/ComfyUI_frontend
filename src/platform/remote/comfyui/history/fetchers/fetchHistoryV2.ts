@@ -18,9 +18,14 @@ import type { HistoryResponseV2 } from '../types/historyV2Types'
  */
 export async function fetchHistoryV2(
   fetchApi: (url: string) => Promise<Response>,
-  maxItems: number = 200
+  maxItems: number = 200,
+  offset?: number
 ): Promise<HistoryV1Response> {
-  const res = await fetchApi(`/history_v2?max_items=${maxItems}`)
+  let url = `/history_v2?max_items=${maxItems}`
+  if (offset !== undefined) {
+    url += `&offset=${offset}`
+  }
+  const res = await fetchApi(url)
   const rawData: HistoryResponseV2 = await res.json()
   const adaptedHistory = mapHistoryV2toHistory(rawData)
   return { History: adaptedHistory }
