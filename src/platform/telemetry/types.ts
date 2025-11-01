@@ -227,6 +227,14 @@ export interface HelpCenterClosedMetadata {
 }
 
 /**
+ * Workflow created metadata
+ */
+export interface WorkflowCreatedMetadata {
+  workflow_type: 'blank' | 'default'
+  previous_workflow_had_nodes: boolean
+}
+
+/**
  * Core telemetry provider interface
  */
 export interface TelemetryProvider {
@@ -273,6 +281,9 @@ export interface TelemetryProvider {
   trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void
   trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void
   trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void
+
+  // Workflow creation events
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void
 
   // Workflow execution events
   trackWorkflowExecution(): void
@@ -337,6 +348,9 @@ export const TelemetryEvents = {
   HELP_RESOURCE_CLICKED: 'app:help_resource_clicked',
   HELP_CENTER_CLOSED: 'app:help_center_closed',
 
+  // Workflow Creation
+  WORKFLOW_CREATED: 'app:workflow_created',
+
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
@@ -369,3 +383,4 @@ export type TelemetryEventProperties =
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
+  | WorkflowCreatedMetadata

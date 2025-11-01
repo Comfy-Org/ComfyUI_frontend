@@ -31,6 +31,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateLibraryClosedMetadata,
   TemplateMetadata,
+  WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
@@ -282,6 +283,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void {
     this.trackEvent(TelemetryEvents.HELP_CENTER_CLOSED, metadata)
+  }
+
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
   trackWorkflowExecution(): void {

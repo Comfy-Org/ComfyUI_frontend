@@ -103,7 +103,16 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'New Blank Workflow',
       menubarLabel: 'New',
       category: 'essentials' as const,
-      function: () => workflowService.loadBlankWorkflow()
+      function: async () => {
+        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        await workflowService.loadBlankWorkflow()
+        if (isCloud) {
+          telemetry?.trackWorkflowCreated({
+            workflow_type: 'blank',
+            previous_workflow_had_nodes: previousWorkflowHadNodes
+          })
+        }
+      }
     },
     {
       id: 'Comfy.OpenWorkflow',
@@ -119,7 +128,16 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.LoadDefaultWorkflow',
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
-      function: () => workflowService.loadDefaultWorkflow()
+      function: async () => {
+        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        await workflowService.loadDefaultWorkflow()
+        if (isCloud) {
+          telemetry?.trackWorkflowCreated({
+            workflow_type: 'default',
+            previous_workflow_had_nodes: previousWorkflowHadNodes
+          })
+        }
+      }
     },
     {
       id: 'Comfy.SaveWorkflow',
