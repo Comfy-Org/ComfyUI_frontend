@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { useTelemetry } from '@/platform/telemetry'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -34,6 +35,8 @@ export const useCustomerEventsService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const { d } = useI18n()
+  const telemetry = useTelemetry()
+  const seenCreditAddedEventIds = new Set<string>()
 
   const handleRequestError = (
     err: unknown,
@@ -179,7 +182,7 @@ export const useCustomerEventsService = () => {
       return null
     }
 
-    return executeRequest<CustomerEventsResponse>(
+    const result = await executeRequest<CustomerEventsResponse>(
       () =>
         customerApiClient.get('/customers/events', {
           params: { page, limit },
@@ -187,6 +190,33 @@ export const useCustomerEventsService = () => {
         }),
       { errorContext, routeSpecificErrors }
     )
+
+    if (result?.events?.length) {
+      for (const evt of result.events) {
+        if (evt?.event_id && evt.event_type === EventType.CREDIT_ADDED) {
+          if (!seenCreditAddedEventIds.has(evt.event_id)) {
+            const amount = Number((evt as any)?.params?.amount)
+            if (!Number.isNaN(amount) && amount > 0) {
+              const creditAmountUsd = amount / 100
+              const paymentMethod = (evt as any)?.params?.payment_method as
+                | string
+                | undefined
+              const transactionId = (evt as any)?.params?.transaction_id as
+                | string
+                | undefined
+              telemetry?.trackApiCreditTopupSucceeded({
+                credit_amount: creditAmountUsd,
+                payment_method: paymentMethod,
+                transaction_id: transactionId
+              })
+            }
+            seenCreditAddedEventIds.add(evt.event_id)
+          }
+        }
+      }
+    }
+
+    return result
   }
 
   return {
