@@ -50,6 +50,13 @@ export interface RunButtonProperties {
 }
 
 /**
+ * Run trigger metadata for unified run initiation tracking
+ */
+export interface RunTriggeredMetadata {
+  trigger_source: 'button' | 'keybinding' | 'menu'
+}
+
+/**
  * Execution context for workflow tracking
  */
 export interface ExecutionContext {
@@ -206,6 +213,7 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked(): void
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
   trackRunButton(options?: { subscribe_to_run?: boolean }): void
+  trackRunTriggered(metadata: RunTriggeredMetadata): void
 
   // Survey flow events
   trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -255,6 +263,7 @@ export const TelemetryEvents = {
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
+  RUN_TRIGGERED: 'app:run_triggered',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
@@ -311,6 +320,7 @@ export type TelemetryEventProperties =
   | TemplateMetadata
   | ExecutionContext
   | RunButtonProperties
+  | RunTriggeredMetadata
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
   | CreditTopupMetadata
