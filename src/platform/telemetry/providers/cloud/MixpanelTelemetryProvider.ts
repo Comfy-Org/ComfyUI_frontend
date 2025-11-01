@@ -175,6 +175,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       subscribe_to_run: options?.subscribe_to_run || false,
       workflow_type: executionContext.is_template ? 'template' : 'custom',
       workflow_name: executionContext.workflow_name ?? 'untitled',
+      custom_node_count: executionContext.custom_node_count,
       total_node_count: executionContext.total_node_count,
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,

@@ -42,6 +42,7 @@ export interface RunButtonProperties {
   subscribe_to_run: boolean
   workflow_type: 'template' | 'custom'
   workflow_name: string
+  custom_node_count: number
   total_node_count: number
   subgraph_count: number
   has_api_nodes: boolean
