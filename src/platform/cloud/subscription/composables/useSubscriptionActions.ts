@@ -3,6 +3,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -14,6 +16,7 @@ export function useSubscriptionActions() {
   const dialogService = useDialogService()
   const authActions = useFirebaseAuthActions()
   const commandStore = useCommandStore()
+  const telemetry = useTelemetry()
   const { fetchStatus, formattedRenewalDate } = useSubscription()
 
   const isLoadingSupport = ref(false)
@@ -35,6 +38,13 @@ export function useSubscriptionActions() {
   const handleMessageSupport = async () => {
     try {
       isLoadingSupport.value = true
+      if (isCloud) {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'help_feedback',
+          is_external: true,
+          source: 'subscription'
+        })
+      }
       await commandStore.execute('Comfy.ContactSupport')
     } catch (error) {
       console.error('[useSubscriptionActions] Error contacting support:', error)
