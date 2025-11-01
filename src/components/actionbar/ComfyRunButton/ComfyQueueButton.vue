@@ -88,7 +88,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import {
   useQueuePendingTaskCountStore,
@@ -163,14 +162,6 @@ const queuePrompt = async (e: Event) => {
   const commandId = isShiftPressed
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
-
-  useTelemetry()?.trackRunButton({ subscribe_to_run: false })
-
-  if (batchCount.value > 1) {
-    useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_multiple_batches_submitted'
-    })
-  }
 
   await commandStore.execute(commandId)
 }
