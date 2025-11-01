@@ -15,7 +15,7 @@
           <UserCredit text-class="text-3xl font-bold" />
           <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
-            v-else
+            v-else-if="isActiveSubscription"
             :label="$t('credits.purchaseCredits')"
             :loading="loading"
             @click="handlePurchaseCreditsClick"
@@ -123,6 +123,7 @@ import { computed, ref, watch } from 'vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -139,6 +140,7 @@ const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
+const { isActiveSubscription } = useSubscription()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 

@@ -49,6 +49,7 @@ import { getMp3Metadata } from '@/scripts/metadata/mp3'
 import { getOggMetadata } from '@/scripts/metadata/ogg'
 import { getSvgMetadata } from '@/scripts/metadata/svg'
 import { useDialogService } from '@/services/dialogService'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -703,9 +704,12 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        useDialogService().showTopUpCreditsDialog({
-          isInsufficientCredits: true
-        })
+        const { isActiveSubscription } = useSubscription()
+        if (isActiveSubscription.value) {
+          useDialogService().showTopUpCreditsDialog({
+            isInsufficientCredits: true
+          })
+        }
       } else {
         useDialogService().showExecutionErrorDialog(detail)
       }
