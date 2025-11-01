@@ -175,7 +175,10 @@ const extraMenuItems = computed(() => [
     key: 'settings',
     label: t('g.settings'),
     icon: 'mdi mdi-cog-outline',
-    command: () => showSettings()
+    command: () => {
+      telemetry?.trackUiButtonClicked({ button_id: 'settings_menu' })
+      showSettings()
+    }
   },
   {
     key: 'manage-extensions',
