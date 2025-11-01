@@ -546,7 +546,7 @@ export function getExecutionIdsForSelectedNodes(
 ): NodeExecutionId[] {
   if (!startGraph) return []
   const rootGraph = startGraph.rootGraph
-  const parentPath = startGraph?.isRootGraph
+  const parentPath = startGraph.isRootGraph
     ? ''
     : findPartialExecutionPathToGraph(startGraph, rootGraph)
   if (parentPath === undefined) return []
@@ -569,11 +569,13 @@ function findPartialExecutionPathToGraph(
   target: LGraph,
   root: LGraph
 ): string | undefined {
-  for (const node of root.nodes)
-    if (node.isSubgraphNode()) {
-      if (node.subgraph === target) return `${node.id}`
-      const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
-      if (subpath !== undefined) return node.id + ':' + subpath
-    }
+  for (const node of root.nodes) {
+    if (!node.isSubgraphNode()) continue
+
+    if (node.subgraph === target) return `${node.id}`
+
+    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
+    if (subpath !== undefined) return node.id + ':' + subpath
+  }
   return undefined
 }
