@@ -19,7 +19,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -620,7 +619,7 @@ export class ComfyApp {
           event.dataTransfer.files.length &&
           event.dataTransfer.files[0].type !== 'image/bmp'
         ) {
-          await this.handleFile(event.dataTransfer.files[0], 'file_drop')
+          await this.handleFile(event.dataTransfer.files[0])
         } else {
           // Try loading the first URI in the transfer list
           const validTypes = ['text/uri-list', 'text/x-moz-url']
@@ -631,10 +630,7 @@ export class ComfyApp {
             const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
             if (uri) {
               const blob = await (await fetch(uri)).blob()
-              await this.handleFile(
-                new File([blob], uri, { type: blob.type }),
-                'file_drop'
-              )
+              await this.handleFile(new File([blob], uri, { type: blob.type }))
             }
           }
         }
@@ -1130,19 +1126,12 @@ export class ComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    options: {
-      showMissingNodesDialog?: boolean
-      showMissingModelsDialog?: boolean
-      checkForRerouteMigration?: boolean
-      openSource?: WorkflowOpenSource
-    } = {}
-  ) {
-    const {
+    {
       showMissingNodesDialog = true,
       showMissingModelsDialog = true,
-      checkForRerouteMigration = false,
-      openSource
-    } = options
+      checkForRerouteMigration = false
+    } = {}
+  ) {
     useWorkflowService().beforeLoadNewGraph()
 
     if (clean !== false) {
@@ -1372,15 +1361,6 @@ export class ComfyApp {
       'afterConfigureGraph',
       missingNodeTypes
     )
-    const telemetryPayload = {
-      missing_node_count: missingNodeTypes.length,
-      missing_node_types: missingNodeTypes.map((node) =>
-        typeof node === 'string' ? node : node.type
-      ),
-      open_source: openSource ?? 'unknown'
-    }
-    useTelemetry()?.trackWorkflowOpened(telemetryPayload)
-    useTelemetry()?.trackWorkflowImported(telemetryPayload)
     await useWorkflowService().afterLoadNewGraph(
       workflow,
       this.graph.serialize() as unknown as ComfyWorkflowJSON
@@ -1498,7 +1478,7 @@ export class ComfyApp {
    * Loads workflow data from the specified file
    * @param {File} file
    */
-  async handleFile(file: File, openSource?: WorkflowOpenSource) {
+  async handleFile(file: File) {
     const removeExt = (f: string) => {
       if (!f) return f
       const p = f.lastIndexOf('.')
@@ -1513,8 +1493,7 @@ export class ComfyApp {
           JSON.parse(pngInfo.workflow),
           true,
           true,
-          fileName,
-          { openSource }
+          fileName
         )
       } else if (pngInfo?.prompt) {
         this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
@@ -1534,9 +1513,7 @@ export class ComfyApp {
       const { workflow, prompt } = await getAvifMetadata(file)
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
-          openSource
-        })
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
@@ -1549,9 +1526,7 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
-          openSource
-        })
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
@@ -1560,7 +1535,7 @@ export class ComfyApp {
     } else if (file.type === 'audio/mpeg') {
       const { workflow, prompt } = await getMp3Metadata(file)
       if (workflow) {
-        this.loadGraphData(workflow, true, true, fileName, { openSource })
+        this.loadGraphData(workflow, true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(prompt, fileName)
       } else {
@@ -1569,7 +1544,7 @@ export class ComfyApp {
     } else if (file.type === 'audio/ogg') {
       const { workflow, prompt } = await getOggMetadata(file)
       if (workflow) {
-        this.loadGraphData(workflow, true, true, fileName, { openSource })
+        this.loadGraphData(workflow, true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(prompt, fileName)
       } else {
@@ -1581,9 +1556,7 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName, {
-          openSource
-        })
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
@@ -1592,9 +1565,7 @@ export class ComfyApp {
     } else if (file.type === 'video/webm') {
       const webmInfo = await getFromWebmFile(file)
       if (webmInfo.workflow) {
-        this.loadGraphData(webmInfo.workflow, true, true, fileName, {
-          openSource
-        })
+        this.loadGraphData(webmInfo.workflow, true, true, fileName)
       } else if (webmInfo.prompt) {
         this.loadApiJson(webmInfo.prompt, fileName)
       } else {
@@ -1610,18 +1581,14 @@ export class ComfyApp {
     ) {
       const mp4Info = await getFromIsobmffFile(file)
       if (mp4Info.workflow) {
-        this.loadGraphData(mp4Info.workflow, true, true, fileName, {
-          openSource
-        })
+        this.loadGraphData(mp4Info.workflow, true, true, fileName)
       } else if (mp4Info.prompt) {
         this.loadApiJson(mp4Info.prompt, fileName)
       }
     } else if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
       const svgInfo = await getSvgMetadata(file)
       if (svgInfo.workflow) {
-        this.loadGraphData(svgInfo.workflow, true, true, fileName, {
-          openSource
-        })
+        this.loadGraphData(svgInfo.workflow, true, true, fileName)
       } else if (svgInfo.prompt) {
         this.loadApiJson(svgInfo.prompt, fileName)
       } else {
@@ -1633,9 +1600,7 @@ export class ComfyApp {
     ) {
       const gltfInfo = await getGltfBinaryMetadata(file)
       if (gltfInfo.workflow) {
-        this.loadGraphData(gltfInfo.workflow, true, true, fileName, {
-          openSource
-        })
+        this.loadGraphData(gltfInfo.workflow, true, true, fileName)
       } else if (gltfInfo.prompt) {
         this.loadApiJson(gltfInfo.prompt, fileName)
       } else {
@@ -1658,8 +1623,7 @@ export class ComfyApp {
             JSON.parse(readerResult),
             true,
             true,
-            fileName,
-            { openSource }
+            fileName
           )
         }
       }
@@ -1677,8 +1641,7 @@ export class ComfyApp {
           JSON.parse(info.workflow),
           true,
           true,
-          fileName,
-          { openSource }
+          fileName
         )
         // @ts-expect-error
       } else if (info.prompt) {
