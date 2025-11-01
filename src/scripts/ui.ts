@@ -576,16 +576,16 @@ export class ComfyUI {
           ]
         ),
         $el('div.comfy-menu-btns', [
-            $el('button', {
-              id: 'queue-front-button',
-              textContent: 'Queue Front',
-              onclick: () => {
-                if (isCloud) {
-                  useTelemetry()?.trackRunTriggered({ trigger_source: 'menu' })
-                }
-                app.queuePrompt(-1, this.batchCount)
+          $el('button', {
+            id: 'queue-front-button',
+            textContent: 'Queue Front',
+            onclick: () => {
+              if (isCloud) {
+                useTelemetry()?.trackRunTriggered({ trigger_source: 'menu' })
               }
-            }),
+              app.queuePrompt(-1, this.batchCount)
+            }
+          }),
           $el('button', {
             $: (b) => (this.queue.button = b as HTMLButtonElement),
             id: 'comfy-view-queue-button',
