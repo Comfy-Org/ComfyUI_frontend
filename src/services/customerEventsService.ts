@@ -4,7 +4,6 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
-import { useTelemetry } from '@/platform/telemetry'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -35,7 +34,6 @@ export const useCustomerEventsService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const { d } = useI18n()
-  const telemetry = useTelemetry()
 
   const handleRequestError = (
     err: unknown,
@@ -189,12 +187,6 @@ export const useCustomerEventsService = () => {
         }),
       { errorContext, routeSpecificErrors }
     )
-
-    for (const event of result?.events ?? []) {
-      if (event?.event_type === EventType.CREDIT_ADDED) {
-        telemetry?.trackApiCreditTopupSucceeded()
-      }
-    }
 
     return result
   }
