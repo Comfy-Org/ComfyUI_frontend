@@ -1,9 +1,9 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
-import { app } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { computeNodeMetrics } from '@/platform/telemetry/utils/computeNodeMetrics'
+import type { NodeMetrics } from '@/platform/telemetry/utils/computeNodeMetrics'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import type {
   AuthMetadata,
@@ -11,6 +11,9 @@ import type {
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  HelpCenterClosedMetadata,
+  HelpCenterOpenedMetadata,
+  HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   PageVisibilityMetadata,
@@ -24,6 +27,7 @@ import type {
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
+  WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
@@ -60,6 +64,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private _currentUser: any = null
   private _settingStore: any = null
   private _composablesReady = false
+
+  // Injected dependencies to avoid circular dependency with app.ts
+  private _graph: LGraph | null = null
+  private _nodeDefsByName: Record<string, ComfyNodeDefImpl> = {}
 
   constructor() {
     const token = window.__CONFIG__?.mixpanel_token
@@ -145,6 +153,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.isOnboardingMode = false
     // Trigger composable initialization now that it's safe
     void this.initializeComposables()
+  }
+
+  /**
+   * Set the graph context for node metrics computation.
+   * Must be called after app.graph is initialized to enable full telemetry context.
+   * @param graph - The LiteGraph instance
+   * @param nodeDefsByName - Map of node type names to their definitions
+   */
+  setGraphContext(
+    graph: LGraph,
+    nodeDefsByName: Record<string, ComfyNodeDefImpl>
+  ): void {
+    this._graph = graph
+    this._nodeDefsByName = nodeDefsByName
   }
 
   /**
@@ -277,6 +299,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackAuth(metadata: AuthMetadata): void {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+  }
+
+  trackUserLoggedIn(): void {
+    this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
@@ -437,6 +463,22 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TEMPLATE_FILTER_CHANGED, metadata)
   }
 
+  trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_OPENED, metadata)
+  }
+
+  trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_RESOURCE_CLICKED, metadata)
+  }
+
+  trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_CLOSED, metadata)
+  }
+
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
   trackWorkflowExecution(): void {
     if (this.isOnboardingMode) {
       // During onboarding, track basic execution without workflow context
@@ -471,60 +513,17 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       void this.initializeComposables()
     }
 
-    let nodeCounts: {
-      custom_node_count: number
-      api_node_count: number
-      subgraph_count: number
-      total_node_count: number
-      has_api_nodes: boolean
-      api_node_names: string[]
-    }
-    try {
-      const nodeDefStore = useNodeDefStore()
-      const nodes = collectAllNodes(app.graph)
-
-      let customNodeCount = 0
-      let apiNodeCount = 0
-      let subgraphCount = 0
-      let totalNodeCount = 0
-      let hasApiNodes = false
-      const apiNodeNames = new Set<string>()
-
-      for (const node of nodes) {
-        totalNodeCount += 1
-        const nodeDef = nodeDefStore.nodeDefsByName[node.type ?? '']
-        const isCustomNode =
-          nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-        const isApiNode = nodeDef?.api_node === true
-        const isSubgraph = node.isSubgraphNode?.() === true
-        if (isCustomNode) customNodeCount += 1
-        if (isApiNode) {
-          apiNodeCount += 1
-          hasApiNodes = true
-          if (nodeDef?.name) apiNodeNames.add(nodeDef.name)
+    // Return zero node counts if graph context not injected yet
+    const nodeCounts: NodeMetrics = this._graph
+      ? computeNodeMetrics(this._graph, this._nodeDefsByName)
+      : {
+          custom_node_count: 0,
+          api_node_count: 0,
+          subgraph_count: 0,
+          total_node_count: 0,
+          has_api_nodes: false,
+          api_node_names: []
         }
-        if (isSubgraph) subgraphCount += 1
-      }
-
-      nodeCounts = {
-        custom_node_count: customNodeCount,
-        api_node_count: apiNodeCount,
-        subgraph_count: subgraphCount,
-        total_node_count: totalNodeCount,
-        has_api_nodes: hasApiNodes,
-        api_node_names: Array.from(apiNodeNames)
-      }
-    } catch (error) {
-      console.error('Failed to compute node metrics:', error)
-      nodeCounts = {
-        custom_node_count: 0,
-        api_node_count: 0,
-        subgraph_count: 0,
-        total_node_count: 0,
-        has_api_nodes: false,
-        api_node_names: []
-      }
-    }
 
     if (
       !this._composablesReady ||
