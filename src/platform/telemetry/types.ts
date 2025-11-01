@@ -257,8 +257,6 @@ export interface TelemetryProvider {
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
   trackApiCreditTopupSucceeded(): void
   trackRunButton(options?: { subscribe_to_run?: boolean }): void
-  trackRunTriggeredViaKeybinding(): void
-  trackRunTriggeredViaMenu(): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking(): void
@@ -324,8 +322,6 @@ export const TelemetryEvents = {
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
-  RUN_TRIGGERED_KEYBINDING: 'app:run_triggered_keybinding',
-  RUN_TRIGGERED_MENU: 'app:run_triggered_menu',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
