@@ -123,7 +123,6 @@ import { computed, ref, watch } from 'vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -142,7 +141,6 @@ const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
-const { isActiveSubscription } = useSubscription()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 

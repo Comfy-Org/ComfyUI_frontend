@@ -1,6 +1,7 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { computeNodeMetrics } from '@/platform/telemetry/utils/computeNodeMetrics'
 import type { NodeMetrics } from '@/platform/telemetry/utils/computeNodeMetrics'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -298,6 +299,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackAuth(metadata: AuthMetadata): void {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+  }
+
+  trackUserLoggedIn(): void {
+    this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
