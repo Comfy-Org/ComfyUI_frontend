@@ -83,11 +83,12 @@ const updateSettingValue = async (newValue: any) => {
 
   await settingStore.set(settingId, newValue)
 
-  if (previousValue !== newValue) {
+  const normalizedValue = settingStore.get(settingId)
+  if (previousValue !== normalizedValue) {
     telemetry?.trackSettingChanged({
       setting_id: settingId,
       previous_value: previousValue,
-      new_value: newValue
+      new_value: normalizedValue
     })
   }
 }

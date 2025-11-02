@@ -54,7 +54,7 @@ describe('SettingItem (telemetry UI tracking)', () => {
     })
   }
 
-  it('tracks telemetry when value changes via UI', async () => {
+  it('tracks telemetry when value changes via UI (uses normalized value)', async () => {
     const settingParams: SettingParams = {
       id: 'main.sub.setting.name',
       name: 'Telemetry Visible',
@@ -62,7 +62,7 @@ describe('SettingItem (telemetry UI tracking)', () => {
       defaultValue: 'default'
     }
 
-    mockGet.mockReturnValueOnce('default')
+    mockGet.mockReturnValueOnce('default').mockReturnValueOnce('normalized')
     mockSet.mockResolvedValue(undefined)
 
     const wrapper = mountComponent(settingParams)
@@ -78,12 +78,12 @@ describe('SettingItem (telemetry UI tracking)', () => {
       expect.objectContaining({
         setting_id: 'main.sub.setting.name',
         previous_value: 'default',
-        new_value: newValue
+        new_value: 'normalized'
       })
     )
   })
 
-  it('does not track telemetry when value does not change', async () => {
+  it('does not track telemetry when normalized value does not change', async () => {
     const settingParams: SettingParams = {
       id: 'main.sub.setting.name',
       name: 'Telemetry Visible',
@@ -91,7 +91,7 @@ describe('SettingItem (telemetry UI tracking)', () => {
       defaultValue: 'same'
     }
 
-    mockGet.mockReturnValueOnce('same')
+    mockGet.mockReturnValueOnce('same').mockReturnValueOnce('same')
     mockSet.mockResolvedValue(undefined)
 
     const wrapper = mountComponent(settingParams)
