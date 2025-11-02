@@ -181,7 +181,7 @@ export interface TemplateFilterMetadata {
   search_query?: string
   selected_models: string[]
   selected_use_cases: string[]
-  selected_licenses: string[]
+  selected_runs_on: string[]
   sort_by:
     | 'default'
     | 'alphabetical'
