@@ -61,7 +61,7 @@
         data-testid="toggle-minimap-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         :class="minimapButtonClass"
-        @click="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
+        @click="onMinimapToggleClick"
       >
         <template #icon>
           <i class="icon-[lucide--map] h-4 w-4" />
@@ -82,7 +82,7 @@
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
         :style="stringifiedMinimapStyles.buttonStyles"
-        @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
+        @click="onLinkVisibilityToggleClick"
       >
         <template #icon>
           <i class="icon-[lucide--route-off] h-4 w-4" />
@@ -101,6 +101,7 @@ import { useI18n } from 'vue-i18n'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -217,6 +218,26 @@ const linkVisibleClass = computed(() => [
 onMounted(() => {
   canvasStore.initScaleSync()
 })
+
+/**
+ * Track minimap toggle button click and execute the command.
+ */
+const onMinimapToggleClick = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'graph_menu_minimap_toggle_clicked'
+  })
+  void commandStore.execute('Comfy.Canvas.ToggleMinimap')
+}
+
+/**
+ * Track hide/show links button click and execute the command.
+ */
+const onLinkVisibilityToggleClick = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'graph_menu_hide_links_toggle_clicked'
+  })
+  void commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')
+}
 
 onBeforeUnmount(() => {
   canvasStore.cleanupScaleSync()

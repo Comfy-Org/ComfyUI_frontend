@@ -226,7 +226,7 @@ const setCurrentIndex = (index: number) => {
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
     actualDimensions.value = null
-    isLoading.value = true
+    isLoading.value = false
     imageError.value = false
   }
 }

@@ -164,6 +164,8 @@ watch(
 )
 
 const handlePurchaseCreditsClick = () => {
+  // Track purchase credits entry from Settings > Credits panel
+  useTelemetry()?.trackAddApiCreditButtonClicked()
   dialogService.showTopUpCreditsDialog()
 }
 

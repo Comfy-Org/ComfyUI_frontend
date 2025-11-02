@@ -526,6 +526,15 @@ export function useCoreCommands(): ComfyCommand[] {
         // Get execution IDs for all selected output nodes and their descendants
         const executionIds =
           getExecutionIdsForSelectedNodes(selectedOutputNodes)
+        if (executionIds.length === 0) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('toastMessages.failedToQueue'),
+            detail: t('toastMessages.failedExecutionPathResolution'),
+            life: 3000
+          })
+          return
+        }
         await app.queuePrompt(0, batchCount, executionIds)
       }
     },
