@@ -478,6 +478,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         if (isCloud) {
           useTelemetry()?.trackRunButton(metadata)
+          useTelemetry()?.trackWorkflowExecution()
         }
 
         await app.queuePrompt(0, batchCount)
@@ -499,6 +500,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         if (isCloud) {
           useTelemetry()?.trackRunButton(metadata)
+          useTelemetry()?.trackWorkflowExecution()
         }
 
         await app.queuePrompt(-1, batchCount)
@@ -544,6 +546,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
         if (isCloud) {
           useTelemetry()?.trackRunButton(metadata)
+          useTelemetry()?.trackWorkflowExecution()
         }
         await app.queuePrompt(0, batchCount, executionIds)
       }

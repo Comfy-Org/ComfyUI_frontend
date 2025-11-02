@@ -477,6 +477,7 @@ export class ComfyUI {
           onclick: () => {
             if (isCloud) {
               useTelemetry()?.trackRunButton()
+              useTelemetry()?.trackWorkflowExecution()
             }
             app.queuePrompt(0, this.batchCount)
           }
@@ -584,6 +585,7 @@ export class ComfyUI {
             onclick: () => {
               if (isCloud) {
                 useTelemetry()?.trackRunButton()
+                useTelemetry()?.trackWorkflowExecution()
               }
               app.queuePrompt(-1, this.batchCount)
             }
