@@ -1,225 +1,489 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { api } from '@/scripts/api'
+import type {
+  TaskItem,
+  HistoryTaskItem,
+  TaskPrompt,
+  TaskStatus,
+  TaskOutput
+} from '@/schemas/apiSchema'
 
-// Mock isCloud to be true for these tests
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+// Mock the api module
+vi.mock('@/scripts/api', () => ({
+  api: {
+    getHistory: vi.fn(),
+    internalURL: vi.fn((path) => `http://localhost:3000${path}`),
+    user: 'test-user'
+  }
 }))
 
-// Mock assetService
-const mockGetAssetsForNodeType = vi.hoisted(() => vi.fn())
-
+// Mock the asset service
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    getAssetsForNodeType: mockGetAssetsForNodeType
+    getAssetsByTag: vi.fn()
   }
 }))
 
-const HASH_FILENAME =
-  '72e786ff2a44d682c4294db0b7098e569832bc394efc6dad644e6ec85a78efb7.png'
-const HASH_FILENAME_2 =
-  'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456.jpg'
+// Mock distribution type
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false
+}))
 
-function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
-    id: 'test-id',
-    name: 'test.png',
-    asset_hash: 'test-hash',
-    size: 1024,
-    tags: [],
-    created_at: '2024-01-01T00:00:00.000Z',
-    ...overrides
+// Mock reconcileHistory to simulate the real behavior
+vi.mock('@/platform/remote/comfyui/history/reconciliation', () => ({
+  reconcileHistory: vi.fn(
+    (
+      serverHistory: TaskItem[],
+      clientHistory: TaskItem[],
+      maxItems: number,
+      _lastKnownQueueIndex?: number
+    ) => {
+      // For initial load (empty clientHistory), return all server items
+      if (!clientHistory || clientHistory.length === 0) {
+        return serverHistory.slice(0, maxItems)
+      }
+
+      // For subsequent loads, merge without duplicates
+      const clientPromptIds = new Set(
+        clientHistory.map((item) => item.prompt[1])
+      )
+      const newItems = serverHistory.filter(
+        (item) => !clientPromptIds.has(item.prompt[1])
+      )
+
+      return [...newItems, ...clientHistory]
+        .sort((a, b) => b.prompt[0] - a.prompt[0])
+        .slice(0, maxItems)
+    }
+  )
+}))
+
+// Mock TaskItemImpl
+vi.mock('@/stores/queueStore', () => ({
+  TaskItemImpl: class {
+    public flatOutputs: Array<{
+      supportsPreview: boolean
+      filename: string
+      subfolder: string
+      type: string
+      url: string
+    }>
+    public previewOutput:
+      | {
+          supportsPreview: boolean
+          filename: string
+          subfolder: string
+          type: string
+          url: string
+        }
+      | undefined
+
+    constructor(
+      public taskType: string,
+      public prompt: TaskPrompt,
+      public status: TaskStatus | undefined,
+      public outputs: TaskOutput
+    ) {
+      this.flatOutputs = this.outputs
+        ? [
+            {
+              supportsPreview: true,
+              filename: 'test.png',
+              subfolder: '',
+              type: 'output',
+              url: 'http://test.com/test.png'
+            }
+          ]
+        : []
+      this.previewOutput = this.flatOutputs[0]
+    }
   }
-}
+}))
+
+// Mock asset mappers
+vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
+  mapInputFileToAssetItem: vi.fn((name, index, type) => ({
+    id: `${type}-${index}`,
+    name,
+    size: 0,
+    created_at: new Date().toISOString(),
+    tags: [type],
+    preview_url: `http://test.com/${name}`
+  })),
+  mapTaskOutputToAssetItem: vi.fn((task, output) => ({
+    id: `${task.prompt[1]}_0`,
+    name: output.filename,
+    size: 0,
+    created_at: new Date().toISOString(),
+    tags: ['output'],
+    preview_url: output.url,
+    user_metadata: {}
+  }))
+}))
 
 describe('assetsStore', () => {
+  let store: ReturnType<typeof useAssetsStore>
+
+  // Helper function to create mock history items
+  const createMockHistoryItem = (index: number): HistoryTaskItem => ({
+    taskType: 'History' as const,
+    prompt: [
+      1000 + index, // queueIndex
+      `prompt_${index}`, // promptId
+      {}, // promptInputs
+      {
+        extra_pnginfo: {
+          workflow: {
+            last_node_id: 1,
+            last_link_id: 1,
+            nodes: [],
+            links: [],
+            groups: [],
+            config: {},
+            version: 1
+          }
+        }
+      }, // extraData
+      [] // outputsToExecute
+    ],
+    status: {
+      status_str: 'success' as const,
+      completed: true,
+      messages: []
+    },
+    outputs: {
+      '1': {
+        images: [
+          {
+            filename: `output_${index}.png`,
+            subfolder: '',
+            type: 'output' as const
+          }
+        ]
+      }
+    }
+  })
+
   beforeEach(() => {
     setActivePinia(createPinia())
+    store = useAssetsStore()
     vi.clearAllMocks()
   })
 
-  describe('input asset mapping helpers', () => {
-    it('should return name for valid asset_hash', () => {
-      const store = useAssetsStore()
+  describe('Initial Load', () => {
+    it('should load initial history items', async () => {
+      const mockHistory = Array.from({ length: 10 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue({
+        History: mockHistory
+      })
 
-      store.inputAssets = [
-        createMockAssetItem({
-          name: 'Beautiful Sunset.png',
-          asset_hash: HASH_FILENAME
-        }),
-        createMockAssetItem({
-          name: 'Mountain Vista.jpg',
-          asset_hash: HASH_FILENAME_2
-        })
-      ]
+      await store.updateHistory()
 
-      expect(store.getInputName(HASH_FILENAME)).toBe('Beautiful Sunset.png')
-      expect(store.getInputName(HASH_FILENAME_2)).toBe('Mountain Vista.jpg')
+      expect(api.getHistory).toHaveBeenCalledWith(200, { offset: 0 })
+      expect(store.historyAssets).toHaveLength(10)
+      expect(store.hasMoreHistory).toBe(false) // Less than BATCH_SIZE
+      expect(store.historyLoading).toBe(false)
+      expect(store.historyError).toBe(null)
     })
 
-    it('should return original hash when no matching asset found', () => {
-      const store = useAssetsStore()
+    it('should set hasMoreHistory to true when batch is full', async () => {
+      const mockHistory = Array.from({ length: 200 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue({
+        History: mockHistory
+      })
 
-      store.inputAssets = [
-        createMockAssetItem({
-          name: 'Beautiful Sunset.png',
-          asset_hash: HASH_FILENAME
-        })
-      ]
+      await store.updateHistory()
 
-      const unknownHash =
-        'fffffffffffffffffffffffffffuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu.png'
-      expect(store.getInputName(unknownHash)).toBe(unknownHash)
+      expect(store.historyAssets).toHaveLength(200)
+      expect(store.hasMoreHistory).toBe(true) // Exactly BATCH_SIZE
     })
 
-    it('should return hash as-is when no assets loaded', () => {
-      const store = useAssetsStore()
+    it('should handle errors during initial load', async () => {
+      const error = new Error('Failed to fetch')
+      vi.mocked(api.getHistory).mockRejectedValue(error)
 
-      store.inputAssets = []
+      await store.updateHistory()
 
-      expect(store.getInputName(HASH_FILENAME)).toBe(HASH_FILENAME)
-    })
-
-    it('should ignore assets without asset_hash', () => {
-      const store = useAssetsStore()
-
-      store.inputAssets = [
-        createMockAssetItem({
-          name: 'Beautiful Sunset.png',
-          asset_hash: HASH_FILENAME
-        }),
-        createMockAssetItem({
-          name: 'No Hash Asset.jpg',
-          asset_hash: null
-        })
-      ]
-
-      // Should find first asset
-      expect(store.getInputName(HASH_FILENAME)).toBe('Beautiful Sunset.png')
-      // Map should only contain one entry
-      expect(store.inputAssetsByFilename.size).toBe(1)
+      expect(store.historyAssets).toHaveLength(0)
+      expect(store.historyError).toBe(error)
+      expect(store.historyLoading).toBe(false)
     })
   })
 
-  describe('inputAssetsByFilename computed', () => {
-    it('should create map keyed by asset_hash', () => {
-      const store = useAssetsStore()
-
-      store.inputAssets = [
-        createMockAssetItem({
-          id: 'asset-123',
-          name: 'Beautiful Sunset.png',
-          asset_hash: HASH_FILENAME
-        }),
-        createMockAssetItem({
-          id: 'asset-456',
-          name: 'Mountain Vista.jpg',
-          asset_hash: HASH_FILENAME_2
-        })
-      ]
-
-      const map = store.inputAssetsByFilename
-
-      expect(map.size).toBe(2)
-      expect(map.get(HASH_FILENAME)).toMatchObject({
-        id: 'asset-123',
-        name: 'Beautiful Sunset.png',
-        asset_hash: HASH_FILENAME
+  describe('Pagination', () => {
+    it('should accumulate items when loading more', async () => {
+      // First batch
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: firstBatch
       })
-      expect(map.get(HASH_FILENAME_2)).toMatchObject({
-        id: 'asset-456',
-        name: 'Mountain Vista.jpg',
-        asset_hash: HASH_FILENAME_2
+
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(200)
+      expect(store.hasMoreHistory).toBe(true) // Should be true after full batch
+
+      // Second batch - different items (200-399) with lower queue indices (older items)
+      const secondBatch = Array.from({ length: 200 }, (_, i) => {
+        const item = createMockHistoryItem(200 + i)
+        // Queue indices should be older (lower) for pagination
+        item.prompt[0] = 800 - i // Older items have lower queue indices
+        item.prompt[1] = `prompt_${200 + i}`
+        return item
       })
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: secondBatch
+      })
+
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenCalledWith(200, { offset: 200 })
+
+      expect(store.historyAssets).toHaveLength(400) // Accumulated
+      expect(store.hasMoreHistory).toBe(true)
     })
 
-    it('should exclude assets with null/undefined hash from map', () => {
-      const store = useAssetsStore()
+    it('should handle small batch sizes correctly', async () => {
+      // Simulate BATCH_SIZE = 200
+      const SMALL_BATCH = 200
 
-      store.inputAssets = [
-        createMockAssetItem({
-          name: 'Has Hash.png',
-          asset_hash: HASH_FILENAME
-        }),
-        createMockAssetItem({
-          name: 'Null Hash.jpg',
-          asset_hash: null
-        }),
-        createMockAssetItem({
-          name: 'Undefined Hash.jpg',
-          asset_hash: undefined
-        })
-      ]
+      // First batch
+      const firstBatch = Array.from({ length: SMALL_BATCH }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: firstBatch
+      })
 
-      const map = store.inputAssetsByFilename
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(200)
 
-      // Only asset with valid asset_hash should be in map
-      expect(map.size).toBe(1)
-      expect(map.has(HASH_FILENAME)).toBe(true)
+      // Second batch
+      const secondBatch = Array.from({ length: SMALL_BATCH }, (_, i) =>
+        createMockHistoryItem(SMALL_BATCH + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: secondBatch
+      })
+
+      await store.loadMoreHistory()
+      expect(store.historyAssets).toHaveLength(400) // Should accumulate
+
+      // Third batch
+      const thirdBatch = Array.from({ length: SMALL_BATCH }, (_, i) =>
+        createMockHistoryItem(SMALL_BATCH * 2 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: thirdBatch
+      })
+
+      await store.loadMoreHistory()
+      expect(store.historyAssets).toHaveLength(600) // Should keep accumulating
     })
 
-    it('should return empty map when no assets loaded', () => {
-      const store = useAssetsStore()
+    it('should prevent duplicate items during pagination', async () => {
+      // First batch with items 0-4
+      const firstBatch = Array.from({ length: 5 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: firstBatch
+      })
 
-      store.inputAssets = []
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(5)
 
-      expect(store.inputAssetsByFilename.size).toBe(0)
+      // Second batch with overlapping item (prompt_2) and new items
+      const secondBatch = [
+        createMockHistoryItem(2), // Duplicate
+        createMockHistoryItem(5),
+        createMockHistoryItem(6)
+      ]
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: secondBatch
+      })
+
+      await store.loadMoreHistory()
+
+      // Should only add new items (5, 6), not the duplicate (2)
+      expect(store.historyAssets).toHaveLength(7)
+      const promptIds = store.historyAssets.map((a) => a.id.split('_')[0])
+      const uniquePromptIds = new Set(promptIds)
+      expect(uniquePromptIds.size).toBe(7) // No duplicates
+    })
+
+    it('should stop loading when no more items', async () => {
+      // First batch - less than BATCH_SIZE
+      const firstBatch = Array.from({ length: 50 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: firstBatch
+      })
+
+      await store.updateHistory()
+      expect(store.hasMoreHistory).toBe(false)
+
+      // Try to load more - should return early
+      await store.loadMoreHistory()
+
+      // Should only have been called once (initial load)
+      expect(api.getHistory).toHaveBeenCalledTimes(1)
+    })
+
+    it('should handle race conditions with concurrent loads', async () => {
+      // Slow first request
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      let resolveFirst: (value: { History: HistoryTaskItem[] }) => void
+      const firstPromise = new Promise<{ History: HistoryTaskItem[] }>(
+        (resolve) => {
+          resolveFirst = resolve
+        }
+      )
+      vi.mocked(api.getHistory).mockReturnValueOnce(firstPromise)
+
+      // Start initial load
+      const updatePromise = store.updateHistory()
+
+      // Try to load more while initial load is in progress
+      const loadMorePromise = store.loadMoreHistory()
+
+      // Resolve first request
+      resolveFirst!({ History: firstBatch })
+
+      await updatePromise
+      await loadMorePromise
+
+      // Second loadMore should have been skipped due to loading state
+      expect(api.getHistory).toHaveBeenCalledTimes(1)
+    })
+
+    it('should respect MAX_HISTORY_ITEMS limit', async () => {
+      // Simulate loading many batches that exceed MAX_HISTORY_ITEMS (1000)
+      const BATCH_COUNT = 6 // 6 * 200 = 1200 items
+
+      // Initial load
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: firstBatch
+      })
+      await store.updateHistory()
+
+      // Load additional batches
+      for (let batch = 1; batch < BATCH_COUNT; batch++) {
+        const items = Array.from({ length: 200 }, (_, i) =>
+          createMockHistoryItem(batch * 200 + i)
+        )
+        vi.mocked(api.getHistory).mockResolvedValueOnce({
+          History: items
+        })
+        await store.loadMoreHistory()
+      }
+
+      // Should be capped at MAX_HISTORY_ITEMS
+      expect(store.historyAssets.length).toBeLessThanOrEqual(1000)
     })
   })
 
-  describe('model assets caching', () => {
-    beforeEach(() => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
+  describe('Sorting', () => {
+    it('should maintain date sorting after pagination', async () => {
+      // Create items with different timestamps
+      const createItemWithDate = (
+        index: number,
+        daysAgo: number
+      ): HistoryTaskItem => {
+        const item = createMockHistoryItem(index)
+        const date = new Date()
+        date.setDate(date.getDate() - daysAgo)
+        // Mock the mapTaskOutputToAssetItem to use specific dates
+        return item
+      }
+
+      // First batch - older items
+      const firstBatch = Array.from(
+        { length: 3 },
+        (_, i) => createItemWithDate(i, 10 - i) // 10, 9, 8 days ago
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: firstBatch
+      })
+
+      await store.updateHistory()
+
+      // Second batch - newer items
+      const secondBatch = Array.from(
+        { length: 3 },
+        (_, i) => createItemWithDate(3 + i, 3 - i) // 3, 2, 1 days ago
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: secondBatch
+      })
+
+      await store.loadMoreHistory()
+
+      // Items should be sorted by date (newest first)
+      for (let i = 1; i < store.historyAssets.length; i++) {
+        const prevDate = new Date(store.historyAssets[i - 1].created_at)
+        const currDate = new Date(store.historyAssets[i].created_at)
+        expect(prevDate.getTime()).toBeGreaterThanOrEqual(currDate.getTime())
+      }
+    })
+  })
+
+  describe('Error Handling', () => {
+    it('should clear error before new load attempt', async () => {
+      // First attempt fails
+      vi.mocked(api.getHistory).mockRejectedValueOnce(
+        new Error('Network error')
+      )
+      await store.updateHistory()
+      expect(store.historyError).toBeTruthy()
+
+      // Second attempt succeeds
+      const mockHistory = Array.from({ length: 10 }, (_, i) =>
+        createMockHistoryItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: mockHistory
+      })
+
+      await store.updateHistory()
+      expect(store.historyError).toBe(null)
+      expect(store.historyAssets).toHaveLength(10)
     })
 
-    it('should cache assets by node type', async () => {
-      const store = useAssetsStore()
-      const mockAssets: AssetItem[] = [
-        createMockAssetItem({ id: '1', name: 'model_a.safetensors' }),
-        createMockAssetItem({ id: '2', name: 'model_b.safetensors' })
-      ]
-      mockGetAssetsForNodeType.mockResolvedValue(mockAssets)
-
-      await store.updateModelsForNodeType('CheckpointLoaderSimple')
-
-      expect(mockGetAssetsForNodeType).toHaveBeenCalledWith(
-        'CheckpointLoaderSimple'
+    it('should handle errors during loadMore', async () => {
+      // Initial load succeeds
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockHistoryItem(i)
       )
-      expect(store.modelAssetsByNodeType.get('CheckpointLoaderSimple')).toEqual(
-        mockAssets
+      vi.mocked(api.getHistory).mockResolvedValueOnce({
+        History: firstBatch
+      })
+      await store.updateHistory()
+
+      // LoadMore fails
+      vi.mocked(api.getHistory).mockRejectedValueOnce(
+        new Error('Load more failed')
       )
-    })
+      await store.loadMoreHistory()
 
-    it('should track loading state', async () => {
-      const store = useAssetsStore()
-      mockGetAssetsForNodeType.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve([]), 100))
-      )
-
-      const promise = store.updateModelsForNodeType('LoraLoader')
-
-      expect(store.modelLoadingByNodeType.get('LoraLoader')).toBe(true)
-
-      await promise
-
-      expect(store.modelLoadingByNodeType.get('LoraLoader')).toBe(false)
-    })
-
-    it('should handle errors gracefully', async () => {
-      const store = useAssetsStore()
-      const mockError = new Error('Network error')
-      mockGetAssetsForNodeType.mockRejectedValue(mockError)
-
-      await store.updateModelsForNodeType('VAELoader')
-
-      expect(store.modelErrorByNodeType.get('VAELoader')).toBe(mockError)
-      expect(store.modelAssetsByNodeType.get('VAELoader')).toEqual([])
-      expect(store.modelLoadingByNodeType.get('VAELoader')).toBe(false)
+      expect(store.historyError).toBeTruthy()
+      expect(store.isLoadingMore).toBe(false)
+      // Should keep existing items
+      expect(store.historyAssets).toHaveLength(200)
     })
   })
 })

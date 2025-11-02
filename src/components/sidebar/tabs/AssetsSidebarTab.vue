@@ -43,7 +43,7 @@
     <template #body>
       <div v-if="displayAssets.length" class="relative size-full">
         <VirtualGrid
-          v-if="!loading"
+          v-if="!loading && displayAssets.length"
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
