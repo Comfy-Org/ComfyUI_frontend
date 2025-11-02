@@ -70,8 +70,10 @@ export const useKeybindingService = () => {
         'Comfy.QueueSelectedOutputNodes'
       ])
       if (runCommandIds.has(keybinding.commandId)) {
-        await commandStore.execute(keybinding.commandId, undefined, {
-          trigger_source: 'keybinding'
+        await commandStore.execute(keybinding.commandId, {
+          metadata: {
+            trigger_source: 'keybinding'
+          }
         })
       } else {
         await commandStore.execute(keybinding.commandId)

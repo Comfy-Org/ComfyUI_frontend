@@ -170,9 +170,11 @@ const queuePrompt = async (e: Event) => {
     })
   }
 
-  await commandStore.execute(commandId, undefined, {
-    subscribe_to_run: false,
-    trigger_source: 'button'
+  await commandStore.execute(commandId, {
+    metadata: {
+      subscribe_to_run: false,
+      trigger_source: 'button'
+    }
   })
 }
 </script>

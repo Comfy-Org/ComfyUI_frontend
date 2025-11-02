@@ -98,14 +98,16 @@ export const useCommandStore = defineStore('command', () => {
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const execute = async (
     commandId: string,
-    errorHandler?: (error: any) => void,
-    ...args: unknown[]
+    options?: {
+      errorHandler?: (error: any) => void
+      metadata?: Record<string, unknown>
+    }
   ) => {
     const command = getCommand(commandId)
     if (command) {
       await wrapWithErrorHandlingAsync(
-        () => command.function(...args),
-        errorHandler
+        () => command.function(options?.metadata),
+        options?.errorHandler
       )()
     } else {
       throw new Error(`Command ${commandId} not found`)
