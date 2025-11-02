@@ -24,6 +24,7 @@ import type {
   SelectedKey
 } from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+import { ensureValueInOptions } from '../utils/widgetOptionsUtils'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
@@ -74,7 +75,12 @@ const inputItems = computed<DropdownItem[]>(() => {
     return []
   }
 
-  return values.map((value: string, index: number) => ({
+  const valuesWithCurrent = ensureValueInOptions(
+    values,
+    typeof localValue.value === 'string' ? localValue.value : undefined
+  )
+
+  return valuesWithCurrent.map((value: string, index: number) => ({
     id: `input-${index}`,
     mediaSrc: getMediaUrl(value, 'input'),
     name: value,

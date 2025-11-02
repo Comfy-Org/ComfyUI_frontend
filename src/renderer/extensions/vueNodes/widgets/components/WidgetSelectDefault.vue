@@ -32,6 +32,7 @@ import {
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+import { ensureValueInOptions } from '../utils/widgetOptionsUtils'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
@@ -63,7 +64,7 @@ const selectOptions = computed(() => {
   const options = props.widget.options
 
   if (options?.values && Array.isArray(options.values)) {
-    return options.values
+    return ensureValueInOptions(options.values, localValue.value)
   }
 
   return []
