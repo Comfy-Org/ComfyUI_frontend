@@ -1,6 +1,11 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  checkForCompletedTopup as checkTopupUtil,
+  clearTopupTracking as clearTopupUtil,
+  startTopupTracking as startTopupUtil
+} from '@/platform/telemetry/topupTracker'
 import { computeNodeMetrics } from '@/platform/telemetry/utils/computeNodeMetrics'
 import type { NodeMetrics } from '@/platform/telemetry/utils/computeNodeMetrics'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -330,6 +335,23 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
       metadata
     )
+  }
+
+  trackApiCreditTopupSucceeded(): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  // Credit top-up tracking methods (composition with utility functions)
+  startTopupTracking(): void {
+    startTopupUtil()
+  }
+
+  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+    return checkTopupUtil(events)
+  }
+
+  clearTopupTracking(): void {
+    clearTopupUtil()
   }
 
   trackRunButton(options?: { subscribe_to_run?: boolean }): void {

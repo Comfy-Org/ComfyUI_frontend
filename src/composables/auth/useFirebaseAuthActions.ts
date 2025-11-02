@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
@@ -98,7 +99,7 @@ export const useFirebaseAuthActions = () => {
       )
     }
 
-    // Go to Stripe checkout page
+    useTelemetry()?.startTopupTracking()
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
@@ -115,7 +116,9 @@ export const useFirebaseAuthActions = () => {
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.fetchBalance()
+    const result = await authStore.fetchBalance()
+    // Top-up completion tracking happens in UsageLogsTable when events are fetched
+    return result
   }, reportError)
 
   const signInWithGoogle = (errorHandler = reportError) =>
