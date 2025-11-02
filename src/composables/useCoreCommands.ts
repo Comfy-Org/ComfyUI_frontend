@@ -473,6 +473,9 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (isCloud) {
+          useTelemetry()?.trackRunButton(metadata)
+        }
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -481,7 +484,6 @@ export function useCoreCommands(): ComfyCommand[] {
         const batchCount = useQueueSettingsStore().batchCount
 
         if (isCloud) {
-          useTelemetry()?.trackRunButton(metadata)
           useTelemetry()?.trackWorkflowExecution()
         }
 
@@ -498,6 +500,9 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (isCloud) {
+          useTelemetry()?.trackRunButton(metadata)
+        }
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -506,7 +511,6 @@ export function useCoreCommands(): ComfyCommand[] {
         const batchCount = useQueueSettingsStore().batchCount
 
         if (isCloud) {
-          useTelemetry()?.trackRunButton(metadata)
           useTelemetry()?.trackWorkflowExecution()
         }
 
@@ -522,6 +526,9 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (isCloud) {
+          useTelemetry()?.trackRunButton(metadata)
+        }
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -555,7 +562,6 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         if (isCloud) {
-          useTelemetry()?.trackRunButton(metadata)
           useTelemetry()?.trackWorkflowExecution()
         }
         await app.queuePrompt(0, batchCount, executionIds)
