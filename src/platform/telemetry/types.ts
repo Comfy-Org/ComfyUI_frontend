@@ -388,7 +388,6 @@ export type TelemetryEventName =
 export type ExecutionTriggerSource =
   | 'button'
   | 'keybinding'
-  | 'menu'
   | 'legacy_ui'
   | 'unknown'
 
