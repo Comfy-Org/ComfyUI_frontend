@@ -54,17 +54,17 @@
             @edit="handleTitleEdit"
             @cancel="handleTitleCancel"
           />
-          <i
-            v-if="isPinned"
-            class="icon-[lucide--pin] size-5 text-node-component-header-icon"
-            data-testid="node-pin-indicator"
-          />
         </div>
         <LODFallback />
       </div>
 
       <div class="lod-toggle flex shrink-0 items-center justify-between gap-2">
         <NodeBadge v-for="badge of nodeBadges" :key="badge.text" :badge />
+        <i
+          v-if="isPinned"
+          class="icon-[lucide--pin] size-5 text-node-component-header-icon"
+          data-testid="node-pin-indicator"
+        />
         <IconButton
           v-if="isSubgraphNode"
           v-tooltip.top="enterSubgraphTooltipConfig"
