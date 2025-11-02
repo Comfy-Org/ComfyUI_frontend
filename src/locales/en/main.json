@@ -754,7 +754,11 @@
       "Image API": "Image API",
       "Video API": "Video API",
       "LLM API": "LLM API",
-      "All": "All Templates"
+      "All": "All Templates",
+      "Extensions": "Extensions",
+      "Partner Nodes": "Partner Nodes",
+      "Generation Type": "Generation Type",
+      "Closed Source Models": "Closed Source Models"
     },
     "categories": "Categories",
     "resetFilters": "Clear Filters",
@@ -767,6 +771,7 @@
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
     "runsOnSelected": "{count} Runs On",
+    "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
