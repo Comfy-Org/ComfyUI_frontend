@@ -16,6 +16,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { ensureValueInOptions } from '../utils/widgetOptionsUtils'
 import FormDropdown from './form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from './form/dropdown/types'
 import type {
@@ -24,7 +25,6 @@ import type {
   SelectedKey
 } from './form/dropdown/types'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
-import { ensureValueInOptions } from '../utils/widgetOptionsUtils'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>

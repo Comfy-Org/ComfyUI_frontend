@@ -212,7 +212,9 @@ describe('WidgetSelect Value Binding', () => {
 
       // Should not duplicate the value
       expect(selectOptions).toEqual(options)
-      expect(selectOptions.filter((opt: string) => opt === 'option2')).toHaveLength(1)
+      expect(
+        selectOptions.filter((opt: string) => opt === 'option2')
+      ).toHaveLength(1)
     })
   })
 
