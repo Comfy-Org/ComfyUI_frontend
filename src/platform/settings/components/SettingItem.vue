@@ -79,7 +79,7 @@ const settingValue = computed(() => settingStore.get(props.setting.id))
 const updateSettingValue = async (newValue: any) => {
   const telemetry = useTelemetry()
   const settingId = props.setting.id
-  const previousValue = settingStore.get(settingId)
+  const previousValue = settingValue.value
 
   await settingStore.set(settingId, newValue)
 
