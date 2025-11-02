@@ -208,11 +208,11 @@ describe('WidgetSelect Value Binding', () => {
       const wrapper = mountComponent(widget, 'option2')
 
       const select = wrapper.findComponent({ name: 'Select' })
-      const selectOptions = select.props('options')
+      const selectOptions = select.props('options') as string[]
 
       // Should not duplicate the value
       expect(selectOptions).toEqual(options)
-      expect(selectOptions.filter((opt) => opt === 'option2')).toHaveLength(1)
+      expect(selectOptions.filter((opt: string) => opt === 'option2')).toHaveLength(1)
     })
   })
 
