@@ -7,9 +7,9 @@ import type { ComfyExtension } from '@/types/comfy'
 import { useKeybindingStore } from './keybindingStore'
 import type { KeybindingImpl } from './keybindingStore'
 
-export interface ComfyCommand<TArgs extends unknown[] = unknown[]> {
+export interface ComfyCommand {
   id: string
-  function: (...args: TArgs) => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => void | Promise<void>
 
   label?: string | (() => string)
   icon?: string | (() => string)
@@ -22,11 +22,9 @@ export interface ComfyCommand<TArgs extends unknown[] = unknown[]> {
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
 }
 
-export class ComfyCommandImpl<TArgs extends unknown[] = unknown[]>
-  implements ComfyCommand<TArgs>
-{
+export class ComfyCommandImpl implements ComfyCommand {
   id: string
-  function: (...args: TArgs) => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => void | Promise<void>
   _label?: string | (() => string)
   _icon?: string | (() => string)
   _tooltip?: string | (() => string)
@@ -37,7 +35,7 @@ export class ComfyCommandImpl<TArgs extends unknown[] = unknown[]>
   active?: () => boolean
   category?: 'essentials' | 'view-controls'
 
-  constructor(command: ComfyCommand<TArgs>) {
+  constructor(command: ComfyCommand) {
     this.id = command.id
     this.function = command.function
     this._label = command.label

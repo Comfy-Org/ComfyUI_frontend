@@ -19,7 +19,6 @@ import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { SUPPORT_URL } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -472,9 +471,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (isCloud) {
-          useTelemetry()?.trackRunButton(metadata)
-        }
+        useTelemetry()?.trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -482,9 +479,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const batchCount = useQueueSettingsStore().batchCount
 
-        if (isCloud) {
-          useTelemetry()?.trackWorkflowExecution()
-        }
+        useTelemetry()?.trackWorkflowExecution()
 
         await app.queuePrompt(0, batchCount)
       }
@@ -499,9 +494,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (isCloud) {
-          useTelemetry()?.trackRunButton(metadata)
-        }
+        useTelemetry()?.trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -509,9 +502,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const batchCount = useQueueSettingsStore().batchCount
 
-        if (isCloud) {
-          useTelemetry()?.trackWorkflowExecution()
-        }
+        useTelemetry()?.trackWorkflowExecution()
 
         await app.queuePrompt(-1, batchCount)
       }
@@ -525,9 +516,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (isCloud) {
-          useTelemetry()?.trackRunButton(metadata)
-        }
+        useTelemetry()?.trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -560,9 +549,7 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        if (isCloud) {
-          useTelemetry()?.trackWorkflowExecution()
-        }
+        useTelemetry()?.trackWorkflowExecution()
         await app.queuePrompt(0, batchCount, executionIds)
       }
     },
@@ -1228,7 +1215,7 @@ export function useCoreCommands(): ComfyCommand[] {
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
     }
-  ] as ComfyCommand[]
+  ]
 
   return commands.map((command) => ({ ...command, source: 'System' }))
 }
