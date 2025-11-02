@@ -8,6 +8,7 @@ import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -99,7 +100,7 @@ export const useFirebaseAuthActions = () => {
       )
     }
 
-    // Go to Stripe checkout page
+    useTelemetry()?.startTopupTracking()
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
@@ -116,7 +117,9 @@ export const useFirebaseAuthActions = () => {
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.fetchBalance()
+    const result = await authStore.fetchBalance()
+    // Top-up completion tracking happens in UsageLogsTable when events are fetched
+    return result
   }, reportError)
 
   const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {

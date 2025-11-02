@@ -179,7 +179,7 @@ export const useCustomerEventsService = () => {
       return null
     }
 
-    return executeRequest<CustomerEventsResponse>(
+    const result = await executeRequest<CustomerEventsResponse>(
       () =>
         customerApiClient.get('/customers/events', {
           params: { page, limit },
@@ -187,6 +187,8 @@ export const useCustomerEventsService = () => {
         }),
       { errorContext, routeSpecificErrors }
     )
+
+    return result
   }
 
   return {

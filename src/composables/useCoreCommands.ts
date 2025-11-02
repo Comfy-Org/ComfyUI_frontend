@@ -19,7 +19,6 @@ import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { SUPPORT_URL } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -74,6 +73,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const telemetry = useTelemetry()
 
   const bottomPanelStore = useBottomPanelStore()
 
@@ -102,7 +102,14 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'New Blank Workflow',
       menubarLabel: 'New',
       category: 'essentials' as const,
-      function: () => workflowService.loadBlankWorkflow()
+      function: async () => {
+        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        await workflowService.loadBlankWorkflow()
+        telemetry?.trackWorkflowCreated({
+          workflow_type: 'blank',
+          previous_workflow_had_nodes: previousWorkflowHadNodes
+        })
+      }
     },
     {
       id: 'Comfy.OpenWorkflow',
@@ -118,7 +125,14 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.LoadDefaultWorkflow',
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
-      function: () => workflowService.loadDefaultWorkflow()
+      function: async () => {
+        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        await workflowService.loadDefaultWorkflow()
+        telemetry?.trackWorkflowCreated({
+          workflow_type: 'default',
+          previous_workflow_had_nodes: previousWorkflowHadNodes
+        })
+      }
     },
     {
       id: 'Comfy.SaveWorkflow',
@@ -460,9 +474,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const batchCount = useQueueSettingsStore().batchCount
 
-        if (isCloud) {
-          useTelemetry()?.trackWorkflowExecution()
-        }
+        useTelemetry()?.trackWorkflowExecution()
 
         await app.queuePrompt(0, batchCount)
       }
@@ -481,9 +493,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const batchCount = useQueueSettingsStore().batchCount
 
-        if (isCloud) {
-          useTelemetry()?.trackWorkflowExecution()
-        }
+        useTelemetry()?.trackWorkflowExecution()
 
         await app.queuePrompt(-1, batchCount)
       }
@@ -516,6 +526,15 @@ export function useCoreCommands(): ComfyCommand[] {
         // Get execution IDs for all selected output nodes and their descendants
         const executionIds =
           getExecutionIdsForSelectedNodes(selectedOutputNodes)
+        if (executionIds.length === 0) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('toastMessages.failedToQueue'),
+            detail: t('toastMessages.failedExecutionPathResolution'),
+            life: 3000
+          })
+          return
+        }
         await app.queuePrompt(0, batchCount, executionIds)
       }
     },
@@ -721,6 +740,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Issues',
       versionAdded: '1.5.5',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'github',
+          is_external: true,
+          source: 'menu'
+        })
         window.open(
           'https://github.com/comfyanonymous/ComfyUI/issues',
           '_blank'
@@ -734,6 +758,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Docs',
       versionAdded: '1.5.5',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'docs',
+          is_external: true,
+          source: 'menu'
+        })
         window.open('https://docs.comfy.org/', '_blank')
       }
     },
@@ -744,6 +773,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Comfy-Org Discord',
       versionAdded: '1.5.5',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'discord',
+          is_external: true,
+          source: 'menu'
+        })
         window.open('https://www.comfy.org/discord', '_blank')
       }
     },
@@ -801,6 +835,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Forum',
       versionAdded: '1.8.2',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'help_feedback',
+          is_external: true,
+          source: 'menu'
+        })
         window.open('https://forum.comfy.org/', '_blank')
       }
     },

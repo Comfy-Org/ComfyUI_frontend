@@ -100,7 +100,7 @@ import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
-const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
+const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => {
@@ -118,6 +118,9 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.onChange')})`,
       tooltip: t('menu.onChangeTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'queue_mode_option_run_on_change_selected'
+        })
         queueMode.value = 'change'
       }
     }
@@ -128,6 +131,9 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.instant')})`,
       tooltip: t('menu.instantTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'queue_mode_option_run_instant_selected'
+        })
         queueMode.value = 'instant'
       }
     }
@@ -158,8 +164,12 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  if (isCloud) {
-    useTelemetry()?.trackRunButton({ subscribe_to_run: false })
+  useTelemetry()?.trackRunButton({ subscribe_to_run: false })
+
+  if (batchCount.value > 1) {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'queue_run_multiple_batches_submitted'
+    })
   }
 
   await commandStore.execute(commandId)

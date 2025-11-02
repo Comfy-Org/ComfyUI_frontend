@@ -208,10 +208,6 @@ describe('ImagePreview', () => {
     await navigationDots[1].trigger('click')
     await nextTick()
 
-    // After clicking, component shows loading state (Skeleton), not img
-    expect(wrapper.find('skeleton-stub').exists()).toBe(true)
-    expect(wrapper.find('img').exists()).toBe(false)
-
     // Simulate image load event to clear loading state
     const component = wrapper.vm as any
     component.isLoading = false

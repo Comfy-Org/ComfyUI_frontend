@@ -9,7 +9,7 @@
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
-    @click="menuRef?.toggle($event)"
+    @click="onLogoMenuClick($event)"
   >
     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-black">
       <ComfyLogo
@@ -80,6 +80,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -101,6 +102,15 @@ const managerState = useManagerState()
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
+
+const telemetry = useTelemetry()
+
+function onLogoMenuClick(event: MouseEvent) {
+  telemetry?.trackUiButtonClicked({
+    button_id: 'sidebar_comfy_menu_opened'
+  })
+  menuRef.value?.toggle(event)
+}
 
 const translateMenuItem = (item: MenuItem): MenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label
@@ -165,7 +175,12 @@ const extraMenuItems = computed(() => [
     key: 'settings',
     label: t('g.settings'),
     icon: 'mdi mdi-cog-outline',
-    command: () => showSettings()
+    command: () => {
+      telemetry?.trackUiButtonClicked({
+        button_id: 'sidebar_settings_menu_opened'
+      })
+      showSettings()
+    }
   },
   {
     key: 'manage-extensions',
