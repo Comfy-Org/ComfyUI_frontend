@@ -17,13 +17,6 @@ import { TaskItemImpl } from './queueStore'
 const INPUT_LIMIT = 100
 
 /**
- * Extract promptId from asset ID
- */
-const extractPromptId = (assetId: string): string => {
-  return assetId.split('_')[0]
-}
-
-/**
  * Binary search to find insertion index in sorted array
  */
 const findInsertionIndex = (array: AssetItem[], item: AssetItem): number => {
@@ -217,10 +210,9 @@ export const useAssetsStore = defineStore('assets', () => {
     if (loadMore) {
       // For pagination: insert new assets in sorted order
       newAssets.forEach((asset) => {
-        const promptId = extractPromptId(asset.id)
         // Only add if not already present
-        if (!assetItemsByPromptId.has(promptId)) {
-          assetItemsByPromptId.set(promptId, asset)
+        if (!assetItemsByPromptId.has(asset.id)) {
+          assetItemsByPromptId.set(asset.id, asset)
           // Insert at correct position to maintain sort order
           const index = findInsertionIndex(allHistoryItems.value, asset)
           allHistoryItems.value.splice(index, 0, asset)
@@ -232,8 +224,7 @@ export const useAssetsStore = defineStore('assets', () => {
       allHistoryItems.value = []
 
       newAssets.forEach((asset) => {
-        const promptId = extractPromptId(asset.id)
-        assetItemsByPromptId.set(promptId, asset)
+        assetItemsByPromptId.set(asset.id, asset)
         allHistoryItems.value.push(asset)
       })
     }
