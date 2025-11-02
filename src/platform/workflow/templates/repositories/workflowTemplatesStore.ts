@@ -203,7 +203,7 @@ export const useWorkflowTemplatesStore = defineStore(
             categoryType: category.type,
             categoryGroup: category.category,
             isEssential: category.isEssential,
-            isPartnerNode: template.OpenSource === false,
+            isPartnerNode: template.openSource === false,
             searchableText: [
               template.title || template.name,
               template.description || '',

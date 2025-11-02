@@ -757,8 +757,7 @@
       "All": "All Templates",
       "Extensions": "Extensions",
       "Partner Nodes": "Partner Nodes",
-      "Generation Type": "Generation Type",
-      "Closed Source Models": "Closed Source Models"
+      "Generation Type": "Generation Type"
     },
     "categories": "Categories",
     "resetFilters": "Clear Filters",

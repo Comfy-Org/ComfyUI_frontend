@@ -75,7 +75,7 @@ describe('useTemplateFiltering', () => {
         models: ['Flux'],
         date: '2024-06-01',
         vram: 15 * 1024 ** 3,
-        OpenSource: false
+        openSource: false
       },
       {
         name: 'portrait-flow',

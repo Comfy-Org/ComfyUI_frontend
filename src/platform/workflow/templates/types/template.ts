@@ -26,7 +26,7 @@ export interface TemplateInfo {
   /**
    * Whether this template uses open source models. When false, indicates partner/API node templates.
    */
-  OpenSource?: boolean
+  openSource?: boolean
 }
 
 export interface WorkflowTemplates {
