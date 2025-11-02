@@ -7,6 +7,7 @@ import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
