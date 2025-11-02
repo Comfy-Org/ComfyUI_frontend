@@ -160,6 +160,15 @@ export interface TabCountMetadata {
 }
 
 /**
+ * Settings change metadata
+ */
+export interface SettingChangedMetadata {
+  setting_id: string
+  previous_value?: unknown
+  new_value?: unknown
+}
+
+/**
  * Node search metadata
  */
 export interface NodeSearchMetadata {
@@ -306,6 +315,9 @@ export interface TelemetryProvider {
   trackExecutionError(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
 
+  // Settings events
+  trackSettingChanged(metadata: SettingChangedMetadata): void
+
   // Generic UI button click events
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void
 }
@@ -365,6 +377,9 @@ export const TelemetryEvents = {
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
 
+  // Settings
+  SETTING_CHANGED: 'app:setting_changed',
+
   // Help Center Analytics
   HELP_CENTER_OPENED: 'app:help_center_opened',
   HELP_RESOURCE_CLICKED: 'app:help_resource_clicked',
@@ -404,6 +419,7 @@ export type TelemetryEventProperties =
   | NodeSearchMetadata
   | NodeSearchResultMetadata
   | TemplateFilterMetadata
+  | SettingChangedMetadata
   | UiButtonClickMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
