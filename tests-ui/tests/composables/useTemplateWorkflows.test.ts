@@ -278,6 +278,27 @@ describe('useTemplateWorkflows', () => {
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
   })
 
+  it('should load templates with centerView option enabled', async () => {
+    const { app } = await import('@/scripts/app')
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    // Set the store as loaded
+    mockWorkflowTemplatesStore.isLoaded = true
+
+    // Load a template from the default category
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    // Verify that loadGraphData was called with centerView: true
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      { workflow: 'data' },
+      true,
+      true,
+      'template1',
+      { openSource: 'template', centerView: true }
+    )
+  })
+
   it('should handle errors when loading templates', async () => {
     const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
 

@@ -1025,13 +1025,15 @@ export class ComfyApp {
       showMissingModelsDialog?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      centerView?: boolean
     } = {}
   ) {
     const {
       showMissingNodesDialog = true,
       showMissingModelsDialog = true,
       checkForRerouteMigration = false,
-      openSource
+      openSource,
+      centerView = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
@@ -1179,16 +1181,16 @@ export class ComfyApp {
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
       ) {
-        if (graphData.extra?.ds) {
-          this.canvas.ds.offset = graphData.extra.ds.offset
-          this.canvas.ds.scale = graphData.extra.ds.scale
-        } else {
+        if (centerView || !graphData.extra?.ds) {
           // @note: Set view after the graph has been rendered once. fitView uses
           // boundingRect on nodes to calculate the view bounds, which only become
           // available after the first render.
           requestAnimationFrame(() => {
             useLitegraphService().fitView()
           })
+        } else {
+          this.canvas.ds.offset = graphData.extra.ds.offset
+          this.canvas.ds.scale = graphData.extra.ds.scale
         }
       }
     } catch (error) {
