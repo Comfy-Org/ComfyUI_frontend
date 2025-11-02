@@ -538,8 +538,8 @@ export class ComfyApp {
         if (!fileMaybe) return
 
         const workspace = useWorkspaceStore()
-        workspace.spinner = true
         try {
+          workspace.spinner = true
           await this.handleFile(fileMaybe, 'file_drop')
         } finally {
           workspace.spinner = false
