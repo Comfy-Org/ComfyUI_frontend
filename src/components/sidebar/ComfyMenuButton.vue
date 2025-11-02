@@ -1,21 +1,23 @@
 <template>
   <div
-    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center rounded-t-md p-2 transition-colors"
+    v-tooltip="{
+      value: t('sideToolbar.labels.menu'),
+      showDelay: 300,
+      hideDelay: 300
+    }"
+    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center p-2 transition-colors"
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
     @click="onLogoMenuClick($event)"
   >
-    <ComfyLogoTransparent
-      alt="ComfyUI Logo"
-      class="comfyui-logo h-[18px] w-[18px]"
-    />
-
-    <span
-      v-if="!isSmall"
-      class="side-bar-button-label mt-1 text-center text-[10px]"
-      >{{ t('sideToolbar.labels.menu') }}</span
-    >
+    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-black">
+      <ComfyLogo
+        alt="ComfyUI Logo"
+        class="comfyui-logo h-[18px] w-[18px] text-white"
+        mode="fill"
+      />
+    </div>
   </div>
 
   <TieredMenu
@@ -75,7 +77,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import ComfyLogoTransparent from '@/components/icons/ComfyLogoTransparent.vue'
+import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useTelemetry } from '@/platform/telemetry'
@@ -96,10 +98,6 @@ const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const dialogStore = useDialogStore()
 const managerState = useManagerState()
-
-const { isSmall = false } = defineProps<{
-  isSmall?: boolean
-}>()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
@@ -292,12 +290,12 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
 }
 
 .comfy-menu-button-wrapper:hover {
-  background: var(--p-button-text-secondary-hover-background);
+  background: var(--interface-panel-hover-surface);
 }
 
 .comfy-menu-button-active,
 .comfy-menu-button-active:hover {
-  background-color: var(--content-hover-bg);
+  background: var(--interface-panel-selected-surface);
 }
 
 .keybinding-tag {

@@ -241,6 +241,18 @@
   --border-subtle: var(--color-smoke-400);
   --muted-background: var(--color-smoke-700);
   --accent-background: var(--color-smoke-800);
+
+  /* Default UI element color palette variables */
+   --palette-contrast-mix-color: #fff;
+   --palette-interface-panel-surface: var(--comfy-menu-bg);
+   --palette-interface-stroke: color-mix(in srgb, var(--interface-panel-surface) 75.5%, var(--contrast-mix-color));
+
+   --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.4);
+   --palette-interface-panel-drop-shadow: 1px 1px 4px rgb(0 0 0 / 0.4);
+   --palette-interface-panel-hover-surface: color-mix(in srgb, var(--interface-panel-surface) 92.5%, var(--contrast-mix-color));
+   --palette-interface-panel-selected-surface: color-mix(in srgb, var(--interface-panel-surface) 87.5%, var(--contrast-mix-color));
+   --palette-interface-button-hover-surface:  color-mix(in srgb, var(--interface-panel-surface) 82%, var(--contrast-mix-color));
+
 }
 
 .dark-theme {

@@ -122,7 +122,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sidebar style',
     type: 'combo',
     options: ['floating', 'connected'],
-    defaultValue: 'floating'
+    defaultValue: 'connected'
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
