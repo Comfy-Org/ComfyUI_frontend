@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 /**
  * Integration tests for template URL loading feature
@@ -10,16 +9,13 @@ import { ref } from 'vue'
  * - Invalid template shows error toast
  */
 
-// Mock @vueuse/router
-const mockTemplateQuery = ref<string | null>(null)
-const mockSourceQuery = ref<string>('default')
+// Mock vue-router
+let mockQueryParams: Record<string, string | undefined> = {}
 
-vi.mock('@vueuse/router', () => ({
-  useRouteQuery: vi.fn((param: string, defaultValue: any) => {
-    if (param === 'template') return mockTemplateQuery
-    if (param === 'source') return mockSourceQuery
-    return ref(defaultValue)
-  })
+vi.mock('vue-router', () => ({
+  useRoute: vi.fn(() => ({
+    query: mockQueryParams
+  }))
 }))
 
 // Mock template workflows composable
@@ -31,9 +27,7 @@ vi.mock(
   () => ({
     useTemplateWorkflows: () => ({
       loadTemplates: mockLoadTemplates,
-      loadWorkflowTemplate: mockLoadWorkflowTemplate,
-      isTemplatesLoaded: ref(false),
-      allTemplateGroups: ref([])
+      loadWorkflowTemplate: mockLoadWorkflowTemplate
     })
   })
 )
@@ -42,8 +36,7 @@ vi.mock(
 const mockToastAdd = vi.fn()
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({
-    add: mockToastAdd,
-    remove: vi.fn()
+    add: mockToastAdd
   })
 }))
 
@@ -63,33 +56,27 @@ vi.mock('vue-i18n', () => ({
 describe('Template URL Loading', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockTemplateQuery.value = null
-    mockSourceQuery.value = 'default'
+    mockQueryParams = {}
   })
 
-  it('does not load template when no query param present', async () => {
-    // Simulate GraphView initialization with no template param
-    mockTemplateQuery.value = null
+  it('does not load template when no query param present', () => {
+    mockQueryParams = {}
 
-    // The logic in GraphView checks: if (templateQuery.value)
-    const shouldLoad = !!mockTemplateQuery.value
+    const templateParam = mockQueryParams.template
+    const shouldLoad = !!(templateParam && typeof templateParam === 'string')
 
     expect(shouldLoad).toBe(false)
-    expect(mockLoadTemplates).not.toHaveBeenCalled()
-    expect(mockLoadWorkflowTemplate).not.toHaveBeenCalled()
   })
 
   it('loads template when query param is present', async () => {
-    mockTemplateQuery.value = 'flux_simple'
-    mockSourceQuery.value = 'default'
+    mockQueryParams = { template: 'flux_simple' }
 
-    // Simulate the loading logic from GraphView
-    if (mockTemplateQuery.value) {
+    const templateParam = mockQueryParams.template
+    if (templateParam && typeof templateParam === 'string') {
+      const sourceParam = mockQueryParams.source || 'default'
+
       await mockLoadTemplates()
-      await mockLoadWorkflowTemplate(
-        mockTemplateQuery.value,
-        mockSourceQuery.value
-      )
+      await mockLoadWorkflowTemplate(templateParam, sourceParam)
     }
 
     expect(mockLoadTemplates).toHaveBeenCalledTimes(1)
@@ -100,15 +87,14 @@ describe('Template URL Loading', () => {
   })
 
   it('uses default source when source param is not provided', async () => {
-    mockTemplateQuery.value = 'flux_simple'
-    // mockSourceQuery defaults to 'default'
+    mockQueryParams = { template: 'flux_simple' }
 
-    if (mockTemplateQuery.value) {
+    const templateParam = mockQueryParams.template
+    if (templateParam && typeof templateParam === 'string') {
+      const sourceParam = mockQueryParams.source || 'default'
+
       await mockLoadTemplates()
-      await mockLoadWorkflowTemplate(
-        mockTemplateQuery.value,
-        mockSourceQuery.value
-      )
+      await mockLoadWorkflowTemplate(templateParam, sourceParam)
     }
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
@@ -118,15 +104,14 @@ describe('Template URL Loading', () => {
   })
 
   it('uses custom source when source param is provided', async () => {
-    mockTemplateQuery.value = 'custom-template'
-    mockSourceQuery.value = 'custom-module'
+    mockQueryParams = { template: 'custom-template', source: 'custom-module' }
 
-    if (mockTemplateQuery.value) {
+    const templateParam = mockQueryParams.template
+    if (templateParam && typeof templateParam === 'string') {
+      const sourceParam = mockQueryParams.source || 'default'
+
       await mockLoadTemplates()
-      await mockLoadWorkflowTemplate(
-        mockTemplateQuery.value,
-        mockSourceQuery.value
-      )
+      await mockLoadWorkflowTemplate(templateParam, sourceParam)
     }
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
@@ -136,21 +121,21 @@ describe('Template URL Loading', () => {
   })
 
   it('shows error toast when template loading fails', async () => {
-    mockTemplateQuery.value = 'invalid-template'
+    mockQueryParams = { template: 'invalid-template' }
     mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
-    if (mockTemplateQuery.value) {
+    const templateParam = mockQueryParams.template
+    if (templateParam && typeof templateParam === 'string') {
+      const sourceParam = mockQueryParams.source || 'default'
+
       await mockLoadTemplates()
-      const success = await mockLoadWorkflowTemplate(
-        mockTemplateQuery.value,
-        mockSourceQuery.value
-      )
+      const success = await mockLoadWorkflowTemplate(templateParam, sourceParam)
 
       if (!success) {
         mockToastAdd({
           severity: 'error',
           summary: 'Error',
-          detail: `Template "${mockTemplateQuery.value}" not found`,
+          detail: `Template "${templateParam}" not found`,
           life: 3000
         })
       }
@@ -164,48 +149,30 @@ describe('Template URL Loading', () => {
     })
   })
 
-  it('handles reactive updates to query params', async () => {
-    // Initially no template
-    mockTemplateQuery.value = null
-    expect(!!mockTemplateQuery.value).toBe(false)
-
-    // User navigates to URL with template param
-    mockTemplateQuery.value = 'flux_simple'
-    expect(mockTemplateQuery.value).toBe('flux_simple')
-
-    // Template should be loaded
-    if (mockTemplateQuery.value) {
-      await mockLoadTemplates()
-      await mockLoadWorkflowTemplate(
-        mockTemplateQuery.value,
-        mockSourceQuery.value
-      )
-    }
-
-    expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
-      'flux_simple',
-      'default'
-    )
-  })
-
   it('validates query param is string before loading', async () => {
-    // useRouteQuery returns Ref<string | null>
-    // GraphView checks: if (templateQuery.value)
-    mockTemplateQuery.value = 'flux_simple'
+    mockQueryParams = { template: 'flux_simple' }
 
-    const isValid =
-      typeof mockTemplateQuery.value === 'string' &&
-      mockTemplateQuery.value.length > 0
+    const templateParam = mockQueryParams.template
+    const isValid = !!(templateParam && typeof templateParam === 'string')
 
     expect(isValid).toBe(true)
 
     if (isValid) {
-      await mockLoadWorkflowTemplate(
-        mockTemplateQuery.value,
-        mockSourceQuery.value
-      )
+      const sourceParam = mockQueryParams.source || 'default'
+      await mockLoadWorkflowTemplate(templateParam, sourceParam)
     }
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalled()
+  })
+
+  it('handles array query params correctly', () => {
+    // Vue Router can return string[] for duplicate params
+    mockQueryParams = { template: ['first', 'second'] as any }
+
+    const templateParam = mockQueryParams.template
+    const isValid = !!(templateParam && typeof templateParam === 'string')
+
+    // Should not load when param is an array
+    expect(isValid).toBe(false)
   })
 })

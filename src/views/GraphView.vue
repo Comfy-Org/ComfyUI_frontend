@@ -22,7 +22,6 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { useRouteQuery } from '@vueuse/router'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import {
@@ -35,6 +34,7 @@ import {
   watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -91,11 +91,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-
-// Query params for template loading
-const templateQuery = useRouteQuery<string | null>('template', null)
-const sourceQuery = useRouteQuery<string>('source', 'default')
-
+const route = useRoute()
 const templateWorkflows = useTemplateWorkflows()
 
 const telemetry = useTelemetry()
@@ -358,13 +354,17 @@ const onGraphReady = () => {
     }
 
     // Check for template query parameter and load template if present
-    if (templateQuery.value) {
+    const templateParam = route.query.template
+    if (templateParam && typeof templateParam === 'string') {
+      const sourceParam =
+        (route.query.source as string | undefined) || 'default'
+
       void wrapWithErrorHandlingAsync(async () => {
         await templateWorkflows.loadTemplates()
 
         const success = await templateWorkflows.loadWorkflowTemplate(
-          templateQuery.value!,
-          sourceQuery.value
+          templateParam,
+          sourceParam
         )
 
         if (!success) {
@@ -372,7 +372,7 @@ const onGraphReady = () => {
             severity: 'error',
             summary: t('g.error'),
             detail: t('templateWorkflows.error.templateNotFound', {
-              templateName: templateQuery.value
+              templateName: templateParam
             }),
             life: 3000
           })

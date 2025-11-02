@@ -42,7 +42,6 @@ catalog:
   '@vue/test-utils': ^2.4.6
   '@vueuse/core': ^11.0.0
   '@vueuse/integrations': ^13.9.0
-  '@vueuse/router': ^14.0.0
   algoliasearch: ^5.21.0
   axios: ^1.8.2
   cross-env: ^10.1.0
