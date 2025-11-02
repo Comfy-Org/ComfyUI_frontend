@@ -693,7 +693,6 @@
       "perspective": "원근법"
     },
     "clearRecording": "녹화 지우기",
-    "edgeThreshold": "엣지 임계값",
     "export": "내보내기",
     "exportModel": "모델 내보내기",
     "exportRecording": "녹화 내보내기",
@@ -706,7 +705,6 @@
     "materialMode": "재질 모드",
     "materialModes": {
       "depth": "깊이",
-      "lineart": "라인아트",
       "normal": "노멀(normal)",
       "original": "원본",
       "wireframe": "와이어프레임"
