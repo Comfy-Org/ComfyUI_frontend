@@ -39,6 +39,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
+import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -468,7 +469,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async (metadata?: { subscribe_to_run?: boolean }) => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -490,7 +494,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt (Front)',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async (metadata?: { subscribe_to_run?: boolean }) => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -511,7 +518,10 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Selected Output Nodes',
       versionAdded: '1.19.6',
-      function: async (metadata?: { subscribe_to_run?: boolean }) => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return

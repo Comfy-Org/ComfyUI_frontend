@@ -18,6 +18,7 @@ import type {
   AuthMetadata,
   CreditTopupMetadata,
   ExecutionContext,
+  ExecutionTriggerSource,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
@@ -64,6 +65,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
+  private lastTriggerSource: ExecutionTriggerSource | undefined
 
   constructor() {
     const token = window.__CONFIG__?.mixpanel_token
@@ -195,7 +197,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     clearTopupUtil()
   }
 
-  trackRunButton(options?: { subscribe_to_run?: boolean }): void {
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void {
     const executionContext = this.getExecutionContext()
 
     const runButtonProperties: RunButtonProperties = {
@@ -206,9 +211,11 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       total_node_count: executionContext.total_node_count,
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names
+      api_node_names: executionContext.api_node_names,
+      trigger_source: options?.trigger_source
     }
 
+    this.lastTriggerSource = options?.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
@@ -314,7 +321,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowExecution(): void {
     const context = this.getExecutionContext()
-    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
+    const eventContext: ExecutionContext = {
+      ...context,
+      trigger_source: this.lastTriggerSource ?? 'unknown'
+    }
+    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
+    this.lastTriggerSource = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {

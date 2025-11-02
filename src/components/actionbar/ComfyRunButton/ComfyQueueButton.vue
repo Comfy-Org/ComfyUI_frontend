@@ -163,7 +163,10 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  await commandStore.execute(commandId, undefined, { subscribe_to_run: false })
+  await commandStore.execute(commandId, undefined, {
+    subscribe_to_run: false,
+    trigger_source: 'button'
+  })
 }
 </script>
 
