@@ -14,7 +14,7 @@ export async function extractFileFromDragEvent(
   // Try loading the first URI in the transfer list
   const validTypes = ['text/uri-list', 'text/x-moz-url']
   const match = [...event.dataTransfer.types].find((t) =>
-    validTypes.find((v) => t === v)
+    validTypes.includes(t)
   )
   if (!match) return
 
