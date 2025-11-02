@@ -336,6 +336,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {
     this.trackEvent(TelemetryEvents.SETTING_CHANGED, metadata)
+  }
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
