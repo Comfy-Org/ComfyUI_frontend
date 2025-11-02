@@ -87,7 +87,13 @@ const repoOwner = 'comfyanonymous'
 const repoName = 'ComfyUI'
 const reportContent = ref('')
 const reportOpen = ref(false)
+/**
+ * Open the error report content and track telemetry.
+ */
 const showReport = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_dialog_show_report_clicked'
+  })
   reportOpen.value = true
 }
 const toast = useToast()
@@ -99,6 +105,9 @@ const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
 )
 
+/**
+ * Open contact support flow from error dialog and track telemetry.
+ */
 const showContactSupport = async () => {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',

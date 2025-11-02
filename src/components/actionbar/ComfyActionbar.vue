@@ -48,6 +48,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
@@ -130,6 +131,15 @@ watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)
   }
+})
+
+/**
+ * Track run button handle drag start using mousedown on the drag handle.
+ */
+useEventListener(dragHandleRef, 'mousedown', () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'actionbar_run_handle_drag_start'
+  })
 })
 
 const lastDragState = ref({
