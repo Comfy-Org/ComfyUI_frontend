@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
+import { useRouteQuery } from '@vueuse/router'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import {
@@ -53,6 +54,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -89,6 +91,12 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+
+// Query params for template loading
+const templateQuery = useRouteQuery<string | null>('template', null)
+const sourceQuery = useRouteQuery<string>('source', 'default')
+
+const templateWorkflows = useTemplateWorkflows()
 
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
@@ -347,6 +355,29 @@ const onGraphReady = () => {
 
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
+    }
+
+    // Check for template query parameter and load template if present
+    if (templateQuery.value) {
+      void wrapWithErrorHandlingAsync(async () => {
+        await templateWorkflows.loadTemplates()
+
+        const success = await templateWorkflows.loadWorkflowTemplate(
+          templateQuery.value!,
+          sourceQuery.value
+        )
+
+        if (!success) {
+          toast.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('templateWorkflows.error.templateNotFound', {
+              templateName: templateQuery.value
+            }),
+            life: 3000
+          })
+        }
+      })()
     }
 
     // Setting values now available after comfyApp.setup.
