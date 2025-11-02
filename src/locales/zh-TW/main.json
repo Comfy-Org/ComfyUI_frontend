@@ -693,7 +693,6 @@
       "perspective": "透視"
     },
     "clearRecording": "清除錄影",
-    "edgeThreshold": "邊緣閾值",
     "export": "匯出",
     "exportModel": "匯出模型",
     "exportRecording": "匯出錄影",
@@ -706,7 +705,6 @@
     "materialMode": "材質模式",
     "materialModes": {
       "depth": "深度",
-      "lineart": "線條藝術",
       "normal": "一般",
       "original": "原始",
       "wireframe": "線框"
