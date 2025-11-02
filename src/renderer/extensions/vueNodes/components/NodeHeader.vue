@@ -71,6 +71,7 @@
           size="sm"
           type="transparent"
           data-testid="subgraph-enter-button"
+          class="h-5"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
