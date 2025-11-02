@@ -7,6 +7,7 @@ import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
@@ -1269,15 +1270,22 @@ export class ComfyApi extends EventTarget {
   }
 
   async getLogs(): Promise<string> {
-    return (await axios.get(this.internalURL('/logs'))).data
+    const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
+    return (await axios.get(url)).data
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
-    return (await axios.get(this.internalURL('/logs/raw'))).data
+    const url = isCloud
+      ? this.apiURL('/logs/raw')
+      : this.internalURL('/logs/raw')
+    return (await axios.get(url)).data
   }
 
   async subscribeLogs(enabled: boolean): Promise<void> {
-    return await axios.patch(this.internalURL('/logs/subscribe'), {
+    const url = isCloud
+      ? this.apiURL('/logs/subscribe')
+      : this.internalURL('/logs/subscribe')
+    return await axios.patch(url, {
       enabled,
       clientId: this.clientId
     })
