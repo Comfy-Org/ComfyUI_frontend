@@ -23,10 +23,12 @@ export function useSubscriptionCredits() {
   })
 
   const monthlyBonusCredits = computed(() => {
-    const balance = authStore.balance as any
-    if (!balance?.cloud_credit_balance_micros) return '0.00'
+    if (!authStore.balance?.cloud_credit_balance_micros) return '0.00'
     try {
-      return formatMetronomeCurrency(balance.cloud_credit_balance_micros, 'usd')
+      return formatMetronomeCurrency(
+        authStore.balance.cloud_credit_balance_micros,
+        'usd'
+      )
     } catch (error) {
       console.error(
         '[useSubscriptionCredits] Error formatting monthly bonus credits:',
@@ -37,10 +39,12 @@ export function useSubscriptionCredits() {
   })
 
   const prepaidCredits = computed(() => {
-    const balance = authStore.balance as any
-    if (!balance?.prepaid_balance_micros) return '0.00'
+    if (!authStore.balance?.prepaid_balance_micros) return '0.00'
     try {
-      return formatMetronomeCurrency(balance.prepaid_balance_micros, 'usd')
+      return formatMetronomeCurrency(
+        authStore.balance.prepaid_balance_micros,
+        'usd'
+      )
     } catch (error) {
       console.error(
         '[useSubscriptionCredits] Error formatting prepaid credits:',
