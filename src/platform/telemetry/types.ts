@@ -47,6 +47,7 @@ export interface RunButtonProperties {
   subgraph_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  trigger_source?: ExecutionTriggerSource
 }
 
 /**
@@ -69,6 +70,7 @@ export interface ExecutionContext {
   total_node_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  trigger_source?: ExecutionTriggerSource
 }
 
 /**
@@ -265,9 +267,10 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked(): void
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
   trackApiCreditTopupSucceeded(): void
-  trackRunButton(options?: { subscribe_to_run?: boolean }): void
-  trackRunTriggeredViaKeybinding(): void
-  trackRunTriggeredViaMenu(): void
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking(): void
@@ -336,8 +339,6 @@ export const TelemetryEvents = {
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
-  RUN_TRIGGERED_KEYBINDING: 'app:run_triggered_keybinding',
-  RUN_TRIGGERED_MENU: 'app:run_triggered_menu',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
@@ -398,6 +399,12 @@ export const TelemetryEvents = {
 
 export type TelemetryEventName =
   (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+
+export type ExecutionTriggerSource =
+  | 'button'
+  | 'keybinding'
+  | 'legacy_ui'
+  | 'unknown'
 
 /**
  * Union type for all possible telemetry event properties
