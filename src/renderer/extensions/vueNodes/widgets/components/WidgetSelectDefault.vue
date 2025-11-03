@@ -5,7 +5,6 @@
       :invalid
       :options="selectOptions"
       v-bind="combinedProps"
-      :placeholder
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       :aria-label="widget.name"
       size="small"
@@ -55,11 +54,6 @@ const { localValue, onChange } = useWidgetValue({
 // Transform compatibility props for overlay positioning
 const transformCompatProps = useTransformCompatOverlayProps()
 
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
-
 // Extract select options from widget options
 const selectOptions = computed(() => {
   const options = props.widget.options
@@ -73,9 +67,10 @@ const selectOptions = computed(() => {
 const invalid = computed(
   () => !!localValue.value && !selectOptions.value.includes(localValue.value)
 )
-const placeholder = computed(() =>
-  invalid.value
-    ? `${localValue.value}`
-    : (combinedProps.value as { placeholder?: string }).placeholder
-)
+
+const combinedProps = computed(() => ({
+  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
+  ...transformCompatProps.value,
+  ...(invalid.value ? { placeholder: `${localValue.value}` } : {})
+}))
 </script>
