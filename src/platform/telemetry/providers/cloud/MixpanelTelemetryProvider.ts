@@ -33,6 +33,7 @@ import type {
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
+  UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
@@ -499,6 +500,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
+  trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
+    this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
   trackWorkflowExecution(): void {
