@@ -10,8 +10,9 @@
       v-model:model-value="inputValue"
       v-focus
       type="text"
-      size="small"
+      size="large"
       fluid
+      class="text-2xl"
       :pt="{
         root: {
           onBlur: finishEditing,

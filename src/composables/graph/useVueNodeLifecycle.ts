@@ -4,15 +4,13 @@ import { shallowRef, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
-import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
+
 import { app as comfyApp } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -21,9 +19,7 @@ function useVueNodeLifecycleIndividual() {
 
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
 
-  const { startSync } = useLayoutSync()
-
-  const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
+  const { startSync, stopSync } = useLayoutSync()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -34,13 +30,22 @@ function useVueNodeLifecycleIndividual() {
     const manager = useGraphNodeManager(activeGraph)
     nodeManager.value = manager
 
-    // Initialize layout system with existing nodes from active graph
-    const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
-      id: node.id.toString(),
-      pos: [node.pos[0], node.pos[1]] as [number, number],
-      size: [node.size[0], node.size[1]] as [number, number]
-    }))
-    layoutStore.initializeFromLiteGraph(nodes)
+    // Only initialize layout store if it's empty (first time enabling Vue nodes)
+    // On subsequent mode switches, preserve existing layout data to prevent drift
+    const hasExistingLayouts = activeGraph._nodes.some(
+      (node: LGraphNode) =>
+        layoutStore.getNodeLayoutRef(node.id.toString()).value !== null
+    )
+
+    if (!hasExistingLayouts) {
+      // First time: initialize from Litegraph
+      const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
+        id: node.id.toString(),
+        pos: [node.pos[0], node.pos[1]] as [number, number],
+        size: [node.size[0], node.size[1]] as [number, number]
+      }))
+      layoutStore.initializeFromLiteGraph(nodes)
+    }
 
     // Seed reroutes into the Layout Store so hit-testing uses the new path
     for (const reroute of activeGraph.reroutes.values()) {
@@ -74,23 +79,17 @@ function useVueNodeLifecycleIndividual() {
       /* empty */
     }
     nodeManager.value = null
+
+    // Stop layout sync when Vue nodes are disabled
+    stopSync()
   }
 
   // Watch for Vue nodes enabled state changes
   watch(
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
-    (enabled, wasEnabled) => {
+    (enabled) => {
       if (enabled) {
         initializeNodeManager()
-        ensureCorrectLayoutScale()
-
-        if (!wasEnabled && !isVueNodeToastDismissed.value) {
-          useToastStore().add({
-            group: 'vue-nodes-migration',
-            severity: 'info',
-            life: 0
-          })
-        }
       } else {
         comfyApp.canvas?.setDirty(true, true)
         disposeNodeManagerAndSyncs()

@@ -33,10 +33,12 @@
     "
     :style="[
       {
-        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+        // Position in Litegraph coordinates, then scale down from Vue DOM size to visual size
+        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px) scale(${VUE_TO_LITEGRAPH_SCALE})`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--node-component-surface': nodeBodyBackgroundColor
+        '--node-component-surface': nodeBodyBackgroundColor,
+        transformOrigin: 'top left'
       },
       dragStyle
     ]"
@@ -285,16 +287,25 @@ const handleContextMenu = (event: MouseEvent) => {
   }
 }
 
+// Coordinate system constants:
+// - Layout store uses Litegraph coordinate system (smaller values)
+// - Vue nodes need larger intrinsic size due to padding/spacing
+// - We scale up DOM by 2, then scale down visually by 1/2 via CSS transform
+// - This achieves correct visual size while allowing proper intrinsic sizing
+const LITEGRAPH_TO_VUE_SCALE = 2
+const VUE_TO_LITEGRAPH_SCALE = 1 / 2 // 0.5
+
 onMounted(() => {
-  // Set initial DOM size from layout store, but respect intrinsic content minimum
+  // Set initial DOM size from layout store (convert Litegraph coords to Vue DOM coords)
+  // Layout store contains Litegraph coordinates, we scale up for Vue's larger intrinsic size
   if (size.value && nodeContainerRef.value) {
     nodeContainerRef.value.style.setProperty(
       '--node-width',
-      `${size.value.width}px`
+      `${size.value.width * LITEGRAPH_TO_VUE_SCALE}px`
     )
     nodeContainerRef.value.style.setProperty(
       '--node-height',
-      `${size.value.height}px`
+      `${(size.value.height + LiteGraph.NODE_TITLE_HEIGHT) * LITEGRAPH_TO_VUE_SCALE}px`
     )
   }
 })
@@ -341,9 +352,16 @@ const { startResize } = useNodeResize(
   (result, element) => {
     if (isCollapsed.value) return
 
+    // Convert from visual/canvas coordinates to Vue DOM coordinates
+    // result.size is the visual size from getBoundingClientRect (after CSS transform)
+    // This already includes NODE_TITLE_HEIGHT in the visual measurement
+    // We just need to scale up to DOM size by inverting the transform scale
+    const domWidth = result.size.width * LITEGRAPH_TO_VUE_SCALE
+    const domHeight = result.size.height * LITEGRAPH_TO_VUE_SCALE
+
     // Apply size directly to DOM element - ResizeObserver will pick this up
-    element.style.setProperty('--node-width', `${result.size.width}px`)
-    element.style.setProperty('--node-height', `${result.size.height}px`)
+    element.style.setProperty('--node-width', `${domWidth}px`)
+    element.style.setProperty('--node-height', `${domHeight}px`)
 
     const currentPosition = position.value
     const deltaX = Math.abs(result.position.x - currentPosition.x)

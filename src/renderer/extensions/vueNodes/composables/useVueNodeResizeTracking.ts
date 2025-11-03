@@ -86,25 +86,44 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
 
-    // Use contentBoxSize when available; fall back to contentRect for older engines/tests
-    const contentBox = Array.isArray(entry.contentBoxSize)
-      ? entry.contentBoxSize[0]
-      : {
-          inlineSize: entry.contentRect.width,
-          blockSize: entry.contentRect.height
-        }
-    const width = contentBox.inlineSize
-    const height = contentBox.blockSize
+    // Use borderBoxSize to include borders in measurements
+    // This matches the visual size that will be scaled by CSS transform
+    // Fallback to getBoundingClientRect for older engines
+    let width: number
+    let height: number
+
+    if (entry.borderBoxSize) {
+      const borderBox = Array.isArray(entry.borderBoxSize)
+        ? entry.borderBoxSize[0]
+        : entry.borderBoxSize
+      width = borderBox.inlineSize
+      height = borderBox.blockSize
+    } else {
+      // Fallback: use getBoundingClientRect which gives us borderBox size
+      const rect = element.getBoundingClientRect()
+      width = rect.width
+      height = rect.height
+    }
 
     // Screen-space rect
     const rect = element.getBoundingClientRect()
     const [cx, cy] = conv.clientPosToCanvasPos([rect.left, rect.top])
     const topLeftCanvas = { x: cx, y: cy }
+
+    // Convert Vue DOM coordinates (scaled by 2x) to Litegraph coordinates
+    // - Layout store uses Litegraph coordinate system as single source of truth
+    // - Vue nodes are rendered at 2x size in DOM, then scaled down 0.5 via CSS transform
+    // - We use borderBoxSize (includes border) to match the visual size after transform
+    // - This prevents drift: borderBox 200px → store 100px → next cycle borderBox 200px ✓
+    const VUE_TO_LITEGRAPH_SCALE = 0.5
     const bounds: Bounds = {
       x: topLeftCanvas.x,
       y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
-      width: Math.max(0, width),
-      height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
+      width: Math.max(0, width * VUE_TO_LITEGRAPH_SCALE),
+      height: Math.max(
+        0,
+        height * VUE_TO_LITEGRAPH_SCALE - LiteGraph.NODE_TITLE_HEIGHT
+      )
     }
 
     let updates = updatesByType.get(elementType)
