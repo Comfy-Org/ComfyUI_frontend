@@ -780,6 +780,9 @@
       "vramLowToHigh": "VRAM Usage (Low to High)",
       "modelSizeLowToHigh": "Model Size (Low to High)",
       "default": "Default"
+    },
+    "error": {
+      "templateNotFound": "Template \"{templateName}\" not found"
     }
   },
   "graphCanvasMenu": {
