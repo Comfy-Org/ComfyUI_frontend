@@ -13,7 +13,9 @@ import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordCon
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -107,7 +109,14 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ErrorDialogContent,
-      props
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
+        }
+      }
     })
   }
 
@@ -189,7 +198,14 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-error',
       component: ErrorDialogContent,
-      props
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
+        }
+      }
     })
   }
 
@@ -341,6 +357,9 @@ export const useDialogService = () => {
   function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
+    const { isActiveSubscription } = useSubscription()
+    if (!isActiveSubscription.value) return
+
     return dialogStore.showDialog({
       key: 'top-up-credits',
       component: TopUpCreditsDialogContent,

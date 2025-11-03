@@ -1,11 +1,11 @@
 <template>
   <div
-    class="widget-expands widget-markdown relative w-full cursor-text"
-    @click="startEditing"
+    class="widget-expands widget-markdown relative w-full"
+    @dblclick="startEditing"
   >
     <!-- Display mode: Rendered markdown -->
     <div
-      class="comfy-markdown-content lod-toggle h-full min-h-[60px] w-full overflow-y-auto rounded-lg px-4 py-2 text-sm hover:bg-[var(--p-content-hover-background)]"
+      class="comfy-markdown-content lod-toggle size-full min-h-[60px] overflow-y-auto rounded-lg px-4 py-2 text-sm"
       :class="isEditing === false ? 'visible' : 'invisible'"
       v-html="renderedHtml"
     />
@@ -83,15 +83,3 @@ const handleBlur = () => {
   isEditing.value = false
 }
 </script>
-
-<style scoped>
-.widget-markdown {
-  background-color: var(--p-muted-color);
-  border: 1px solid var(--p-border-color);
-  border-radius: var(--p-border-radius);
-}
-
-.comfy-markdown-content:hover {
-  background-color: var(--p-content-hover-background);
-}
-</style>

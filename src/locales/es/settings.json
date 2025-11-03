@@ -155,10 +155,6 @@
     "name": "Mostrar Cuadrícula",
     "tooltip": "Cambiar para mostrar cuadrícula por defecto"
   },
-  "Comfy_Load3D_ShowPreview": {
-    "name": "Mostrar Previsualización",
-    "tooltip": "Cambiar para mostrar previsualización por defecto"
-  },
   "Comfy_Locale": {
     "name": "Idioma"
   },

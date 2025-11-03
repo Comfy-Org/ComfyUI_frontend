@@ -1694,21 +1694,22 @@ const ext: ComfyExtension = {
       label: 'Convert selected nodes to group node',
       icon: 'pi pi-sitemap',
       versionAdded: '1.3.17',
-      function: convertSelectedNodesToGroupNode
+      function: () => convertSelectedNodesToGroupNode()
     },
     {
       id: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
       label: 'Ungroup selected group nodes',
       icon: 'pi pi-sitemap',
       versionAdded: '1.3.17',
-      function: ungroupSelectedGroupNodes
+      function: () => ungroupSelectedGroupNodes()
     },
     {
       id: 'Comfy.GroupNode.ManageGroupNodes',
       label: 'Manage group nodes',
       icon: 'pi pi-cog',
       versionAdded: '1.3.17',
-      function: manageGroupNodes
+      function: (...args: unknown[]) =>
+        manageGroupNodes(args[0] as string | undefined)
     }
   ],
   keybindings: [

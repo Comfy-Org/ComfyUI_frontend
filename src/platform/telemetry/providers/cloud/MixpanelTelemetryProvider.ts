@@ -1,36 +1,48 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  checkForCompletedTopup as checkTopupUtil,
+  clearTopupTracking as clearTopupUtil,
+  startTopupTracking as startTopupUtil
+} from '@/platform/telemetry/topupTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 import type {
   AuthMetadata,
   CreditTopupMetadata,
   ExecutionContext,
+  ExecutionTriggerSource,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  HelpCenterClosedMetadata,
+  HelpCenterOpenedMetadata,
+  HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  SettingChangedMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
   TelemetryEventProperties,
   TelemetryProvider,
   TemplateFilterMetadata,
-  TemplateLibraryMetadata,
   TemplateLibraryClosedMetadata,
+  TemplateLibraryMetadata,
   TemplateMetadata,
+  UiButtonClickMetadata,
+  WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
+import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -54,6 +66,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
+  private lastTriggerSource: ExecutionTriggerSource | undefined
 
   constructor() {
     const token = window.__CONFIG__?.mixpanel_token
@@ -168,7 +181,27 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackRunButton(options?: { subscribe_to_run?: boolean }): void {
+  trackApiCreditTopupSucceeded(): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  // Credit top-up tracking methods (composition with utility functions)
+  startTopupTracking(): void {
+    startTopupUtil()
+  }
+
+  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+    return checkTopupUtil(events)
+  }
+
+  clearTopupTracking(): void {
+    clearTopupUtil()
+  }
+
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void {
     const executionContext = this.getExecutionContext()
 
     const runButtonProperties: RunButtonProperties = {
@@ -179,9 +212,11 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       total_node_count: executionContext.total_node_count,
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names
+      api_node_names: executionContext.api_node_names,
+      trigger_source: options?.trigger_source
     }
 
+    this.lastTriggerSource = options?.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
@@ -269,9 +304,30 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TEMPLATE_FILTER_CHANGED, metadata)
   }
 
+  trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_OPENED, metadata)
+  }
+
+  trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_RESOURCE_CLICKED, metadata)
+  }
+
+  trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_CLOSED, metadata)
+  }
+
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
   trackWorkflowExecution(): void {
     const context = this.getExecutionContext()
-    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
+    const eventContext: ExecutionContext = {
+      ...context,
+      trigger_source: this.lastTriggerSource ?? 'unknown'
+    }
+    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
+    this.lastTriggerSource = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
@@ -280,6 +336,14 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+  }
+
+  trackSettingChanged(metadata: SettingChangedMetadata): void {
+    this.trackEvent(TelemetryEvents.SETTING_CHANGED, metadata)
+  }
+
+  trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
+    this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
   getExecutionContext(): ExecutionContext {

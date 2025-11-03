@@ -47,6 +47,7 @@ export interface RunButtonProperties {
   subgraph_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  trigger_source?: ExecutionTriggerSource
 }
 
 /**
@@ -69,6 +70,7 @@ export interface ExecutionContext {
   total_node_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  trigger_source?: ExecutionTriggerSource
 }
 
 /**
@@ -160,6 +162,15 @@ export interface TabCountMetadata {
 }
 
 /**
+ * Settings change metadata
+ */
+export interface SettingChangedMetadata {
+  setting_id: string
+  previous_value?: unknown
+  new_value?: unknown
+}
+
+/**
  * Node search metadata
  */
 export interface NodeSearchMetadata {
@@ -181,7 +192,7 @@ export interface TemplateFilterMetadata {
   search_query?: string
   selected_models: string[]
   selected_use_cases: string[]
-  selected_licenses: string[]
+  selected_runs_on: string[]
   sort_by:
     | 'default'
     | 'alphabetical'
@@ -190,6 +201,56 @@ export interface TemplateFilterMetadata {
     | 'model-size-low-to-high'
   filtered_count: number
   total_count: number
+}
+
+/**
+ * UI button click tracking metadata
+ */
+export interface UiButtonClickMetadata {
+  /** Canonical identifier for the button (e.g., "comfy_logo") */
+  button_id: string
+}
+
+/**
+ * Help center opened metadata
+ */
+export interface HelpCenterOpenedMetadata {
+  source: 'menu' | 'topbar' | 'sidebar'
+}
+
+/**
+ * Help resource clicked metadata
+ */
+export interface HelpResourceClickedMetadata {
+  resource_type:
+    | 'docs'
+    | 'discord'
+    | 'github'
+    | 'help_feedback'
+    | 'manager'
+    | 'release_notes'
+  is_external: boolean
+  source:
+    | 'menu'
+    | 'help_center'
+    | 'error_dialog'
+    | 'credits_panel'
+    | 'subscription'
+}
+
+/**
+ * Help center closed metadata
+ */
+export interface HelpCenterClosedMetadata {
+  time_spent_seconds: number
+}
+
+/**
+ * Workflow created metadata
+ */
+export interface WorkflowCreatedMetadata {
+  workflow_type: 'blank' | 'default'
+  previous_workflow_had_nodes: boolean
 }
 
 /**
@@ -205,7 +266,16 @@ export interface TelemetryProvider {
   trackMonthlySubscriptionSucceeded(): void
   trackAddApiCreditButtonClicked(): void
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
-  trackRunButton(options?: { subscribe_to_run?: boolean }): void
+  trackApiCreditTopupSucceeded(): void
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void
+
+  // Credit top-up tracking (composition with internal utilities)
+  startTopupTracking(): void
+  checkForCompletedTopup(events: any[] | undefined | null): boolean
+  clearTopupTracking(): void
 
   // Survey flow events
   trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -235,10 +305,24 @@ export interface TelemetryProvider {
   // Template filter tracking events
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void
 
+  // Help center events
+  trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void
+  trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void
+  trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void
+
+  // Workflow creation events
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void
+
   // Workflow execution events
   trackWorkflowExecution(): void
   trackExecutionError(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
+
+  // Settings events
+  trackSettingChanged(metadata: SettingChangedMetadata): void
+
+  // Generic UI button click events
+  trackUiButtonClicked(metadata: UiButtonClickMetadata): void
 }
 
 /**
@@ -261,6 +345,7 @@ export const TelemetryEvents = {
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
+  API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -293,14 +378,33 @@ export const TelemetryEvents = {
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
 
+  // Settings
+  SETTING_CHANGED: 'app:setting_changed',
+
+  // Help Center Analytics
+  HELP_CENTER_OPENED: 'app:help_center_opened',
+  HELP_RESOURCE_CLICKED: 'app:help_resource_clicked',
+  HELP_CENTER_CLOSED: 'app:help_center_closed',
+
+  // Workflow Creation
+  WORKFLOW_CREATED: 'app:workflow_created',
+
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
-  EXECUTION_SUCCESS: 'execution_success'
+  EXECUTION_SUCCESS: 'execution_success',
+  // Generic UI Button Click
+  UI_BUTTON_CLICKED: 'app:ui_button_clicked'
 } as const
 
 export type TelemetryEventName =
   (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+
+export type ExecutionTriggerSource =
+  | 'button'
+  | 'keybinding'
+  | 'legacy_ui'
+  | 'unknown'
 
 /**
  * Union type for all possible telemetry event properties
@@ -322,3 +426,9 @@ export type TelemetryEventProperties =
   | NodeSearchMetadata
   | NodeSearchResultMetadata
   | TemplateFilterMetadata
+  | SettingChangedMetadata
+  | UiButtonClickMetadata
+  | HelpCenterOpenedMetadata
+  | HelpResourceClickedMetadata
+  | HelpCenterClosedMetadata
+  | WorkflowCreatedMetadata

@@ -104,6 +104,7 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 
 const emit = defineEmits<{
@@ -136,6 +137,8 @@ const handleOpenPlanAndCreditsSettings = () => {
 }
 
 const handleTopUp = () => {
+  // Track purchase credits entry from avatar popover
+  useTelemetry()?.trackAddApiCreditButtonClicked()
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }

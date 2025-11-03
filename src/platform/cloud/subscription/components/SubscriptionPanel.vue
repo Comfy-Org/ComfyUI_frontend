@@ -3,7 +3,11 @@
     <div class="flex h-full flex-col gap-6">
       <div class="flex items-baseline gap-2">
         <span class="text-2xl font-inter font-semibold leading-tight">
-          {{ $t('subscription.title') }}
+          {{
+            isActiveSubscription
+              ? $t('subscription.title')
+              : $t('subscription.titleUnsubscribed')
+          }}
         </span>
         <CloudBadge
           reverse-order
@@ -244,6 +248,22 @@
             @click="handleLearnMoreClick"
           />
           <Button
+            :label="$t('subscription.partnerNodesCredits')"
+            text
+            severity="secondary"
+            icon="pi pi-question-circle"
+            class="text-xs"
+            :pt="{
+              label: {
+                class: 'text-text-secondary'
+              },
+              icon: {
+                class: 'text-text-secondary text-xs'
+              }
+            }"
+            @click="handleOpenPartnerNodesInfo"
+          />
+          <Button
             :label="$t('subscription.messageSupport')"
             text
             severity="secondary"
@@ -318,6 +338,13 @@ const {
   handleRefresh,
   handleLearnMoreClick
 } = useSubscriptionActions()
+
+const handleOpenPartnerNodesInfo = () => {
+  window.open(
+    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    '_blank'
+  )
+}
 </script>
 
 <style scoped>

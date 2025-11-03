@@ -17,7 +17,7 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative bg-interface-panel-surface"
+      class="litegraph-minimap relative border border-[var(--interface-stroke)] bg-interface-panel-surface shadow-interface"
       :style="containerStyles"
     >
       <Button

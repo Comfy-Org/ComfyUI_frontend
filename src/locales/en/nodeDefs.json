@@ -4640,10 +4640,7 @@
       },
       "height": {
         "name": "height"
-      },
-      "clear": {},
-      "upload 3d model": {},
-      "upload extra resources": {}
+      }
     },
     "outputs": {
       "0": {
@@ -8805,9 +8802,6 @@
       },
       "camera_info": {
         "name": "camera_info"
-      },
-      "image": {
-        "name": "image"
       }
     }
   },

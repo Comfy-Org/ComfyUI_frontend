@@ -1,11 +1,12 @@
 import { toRaw } from 'vue'
+import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { paletteSchema } from '@/schemas/colorPaletteSchema'
+import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
 import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
 import { app } from '@/scripts/app'
 import { uploadFile } from '@/scripts/utils'
@@ -159,6 +160,26 @@ export const useColorPaletteService = () => {
   }
 
   /**
+   * Gets optional keys from a Zod schema object.
+   *
+   * @param schema - The Zod schema object to analyze.
+   * @returns Array of optional key names.
+   */
+  const getOptionalKeys = (schema: z.ZodObject<any, any>) => {
+    const optionalKeys: string[] = []
+    const shape = schema.shape
+
+    for (const [key, value] of Object.entries(shape)) {
+      if (value instanceof z.ZodOptional || value instanceof z.ZodDefault) {
+        optionalKeys.push(key)
+      }
+    }
+
+    return optionalKeys
+  }
+  const optionalComfyBaseKeys = getOptionalKeys(comfyBaseSchema)
+
+  /**
    * Loads the Comfy color palette.
    *
    * @param comfyColorPalette - The palette to set.
@@ -169,6 +190,16 @@ export const useColorPaletteService = () => {
     for (const [key, value] of Object.entries(comfyColorPalette)) {
       rootStyle.setProperty('--' + key, value)
     }
+
+    for (const optionalKey of optionalComfyBaseKeys) {
+      if (!(optionalKey in comfyColorPalette)) {
+        rootStyle.setProperty(
+          '--' + optionalKey,
+          `var(--palette-${optionalKey})`
+        )
+      }
+    }
+
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
       rootStyle.setProperty(

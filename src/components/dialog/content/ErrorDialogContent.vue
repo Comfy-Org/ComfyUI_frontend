@@ -61,6 +61,7 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -86,18 +87,33 @@ const repoOwner = 'comfyanonymous'
 const repoName = 'ComfyUI'
 const reportContent = ref('')
 const reportOpen = ref(false)
+/**
+ * Open the error report content and track telemetry.
+ */
 const showReport = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_dialog_show_report_clicked'
+  })
   reportOpen.value = true
 }
 const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
+const telemetry = useTelemetry()
 
 const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
 )
 
+/**
+ * Open contact support flow from error dialog and track telemetry.
+ */
 const showContactSupport = async () => {
+  telemetry?.trackHelpResourceClicked({
+    resource_type: 'help_feedback',
+    is_external: true,
+    source: 'error_dialog'
+  })
   await useCommandStore().execute('Comfy.ContactSupport')
 }
 
