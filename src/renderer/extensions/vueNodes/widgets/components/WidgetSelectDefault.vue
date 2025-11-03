@@ -2,8 +2,8 @@
   <WidgetLayoutField :widget>
     <Select
       v-model="localValue"
-      :placeholder="`${localValue ?? ''}`"
-      :invalid="!selectOptions.includes(localValue)"
+      :placeholder="isValid ? undefined : `${localValue ?? ''}`"
+      :invalid="!isValid"
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
@@ -70,4 +70,5 @@ const selectOptions = computed(() => {
 
   return []
 })
+const isValid = computed(() => selectOptions.value.includes(localValue.value))
 </script>
