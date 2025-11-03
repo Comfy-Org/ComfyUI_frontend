@@ -272,9 +272,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Create a completely new object to ensure Vue reactivity triggers
       const updatedData = {
         ...currentData,
-        widgets: updatedWidgets,
-        // Add a timestamp to force reactivity detection
-        _updateTs: Date.now()
+        widgets: updatedWidgets
       }
 
       vueNodeData.set(nodeId, updatedData)
