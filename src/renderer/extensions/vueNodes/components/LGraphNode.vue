@@ -222,7 +222,9 @@ const hasAnyError = computed((): boolean => {
 })
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
-const bypassed = computed((): boolean => nodeData.mode === LGraphEventMode.BYPASS)
+const bypassed = computed(
+  (): boolean => nodeData.mode === LGraphEventMode.BYPASS
+)
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeBodyBackgroundColor = computed(() => {
