@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * Integration tests for template URL loading feature
+ * Unit tests for template URL loading feature
  *
  * Tests the behavior of loading templates via URL query parameters:
  * - ?template=flux_simple loads the template
  * - ?template=flux_simple&source=custom loads from custom source
  * - Invalid template shows error toast
+ * - Input validation for template and source parameters
  */
 
 // Mock vue-router
@@ -174,5 +175,56 @@ describe('Template URL Loading', () => {
 
     // Should not load when param is an array
     expect(isValid).toBe(false)
+  })
+
+  it('rejects invalid template parameter with special characters', () => {
+    // Test path traversal attempt
+    mockQueryParams = { template: '../../../etc/passwd' }
+
+    const templateParam = mockQueryParams.template
+    const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(templateParam!)
+
+    expect(isValidFormat).toBe(false)
+  })
+
+  it('rejects invalid template parameter with slash', () => {
+    mockQueryParams = { template: 'path/to/template' }
+
+    const templateParam = mockQueryParams.template
+    const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(templateParam!)
+
+    expect(isValidFormat).toBe(false)
+  })
+
+  it('accepts valid template parameter formats', () => {
+    const validTemplates = [
+      'flux_simple',
+      'flux-kontext-dev',
+      'template123',
+      'My_Template-2'
+    ]
+
+    validTemplates.forEach((template) => {
+      const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(template)
+      expect(isValidFormat).toBe(true)
+    })
+  })
+
+  it('rejects invalid source parameter with special characters', () => {
+    mockQueryParams = { template: 'flux_simple', source: '../malicious' }
+
+    const sourceParam = mockQueryParams.source!
+    const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(sourceParam)
+
+    expect(isValidFormat).toBe(false)
+  })
+
+  it('accepts valid source parameter formats', () => {
+    const validSources = ['default', 'custom-module', 'my_source', 'source123']
+
+    validSources.forEach((source) => {
+      const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(source)
+      expect(isValidFormat).toBe(true)
+    })
   })
 })

@@ -356,8 +356,26 @@ const onGraphReady = () => {
     // Check for template query parameter and load template if present
     const templateParam = route.query.template
     if (templateParam && typeof templateParam === 'string') {
+      // Validate template name format (alphanumeric, hyphens, underscores only)
+      const isValidTemplate = /^[a-zA-Z0-9_-]+$/.test(templateParam)
+      if (!isValidTemplate) {
+        console.warn(
+          `[GraphView] Invalid template parameter format: ${templateParam}`
+        )
+        return
+      }
+
       const sourceParam =
         (route.query.source as string | undefined) || 'default'
+
+      // Validate source parameter format
+      const isValidSource = /^[a-zA-Z0-9_-]+$/.test(sourceParam)
+      if (!isValidSource) {
+        console.warn(
+          `[GraphView] Invalid source parameter format: ${sourceParam}`
+        )
+        return
+      }
 
       void wrapWithErrorHandlingAsync(async () => {
         await templateWorkflows.loadTemplates()
