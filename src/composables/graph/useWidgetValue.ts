@@ -2,16 +2,17 @@
  * Composable for managing widget value synchronization between Vue and LiteGraph
  * Provides consistent pattern for immediate UI updates and LiteGraph callbacks
  */
-import { ref, watch } from 'vue'
+import { computed, toValue } from 'vue'
 import type { Ref } from 'vue'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { MaybeRefOrGetter } from '@vueuse/core'
 
 interface UseWidgetValueOptions<T extends WidgetValue = WidgetValue, U = T> {
   /** The widget configuration from LiteGraph */
   widget: SimplifiedWidget<T>
   /** The current value from parent component (can be a value or a getter function) */
-  modelValue: T | (() => T)
+  modelValue: MaybeRefOrGetter<T>
   /** Default value if modelValue is null/undefined */
   defaultValue: T
   /** Emit function from component setup */
@@ -46,15 +47,8 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
   emit,
   transform
 }: UseWidgetValueOptions<T, U>): UseWidgetValueReturn<T, U> {
-  // Normalize modelValue to always be a getter function for reactivity
-  const getModelValue =
-    typeof modelValue === 'function'
-      ? (modelValue as () => T)
-      : () => modelValue as T
-
-  // Local value for immediate UI updates
-  const initialValue = getModelValue()
-  const localValue = ref<T>(initialValue ?? defaultValue)
+  // Local value computed from modelValue for reactive UI updates
+  const localValue = computed<T>(() => toValue(modelValue) ?? defaultValue)
 
   // Handle user changes
   const onChange = (newValue: U) => {
@@ -78,17 +72,9 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
       }
     }
 
-    // 1. Update local state for immediate UI feedback
-    localValue.value = processedValue
-
-    // 2. Emit to parent component
+    // Emit to parent component (value will flow back through modelValue)
     emit('update:modelValue', processedValue)
   }
-
-  // Watch for external updates from LiteGraph
-  watch(getModelValue, (newValue) => {
-    localValue.value = newValue ?? defaultValue
-  })
 
   return {
     localValue: localValue as Ref<T>,

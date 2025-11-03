@@ -60,9 +60,7 @@ async function uploadFile(
         audioWidget.value = path
 
         // Manually trigger the callback to update VueNodes
-        if (audioWidget.callback) {
-          audioWidget.callback(path)
-        }
+        audioWidget.callback?.(path)
       }
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
@@ -187,8 +185,6 @@ app.registerExtension({
           audioUIWidget.element.src = api.apiURL(
             getResourceURL(...splitFilePath(audioWidget.value))
           )
-          // Mark canvas as dirty to trigger VueNodes refresh
-          // node.graph?.setDirtyCanvas(true, true)
         }
         // Initially load default audio file to audioUIWidget.
         if (audioWidget.value) {

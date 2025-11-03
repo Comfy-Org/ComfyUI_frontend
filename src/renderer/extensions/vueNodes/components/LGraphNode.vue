@@ -500,11 +500,11 @@ const handleDragOver = (event: DragEvent) => {
 }
 
 const handleDragLeave = (event: DragEvent) => {
-  // Only clear if we're actually leaving the node (not entering a child element)
-  const target = event.currentTarget as HTMLElement
-  const relatedTarget = event.relatedTarget as HTMLElement
-
-  if (!target.contains(relatedTarget)) {
+  const target =
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  const relatedTarget =
+    event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null
+  if (target && !target.contains(relatedTarget)) {
     isDraggingOver.value = false
   }
 }
