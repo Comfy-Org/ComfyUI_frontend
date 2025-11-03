@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (v18 or later to build; v24 for vite dev server) and pnpm
+  - Node.js (v24 or later) and pnpm
   - Git for version control
   - A running ComfyUI backend instance
   
