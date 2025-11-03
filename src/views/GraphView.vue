@@ -34,7 +34,6 @@ import {
   watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -54,7 +53,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -82,6 +81,9 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
 
+// Template URL loading
+const { loadTemplateFromUrl } = useTemplateUrlLoader()
+
 const { t } = useI18n()
 const toast = useToast()
 const settingStore = useSettingStore()
@@ -91,8 +93,6 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const route = useRoute()
-const templateWorkflows = useTemplateWorkflows()
 
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
@@ -353,50 +353,8 @@ const onGraphReady = () => {
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
     }
 
-    // Check for template query parameter and load template if present
-    const templateParam = route.query.template
-    if (templateParam && typeof templateParam === 'string') {
-      // Validate template name format (alphanumeric, hyphens, underscores only)
-      const isValidTemplate = /^[a-zA-Z0-9_-]+$/.test(templateParam)
-      if (!isValidTemplate) {
-        console.warn(
-          `[GraphView] Invalid template parameter format: ${templateParam}`
-        )
-        return
-      }
-
-      const sourceParam =
-        (route.query.source as string | undefined) || 'default'
-
-      // Validate source parameter format
-      const isValidSource = /^[a-zA-Z0-9_-]+$/.test(sourceParam)
-      if (!isValidSource) {
-        console.warn(
-          `[GraphView] Invalid source parameter format: ${sourceParam}`
-        )
-        return
-      }
-
-      void wrapWithErrorHandlingAsync(async () => {
-        await templateWorkflows.loadTemplates()
-
-        const success = await templateWorkflows.loadWorkflowTemplate(
-          templateParam,
-          sourceParam
-        )
-
-        if (!success) {
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('templateWorkflows.error.templateNotFound', {
-              templateName: templateParam
-            }),
-            life: 3000
-          })
-        }
-      })()
-    }
+    // Load template from URL if present
+    loadTemplateFromUrl()
 
     // Setting values now available after comfyApp.setup.
     // Load keybindings.

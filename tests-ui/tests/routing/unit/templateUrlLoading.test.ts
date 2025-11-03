@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+
 /**
- * Unit tests for template URL loading feature
+ * Unit tests for useTemplateUrlLoader composable
  *
  * Tests the behavior of loading templates via URL query parameters:
  * - ?template=flux_simple loads the template
@@ -54,7 +56,14 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-describe('Template URL Loading', () => {
+// Mock error handling
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => ({
+    wrapWithErrorHandlingAsync: (fn: () => Promise<void>) => fn
+  })
+}))
+
+describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockQueryParams = {}
@@ -63,22 +72,18 @@ describe('Template URL Loading', () => {
   it('does not load template when no query param present', () => {
     mockQueryParams = {}
 
-    const templateParam = mockQueryParams.template
-    const shouldLoad = !!(templateParam && typeof templateParam === 'string')
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    loadTemplateFromUrl()
 
-    expect(shouldLoad).toBe(false)
+    expect(mockLoadTemplates).not.toHaveBeenCalled()
+    expect(mockLoadWorkflowTemplate).not.toHaveBeenCalled()
   })
 
   it('loads template when query param is present', async () => {
     mockQueryParams = { template: 'flux_simple' }
 
-    const templateParam = mockQueryParams.template
-    if (templateParam && typeof templateParam === 'string') {
-      const sourceParam = mockQueryParams.source || 'default'
-
-      await mockLoadTemplates()
-      await mockLoadWorkflowTemplate(templateParam, sourceParam)
-    }
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
 
     expect(mockLoadTemplates).toHaveBeenCalledTimes(1)
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
@@ -90,13 +95,8 @@ describe('Template URL Loading', () => {
   it('uses default source when source param is not provided', async () => {
     mockQueryParams = { template: 'flux_simple' }
 
-    const templateParam = mockQueryParams.template
-    if (templateParam && typeof templateParam === 'string') {
-      const sourceParam = mockQueryParams.source || 'default'
-
-      await mockLoadTemplates()
-      await mockLoadWorkflowTemplate(templateParam, sourceParam)
-    }
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
@@ -107,13 +107,8 @@ describe('Template URL Loading', () => {
   it('uses custom source when source param is provided', async () => {
     mockQueryParams = { template: 'custom-template', source: 'custom-module' }
 
-    const templateParam = mockQueryParams.template
-    if (templateParam && typeof templateParam === 'string') {
-      const sourceParam = mockQueryParams.source || 'default'
-
-      await mockLoadTemplates()
-      await mockLoadWorkflowTemplate(templateParam, sourceParam)
-    }
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
 
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'custom-template',
@@ -125,22 +120,11 @@ describe('Template URL Loading', () => {
     mockQueryParams = { template: 'invalid-template' }
     mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
-    const templateParam = mockQueryParams.template
-    if (templateParam && typeof templateParam === 'string') {
-      const sourceParam = mockQueryParams.source || 'default'
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    loadTemplateFromUrl()
 
-      await mockLoadTemplates()
-      const success = await mockLoadWorkflowTemplate(templateParam, sourceParam)
-
-      if (!success) {
-        mockToastAdd({
-          severity: 'error',
-          summary: 'Error',
-          detail: `Template "${templateParam}" not found`,
-          life: 3000
-        })
-      }
-    }
+    // Wait for async operations to complete
+    await new Promise((resolve) => setTimeout(resolve, 10))
 
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
@@ -150,53 +134,39 @@ describe('Template URL Loading', () => {
     })
   })
 
-  it('validates query param is string before loading', async () => {
-    mockQueryParams = { template: 'flux_simple' }
-
-    const templateParam = mockQueryParams.template
-    const isValid = !!(templateParam && typeof templateParam === 'string')
-
-    expect(isValid).toBe(true)
-
-    if (isValid) {
-      const sourceParam = mockQueryParams.source || 'default'
-      await mockLoadWorkflowTemplate(templateParam, sourceParam)
-    }
-
-    expect(mockLoadWorkflowTemplate).toHaveBeenCalled()
-  })
-
   it('handles array query params correctly', () => {
     // Vue Router can return string[] for duplicate params
     mockQueryParams = { template: ['first', 'second'] as any }
 
-    const templateParam = mockQueryParams.template
-    const isValid = !!(templateParam && typeof templateParam === 'string')
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    loadTemplateFromUrl()
 
     // Should not load when param is an array
-    expect(isValid).toBe(false)
+    expect(mockLoadTemplates).not.toHaveBeenCalled()
   })
 
   it('rejects invalid template parameter with special characters', () => {
     // Test path traversal attempt
     mockQueryParams = { template: '../../../etc/passwd' }
 
-    const templateParam = mockQueryParams.template
-    const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(templateParam!)
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    loadTemplateFromUrl()
 
-    expect(isValidFormat).toBe(false)
+    // Should not load invalid template
+    expect(mockLoadTemplates).not.toHaveBeenCalled()
   })
 
   it('rejects invalid template parameter with slash', () => {
     mockQueryParams = { template: 'path/to/template' }
 
-    const templateParam = mockQueryParams.template
-    const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(templateParam!)
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    loadTemplateFromUrl()
 
-    expect(isValidFormat).toBe(false)
+    // Should not load invalid template
+    expect(mockLoadTemplates).not.toHaveBeenCalled()
   })
 
-  it('accepts valid template parameter formats', () => {
+  it('accepts valid template parameter formats', async () => {
     const validTemplates = [
       'flux_simple',
       'flux-kontext-dev',
@@ -204,27 +174,41 @@ describe('Template URL Loading', () => {
       'My_Template-2'
     ]
 
-    validTemplates.forEach((template) => {
-      const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(template)
-      expect(isValidFormat).toBe(true)
-    })
+    for (const template of validTemplates) {
+      vi.clearAllMocks()
+      mockQueryParams = { template }
+
+      const { loadTemplateFromUrl } = useTemplateUrlLoader()
+      await loadTemplateFromUrl()
+
+      expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(template, 'default')
+    }
   })
 
   it('rejects invalid source parameter with special characters', () => {
     mockQueryParams = { template: 'flux_simple', source: '../malicious' }
 
-    const sourceParam = mockQueryParams.source!
-    const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(sourceParam)
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    loadTemplateFromUrl()
 
-    expect(isValidFormat).toBe(false)
+    // Should not load with invalid source
+    expect(mockLoadTemplates).not.toHaveBeenCalled()
   })
 
-  it('accepts valid source parameter formats', () => {
+  it('accepts valid source parameter formats', async () => {
     const validSources = ['default', 'custom-module', 'my_source', 'source123']
 
-    validSources.forEach((source) => {
-      const isValidFormat = /^[a-zA-Z0-9_-]+$/.test(source)
-      expect(isValidFormat).toBe(true)
-    })
+    for (const source of validSources) {
+      vi.clearAllMocks()
+      mockQueryParams = { template: 'flux_simple', source }
+
+      const { loadTemplateFromUrl } = useTemplateUrlLoader()
+      await loadTemplateFromUrl()
+
+      expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
+        'flux_simple',
+        source
+      )
+    }
   })
 })
