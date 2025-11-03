@@ -2,6 +2,7 @@
   <WidgetLayoutField :widget>
     <Select
       v-model="localValue"
+      :placeholder="`${localValue ?? ''}`"
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
