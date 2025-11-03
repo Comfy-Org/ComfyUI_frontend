@@ -3,6 +3,7 @@
     <Select
       v-model="localValue"
       :placeholder="`${localValue ?? ''}`"
+      :invalid="!selectOptions.includes(localValue)"
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
