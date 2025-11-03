@@ -354,7 +354,7 @@ const onGraphReady = () => {
     }
 
     // Load template from URL if present
-    loadTemplateFromUrl()
+    void loadTemplateFromUrl()
 
     // Setting values now available after comfyApp.setup.
     // Load keybindings.
