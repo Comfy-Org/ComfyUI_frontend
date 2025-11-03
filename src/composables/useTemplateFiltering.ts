@@ -114,16 +114,17 @@ export function useTemplateFiltering(
     }
 
     return filteredByUseCases.value.filter((template) => {
-      // Use openSource field to determine if it runs on external/remote API (openSource === false)
-      // Explicitly check for false to handle undefined (undefined should be treated as open source)
+      // Use openSource field to determine where template runs
+      // openSource === false -> External/Remote API
+      // openSource !== false -> ComfyUI (includes true and undefined)
       const isExternalAPI = template.openSource === false
+      const isComfyUI = template.openSource !== false
 
       return selectedRunsOn.value.some((selectedRunsOn) => {
         if (selectedRunsOn === 'External or Remote API') {
           return isExternalAPI
         } else if (selectedRunsOn === 'ComfyUI') {
-          // Treat undefined as open source
-          return template.openSource !== false
+          return isComfyUI
         }
         return false
       })
