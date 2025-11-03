@@ -353,28 +353,14 @@ export class ContextMenu<TValue = unknown> {
         e &&
         !ContextMenu.isCursorOverElement(e, this.parentMenu.root)
       ) {
-        ContextMenu.trigger(
-          this.parentMenu.root,
-          `${LiteGraph.pointerevents_method}leave`,
-          e
-        )
+        const evt = document.createEvent('CustomEvent')
+        const event_name = `${LiteGraph.pointerevents_method}leave`
+        evt.initCustomEvent(event_name, true, true, e)
+        if (this.parentMenu.root.dispatchEvent)
+          this.parentMenu.root.dispatchEvent(evt)
       }
     }
     this.current_submenu?.close(e, true)
-  }
-
-  /** @deprecated Likely unused, however code search was inconclusive (too many results to check by hand). */
-  // this code is used to trigger events easily (used in the context menu mouseleave
-  static trigger(
-    element: HTMLDivElement,
-    event_name: string,
-    params: MouseEvent
-  ): CustomEvent {
-    const evt = document.createEvent('CustomEvent')
-    evt.initCustomEvent(event_name, true, true, params)
-    if (element.dispatchEvent) element.dispatchEvent(evt)
-    // else nothing seems bound here so nothing to do
-    return evt
   }
 
   // returns the top most menu
