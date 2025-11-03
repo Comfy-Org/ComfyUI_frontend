@@ -24,18 +24,19 @@
       <div>
         <h3
           :id="titleId"
+          v-tooltip.top="{ value: asset.name, showDelay: tooltipDelay }"
           :class="
             cn(
               'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
               'text-base-foreground'
             )
           "
-          :title="asset.name"
         >
           {{ asset.name }}
         </h3>
         <p
           :id="descId"
+          v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
@@ -43,7 +44,6 @@
               'dark-theme:text-slate-100'
             )
           "
-          :title="asset.description"
         >
           {{ asset.description }}
         </p>
@@ -76,6 +76,7 @@ import { computed, useId } from 'vue'
 
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
@@ -83,8 +84,14 @@ const props = defineProps<{
   interactive?: boolean
 }>()
 
+const settingStore = useSettingStore()
+
 const titleId = useId()
 const descId = useId()
+
+const tooltipDelay = computed<number>(() =>
+  settingStore.get('LiteGraph.Node.TooltipDelay')
+)
 
 const { error } = useImage({
   src: props.asset.preview_url ?? '',
