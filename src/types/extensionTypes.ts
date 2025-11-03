@@ -117,7 +117,7 @@ export interface CommandManager {
   execute(
     command: string,
     options?: {
-      errorHandler?: (error: any) => void
+      errorHandler?: (error: unknown) => void
       metadata?: Record<string, unknown>
     }
   ): void

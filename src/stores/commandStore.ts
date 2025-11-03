@@ -97,7 +97,7 @@ export const useCommandStore = defineStore('command', () => {
   const execute = async (
     commandId: string,
     options?: {
-      errorHandler?: (error: any) => void
+      errorHandler?: (error: unknown) => void
       metadata?: Record<string, unknown>
     }
   ) => {
