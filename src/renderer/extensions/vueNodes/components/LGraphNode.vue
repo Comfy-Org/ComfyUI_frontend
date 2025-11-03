@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { useMouseInElement, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -484,6 +484,9 @@ const nodeMedia = computed(() => {
 
 const nodeContainerRef = ref<HTMLDivElement>()
 
+// Track mouse position relative to node container for drag and drop
+const { isOutside } = useMouseInElement(nodeContainerRef)
+
 // Drag and drop support
 const isDraggingOver = ref(false)
 
@@ -499,12 +502,8 @@ const handleDragOver = (event: DragEvent) => {
   isDraggingOver.value = canDrop
 }
 
-const handleDragLeave = (event: DragEvent) => {
-  const target =
-    event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  const relatedTarget =
-    event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null
-  if (target && !target.contains(relatedTarget)) {
+const handleDragLeave = () => {
+  if (isOutside.value) {
     isDraggingOver.value = false
   }
 }
