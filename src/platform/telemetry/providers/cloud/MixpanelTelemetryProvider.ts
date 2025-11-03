@@ -16,6 +16,7 @@ import type {
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -32,6 +33,7 @@ import type {
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
+  UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
@@ -59,6 +61,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
+  private lastTriggerSource: ExecutionTriggerSource | undefined
 
   // Onboarding mode - starts true, set to false when app is fully ready
   private isOnboardingMode = true
@@ -354,7 +357,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     clearTopupUtil()
   }
 
-  trackRunButton(options?: { subscribe_to_run?: boolean }): void {
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void {
     if (this.isOnboardingMode) {
       // During onboarding, track basic run button click without workflow context
       this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, {
@@ -365,7 +371,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         total_node_count: 0,
         subgraph_count: 0,
         has_api_nodes: false,
-        api_node_names: []
+        api_node_names: [],
+        trigger_source: options?.trigger_source
       })
       return
     }
@@ -380,18 +387,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       total_node_count: executionContext.total_node_count,
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names
+      api_node_names: executionContext.api_node_names,
+      trigger_source: options?.trigger_source
     }
 
+    this.lastTriggerSource = options?.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
-  }
-
-  trackRunTriggeredViaKeybinding(): void {
-    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_KEYBINDING)
-  }
-
-  trackRunTriggeredViaMenu(): void {
-    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_MENU)
   }
 
   trackSurvey(
@@ -501,6 +502,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
+  trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
+    this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
   trackWorkflowExecution(): void {
     if (this.isOnboardingMode) {
       // During onboarding, track basic execution without workflow context
@@ -518,7 +523,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
 
     const context = this.getExecutionContext()
-    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
+    const eventContext: ExecutionContext = {
+      ...context,
+      trigger_source: this.lastTriggerSource ?? 'unknown'
+    }
+    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
+    this.lastTriggerSource = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {

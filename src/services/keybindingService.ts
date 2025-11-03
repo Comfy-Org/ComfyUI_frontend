@@ -1,7 +1,5 @@
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -66,15 +64,20 @@ export const useKeybindingService = () => {
 
       // Prevent default browser behavior first, then execute the command
       event.preventDefault()
-      if (
-        isCloud &&
-        (keybinding.commandId === 'Comfy.QueuePrompt' ||
-          keybinding.commandId === 'Comfy.QueuePromptFront' ||
-          keybinding.commandId === 'Comfy.QueueSelectedOutputNodes')
-      ) {
-        useTelemetry()?.trackRunTriggeredViaKeybinding()
+      const runCommandIds = new Set([
+        'Comfy.QueuePrompt',
+        'Comfy.QueuePromptFront',
+        'Comfy.QueueSelectedOutputNodes'
+      ])
+      if (runCommandIds.has(keybinding.commandId)) {
+        await commandStore.execute(keybinding.commandId, {
+          metadata: {
+            trigger_source: 'keybinding'
+          }
+        })
+      } else {
+        await commandStore.execute(keybinding.commandId)
       }
-      await commandStore.execute(keybinding.commandId)
       return
     }
 

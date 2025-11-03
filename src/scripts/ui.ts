@@ -480,7 +480,8 @@ export class ComfyUI {
           textContent: 'Queue Prompt',
           onclick: () => {
             if (isCloud) {
-              useTelemetry()?.trackRunTriggeredViaMenu()
+              useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+              useTelemetry()?.trackWorkflowExecution()
             }
             app.queuePrompt(0, this.batchCount)
           }
@@ -587,7 +588,8 @@ export class ComfyUI {
             textContent: 'Queue Front',
             onclick: () => {
               if (isCloud) {
-                useTelemetry()?.trackRunTriggeredViaMenu()
+                useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+                useTelemetry()?.trackWorkflowExecution()
               }
               app.queuePrompt(-1, this.batchCount)
             }
