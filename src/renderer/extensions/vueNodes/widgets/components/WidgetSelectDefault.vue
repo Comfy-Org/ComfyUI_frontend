@@ -31,7 +31,6 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { ensureValueInOptions } from '../utils/widgetOptionsUtils'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

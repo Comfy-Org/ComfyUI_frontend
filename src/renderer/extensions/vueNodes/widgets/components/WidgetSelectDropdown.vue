@@ -16,7 +16,6 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { ensureValueInOptions } from '../utils/widgetOptionsUtils'
 import FormDropdown from './form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from './form/dropdown/types'
 import type {
