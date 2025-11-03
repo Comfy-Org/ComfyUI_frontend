@@ -2,10 +2,10 @@
   <WidgetLayoutField :widget>
     <Select
       v-model="localValue"
-      :placeholder="invalid ? `${localValue ?? ''}` : undefined"
       :invalid
       :options="selectOptions"
       v-bind="combinedProps"
+      :placeholder
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       :aria-label="widget.name"
       size="small"
@@ -70,5 +70,12 @@ const selectOptions = computed(() => {
 
   return []
 })
-const invalid = computed(() => !selectOptions.value.includes(localValue.value))
+const invalid = computed(
+  () => !!localValue.value && !selectOptions.value.includes(localValue.value)
+)
+const placeholder = computed(() =>
+  invalid.value
+    ? `${localValue.value}`
+    : (combinedProps.value as { placeholder?: string }).placeholder
+)
 </script>
