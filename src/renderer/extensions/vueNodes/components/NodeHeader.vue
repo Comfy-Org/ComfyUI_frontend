@@ -96,6 +96,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -183,8 +184,10 @@ const resolveTitle = (info: VueNodeData | undefined) => {
 // Local state for title to provide immediate feedback
 const displayTitle = ref(resolveTitle(nodeData))
 
-const bypassed = computed((): boolean => nodeData?.mode === 4)
-const muted = computed((): boolean => nodeData?.mode === 2) // NEVER mode
+const bypassed = computed(
+  (): boolean => nodeData?.mode === LGraphEventMode.BYPASS
+)
+const muted = computed((): boolean => nodeData?.mode === LGraphEventMode.NEVER)
 
 const statusBadge = computed((): NodeBadgeProps | undefined =>
   muted.value
