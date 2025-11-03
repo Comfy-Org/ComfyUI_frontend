@@ -2,8 +2,6 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-import { useErrorHandling } from '@/composables/useErrorHandling'
-
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
 /**
@@ -22,7 +20,6 @@ export function useTemplateUrlLoader() {
   const { t } = useI18n()
   const toast = useToast()
   const templateWorkflows = useTemplateWorkflows()
-  const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
@@ -33,9 +30,9 @@ export function useTemplateUrlLoader() {
 
   /**
    * Loads template from URL query parameters if present
-   * Called automatically on component mount
+   * Handles errors internally and shows appropriate user feedback
    */
-  const loadTemplateFromUrl = () => {
+  const loadTemplateFromUrl = async () => {
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {
@@ -60,8 +57,8 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    // Load template
-    void wrapWithErrorHandlingAsync(async () => {
+    // Load template with error handling
+    try {
       await templateWorkflows.loadTemplates()
 
       const success = await templateWorkflows.loadWorkflowTemplate(
@@ -79,7 +76,18 @@ export function useTemplateUrlLoader() {
           life: 3000
         })
       }
-    })()
+    } catch (error) {
+      console.error(
+        '[useTemplateUrlLoader] Failed to load template from URL:',
+        error
+      )
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.errorLoadingTemplate'),
+        life: 3000
+      })
+    }
   }
 
   return {

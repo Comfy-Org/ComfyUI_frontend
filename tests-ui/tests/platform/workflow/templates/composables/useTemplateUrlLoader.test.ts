@@ -51,15 +51,9 @@ vi.mock('vue-i18n', () => ({
       if (key === 'templateWorkflows.error.templateNotFound') {
         return `Template "${params?.templateName}" not found`
       }
+      if (key === 'g.errorLoadingTemplate') return 'Failed to load template'
       return key
     })
-  })
-}))
-
-// Mock error handling
-vi.mock('@/composables/useErrorHandling', () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync: (fn: () => Promise<void>) => fn
   })
 }))
 
@@ -73,7 +67,7 @@ describe('useTemplateUrlLoader', () => {
     mockQueryParams = {}
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    loadTemplateFromUrl()
+    void loadTemplateFromUrl()
 
     expect(mockLoadTemplates).not.toHaveBeenCalled()
     expect(mockLoadWorkflowTemplate).not.toHaveBeenCalled()
@@ -121,10 +115,7 @@ describe('useTemplateUrlLoader', () => {
     mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    loadTemplateFromUrl()
-
-    // Wait for async operations to complete
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await loadTemplateFromUrl()
 
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
@@ -139,7 +130,7 @@ describe('useTemplateUrlLoader', () => {
     mockQueryParams = { template: ['first', 'second'] as any }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    loadTemplateFromUrl()
+    void loadTemplateFromUrl()
 
     // Should not load when param is an array
     expect(mockLoadTemplates).not.toHaveBeenCalled()
@@ -150,7 +141,7 @@ describe('useTemplateUrlLoader', () => {
     mockQueryParams = { template: '../../../etc/passwd' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    loadTemplateFromUrl()
+    void loadTemplateFromUrl()
 
     // Should not load invalid template
     expect(mockLoadTemplates).not.toHaveBeenCalled()
@@ -160,7 +151,7 @@ describe('useTemplateUrlLoader', () => {
     mockQueryParams = { template: 'path/to/template' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    loadTemplateFromUrl()
+    void loadTemplateFromUrl()
 
     // Should not load invalid template
     expect(mockLoadTemplates).not.toHaveBeenCalled()
@@ -189,7 +180,7 @@ describe('useTemplateUrlLoader', () => {
     mockQueryParams = { template: 'flux_simple', source: '../malicious' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    loadTemplateFromUrl()
+    void loadTemplateFromUrl()
 
     // Should not load with invalid source
     expect(mockLoadTemplates).not.toHaveBeenCalled()
@@ -210,5 +201,20 @@ describe('useTemplateUrlLoader', () => {
         source
       )
     }
+  })
+
+  it('shows error toast when exception is thrown', async () => {
+    mockQueryParams = { template: 'flux_simple' }
+    mockLoadTemplates.mockRejectedValueOnce(new Error('Network error'))
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
+
+    expect(mockToastAdd).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load template',
+      life: 3000
+    })
   })
 })
