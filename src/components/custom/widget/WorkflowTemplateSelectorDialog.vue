@@ -68,17 +68,17 @@
             </template>
           </MultiSelect>
 
-          <!-- License Filter -->
+          <!-- Runs On Filter -->
           <MultiSelect
-            v-model="selectedLicenseObjects"
-            :label="licenseFilterLabel"
-            :options="licenseOptions"
+            v-model="selectedRunsOnObjects"
+            :label="runsOnFilterLabel"
+            :options="runsOnOptions"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
           >
             <template #icon>
-              <i class="icon-[lucide--file-text]" />
+              <i class="icon-[lucide--server]" />
             </template>
           </MultiSelect>
         </div>
@@ -528,12 +528,12 @@ const {
   searchQuery,
   selectedModels,
   selectedUseCases,
-  selectedLicenses,
+  selectedRunsOn,
   sortBy,
   filteredTemplates,
   availableModels,
   availableUseCases,
-  availableLicenses,
+  availableRunsOn,
   filteredCount,
   totalCount,
   resetFilters
@@ -561,15 +561,15 @@ const selectedUseCaseObjects = computed({
   }
 })
 
-const selectedLicenseObjects = computed({
+const selectedRunsOnObjects = computed({
   get() {
-    return selectedLicenses.value.map((license) => ({
-      name: license,
-      value: license
+    return selectedRunsOn.value.map((runsOn) => ({
+      name: runsOn,
+      value: runsOn
     }))
   },
   set(value: { name: string; value: string }[]) {
-    selectedLicenses.value = value.map((item) => item.value)
+    selectedRunsOn.value = value.map((item) => item.value)
   }
 })
 
@@ -602,10 +602,10 @@ const useCaseOptions = computed(() =>
   }))
 )
 
-const licenseOptions = computed(() =>
-  availableLicenses.value.map((license) => ({
-    name: license,
-    value: license
+const runsOnOptions = computed(() =>
+  availableRunsOn.value.map((runsOn) => ({
+    name: runsOn,
+    value: runsOn
   }))
 )
 
@@ -634,14 +634,14 @@ const useCaseFilterLabel = computed(() => {
   }
 })
 
-const licenseFilterLabel = computed(() => {
-  if (selectedLicenseObjects.value.length === 0) {
-    return t('templateWorkflows.licenseFilter', 'License')
-  } else if (selectedLicenseObjects.value.length === 1) {
-    return selectedLicenseObjects.value[0].name
+const runsOnFilterLabel = computed(() => {
+  if (selectedRunsOnObjects.value.length === 0) {
+    return t('templateWorkflows.runsOnFilter', 'Runs On')
+  } else if (selectedRunsOnObjects.value.length === 1) {
+    return selectedRunsOnObjects.value[0].name
   } else {
-    return t('templateWorkflows.licensesSelected', {
-      count: selectedLicenseObjects.value.length
+    return t('templateWorkflows.runsOnSelected', {
+      count: selectedRunsOnObjects.value.length
     })
   }
 })
@@ -708,7 +708,7 @@ watch(
     sortBy,
     selectedModels,
     selectedUseCases,
-    selectedLicenses
+    selectedRunsOn
   ],
   () => {
     resetPagination()

@@ -766,7 +766,7 @@
     "modelFilter": "Model Filter",
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
-    "licensesSelected": "{count} Licenses",
+    "runsOnSelected": "{count} Runs On",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
