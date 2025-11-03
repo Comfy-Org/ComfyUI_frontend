@@ -3,6 +3,7 @@
     <Select
       v-model="localValue"
       :options="selectOptions"
+      :placeholder="selectPlaceholder"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       :aria-label="widget.name"
@@ -64,9 +65,27 @@ const selectOptions = computed(() => {
   const options = props.widget.options
 
   if (options?.values && Array.isArray(options.values)) {
-    return ensureValueInOptions(options.values, localValue.value)
+    return options.values
   }
 
   return []
+})
+
+// Show the deserialized value as placeholder when it's not in the options list
+// This preserves legacy behavior where workflow values are shown even if deleted
+const selectPlaceholder = computed(() => {
+  const currentValue = localValue.value
+
+  // If there's a current value and it's not in the options, show it as placeholder
+  if (
+    currentValue != null &&
+    currentValue !== '' &&
+    !selectOptions.value.includes(currentValue)
+  ) {
+    return String(currentValue)
+  }
+
+  // Otherwise use the default placeholder from options
+  return props.widget.options?.placeholder
 })
 </script>

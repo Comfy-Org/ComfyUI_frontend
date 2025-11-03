@@ -180,7 +180,7 @@ describe('WidgetSelect Value Binding', () => {
       expect(emitted![0]).toContain('100')
     })
 
-    it('displays value not in options list (deserialized workflow value)', async () => {
+    it('displays value not in options list as placeholder (deserialized workflow value)', async () => {
       // Simulate a workflow loaded with a value that's no longer in the options
       // (e.g., a deleted model file)
       const currentOptions = ['model1.ckpt', 'model2.safetensors']
@@ -191,30 +191,29 @@ describe('WidgetSelect Value Binding', () => {
       const wrapper = mountComponent(widget, deserializedValue)
 
       const select = wrapper.findComponent({ name: 'Select' })
-      const options = select.props('options')
 
-      // The current value should be included in the options
-      expect(options).toContain(deserializedValue)
-      // And it should be first
-      expect(options[0]).toBe(deserializedValue)
-      // Original options should still be present
+      // The deserialized value should be shown as the placeholder
+      expect(select.props('placeholder')).toBe(deserializedValue)
+
+      // The options should remain unchanged (not include the deserialized value)
+      const options = select.props('options')
+      expect(options).not.toContain(deserializedValue)
       expect(options).toContain('model1.ckpt')
       expect(options).toContain('model2.safetensors')
     })
 
-    it('does not duplicate value if it exists in options', async () => {
+    it('uses widget placeholder when value exists in options', async () => {
       const options = ['option1', 'option2', 'option3']
-      const widget = createMockWidget('option2', { values: options })
+      const widget = createMockWidget('option2', {
+        values: options,
+        placeholder: 'Select an option'
+      })
       const wrapper = mountComponent(widget, 'option2')
 
       const select = wrapper.findComponent({ name: 'Select' })
-      const selectOptions = select.props('options') as string[]
 
-      // Should not duplicate the value
-      expect(selectOptions).toEqual(options)
-      expect(
-        selectOptions.filter((opt: string) => opt === 'option2')
-      ).toHaveLength(1)
+      // Should use the widget's placeholder since value is in options
+      expect(select.props('placeholder')).toBe('Select an option')
     })
   })
 

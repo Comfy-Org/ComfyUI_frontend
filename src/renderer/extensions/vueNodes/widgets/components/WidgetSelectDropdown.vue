@@ -75,12 +75,7 @@ const inputItems = computed<DropdownItem[]>(() => {
     return []
   }
 
-  const valuesWithCurrent = ensureValueInOptions(
-    values,
-    typeof localValue.value === 'string' ? localValue.value : undefined
-  )
-
-  return valuesWithCurrent.map((value: string, index: number) => ({
+  return values.map((value: string, index: number) => ({
     id: `input-${index}`,
     mediaSrc: getMediaUrl(value, 'input'),
     name: value,
@@ -134,6 +129,20 @@ const dropdownItems = computed<DropdownItem[]>(() => {
 })
 
 const mediaPlaceholder = computed(() => {
+  const currentValue = localValue.value
+  const values = props.widget.options?.values || []
+
+  // If there's a current value and it's not in the options, show it as placeholder
+  // This preserves legacy behavior where workflow values are shown even if deleted
+  if (
+    currentValue != null &&
+    currentValue !== '' &&
+    typeof currentValue === 'string' &&
+    !values.includes(currentValue)
+  ) {
+    return currentValue
+  }
+
   const options = props.widget.options
 
   if (options?.placeholder) {
