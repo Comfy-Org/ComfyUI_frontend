@@ -100,7 +100,7 @@ import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
-const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
+const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => {
@@ -158,9 +158,18 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  useTelemetry()?.trackRunButton({ subscribe_to_run: false })
+  if (batchCount.value > 1) {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'queue_run_multiple_batches_submitted'
+    })
+  }
 
-  await commandStore.execute(commandId)
+  await commandStore.execute(commandId, {
+    metadata: {
+      subscribe_to_run: false,
+      trigger_source: 'button'
+    }
+  })
 }
 </script>
 

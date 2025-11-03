@@ -3,8 +3,6 @@ import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
@@ -64,17 +62,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       .map(
         (command) =>
           ({
-            command: () => {
-              if (
-                isCloud &&
-                (command.id === 'Comfy.QueuePrompt' ||
-                  command.id === 'Comfy.QueuePromptFront' ||
-                  command.id === 'Comfy.QueueSelectedOutputNodes')
-              ) {
-                useTelemetry()?.trackRunTriggeredViaMenu()
-              }
-              return commandStore.execute(command.id)
-            },
+            command: () => commandStore.execute(command.id),
             label: command.menubarLabel,
             icon: command.icon,
             tooltip: command.tooltip,
