@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
     tabindex="0"
     role="region"
     :aria-label="$t('g.imagePreview')"
@@ -11,7 +11,7 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="min-h-88 w-full overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
