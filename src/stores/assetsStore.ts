@@ -1,6 +1,6 @@
 import { useAsyncState } from '@vueuse/core'
-import { computed } from 'vue'
 import { defineStore } from 'pinia'
+import { computed } from 'vue'
 
 import {
   mapInputFileToAssetItem,
@@ -12,6 +12,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 
 import { TaskItemImpl } from './queueStore'
+
+const INPUT_LIMIT = 100
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -37,7 +39,9 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
  * Fetch input files from cloud service
  */
 async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag('input', false)
+  return await assetService.getAssetsByTag('input', false, {
+    limit: INPUT_LIMIT
+  })
 }
 
 /**

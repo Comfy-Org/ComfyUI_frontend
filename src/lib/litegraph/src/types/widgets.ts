@@ -29,6 +29,8 @@ export interface IWidgetOptions<TValues = unknown[]> {
   canvasOnly?: boolean
 
   values?: TValues
+  /** Optional function to format values for display (e.g., hash → human-readable name) */
+  getOptionLabel?: (value?: string | null) => string
   callback?: IWidget['callback']
 }
 
@@ -63,7 +65,6 @@ export type IWidget =
   | IStringWidget
   | IComboWidget
   | IStringComboWidget
-  | IMappedComboWidget
   | ICustomWidget
   | ISliderWidget
   | IButtonWidget
@@ -117,35 +118,20 @@ export interface IStringComboWidget
   value: string
 }
 
-export type ComboWidgetValues =
+type ComboWidgetValues =
   | string[]
   | Record<string, string>
   | ((widget?: IComboWidget, node?: LGraphNode) => string[])
 
-/**
- * Type accepts both 'combo' and 'mapped_combo' for polymorphism with {@link IMappedComboWidget}.
- *
- * This matches runtime: MappedComboWidget class extends ComboWidget class, so instances of
- * MappedComboWidget must be assignable to functions/properties expecting IComboWidget.
- */
+/** A combo-box widget (dropdown, select, etc) */
 export interface IComboWidget
   extends IBaseWidget<
     string | number,
-    'combo' | 'mapped_combo',
+    'combo',
     RequiredProps<IWidgetOptions<ComboWidgetValues>, 'values'>
   > {
-  type: 'combo' | 'mapped_combo'
+  type: 'combo'
   value: string | number
-}
-
-/** A mapped combo widget that displays human-readable names for hash-based filenames */
-export interface IMappedComboWidget
-  extends Omit<IComboWidget, 'type' | 'options'> {
-  type: 'mapped_combo'
-  options: RequiredProps<IWidgetOptions<ComboWidgetValues>, 'values'> & {
-    /** Optional function to map widget value to display value (e.g., hash filename to human-readable name) */
-    mapValue?: (value: string) => string
-  }
 }
 
 /** A widget with a string value */

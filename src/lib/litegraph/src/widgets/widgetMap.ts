@@ -3,7 +3,6 @@ import type {
   IAssetWidget,
   IBaseWidget,
   IComboWidget,
-  IMappedComboWidget,
   IWidget,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
@@ -21,7 +20,6 @@ import { GalleriaWidget } from './GalleriaWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
-import { MappedComboWidget } from './MappedComboWidget'
 import { MarkdownWidget } from './MarkdownWidget'
 import { MultiSelectWidget } from './MultiSelectWidget'
 import { NumberWidget } from './NumberWidget'
@@ -37,7 +35,6 @@ export type WidgetTypeMap = {
   slider: SliderWidget
   knob: KnobWidget
   combo: ComboWidget
-  mapped_combo: MappedComboWidget
   number: NumberWidget
   string: TextWidget
   text: TextWidget
@@ -95,11 +92,6 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(KnobWidget, narrowedWidget, node)
     case 'combo':
       return toClass(ComboWidget, narrowedWidget, node)
-    case 'mapped_combo':
-      if (!isMappedComboWidget(narrowedWidget)) {
-        throw new Error('Expected IMappedComboWidget but got IComboWidget')
-      }
-      return toClass(MappedComboWidget, narrowedWidget, node)
     case 'number':
       return toClass(NumberWidget, narrowedWidget, node)
     case 'string':
@@ -139,13 +131,6 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
 /** Type guard: Narrow **from {@link IBaseWidget}** to {@link IComboWidget}. */
 export function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IMappedComboWidget}. */
-export function isMappedComboWidget(
-  widget: IBaseWidget
-): widget is IMappedComboWidget {
-  return widget.type === 'mapped_combo'
 }
 
 /** Type guard: Narrow **from {@link IBaseWidget}** to {@link IAssetWidget}. */
