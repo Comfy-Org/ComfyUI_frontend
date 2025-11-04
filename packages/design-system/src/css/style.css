@@ -73,6 +73,7 @@
 
   --color-jade-400: #47e469;
   --color-jade-600: #00cd72;
+  --color-graphite-400: #9C9EAB;
 
   --color-gold-400: #fcbf64;
   --color-gold-500: #fdab34;
@@ -227,7 +228,7 @@
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
   --secondary-background: var(--color-smoke-200);
-  --secondary-background-hover: var(--color-smoke-400);
+  --secondary-background-hover: var(--color-smoke-200);
   --secondary-background-selected: var(--color-smoke-600);
   --base-background: var(--color-white);
   --primary-background: var(--color-azure-400);
@@ -241,6 +242,17 @@
   --border-subtle: var(--color-smoke-400);
   --muted-background: var(--color-smoke-700);
   --accent-background: var(--color-smoke-800);
+
+  /* Component/Node tokens from design system light */
+  --component-node-background: var(--color-white);
+  --component-node-border: var(--color-border-default);
+  --component-node-foreground: var(--base-foreground);
+  --component-node-foreground-secondary: var(--color-muted-foreground);
+  --component-node-widget-background: var(--secondary-background);
+  --component-node-widget-background-hovered: var(--secondary-background-hover);
+  --component-node-widget-background-selected: var(--secondary-background-selected);
+  --component-node-widget-background-disabled: var(--color-alpha-ash-500-20);
+  --component-node-widget-background-highlighted: var(--color-ash-500);
 
   /* Default UI element color palette variables */
    --palette-contrast-mix-color: #fff;
@@ -301,7 +313,7 @@
   --node-component-surface-highlight: var(--color-slate-100);
   --node-component-surface-hovered: var(--color-charcoal-600);
   --node-component-surface-selected: var(--color-charcoal-200);
-  --node-component-surface: var(--color-charcoal-800);
+  --node-component-surface: var(--color-charcoal-600);
   --node-component-tooltip: var(--color-white);
   --node-component-tooltip-border: var(--color-slate-300);
   --node-component-tooltip-surface: var(--color-charcoal-800);
@@ -339,6 +351,17 @@
   --border-subtle: var(--color-charcoal-300);
   --muted-background: var(--color-charcoal-100);
   --accent-background: var(--color-charcoal-100);
+
+  /* Component/Node tokens from design dark system */
+  --component-node-background: var(--color-charcoal-600);
+  --component-node-border: var(--color-charcoal-100);
+  --component-node-foreground: var(--base-foreground);
+  --component-node-foreground-secondary: var(--color-muted-foreground);
+  --component-node-widget-background: var(--secondary-background-hover);
+  --component-node-widget-background-hovered: var(--secondary-background-selected);
+  --component-node-widget-background-selected: var(--color-charcoal-100);
+  --component-node-widget-background-disabled: var(--color-alpha-charcoal-600-30);
+  --component-node-widget-background-highlighted: var(--color-graphite-400);
 }
 
 @theme inline {
@@ -405,6 +428,17 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-primary: var(--text-primary);
   --color-input-surface: var(--input-surface);
+
+  /* Component/Node design tokens */
+  --color-component-node-background: var(--component-node-background);
+  --color-component-node-border: var(--component-node-border);
+  --color-component-node-foreground: var(--component-node-foreground);
+  --color-component-node-foreground-secondary: var(--component-node-foreground-secondary);
+  --color-component-node-widget-background: var(--component-node-widget-background);
+  --color-component-node-widget-background-hovered: var(--component-node-widget-background-hovered);
+  --color-component-node-widget-background-selected: var(--component-node-widget-background-selected);
+  --color-component-node-widget-background-disabled: var(--component-node-widget-background-disabled);
+  --color-component-node-widget-background-highlighted: var(--component-node-widget-background-highlighted);
 
   /* Semantic tokens */
   --color-base-foreground: var(--base-foreground);
