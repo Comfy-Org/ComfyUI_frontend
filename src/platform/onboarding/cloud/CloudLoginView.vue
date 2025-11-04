@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full items-center justify-center p-8">
-    <div class="max-w-[100vw] p-2 lg:w-96">
+    <div class="max-w-screen p-2 lg:w-96">
       <!-- Header -->
       <div class="mt-6 mb-8 flex flex-col gap-4">
         <h1 class="my-0 text-xl leading-normal font-medium">
@@ -108,39 +108,23 @@ const onSuccess = async () => {
   await router.push({ name: 'cloud-user-check' })
 }
 
-// Custom error handler for inline display
-const inlineErrorHandler = (error: unknown) => {
-  if (error instanceof Error) {
-    authError.value = error.message
-  } else {
-    authError.value = String(error)
-  }
-  authActions.reportError(error)
-}
-
 const signInWithGoogle = async () => {
   authError.value = ''
-  if (await authActions.signInWithGoogle(inlineErrorHandler)()) {
+  if (await authActions.signInWithGoogle()) {
     await onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
-  if (await authActions.signInWithGithub(inlineErrorHandler)()) {
+  if (await authActions.signInWithGithub()) {
     await onSuccess()
   }
 }
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
-  if (
-    await authActions.signInWithEmail(
-      values.email,
-      values.password,
-      inlineErrorHandler
-    )()
-  ) {
+  if (await authActions.signInWithEmail(values.email, values.password)) {
     await onSuccess()
   }
 }

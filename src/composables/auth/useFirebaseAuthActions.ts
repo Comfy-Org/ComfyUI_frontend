@@ -1,13 +1,18 @@
 import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
-import router from '@/router'
 
 /**
  * Service for Firebase Auth actions.
@@ -54,13 +59,14 @@ export const useFirebaseAuthActions = () => {
       life: 5000
     })
 
-    // CRITICAL: Use full page navigation for logout to prevent stale app state
-    // Issue: SPA routing during logout can leave extensions loaded with stale auth state
-    // This causes subscription dialogs to appear incorrectly during re-login onboarding
-    // Full page reload ensures complete app state reset and proper onboarding flow
-    const hostname = window.location.hostname
-    if (hostname.includes('cloud.comfy.org')) {
-      await router.push('/cloud/login')
+    if (isCloud) {
+      try {
+        const router = useRouter()
+        await router.push({ name: 'cloud-login' })
+      } catch (error) {
+        // needed for local development until we bring in cloud login pages.
+        window.location.reload()
+      }
     }
   }, reportError)
 
@@ -78,6 +84,9 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
+    const { isActiveSubscription } = useSubscription()
+    if (!isActiveSubscription.value) return
+
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
       currency: 'usd'
@@ -113,33 +122,68 @@ export const useFirebaseAuthActions = () => {
     return result
   }, reportError)
 
-  const signInWithGoogle = (errorHandler = reportError) =>
-    wrapWithErrorHandlingAsync(async () => {
-      return await authStore.loginWithGoogle()
-    }, errorHandler)
+  const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {
+    return await authStore.loginWithGoogle()
+  }, reportError)
 
-  const signInWithGithub = (errorHandler = reportError) =>
-    wrapWithErrorHandlingAsync(async () => {
-      return await authStore.loginWithGithub()
-    }, errorHandler)
+  const signInWithGithub = wrapWithErrorHandlingAsync(async () => {
+    return await authStore.loginWithGithub()
+  }, reportError)
 
-  const signInWithEmail = (
-    email: string,
-    password: string,
-    errorHandler = reportError
-  ) =>
-    wrapWithErrorHandlingAsync(async () => {
+  const signInWithEmail = wrapWithErrorHandlingAsync(
+    async (email: string, password: string) => {
       return await authStore.login(email, password)
-    }, errorHandler)
+    },
+    reportError
+  )
 
-  const signUpWithEmail = (
-    email: string,
-    password: string,
-    errorHandler = reportError
-  ) =>
-    wrapWithErrorHandlingAsync(async () => {
+  const signUpWithEmail = wrapWithErrorHandlingAsync(
+    async (email: string, password: string) => {
       return await authStore.register(email, password)
-    }, errorHandler)
+    },
+    reportError
+  )
+
+  /**
+   * Recovery strategy for Firebase auth/requires-recent-login errors.
+   * Prompts user to reauthenticate and retries the operation after successful login.
+   */
+  const createReauthenticationRecovery = <
+    TArgs extends unknown[],
+    TReturn
+  >(): ErrorRecoveryStrategy<TArgs, TReturn> => {
+    const dialogService = useDialogService()
+
+    return {
+      shouldHandle: (error: unknown) =>
+        error instanceof FirebaseError &&
+        error.code === AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN,
+
+      recover: async (
+        _error: unknown,
+        retry: (...args: TArgs) => Promise<TReturn> | TReturn,
+        args: TArgs
+      ) => {
+        const confirmed = await dialogService.confirm({
+          title: t('auth.reauthRequired.title'),
+          message: t('auth.reauthRequired.message'),
+          type: 'default'
+        })
+
+        if (!confirmed) {
+          return
+        }
+
+        await authStore.logout()
+
+        const signedIn = await dialogService.showSignInDialog()
+
+        if (signedIn) {
+          await retry(...args)
+        }
+      }
+    }
+  }
 
   const updatePassword = wrapWithErrorHandlingAsync(
     async (newPassword: string) => {
@@ -151,18 +195,25 @@ export const useFirebaseAuthActions = () => {
         life: 5000
       })
     },
-    reportError
+    reportError,
+    undefined,
+    [createReauthenticationRecovery<[string], void>()]
   )
 
-  const deleteAccount = wrapWithErrorHandlingAsync(async () => {
-    await authStore.deleteAccount()
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.deleteAccount.success'),
-      detail: t('auth.deleteAccount.successDetail'),
-      life: 5000
-    })
-  }, reportError)
+  const deleteAccount = wrapWithErrorHandlingAsync(
+    async () => {
+      await authStore.deleteAccount()
+      toastStore.add({
+        severity: 'success',
+        summary: t('auth.deleteAccount.success'),
+        detail: t('auth.deleteAccount.successDetail'),
+        life: 5000
+      })
+    },
+    reportError,
+    undefined,
+    [createReauthenticationRecovery<[], void>()]
+  )
 
   return {
     logout,
