@@ -69,6 +69,7 @@ app.registerExtension({
                   input
                 )
             }
+            app.canvas.setDirty(true, true)
           }
         }, 50)
       }
