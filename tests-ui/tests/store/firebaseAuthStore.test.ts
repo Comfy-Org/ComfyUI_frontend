@@ -83,6 +83,7 @@ vi.mock('@/services/dialogService')
 describe('useFirebaseAuthStore', () => {
   let store: ReturnType<typeof useFirebaseAuthStore>
   let authStateCallback: (user: any) => void
+  let idTokenCallback: (user: any) => void
 
   const mockAuth = {
     /* mock Auth object */
@@ -141,6 +142,55 @@ describe('useFirebaseAuthStore', () => {
     // Reset and set up getIdToken mock
     mockUser.getIdToken.mockReset()
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
+  })
+
+  describe('token refresh events', () => {
+    beforeEach(async () => {
+      vi.resetModules()
+      vi.doMock('@/platform/distribution/types', () => ({
+        isCloud: true,
+        isDesktop: true
+      }))
+
+      vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
+        (_auth, callback) => {
+          idTokenCallback = callback as (user: any) => void
+          return vi.fn()
+        }
+      )
+
+      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
+
+      setActivePinia(createPinia())
+      const storeModule = await import('@/stores/firebaseAuthStore')
+      store = storeModule.useFirebaseAuthStore()
+    })
+
+    it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
+      idTokenCallback?.(mockUser)
+      expect(store.tokenRefreshTrigger).toBe(0)
+    })
+
+    it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
+      idTokenCallback?.(mockUser)
+      idTokenCallback?.(mockUser)
+      expect(store.tokenRefreshTrigger).toBe(1)
+    })
+
+    it('should not increment when ID token event is for a different user UID', () => {
+      const otherUser = { uid: 'other-user-id' }
+      idTokenCallback?.(mockUser)
+      idTokenCallback?.(otherUser)
+      expect(store.tokenRefreshTrigger).toBe(0)
+    })
+
+    it('should increment after switching to a new UID and receiving a second event for that UID', () => {
+      const otherUser = { uid: 'other-user-id' }
+      idTokenCallback?.(mockUser)
+      idTokenCallback?.(otherUser)
+      idTokenCallback?.(otherUser)
+      expect(store.tokenRefreshTrigger).toBe(1)
+    })
   })
 
   it('should initialize with the current user', () => {
