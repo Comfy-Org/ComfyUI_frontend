@@ -1,3 +1,5 @@
+import { until } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import {
   createRouter,
   createWebHashHistory,
@@ -84,12 +86,6 @@ const router = createRouter({
           component: () => import('@/views/UserSelectView.vue')
         }
       ]
-    },
-    // Catch-all: redirect unknown routes
-    {
-      path: '/:pathMatch(.*)*',
-      name: 'not-found-redirect',
-      redirect: '/'
     }
   ],
 
@@ -102,105 +98,89 @@ const router = createRouter({
   }
 })
 
-// Global authentication guard
-router.beforeEach(async (to, _from, next) => {
-  // Skip cloud-specific auth guard for non-cloud builds (e.g., Playwright tests)
-  if (!isCloud) return next()
+if (isCloud) {
+  // Global authentication guard
+  router.beforeEach(async (to, _from, next) => {
+    const authStore = useFirebaseAuthStore()
 
-  const authStore = useFirebaseAuthStore()
-
-  // Wait for Firebase auth to initialize with timeout
-  if (!authStore.isInitialized) {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          unwatch()
-          reject(new Error('Authentication initialization timeout'))
-        }, 16000) // 16 second timeout
-
-        const unwatch = authStore.$subscribe((_, state) => {
-          if (state.isInitialized) {
-            clearTimeout(timeout)
-            unwatch()
-            resolve()
-          }
-        })
-      })
-    } catch (error) {
-      console.error('Auth initialization failed:', error)
-      // Navigate to auth timeout recovery page with error details
-      return next({
-        name: 'cloud-auth-timeout',
-        params: {
-          errorMessage: error instanceof Error ? error.message : String(error)
-        }
-      })
+    // Wait for Firebase auth to initialize
+    // Timeout after 16 seconds
+    if (!authStore.isInitialized) {
+      try {
+        const { isInitialized } = storeToRefs(authStore)
+        await until(isInitialized).toBe(true, { timeout: 16_000 })
+      } catch (error) {
+        console.error('Auth initialization failed:', error)
+        return next({ name: 'cloud-auth-timeout' })
+      }
     }
-  }
 
-  // Check if user is authenticated
-  const authHeader = await authStore.getAuthHeader()
-  const isLoggedIn = !!authHeader
+    // Pass authenticated users
+    const authHeader = await authStore.getAuthHeader()
+    const isLoggedIn = !!authHeader
 
-  // Allow public routes
-  if (isPublicRoute(to)) {
-    return next()
-  }
+    // Allow public routes
+    if (isPublicRoute(to)) {
+      return next()
+    }
 
-  // Special handling for user-check
-  // These routes need auth but handle their own routing logic
-  if (to.name === 'cloud-user-check') {
+    // Special handling for user-check
+    // These routes need auth but handle their own routing logic
+    if (to.name === 'cloud-user-check') {
+      if (to.meta.requiresAuth && !isLoggedIn) {
+        return next({ name: 'cloud-login' })
+      }
+      return next()
+    }
+
+    // Prevent redirect loop when coming from user-check
+    if (_from.name === 'cloud-user-check' && to.path === '/') {
+      return next()
+    }
+
+    // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
       return next({ name: 'cloud-login' })
     }
-    return next()
-  }
 
-  // Prevent redirect loop when coming from user-check
-  if (_from.name === 'cloud-user-check' && to.path === '/') {
-    return next()
-  }
-
-  // Check if route requires authentication
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    return next({ name: 'cloud-login' })
-  }
-
-  // Handle other protected routes
-  if (!isPublicRoute(to) && !isLoggedIn) {
-    // For Electron, use dialog
-    if (isElectron()) {
-      const dialogService = useDialogService()
-      const loginSuccess = await dialogService.showSignInDialog()
-      return loginSuccess ? next() : next(false)
-    }
-
-    // For web, redirect to login
-    return next({ name: 'cloud-login' })
-  }
-
-  // User is logged in - check if they need onboarding
-  // For root path, check actual user status to handle waitlisted users
-  if (!isElectron() && isLoggedIn && to.path === '/') {
-    // Import auth functions dynamically to avoid circular dependency
-    const { getSurveyCompletedStatus } = await import('@/api/auth')
-    try {
-      // Check user's actual status
-      const surveyCompleted = await getSurveyCompletedStatus()
-
-      // Survey is required for all users regardless of whitelist status
-      if (!surveyCompleted) {
-        return next({ name: 'cloud-survey' })
+    // Handle other protected routes
+    if (!isPublicRoute(to) && !isLoggedIn) {
+      // For Electron, use dialog
+      if (isElectron()) {
+        const dialogService = useDialogService()
+        const loginSuccess = await dialogService.showSignInDialog()
+        return loginSuccess ? next() : next(false)
       }
-    } catch (error) {
-      console.error('Failed to check user status:', error)
-      // On error, redirect to user-check as fallback
-      return next({ name: 'cloud-user-check' })
-    }
-  }
 
-  // User is logged in and accessing protected route
-  return next()
-})
+      // For web, redirect to login
+      return next({ name: 'cloud-login' })
+    }
+
+    // User is logged in - check if they need onboarding
+    // For root path, check actual user status to handle waitlisted users
+    if (!isElectron() && isLoggedIn && to.path === '/') {
+      // Import auth functions dynamically to avoid circular dependency
+      const { getSurveyCompletedStatus } = await import(
+        '@/platform/onboarding/auth'
+      )
+      try {
+        // Check user's actual status
+        const surveyCompleted = await getSurveyCompletedStatus()
+
+        // Survey is required for all users regardless of whitelist status
+        if (!surveyCompleted) {
+          return next({ name: 'cloud-survey' })
+        }
+      } catch (error) {
+        console.error('Failed to check user status:', error)
+        // On error, redirect to user-check as fallback
+        return next({ name: 'cloud-user-check' })
+      }
+    }
+
+    // User is logged in and accessing protected route
+    return next()
+  })
+}
 
 export default router
