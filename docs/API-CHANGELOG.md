@@ -25,3 +25,29 @@ When breaking changes occur, refer to the specific version section below for:
 ---
 
 <!-- Automated changelog entries will be added below -->
+## v1.31.1 (2025-11-04)
+
+Comparing v1.32.1 → v1.31.1. This changelog documents changes to the public API surface that third-party extensions and custom nodes depend on.
+
+### ⚠️ Breaking Changes
+
+**Type Aliases**
+
+- **Removed**: `WorkflowOpenSource`
+
+**Interfaces**
+
+- **Removed**: `WorkflowImportMetadata`
+
+### 🔄 Modifications
+
+> **Note**: Some modifications may be breaking changes.
+
+**Classes**
+
+- `ComfyApp`
+  - ⚠️ **Breaking**: Method `loadGraphData()` signature changed
+  - ⚠️ **Breaking**: Method `handleFile()` signature changed
+
+---
+
