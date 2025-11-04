@@ -61,11 +61,12 @@
       <div class="minimap-viewport" :style="viewportStyles" />
 
       <div
-        class="absolute inset-0"
+        class="absolute inset-0 touch-none"
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
         @pointerleave="handlePointerUp"
+        @pointercancel="handlePointerCancel"
         @wheel="handleWheel"
       />
     </div>
@@ -105,6 +106,7 @@ const {
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
+  handlePointerCancel,
   handleWheel,
   setMinimapRef
 } = useMinimap()
