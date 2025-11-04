@@ -1,7 +1,9 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -84,14 +86,30 @@ export function useWorkflowPersistence() {
 
   const restorePreviousWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) return
+
+    const route = useRoute()
+    const templateParam = route.query.template
+    const hasTemplateParam = templateParam && typeof templateParam === 'string'
+
+    // First, restore the previous workflow (if any) - this opens as a tab in the background
     try {
       const restored = await loadPreviousWorkflowFromStorage()
-      if (!restored) {
+      if (!restored && !hasTemplateParam) {
+        // Only load default if no template will be loaded
         await loadDefaultWorkflow()
       }
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      await loadDefaultWorkflow()
+      if (!hasTemplateParam) {
+        await loadDefaultWorkflow()
+      }
+    }
+
+    // Then, if template URL parameter is present, load the template
+    // This creates a new tab and becomes the active workflow
+    if (hasTemplateParam) {
+      const { loadTemplateFromUrl } = useTemplateUrlLoader()
+      await loadTemplateFromUrl()
     }
   }
 
