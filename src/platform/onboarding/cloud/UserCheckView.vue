@@ -34,7 +34,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
-import CloudWaitlistViewSkeleton from './skeletons/CloudWaitlistViewSkeleton.vue'
 
 const router = useRouter()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -65,17 +64,6 @@ const {
     if (!surveyStatus) {
       skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })
-      return
-    }
-
-    // Check if we should enforce whitelist requirement
-    const requireWhitelist = window.__CONFIG__?.require_whitelist ?? true
-
-    // Check feature flag and redirect non-active users if whitelist is required
-    if (requireWhitelist && cloudUserStats.status !== 'active') {
-      // Feature flag ON: Show waitlist page for non-active users
-      skeletonType.value = 'waitlist'
-      await router.replace({ name: 'cloud-waitlist' })
       return
     }
 

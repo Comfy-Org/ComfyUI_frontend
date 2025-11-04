@@ -61,14 +61,6 @@
       <!-- Help text -->
       <p class="mt-5 text-sm text-gray-600">
         {{ t('cloudForgotPassword_didntReceiveEmail') }}
-        <a
-          href="https://support.comfy.org"
-          class="cursor-pointer text-blue-400 no-underline"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ t('cloudWaitlist_contactLink') }}</a
-        >.
       </p>
     </div>
   </div>

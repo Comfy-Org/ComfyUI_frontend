@@ -183,27 +183,15 @@ router.beforeEach(async (to, _from, next) => {
   // For root path, check actual user status to handle waitlisted users
   if (!isElectron() && isLoggedIn && to.path === '/') {
     // Import auth functions dynamically to avoid circular dependency
-    const { getUserCloudStatus, getSurveyCompletedStatus } = await import(
-      '@/api/auth'
-    )
+    const { getSurveyCompletedStatus } = await import('@/api/auth')
     try {
       // Check user's actual status
-      const userStatus = await getUserCloudStatus()
       const surveyCompleted = await getSurveyCompletedStatus()
 
       // Survey is required for all users regardless of whitelist status
       if (!surveyCompleted) {
         return next({ name: 'cloud-survey' })
       }
-
-      // Check if we should enforce whitelist requirement
-      const requireWhitelist = window.__CONFIG__?.require_whitelist ?? true
-
-      // Check feature flag and redirect non-active users if whitelist is required
-      if (requireWhitelist && userStatus.status !== 'active') {
-        return next({ name: 'cloud-waitlist' })
-      }
-      // User is active or whitelist check disabled: Allow access to root
     } catch (error) {
       console.error('Failed to check user status:', error)
       // On error, redirect to user-check as fallback

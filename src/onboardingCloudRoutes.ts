@@ -21,7 +21,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
 
             if (isLoggedIn.value) {
               // User is already logged in, redirect to user-check
-              // user-check will handle survey, waitlist, or main page routing
+              // user-check will handle survey, or main page routing
               return next({ name: 'cloud-user-check' })
             }
           }
@@ -48,26 +48,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
       },
       {
-        path: 'waitlist',
-        name: 'cloud-waitlist',
-        component: () =>
-          import('@/platform/onboarding/cloud/CloudWaitlistView.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
         path: 'user-check',
         name: 'cloud-user-check',
         component: () =>
           import('@/platform/onboarding/cloud/UserCheckView.vue'),
         meta: { requiresAuth: true }
-      },
-      {
-        path: 'verify-email',
-        name: 'cloud-verify-email',
-        redirect: (to) => ({
-          name: 'cloud-user-check',
-          query: to.query
-        })
       },
       {
         path: 'sorry-contact-support',

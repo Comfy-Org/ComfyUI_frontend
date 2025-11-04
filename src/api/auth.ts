@@ -4,7 +4,7 @@ import { isEmpty } from 'es-toolkit/compat'
 import { api } from '@/scripts/api'
 
 interface UserCloudStatus {
-  status: 'active' | 'waitlisted'
+  status: 'active'
 }
 
 const ONBOARDING_SURVEY_KEY = 'onboarding_survey'
