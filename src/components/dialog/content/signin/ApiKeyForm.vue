@@ -89,7 +89,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { useRuntimeConfig } from '@/platform/remoteConfig/remoteConfig'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -97,9 +97,8 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 const authStore = useFirebaseAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
-const runtimeConfig = useRuntimeConfig()
 const comfyPlatformBaseUrl = computed(() => {
-  const runtimeUrl = runtimeConfig.value.comfy_platform_base_url
+  const runtimeUrl = remoteConfig.value.comfy_platform_base_url
   if (runtimeUrl && runtimeUrl.length > 0) {
     return runtimeUrl
   }

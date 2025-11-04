@@ -11,7 +11,7 @@
  * Used for initial config load in main.ts and polling in the extension.
  */
 
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import type { RemoteConfig } from './types'
 
@@ -45,25 +45,9 @@ export async function loadRemoteConfig(): Promise<void> {
 }
 
 /**
- * Returns the most recent remote configuration available to the client.
- * Prefers the reactive ref (which updates when polling) and falls back to the
- * last value stored on window.__CONFIG__ so early imports can still resolve
- * runtime configuration before the reactive store is populated.
+ * Access the current remote configuration.
+ * Consumers should use the reactive `remoteConfig` ref directly.
  */
 export function getRuntimeConfig(): RemoteConfig {
-  if (Object.keys(remoteConfig.value).length > 0) {
-    return remoteConfig.value
-  }
-
-  return window.__CONFIG__ ?? {}
-}
-
-export function useRuntimeConfig() {
-  return computed<RemoteConfig>(() => {
-    if (Object.keys(remoteConfig.value).length > 0) {
-      return remoteConfig.value
-    }
-
-    return window.__CONFIG__ ?? {}
-  })
+  return remoteConfig.value
 }
