@@ -118,6 +118,9 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.onChange')})`,
       tooltip: t('menu.onChangeTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'queue_mode_option_run_on_change_selected'
+        })
         queueMode.value = 'change'
       }
     }
@@ -128,6 +131,9 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.instant')})`,
       tooltip: t('menu.instantTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'queue_mode_option_run_instant_selected'
+        })
         queueMode.value = 'instant'
       }
     }

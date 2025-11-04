@@ -14,6 +14,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
@@ -34,6 +35,9 @@ const tooltipText = computed(
 )
 
 const toggleShortcutsPanel = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_shortcuts_panel_toggled'
+  })
   bottomPanelStore.togglePanel('shortcuts')
 }
 </script>

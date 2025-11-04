@@ -14,6 +14,7 @@ import { computed } from 'vue'
 
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 
 import SidebarIcon from './SidebarIcon.vue'
 
@@ -24,6 +25,9 @@ const isSmall = computed(
 )
 
 const openTemplates = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_templates_dialog_opened'
+  })
   useWorkflowTemplateSelectorDialog().show('sidebar')
 }
 </script>

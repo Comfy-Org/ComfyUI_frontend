@@ -11,6 +11,8 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 const props = defineProps<{
   errorMessage: string
   repoOwner: string
@@ -20,6 +22,9 @@ const props = defineProps<{
 const queryString = computed(() => props.errorMessage + ' is:issue')
 
 const openGitHubIssues = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_dialog_find_existing_issues_clicked'
+  })
   const query = encodeURIComponent(queryString.value)
   const url = `https://github.com/${props.repoOwner}/${props.repoName}/issues?q=${query}`
   window.open(url, '_blank')

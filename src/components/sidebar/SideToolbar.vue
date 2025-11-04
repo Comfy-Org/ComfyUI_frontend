@@ -38,6 +38,7 @@ import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
@@ -67,10 +68,35 @@ const isSmall = computed(
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 
-const onTabClick = async (item: SidebarTabExtension) =>
+const onTabClick = async (item: SidebarTabExtension) => {
+  const telemetry = useTelemetry()
+
+  const isNodeLibraryTab = item.id === 'node-library'
+  const isModelLibraryTab = item.id === 'model-library'
+  const isWorkflowsTab = item.id === 'workflows'
+  const isAssetsTab = item.id === 'assets'
+
+  if (isNodeLibraryTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_node_library_selected'
+    })
+  else if (isModelLibraryTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_model_library_selected'
+    })
+  else if (isWorkflowsTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_workflows_selected'
+    })
+  else if (isAssetsTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_assets_media_selected'
+    })
+
   await commandStore.commands
     .find((cmd) => cmd.id === `Workspace.ToggleSidebarTab.${item.id}`)
     ?.function?.()
+}
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
