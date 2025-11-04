@@ -8,7 +8,6 @@ declare const __USE_PROD_CONFIG__: boolean
 interface Window {
   __CONFIG__: {
     mixpanel_token?: string
-    require_whitelist?: boolean
     subscription_required?: boolean
     server_health_alert?: {
       message: string
