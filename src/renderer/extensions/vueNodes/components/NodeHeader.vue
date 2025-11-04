@@ -54,17 +54,22 @@
             @edit="handleTitleEdit"
             @cancel="handleTitleCancel"
           />
-          <i
-            v-if="isPinned"
-            class="icon-[lucide--pin] size-5 text-node-component-header-icon"
-            data-testid="node-pin-indicator"
-          />
         </div>
         <LODFallback />
       </div>
 
       <div class="lod-toggle flex shrink-0 items-center justify-between gap-2">
-        <NodeBadge v-for="badge of nodeBadges" :key="badge.text" :badge />
+        <NodeBadge
+          v-for="badge of nodeBadges"
+          :key="badge.text"
+          v-bind="badge"
+        />
+        <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
+        <i-comfy:pin
+          v-if="isPinned"
+          class="size-5"
+          data-testid="node-pin-indicator"
+        />
         <IconButton
           v-if="isSubgraphNode"
           v-tooltip.top="enterSubgraphTooltipConfig"
@@ -91,7 +96,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -106,6 +111,7 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import LODFallback from './LODFallback.vue'
+import type { NodeBadgeProps } from './NodeBadge.vue'
 
 interface NodeHeaderProps {
   nodeData?: VueNodeData
@@ -178,19 +184,21 @@ const resolveTitle = (info: VueNodeData | undefined) => {
 // Local state for title to provide immediate feedback
 const displayTitle = ref(resolveTitle(nodeData))
 
-// Watch for external changes to the node title or type
-watch(
-  () => [nodeData?.title, nodeData?.type] as const,
-  () => {
-    const next = resolveTitle(nodeData)
-    if (next !== displayTitle.value) {
-      displayTitle.value = next
-    }
-  }
+const bypassed = computed(
+  (): boolean => nodeData?.mode === LGraphEventMode.BYPASS
+)
+const muted = computed((): boolean => nodeData?.mode === LGraphEventMode.NEVER)
+
+const statusBadge = computed((): NodeBadgeProps | undefined =>
+  muted.value
+    ? { text: 'Muted', cssIcon: 'icon-[lucide--ban]' }
+    : bypassed.value
+      ? { text: 'Bypassed', cssIcon: 'icon-[lucide--redo-dot]' }
+      : undefined
 )
 
-const nodeBadges = computed<LGraphBadge[]>(() =>
-  (nodeData?.badges ?? []).map(toValue)
+const nodeBadges = computed<NodeBadgeProps[]>(() =>
+  [...(nodeData?.badges ?? [])].map(toValue)
 )
 const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
 const isApiNode = computed(() => Boolean(nodeData?.apiNode))
@@ -209,6 +217,17 @@ const isSubgraphNode = computed(() => {
   // Use the official type guard method
   return litegraphNode?.isSubgraphNode() ?? false
 })
+
+// Watch for external changes to the node title or type
+watch(
+  () => [nodeData?.title, nodeData?.type] as const,
+  () => {
+    const next = resolveTitle(nodeData)
+    if (next !== displayTitle.value) {
+      displayTitle.value = next
+    }
+  }
+)
 
 // Event handlers
 const handleCollapse = () => {
