@@ -16,26 +16,6 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
 
-const PUBLIC_ROUTE_NAMES = new Set([
-  'cloud-login',
-  'cloud-signup',
-  'cloud-forgot-password',
-  'cloud-sorry-contact-support'
-])
-const PUBLIC_ROUTE_PATHS = new Set([
-  '/cloud/login',
-  '/cloud/signup',
-  '/cloud/forgot-password',
-  '/cloud/sorry-contact-support'
-])
-
-function isPublicRoute(to: RouteLocationNormalized) {
-  const name = String(to.name)
-  if (PUBLIC_ROUTE_NAMES.has(name)) return true
-  const path = to.path
-  return PUBLIC_ROUTE_PATHS.has(path)
-}
-
 const isFileProtocol = window.location.protocol === 'file:'
 
 // Determine base path for the router
@@ -43,9 +23,8 @@ const isFileProtocol = window.location.protocol === 'file:'
 // - Web: rely on Vite's BASE_URL (configured via vite.config `base`)
 function getBasePath(): string {
   if (isElectron()) return '/'
-  // Vite injects BASE_URL at build/dev time; default is '/'
-  const viteBase = (import.meta as any).env?.BASE_URL || '/'
-  return viteBase
+  // Vite injects BASE_URL at build/dev time; default to '/'
+  return import.meta.env?.BASE_URL || '/'
 }
 
 const basePath = getBasePath()
@@ -97,6 +76,25 @@ const router = createRouter({
 })
 
 if (isCloud) {
+  const PUBLIC_ROUTE_NAMES = new Set([
+    'cloud-login',
+    'cloud-signup',
+    'cloud-forgot-password',
+    'cloud-sorry-contact-support'
+  ])
+  const PUBLIC_ROUTE_PATHS = new Set([
+    '/cloud/login',
+    '/cloud/signup',
+    '/cloud/forgot-password',
+    '/cloud/sorry-contact-support'
+  ])
+
+  function isPublicRoute(to: RouteLocationNormalized) {
+    const name = String(to.name)
+    if (PUBLIC_ROUTE_NAMES.has(name)) return true
+    const path = to.path
+    return PUBLIC_ROUTE_PATHS.has(path)
+  }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
     const authStore = useFirebaseAuthStore()
