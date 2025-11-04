@@ -693,7 +693,6 @@
       "perspective": "Perspective"
     },
     "clearRecording": "Effacer l'enregistrement",
-    "edgeThreshold": "Seuil de Bordure",
     "export": "Exportation",
     "exportModel": "Exportation du modèle",
     "exportRecording": "Exporter l'enregistrement",
@@ -706,7 +705,6 @@
     "materialMode": "Mode Matériel",
     "materialModes": {
       "depth": "Profondeur",
-      "lineart": "Dessin au trait",
       "normal": "Normal",
       "original": "Original",
       "wireframe": "Fil de fer"

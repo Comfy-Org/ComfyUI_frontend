@@ -2,13 +2,15 @@
   <WidgetLayoutField :widget>
     <Select
       v-model="localValue"
+      :invalid
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       :aria-label="widget.name"
       size="small"
       :pt="{
-        option: 'text-xs'
+        option: 'text-xs',
+        dropdownIcon: 'text-button-icon'
       }"
       data-capture-wheel="true"
       @update:model-value="onChange"
@@ -52,11 +54,6 @@ const { localValue, onChange } = useWidgetValue({
 // Transform compatibility props for overlay positioning
 const transformCompatProps = useTransformCompatOverlayProps()
 
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
-
 // Extract select options from widget options
 const selectOptions = computed(() => {
   const options = props.widget.options
@@ -67,4 +64,13 @@ const selectOptions = computed(() => {
 
   return []
 })
+const invalid = computed(
+  () => !!localValue.value && !selectOptions.value.includes(localValue.value)
+)
+
+const combinedProps = computed(() => ({
+  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
+  ...transformCompatProps.value,
+  ...(invalid.value ? { placeholder: `${localValue.value}` } : {})
+}))
 </script>

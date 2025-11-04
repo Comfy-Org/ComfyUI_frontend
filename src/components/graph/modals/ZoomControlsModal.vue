@@ -148,6 +148,6 @@ watch(
 </script>
 <style>
 .zoomInputContainer:focus-within {
-  border: 1px solid var(--color-pure-white);
+  border: 1px solid var(--color-white);
 }
 </style>

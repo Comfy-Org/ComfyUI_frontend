@@ -2,6 +2,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus, type TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -391,9 +393,11 @@ export class ComfyUI {
       style: { display: 'none' },
       parent: document.body,
       onchange: async () => {
-        // @ts-expect-error fixme ts strict error
-        await app.handleFile(fileInput.files[0])
-        fileInput.value = ''
+        const file = fileInput.files?.[0]
+        if (file) {
+          await app.handleFile(file, 'file_button')
+          fileInput.value = ''
+        }
       }
     })
 
@@ -470,7 +474,13 @@ export class ComfyUI {
         $el('button.comfy-queue-btn', {
           id: 'queue-button',
           textContent: 'Queue Prompt',
-          onclick: () => app.queuePrompt(0, this.batchCount)
+          onclick: () => {
+            if (isCloud) {
+              useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+              useTelemetry()?.trackWorkflowExecution()
+            }
+            app.queuePrompt(0, this.batchCount)
+          }
         }),
         $el('div', {}, [
           $el('label', { innerHTML: 'Extra options' }, [
@@ -572,7 +582,13 @@ export class ComfyUI {
           $el('button', {
             id: 'queue-front-button',
             textContent: 'Queue Front',
-            onclick: () => app.queuePrompt(-1, this.batchCount)
+            onclick: () => {
+              if (isCloud) {
+                useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+                useTelemetry()?.trackWorkflowExecution()
+              }
+              app.queuePrompt(-1, this.batchCount)
+            }
           }),
           $el('button', {
             $: (b) => (this.queue.button = b as HTMLButtonElement),

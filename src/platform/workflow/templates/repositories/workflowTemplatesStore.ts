@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { i18n, st } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { getCategoryIcon } from '@/utils/categoryIcons'
@@ -21,6 +22,7 @@ interface EnhancedTemplate extends TemplateInfo {
   categoryType?: string
   categoryGroup?: string // 'GENERATION TYPE' or 'CLOSED SOURCE MODELS'
   isEssential?: boolean
+  isPartnerNode?: boolean // Computed from OpenSource === false
   searchableText?: string
 }
 
@@ -29,6 +31,7 @@ export const useWorkflowTemplatesStore = defineStore(
   () => {
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
+    const englishTemplates = shallowRef<WorkflowTemplates[]>([])
     const isLoaded = ref(false)
     const knownTemplateNames = ref(new Set<string>())
 
@@ -200,6 +203,7 @@ export const useWorkflowTemplatesStore = defineStore(
             categoryType: category.type,
             categoryGroup: category.category,
             isEssential: category.isEssential,
+            isPartnerNode: template.openSource === false,
             searchableText: [
               template.title || template.name,
               template.description || '',
@@ -265,6 +269,11 @@ export const useWorkflowTemplatesStore = defineStore(
       if (categoryId === 'basics') {
         // Filter for templates from categories marked as essential
         return enhancedTemplates.value.filter((t) => t.isEssential)
+      }
+
+      if (categoryId === 'partner-nodes') {
+        // Filter for templates where OpenSource === false
+        return enhancedTemplates.value.filter((t) => t.isPartnerNode)
       }
 
       // Handle extension-specific filters
@@ -395,6 +404,22 @@ export const useWorkflowTemplatesStore = defineStore(
         }
       })
 
+      // 3.5. Partner Nodes - virtual category for OpenSource === false templates
+      const partnerNodeCount = enhancedTemplates.value.filter(
+        (t) => t.isPartnerNode
+      ).length
+
+      if (partnerNodeCount > 0) {
+        items.push({
+          id: 'partner-nodes',
+          label: st(
+            'templateWorkflows.category.Partner Nodes',
+            'Partner Nodes'
+          ),
+          icon: 'icon-[lucide--handshake]'
+        })
+      }
+
       // 4. Extensions - always last
       const extensionCounts = enhancedTemplates.value.filter(
         (t) => t.sourceModule !== 'default'
@@ -436,7 +461,16 @@ export const useWorkflowTemplatesStore = defineStore(
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
           const locale = i18n.global.locale.value
-          coreTemplates.value = await api.getCoreWorkflowTemplates(locale)
+
+          const [coreResult, englishResult] = await Promise.all([
+            api.getCoreWorkflowTemplates(locale),
+            isCloud && locale !== 'en'
+              ? api.getCoreWorkflowTemplates('en')
+              : Promise.resolve([])
+          ])
+
+          coreTemplates.value = coreResult
+          englishTemplates.value = englishResult
 
           const coreNames = coreTemplates.value.flatMap((category) =>
             category.templates.map((template) => template.name)
@@ -451,6 +485,33 @@ export const useWorkflowTemplatesStore = defineStore(
       }
     }
 
+    function getEnglishMetadata(templateName: string): {
+      tags?: string[]
+      category?: string
+      useCase?: string
+      models?: string[]
+      license?: string
+    } | null {
+      if (englishTemplates.value.length === 0) {
+        return null
+      }
+
+      for (const category of englishTemplates.value) {
+        const template = category.templates.find((t) => t.name === templateName)
+        if (template) {
+          return {
+            tags: template.tags,
+            category: category.title,
+            useCase: template.useCase,
+            models: template.models,
+            license: template.license
+          }
+        }
+      }
+
+      return null
+    }
+
     return {
       groupedTemplates,
       navGroupedTemplates,
@@ -460,7 +521,8 @@ export const useWorkflowTemplatesStore = defineStore(
       isLoaded,
       loadWorkflowTemplates,
       knownTemplateNames,
-      getTemplateByName
+      getTemplateByName,
+      getEnglishMetadata
     }
   }
 )

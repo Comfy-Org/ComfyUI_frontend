@@ -8,6 +8,9 @@
       :max-selected-labels="3"
       :display="display"
       class="w-full"
+      :pt="{
+        dropdownIcon: 'text-button-icon'
+      }"
     />
   </div>
 </template>

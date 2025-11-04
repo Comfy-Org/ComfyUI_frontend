@@ -155,10 +155,6 @@
     "name": "Başlangıç Izgara Görünürlüğü",
     "tooltip": "Yeni bir 3D widget oluşturulduğunda ızgaranın varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
   },
-  "Comfy_Load3D_ShowPreview": {
-    "name": "Başlangıç Önizleme Görünürlüğü",
-    "tooltip": "Yeni bir 3D widget oluşturulduğunda önizleme ekranının varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
-  },
   "Comfy_Locale": {
     "name": "Dil"
   },

@@ -114,5 +114,11 @@ export interface ExtensionManager {
 
 export interface CommandManager {
   commands: ComfyCommand[]
-  execute(command: string, errorHandler?: (error: any) => void): void
+  execute(
+    command: string,
+    options?: {
+      errorHandler?: (error: unknown) => void
+      metadata?: Record<string, unknown>
+    }
+  ): void
 }

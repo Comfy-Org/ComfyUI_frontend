@@ -12,7 +12,7 @@
       v-else
       class="flex size-full items-center justify-center bg-zinc-200 dark-theme:bg-zinc-700/50"
     >
-      <i class="pi pi-image text-3xl text-gray-400" />
+      <i class="pi pi-image text-3xl text-smoke-400" />
     </div>
   </div>
 </template>

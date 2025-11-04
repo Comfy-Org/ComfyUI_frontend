@@ -5,7 +5,6 @@ import type { TransformState } from '@/renderer/core/layout/injectionKeys'
 import type { Point, Size } from '@/renderer/core/layout/types'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
-import { calculateIntrinsicSize } from '@/renderer/extensions/vueNodes/utils/calculateIntrinsicSize'
 
 import type { ResizeHandleDirection } from './resizeMath'
 import { createResizeSession, toCanvasDelta } from './resizeMath'
@@ -76,8 +75,6 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const minSize = calculateIntrinsicSize(nodeElement, scale)
-
     // Track shift key state and sync to canvas for snap preview
     const stopShiftSync = trackShiftKey(event)
 
@@ -89,7 +86,6 @@ export function useNodeResize(
     resizeSession.value = createResizeSession({
       startSize,
       startPosition: { ...startPosition },
-      minSize,
       handle
     })
 

@@ -1,12 +1,16 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
+import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
+import { getWorkflowFromHistory } from '@/platform/workflow/cloud'
 import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  HistoryTaskItem,
   ResultItem,
   StatusWsMessageStatus,
   TaskItem,
@@ -378,24 +382,37 @@ export class TaskItemImpl {
   }
 
   public async loadWorkflow(app: ComfyApp) {
-    if (!this.workflow) {
-      return
-    }
-    await app.loadGraphData(toRaw(this.workflow))
-    if (this.outputs) {
-      const nodeOutputsStore = useNodeOutputStore()
-      const rawOutputs = toRaw(this.outputs)
-      for (const nodeExecutionId in rawOutputs) {
-        nodeOutputsStore.setNodeOutputsByExecutionId(
-          nodeExecutionId,
-          rawOutputs[nodeExecutionId]
-        )
-      }
-      useExtensionService().invokeExtensions(
-        'onNodeOutputsUpdated',
-        app.nodeOutputs
+    let workflowData = this.workflow
+
+    if (isCloud && !workflowData && this.isHistory) {
+      workflowData = await getWorkflowFromHistory(
+        (url) => app.api.fetchApi(url),
+        this.promptId
       )
     }
+
+    if (!workflowData) {
+      return
+    }
+
+    await app.loadGraphData(toRaw(workflowData))
+
+    if (!this.outputs) {
+      return
+    }
+
+    const nodeOutputsStore = useNodeOutputStore()
+    const rawOutputs = toRaw(this.outputs)
+    for (const nodeExecutionId in rawOutputs) {
+      nodeOutputsStore.setNodeOutputsByExecutionId(
+        nodeExecutionId,
+        rawOutputs[nodeExecutionId]
+      )
+    }
+    useExtensionService().invokeExtensions(
+      'onNodeOutputsUpdated',
+      app.nodeOutputs
+    )
   }
 
   public flatten(): TaskItemImpl[] {
@@ -424,12 +441,38 @@ export class TaskItemImpl {
         )
     )
   }
+
+  public toTaskItem(): TaskItem {
+    const item: HistoryTaskItem = {
+      taskType: 'History',
+      prompt: this.prompt,
+      status: this.status!,
+      outputs: this.outputs
+    }
+    return item
+  }
 }
 
+const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
+  b.queueIndex - a.queueIndex
+
+const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
+  tasks.map(
+    (task) =>
+      new TaskItemImpl(
+        task.taskType,
+        task.prompt,
+        'status' in task ? task.status : undefined,
+        'outputs' in task ? task.outputs : undefined
+      )
+  )
+
 export const useQueueStore = defineStore('queue', () => {
-  const runningTasks = ref<TaskItemImpl[]>([])
-  const pendingTasks = ref<TaskItemImpl[]>([])
-  const historyTasks = ref<TaskItemImpl[]>([])
+  // Use shallowRef because TaskItemImpl instances are immutable and arrays are
+  // replaced entirely (not mutated), so deep reactivity would waste performance
+  const runningTasks = shallowRef<TaskItemImpl[]>([])
+  const pendingTasks = shallowRef<TaskItemImpl[]>([])
+  const historyTasks = shallowRef<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
   const firstSeenByPromptId = ref<Record<string, number>>({})
@@ -461,50 +504,43 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
-      const executionStore = useExecutionStore()
-      const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
-        tasks
-          .map((task: TaskItem) => {
-            const ti = new TaskItemImpl(
-              task.taskType,
-              task.prompt,
-              'status' in task ? task.status : undefined,
-              'outputs' in task ? task.outputs : undefined
-            )
-            const wid = ti.workflow?.id
-            const pid = String(ti.promptId)
-            if (wid && pid) {
-              executionStore.registerPromptWorkflowIdMapping(pid, String(wid))
-            }
-            return ti
-          })
-          .sort((a, b) => b.queueIndex - a.queueIndex)
+      runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
+      pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
-      runningTasks.value = toClassAll(queue.Running)
-      pendingTasks.value = toClassAll(queue.Pending)
+      const currentHistory = toValue(historyTasks)
 
       const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+      const executionStore = useExecutionStore()
       appearedTasks.forEach((task) => {
-        const pid = String(task.promptId)
-        if (!(pid in firstSeenByPromptId.value)) {
-          firstSeenByPromptId.value[pid] = Date.now()
+        const promptIdString = String(task.promptId)
+        if (!(promptIdString in firstSeenByPromptId.value)) {
+          firstSeenByPromptId.value[promptIdString] = Date.now()
+        }
+        const workflowId = task.workflow?.id
+        if (workflowId && promptIdString) {
+          executionStore.registerPromptWorkflowIdMapping(
+            promptIdString,
+            String(workflowId)
+          )
         }
       })
 
-      const allIndex = new Set<number>(
-        history.History.map((item: TaskItem) => item.prompt[0])
+      const items = reconcileHistory(
+        history.History,
+        currentHistory.map((impl) => impl.toTaskItem()),
+        toValue(maxHistoryItems),
+        toValue(lastHistoryQueueIndex)
       )
-      const newHistoryItems = toClassAll(
-        history.History.filter(
-          (item) => item.prompt[0] > lastHistoryQueueIndex.value
-        )
+
+      // Reuse existing TaskItemImpl instances or create new
+      const existingByPromptId = new Map(
+        currentHistory.map((impl) => [impl.promptId, impl])
       )
-      const existingHistoryItems = historyTasks.value.filter((item) =>
-        allIndex.has(item.queueIndex)
+
+      historyTasks.value = items.map(
+        (item) =>
+          existingByPromptId.get(item.prompt[1]) ?? toTaskItemImpls([item])[0]
       )
-      historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
-        .slice(0, maxHistoryItems.value)
-        .sort((a, b) => b.queueIndex - a.queueIndex)
     } finally {
       isLoading.value = false
     }

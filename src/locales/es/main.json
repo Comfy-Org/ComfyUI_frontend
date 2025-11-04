@@ -693,7 +693,6 @@
       "perspective": "Perspectiva"
     },
     "clearRecording": "Borrar grabación",
-    "edgeThreshold": "Umbral de borde",
     "export": "Exportar",
     "exportModel": "Exportar modelo",
     "exportRecording": "Exportar grabación",
@@ -706,7 +705,6 @@
     "materialMode": "Modo de material",
     "materialModes": {
       "depth": "Profundidad",
-      "lineart": "Dibujo lineal",
       "normal": "Normal",
       "original": "Original",
       "wireframe": "Malla"

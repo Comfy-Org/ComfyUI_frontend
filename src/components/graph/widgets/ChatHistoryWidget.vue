@@ -13,7 +13,7 @@
       >
         <div class="mb-1 flex justify-end">
           <div
-            class="max-w-[80%] rounded-xl bg-gray-300 px-4 py-1 text-right dark-theme:bg-gray-800"
+            class="max-w-[80%] rounded-xl bg-smoke-300 px-4 py-1 text-right dark-theme:bg-smoke-800"
           >
             <div class="text-[12px] break-words">{{ item.prompt }}</div>
           </div>
@@ -26,7 +26,7 @@
             "
             text
             rounded
-            class="h-4! w-4! p-1! text-gray-400 transition hover:text-gray-600 hover:dark-theme:text-gray-200"
+            class="h-4! w-4! p-1! text-smoke-400 transition hover:text-smoke-600 hover:dark-theme:text-smoke-200"
             pt:icon:class="text-xs!"
             :icon="editIndex === i ? 'pi pi-times' : 'pi pi-pencil'"
             :aria-label="

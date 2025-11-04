@@ -16,7 +16,7 @@
       />
       <div
         v-else
-        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-400 via-gray-800 to-charcoal-400"
+        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
@@ -24,11 +24,11 @@
       <div>
         <h3
           :id="titleId"
+          v-tooltip.top="{ value: asset.name, showDelay: tooltipDelay }"
           :class="
             cn(
               'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
-              'text-slate-800',
-              'dark-theme:text-white'
+              'text-base-foreground'
             )
           "
         >
@@ -36,25 +36,21 @@
         </h3>
         <p
           :id="descId"
+          v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-              'text-stone-100',
+              'text-ash-500',
               'dark-theme:text-slate-100'
             )
           "
-          :title="asset.description"
         >
           {{ asset.description }}
         </p>
       </div>
       <div
         :class="
-          cn(
-            'flex gap-4 text-xs',
-            'text-stone-400',
-            'dark-theme:text-stone-300'
-          )
+          cn('flex gap-4 text-xs', 'text-stone-400', 'dark-theme:text-ash-300')
         "
       >
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
@@ -80,6 +76,7 @@ import { computed, useId } from 'vue'
 
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
@@ -87,8 +84,14 @@ const props = defineProps<{
   interactive?: boolean
 }>()
 
+const settingStore = useSettingStore()
+
 const titleId = useId()
 const descId = useId()
+
+const tooltipDelay = computed<number>(() =>
+  settingStore.get('LiteGraph.Node.TooltipDelay')
+)
 
 const { error } = useImage({
   src: props.asset.preview_url ?? '',
@@ -106,7 +109,7 @@ const cardClasses = computed(() => {
   ]
 
   if (!props.interactive) {
-    return cn(...base, 'bg-gray-100 dark-theme:bg-charcoal-800')
+    return cn(...base, 'bg-smoke-100 dark-theme:bg-charcoal-800')
   }
 
   return cn(
@@ -114,10 +117,10 @@ const cardClasses = computed(() => {
     'group',
     'appearance-none bg-transparent p-0 m-0',
     'font-inherit text-inherit outline-none cursor-pointer text-left',
-    'bg-gray-100 dark-theme:bg-charcoal-800',
-    'hover:bg-gray-200 dark-theme:hover:bg-charcoal-600',
+    'bg-smoke-100 dark-theme:bg-charcoal-800',
+    'hover:bg-secondary-background',
     'border-none',
-    'focus:outline-solid outline-blue-100 outline-4'
+    'focus:outline-solid outline-azure-600 outline-4'
   )
 })
 

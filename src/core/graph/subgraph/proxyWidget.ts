@@ -1,4 +1,7 @@
-import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  demoteWidget,
+  promoteRecommendedWidgets
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -45,8 +48,11 @@ type Overlay = Partial<IBaseWidget> & {
  * on the linked widget
  */
 type ProxyWidget = IBaseWidget & { _overlay: Overlay }
-function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
+export function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
   return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
+}
+export function isDisconnectedWidget(w: ProxyWidget) {
+  return w instanceof disconnectedWidget.constructor
 }
 
 export function registerProxyWidgets(canvas: LGraphCanvas) {
@@ -62,6 +68,10 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
       }
     }
   })
+  canvas.canvas.addEventListener<'subgraph-converted'>(
+    'subgraph-converted',
+    (e) => promoteRecommendedWidgets(e.detail.subgraphNode)
+  )
   SubgraphNode.prototype.onConfigure = onConfigure
 }
 
@@ -158,7 +168,11 @@ function resolveLinkedWidget(
   const { graph, nodeId, widgetName } = overlay
   const n = getNodeByExecutionId(graph, nodeId)
   if (!n) return [undefined, undefined]
-  return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
+  const widget = n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
+  //Slightly hacky. Force recursive resolution of nested widgets
+  if (widget && isProxyWidget(widget) && isDisconnectedWidget(widget))
+    widget.computedHeight = 20
+  return [n, widget]
 }
 
 function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {

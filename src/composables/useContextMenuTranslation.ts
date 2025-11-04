@@ -1,4 +1,5 @@
 import { st, te } from '@/i18n'
+import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type {
   IContextMenuOptions,
   IContextMenuValue,
@@ -6,18 +7,40 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 /**
  * Add translation for litegraph context menu.
  */
 export const useContextMenuTranslation = () => {
-  const f = LGraphCanvas.prototype.getCanvasMenuOptions
+  // Install compatibility layer BEFORE any extensions load
+  legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
+
+  const { getCanvasMenuOptions } = LGraphCanvas.prototype
   const getCanvasCenterMenuOptions = function (
     this: LGraphCanvas,
-    ...args: Parameters<typeof f>
+    ...args: Parameters<typeof getCanvasMenuOptions>
   ) {
-    const res = f.apply(this, args) as ReturnType<typeof f>
+    const res: IContextMenuValue[] = getCanvasMenuOptions.apply(this, args)
+
+    // Add items from new extension API
+    const newApiItems = app.collectCanvasMenuItems(this)
+    for (const item of newApiItems) {
+      res.push(item)
+    }
+
+    // Add legacy monkey-patched items
+    const legacyItems = legacyMenuCompat.extractLegacyItems(
+      'getCanvasMenuOptions',
+      this,
+      ...args
+    )
+    for (const item of legacyItems) {
+      res.push(item)
+    }
+
+    // Translate all items
     for (const item of res) {
       if (item?.content) {
         item.content = st(`contextMenu.${item.content}`, item.content)
@@ -27,6 +50,33 @@ export const useContextMenuTranslation = () => {
   }
 
   LGraphCanvas.prototype.getCanvasMenuOptions = getCanvasCenterMenuOptions
+
+  legacyMenuCompat.registerWrapper(
+    'getCanvasMenuOptions',
+    getCanvasCenterMenuOptions,
+    getCanvasMenuOptions,
+    LGraphCanvas.prototype
+  )
+
+  // Wrap getNodeMenuOptions to add new API items
+  const nodeMenuFn = LGraphCanvas.prototype.getNodeMenuOptions
+  const getNodeMenuOptionsWithExtensions = function (
+    this: LGraphCanvas,
+    ...args: Parameters<typeof nodeMenuFn>
+  ) {
+    const res = nodeMenuFn.apply(this, args)
+
+    // Add items from new extension API
+    const node = args[0]
+    const newApiItems = app.collectNodeMenuItems(node)
+    for (const item of newApiItems) {
+      res.push(item)
+    }
+
+    return res
+  }
+
+  LGraphCanvas.prototype.getNodeMenuOptions = getNodeMenuOptionsWithExtensions
 
   function translateMenus(
     values: readonly (IContextMenuValue | string | null)[] | undefined,

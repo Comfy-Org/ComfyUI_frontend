@@ -1,5 +1,6 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -80,6 +81,20 @@ export const useExtensionService = () => {
         void extension.onAuthUserResolved?.(user, app)
       })
     }
+
+    if (extension.onAuthTokenRefreshed) {
+      const { onTokenRefreshed } = useCurrentUser()
+      onTokenRefreshed(() => {
+        void extension.onAuthTokenRefreshed?.()
+      })
+    }
+
+    if (extension.onAuthUserLogout) {
+      const { onUserLogout } = useCurrentUser()
+      onUserLogout(() => {
+        void extension.onAuthUserLogout?.()
+      })
+    }
   }
 
   /**
@@ -122,8 +137,25 @@ export const useExtensionService = () => {
       extensionStore.enabledExtensions.map(async (ext) => {
         if (method in ext) {
           try {
-            return await ext[method](...args, app)
+            // Set current extension name for legacy compatibility tracking
+            if (method === 'setup') {
+              legacyMenuCompat.setCurrentExtension(ext.name)
+            }
+
+            const result = await ext[method](...args, app)
+
+            // Clear current extension after setup
+            if (method === 'setup') {
+              legacyMenuCompat.setCurrentExtension(null)
+            }
+
+            return result
           } catch (error) {
+            // Clear current extension on error too
+            if (method === 'setup') {
+              legacyMenuCompat.setCurrentExtension(null)
+            }
+
             console.error(
               `Error calling extension '${ext.name}' method '${method}'`,
               { error },

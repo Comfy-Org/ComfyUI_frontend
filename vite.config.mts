@@ -1,19 +1,23 @@
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
+import type { IncomingMessage, ServerResponse } from 'http'
+import { Readable } from 'stream'
+import type { ReadableStream as NodeReadableStream } from 'stream/web'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
-import type { UserConfig } from 'vite'
+import type { ProxyOptions, UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
-dotenv.config()
+dotenvConfig()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
@@ -49,9 +53,73 @@ const DEV_SEVER_FALLBACK_URL =
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 
-// Cloud proxy configuration
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
+
+function handleGcsRedirect(
+  proxyRes: IncomingMessage,
+  _req: IncomingMessage,
+  res: ServerResponse
+) {
+  const location = proxyRes.headers.location
+  const isGcsRedirect =
+    proxyRes.statusCode === 302 &&
+    location?.includes('storage.googleapis.com') &&
+    proxyRes.headers.via?.includes('google')
+
+  // Not a GCS redirect - pass through normally
+  if (!isGcsRedirect || !location) {
+    Object.keys(proxyRes.headers).forEach((key) => {
+      const value = proxyRes.headers[key]
+      if (value !== undefined) {
+        res.setHeader(key, value)
+      }
+    })
+    res.writeHead(proxyRes.statusCode || 200)
+    proxyRes.pipe(res)
+    return
+  }
+
+  // GCS redirect detected - fetch server-side to avoid CORS
+  fetch(location)
+    .then(async (gcsResponse) => {
+      if (!gcsResponse.body) {
+        res.statusCode = 500
+        res.end('Empty response from GCS')
+        return
+      }
+
+      // Set response headers from GCS
+      res.statusCode = 200
+      res.setHeader(
+        'Content-Type',
+        gcsResponse.headers.get('content-type') || 'application/octet-stream'
+      )
+
+      const contentLength = gcsResponse.headers.get('content-length')
+      if (contentLength) {
+        res.setHeader('Content-Length', contentLength)
+      }
+
+      // Convert Web ReadableStream to Node.js stream and pipe to client
+      const readable = Readable.fromWeb(gcsResponse.body as NodeReadableStream)
+      readable.pipe(res)
+    })
+    .catch((error) => {
+      console.error('Error fetching from GCS:', error)
+      res.statusCode = 500
+      res.end('Error fetching media')
+    })
+}
+
+const gcsRedirectProxyConfig: ProxyOptions = {
+  target: DEV_SERVER_COMFYUI_URL,
+  ...cloudProxyConfig,
+  selfHandleResponse: true,
+  configure: (proxy) => {
+    proxy.on('proxyRes', handleGcsRedirect)
+  }
+}
 
 export default defineConfig({
   base: '',
@@ -79,6 +147,13 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig
       },
+
+      ...(DISTRIBUTION === 'cloud'
+        ? {
+            '/api/view': gcsRedirectProxyConfig,
+            '/api/viewvideo': gcsRedirectProxyConfig
+          }
+        : {}),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
@@ -147,41 +222,46 @@ export default defineConfig({
       : [vue()]),
     tailwindcss(),
     comfyAPIPlugin(IS_DEV),
-    generateImportMapPlugin([
-      {
-        name: 'vue',
-        pattern: 'vue',
-        entry: './dist/vue.esm-browser.prod.js'
-      },
-      {
-        name: 'vue-i18n',
-        pattern: 'vue-i18n',
-        entry: './dist/vue-i18n.esm-browser.prod.js'
-      },
-      {
-        name: 'primevue',
-        pattern: /^primevue\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/themes',
-        pattern: /^@primevue\/themes\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/forms',
-        pattern: /^@primevue\/forms\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true,
-        override: {
-          '@primeuix/forms': {
-            entry: ''
-          }
-        }
-      }
-    ]),
+    // Skip import-map generation for cloud builds to keep bundle small
+    ...(DISTRIBUTION !== 'cloud'
+      ? [
+          generateImportMapPlugin([
+            {
+              name: 'vue',
+              pattern: 'vue',
+              entry: './dist/vue.esm-browser.prod.js'
+            },
+            {
+              name: 'vue-i18n',
+              pattern: 'vue-i18n',
+              entry: './dist/vue-i18n.esm-browser.prod.js'
+            },
+            {
+              name: 'primevue',
+              pattern: /^primevue\/?.*/,
+              entry: './index.mjs',
+              recursiveDependence: true
+            },
+            {
+              name: '@primevue/themes',
+              pattern: /^@primevue\/themes\/?.*/,
+              entry: './index.mjs',
+              recursiveDependence: true
+            },
+            {
+              name: '@primevue/forms',
+              pattern: /^@primevue\/forms\/?.*/,
+              entry: './index.mjs',
+              recursiveDependence: true,
+              override: {
+                '@primeuix/forms': {
+                  entry: ''
+                }
+              }
+            }
+          ])
+        ]
+      : []),
 
     Icons({
       compiler: 'vue3',
@@ -209,10 +289,31 @@ export default defineConfig({
       ? [
           visualizer({
             filename: 'dist/stats.html',
-            open: false,
+            open: true,
             gzipSize: true,
             brotliSize: true,
             template: 'treemap' // or 'sunburst', 'network'
+          })
+        ]
+      : []),
+
+    // Sentry sourcemap upload plugin
+    // Only runs during cloud production builds when all Sentry env vars are present
+    // Requires: SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT env vars
+    ...(DISTRIBUTION === 'cloud' &&
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT &&
+    !IS_DEV
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            sourcemaps: {
+              // Delete source maps after upload to prevent public access
+              filesToDeleteAfterUpload: ['**/*.map']
+            }
           })
         ]
       : [])
@@ -242,8 +343,12 @@ export default defineConfig({
             return 'vendor-chart'
           }
 
-          if (id.includes('three') || id.includes('@xterm')) {
-            return 'vendor-visualization'
+          if (id.includes('three')) {
+            return 'vendor-three'
+          }
+
+          if (id.includes('@xterm')) {
+            return 'vendor-xterm'
           }
 
           if (id.includes('/vue') || id.includes('pinia')) {

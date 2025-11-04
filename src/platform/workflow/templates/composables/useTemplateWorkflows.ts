@@ -132,13 +132,15 @@ export function useTemplateWorkflows() {
 
         if (isCloud) {
           useTelemetry()?.trackTemplate({
-            workflow_name: workflowName,
+            workflow_name: id,
             template_source: actualSourceModule
           })
         }
 
         dialogStore.closeDialog()
-        await app.loadGraphData(json, true, true, workflowName)
+        await app.loadGraphData(json, true, true, workflowName, {
+          openSource: 'template'
+        })
 
         return true
       }
@@ -153,13 +155,15 @@ export function useTemplateWorkflows() {
 
       if (isCloud) {
         useTelemetry()?.trackTemplate({
-          workflow_name: workflowName,
+          workflow_name: id,
           template_source: sourceModule
         })
       }
 
       dialogStore.closeDialog()
-      await app.loadGraphData(json, true, true, workflowName)
+      await app.loadGraphData(json, true, true, workflowName, {
+        openSource: 'template'
+      })
 
       return true
     } catch (error) {

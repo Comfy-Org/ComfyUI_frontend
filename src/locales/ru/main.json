@@ -693,7 +693,6 @@
       "perspective": "Перспектива"
     },
     "clearRecording": "Очистить запись",
-    "edgeThreshold": "Пороговое значение края",
     "export": "Экспорт",
     "exportModel": "Экспорт модели",
     "exportRecording": "Экспортировать запись",
@@ -706,7 +705,6 @@
     "materialMode": "Режим Материала",
     "materialModes": {
       "depth": "Глубина",
-      "lineart": "Лайнарт",
       "normal": "Нормальный",
       "original": "Оригинал",
       "wireframe": "Каркас"

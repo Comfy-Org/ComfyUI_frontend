@@ -223,15 +223,15 @@ export class LGraph
   /** Internal only.  Not required for serialisation; calculated on deserialise. */
   #lastFloatingLinkId: number = 0
 
-  #floatingLinks: Map<LinkId, LLink> = new Map()
+  private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
   get floatingLinks(): ReadonlyMap<LinkId, LLink> {
-    return this.#floatingLinks
+    return this.floatingLinksInternal
   }
 
-  #reroutes = new Map<RerouteId, Reroute>()
+  private readonly reroutesInternal = new Map<RerouteId, Reroute>()
   /** All reroutes in this graph. */
   public get reroutes(): Map<RerouteId, Reroute> {
-    return this.#reroutes
+    return this.reroutesInternal
   }
 
   get rootGraph(): LGraph {
@@ -340,7 +340,7 @@ export class LGraph
 
     this._links.clear()
     this.reroutes.clear()
-    this.#floatingLinks.clear()
+    this.floatingLinksInternal.clear()
 
     this.#lastFloatingLinkId = 0
 
@@ -1268,7 +1268,7 @@ export class LGraph
     if (link.id === -1) {
       link.id = ++this.#lastFloatingLinkId
     }
-    this.#floatingLinks.set(link.id, link)
+    this.floatingLinksInternal.set(link.id, link)
 
     const slot =
       link.target_id !== -1
@@ -1291,7 +1291,7 @@ export class LGraph
   }
 
   removeFloatingLink(link: LLink): void {
-    this.#floatingLinks.delete(link.id)
+    this.floatingLinksInternal.delete(link.id)
 
     const slot =
       link.target_id !== -1
@@ -1710,6 +1710,14 @@ export class LGraph
 
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
+    this.canvasAction((c) =>
+      c.canvas.dispatchEvent(
+        new CustomEvent('subgraph-converted', {
+          bubbles: true,
+          detail: { subgraphNode: subgraphNode as SubgraphNode }
+        })
+      )
+    )
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 

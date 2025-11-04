@@ -17,6 +17,7 @@ import {
   matchesPropertyItem,
   matchesWidgetItem,
   promoteWidget,
+  pruneDisconnected,
   widgetItemToProperty
 } from '@/core/graph/subgraph/proxyWidgetUtils'
 import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
@@ -235,6 +236,7 @@ watchDebounced(
 )
 onMounted(() => {
   setDraggableState()
+  if (activeNode.value) pruneDisconnected(activeNode.value)
 })
 onBeforeUnmount(() => {
   draggableList.value?.dispose()
@@ -255,7 +257,7 @@ onBeforeUnmount(() => {
         {{ $t('subgraphStore.shown') }}
       </div>
       <a
-        class="cursor-pointer text-right text-[11px] font-normal text-blue-100"
+        class="cursor-pointer text-right text-[11px] font-normal text-azure-600"
         @click.stop="hideAll"
       >
         {{ $t('subgraphStore.hideAll') }}</a
@@ -280,7 +282,7 @@ onBeforeUnmount(() => {
         {{ $t('subgraphStore.hidden') }}
       </div>
       <a
-        class="cursor-pointer text-right text-[11px] font-normal text-blue-100"
+        class="cursor-pointer text-right text-[11px] font-normal text-azure-600"
         @click.stop="showAll"
       >
         {{ $t('subgraphStore.showAll') }}</a

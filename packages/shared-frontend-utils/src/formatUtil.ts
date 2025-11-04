@@ -531,21 +531,11 @@ export function getMediaTypeFromFilename(filename: string): MediaType {
   const ext = filename.split('.').pop()?.toLowerCase()
   if (!ext) return 'image'
 
+  // Type-safe array includes check using type assertion
   if (IMAGE_EXTENSIONS.includes(ext as ImageExtension)) return 'image'
   if (VIDEO_EXTENSIONS.includes(ext as VideoExtension)) return 'video'
   if (AUDIO_EXTENSIONS.includes(ext as AudioExtension)) return 'audio'
   if (THREE_D_EXTENSIONS.includes(ext as ThreeDExtension)) return '3D'
 
   return 'image'
-}
-
-/**
- * @deprecated Use getMediaTypeFromFilename instead - kept for backward compatibility
- * @param filename The filename to analyze
- * @returns The media kind: 'image', 'video', 'audio', or '3D'
- */
-export function getMediaKindFromFilename(
-  filename: string
-): 'image' | 'video' | 'audio' | '3D' {
-  return getMediaTypeFromFilename(filename)
 }

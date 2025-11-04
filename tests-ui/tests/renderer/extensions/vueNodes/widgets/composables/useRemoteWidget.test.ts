@@ -1,46 +1,62 @@
 import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 
-vi.mock('axios', () => {
+const createMockNode = (overrides: Partial<LGraphNode> = {}): LGraphNode => {
+  const node = new LGraphNode('TestNode')
+  Object.assign(node, overrides)
+  return node
+}
+
+const createMockWidget = (overrides = {}): IWidget =>
+  ({ ...overrides }) as unknown as IWidget
+
+const mockCloudAuth = vi.hoisted(() => ({
+  isCloud: false,
+  authHeader: null as { Authorization: string } | null
+}))
+
+vi.mock('axios', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('axios')>()
   return {
     default: {
+      ...actual.default,
       get: vi.fn()
     }
   }
 })
 
-vi.mock('@/i18n', () => ({
-  i18n: {
-    global: {
-      t: vi.fn((key) => key)
-    }
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockCloudAuth.isCloud
   }
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    settings: {}
-  })
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
+vi.mock('@/stores/firebaseAuthStore', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/stores/firebaseAuthStore')>()
+  return {
+    ...actual,
+    useFirebaseAuthStore: vi.fn(() => ({
+      getAuthHeader: vi.fn(() => Promise.resolve(mockCloudAuth.authHeader))
+    }))
   }
-}))
+})
 
-vi.mock('@/composables/functional/useChainCallback', () => ({
-  useChainCallback: vi.fn((original, ...callbacks) => {
-    return function (this: any, ...args: any[]) {
-      original?.apply(this, args)
-      callbacks.forEach((cb: any) => cb.apply(this, args))
-    }
-  })
-}))
+vi.mock('@/platform/settings/settingStore', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/platform/settings/settingStore')>()
+  return {
+    ...actual,
+    useSettingStore: () => ({
+      settings: {}
+    })
+  }
+})
 
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 const DEFAULT_VALUE = 'Loading...'
@@ -56,10 +72,8 @@ function createMockConfig(overrides = {}): RemoteWidgetConfig {
 const createMockOptions = (inputOverrides = {}) => ({
   remoteConfig: createMockConfig(inputOverrides),
   defaultValue: DEFAULT_VALUE,
-  node: {
-    addWidget: vi.fn()
-  } as any,
-  widget: {} as any
+  node: createMockNode(),
+  widget: createMockWidget()
 })
 
 function mockAxiosResponse(data: unknown, status = 200) {
@@ -224,12 +238,19 @@ describe('useRemoteWidget', () => {
         const { hook } = await setupHookWithResponse(mockData)
 
         await getResolvedValue(hook)
+        expect(hook.getCachedValue()).toEqual(mockData)
+
         const refreshedData = ['data that user forced to be fetched']
         mockAxiosResponse(refreshedData)
 
         hook.refreshValue()
-        const data = await getResolvedValue(hook)
-        expect(data).toEqual(refreshedData)
+
+        // Wait for cache to update with refreshed data
+        await vi.waitFor(() => {
+          expect(hook.getCachedValue()).toEqual(refreshedData)
+        })
+
+        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
       })
 
       it('permanent widgets should still retry if request fails', async () => {
@@ -417,16 +438,25 @@ describe('useRemoteWidget', () => {
     })
 
     it('should prevent duplicate in-flight requests', async () => {
-      const promise = Promise.resolve({ data: ['non-duplicate'] })
-      vi.mocked(axios.get).mockImplementationOnce(() => promise as any)
+      const mockData = ['non-duplicate']
+      mockAxiosResponse(mockData)
 
       const hook = useRemoteWidget(createMockOptions())
-      const [result1, result2] = await Promise.all([
-        getResolvedValue(hook),
-        getResolvedValue(hook)
-      ])
 
-      expect(result1).toBe(result2)
+      // Start two concurrent getValue calls
+      const promise1 = new Promise<void>((resolve) => {
+        hook.getValue(() => resolve())
+      })
+      const promise2 = new Promise<void>((resolve) => {
+        hook.getValue(() => resolve())
+      })
+
+      // Wait for both e
+      await Promise.all([promise1, promise2])
+
+      // Both should see the same cached data
+      expect(hook.getCachedValue()).toEqual(mockData)
+      // Only one axios call should have been made
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
     })
   })
@@ -518,6 +548,44 @@ describe('useRemoteWidget', () => {
     })
   })
 
+  describe('cloud distribution authentication', () => {
+    describe('when distribution is cloud', () => {
+      describe('when authenticated', () => {
+        it('passes Firebase authentication token in request headers', async () => {
+          const mockData = ['authenticated data']
+          mockCloudAuth.authHeader = null
+          mockCloudAuth.isCloud = true
+          mockCloudAuth.authHeader = { Authorization: 'Bearer test-token' }
+          mockAxiosResponse(mockData)
+
+          const hook = useRemoteWidget(createMockOptions())
+          await getResolvedValue(hook)
+
+          expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({
+              headers: { Authorization: 'Bearer test-token' }
+            })
+          )
+        })
+      })
+    })
+
+    describe('when distribution is not cloud', () => {
+      it('bypasses authentication for non-cloud environments', async () => {
+        const mockData = ['non-cloud data']
+        mockCloudAuth.isCloud = false
+        mockAxiosResponse(mockData)
+
+        const hook = useRemoteWidget(createMockOptions())
+        await getResolvedValue(hook)
+
+        const axiosCall = vi.mocked(axios.get).mock.calls[0][1]
+        expect(axiosCall).not.toHaveProperty('headers')
+      })
+    })
+  })
+
   describe('auto-refresh on task completion', () => {
     it('should add auto-refresh toggle widget', () => {
       const mockNode = {
@@ -550,6 +618,7 @@ describe('useRemoteWidget', () => {
 
     it('should register event listener when enabled', async () => {
       const { api } = await import('@/scripts/api')
+      const addEventListenerSpy = vi.spyOn(api, 'addEventListener')
 
       const mockNode = {
         addWidget: vi.fn(),
@@ -567,7 +636,7 @@ describe('useRemoteWidget', () => {
       })
 
       // Event listener should be registered immediately
-      expect(api.addEventListener).toHaveBeenCalledWith(
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
         'execution_success',
         expect.any(Function)
       )
@@ -577,8 +646,7 @@ describe('useRemoteWidget', () => {
       const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
-      // Capture the event handler
-      vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
+      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
         if (event === 'execution_success') {
           executionSuccessHandler = handler as () => void
         }
@@ -616,8 +684,7 @@ describe('useRemoteWidget', () => {
       const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
-      // Capture the event handler
-      vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
+      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
         if (event === 'execution_success') {
           executionSuccessHandler = handler as () => void
         }
@@ -650,12 +717,13 @@ describe('useRemoteWidget', () => {
       const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
-      // Capture the event handler
-      vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
+      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
         if (event === 'execution_success') {
           executionSuccessHandler = handler as () => void
         }
       })
+
+      const removeEventListenerSpy = vi.spyOn(api, 'removeEventListener')
 
       const mockNode = {
         addWidget: vi.fn(),
@@ -676,7 +744,7 @@ describe('useRemoteWidget', () => {
       // Simulate node removal
       mockNode.onRemoved?.()
 
-      expect(api.removeEventListener).toHaveBeenCalledWith(
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'execution_success',
         executionSuccessHandler
       )

@@ -2,39 +2,57 @@
   <Button
     :label="label || $t('subscription.required.subscribe')"
     :size="size"
-    :class="buttonClass"
     :loading="isLoading"
     :disabled="isPolling"
     severity="primary"
+    :style="
+      variant === 'gradient'
+        ? {
+            background: 'var(--color-subscription-button-gradient)',
+            color: 'var(--color-white)'
+          }
+        : undefined
+    "
+    :pt="{
+      root: {
+        class: rootClass
+      }
+    }"
     @click="handleSubscribe"
   />
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { cn } from '@/utils/tailwindUtil'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     label?: string
     size?: 'small' | 'large'
-    buttonClass?: string
+    variant?: 'default' | 'gradient'
+    fluid?: boolean
   }>(),
   {
     size: 'large',
-    buttonClass: 'w-full font-bold'
+    variant: 'default',
+    fluid: true
   }
 )
+
+const rootClass = computed(() => cn('font-bold', props.fluid && 'w-full'))
 
 const emit = defineEmits<{
   subscribed: []
 }>()
 
 const { subscribe, isActiveSubscription, fetchStatus } = useSubscription()
+const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const isPolling = ref(false)
@@ -60,6 +78,7 @@ const startPollingSubscriptionStatus = () => {
 
       if (isActiveSubscription.value) {
         stopPolling()
+        telemetry?.trackMonthlySubscriptionSucceeded()
         emit('subscribed')
       }
     } catch (error) {

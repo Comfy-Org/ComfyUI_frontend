@@ -693,7 +693,6 @@
       "perspective": "Perspektif"
     },
     "clearRecording": "Kaydı Temizle",
-    "edgeThreshold": "Kenar Eşiği",
     "export": "Dışa Aktar",
     "exportModel": "Modeli Dışa Aktar",
     "exportRecording": "Kaydı Dışa Aktar",
@@ -706,7 +705,6 @@
     "materialMode": "Malzeme Modu",
     "materialModes": {
       "depth": "Derinlik",
-      "lineart": "Çizgi Sanatı",
       "normal": "Normal",
       "original": "Orijinal",
       "wireframe": "Tel Kafes"

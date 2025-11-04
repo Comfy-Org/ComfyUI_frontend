@@ -28,7 +28,7 @@ export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
     secondary:
       'bg-white border-none text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
     transparent:
-      'bg-transparent border-none text-neutral-600 dark-theme:text-neutral-400'
+      'bg-transparent border-none text-neutral-600 dark-theme:text-neutral-200'
   } as const
 
   return baseByType[type]

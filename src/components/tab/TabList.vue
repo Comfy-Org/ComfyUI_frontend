@@ -5,17 +5,17 @@
 </template>
 
 <script setup lang="ts">
-import { provide, toRef } from 'vue'
+import { provide } from 'vue'
 
-const props = defineProps<{
-  modelValue: string
-}>()
+const modelValue = defineModel<string>({ required: true })
 
-const emit = defineEmits<{
+defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
 // Provide for child Tab components
-provide('tabs-value', toRef(props, 'modelValue'))
-provide('tabs-update', (value: string) => emit('update:modelValue', value))
+provide('tabs-value', modelValue)
+provide('tabs-update', (value: string) => {
+  modelValue.value = value
+})
 </script>

@@ -693,7 +693,6 @@
       "perspective": "منظور"
     },
     "clearRecording": "مسح التسجيل",
-    "edgeThreshold": "عتبة الحواف",
     "export": "تصدير",
     "exportModel": "تصدير النموذج",
     "exportRecording": "تصدير التسجيل",
@@ -706,7 +705,6 @@
     "materialMode": "وضع المادة",
     "materialModes": {
       "depth": "العمق",
-      "lineart": "رسم الخطوط",
       "normal": "عادي",
       "original": "أصلي",
       "wireframe": "إطار سلكي"

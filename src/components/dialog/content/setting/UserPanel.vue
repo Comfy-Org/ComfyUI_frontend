@@ -78,7 +78,7 @@
 
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
-        <p class="text-gray-600">
+        <p class="text-smoke-600">
           {{ $t('auth.login.title') }}
         </p>
 
