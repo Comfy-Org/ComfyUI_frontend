@@ -131,7 +131,7 @@ const gcsRedirectProxyConfig: ProxyOptions = {
 }
 
 export default defineConfig({
-  base: '',
+  base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
