@@ -4,7 +4,7 @@
       v-if="!hidden"
       :class="
         cn(
-          'bg-zinc-500/10 dark-theme:bg-charcoal-600 box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
+          'bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
           { hidden: hideWhenEmpty && !hasAudio }
         )
       "
