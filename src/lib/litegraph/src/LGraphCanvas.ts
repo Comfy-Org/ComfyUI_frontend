@@ -2169,7 +2169,7 @@ export class LGraphCanvas
     }
   }
 
-  processMouseDown(e: PointerEvent): void {
+  processMouseDown(e: MouseEvent): void {
     if (
       this.dragZoomEnabled &&
       e.ctrlKey &&
