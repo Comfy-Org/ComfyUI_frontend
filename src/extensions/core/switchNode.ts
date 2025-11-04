@@ -6,7 +6,7 @@ import { app } from '@/scripts/app'
 
 app.registerExtension({
   name: 'Comfy.SwitchNode',
-  registerCustomNodes(app) {
+  registerCustomNodes() {
     class SwitchNode extends LGraphNode {
       static override category: string | undefined
       static defaultVisibility = false
@@ -60,15 +60,22 @@ app.registerExtension({
                 this.graph
               )
               const inputType = (input ?? subgraphOutput)?.type
-              if (
-                !inputType ||
-                LiteGraph.isValidConnection(combinedType, inputType)
-              )
-                continue
-              if (inputNode) inputNode.disconnectInput(link.target_slot)
-              else
+              if (!inputType) continue
+              const keep = LiteGraph.isValidConnection(combinedType, inputType)
+              if (!keep && subgraphOutput) {
                 // @ts-expect-error Does exist, but fails to cleanup output links
                 subgraphOutput?.disconnect()
+              } else if (!keep && inputNode) {
+                inputNode.disconnectInput(link.target_slot)
+              }
+              if (input && inputNode?.onConnectionsChange)
+                inputNode.onConnectionsChange(
+                  LiteGraph.INPUT,
+                  link.target_slot,
+                  keep,
+                  link,
+                  input
+                )
             }
           }
         }, 50)
@@ -79,8 +86,8 @@ app.registerExtension({
         iscon: boolean,
         linf: LLink | null | undefined
       ) {
-        if (app.configuringGraph || !this.graph) return
         if (contype == LiteGraph.INPUT && (slot == 0 || slot == 1)) {
+          if (!this.graph) return
           let newType: ISlotType | undefined = '*'
           if (iscon && linf) {
             const { output, subgraphInput } = linf.resolve(this.graph)
