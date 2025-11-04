@@ -475,6 +475,9 @@ export const useQueueStore = defineStore('queue', () => {
   const historyTasks = shallowRef<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
+  /** Feature flag to hide UI elements that depend on firstSeenByPromptId */
+  const hideFirstSeenByPromptIdUI = true
+  /** Keep the mapping exported for compatibility, but stop tracking locally */
   const firstSeenByPromptId = ref<Record<string, number>>({})
 
   const tasks = computed<TaskItemImpl[]>(
@@ -513,9 +516,6 @@ export const useQueueStore = defineStore('queue', () => {
       const executionStore = useExecutionStore()
       appearedTasks.forEach((task) => {
         const promptIdString = String(task.promptId)
-        if (!(promptIdString in firstSeenByPromptId.value)) {
-          firstSeenByPromptId.value[promptIdString] = Date.now()
-        }
         const workflowId = task.workflow?.id
         if (workflowId && promptIdString) {
           executionStore.registerPromptWorkflowIdMapping(
@@ -554,15 +554,11 @@ export const useQueueStore = defineStore('queue', () => {
     }
     await Promise.all(targets.map((type) => api.clearItems(type)))
     await update()
-    if (targets.includes('queue')) {
-      firstSeenByPromptId.value = {}
-    }
   }
 
   const deleteTask = async (task: TaskItemImpl) => {
     await api.deleteItem(task.apiTaskType, task.promptId)
     await update()
-    delete firstSeenByPromptId.value[String(task.promptId)]
   }
 
   return {
@@ -580,7 +576,8 @@ export const useQueueStore = defineStore('queue', () => {
     update,
     clear,
     delete: deleteTask,
-    firstSeenByPromptId
+    firstSeenByPromptId,
+    hideFirstSeenByPromptIdUI
   }
 })
 

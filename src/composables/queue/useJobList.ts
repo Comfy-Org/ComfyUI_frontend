@@ -136,7 +136,9 @@ export function useJobList() {
       const display = buildJobDisplay(task, state, {
         t,
         locale: locale.value,
-        firstSeenByPromptId: queueStore.firstSeenByPromptId,
+        firstSeenByPromptId: queueStore.hideFirstSeenByPromptIdUI
+          ? {}
+          : queueStore.firstSeenByPromptId,
         formatClockTimeFn: formatClockTime,
         isActive,
         totalPercent: isActive ? totalPercent.value : undefined,

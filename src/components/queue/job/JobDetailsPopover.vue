@@ -170,6 +170,7 @@ const jobState = computed(() => {
 
 const firstSeenTs = computed<number | undefined>(() => {
   const pid = String(props.jobId ?? '')
+  if (queueStore.hideFirstSeenByPromptIdUI) return undefined
   return queueStore.firstSeenByPromptId?.[pid]
 })
 
