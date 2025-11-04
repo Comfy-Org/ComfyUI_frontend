@@ -29,8 +29,11 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getSurveyCompletedStatus, getUserCloudStatus } from '@/api/auth'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import {
+  getSurveyCompletedStatus,
+  getUserCloudStatus
+} from '@/platform/cloud/onboarding/auth'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'

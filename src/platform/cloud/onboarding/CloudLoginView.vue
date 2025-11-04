@@ -83,7 +83,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
+import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
 

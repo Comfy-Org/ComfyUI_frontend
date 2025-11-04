@@ -65,10 +65,10 @@
 import Button from 'primevue/button'
 
 import { t } from '@/i18n'
-import videoPoster from '@/platform/onboarding/cloud/assets/videos/thumbnail.png'
-import videoSrc from '@/platform/onboarding/cloud/assets/videos/video.mp4'
-import CloudLogo from '@/platform/onboarding/cloud/components/CloudLogo.vue'
-import CloudTemplateFooter from '@/platform/onboarding/cloud/components/CloudTemplateFooter.vue'
+import videoPoster from '@/platform/cloud/onboarding/assets/videos/thumbnail.png'
+import videoSrc from '@/platform/cloud/onboarding/assets/videos/video.mp4'
+import CloudLogo from '@/platform/cloud/onboarding/components/CloudLogo.vue'
+import CloudTemplateFooter from '@/platform/cloud/onboarding/components/CloudTemplateFooter.vue'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const handleDownloadClick = () => {

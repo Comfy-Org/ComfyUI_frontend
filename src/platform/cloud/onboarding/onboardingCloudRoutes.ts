@@ -4,13 +4,13 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
   {
     path: '/cloud',
     component: () =>
-      import('@/platform/onboarding/cloud/components/CloudLayoutView.vue'),
+      import('@/platform/cloud/onboarding/components/CloudLayoutView.vue'),
     children: [
       {
         path: 'login',
         name: 'cloud-login',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudLoginView.vue'),
+          import('@/platform/cloud/onboarding/CloudLoginView.vue'),
         beforeEnter: async (to, _from, next) => {
           // Only redirect if not explicitly switching accounts
           if (!to.query.switchAccount) {
@@ -32,39 +32,39 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         path: 'signup',
         name: 'cloud-signup',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudSignupView.vue')
+          import('@/platform/cloud/onboarding/CloudSignupView.vue')
       },
       {
         path: 'forgot-password',
         name: 'cloud-forgot-password',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudForgotPasswordView.vue')
+          import('@/platform/cloud/onboarding/CloudForgotPasswordView.vue')
       },
       {
         path: 'survey',
         name: 'cloud-survey',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudSurveyView.vue'),
+          import('@/platform/cloud/onboarding/CloudSurveyView.vue'),
         meta: { requiresAuth: true }
       },
       {
         path: 'user-check',
         name: 'cloud-user-check',
         component: () =>
-          import('@/platform/onboarding/cloud/UserCheckView.vue'),
+          import('@/platform/cloud/onboarding/UserCheckView.vue'),
         meta: { requiresAuth: true }
       },
       {
         path: 'sorry-contact-support',
         name: 'cloud-sorry-contact-support',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudSorryContactSupportView.vue')
+          import('@/platform/cloud/onboarding/CloudSorryContactSupportView.vue')
       },
       {
         path: 'auth-timeout',
         name: 'cloud-auth-timeout',
         component: () =>
-          import('@/platform/onboarding/cloud/CloudAuthTimeoutView.vue'),
+          import('@/platform/cloud/onboarding/CloudAuthTimeoutView.vue'),
         props: true
       }
     ]

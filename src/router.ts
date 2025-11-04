@@ -14,7 +14,7 @@ import { useUserStore } from '@/stores/userStore'
 import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
-import { cloudOnboardingRoutes } from './onboardingCloudRoutes'
+import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
 
 const PUBLIC_ROUTE_NAMES = new Set([
   'cloud-login',
@@ -22,19 +22,18 @@ const PUBLIC_ROUTE_NAMES = new Set([
   'cloud-forgot-password',
   'cloud-sorry-contact-support'
 ])
+const PUBLIC_ROUTE_PATHS = new Set([
+  '/cloud/login',
+  '/cloud/signup',
+  '/cloud/forgot-password',
+  '/cloud/sorry-contact-support'
+])
 
-const isPublicRoute = (to: RouteLocationNormalized) => {
+function isPublicRoute(to: RouteLocationNormalized) {
   const name = String(to.name)
   if (PUBLIC_ROUTE_NAMES.has(name)) return true
   const path = to.path
-  if (
-    path === '/cloud/login' ||
-    path === '/cloud/signup' ||
-    path === '/cloud/forgot-password' ||
-    path === '/cloud/sorry-contact-support'
-  )
-    return true
-  return false
+  return PUBLIC_ROUTE_PATHS.has(path)
 }
 
 const isFileProtocol = window.location.protocol === 'file:'
@@ -59,8 +58,7 @@ const router = createRouter({
       // we need this base path or assets will incorrectly resolve from 'http://localhost:7801/'
       createWebHistory(basePath),
   routes: [
-    // Cloud onboarding routes
-    ...cloudOnboardingRoutes,
+    ...(isCloud ? cloudOnboardingRoutes : []),
     {
       path: '/',
       component: LayoutDefault,
@@ -144,7 +142,7 @@ if (isCloud) {
     }
 
     // Handle other protected routes
-    if (!isPublicRoute(to) && !isLoggedIn) {
+    if (!isLoggedIn) {
       // For Electron, use dialog
       if (isElectron()) {
         const dialogService = useDialogService()
@@ -161,7 +159,7 @@ if (isCloud) {
     if (!isElectron() && isLoggedIn && to.path === '/') {
       // Import auth functions dynamically to avoid circular dependency
       const { getSurveyCompletedStatus } = await import(
-        '@/platform/onboarding/auth'
+        '@/platform/cloud/onboarding/auth'
       )
       try {
         // Check user's actual status

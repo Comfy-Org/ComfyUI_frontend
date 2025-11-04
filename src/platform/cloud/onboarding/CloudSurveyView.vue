@@ -221,7 +221,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { getSurveyCompletedStatus, submitSurvey } from '@/api/auth'
+import {
+  getSurveyCompletedStatus,
+  submitSurvey
+} from '@/platform/cloud/onboarding/auth'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 
