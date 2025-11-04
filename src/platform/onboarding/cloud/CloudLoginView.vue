@@ -1,35 +1,20 @@
 <template>
   <div class="flex h-full items-center justify-center p-8">
     <div class="max-w-[100vw] p-2 lg:w-96">
-      <template v-if="!hasInviteCode">
-        <!-- Header -->
-        <div class="mt-6 mb-8 flex flex-col gap-4">
-          <h1 class="my-0 text-xl leading-normal font-medium">
-            {{ t('auth.login.title') }}
-          </h1>
-          <p class="my-0 text-base">
-            <span class="text-muted">{{ t('auth.login.newUser') }}</span>
-            <span
-              class="ml-1 cursor-pointer text-blue-500"
-              @click="navigateToSignup"
-              >{{ t('auth.login.signUp') }}</span
-            >
-          </p>
-        </div>
-      </template>
-
-      <template v-else>
-        <div class="mt-6 mb-8 flex flex-col gap-1">
-          <h1
-            class="font-abcrom my-0 text-2xl font-black text-white uppercase italic"
+      <!-- Header -->
+      <div class="mt-6 mb-8 flex flex-col gap-4">
+        <h1 class="my-0 text-xl leading-normal font-medium">
+          {{ t('auth.login.title') }}
+        </h1>
+        <p class="my-0 text-base">
+          <span class="text-muted">{{ t('auth.login.newUser') }}</span>
+          <span
+            class="ml-1 cursor-pointer text-blue-500"
+            @click="navigateToSignup"
+            >{{ t('auth.login.signUp') }}</span
           >
-            {{ t('cloudStart_invited') }}
-          </h1>
-          <p class="my-0 text-base">
-            <span class="text-muted">{{ t('cloudStart_invited_signin') }}</span>
-          </p>
-        </div>
-      </template>
+        </p>
+      </div>
 
       <Message v-if="!isSecureContext" severity="warn" class="mb-4">
         {{ t('auth.login.insecureContextWarning') }}
@@ -86,19 +71,17 @@
         >.
       </p>
 
-      <template v-if="!hasInviteCode">
-        <p class="mt-5 text-sm text-gray-600">
-          {{ t('cloudWaitlist_questionsText') }}
-          <a
-            href="https://support.comfy.org"
-            class="cursor-pointer text-blue-400 no-underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ t('cloudWaitlist_contactLink') }}</a
-          >.
-        </p>
-      </template>
+      <p class="mt-5 text-sm text-gray-600">
+        {{ t('cloudWaitlist_questionsText') }}
+        <a
+          href="https://support.comfy.org"
+          class="cursor-pointer text-blue-400 no-underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t('cloudWaitlist_contactLink') }}</a
+        >.
+      </p>
     </div>
   </div>
 </template>
@@ -107,7 +90,7 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -125,8 +108,6 @@ const isSecureContext = window.isSecureContext
 const authError = ref('')
 const toastStore = useToastStore()
 
-const hasInviteCode = computed(() => !!route.query.inviteCode)
-
 const navigateToSignup = () => {
   void router.push({ name: 'cloud-signup', query: route.query })
 }
@@ -137,18 +118,7 @@ const onSuccess = async () => {
     summary: 'Login Completed',
     life: 2000
   })
-  // Check if there's an invite code
-  const inviteCode = route.query.inviteCode as string | undefined
-  if (inviteCode) {
-    // Handle invite code flow - go to invite check
-    await router.push({
-      name: 'cloud-invite-check',
-      query: { inviteCode }
-    })
-  } else {
-    // Normal login flow - go to user check
-    await router.push({ name: 'cloud-user-check' })
-  }
+  await router.push({ name: 'cloud-user-check' })
 }
 
 // Custom error handler for inline display

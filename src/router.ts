@@ -32,7 +32,6 @@ const isPublicRoute = (to: RouteLocationNormalized) => {
     path === '/cloud/sorry-contact-support'
   )
     return true
-  if (path.startsWith('/cloud/code')) return true
   return false
 }
 
@@ -148,9 +147,9 @@ router.beforeEach(async (to, _from, next) => {
     return next()
   }
 
-  // Special handling for user-check and invite-check routes
+  // Special handling for user-check
   // These routes need auth but handle their own routing logic
-  if (to.name === 'cloud-user-check' || to.name === 'cloud-invite-check') {
+  if (to.name === 'cloud-user-check') {
     if (to.meta.requiresAuth && !isLoggedIn) {
       return next({ name: 'cloud-login' })
     }

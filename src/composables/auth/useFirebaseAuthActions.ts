@@ -1,6 +1,5 @@
 import { FirebaseError } from 'firebase/app'
 import { ref } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -17,7 +16,6 @@ import { usdToMicros } from '@/utils/formatUtil'
 export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
-  const route = useRoute()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -61,14 +59,7 @@ export const useFirebaseAuthActions = () => {
     // Full page reload ensures complete app state reset and proper onboarding flow
     const hostname = window.location.hostname
     if (hostname.includes('cloud.comfy.org')) {
-      if (route.query.inviteCode) {
-        const inviteCode = Array.isArray(route.query.inviteCode)
-          ? route.query.inviteCode[0]
-          : route.query.inviteCode
-        window.location.href = `/cloud/login?inviteCode=${encodeURIComponent(inviteCode || '')}`
-      } else {
-        window.location.href = '/cloud/login'
-      }
+      window.location.href = '/cloud/login'
     }
   }, reportError)
 
