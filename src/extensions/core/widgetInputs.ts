@@ -445,7 +445,7 @@ function getWidgetType(config: InputSpec) {
 
 export function setWidgetConfig(
   slot: INodeInputSlot | INodeOutputSlot,
-  config: InputSpec
+  config?: InputSpec
 ) {
   if (!slot.widget) return
   if (config) {
