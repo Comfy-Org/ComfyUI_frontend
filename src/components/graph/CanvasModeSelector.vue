@@ -2,14 +2,14 @@
   <Button
     ref="buttonRef"
     severity="secondary"
-    class="group h-8 rounded-none! bg-interface-panel-surface p-0 transition-none! hover:rounded-lg! hover:bg-button-hover-surface!"
+    class="group h-8 rounded-none! bg-[var(--comfy-menu-bg)] p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
     :style="buttonStyles"
     @click="toggle"
   >
     <template #default>
       <div class="flex items-center gap-1 pr-0.5">
         <div
-          class="rounded-lg bg-button-active-surface p-2 group-hover:bg-button-hover-surface"
+          class="rounded-lg bg-interface-panel-selected-surface p-2 group-hover:bg-interface-button-hover-surface"
         >
           <i :class="currentModeIcon" class="block h-4 w-4" />
         </div>
