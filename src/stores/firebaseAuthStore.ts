@@ -64,6 +64,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Token refresh trigger - increments when token is refreshed
   const tokenRefreshTrigger = ref(0)
+  /**
+   * The user ID for which the initial ID token has been observed.
+   * When a token changes for the same user, that is a refresh.
+   */
+  const lastTokenUserId = ref<string | null>(null)
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -93,6 +98,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user
     isInitialized.value = true
+    if (user === null) {
+      lastTokenUserId.value = null
+    }
 
     // Reset balance when auth state changes
     balance.value = null
@@ -102,6 +110,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Listen for token refresh events
   onIdTokenChanged(auth, (user) => {
     if (user && isCloud) {
+      // Skip initial token change
+      if (lastTokenUserId.value !== user.uid) {
+        lastTokenUserId.value = user.uid
+        return
+      }
       tokenRefreshTrigger.value++
     }
   })
