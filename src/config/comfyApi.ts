@@ -15,23 +15,24 @@ const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
   ? PROD_PLATFORM_BASE_URL
   : STAGING_PLATFORM_BASE_URL
 
-const getCloudRuntimeUrl = (key: 'comfy_api_base_url' | 'comfy_platform_base_url') => {
-  if (!isCloud) return undefined
-
-  const runtimeConfig = getRuntimeConfig()
-  const value = runtimeConfig[key]
-
-  if (value && typeof value === 'string') {
-    return value
+export function getComfyApiBaseUrl(): string {
+  if (!isCloud) {
+    return BUILD_TIME_API_BASE_URL
   }
 
-  return undefined
-}
-
-export function getComfyApiBaseUrl(): string {
-  return getCloudRuntimeUrl('comfy_api_base_url') ?? BUILD_TIME_API_BASE_URL
+  const runtimeUrl = getRuntimeConfig().comfy_api_base_url
+  return typeof runtimeUrl === 'string' && runtimeUrl.length > 0
+    ? runtimeUrl
+    : BUILD_TIME_API_BASE_URL
 }
 
 export function getComfyPlatformBaseUrl(): string {
-  return getCloudRuntimeUrl('comfy_platform_base_url') ?? BUILD_TIME_PLATFORM_BASE_URL
+  if (!isCloud) {
+    return BUILD_TIME_PLATFORM_BASE_URL
+  }
+
+  const runtimeUrl = getRuntimeConfig().comfy_platform_base_url
+  return typeof runtimeUrl === 'string' && runtimeUrl.length > 0
+    ? runtimeUrl
+    : BUILD_TIME_PLATFORM_BASE_URL
 }

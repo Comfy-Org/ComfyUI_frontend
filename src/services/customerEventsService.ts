@@ -23,17 +23,17 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
+const customerApiClient = axios.create({
+  baseURL: getComfyApiBaseUrl(),
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
 export const useCustomerEventsService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const { d } = useI18n()
-
-  const customerApiClient = axios.create({
-    baseURL: getComfyApiBaseUrl(),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
 
   watch(
     () => getComfyApiBaseUrl(),

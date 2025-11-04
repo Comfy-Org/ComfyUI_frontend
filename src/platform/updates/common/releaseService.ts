@@ -13,17 +13,17 @@ type GetReleasesParams = operations['getReleaseNotes']['parameters']['query']
 // Use generated error response type
 type ErrorResponse = components['schemas']['ErrorResponse']
 
+const releaseApiClient = axios.create({
+  baseURL: getComfyApiBaseUrl(),
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
 // Release service for fetching release notes
 export const useReleaseService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-
-  const releaseApiClient = axios.create({
-    baseURL: getComfyApiBaseUrl(),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
 
   watch(
     () => getComfyApiBaseUrl(),

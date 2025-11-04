@@ -4,10 +4,7 @@ import { createSharedComposable } from '@vueuse/core'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import {
-  getComfyApiBaseUrl,
-  getComfyPlatformBaseUrl
-} from '@/config/comfyApi'
+import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'

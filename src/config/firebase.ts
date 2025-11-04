@@ -33,12 +33,10 @@ const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
  * - OSS / localhost builds fall back to the build-time config determined by __USE_PROD_CONFIG__
  */
 export function getFirebaseConfig(): FirebaseOptions {
-  if (isCloud) {
-    const runtimeConfig = getRuntimeConfig().firebase_config
-    if (runtimeConfig) {
-      return runtimeConfig
-    }
+  if (!isCloud) {
+    return BUILD_TIME_CONFIG
   }
 
-  return BUILD_TIME_CONFIG
+  const runtimeConfig = getRuntimeConfig().firebase_config
+  return runtimeConfig ?? BUILD_TIME_CONFIG
 }
