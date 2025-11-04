@@ -7,6 +7,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
+import router from '@/router'
 
 /**
  * Service for Firebase Auth actions.
@@ -59,7 +60,7 @@ export const useFirebaseAuthActions = () => {
     // Full page reload ensures complete app state reset and proper onboarding flow
     const hostname = window.location.hostname
     if (hostname.includes('cloud.comfy.org')) {
-      window.location.href = '/cloud/login'
+      await router.push('/cloud/login')
     }
   }, reportError)
 

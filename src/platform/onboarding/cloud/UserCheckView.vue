@@ -68,7 +68,7 @@ const {
     }
 
     // User is fully onboarded (active or whitelist check disabled)
-    window.location.href = '/'
+    await router.replace('/')
   }),
   null,
   { resetOnExecute: false }
