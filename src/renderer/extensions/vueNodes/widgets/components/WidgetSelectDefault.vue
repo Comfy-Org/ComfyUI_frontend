@@ -10,7 +10,7 @@
       size="small"
       :pt="{
         option: 'text-xs',
-        dropdownIcon: 'text-button-icon'
+        dropdownIcon: 'text-component-node-foreground-secondary'
       }"
       data-capture-wheel="true"
       @update:model-value="onChange"
