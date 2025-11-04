@@ -1,6 +1,7 @@
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import { SubgraphSlot } from '@/lib/litegraph/src/subgraph/SubgraphSlotBase'
 
 import { app } from '@/scripts/app'
 
@@ -13,8 +14,7 @@ app.registerExtension({
       linkTimeout: undefined | ReturnType<typeof setTimeout> = undefined
 
       constructor(title?: string) {
-        // @ts-expect-error fixme ts strict error
-        super(title)
+        super(title ?? 'switch')
         if (!this.properties) {
           this.properties = {}
         }
@@ -23,18 +23,11 @@ app.registerExtension({
         this.addWidget('toggle', 'toggle', true, () => {}, {})
         this.addOutput('output', '*')
 
-        this.onAfterGraphConfigured = function () {
-          requestAnimationFrame(() => {
-            // @ts-expect-error fixme ts strict error
-            this.onConnectionsChange(LiteGraph.INPUT, null, true, null)
-          })
-        }
-
         // This node is purely frontend and does not impact the resulting prompt so should not be serialized
         this.isVirtualNode = true
       }
       combinedType(newType: ISlotType, slot: number): ISlotType | undefined {
-        const otherType = this.inputs[slot === 0 ? 1 : 0].type
+        const otherType = this.inputs[slot].type
         if (typeof newType !== 'string' || typeof otherType !== 'string')
           return undefined
         if (newType === '*') return otherType
@@ -63,8 +56,7 @@ app.registerExtension({
               if (!inputType) continue
               const keep = LiteGraph.isValidConnection(combinedType, inputType)
               if (!keep && subgraphOutput) {
-                // @ts-expect-error Does exist, but fails to cleanup output links
-                subgraphOutput?.disconnect()
+                ;(subgraphOutput as SubgraphSlot).disconnect()
               } else if (!keep && inputNode) {
                 inputNode.disconnectInput(link.target_slot)
               }
