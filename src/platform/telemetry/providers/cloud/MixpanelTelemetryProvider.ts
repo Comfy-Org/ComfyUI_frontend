@@ -149,7 +149,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   trackSignupOpened(): void {
     this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
   }
-  
+
   trackAuth(metadata: AuthMetadata): void {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
