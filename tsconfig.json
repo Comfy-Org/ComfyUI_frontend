@@ -6,6 +6,7 @@
     "lib": [
       "ES2023",
       "ES2023.Array",
+      "ESNEXT",
       "DOM",
       "DOM.Iterable"
     ],

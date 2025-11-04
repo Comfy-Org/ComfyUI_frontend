@@ -33,7 +33,6 @@ app.registerExtension({
         if (newType === '*') return otherType
         if (otherType === '*') return newType
         const newSet = new Set(newType.split(','))
-        // @ts-expect-error intersection doesn't exist?
         const combinedSet = newSet.intersection(new Set(otherType.split(',')))
         if (combinedSet.size == 0) return undefined
         return [...combinedSet].join(',')
