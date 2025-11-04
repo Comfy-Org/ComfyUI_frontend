@@ -122,8 +122,6 @@ const shouldShowDeleteButton = computed(() => {
   return propAllows && typeAllows
 })
 
-// (showCopyJobId is defined above based on assetType)
-
 const handleInspect = () => {
   emit('inspect')
   close()

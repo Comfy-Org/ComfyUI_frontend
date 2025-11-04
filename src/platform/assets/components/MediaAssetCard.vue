@@ -305,6 +305,7 @@ const showActionsOverlay = computed(
     !!asset &&
     (isCardOrOverlayHovered.value || isVideoPlaying.value)
 )
+
 const handleOverlayMouseEnter = () => {
   isOverlayHovered.value = true
 }
