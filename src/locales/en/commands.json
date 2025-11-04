@@ -305,6 +305,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Toggle Assets Sidebar",
+    "tooltip": "Assets"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "Toggle Model Library Sidebar",
     "tooltip": "Model Library"

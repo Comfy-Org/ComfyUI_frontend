@@ -326,7 +326,13 @@ export class ComfyApi extends EventTarget {
     super()
     this.user = ''
     this.api_host = location.host
-    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
+    const pathname = location.pathname
+    const isCloudSpaRoute = isCloud && pathname.startsWith('/cloud/')
+    if (isCloudSpaRoute) {
+      this.api_base = ''
+    } else {
+      this.api_base = pathname.split('/').slice(0, -1).join('/')
+    }
     console.log('Running on', this.api_host)
     this.initialClientId = sessionStorage.getItem('clientId')
   }
@@ -1135,15 +1141,22 @@ export class ComfyApi extends EventTarget {
   }
 
   async getLogs(): Promise<string> {
-    return (await axios.get(this.internalURL('/logs'))).data
+    const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
+    return (await axios.get(url)).data
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
-    return (await axios.get(this.internalURL('/logs/raw'))).data
+    const url = isCloud
+      ? this.apiURL('/logs/raw')
+      : this.internalURL('/logs/raw')
+    return (await axios.get(url)).data
   }
 
   async subscribeLogs(enabled: boolean): Promise<void> {
-    return await axios.patch(this.internalURL('/logs/subscribe'), {
+    const url = isCloud
+      ? this.apiURL('/logs/subscribe')
+      : this.internalURL('/logs/subscribe')
+    return await axios.patch(url, {
       enabled,
       clientId: this.clientId
     })

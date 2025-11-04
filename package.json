@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.31.1",
+  "version": "1.32.1",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -57,6 +57,7 @@
     "@pinia/testing": "catalog:",
     "@playwright/test": "catalog:",
     "@prettier/plugin-oxc": "catalog:",
+    "@sentry/vite-plugin": "catalog:",
     "@storybook/addon-docs": "catalog:",
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",

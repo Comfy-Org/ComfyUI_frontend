@@ -546,6 +546,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Clean up all promoted widgets
     for (const widget of this.widgets) {
+      if ('isProxyWidget' in widget && widget.isProxyWidget) continue
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this

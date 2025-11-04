@@ -41,20 +41,28 @@ describe('useLoad3dViewer', () => {
 
     mockNode = {
       properties: {
-        'Background Color': '#282828',
-        'Show Grid': true,
-        'Camera Type': 'perspective',
-        FOV: 75,
-        'Light Intensity': 1,
-        'Camera Info': null,
-        'Background Image': '',
-        'Up Direction': 'original',
-        'Material Mode': 'original',
-        'Edge Threshold': 85
+        'Scene Config': {
+          backgroundColor: '#282828',
+          showGrid: true,
+          backgroundImage: ''
+        },
+        'Camera Config': {
+          cameraType: 'perspective',
+          fov: 75
+        },
+        'Light Config': {
+          intensity: 1
+        },
+        'Model Config': {
+          upDirection: 'original',
+          materialMode: 'original'
+        },
+        'Resource Folder': ''
       },
       graph: {
         setDirtyCanvas: vi.fn()
-      }
+      },
+      widgets: []
     } as any
 
     mockLoad3d = {
@@ -66,7 +74,6 @@ describe('useLoad3dViewer', () => {
       setBackgroundImage: vi.fn().mockResolvedValue(undefined),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
-      setEdgeThreshold: vi.fn(),
       exportModel: vi.fn().mockResolvedValue(undefined),
       handleResize: vi.fn(),
       updateStatusMouseOnViewer: vi.fn(),
@@ -77,7 +84,8 @@ describe('useLoad3dViewer', () => {
         cameraType: 'perspective'
       }),
       forceRender: vi.fn(),
-      remove: vi.fn()
+      remove: vi.fn(),
+      setTargetSize: vi.fn()
     }
 
     mockSourceLoad3d = {
@@ -142,7 +150,6 @@ describe('useLoad3dViewer', () => {
       expect(viewer.hasBackgroundImage.value).toBe(false)
       expect(viewer.upDirection.value).toBe('original')
       expect(viewer.materialMode.value).toBe('original')
-      expect(viewer.edgeThreshold.value).toBe(85)
     })
 
     it('should initialize viewer with source Load3d state', async () => {
@@ -169,7 +176,6 @@ describe('useLoad3dViewer', () => {
       expect(viewer.fov.value).toBe(75)
       expect(viewer.upDirection.value).toBe('original')
       expect(viewer.materialMode.value).toBe('original')
-      expect(viewer.edgeThreshold.value).toBe(85)
     })
 
     it('should handle background image during initialization', async () => {
@@ -177,7 +183,7 @@ describe('useLoad3dViewer', () => {
         type: 'image',
         value: ''
       })
-      mockNode.properties['Background Image'] = 'test-image.jpg'
+      mockNode.properties['Scene Config'].backgroundImage = 'test-image.jpg'
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
@@ -302,18 +308,6 @@ describe('useLoad3dViewer', () => {
       expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('wireframe')
     })
 
-    it('should update edge threshold when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
-
-      viewer.edgeThreshold.value = 90
-      await nextTick()
-
-      expect(mockLoad3d.setEdgeThreshold).toHaveBeenCalledWith(90)
-    })
-
     it('should handle watcher errors gracefully', async () => {
       mockLoad3d.setBackgroundColor.mockImplementationOnce(() => {
         throw new Error('Color update failed')
@@ -411,16 +405,20 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
 
-      mockNode.properties['Background Color'] = '#ff0000'
-      mockNode.properties['Show Grid'] = false
+      mockNode.properties['Scene Config'].backgroundColor = '#ff0000'
+      mockNode.properties['Scene Config'].showGrid = false
 
       viewer.restoreInitialState()
 
-      expect(mockNode.properties['Background Color']).toBe('#282828')
-      expect(mockNode.properties['Show Grid']).toBe(true)
-      expect(mockNode.properties['Camera Type']).toBe('perspective')
-      expect(mockNode.properties['FOV']).toBe(75)
-      expect(mockNode.properties['Light Intensity']).toBe(1)
+      expect(mockNode.properties['Scene Config'].backgroundColor).toBe(
+        '#282828'
+      )
+      expect(mockNode.properties['Scene Config'].showGrid).toBe(true)
+      expect(mockNode.properties['Camera Config'].cameraType).toBe(
+        'perspective'
+      )
+      expect(mockNode.properties['Camera Config'].fov).toBe(75)
+      expect(mockNode.properties['Light Config'].intensity).toBe(1)
     })
   })
 
@@ -437,8 +435,10 @@ describe('useLoad3dViewer', () => {
       const result = await viewer.applyChanges()
 
       expect(result).toBe(true)
-      expect(mockNode.properties['Background Color']).toBe('#ff0000')
-      expect(mockNode.properties['Show Grid']).toBe(false)
+      expect(mockNode.properties['Scene Config'].backgroundColor).toBe(
+        '#ff0000'
+      )
+      expect(mockNode.properties['Scene Config'].showGrid).toBe(false)
       expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
         mockLoad3d,
         mockSourceLoad3d
@@ -582,7 +582,10 @@ describe('useLoad3dViewer', () => {
 
     it('should handle orthographic camera', async () => {
       mockSourceLoad3d.getCurrentCameraType.mockReturnValue('orthographic')
-      mockSourceLoad3d.cameraManager = {} // No perspective camera
+      mockSourceLoad3d.cameraManager = {
+        perspectiveCamera: { fov: 75 }
+      }
+      delete mockNode.properties['Camera Config'].cameraType
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')

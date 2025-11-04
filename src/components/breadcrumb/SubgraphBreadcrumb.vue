@@ -1,6 +1,6 @@
 <template>
   <div
-    class="subgraph-breadcrumb w-auto drop-shadow-md"
+    class="subgraph-breadcrumb w-auto drop-shadow-[var(--interface-panel-drop-shadow)]"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -40,6 +40,7 @@ import { computed, onUpdated, ref, watch } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -73,6 +74,9 @@ const items = computed(() => {
   const items = navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
     label: subgraph.name,
     command: () => {
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: 'breadcrumb_subgraph_item_selected'
+      })
       const canvas = useCanvasStore().getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
@@ -97,6 +101,9 @@ const home = computed(() => ({
   key: 'root',
   isBlueprint: isBlueprint.value,
   command: () => {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'breadcrumb_subgraph_root_selected'
+    })
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
@@ -201,8 +208,8 @@ onUpdated(() => {
 :deep(.p-breadcrumb-separator),
 :deep(.p-breadcrumb-item) {
   @apply h-12;
-  border-top: 1px solid var(--p-panel-border-color);
-  border-bottom: 1px solid var(--p-panel-border-color);
+  border-top: 1px solid var(--interface-stroke);
+  border-bottom: 1px solid var(--interface-stroke);
   background-color: var(--comfy-menu-bg);
 }
 
@@ -214,7 +221,7 @@ onUpdated(() => {
   @apply rounded-l-lg;
   /* Then collapse the root workflow */
   flex-shrink: 5000;
-  border-left: 1px solid var(--p-panel-border-color);
+  border-left: 1px solid var(--interface-stroke);
 
   .p-breadcrumb-item-link {
     padding-left: var(--p-breadcrumb-item-padding);
@@ -225,7 +232,7 @@ onUpdated(() => {
   @apply rounded-r-lg;
   /* Then collapse the active item */
   flex-shrink: 1;
-  border-right: 1px solid var(--p-panel-border-color);
+  border-right: 1px solid var(--interface-stroke);
 }
 
 :deep(.p-breadcrumb-item-link:hover),

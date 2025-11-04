@@ -482,7 +482,6 @@ const zSettings = z.object({
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
-  'Comfy.Load3D.ShowPreview': z.boolean(),
   'Comfy.Load3D.BackgroundColor': z.string(),
   'Comfy.Load3D.LightIntensity': z.number(),
   'Comfy.Load3D.LightIntensityMaximum': z.number(),

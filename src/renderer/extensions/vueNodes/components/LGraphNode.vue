@@ -107,7 +107,7 @@
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
-        <div v-if="hasCustomContent" class="min-h-0 flex-1">
+        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
@@ -140,8 +140,9 @@ import { useI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -221,8 +222,10 @@ const hasAnyError = computed((): boolean => {
 })
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
-const bypassed = computed((): boolean => nodeData.mode === 4)
-const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
+const bypassed = computed(
+  (): boolean => nodeData.mode === LGraphEventMode.BYPASS
+)
+const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeBodyBackgroundColor = computed(() => {
   const colorPaletteStore = useColorPaletteStore()
@@ -415,6 +418,9 @@ const handleHeaderTitleUpdate = (newTitle: string) => {
 }
 
 const handleEnterSubgraph = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'graph_node_open_subgraph_clicked'
+  })
   const graph = app.graph?.rootGraph || app.graph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
