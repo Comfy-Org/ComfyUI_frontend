@@ -114,7 +114,7 @@ const popoverPt = computed(() => ({
   content: {
     class: [
       'mb-2 text-text-primary',
-      'shadow-lg border border-node-border',
+      'shadow-lg border border-interface-stroke',
       'bg-nav-background',
       'rounded-lg',
       'p-2 px-3',
