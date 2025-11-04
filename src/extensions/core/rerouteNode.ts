@@ -33,14 +33,13 @@ app.registerExtension({
         this.addInput('', '*')
         this.addOutput(this.properties.showOutputText ? '*' : '', '*')
 
-        this.onAfterGraphConfigured = function () {
-          requestAnimationFrame(() => {
-            this.onConnectionsChange(LiteGraph.INPUT, undefined, true)
-          })
-        }
-
         // This node is purely frontend and does not impact the resulting prompt so should not be serialized
         this.isVirtualNode = true
+      }
+      override onAfterGraphConfigured() {
+        requestAnimationFrame(() => {
+          this.onConnectionsChange(LiteGraph.INPUT, undefined, true)
+        })
       }
       override clone(): LGraphNode | null {
         const cloned = RerouteNode.prototype.clone.apply(this)
@@ -64,8 +63,8 @@ app.registerExtension({
           // Ignore wildcard nodes as these will be updated to real types
           const types = new Set(
             this.outputs[0].links
-              ?.map((l) => graph.links[l].type)
-              ?.filter((t) => t !== '*') ?? []
+              ?.map((l) => graph.links[l]?.type)
+              ?.filter((t) => t && t !== '*') ?? []
           )
           if (types.size > 1) {
             const linksToDisconnect = []

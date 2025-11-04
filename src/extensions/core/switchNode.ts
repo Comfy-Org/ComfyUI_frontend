@@ -1,7 +1,6 @@
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import { SubgraphSlot } from '@/lib/litegraph/src/subgraph/SubgraphSlotBase'
 
 import { app } from '@/scripts/app'
 
@@ -54,11 +53,11 @@ app.registerExtension({
               const inputType = (input ?? subgraphOutput)?.type
               if (!inputType) continue
               const keep = LiteGraph.isValidConnection(combinedType, inputType)
-              if (!keep && subgraphOutput) {
-                ;(subgraphOutput as SubgraphSlot).disconnect()
-              } else if (!keep && inputNode) {
+              if (!keep && subgraphOutput)
+                // @ts-expect-error exists, but bad. need to fix
+                subgraphOutput.disconnect()
+              else if (!keep && inputNode)
                 inputNode.disconnectInput(link.target_slot)
-              }
               if (input && inputNode?.onConnectionsChange)
                 inputNode.onConnectionsChange(
                   LiteGraph.INPUT,
