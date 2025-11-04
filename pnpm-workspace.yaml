@@ -67,6 +67,7 @@ catalog:
   mixpanel-browser: ^2.59.0
   nx: 21.4.1
   oxlint: ^1.23.0
+  oxlint-tsgolint: ^0.4.0
   picocolors: ^1.1.1
   pinia: ^2.1.7
   postcss-html: ^1.8.0

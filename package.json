@@ -96,6 +96,7 @@
     "mixpanel-browser": "catalog:",
     "nx": "catalog:",
     "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "picocolors": "catalog:",
     "postcss-html": "catalog:",
     "prettier": "catalog:",
