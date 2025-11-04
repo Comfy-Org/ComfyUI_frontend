@@ -4,6 +4,7 @@
     "no-async-promise-executor": "off",
     "no-control-regex": "off",
     "no-eval": "off",
+    "no-self-assign": "allow",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
@@ -16,6 +17,5 @@
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-useless-fallback-in-spread": "off",
     "unicorn/no-useless-spread": "off"
-
   }
 }

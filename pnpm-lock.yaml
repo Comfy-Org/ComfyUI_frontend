@@ -148,8 +148,8 @@ catalogs:
       specifier: ^4.16.1
       version: 4.16.1
     eslint-plugin-oxlint:
-      specifier: ^1.24.0
-      version: 1.24.0
+      specifier: 1.25.0
+      version: 1.25.0
     eslint-plugin-prettier:
       specifier: ^5.5.4
       version: 5.5.4
@@ -569,7 +569,7 @@ importers:
         version: 4.16.1(@typescript-eslint/utils@8.44.0(eslint@9.35.0(jiti@2.4.2))(typescript@5.9.2))(eslint-import-resolver-node@0.3.9)(eslint@9.35.0(jiti@2.4.2))
       eslint-plugin-oxlint:
         specifier: 'catalog:'
-        version: 1.24.0
+        version: 1.25.0
       eslint-plugin-prettier:
         specifier: 'catalog:'
         version: 5.5.4(eslint-config-prettier@10.1.8(eslint@9.35.0(jiti@2.4.2)))(eslint@9.35.0(jiti@2.4.2))(prettier@3.6.2)
@@ -4790,8 +4790,8 @@ packages:
       '@typescript-eslint/parser':
         optional: true
 
-  eslint-plugin-oxlint@1.24.0:
-    resolution: {integrity: sha512-eK41VTdYfq8HJH5tGxC6EMdfmCpzXbM5SAqyAU9HProtb5YRCxM9vT2PUfLbGw9EptUvPGF4o9cVUvK9hCCB1g==}
+  eslint-plugin-oxlint@1.25.0:
+    resolution: {integrity: sha512-grS4KdR9FAxoQC+wMkepeQHL4osMhoYfUI11Pot6Gitqr4wWi+JZrX0Shr8Bs9fjdWhEjtaZIV6cr4mbfytmyw==}
 
   eslint-plugin-prettier@5.5.4:
     resolution: {integrity: sha512-swNtI95SToIz05YINMA6Ox5R057IMAmWZ26GqPxusAp1TZzj+IdY9tXNWWD3vkF/wEqydCONcwjTFpxybBqZsg==}
@@ -12614,7 +12614,7 @@ snapshots:
       - supports-color
     optional: true
 
-  eslint-plugin-oxlint@1.24.0:
+  eslint-plugin-oxlint@1.25.0:
     dependencies:
       jsonc-parser: 3.3.1
 
