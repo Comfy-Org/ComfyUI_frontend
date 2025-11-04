@@ -301,7 +301,9 @@ export function useSlotLinkInteraction({
       hoveredSlotKey = dragContext.lastPointerTargetSlotKey
       hoveredNodeId = dragContext.lastPointerTargetNodeId
     } else if (target instanceof HTMLElement) {
-      const elWithSlot = target.closest<HTMLElement>('[data-slot-key]')
+      const elWithSlot = target
+        .closest('.lg-slot, .lg-node-widget')
+        ?.querySelector<HTMLElement>('[data-slot-key]')
       const elWithNode = elWithSlot
         ? null
         : target.closest<HTMLElement>('[data-node-id]')
