@@ -33,14 +33,17 @@ export const useSessionCookie = () => {
           }
         })
 
-        if (!response.ok) {
+        if (response.ok) {
+          return // Success
+        }
+
+        // API error - continue retry loop if not the last attempt
+        if (attempt === 2) {
           const errorData = await response.json().catch(() => ({}))
           throw new Error(
             `Failed to create session: ${errorData.message || response.statusText}`
           )
         }
-
-        return // Success
       }
 
       // Exponential backoff before retry (except for last attempt)
