@@ -123,7 +123,6 @@ export default defineConfig([
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
-      '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',

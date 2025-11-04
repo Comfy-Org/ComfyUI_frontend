@@ -16,6 +16,10 @@
     "unicorn/no-new-array": "off",
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-useless-fallback-in-spread": "off",
-    "unicorn/no-useless-spread": "off"
+    "unicorn/no-useless-spread": "off",
+    
+    "typescript/unbound-method": "off",
+
+    "typescript/no-floating-promises": "error",
   }
 }
