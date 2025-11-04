@@ -304,13 +304,9 @@ export function useSlotLinkInteraction({
       const elWithSlot = target
         .closest('.lg-slot, .lg-node-widget')
         ?.querySelector<HTMLElement>('[data-slot-key]')
-      const elWithNode = elWithSlot
-        ? null
-        : target.closest<HTMLElement>('[data-node-id]')
+      const elWithNode = target.closest<HTMLElement>('[data-node-id]')
       hoveredSlotKey = elWithSlot?.dataset['slotKey'] ?? null
-      hoveredNodeId = hoveredSlotKey
-        ? null
-        : (elWithNode?.dataset['nodeId'] ?? null)
+      hoveredNodeId = elWithNode?.dataset['nodeId'] ?? null
       dragContext.lastPointerEventTarget = target
       dragContext.lastPointerTargetSlotKey = hoveredSlotKey
       dragContext.lastPointerTargetNodeId = hoveredNodeId
@@ -327,10 +323,8 @@ export function useSlotLinkInteraction({
       const graph = app.canvas?.graph ?? null
       const context = { adapter, graph, session: dragContext }
       const slotCandidate = resolveSlotTargetCandidate(target, context)
-      const nodeCandidate = slotCandidate
-        ? null
-        : resolveNodeSurfaceSlotCandidate(target, context)
-      candidate = slotCandidate ?? nodeCandidate
+      const nodeCandidate = resolveNodeSurfaceSlotCandidate(target, context)
+      candidate = slotCandidate?.compatible ? slotCandidate : nodeCandidate
       dragContext.lastHoverSlotKey = hoveredSlotKey
       dragContext.lastHoverNodeId = hoveredNodeId
 
@@ -341,7 +335,8 @@ export function useSlotLinkInteraction({
           slotCandidate.layout.type === 'input'
         )
         setCompatibleForKey(key, !!slotCandidate.compatible)
-      } else if (nodeCandidate) {
+      }
+      if (nodeCandidate && !slotCandidate?.compatible) {
         const key = getSlotKey(
           nodeCandidate.layout.nodeId,
           nodeCandidate.layout.index,
