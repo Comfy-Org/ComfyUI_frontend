@@ -150,6 +150,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useRuntimeConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
@@ -168,7 +169,15 @@ const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
-const comfyPlatformBaseUrl = computed(() => getComfyPlatformBaseUrl())
+const runtimeConfig = useRuntimeConfig()
+const comfyPlatformBaseUrl = computed(() => {
+  const runtimeUrl = runtimeConfig.value.comfy_platform_base_url
+  if (runtimeUrl && runtimeUrl.length > 0) {
+    return runtimeUrl
+  }
+
+  return getComfyPlatformBaseUrl()
+})
 
 const toggleState = () => {
   isSignIn.value = !isSignIn.value

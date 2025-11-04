@@ -11,7 +11,7 @@
  * Used for initial config load in main.ts and polling in the extension.
  */
 
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { RemoteConfig } from './types'
 
@@ -56,4 +56,14 @@ export function getRuntimeConfig(): RemoteConfig {
   }
 
   return window.__CONFIG__ ?? {}
+}
+
+export function useRuntimeConfig() {
+  return computed<RemoteConfig>(() => {
+    if (Object.keys(remoteConfig.value).length > 0) {
+      return remoteConfig.value
+    }
+
+    return window.__CONFIG__ ?? {}
+  })
 }
